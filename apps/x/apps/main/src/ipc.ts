@@ -1345,7 +1345,10 @@ export function setupIpcHandlers() {
       // Starts the connector OAuth flow + opens the browser. The browser
       // completes at the api callback, which deep-links back and main redeems
       // the grant via the connector /claim endpoint (see deeplink.ts).
-      return await connectConnector(args.connector);
+      return await connectConnector(args.connector, {
+        requestedScopes: args.requestedScopes,
+        redirectAfter: args.redirectAfter,
+      });
     },
     "connectors:list": async () => {
       try {

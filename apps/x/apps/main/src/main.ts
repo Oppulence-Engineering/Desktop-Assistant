@@ -76,6 +76,9 @@ import { createEntitySpineReplayService } from "@x/core/knowledge/entity-spine";
 import { WorkDir } from "@x/core/config/config";
 import { sendRendererEvent } from "./renderer-events.js";
 import { openTrustedExternal } from "./external-url.js";
+import { configureMcpApprovalUrlOpener } from "@x/core/mcp/product-approval";
+
+configureMcpApprovalUrlOpener((url) => openTrustedExternal(url));
 
 const notificationService = new ElectronNotificationService();
 const mainLifecycle = new LifecycleRegistry();

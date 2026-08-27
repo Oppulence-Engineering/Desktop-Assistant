@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { setGoogleCredentials, clearGoogleCredentials } from "@/lib/google-credentials-store";
 import { toast } from "sonner";
-import {
-  PRODUCT_NAME,
-  getProductProviderState,
-  isProductProvider,
-} from "@x/shared/branding";
+import { PRODUCT_NAME, getProductProviderState, isProductProvider } from "@x/shared/branding";
+import type {
+  ConnectorEntitlement,
+  ConnectorLifecycleState,
+  ConnectorScope,
+} from "@x/shared/connectors";
+import { connectorLifecycleAction } from "@x/shared/connectors";
 
 export interface ProviderState {
   isConnected: boolean;
@@ -37,6 +39,13 @@ export interface IntegrationConnector {
   transport?: "mcp" | "native";
   authType: "oauth" | "api_key";
   scopes?: string[];
+  grantedScopes?: ConnectorScope[];
+  availableScopes?: ConnectorScope[];
+  connectionHealth?: ConnectorLifecycleState;
+  connectionHealthMessage?: string;
+  entitlement?: ConnectorEntitlement;
+  status?: string;
+  lastUsedAt?: string;
   iconUrl?: string;
   templateBlocks?: IntegrationTemplateBlock[];
   nativeTools?: Array<{ name: string; trustTier?: "read" | "write" | "act" | "money-moving" }>;
@@ -252,7 +261,13 @@ export function useConnectors(active: boolean) {
 
   const handleConnectIntegration = useCallback(
     async (connector: IntegrationConnector) => {
-      if (connector.connected) return;
+      const lifecycleAction = connectorLifecycleAction(connector);
+      if (
+        lifecycleAction === "disconnect" ||
+        lifecycleAction === "wait" ||
+        lifecycleAction === "unavailable"
+      )
+        return;
       if (connector.authType === "api_key") {
         setIntegrationApiKeyTarget(connector);
         setIntegrationApiKeyOpen(true);
@@ -270,6 +285,8 @@ export function useConnectors(active: boolean) {
       try {
         const result = await window.ipc.invoke("connectors:connect", {
           connector: connector.name,
+          requestedScopes: connector.availableScopes?.map((scope) => scope.name),
+          redirectAfter: "solomon-ai://settings/connectors",
         });
         if (!result.success) {
           clearIntegrationConnectTimeout(connector.name);
@@ -548,12 +565,7 @@ export function useConnectors(active: boolean) {
     }
 
     setProviderStates(newStates);
-  }, [
-    providers,
-    refreshGranolaConfig,
-    refreshIntegrations,
-    refreshSlackConfig,
-  ]);
+  }, [providers, refreshGranolaConfig, refreshIntegrations, refreshSlackConfig]);
 
   // Refresh when active or providers change
   useEffect(() => {

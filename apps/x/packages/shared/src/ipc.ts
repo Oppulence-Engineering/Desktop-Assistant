@@ -111,6 +111,11 @@ import {
   RelationshipEvidenceSettings,
 } from "./transcription.js";
 import * as meetings from "./meetings.js";
+import {
+  ConnectorEntitlementSchema,
+  ConnectorLifecycleStateSchema,
+  ConnectorScopeSchema,
+} from "./connectors.js";
 
 // ============================================================================
 // Runtime Validation Schemas (Single Source of Truth)
@@ -143,6 +148,13 @@ const ConnectorViewSchema = z.object({
   transport: z.enum(["mcp", "native"]).optional(),
   authType: z.enum(["oauth", "api_key"]),
   scopes: z.array(z.string()).optional(),
+  grantedScopes: z.array(ConnectorScopeSchema).optional(),
+  availableScopes: z.array(ConnectorScopeSchema).optional(),
+  connectionHealth: ConnectorLifecycleStateSchema.optional(),
+  connectionHealthMessage: z.string().optional(),
+  entitlement: ConnectorEntitlementSchema.optional(),
+  status: z.string().optional(),
+  lastUsedAt: z.string().optional(),
   iconUrl: z.string().optional(),
   mcpTools: z.array(ConnectorMCPToolPolicySchema).optional(),
   nativeTools: z.array(ConnectorMCPToolPolicySchema).optional(),
@@ -661,6 +673,8 @@ const ipcSchemas = {
   "connectors:connect": {
     req: z.object({
       connector: z.string(),
+      requestedScopes: z.array(z.string()).optional(),
+      redirectAfter: z.string().optional(),
     }),
     res: z.object({
       success: z.boolean(),

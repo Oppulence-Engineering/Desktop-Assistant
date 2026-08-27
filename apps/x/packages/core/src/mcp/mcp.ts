@@ -7,6 +7,7 @@ import { IMcpConfigRepo } from "./repo.js";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { connectionState, ListToolsResponse, McpServerList } from "@x/shared/mcp";
+import { consumeMcpApprovalToken, handleApprovalChallenge } from "./product-approval.js";
 
 type mcpState = {
   state: z.infer<typeof connectionState>;
@@ -15,8 +16,8 @@ type mcpState = {
 };
 const clients: Record<string, mcpState> = {};
 
-async function getClient(serverName: string): Promise<Client> {
-  if (clients[serverName] && clients[serverName].state === "connected") {
+async function getClient(serverName: string, approvalToken?: string): Promise<Client> {
+  if (!approvalToken && clients[serverName] && clients[serverName].state === "connected") {
     return clients[serverName].client!;
   }
   const repo = container.resolve<IMcpConfigRepo>("mcpConfigRepo");
@@ -41,7 +42,11 @@ async function getClient(serverName: string): Promise<Client> {
       });
       await client.connect(transport);
     } else {
-      const requestInit = config.headers ? { headers: config.headers } : undefined;
+      const headers = {
+        ...(config.headers ?? {}),
+        ...(approvalToken ? { "X-Approval-Token": approvalToken } : {}),
+      };
+      const requestInit = Object.keys(headers).length ? { headers } : undefined;
       // Try Streamable HTTP first; if the *connection* fails (e.g. the
       // server only speaks the older SSE transport), fall back to SSE.
       // The fallback must wrap client.connect, not just the transport
@@ -154,10 +159,16 @@ export async function executeTool(
   toolName: string,
   input: Record<string, unknown>,
 ): Promise<unknown> {
-  const client = await getClient(serverName);
-  const result = await client.callTool({
-    name: toolName,
-    arguments: input,
-  });
-  return result;
+  const approvalToken = consumeMcpApprovalToken(serverName);
+  if (approvalToken) await closeMcpClient(serverName);
+  const client = await getClient(serverName, approvalToken);
+  try {
+    return await client.callTool({ name: toolName, arguments: input });
+  } catch (error) {
+    const productError = await handleApprovalChallenge(serverName, error);
+    throw new Error(productError.message, { cause: productError });
+  } finally {
+    // One-time approval credentials must never remain on a pooled transport.
+    if (approvalToken) await closeMcpClient(serverName);
+  }
 }

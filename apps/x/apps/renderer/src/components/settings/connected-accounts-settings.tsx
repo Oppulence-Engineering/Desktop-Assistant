@@ -8,6 +8,7 @@ import { GoogleClientIdModal } from "@/components/google-client-id-modal";
 import { IntegrationApiKeyModal } from "@/components/integration-api-key-modal";
 import { useConnectors } from "@/hooks/useConnectors";
 import type { RelationshipSourceStatus } from "@x/shared/relationships";
+import { connectorLifecycleAction } from "@x/shared/connectors";
 import {
   relationshipSourceHealth,
   relationshipSourceStatusLabel,
@@ -85,7 +86,9 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
     const relationshipStatus = relationshipStatusFor(provider);
     const needsReconnect =
       Boolean(c.providerStatus[provider]?.error) ||
-      (relationshipStatus ? relationshipSourceHealth(relationshipStatus) === "needs_attention" : false);
+      (relationshipStatus
+        ? relationshipSourceHealth(relationshipStatus) === "needs_attention"
+        : false);
 
     return (
       <div
@@ -93,16 +96,16 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
         className="flex items-center justify-between gap-3 rounded-2xl border border-border px-3 py-3 transition-colors hover:bg-accent/50"
       >
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-muted">
-            {icon}
-          </div>
+          <div className="flex size-10 items-center justify-center rounded-xl bg-muted">{icon}</div>
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-medium truncate">{displayName}</span>
             {state.isLoading ? (
               <span className="text-xs text-muted-foreground">Checking...</span>
             ) : needsReconnect ? (
               <span className="text-xs text-amber-600">
-                {relationshipStatus ? relationshipSourceStatusLabel(relationshipStatus) : "Needs reconnect"}
+                {relationshipStatus
+                  ? relationshipSourceStatusLabel(relationshipStatus)
+                  : "Needs reconnect"}
               </span>
             ) : state.isConnected ? (
               <span className="text-xs text-emerald-600">Connected</span>
@@ -150,10 +153,36 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
 
   const renderIntegration = (integration: (typeof c.integrations)[number]) => {
     const isBusy = c.integrationConnecting[integration.name] ?? false;
+    const lifecycleAction = connectorLifecycleAction(integration);
+    const isActive = lifecycleAction === "disconnect";
+    const scopes = integration.availableScopes ?? [];
+    const grantedNames = new Set((integration.grantedScopes ?? []).map((scope) => scope.name));
+    const statusCopy =
+      integration.connectionHealthMessage ??
+      (
+        {
+          active: "Healthy",
+          reauth_required: "Reconnect required",
+          revoking: "Disconnecting…",
+          revoked: "Disconnected",
+          invalidated: "Access disabled by product or policy",
+          error: "Connection needs attention",
+        } as const
+      )[integration.connectionHealth ?? "revoked"];
+    const entitlementCopy =
+      integration.entitlement?.allowed === false
+        ? integration.entitlement.reason === "scope_not_in_plan" ||
+          integration.entitlement.reason === "plan_required"
+          ? `Upgrade${integration.entitlement.requiredPlan ? ` to ${integration.entitlement.requiredPlan}` : ""} to connect`
+          : "This connector is not available for this account"
+        : undefined;
     const blocks = integration.templateBlocks ?? [];
     const relationshipStatus = relationshipStatusFor(integration.name);
     return (
-      <div key={integration.name} className="rounded-2xl border border-border p-3 transition-colors hover:bg-accent/50">
+      <div
+        key={integration.name}
+        className="rounded-2xl border border-border p-3 transition-colors hover:bg-accent/50"
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
@@ -162,16 +191,46 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="truncate text-sm font-medium">{integration.displayName}</span>
-                {integration.connected ? <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" /> : null}
+                {isActive ? <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" /> : null}
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">{integration.description}</p>
-              {relationshipStatus && relationshipSourceHealth(relationshipStatus) === "needs_attention" ? (
-                <p className="mt-1 text-xs text-amber-600">{relationshipSourceStatusLabel(relationshipStatus)}</p>
+              <p
+                className={`mt-1 text-xs ${isActive ? "text-emerald-600" : lifecycleAction === "reconnect" || lifecycleAction === "retry" ? "text-amber-600" : "text-muted-foreground"}`}
+              >
+                {entitlementCopy ?? statusCopy}
+              </p>
+              {scopes.length ? (
+                <div className="mt-2 space-y-1">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Granted and available access
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {scopes.map((scope) => (
+                      <span
+                        key={scope.name}
+                        title={scope.description}
+                        className={`rounded-full border px-2 py-0.5 text-[10px] ${grantedNames.has(scope.name) ? "border-emerald-500/40 text-emerald-700" : "border-border text-muted-foreground"}`}
+                      >
+                        {scope.displayName}
+                        {scope.required ? " · required" : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {relationshipStatus &&
+              relationshipSourceHealth(relationshipStatus) === "needs_attention" ? (
+                <p className="mt-1 text-xs text-amber-600">
+                  {relationshipSourceStatusLabel(relationshipStatus)}
+                </p>
               ) : null}
               {blocks.length ? (
                 <div className="mt-2 flex flex-wrap gap-1">
                   {blocks.slice(0, 3).map((block) => (
-                    <span key={block.id} className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground">
+                    <span
+                      key={block.id}
+                      className="rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground"
+                    >
                       {block.title}
                     </span>
                   ))}
@@ -180,12 +239,30 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
             </div>
           </div>
           <Button
-            variant={integration.connected ? "outline" : "default"}
+            variant={isActive ? "outline" : "default"}
             size="sm"
-            onClick={() => integration.connected ? c.handleDisconnectIntegration(integration) : c.handleConnectIntegration(integration)}
-            disabled={isBusy}
+            onClick={() =>
+              isActive
+                ? c.handleDisconnectIntegration(integration)
+                : c.handleConnectIntegration(integration)
+            }
+            disabled={isBusy || lifecycleAction === "wait" || lifecycleAction === "unavailable"}
           >
-            {isBusy ? <Loader2 className="animate-spin" /> : integration.connected ? "Disconnect" : <><Link2 /> Connect</>}
+            {isBusy || lifecycleAction === "wait" ? (
+              <Loader2 className="animate-spin" />
+            ) : isActive ? (
+              "Disconnect"
+            ) : lifecycleAction === "reconnect" ? (
+              "Reconnect"
+            ) : lifecycleAction === "retry" ? (
+              "Retry"
+            ) : lifecycleAction === "unavailable" ? (
+              "Unavailable"
+            ) : (
+              <>
+                <Link2 /> Connect
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -196,28 +273,50 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
     const relationshipStatus = relationshipStatusFor("slack");
     const relationshipStatusNeedsAttention = sourceNeedsAttention("slack");
     return (
-    <div key="slack" className="flex items-center justify-between gap-3 rounded-2xl border border-border px-3 py-3 transition-colors hover:bg-accent/50">
-      <div className="flex min-w-0 items-center gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
-          <BrandImage src={SLACK_BRAND_ICON} />
+      <div
+        key="slack"
+        className="flex items-center justify-between gap-3 rounded-2xl border border-border px-3 py-3 transition-colors hover:bg-accent/50"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+            <BrandImage src={SLACK_BRAND_ICON} />
+          </div>
+          <div className="min-w-0">
+            <span className="text-sm font-medium">Slack</span>
+            <p
+              className={`truncate text-xs ${c.slackDiscoverError || relationshipStatusNeedsAttention ? "text-amber-600" : "text-muted-foreground"}`}
+            >
+              {c.slackDiscoverError ||
+                (relationshipStatusNeedsAttention && relationshipStatus
+                  ? relationshipSourceStatusLabel(relationshipStatus)
+                  : c.slackEnabled
+                    ? c.slackWorkspaces
+                        .map((workspace) => workspace.name)
+                        .filter(Boolean)
+                        .join(", ") || "Connected"
+                    : "Workspace messages and shared customer context")}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <span className="text-sm font-medium">Slack</span>
-          <p className={`truncate text-xs ${c.slackDiscoverError || relationshipStatusNeedsAttention ? "text-amber-600" : "text-muted-foreground"}`}>
-            {c.slackDiscoverError || (relationshipStatusNeedsAttention && relationshipStatus
-              ? relationshipSourceStatusLabel(relationshipStatus)
-              : c.slackEnabled
-              ? c.slackWorkspaces.map((workspace) => workspace.name).filter(Boolean).join(", ") || "Connected"
-              : "Workspace messages and shared customer context")}
-          </p>
-        </div>
+        {c.slackLoading ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Button
+            size="sm"
+            variant={c.slackEnabled ? "outline" : "default"}
+            onClick={c.slackEnabled ? c.handleSlackDisable : c.handleSlackEnable}
+            disabled={c.slackDiscovering}
+          >
+            {c.slackDiscovering ? (
+              <Loader2 className="animate-spin" />
+            ) : c.slackEnabled ? (
+              "Disconnect"
+            ) : (
+              "Connect"
+            )}
+          </Button>
+        )}
       </div>
-      {c.slackLoading ? <Loader2 className="animate-spin" /> : (
-        <Button size="sm" variant={c.slackEnabled ? "outline" : "default"} onClick={c.slackEnabled ? c.handleSlackDisable : c.handleSlackEnable} disabled={c.slackDiscovering}>
-          {c.slackDiscovering ? <Loader2 className="animate-spin" /> : c.slackEnabled ? "Disconnect" : "Connect"}
-        </Button>
-      )}
-    </div>
     );
   };
 
@@ -257,61 +356,140 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
             (integration) => integration.connected && !sourceNeedsAttention(integration.name),
           );
           const attentionIntegrations = c.integrations.filter(
-            (integration) =>
-              integration.connected &&
-              sourceNeedsAttention(integration.name),
+            (integration) => integration.connected && sourceNeedsAttention(integration.name),
           );
-          const availableIntegrations = c.integrations.filter((integration) => !integration.connected);
+          const availableIntegrations = c.integrations.filter(
+            (integration) => !integration.connected,
+          );
           const google = c.providerStates.google;
           const fireflies = c.providerStates["fireflies-ai"];
-          const googleNeedsAttention = Boolean(c.providerStatus.google?.error) || sourceNeedsAttention("google");
-          const firefliesNeedsAttention = Boolean(c.providerStatus["fireflies-ai"]?.error) || sourceNeedsAttention("fireflies-ai");
-          const slackNeedsAttention = Boolean(c.slackDiscoverError) || sourceNeedsAttention("slack");
+          const googleNeedsAttention =
+            Boolean(c.providerStatus.google?.error) || sourceNeedsAttention("google");
+          const firefliesNeedsAttention =
+            Boolean(c.providerStatus["fireflies-ai"]?.error) ||
+            sourceNeedsAttention("fireflies-ai");
+          const slackNeedsAttention =
+            Boolean(c.slackDiscoverError) || sourceNeedsAttention("slack");
           const connected = [
             ...connectedIntegrations.map(renderIntegration),
             ...(c.slackEnabled && !slackNeedsAttention ? [renderSlack()] : []),
             ...(c.providers.includes("google") && google?.isConnected && !googleNeedsAttention
-              ? [renderOAuthProvider("google", "Google", <BrandImage src={GOOGLE_BRAND_ICON} />, "Email and calendar")]
+              ? [
+                  renderOAuthProvider(
+                    "google",
+                    "Google",
+                    <BrandImage src={GOOGLE_BRAND_ICON} />,
+                    "Email and calendar",
+                  ),
+                ]
               : []),
-            ...(c.providers.includes("fireflies-ai") && fireflies?.isConnected && !firefliesNeedsAttention
-              ? [renderOAuthProvider("fireflies-ai", "Fireflies", <Mic className="size-5" />, "AI meeting transcripts")]
+            ...(c.providers.includes("fireflies-ai") &&
+            fireflies?.isConnected &&
+            !firefliesNeedsAttention
+              ? [
+                  renderOAuthProvider(
+                    "fireflies-ai",
+                    "Fireflies",
+                    <Mic className="size-5" />,
+                    "AI meeting transcripts",
+                  ),
+                ]
               : []),
           ];
           const attention = [
             ...attentionIntegrations.map(renderIntegration),
             ...(c.slackEnabled && slackNeedsAttention ? [renderSlack()] : []),
             ...(c.providers.includes("google") && googleNeedsAttention
-              ? [renderOAuthProvider("google", "Google", <BrandImage src={GOOGLE_BRAND_ICON} />, "Email and calendar")]
+              ? [
+                  renderOAuthProvider(
+                    "google",
+                    "Google",
+                    <BrandImage src={GOOGLE_BRAND_ICON} />,
+                    "Email and calendar",
+                  ),
+                ]
               : []),
             ...(c.providers.includes("fireflies-ai") && firefliesNeedsAttention
-              ? [renderOAuthProvider("fireflies-ai", "Fireflies", <Mic className="size-5" />, "AI meeting transcripts")]
+              ? [
+                  renderOAuthProvider(
+                    "fireflies-ai",
+                    "Fireflies",
+                    <Mic className="size-5" />,
+                    "AI meeting transcripts",
+                  ),
+                ]
               : []),
           ];
           const available = [
             ...availableIntegrations.map(renderIntegration),
             ...(!c.slackEnabled && !c.slackDiscoverError ? [renderSlack()] : []),
             ...(c.providers.includes("google") && !google?.isConnected && !googleNeedsAttention
-              ? [renderOAuthProvider("google", "Google", <BrandImage src={GOOGLE_BRAND_ICON} />, "Email and calendar")]
+              ? [
+                  renderOAuthProvider(
+                    "google",
+                    "Google",
+                    <BrandImage src={GOOGLE_BRAND_ICON} />,
+                    "Email and calendar",
+                  ),
+                ]
               : []),
-            ...(c.providers.includes("fireflies-ai") && !fireflies?.isConnected && !firefliesNeedsAttention
-              ? [renderOAuthProvider("fireflies-ai", "Fireflies", <Mic className="size-5" />, "AI meeting transcripts")]
+            ...(c.providers.includes("fireflies-ai") &&
+            !fireflies?.isConnected &&
+            !firefliesNeedsAttention
+              ? [
+                  renderOAuthProvider(
+                    "fireflies-ai",
+                    "Fireflies",
+                    <Mic className="size-5" />,
+                    "AI meeting transcripts",
+                  ),
+                ]
               : []),
           ];
-          const section = (title: string, description: string, rows: React.ReactNode[], empty?: string) => (
+          const section = (
+            title: string,
+            description: string,
+            rows: React.ReactNode[],
+            empty?: string,
+          ) => (
             <section key={title} aria-label={title}>
               <h3 className="text-sm font-medium text-foreground">{title}</h3>
               <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
               <div className="mt-3 space-y-2">
-                {rows.length ? rows : <p className="rounded-2xl border border-dashed border-border p-4 text-xs text-muted-foreground">{empty}</p>}
+                {rows.length ? (
+                  rows
+                ) : (
+                  <p className="rounded-2xl border border-dashed border-border p-4 text-xs text-muted-foreground">
+                    {empty}
+                  </p>
+                )}
               </div>
             </section>
           );
-          return <>
-            {section("Connected", "Sources currently available to your coworker.", connected, "No sources connected yet.")}
-            {attention.length ? section("Needs attention", "Reconnect these sources to restore current evidence.", attention) : null}
-            <Separator />
-            {section("Available", "Add another source when you want its context.", available, "All available sources are connected.")}
-          </>;
+          return (
+            <>
+              {section(
+                "Connected",
+                "Sources currently available to your coworker.",
+                connected,
+                "No sources connected yet.",
+              )}
+              {attention.length
+                ? section(
+                    "Needs attention",
+                    "Reconnect these sources to restore current evidence.",
+                    attention,
+                  )
+                : null}
+              <Separator />
+              {section(
+                "Available",
+                "Add another source when you want its context.",
+                available,
+                "All available sources are connected.",
+              )}
+            </>
+          );
         })()}
       </div>
     </>

@@ -27,10 +27,7 @@ import {
   startConnectorViaBackend,
   claimConnectorViaBackend,
 } from "@x/core/connectors/connectors-backend";
-import {
-  slackStartURL,
-  claimSlackWorkspaceViaBackend,
-} from "@x/core/auth/slack-backend-oauth";
+import { slackStartURL, claimSlackWorkspaceViaBackend } from "@x/core/auth/slack-backend-oauth";
 import { getWorkosLoginUrl, exchangeWorkosCode } from "@x/core/auth/workos-backend";
 import { PRODUCT_PROVIDER_ID, isProductProvider } from "@x/shared/branding";
 import { isManagedAuthMode } from "@x/core/auth/repo";
@@ -484,8 +481,7 @@ export async function connectProvider(
             console.error("[OAuth] Failed to start Oppulence-managed Google connect:", error);
             return {
               success: false,
-              error:
-                error instanceof Error ? error.message : "Couldn't start Google setup.",
+              error: error instanceof Error ? error.message : "Couldn't start Google setup.",
             };
           }
         }
@@ -842,10 +838,11 @@ export async function completeSolomonGoogleConnect(state: string): Promise<void>
  */
 export async function connectConnector(
   connector: string,
+  options: { requestedScopes?: string[]; redirectAfter?: string } = {},
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await beginRelationshipSourceAuthorization(connector);
-    const authorizeUrl = await startConnectorViaBackend(connector);
+    const authorizeUrl = await startConnectorViaBackend(connector, options);
     await openTrustedExternal(authorizeUrl);
     return { success: true };
   } catch (error) {

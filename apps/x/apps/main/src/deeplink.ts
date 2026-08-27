@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import { WorkDir } from "@x/core/config/config";
 import type { MeetingCalendarEvent } from "@x/shared/meetings";
 import { normalizeMeetingEvent } from "@x/shared/meetings";
+import { registerMcpApprovalResult } from "@x/core/mcp/product-approval";
 import { peekMeetingController } from "./meeting-controller.js";
 import { sendRendererEvent } from "./renderer-events.js";
 import {
@@ -57,7 +58,12 @@ function getDeepLinkPayload(url: string): string | null {
  * triggers sync — both main-process concerns.
  */
 export function dispatchUrl(url: string): void {
-  if (parseAction(url)) {
+  const approval = parseMcpApprovalCompletion(url);
+  if (approval) {
+    registerMcpApprovalResult(approval.serverName, approval.token);
+    const win = mainWindowRef;
+    if (win && !win.isDestroyed()) focusWindow(win);
+  } else if (parseAction(url)) {
     void dispatchAction(url);
   } else if (parseOAuthCompletion(url)) {
     void dispatchOAuthCompletion(url);
@@ -66,6 +72,19 @@ export function dispatchUrl(url: string): void {
   } else {
     dispatchDeepLink(url);
   }
+}
+
+function parseMcpApprovalCompletion(url: string): { serverName: string; token: string } | null {
+  const rest = getDeepLinkPayload(url);
+  if (rest === null) return null;
+  const queryIdx = rest.indexOf("?");
+  const host = (queryIdx >= 0 ? rest.slice(0, queryIdx) : rest).replace(/\/$/, "");
+  if (host !== "mcp-approval") return null;
+  const params = new URLSearchParams(queryIdx >= 0 ? rest.slice(queryIdx + 1) : "");
+  const serverName = params.get("server");
+  const token = params.get("approval_token") ?? params.get("token");
+  if (!serverName || !token) return null;
+  return { serverName, token };
 }
 
 export function dispatchDeepLink(url: string): void {
