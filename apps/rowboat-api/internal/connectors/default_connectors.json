@@ -6,6 +6,7 @@
     "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
     "authType": "oauth",
     "audience": "mcp:canvas",
+    "authoritativeEntitlementRequired": true,
     "scopes": [
       {
         "name": "canvas:invoices.read",
@@ -64,6 +65,7 @@
     "mcpUrl": "https://mcp.corinthian.solomon-ai.co/mcp",
     "authType": "oauth",
     "audience": "mcp:corinthian",
+    "authoritativeEntitlementRequired": true,
     "scopes": [
       {
         "name": "corinthian:ar.read",
@@ -106,6 +108,7 @@
     "mcpUrl": "https://mcp.cadence.solomon-ai.co/mcp",
     "authType": "oauth",
     "audience": "mcp:cadence",
+    "authoritativeEntitlementRequired": true,
     "scopes": [
       {
         "name": "cadence:payment_runs.read",
@@ -150,6 +153,7 @@
     "mcpUrl": "https://mcp.conduit.solomon-ai.co/mcp",
     "authType": "oauth",
     "audience": "mcp:conduit",
+    "authoritativeEntitlementRequired": true,
     "scopes": [
       {
         "name": "conduit:pipelines.read",
@@ -191,6 +195,7 @@
     "mcpUrl": "https://mcp.eigen.solomon-ai.co/mcp",
     "authType": "oauth",
     "audience": "mcp:eigen",
+    "authoritativeEntitlementRequired": true,
     "scopes": [
       {
         "name": "eigen:knowledge.read",
@@ -233,6 +238,7 @@
     "mcpUrl": "https://mcp.wispr.solomon-ai.co/mcp",
     "authType": "api_key",
     "audience": "wispr-api",
+    "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "transcript.search", "trustTier": "read" },
       { "name": "transcript.get", "trustTier": "read" }
@@ -257,6 +263,7 @@
     "transport": "native",
     "authType": "api_key",
     "audience": "hubspot-api",
+    "authoritativeEntitlementRequired": true,
     "nativeTools": [
       { "name": "connector.read.hubspot_search", "trustTier": "read" },
       { "name": "connector.write.hubspot_note", "trustTier": "act" },
@@ -290,6 +297,7 @@
     "mcpUrl": "https://mcp.github.solomon-ai.co/mcp",
     "authType": "api_key",
     "audience": "github-api",
+    "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "repository.get", "trustTier": "read" },
       { "name": "issue.search", "trustTier": "read" },
@@ -325,6 +333,7 @@
     "mcpUrl": "https://mcp.linear.solomon-ai.co/mcp",
     "authType": "api_key",
     "audience": "linear-api",
+    "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "issue.search", "trustTier": "read" },
       { "name": "project.lookup", "trustTier": "read" },
@@ -359,6 +368,7 @@
     "mcpUrl": "https://mcp.notion.solomon-ai.co/mcp",
     "authType": "api_key",
     "audience": "notion-api",
+    "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "page.search", "trustTier": "read" },
       { "name": "page.get", "trustTier": "read" },
@@ -393,6 +403,7 @@
     "mcpUrl": "https://mcp.stripe.solomon-ai.co/mcp",
     "authType": "api_key",
     "audience": "stripe-api",
+    "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "customer.lookup", "trustTier": "read" },
       { "name": "charge.search", "trustTier": "read" },

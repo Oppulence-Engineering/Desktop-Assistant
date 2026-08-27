@@ -5,7 +5,9 @@ the repository's Go resource-server library and PostgreSQL for online connection
 status, one-time approvals, tenant binding, and product-side audit records.
 
 PostgreSQL must have the `pgcrypto` extension because approval tokens are stored
-only as SHA-256 hashes. Start with:
+only as SHA-256 hashes. The same database also provides the atomic shared replay
+claim store for signed product-entitlement request IDs, so replay protection is
+preserved when multiple dev-product replicas are running. Start with:
 
 ```sh
 createdb rowboat_rfc012

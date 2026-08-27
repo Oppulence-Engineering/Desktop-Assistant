@@ -3,8 +3,7 @@ package connectors
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
+	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
 )
 
 const entitlementTimeout = 3 * time.Second
@@ -68,14 +68,19 @@ func (h *Handler) productEntitlement(ctx context.Context, owner *ent.User, conn 
 		return false, "entitlement_unavailable"
 	}
 	timestamp := time.Now().UTC().Format(time.RFC3339)
-	mac := hmac.New(sha256.New, conn.entitlementKey)
-	_, _ = mac.Write([]byte(timestamp))
-	_, _ = mac.Write([]byte("\n"))
-	_, _ = mac.Write(body)
+	requestID, err := oauthrs.NewEntitlementRequestID()
+	if err != nil {
+		return false, "entitlement_unavailable"
+	}
+	signature, err := oauthrs.SignEntitlementRequest(conn.entitlementKey, timestamp, requestID, body)
+	if err != nil {
+		return false, "entitlement_unavailable"
+	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Rowboat-Connector", conn.Name)
-	req.Header.Set("X-Rowboat-Timestamp", timestamp)
-	req.Header.Set("X-Rowboat-Signature", fmt.Sprintf("sha256=%x", mac.Sum(nil)))
+	req.Header.Set(oauthrs.EntitlementConnectorHeader, conn.Name)
+	req.Header.Set(oauthrs.EntitlementTimestampHeader, timestamp)
+	req.Header.Set(oauthrs.EntitlementRequestIDHeader, requestID)
+	req.Header.Set(oauthrs.EntitlementSignatureHeader, signature)
 	client := productEntitlementClient(conn.allowPrivateEntitlement)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -111,33 +116,66 @@ func productEntitlementClient(allowPrivate bool) *http.Client {
 	if cached, ok := entitlementClients.Load(allowPrivate); ok {
 		return cached.(*http.Client)
 	}
-	dialer := &net.Dialer{Timeout: 2 * time.Second, KeepAlive: 30 * time.Second}
+	client := newProductEntitlementClient(entitlementTransportOptions{allowPrivate: allowPrivate})
+	actual, _ := entitlementClients.LoadOrStore(allowPrivate, client)
+	return actual.(*http.Client)
+}
+
+type entitlementResolver interface {
+	LookupNetIP(context.Context, string, string) ([]netip.Addr, error)
+}
+
+type entitlementTransportOptions struct {
+	allowPrivate bool
+	resolver     entitlementResolver
+	dialContext  func(context.Context, string, string) (net.Conn, error)
+	tlsConfig    *tls.Config
+	timeout      time.Duration
+}
+
+func newProductEntitlementClient(options entitlementTransportOptions) *http.Client {
+	timeout := options.timeout
+	if timeout <= 0 {
+		timeout = entitlementTimeout
+	}
+	resolver := options.resolver
+	if resolver == nil {
+		resolver = net.DefaultResolver
+	}
+	dialContext := options.dialContext
+	if dialContext == nil {
+		dialer := &net.Dialer{Timeout: 2 * time.Second, KeepAlive: 30 * time.Second}
+		dialContext = dialer.DialContext
+	}
 	base := http.DefaultTransport.(*http.Transport).Clone()
 	base.Proxy = nil
+	if options.tlsConfig != nil {
+		base.TLSClientConfig = options.tlsConfig.Clone()
+	}
 	base.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
 		host, port, err := net.SplitHostPort(address)
 		if err != nil {
 			return nil, err
 		}
-		ips, err := net.DefaultResolver.LookupNetIP(ctx, "ip", host)
-		if err != nil || len(ips) == 0 {
+		ips, err := resolver.LookupNetIP(ctx, "ip", host)
+		if err != nil {
 			return nil, fmt.Errorf("resolve entitlement host: %w", err)
 		}
-		for _, ip := range ips {
-			if !allowPrivate && !publicEntitlementIP(ip) {
-				continue
-			}
-			return dialer.DialContext(ctx, network, net.JoinHostPort(ip.String(), port))
+		if len(ips) == 0 {
+			return nil, fmt.Errorf("resolve entitlement host: no addresses")
 		}
-		return nil, fmt.Errorf("entitlement host resolved only to disallowed addresses")
+		for _, ip := range ips {
+			if !options.allowPrivate && !publicEntitlementIP(ip) {
+				return nil, fmt.Errorf("entitlement host resolved to a disallowed address")
+			}
+		}
+		return dialContext(ctx, network, net.JoinHostPort(ips[0].String(), port))
 	}
-	client := &http.Client{
-		Timeout:       entitlementTimeout,
-		Transport:     outbound.NewTransport(base, outbound.Policy{Name: "connector-entitlement", Timeout: entitlementTimeout, ResponseHeaderTimeout: 2 * time.Second, MaxConcurrent: 32, MaxResponseBytes: entitlementMaxResponseBytes}),
+	return &http.Client{
+		Timeout:       timeout,
+		Transport:     outbound.NewTransport(base, outbound.Policy{Name: "connector-entitlement", Timeout: timeout, ResponseHeaderTimeout: min(timeout, 2*time.Second), MaxConcurrent: 32, MaxResponseBytes: entitlementMaxResponseBytes}),
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse },
 	}
-	actual, _ := entitlementClients.LoadOrStore(allowPrivate, client)
-	return actual.(*http.Client)
 }
 
 func publicEntitlementIP(ip netip.Addr) bool {

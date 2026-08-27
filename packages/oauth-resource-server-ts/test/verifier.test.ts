@@ -143,6 +143,18 @@ async function runMiddleware(options: MCPTokenOptions, approvalToken?: string): 
 }
 
 describe('RFC 012 verifier contract', () => {
+  it('requires exactly RS256 in the primary verifier while generic stays explicitly configurable', () => {
+    const base = {
+      issuerUrl: ISSUER, audience: AUDIENCE, jwksUrl: baseURL,
+      allowedJwksOrigins: [new URL(baseURL).origin], allowLocalhostDevelopment: true,
+    };
+    for (const algorithms of [['RS384'], ['RS256', 'RS384'], ['rs256']]) {
+      expect(() => new Verifier({ ...base, algorithms })).toThrow(/exactly RS256/);
+    }
+    expect(() => new Verifier({ ...base, algorithms: ['RS256'] })).not.toThrow();
+    expect(() => new GenericVerifier({ ...base, algorithms: ['RS384'] })).not.toThrow();
+  });
+
   it('fails closed on config and exposes generic verification explicitly', async () => {
     expect(() => new Verifier({ issuerUrl: '', audience: AUDIENCE, jwksUrl: baseURL })).toThrow();
     expect(() => new Verifier({ issuerUrl: ISSUER, audience: '', jwksUrl: baseURL })).toThrow();

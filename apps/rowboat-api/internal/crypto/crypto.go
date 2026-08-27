@@ -55,6 +55,7 @@ type Sealer struct {
 	primaryKeyID  string
 	keyring       map[string]cipher.AEAD
 	legacyOpeners []cipher.AEAD
+	legacyKeyIDs  []string
 }
 
 // NewSealer derives a 256-bit key from the passphrase (SHA-256) and builds a
@@ -150,10 +151,13 @@ func NewKeyringSealerFromKeys(primaryKeyID string, keyring map[string][]byte) (*
 
 	primary := aeads[primaryKeyID]
 	legacyOpeners := make([]cipher.AEAD, 0, len(aeads))
+	legacyKeyIDs := make([]string, 0, len(aeads))
 	legacyOpeners = append(legacyOpeners, primary)
+	legacyKeyIDs = append(legacyKeyIDs, primaryKeyID)
 	for _, keyID := range keyIDs {
 		if keyID != primaryKeyID {
 			legacyOpeners = append(legacyOpeners, aeads[keyID])
+			legacyKeyIDs = append(legacyKeyIDs, keyID)
 		}
 	}
 
@@ -162,7 +166,21 @@ func NewKeyringSealerFromKeys(primaryKeyID string, keyring map[string][]byte) (*
 		primaryKeyID:  primaryKeyID,
 		keyring:       aeads,
 		legacyOpeners: legacyOpeners,
+		legacyKeyIDs:  legacyKeyIDs,
 	}, nil
+}
+
+// PrimaryKeyID returns the key ID used for new versioned envelopes. Legacy
+// single-key sealers return an empty string because their ciphertext has no key
+// metadata and they are not suitable for managed rotation.
+func (s *Sealer) PrimaryKeyID() string { return s.primaryKeyID }
+
+// CiphertextKeyID inspects an envelope without decrypting it. Versioned
+// ciphertext returns its embedded key ID. Legacy nonce||ciphertext returns
+// ("", false, nil) because attribution requires an authenticated decrypt.
+func CiphertextKeyID(sealed []byte) (keyID string, versioned bool, err error) {
+	_, keyID, _, versioned, err = parseEnvelope(sealed)
+	return keyID, versioned, err
 }
 
 func newAEAD(key []byte) (cipher.AEAD, error) {
@@ -210,48 +228,67 @@ func (s *Sealer) Open(sealed []byte) ([]byte, error) {
 	return s.OpenWithAAD(sealed, nil)
 }
 
+// OpenAndKeyID decrypts ciphertext and reports the key that authenticated it.
+// This is intended for inventory/re-encryption jobs. For legacy ciphertext a
+// keyring sealer tries each configured key and returns the successful key ID.
+func (s *Sealer) OpenAndKeyID(sealed []byte) ([]byte, string, error) {
+	return s.OpenWithAADAndKeyID(sealed, nil)
+}
+
 // OpenWithAAD reverses SealWithAAD and fails authentication if the tenant or
 // key version binding differs.
 func (s *Sealer) OpenWithAAD(sealed, additionalData []byte) ([]byte, error) {
+	out, _, err := s.OpenWithAADAndKeyID(sealed, additionalData)
+	return out, err
+}
+
+// OpenWithAADAndKeyID is the AAD-aware form of OpenAndKeyID.
+func (s *Sealer) OpenWithAADAndKeyID(sealed, additionalData []byte) ([]byte, string, error) {
 	header, keyID, payload, versioned, err := parseEnvelope(sealed)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if versioned {
 		aead, ok := s.keyring[keyID]
 		if !ok {
-			return nil, fmt.Errorf("%w: %q", ErrUnknownKeyID, keyID)
+			return nil, keyID, fmt.Errorf("%w: %q", ErrUnknownKeyID, keyID)
 		}
 		if len(payload) < aead.NonceSize()+aead.Overhead() {
-			return nil, ErrMalformedCiphertext
+			return nil, keyID, ErrMalformedCiphertext
 		}
 		nonce, ct := payload[:aead.NonceSize()], payload[aead.NonceSize():]
 		out, err := aead.Open(nil, nonce, ct, appendAAD(header, additionalData))
 		if err != nil {
-			return nil, fmt.Errorf("crypto: open: %w", err)
+			return nil, keyID, fmt.Errorf("crypto: open: %w", err)
 		}
-		return out, nil
+		return out, keyID, nil
 	}
 
 	if s.keyring != nil {
-		return s.openLegacyWithKeyring(sealed, additionalData)
+		return s.openLegacyWithKeyringAndKeyID(sealed, additionalData)
 	}
-	return openLegacy(s.aead, sealed, additionalData)
+	out, err := openLegacy(s.aead, sealed, additionalData)
+	return out, "", err
 }
 
 func (s *Sealer) openLegacyWithKeyring(sealed, additionalData []byte) ([]byte, error) {
+	out, _, err := s.openLegacyWithKeyringAndKeyID(sealed, additionalData)
+	return out, err
+}
+
+func (s *Sealer) openLegacyWithKeyringAndKeyID(sealed, additionalData []byte) ([]byte, string, error) {
 	if len(sealed) < s.aead.NonceSize() {
-		return nil, ErrCiphertextTooShort
+		return nil, "", ErrCiphertextTooShort
 	}
 	var lastErr error
-	for _, aead := range s.legacyOpeners {
+	for i, aead := range s.legacyOpeners {
 		out, err := openLegacy(aead, sealed, additionalData)
 		if err == nil {
-			return out, nil
+			return out, s.legacyKeyIDs[i], nil
 		}
 		lastErr = err
 	}
-	return nil, lastErr
+	return nil, "", lastErr
 }
 
 func openLegacy(aead cipher.AEAD, sealed, additionalData []byte) ([]byte, error) {

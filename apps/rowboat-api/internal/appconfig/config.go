@@ -78,6 +78,10 @@ type Config struct {
 	DBEncryptionKey          string
 	DBEncryptionPrimaryKeyID string
 	DBEncryptionKeyringJSON  string
+	// DBEncryptionRetiringKeyIDs declares keys an operator intends to remove.
+	// They must remain present in the keyring and cannot be the active primary;
+	// cmd/connector-reencrypt performs the data-dependent retirement gate.
+	DBEncryptionRetiringKeyIDs []string
 
 	// Public values served by GET /v1/config (consumed by the desktop).
 	AppURL          string
@@ -131,11 +135,12 @@ type Config struct {
 	PublicBaseURL string
 
 	// ConnectorsJSON optionally overrides the built-in connector registry.
-	ConnectorsJSON                   string
-	ConnectorEntitlementURLsJSON     string
-	ConnectorEntitlementHMACKeysJSON string
-	ConnectorEmergencyDisabled       []string
-	ConnectorRedirectAllowlist       []string
+	ConnectorsJSON                            string
+	ConnectorEntitlementURLsJSON              string
+	ConnectorEntitlementHMACKeysJSON          string
+	ConnectorAllowLocalEntitlementDevelopment bool
+	ConnectorEmergencyDisabled                []string
+	ConnectorRedirectAllowlist                []string
 
 	// Shared-secret HMAC for /oauth-hooks/* (called by Ory, not users).
 	HookHMACSecret string
@@ -525,6 +530,9 @@ func (c Config) DBEncryptionKeyring() (string, map[string]string, error) {
 		if primaryKeyID != legacyDBEncryptionKeyID {
 			return "", nil, fmt.Errorf("DB_ENCRYPTION_PRIMARY_KEY_ID %q is not present in the legacy fallback keyring; use %q or configure DB_ENCRYPTION_KEYRING_JSON", primaryKeyID, legacyDBEncryptionKeyID)
 		}
+		if err := validateDBEncryptionRetiringKeys(primaryKeyID, keyring, c.DBEncryptionRetiringKeyIDs); err != nil {
+			return "", nil, err
+		}
 		return primaryKeyID, keyring, nil
 	}
 	keyring, err := decodeDBEncryptionKeyring(raw)
@@ -551,7 +559,31 @@ func (c Config) DBEncryptionKeyring() (string, map[string]string, error) {
 	if _, ok := keyring[primaryKeyID]; !ok {
 		return "", nil, fmt.Errorf("DB_ENCRYPTION_PRIMARY_KEY_ID %q is not present in DB_ENCRYPTION_KEYRING_JSON", primaryKeyID)
 	}
+	if err := validateDBEncryptionRetiringKeys(primaryKeyID, keyring, c.DBEncryptionRetiringKeyIDs); err != nil {
+		return "", nil, err
+	}
 	return primaryKeyID, keyring, nil
+}
+
+func validateDBEncryptionRetiringKeys(primaryKeyID string, keyring map[string]string, retiring []string) error {
+	seenRetiring := make(map[string]struct{}, len(retiring))
+	for _, rawKeyID := range retiring {
+		keyID := strings.TrimSpace(rawKeyID)
+		if err := validateDBEncryptionKeyID(keyID); err != nil {
+			return fmt.Errorf("DB_ENCRYPTION_RETIRING_KEY_IDS key %q %w", keyID, err)
+		}
+		if keyID == primaryKeyID {
+			return fmt.Errorf("DB_ENCRYPTION_RETIRING_KEY_IDS cannot include active primary key %q", keyID)
+		}
+		if _, duplicate := seenRetiring[keyID]; duplicate {
+			return fmt.Errorf("DB_ENCRYPTION_RETIRING_KEY_IDS contains duplicate key %q", keyID)
+		}
+		seenRetiring[keyID] = struct{}{}
+		if _, ok := keyring[keyID]; !ok {
+			return fmt.Errorf("DB_ENCRYPTION_RETIRING_KEY_IDS key %q must remain in DB_ENCRYPTION_KEYRING_JSON until the retirement gate passes", keyID)
+		}
+	}
+	return nil
 }
 
 func decodeDBEncryptionKeyring(raw string) (map[string]string, error) {
@@ -660,9 +692,10 @@ func Load() Config {
 			30*time.Minute),
 		DBConnMaxIdleTime: getdur("DB_CONN_MAX_IDLE_TIME",
 			5*time.Minute),
-		DBEncryptionKey:          getenvAllowEmpty("DB_ENCRYPTION_KEY", "dev-insecure-encryption-key-change-me"),
-		DBEncryptionPrimaryKeyID: getenvAllowEmpty("DB_ENCRYPTION_PRIMARY_KEY_ID", legacyDBEncryptionKeyID),
-		DBEncryptionKeyringJSON:  getenvAllowEmpty("DB_ENCRYPTION_KEYRING_JSON", ""),
+		DBEncryptionKey:            getenvAllowEmpty("DB_ENCRYPTION_KEY", "dev-insecure-encryption-key-change-me"),
+		DBEncryptionPrimaryKeyID:   getenvAllowEmpty("DB_ENCRYPTION_PRIMARY_KEY_ID", legacyDBEncryptionKeyID),
+		DBEncryptionKeyringJSON:    getenvAllowEmpty("DB_ENCRYPTION_KEYRING_JSON", ""),
+		DBEncryptionRetiringKeyIDs: getcsv("DB_ENCRYPTION_RETIRING_KEY_IDS", ""),
 
 		AppURL: getenv("APP_URL", "https://app.solomon-ai.co"),
 		// WorkOS-direct: the desktop signs into WorkOS AuthKit directly (no Ory
@@ -697,16 +730,17 @@ func Load() Config {
 		// Default to the WorkOS client id so WorkOS-direct needs only WORKOS_CLIENT_ID.
 		OAuthClientID: getenv("OAUTH_CLIENT_ID", getenv("WORKOS_CLIENT_ID", "")),
 
-		OryPublicURL:                     getenv("ORY_PUBLIC_URL", "https://oauth.solomon-ai.co"),
-		OryAdminURL:                      getenv("ORY_ADMIN_URL", ""),
-		OryBrokerClientID:                getenv("ORY_BROKER_CLIENT_ID", ""),
-		OryBrokerClientSecret:            getenv("ORY_BROKER_CLIENT_SECRET", ""),
-		PublicBaseURL:                    getenv("PUBLIC_BASE_URL", "https://api.x.solomon-ai.co"),
-		ConnectorsJSON:                   getenv("CONNECTORS_JSON", ""),
-		ConnectorEntitlementURLsJSON:     getenv("CONNECTOR_ENTITLEMENT_URLS_JSON", ""),
-		ConnectorEntitlementHMACKeysJSON: getenv("CONNECTOR_ENTITLEMENT_HMAC_KEYS_JSON", ""),
-		ConnectorEmergencyDisabled:       getcsv("CONNECTOR_EMERGENCY_DISABLED", ""),
-		ConnectorRedirectAllowlist:       getcsv("CONNECTOR_REDIRECT_ALLOWLIST", ""),
+		OryPublicURL:                              getenv("ORY_PUBLIC_URL", "https://oauth.solomon-ai.co"),
+		OryAdminURL:                               getenv("ORY_ADMIN_URL", ""),
+		OryBrokerClientID:                         getenv("ORY_BROKER_CLIENT_ID", ""),
+		OryBrokerClientSecret:                     getenv("ORY_BROKER_CLIENT_SECRET", ""),
+		PublicBaseURL:                             getenv("PUBLIC_BASE_URL", "https://api.x.solomon-ai.co"),
+		ConnectorsJSON:                            getenv("CONNECTORS_JSON", ""),
+		ConnectorEntitlementURLsJSON:              getenv("CONNECTOR_ENTITLEMENT_URLS_JSON", ""),
+		ConnectorEntitlementHMACKeysJSON:          getenv("CONNECTOR_ENTITLEMENT_HMAC_KEYS_JSON", ""),
+		ConnectorAllowLocalEntitlementDevelopment: getbool("CONNECTOR_ALLOW_LOCAL_ENTITLEMENT_DEVELOPMENT", false),
+		ConnectorEmergencyDisabled:                getcsv("CONNECTOR_EMERGENCY_DISABLED", ""),
+		ConnectorRedirectAllowlist:                getcsv("CONNECTOR_REDIRECT_ALLOWLIST", ""),
 
 		HookHMACSecret:    getenv("HOOK_HMAC_SECRET", ""),
 		InternalAPISecret: getenv("INTERNAL_API_SECRET", ""),
@@ -1247,6 +1281,9 @@ func (c Config) validateProduction() error {
 	}
 	if !c.AgentRequireMFAForMoneyMoving {
 		return fmt.Errorf("AGENT_REQUIRE_MFA_FOR_MONEY_MOVING must be true in production")
+	}
+	if c.ConnectorAllowLocalEntitlementDevelopment {
+		return fmt.Errorf("CONNECTOR_ALLOW_LOCAL_ENTITLEMENT_DEVELOPMENT must be false in production")
 	}
 	if c.GoogleWatchEnabled {
 		if len(c.GoogleWebhookToken) < 32 {

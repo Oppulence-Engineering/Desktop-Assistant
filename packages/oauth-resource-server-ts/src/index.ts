@@ -15,6 +15,19 @@ export { ClaimsSchema, type Claims, hasScope, hasAllScopes, hasAnyScope, claimsF
 export { Verifier, GenericVerifier, VerifierConfigSchema, GenericVerifierConfigSchema, type VerifierConfig, type GenericVerifierConfig, TokenError, bearerToken } from './verifier.js';
 export { AuthorizationError, errorCodes, type ErrorCode } from './errors.js';
 export {
+  EntitlementRequestVerifier,
+  EntitlementRequestError,
+  MemoryEntitlementReplayStore,
+  signEntitlementRequest,
+  newEntitlementRequestId,
+  ENTITLEMENT_CONNECTOR_HEADER,
+  ENTITLEMENT_TIMESTAMP_HEADER,
+  ENTITLEMENT_REQUEST_ID_HEADER,
+  ENTITLEMENT_SIGNATURE_HEADER,
+  type EntitlementReplayStore,
+  type EntitlementRequestVerifierConfig,
+} from './entitlements.js';
+export {
   requireAuth,
   requireScopes,
   requireAllScopes,

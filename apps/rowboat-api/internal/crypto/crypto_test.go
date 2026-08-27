@@ -122,6 +122,37 @@ func TestKeyringSealerDecryptsLegacyCiphertext(t *testing.T) {
 	if opened != "legacy-refresh-token" {
 		t.Fatalf("opened = %q, want legacy-refresh-token", opened)
 	}
+	_, keyID, err := rotating.OpenAndKeyID(sealed)
+	if err != nil {
+		t.Fatalf("attribute legacy ciphertext: %v", err)
+	}
+	if keyID != "old" {
+		t.Fatalf("legacy ciphertext key ID = %q, want old", keyID)
+	}
+}
+
+func TestCiphertextKeyAttribution(t *testing.T) {
+	s, err := crypto.NewKeyringSealer("new", map[string]string{
+		"old": "old-key-material",
+		"new": "new-key-material",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sealed, err := s.SealString("secret")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, versioned, err := crypto.CiphertextKeyID(sealed); err != nil || !versioned || got != "new" {
+		t.Fatalf("CiphertextKeyID = (%q,%v,%v), want (new,true,nil)", got, versioned, err)
+	}
+	plain, got, err := s.OpenAndKeyID(sealed)
+	if err != nil || string(plain) != "secret" || got != "new" {
+		t.Fatalf("OpenAndKeyID = (%q,%q,%v)", plain, got, err)
+	}
+	if s.PrimaryKeyID() != "new" {
+		t.Fatalf("PrimaryKeyID = %q", s.PrimaryKeyID())
+	}
 }
 
 func TestKeyRotationAndRetirementAfterMigration(t *testing.T) {

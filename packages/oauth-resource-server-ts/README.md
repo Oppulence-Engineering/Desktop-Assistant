@@ -1,7 +1,7 @@
 # @oppulence/oauth-resource-server
 
 TypeScript resource-server toolkit for RFC 012 connector tokens. `Verifier` is
-fail closed: exact `issuerUrl` and `audience` are mandatory, RS256 is the default,
+fail closed: exact `issuerUrl` and `audience` are mandatory, exactly RS256 is required,
 `exp` is required, and verified tokens must contain subject/user,
 `connection_id`, `connector_id`, and `jti` actor claims.
 
@@ -22,7 +22,32 @@ const actor = await verifier.verify(rawToken);
 
 Issuer and audience are compared exactly. For non-connector JWTs without RFC 012
 actor claims, use the explicitly named `GenericVerifier`. It still requires and
-validates exact issuer and audience values.
+validates exact issuer and audience values. Algorithm configurability is available
+only through that explicitly separate generic verifier. `Verifier` rejects mixed
+lists, case variants, and every algorithm other than exactly `RS256`.
+
+## Verify authoritative entitlement requests
+
+Product entitlement endpoints must verify the signed timestamp, connector,
+request ID, and exact body bytes, then atomically consume the request ID in a
+shared bounded replay store:
+
+```ts
+import { EntitlementRequestVerifier } from "@oppulence/oauth-resource-server";
+
+const entitlements = new EntitlementRequestVerifier({
+  signingKey: process.env.PRODUCT_ENTITLEMENT_HMAC_KEY!,
+  connector: "canvas",
+  replayStore: distributedReplayStore,
+});
+
+await entitlements.verify(request.headers, exactBodyBytes);
+```
+
+`MemoryEntitlementReplayStore` is bounded and suitable for tests or one-process
+development only. Multi-replica products must implement `EntitlementReplayStore`
+with one distributed atomic claim store, such as PostgreSQL or Redis. Verification
+fails closed if that store is unavailable or full.
 
 ## Remote JWKS security
 
@@ -62,6 +87,13 @@ app.post("/payments", requireMCPToken(verifier, {
 
 Exports include `requireAuth`, `requireAllScopes`, `requireAnyScope`,
 `requireMCPToken`, and `verifyAuthorizationHeader`.
+
+JWT bearer tokens remain replayable by a holder until `exp`. Signature and `jti`
+validation do not make a bearer token single-use. High-risk products, including
+money movement, destructive operations, and sensitive exports, must configure an
+online `connectionValidator` on every protected request so revocation is enforced
+immediately. Approval tokens should remain operation-bound and single-use where
+the product contract requires them.
 
 ## Errors
 

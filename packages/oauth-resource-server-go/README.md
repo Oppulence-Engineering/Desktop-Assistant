@@ -2,7 +2,7 @@
 
 Go `net/http` resource-server toolkit for the RFC 012 connector-token contract.
 The primary constructor is intentionally fail closed. It requires exact issuer and
-audience values, RS256 by default, expiration, and the connector actor claims
+audience values, exactly RS256, expiration, and the connector actor claims
 `sub`/user, `connection_id`, `connector_id`, and `jti`.
 
 ## RFC 012 verifier
@@ -22,7 +22,42 @@ omitted for same-origin OIDC discovery. Every accepted connector token must
 normalize to a non-empty subject/user, connection ID, connector ID, and token ID.
 Use `NewGeneric(ctx, GenericConfig{...})` explicitly for non-connector JWTs that
 do not carry those actor claims. The generic verifier still requires and checks
-an exact issuer and audience.
+an exact issuer and audience. Algorithm configurability is available only through
+the explicitly separate generic verifier. `New` defaults an omitted method list
+to RS256 and rejects mixed lists, case variants, and every configured algorithm
+other than exactly `RS256`.
+
+## Verify authoritative entitlement requests
+
+Product entitlement endpoints must verify the signed timestamp, connector,
+request ID, exact body bytes, and atomically consume the request ID in a shared
+bounded replay store:
+
+```go
+store := &oauthrs.PostgresEntitlementReplayStore{DB: db}
+if err := store.EnsureSchema(ctx); err != nil { return err }
+
+entitlements, err := oauthrs.NewEntitlementRequestVerifier(
+    oauthrs.EntitlementRequestVerifierConfig{
+        SigningKey:  []byte(os.Getenv("PRODUCT_ENTITLEMENT_HMAC_KEY")),
+        Connector:   "canvas",
+        ReplayStore: store,
+    },
+)
+if err != nil { return err }
+
+body, err := io.ReadAll(io.LimitReader(r.Body, 64<<10))
+if err != nil { return err }
+if err := entitlements.Verify(r.Context(), r.Header, body); err != nil {
+    http.Error(w, "unauthorized", http.StatusUnauthorized)
+    return
+}
+```
+
+`MemoryEntitlementReplayStore` is bounded and suitable for tests or one-process
+development only. Multi-replica products must use one distributed atomic store,
+such as the included PostgreSQL implementation. Verification fails closed if the
+store is unavailable or full.
 
 ## Remote JWKS security
 
@@ -66,6 +101,13 @@ mux.Handle("POST /payments", verifier.RequireMCPToken(oauthrs.MCPTokenOptions{
 ```
 
 `RequireAllScopes` and `RequireAnyScope` are also available.
+
+JWT bearer tokens remain replayable by a holder until `exp`. Signature and `jti`
+validation do not make a bearer token single-use. High-risk products, including
+money movement, destructive operations, and sensitive exports, must configure an
+online `ConnectionValidator` on every protected request so revocation is enforced
+immediately. Approval tokens should remain operation-bound and single-use where
+the product contract requires them.
 
 ## Errors
 

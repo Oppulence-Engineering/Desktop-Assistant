@@ -97,7 +97,12 @@ func newVerifier(ctx context.Context, cfg Config, requireActor bool) (*Verifier,
 	if cfg.Now == nil {
 		cfg.Now = time.Now
 	}
-	if len(cfg.ValidMethods) == 0 {
+	if requireActor {
+		if len(cfg.ValidMethods) != 0 && (len(cfg.ValidMethods) != 1 || cfg.ValidMethods[0] != "RS256") {
+			return nil, errors.New("oauthrs: primary RFC 012 verifier requires exactly RS256; use NewGeneric for other algorithms")
+		}
+		cfg.ValidMethods = []string{"RS256"}
+	} else if len(cfg.ValidMethods) == 0 {
 		cfg.ValidMethods = []string{"RS256"}
 	}
 

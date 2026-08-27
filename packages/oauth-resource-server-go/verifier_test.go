@@ -98,6 +98,30 @@ func newVerifier(t *testing.T, jwksURL string) *oauthrs.Verifier {
 	return v
 }
 
+func TestPrimaryVerifierRequiresExactlyRS256WhileGenericRemainsExplicitlyConfigurable(t *testing.T) {
+	srv, _ := jwksServer(t)
+	base := oauthrs.Config{
+		IssuerURL: "https://oauth.solomon-ai.co", Audience: "rowboat-api", JWKSURL: srv.URL,
+		AllowedJWKSOrigins: []string{srv.URL}, AllowLocalhostDevelopment: true,
+	}
+	for _, methods := range [][]string{{"RS384"}, {"RS256", "RS384"}, {"rs256"}} {
+		cfg := base
+		cfg.ValidMethods = methods
+		if _, err := oauthrs.New(context.Background(), cfg); err == nil || !strings.Contains(err.Error(), "exactly RS256") {
+			t.Fatalf("primary methods %v error = %v", methods, err)
+		}
+	}
+	base.ValidMethods = []string{"RS256"}
+	if _, err := oauthrs.New(context.Background(), base); err != nil {
+		t.Fatalf("exact RS256 primary config rejected: %v", err)
+	}
+	generic := oauthrs.GenericConfig(base)
+	generic.ValidMethods = []string{"RS384"}
+	if _, err := oauthrs.NewGeneric(context.Background(), generic); err != nil {
+		t.Fatalf("explicit generic algorithm configuration rejected: %v", err)
+	}
+}
+
 func TestVerifyValidToken(t *testing.T) {
 	srv, key := jwksServer(t)
 	v := newVerifier(t, srv.URL)

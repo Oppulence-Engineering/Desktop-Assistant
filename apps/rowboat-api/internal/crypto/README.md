@@ -45,8 +45,42 @@ Unversioned ciphertext is treated as the legacy `nonce || ciphertext` format. A 
 
 1. Add the new key to the keyring while retaining every old key.
 2. Change `primaryKeyID` to the new key ID. All new `Seal` calls now use the new key and identify it in the envelope.
-3. Migrate every encrypted value by calling `Open` then `Seal` with the rotating sealer. For AAD-bound data, call `OpenWithAAD` then `SealWithAAD` with the identical AAD.
-4. Verify the migration covered all encrypted columns and records.
+3. Run the connector inventory and resumable reseal job described below.
+4. Run the retirement gate and retain its per-key/per-source report as operational evidence.
 5. Only then remove the old key from the keyring.
 
 Removing an old key before migration is deliberately not transparent. Versioned values for that key fail with `ErrUnknownKeyID`, and legacy values encrypted by that key fail authentication. This makes key retirement safe only after migration has completed.
+
+## Connector inventory, reseal, and retirement gate
+
+`cmd/connector-reencrypt` covers every connector encrypted database payload class,
+including active credentials, immutable histories, pending OAuth payloads, durable
+revocation work, legacy OAuth connection tables, and the shared Redis refresh
+result cache. Reports contain aggregate and per-source counts for each key ID and
+attribute legacy unversioned ciphertext to the key that successfully authenticated
+it. Plaintext and key material are never reported.
+
+Run the command with the same `DATABASE_URL`, optional `REDIS_URL`, and encryption
+keyring configuration as the API:
+
+```sh
+go run ./cmd/connector-reencrypt inventory
+go run ./cmd/connector-reencrypt reseal \
+  --state-file /var/lib/rowboat/connector-reseal.json \
+  --batch-size 250
+go run ./cmd/connector-reencrypt inventory
+go run ./cmd/connector-reencrypt retirement-gate --retire-key-id old-key-id
+```
+
+The reseal checkpoint is atomically persisted with mode `0600` after each database
+batch and Redis scan page. Restarting with the same file resumes safely. Database
+and Redis replacements use compare-and-swap, so a concurrent credential refresh
+cannot be overwritten. A nonzero CAS-miss count requires another inventory/reseal
+pass.
+
+The retirement gate fails if the requested key is the active primary or if any
+verified payload still depends on it. Keep the retiring key in
+`DB_ENCRYPTION_KEYRING_JSON` and list it in
+`DB_ENCRYPTION_RETIRING_KEY_IDS` until the gate passes. If Redis is not configured,
+the command cannot inspect per-process refresh caches. Drain or restart API
+processes, or wait at least the 90-second local cache TTL, before removing the key.

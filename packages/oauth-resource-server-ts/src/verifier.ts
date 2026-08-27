@@ -54,7 +54,16 @@ export class Verifier {
   private readonly allowedOrigins: Set<string>;
   protected requireActor: boolean;
 
-  constructor(cfg: VerifierConfig) { this.cfg = VerifierConfigSchema.parse(cfg); this.requireActor = true; this.jwksUrl = validateUrl(this.cfg.jwksUrl, !!this.cfg.allowLocalhostDevelopment); this.allowedOrigins = buildAllowedOrigins(this.cfg); this.assertAllowed(this.jwksUrl); }
+  constructor(cfg: VerifierConfig, requireActor = true) {
+    this.cfg = VerifierConfigSchema.parse(cfg);
+    this.requireActor = requireActor;
+    if (requireActor && this.cfg.algorithms && (this.cfg.algorithms.length !== 1 || this.cfg.algorithms[0] !== 'RS256')) {
+      throw new Error('primary RFC 012 verifier requires exactly RS256; use GenericVerifier for other algorithms');
+    }
+    this.jwksUrl = validateUrl(this.cfg.jwksUrl, !!this.cfg.allowLocalhostDevelopment);
+    this.allowedOrigins = buildAllowedOrigins(this.cfg);
+    this.assertAllowed(this.jwksUrl);
+  }
 
   protected static generic(cfg: GenericVerifierConfig): Verifier {
     const instance = new Verifier(cfg);
@@ -124,7 +133,7 @@ export class Verifier {
 
 /** Explicit generic JWT verifier. Actor claims are not required. */
 export class GenericVerifier extends Verifier {
-  constructor(cfg: GenericVerifierConfig) { super(cfg); this.requireActor = false; }
+  constructor(cfg: GenericVerifierConfig) { super(cfg, false); }
 }
 
 function decodeHeader(token: string): { kid: string } {

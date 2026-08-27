@@ -5,10 +5,7 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -23,8 +20,8 @@ import (
 )
 
 type server struct {
-	db             *sql.DB
-	entitlementKey []byte
+	db                  *sql.DB
+	entitlementVerifier *oauthrs.EntitlementRequestVerifier
 }
 
 func main() {
@@ -57,7 +54,19 @@ func main() {
 			log.Printf("close postgres: %v", err)
 		}
 	}()
-	s := &server{db: db, entitlementKey: []byte(required("PRODUCT_ENTITLEMENT_HMAC_KEY"))}
+	replayStore := oauthrs.PostgresEntitlementReplayStore{DB: db}
+	if err := replayStore.EnsureSchema(ctx); err != nil {
+		_ = db.Close()
+		log.Fatalf("entitlement replay schema: %v", err)
+	}
+	entitlementVerifier, err := oauthrs.NewEntitlementRequestVerifier(oauthrs.EntitlementRequestVerifierConfig{
+		SigningKey: []byte(required("PRODUCT_ENTITLEMENT_HMAC_KEY")), Connector: "dev", ReplayStore: replayStore,
+	})
+	if err != nil {
+		_ = db.Close()
+		log.Fatal(err)
+	}
+	s := &server{db: db, entitlementVerifier: entitlementVerifier}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, 200, map[string]any{"ok": true}) })
 	mux.HandleFunc("POST /v1/entitlements", s.entitlement)
@@ -107,7 +116,7 @@ CREATE TABLE IF NOT EXISTS dev_product_entitlements (
 
 func (s *server) entitlement(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 16<<10))
-	if err != nil || !s.validEntitlementSignature(r, body) {
+	if err != nil || s.entitlementVerifier.Verify(r.Context(), r.Header, body) != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"code": "entitlement_unauthorized"})
 		return
 	}
@@ -139,24 +148,6 @@ func (s *server) entitlement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"allowed": false, "reason": reason})
-}
-
-func (s *server) validEntitlementSignature(r *http.Request, body []byte) bool {
-	rawTimestamp := r.Header.Get("X-Rowboat-Timestamp")
-	timestamp, err := time.Parse(time.RFC3339, rawTimestamp)
-	if err != nil || time.Since(timestamp) > 5*time.Minute || time.Until(timestamp) > time.Minute {
-		return false
-	}
-	rawSignature := strings.TrimPrefix(r.Header.Get("X-Rowboat-Signature"), "sha256=")
-	signature, err := hex.DecodeString(rawSignature)
-	if err != nil || r.Header.Get("X-Rowboat-Connector") != "dev" {
-		return false
-	}
-	mac := hmac.New(sha256.New, s.entitlementKey)
-	_, _ = mac.Write([]byte(rawTimestamp))
-	_, _ = mac.Write([]byte("\n"))
-	_, _ = mac.Write(body)
-	return hmac.Equal(signature, mac.Sum(nil))
 }
 
 func (s *server) setEntitlement(w http.ResponseWriter, r *http.Request) {

@@ -21,27 +21,34 @@ var defaultConnectorsJSON []byte
 
 // Connector is one entry in the registry the desktop reads from /v1/connectors.
 type Connector struct {
-	Name                    string                     `json:"name"`
-	DisplayName             string                     `json:"displayName"`
-	Description             string                     `json:"description"`
-	MCPURL                  string                     `json:"mcpUrl"`
-	Transport               string                     `json:"transport,omitempty"` // mcp (default) | native
-	AuthType                string                     `json:"authType"`            // "oauth" | "api_key"
-	Audience                string                     `json:"audience"`            // Ory token audience (e.g. canvas-api)
-	Scopes                  []string                   `json:"-"`                   // derived canonical scope names
-	ScopeCatalog            []ScopeDefinition          `json:"scopes,omitempty"`
-	IconURL                 string                     `json:"iconUrl,omitempty"`
-	PolicyURL               string                     `json:"policyUrl,omitempty"`
-	EntitlementURL          string                     `json:"entitlementUrl,omitempty"` // product-authoritative entitlement decision endpoint
-	RequiredPlan            string                     `json:"requiredPlan,omitempty"`   // "" = available on all plans
-	Status                  string                     `json:"status,omitempty"`         // enabled | maintenance | disabled
-	Health                  string                     `json:"health,omitempty"`         // healthy | degraded | unavailable
-	Environments            []string                   `json:"environments,omitempty"`   // development | staging | production
-	MCPTools                []MCPToolPolicy            `json:"mcpTools,omitempty"`       // explicit upstream MCP allowlist
-	NativeTools             []MCPToolPolicy            `json:"nativeTools,omitempty"`    // server-side SDK capability allowlist
-	TemplateBlocks          []IntegrationTemplateBlock `json:"templateBlocks,omitempty"` // onboarding capability blocks
-	entitlementKey          []byte
-	allowPrivateEntitlement bool
+	Name                             string                     `json:"name"`
+	DisplayName                      string                     `json:"displayName"`
+	Description                      string                     `json:"description"`
+	MCPURL                           string                     `json:"mcpUrl"`
+	Transport                        string                     `json:"transport,omitempty"` // mcp (default) | native
+	AuthType                         string                     `json:"authType"`            // "oauth" | "api_key"
+	Audience                         string                     `json:"audience"`            // Ory token audience (e.g. canvas-api)
+	Scopes                           []string                   `json:"-"`                   // derived canonical scope names
+	ScopeCatalog                     []ScopeDefinition          `json:"scopes,omitempty"`
+	IconURL                          string                     `json:"iconUrl,omitempty"`
+	PolicyURL                        string                     `json:"policyUrl,omitempty"`
+	EntitlementURL                   string                     `json:"entitlementUrl,omitempty"` // product-authoritative entitlement decision endpoint
+	AuthoritativeEntitlementRequired bool                       `json:"authoritativeEntitlementRequired,omitempty"`
+	RequiredPlan                     string                     `json:"requiredPlan,omitempty"`   // "" = available on all plans
+	Status                           string                     `json:"status,omitempty"`         // enabled | maintenance | disabled
+	Health                           string                     `json:"health,omitempty"`         // healthy | degraded | unavailable
+	Environments                     []string                   `json:"environments,omitempty"`   // development | staging | production
+	MCPTools                         []MCPToolPolicy            `json:"mcpTools,omitempty"`       // explicit upstream MCP allowlist
+	NativeTools                      []MCPToolPolicy            `json:"nativeTools,omitempty"`    // server-side SDK capability allowlist
+	TemplateBlocks                   []IntegrationTemplateBlock `json:"templateBlocks,omitempty"` // onboarding capability blocks
+	entitlementKey                   []byte
+	allowPrivateEntitlement          bool
+}
+
+// ProductEntitlementOptions controls the sole permitted local fallback. It is
+// intentionally explicit and accepted only in development.
+type ProductEntitlementOptions struct {
+	AllowLocalDevelopment bool
 }
 
 // ScopeDefinition is the canonical consent and minting policy for one scope.
@@ -66,6 +73,15 @@ type ScopeDefinition struct {
 // catalog. Production and staging fail boot when an enabled connector is only
 // partially configured.
 func (r *Registry) ConfigureProductEntitlements(urls, keys map[string]string) error {
+	return r.ConfigureProductEntitlementsWithOptions(urls, keys, ProductEntitlementOptions{})
+}
+
+// ConfigureProductEntitlementsWithOptions applies deployment-owned product
+// endpoints and enforces authoritative entitlement metadata.
+func (r *Registry) ConfigureProductEntitlementsWithOptions(urls, keys map[string]string, options ProductEntitlementOptions) error {
+	if options.AllowLocalDevelopment && r.environment != "development" {
+		return fmt.Errorf("local entitlement override is development-only")
+	}
 	for name := range urls {
 		if _, ok := r.byName[name]; !ok {
 			return fmt.Errorf("entitlement URL configured for unknown connector %q", name)
@@ -96,12 +112,32 @@ func (r *Registry) ConfigureProductEntitlements(urls, keys map[string]string) er
 		r.ordered[i] = c
 		r.byName[c.Name] = c
 	}
+	for _, c := range r.ordered {
+		if !c.AuthoritativeEntitlementRequired || c.Status != "enabled" || !slices.Contains(c.Environments, r.environment) {
+			continue
+		}
+		if _, disabled := r.disabled[c.Name]; disabled {
+			continue
+		}
+		if c.EntitlementURL == "" || len(c.entitlementKey) < 32 {
+			if r.environment == "development" && options.AllowLocalDevelopment {
+				continue
+			}
+			return fmt.Errorf("connector %q requires authoritative product entitlement URL and signing key in %s", c.Name, r.environment)
+		}
+	}
 	return nil
 }
 
 // ConfigureProductEntitlementsJSON strictly parses the non-secret URL map and
 // secret signing-key map before applying them atomically to the registry.
 func (r *Registry) ConfigureProductEntitlementsJSON(rawURLs, rawKeys string) error {
+	return r.ConfigureProductEntitlementsJSONWithOptions(rawURLs, rawKeys, ProductEntitlementOptions{})
+}
+
+// ConfigureProductEntitlementsJSONWithOptions strictly parses configuration
+// and applies the explicit development-only local fallback option.
+func (r *Registry) ConfigureProductEntitlementsJSONWithOptions(rawURLs, rawKeys string, options ProductEntitlementOptions) error {
 	decode := func(raw string) (map[string]string, error) {
 		if strings.TrimSpace(raw) == "" {
 			return nil, nil
@@ -125,7 +161,7 @@ func (r *Registry) ConfigureProductEntitlementsJSON(rawURLs, rawKeys string) err
 	if err != nil {
 		return fmt.Errorf("parse entitlement signing keys: %w", err)
 	}
-	return r.ConfigureProductEntitlements(urls, keys)
+	return r.ConfigureProductEntitlementsWithOptions(urls, keys, options)
 }
 
 // MCPToolPolicy allowlists one upstream tool exposed by a connector MCP server.

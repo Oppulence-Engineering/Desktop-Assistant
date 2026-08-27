@@ -66,8 +66,9 @@ func TestLoadDBEncryptionKeyringSeedsLegacyKey(t *testing.T) {
 
 func TestDBEncryptionKeyringParsesExplicitRotationRing(t *testing.T) {
 	cfg := Config{
-		DBEncryptionPrimaryKeyID: "2026-08",
-		DBEncryptionKeyringJSON:  `{"legacy-db-encryption-key":"old-secret","2026-08":"new-secret"}`,
+		DBEncryptionPrimaryKeyID:   "2026-08",
+		DBEncryptionKeyringJSON:    `{"legacy-db-encryption-key":"old-secret","2026-08":"new-secret"}`,
+		DBEncryptionRetiringKeyIDs: []string{"legacy-db-encryption-key"},
 	}
 
 	primaryKeyID, keyring, err := cfg.DBEncryptionKeyring()
@@ -76,6 +77,30 @@ func TestDBEncryptionKeyringParsesExplicitRotationRing(t *testing.T) {
 	}
 	if primaryKeyID != "2026-08" || keyring[legacyDBEncryptionKeyID] != "old-secret" || keyring["2026-08"] != "new-secret" {
 		t.Fatalf("resolved primary/keyring = %q/%#v", primaryKeyID, keyring)
+	}
+}
+
+func TestDBEncryptionKeyringRejectsUnsafeRetirementDeclaration(t *testing.T) {
+	base := Config{
+		DBEncryptionPrimaryKeyID: "new",
+		DBEncryptionKeyringJSON:  `{"old":"old-secret","new":"new-secret"}`,
+	}
+	for _, tc := range []struct {
+		name string
+		ids  []string
+		want string
+	}{
+		{name: "active primary", ids: []string{"new"}, want: "active primary"},
+		{name: "already removed", ids: []string{"missing"}, want: "must remain"},
+		{name: "duplicate", ids: []string{"old", "old"}, want: "duplicate"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := base
+			cfg.DBEncryptionRetiringKeyIDs = tc.ids
+			if _, _, err := cfg.DBEncryptionKeyring(); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("DBEncryptionKeyring error = %v, want containing %q", err, tc.want)
+			}
+		})
 	}
 }
 
@@ -212,6 +237,7 @@ func TestValidateProductionRejectsUnsafeSecurityConfiguration(t *testing.T) {
 		{name: "weak hook secret", mutate: func(c *Config) { c.HookHMACSecret = "short" }, want: "at least 32 bytes"},
 		{name: "insecure public URL", mutate: func(c *Config) { c.PublicBaseURL = "http://api.example.com" }, want: "absolute HTTPS URL"},
 		{name: "MFA disabled", mutate: func(c *Config) { c.AgentRequireMFAForMoneyMoving = false }, want: "must be true"},
+		{name: "local entitlement override", mutate: func(c *Config) { c.ConnectorAllowLocalEntitlementDevelopment = true }, want: "must be false"},
 		{name: "weak Google webhook token", mutate: func(c *Config) {
 			c.GoogleWatchEnabled = true
 			c.GoogleWebhookToken = "short"
