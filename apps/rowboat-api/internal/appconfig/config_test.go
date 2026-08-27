@@ -10,28 +10,29 @@ import (
 
 func validProductionSecurityConfig() Config {
 	return Config{
-		Environment:                   "production",
-		AppURL:                        "https://app.example.com",
-		PublicBaseURL:                 "https://api.example.com",
-		GoogleRedirectURI:             "https://api.example.com/oauth/google/callback",
-		DatabaseURL:                   "postgres://db.example.com/rowboat",
-		RedisURL:                      "redis://redis.example.com:6379",
-		DBEncryptionKey:               strings.Repeat("e", 32),
-		DBEncryptionPrimaryKeyID:      legacyDBEncryptionKeyID,
-		TokenIssuer:                   "https://auth.example.com",
-		WorkOSAPIKey:                  "sk_test",
-		WorkOSClientID:                "client_test",
-		HookHMACSecret:                strings.Repeat("h", 32),
-		InternalAPISecret:             strings.Repeat("i", 32),
-		CORSOrigins:                   []string{"https://app.example.com"},
-		DailyCreditLimit:              100,
-		MonthlyCreditLimit:            1000,
-		OpenAIAPIKey:                  "openai",
-		ElevenLabsAPIKey:              "eleven",
-		ExaAPIKey:                     "exa",
-		GoogleOAuthClientID:           "google-client",
-		GoogleOAuthClientSecret:       "google-secret",
-		AgentRequireMFAForMoneyMoving: true,
+		Environment:                         "production",
+		AppURL:                              "https://app.example.com",
+		PublicBaseURL:                       "https://api.example.com",
+		GoogleRedirectURI:                   "https://api.example.com/oauth/google/callback",
+		DatabaseURL:                         "postgres://db.example.com/rowboat",
+		RedisURL:                            "redis://redis.example.com:6379",
+		DBEncryptionKey:                     strings.Repeat("e", 32),
+		DBEncryptionPrimaryKeyID:            legacyDBEncryptionKeyID,
+		TokenIssuer:                         "https://auth.example.com",
+		WorkOSAPIKey:                        "sk_test",
+		WorkOSClientID:                      "client_test",
+		HookHMACSecret:                      strings.Repeat("h", 32),
+		InternalAPISecret:                   strings.Repeat("i", 32),
+		ConnectorInvalidationPrincipalsJSON: `[{"principal":"canvas-service","connectors":["canvas"],"selector_classes":["connection","user","organization"],"hmac_secret":"` + strings.Repeat("c", 32) + `"}]`,
+		CORSOrigins:                         []string{"https://app.example.com"},
+		DailyCreditLimit:                    100,
+		MonthlyCreditLimit:                  1000,
+		OpenAIAPIKey:                        "openai",
+		ElevenLabsAPIKey:                    "eleven",
+		ExaAPIKey:                           "exa",
+		GoogleOAuthClientID:                 "google-client",
+		GoogleOAuthClientSecret:             "google-secret",
+		AgentRequireMFAForMoneyMoving:       true,
 	}
 }
 
@@ -246,6 +247,7 @@ func TestValidateProductionRejectsUnsafeSecurityConfiguration(t *testing.T) {
 		{name: "CORS origin with userinfo", mutate: func(c *Config) { c.CORSOrigins = []string{"https://user@app.example.com"} }, want: "invalid production origin"},
 		{name: "weak internal secret", mutate: func(c *Config) { c.InternalAPISecret = "short" }, want: "at least 32 bytes"},
 		{name: "weak hook secret", mutate: func(c *Config) { c.HookHMACSecret = "short" }, want: "at least 32 bytes"},
+		{name: "missing invalidation principals", mutate: func(c *Config) { c.ConnectorInvalidationPrincipalsJSON = "" }, want: "CONNECTOR_INVALIDATION_PRINCIPALS_JSON"},
 		{name: "insecure public URL", mutate: func(c *Config) { c.PublicBaseURL = "http://api.example.com" }, want: "absolute HTTPS URL"},
 		{name: "MFA disabled", mutate: func(c *Config) { c.AgentRequireMFAForMoneyMoving = false }, want: "must be true"},
 		{name: "local entitlement override", mutate: func(c *Config) { c.ConnectorAllowLocalEntitlementDevelopment = true }, want: "must be false"},
@@ -280,6 +282,40 @@ func TestValidateProductionRejectsUnsafeSecurityConfiguration(t *testing.T) {
 	}
 	if err := validProductionSecurityConfig().validateProduction(); err != nil {
 		t.Fatalf("valid production security config rejected: %v", err)
+	}
+}
+
+func TestValidateConnectorInvalidationJWTConfigurationIsAllOrNothing(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		mutate func(*Config)
+		valid  bool
+	}{
+		{name: "unset", mutate: func(*Config) {}, valid: true},
+		{name: "complete", mutate: func(c *Config) {
+			c.ConnectorInvalidationJWTIssuer = "https://service.example.com"
+			c.ConnectorInvalidationJWTAudience = "connector-invalidation"
+			c.ConnectorInvalidationJWTJWKSURL = "https://service.example.com/.well-known/jwks.json"
+		}, valid: true},
+		{name: "issuer only", mutate: func(c *Config) {
+			c.ConnectorInvalidationJWTIssuer = "https://service.example.com"
+		}},
+		{name: "missing audience", mutate: func(c *Config) {
+			c.ConnectorInvalidationJWTIssuer = "https://service.example.com"
+			c.ConnectorInvalidationJWTJWKSURL = "https://service.example.com/.well-known/jwks.json"
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := baseConfig()
+			tc.mutate(&cfg)
+			err := cfg.Validate()
+			if tc.valid && err != nil {
+				t.Fatalf("valid config rejected: %v", err)
+			}
+			if !tc.valid && (err == nil || !strings.Contains(err.Error(), "must be configured together")) {
+				t.Fatalf("partial JWT config error = %v", err)
+			}
+		})
 	}
 }
 

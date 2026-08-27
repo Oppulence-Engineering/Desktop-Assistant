@@ -1,6 +1,7 @@
 package connectors_test
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -94,6 +95,16 @@ func withParam(ctx context.Context, key, val string) context.Context {
 	rc := chi.NewRouteContext()
 	rc.URLParams.Add(key, val)
 	return context.WithValue(ctx, chi.RouteCtxKey, rc)
+}
+
+func invalidationContext(principal string, allowedConnectors, selectors []string) context.Context {
+	ctx := auth.WithInternal(context.Background())
+	return auth.WithActor(ctx, &auth.Actor{
+		Kind: auth.KindService, ServiceName: principal,
+		Capabilities:           []string{auth.ConnectorInvalidationCapabilityProduct},
+		AllowedConnectors:      allowedConnectors,
+		AllowedSelectorClasses: selectors,
+	})
 }
 
 func TestOAuthConnectorFlow(t *testing.T) {
@@ -505,7 +516,7 @@ func TestInvalidate(t *testing.T) {
 
 	body := `{"workos_user_id":"user_1","connector":"canvas"}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/internal/connections/invalidate", strings.NewReader(body)).
-		WithContext(auth.WithInternal(context.Background()))
+		WithContext(invalidationContext("canvas-api", []string{"canvas"}, []string{auth.ConnectorInvalidationSelectorUser}))
 	rec := httptest.NewRecorder()
 	h.Invalidate(rec, req)
 	if rec.Code != http.StatusOK {
@@ -517,6 +528,190 @@ func TestInvalidate(t *testing.T) {
 	tombstone := client.MCPConnection.Query().OnlyX(auth.WithInternal(context.Background()))
 	if tombstone.Status != "invalidated" || tombstone.RevokedAt.IsZero() || len(tombstone.RefreshTokenEncrypted) != 0 {
 		t.Fatalf("forced invalidation did not create a safe tombstone: %+v", tombstone)
+	}
+	if tombstone.RevokedBy != "canvas-api" {
+		t.Fatalf("revoked_by = %q, want service principal", tombstone.RevokedBy)
+	}
+	audit := client.ConnectorAuditEvent.Query().Where(connectorauditevent.EventTypeEQ("connection_invalidated")).OnlyX(auth.WithInternal(context.Background()))
+	if audit.ActorKind != string(auth.KindService) || !strings.Contains(audit.MetadataJSON, `"servicePrincipal":"canvas-api"`) {
+		t.Fatalf("invalidation audit lost service principal: %+v", audit)
+	}
+}
+
+func TestInvalidateRejectsLegacyGlobalInternalPrincipal(t *testing.T) {
+	client, u, h := setup(t, connectors.DefaultRegistry())
+	connection := client.MCPConnection.Create().SetUser(u).SetConnector("canvas").SetAudience("canvas-api").
+		SetOrganizationID("org_1").SetAPIKeyEncrypted([]byte("canvas-key")).SaveX(auth.WithUser(context.Background(), u))
+	ctx := auth.WithInternal(context.Background())
+	ctx = auth.WithActor(ctx, &auth.Actor{Kind: auth.KindInternal, ServiceName: "internal-api"})
+	rec := httptest.NewRecorder()
+	h.Invalidate(rec, httptest.NewRequest(http.MethodPost, "/v1/internal/connections/invalidate",
+		strings.NewReader(`{"workos_user_id":"user_1","connector":"canvas"}`)).WithContext(ctx))
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("legacy internal principal: got %d, want 403: %s", rec.Code, rec.Body.String())
+	}
+	fresh := client.MCPConnection.GetX(auth.WithInternal(context.Background()), connection.ID)
+	if fresh.Status != "active" || len(fresh.APIKeyEncrypted) == 0 {
+		t.Fatalf("legacy global principal changed connector grant: %+v", fresh)
+	}
+}
+
+func TestInvalidateRejectsCrossProductAndCrossTenantSelectors(t *testing.T) {
+	client, u, h := setup(t, connectors.DefaultRegistry())
+	other := client.User.Create().SetEmail("other@x.co").SetWorkosUserID("user_2").SetWorkosOrgID("org_2").SaveX(context.Background())
+	canvas := client.MCPConnection.Create().SetUser(u).SetConnector("canvas").SetAudience("canvas-api").
+		SetOrganizationID("org_1").SetAPIKeyEncrypted([]byte("canvas-key")).SaveX(auth.WithUser(context.Background(), u))
+	github := client.MCPConnection.Create().SetUser(u).SetConnector("github").SetAudience("github-api").
+		SetOrganizationID("org_1").SetAPIKeyEncrypted([]byte("github-key")).SaveX(auth.WithUser(context.Background(), u))
+	otherCanvas := client.MCPConnection.Create().SetUser(other).SetConnector("canvas").SetAudience("canvas-api").
+		SetOrganizationID("org_2").SetAPIKeyEncrypted([]byte("other-key")).SaveX(auth.WithUser(context.Background(), other))
+
+	productCtx := invalidationContext("canvas-api", []string{"canvas"}, []string{
+		auth.ConnectorInvalidationSelectorConnection,
+		auth.ConnectorInvalidationSelectorUser,
+		auth.ConnectorInvalidationSelectorOrganization,
+	})
+	crossProduct := httptest.NewRecorder()
+	h.Invalidate(crossProduct, httptest.NewRequest(http.MethodPost, "/v1/internal/connections/invalidate",
+		strings.NewReader(`{"connection_id":"`+github.ID.String()+`","connector":"github"}`)).WithContext(productCtx))
+	if crossProduct.Code != http.StatusForbidden {
+		t.Fatalf("cross-product invalidation: got %d, want 403: %s", crossProduct.Code, crossProduct.Body.String())
+	}
+	if got := client.MCPConnection.GetX(auth.WithInternal(context.Background()), github.ID); got.Status != "active" || len(got.APIKeyEncrypted) == 0 {
+		t.Fatalf("cross-product request changed github grant: %+v", got)
+	}
+
+	crossTenant := httptest.NewRecorder()
+	h.Invalidate(crossTenant, httptest.NewRequest(http.MethodPost, "/v1/internal/connections/invalidate",
+		strings.NewReader(`{"connection_id":"`+canvas.ID.String()+`","org_id":"org_2","connector":"canvas"}`)).WithContext(productCtx))
+	if crossTenant.Code != http.StatusOK || !strings.Contains(crossTenant.Body.String(), `"matched":0`) {
+		t.Fatalf("cross-tenant selector should match nothing: %d %s", crossTenant.Code, crossTenant.Body.String())
+	}
+	if got := client.MCPConnection.GetX(auth.WithInternal(context.Background()), canvas.ID); got.Status != "active" || len(got.APIKeyEncrypted) == 0 {
+		t.Fatalf("cross-tenant request changed tenant A grant: %+v", got)
+	}
+	if got := client.MCPConnection.GetX(auth.WithInternal(context.Background()), otherCanvas.ID); got.Status != "active" || len(got.APIKeyEncrypted) == 0 {
+		t.Fatalf("cross-tenant request changed tenant B grant: %+v", got)
+	}
+}
+
+func TestInvalidateOrganizationUsesImmutableConnectionOrganization(t *testing.T) {
+	client, u, h := setup(t, connectors.DefaultRegistry())
+	connection := client.MCPConnection.Create().SetUser(u).SetConnector("canvas").SetAudience("canvas-api").
+		SetOrganizationID("org_original").SetAPIKeyEncrypted([]byte("canvas-key")).SaveX(auth.WithUser(context.Background(), u))
+	client.User.UpdateOneID(u.ID).SetWorkosOrgID("org_current").ExecX(auth.WithInternal(context.Background()))
+
+	rec := httptest.NewRecorder()
+	h.Invalidate(rec, httptest.NewRequest(http.MethodPost, "/v1/internal/connections/invalidate",
+		strings.NewReader(`{"org_id":"org_original","connector":"canvas"}`)).WithContext(
+		invalidationContext("canvas-api", []string{"canvas"}, []string{auth.ConnectorInvalidationSelectorOrganization}),
+	))
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"matched":1`) {
+		t.Fatalf("immutable org invalidation: %d %s", rec.Code, rec.Body.String())
+	}
+	tombstone := client.MCPConnection.GetX(auth.WithInternal(context.Background()), connection.ID)
+	if tombstone.Status != "invalidated" || tombstone.OrganizationID != "org_original" {
+		t.Fatalf("mutable user org retargeted immutable credential: %+v", tombstone)
+	}
+}
+
+func TestRevocationRetryMarksTombstoneSucceeded(t *testing.T) {
+	var fail atomic.Bool
+	fail.Store(true)
+	ory := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/oauth2/revoke" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		if fail.Load() {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(ory.Close)
+
+	client, u, h := setup(t, connectors.DefaultRegistry())
+	h.SetOryBaseURL(ory.URL)
+	sealer, _ := crypto.NewSealer("test-key")
+	sealed, err := sealer.Seal([]byte("provider-refresh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	connection := client.MCPConnection.Create().SetUser(u).SetConnector("canvas").SetAudience("canvas-api").
+		SetOrganizationID("org_1").SetRefreshTokenEncrypted(sealed).SaveX(auth.WithUser(context.Background(), u))
+	rec := httptest.NewRecorder()
+	h.Invalidate(rec, httptest.NewRequest(http.MethodPost, "/v1/internal/connections/invalidate",
+		strings.NewReader(`{"connection_id":"`+connection.ID.String()+`","connector":"canvas"}`)).WithContext(
+		invalidationContext("canvas-api", []string{"canvas"}, []string{auth.ConnectorInvalidationSelectorConnection}),
+	))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("invalidate: %d %s", rec.Code, rec.Body.String())
+	}
+	tombstone := client.MCPConnection.GetX(auth.WithInternal(context.Background()), connection.ID)
+	job := client.ConnectorRevocationJob.Query().OnlyX(auth.WithInternal(context.Background()))
+	if tombstone.RevocationSucceeded || job.CredentialGeneration != tombstone.CredentialGeneration {
+		t.Fatalf("job generation must target pending tombstone: tombstone=%+v job=%+v", tombstone, job)
+	}
+
+	fail.Store(false)
+	completed, err := h.ProcessRevocationJobs(context.Background(), 10)
+	if err != nil || completed != 1 {
+		t.Fatalf("process revocation jobs = %d, %v", completed, err)
+	}
+	tombstone = client.MCPConnection.GetX(auth.WithInternal(context.Background()), connection.ID)
+	if !tombstone.RevocationSucceeded || tombstone.Status != "invalidated" || len(tombstone.RefreshTokenEncrypted) != 0 {
+		t.Fatalf("provider success did not mark safe tombstone: %+v", tombstone)
+	}
+	if client.ConnectorRevocationJob.Query().CountX(auth.WithInternal(context.Background())) != 0 {
+		t.Fatal("completed revocation job was not retired")
+	}
+}
+
+func TestRevocationRetryDoesNotClearNewerGrant(t *testing.T) {
+	var fail atomic.Bool
+	fail.Store(true)
+	ory := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if fail.Load() {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(ory.Close)
+
+	client, u, h := setup(t, connectors.DefaultRegistry())
+	h.SetOryBaseURL(ory.URL)
+	sealer, _ := crypto.NewSealer("test-key")
+	oldSealed, _ := sealer.Seal([]byte("old-provider-refresh"))
+	newSealed, _ := sealer.Seal([]byte("new-provider-refresh"))
+	connection := client.MCPConnection.Create().SetUser(u).SetConnector("canvas").SetAudience("canvas-api").
+		SetOrganizationID("org_1").SetRefreshTokenEncrypted(oldSealed).SaveX(auth.WithUser(context.Background(), u))
+	rec := httptest.NewRecorder()
+	h.Invalidate(rec, httptest.NewRequest(http.MethodPost, "/v1/internal/connections/invalidate",
+		strings.NewReader(`{"connection_id":"`+connection.ID.String()+`","connector":"canvas"}`)).WithContext(
+		invalidationContext("canvas-api", []string{"canvas"}, []string{auth.ConnectorInvalidationSelectorConnection}),
+	))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("invalidate: %d %s", rec.Code, rec.Body.String())
+	}
+	tombstone := client.MCPConnection.GetX(auth.WithInternal(context.Background()), connection.ID)
+	client.MCPConnection.UpdateOneID(connection.ID).
+		SetStatus("active").
+		SetRefreshTokenEncrypted(newSealed).
+		AddCredentialGeneration(1).
+		SetRevocationSucceeded(false).
+		ExecX(auth.WithUser(context.Background(), u))
+
+	fail.Store(false)
+	completed, err := h.ProcessRevocationJobs(context.Background(), 10)
+	if err != nil || completed != 1 {
+		t.Fatalf("process stale revocation job = %d, %v", completed, err)
+	}
+	fresh := client.MCPConnection.GetX(auth.WithInternal(context.Background()), connection.ID)
+	if fresh.CredentialGeneration != tombstone.CredentialGeneration+1 || fresh.Status != "active" ||
+		!bytes.Equal(fresh.RefreshTokenEncrypted, newSealed) {
+		t.Fatalf("old revocation cleared newer grant: tombstone=%+v fresh=%+v", tombstone, fresh)
 	}
 }
 

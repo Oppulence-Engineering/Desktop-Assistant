@@ -142,6 +142,14 @@ type Config struct {
 	ConnectorOAuthLegacyStateWrite            bool
 	ConnectorEmergencyDisabled                []string
 	ConnectorRedirectAllowlist                []string
+	// ConnectorInvalidationPrincipalsJSON declares individually authenticated
+	// product/service principals, their connector/selector bounds, and any
+	// explicit platform-admin principal. JWT settings are optional and enable
+	// Bearer authentication in addition to per-principal request HMAC.
+	ConnectorInvalidationPrincipalsJSON string
+	ConnectorInvalidationJWTIssuer      string
+	ConnectorInvalidationJWTAudience    string
+	ConnectorInvalidationJWTJWKSURL     string
 
 	// Shared-secret HMAC for /oauth-hooks/* (called by Ory, not users).
 	HookHMACSecret string
@@ -743,6 +751,10 @@ func Load() Config {
 		ConnectorOAuthLegacyStateWrite:            getbool("CONNECTOR_OAUTH_LEGACY_STATE_WRITE", false),
 		ConnectorEmergencyDisabled:                getcsv("CONNECTOR_EMERGENCY_DISABLED", ""),
 		ConnectorRedirectAllowlist:                getcsv("CONNECTOR_REDIRECT_ALLOWLIST", ""),
+		ConnectorInvalidationPrincipalsJSON:       getenvAllowEmpty("CONNECTOR_INVALIDATION_PRINCIPALS_JSON", ""),
+		ConnectorInvalidationJWTIssuer:            getenvAllowEmpty("CONNECTOR_INVALIDATION_JWT_ISSUER", ""),
+		ConnectorInvalidationJWTAudience:          getenvAllowEmpty("CONNECTOR_INVALIDATION_JWT_AUDIENCE", ""),
+		ConnectorInvalidationJWTJWKSURL:           getenvAllowEmpty("CONNECTOR_INVALIDATION_JWT_JWKS_URL", ""),
 
 		HookHMACSecret:    getenv("HOOK_HMAC_SECRET", ""),
 		InternalAPISecret: getenv("INTERNAL_API_SECRET", ""),
@@ -1029,6 +1041,20 @@ func (c Config) Validate() error {
 	if c.UpstreamResponseMaxBytes <= 0 {
 		return fmt.Errorf("upstream response byte limits must be > 0")
 	}
+	jwtInvalidationValues := []string{
+		strings.TrimSpace(c.ConnectorInvalidationJWTIssuer),
+		strings.TrimSpace(c.ConnectorInvalidationJWTAudience),
+		strings.TrimSpace(c.ConnectorInvalidationJWTJWKSURL),
+	}
+	configuredJWTValues := 0
+	for _, value := range jwtInvalidationValues {
+		if value != "" {
+			configuredJWTValues++
+		}
+	}
+	if configuredJWTValues != 0 && configuredJWTValues != len(jwtInvalidationValues) {
+		return fmt.Errorf("CONNECTOR_INVALIDATION_JWT_ISSUER, CONNECTOR_INVALIDATION_JWT_AUDIENCE, and CONNECTOR_INVALIDATION_JWT_JWKS_URL must be configured together")
+	}
 	if c.GraphQLMaxComplexity <= 0 || c.GraphQLMaxDepth <= 0 {
 		return fmt.Errorf("GraphQL complexity and depth limits must be > 0")
 	}
@@ -1240,15 +1266,16 @@ func imageAllowedByList(image string, allowed []string) bool {
 
 func (c Config) validateProduction() error {
 	required := map[string]string{
-		"DATABASE_URL":        c.DatabaseURL,
-		"REDIS_URL":           c.RedisURL,
-		"TOKEN_ISSUER":        c.TokenIssuer,
-		"WORKOS_API_KEY":      c.WorkOSAPIKey,
-		"WORKOS_CLIENT_ID":    c.WorkOSClientID,
-		"HOOK_HMAC_SECRET":    c.HookHMACSecret,
-		"INTERNAL_API_SECRET": c.InternalAPISecret,
-		"PUBLIC_BASE_URL":     c.PublicBaseURL,
-		"GOOGLE_REDIRECT_URI": c.GoogleRedirectURI,
+		"DATABASE_URL":                           c.DatabaseURL,
+		"REDIS_URL":                              c.RedisURL,
+		"TOKEN_ISSUER":                           c.TokenIssuer,
+		"WORKOS_API_KEY":                         c.WorkOSAPIKey,
+		"WORKOS_CLIENT_ID":                       c.WorkOSClientID,
+		"HOOK_HMAC_SECRET":                       c.HookHMACSecret,
+		"INTERNAL_API_SECRET":                    c.InternalAPISecret,
+		"CONNECTOR_INVALIDATION_PRINCIPALS_JSON": c.ConnectorInvalidationPrincipalsJSON,
+		"PUBLIC_BASE_URL":                        c.PublicBaseURL,
+		"GOOGLE_REDIRECT_URI":                    c.GoogleRedirectURI,
 	}
 	for key, value := range required {
 		if strings.TrimSpace(value) == "" {

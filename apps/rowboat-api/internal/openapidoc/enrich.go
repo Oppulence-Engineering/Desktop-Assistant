@@ -66,7 +66,7 @@ func Enrich(spec obj) {
 		obj{"name": "Relationship Intelligence", "description": "Living relationship state, append-only evidence, deterministic projections, corrections, source health, and governed recommendations (RFC 036)."},
 		obj{"name": "Revenue", "description": "Revenue Action Queue: relationships, evidence-backed actions, OutboundConsole policy preflight, approval, and governed execution (RFC 030)."},
 		obj{"name": "Entities", "description": "Org-scoped minimal entity identity spine (RFC 022)."},
-		obj{"name": "Internal", "description": "Server-to-server APIs guarded by X-Internal-Secret."},
+		obj{"name": "Internal", "description": "Server-to-server APIs. Most use X-Internal-Secret; connector invalidation uses individually scoped HMAC/JWT service principals."},
 		obj{"name": "GraphQL", "description": "Internal admin GraphQL over the ent graph."},
 	}
 
@@ -100,6 +100,14 @@ func addSecuritySchemes(schemes obj) {
 		"in":          "header",
 		"name":        "X-Hook-Signature",
 		"description": "HMAC-SHA256 over the raw request body, formatted as sha256=<hex>.",
+	}
+	schemes["ConnectorInvalidationHMAC"] = obj{
+		"type": "apiKey", "in": "header", "name": "X-Connector-Signature",
+		"description": "Per-principal HMAC-SHA256 signature. Also requires X-Connector-Principal, X-Connector-Timestamp, and X-Connector-Nonce; the canonical request binds method, escaped path, principal, timestamp, nonce, and body digest.",
+	}
+	schemes["ConnectorInvalidationBearer"] = obj{
+		"type": "http", "scheme": "bearer", "bearerFormat": "JWT",
+		"description": "Service JWT whose verified sub maps to a configured invalidation principal and whose scope includes connector:invalidate.",
 	}
 	schemes["WebhookHMAC"] = obj{
 		"type":        "apiKey",
@@ -1621,11 +1629,14 @@ func addInternalPaths(paths obj) {
 		"200": jsonResponse("Audit event persisted or exactly replayed.", ref("ConsentAuditResponse"), obj{"accepted": true}),
 		"400": responseRef("400"), "401": responseRef("401"), "403": responseRef("403"), "404": responseRef("404"), "409": responseRef("409"), "500": responseRef("500"),
 	})}
-	paths["/v1/internal/connections/invalidate"] = obj{"post": operation("Internal", "Force-invalidate connector connections", "Server-to-server endpoint supporting exact connection, user, org, connector, or combined targets. Matches become invalidated tombstones; credentials are cleared and upstream revocation is attempted.", "invalidateConnection", internalSecret(), nil, jsonRequest("Invalidation target.", ref("InternalInvalidateRequest"), obj{"org_id": "org_01HABCDEF", "connector": "canvas", "reason": "subscription_ended"}), obj{
+	paths["/v1/internal/connections/invalidate"] = obj{"post": operation("Internal", "Force-invalidate connector connections", "Server-to-server endpoint supporting exact connection, user, immutable credential-org, connector, or combined targets. Product/service principals are bound to configured connector(s) and selector classes. Global control requires an explicit platform_admin principal. Matches become invalidated tombstones; credentials are cleared and upstream revocation is attempted.", "invalidateConnection", connectorInvalidationSecurity(), nil, jsonRequest("Invalidation target.", ref("InternalInvalidateRequest"), obj{"org_id": "org_01HABCDEF", "connector": "canvas", "reason": "subscription_ended"}), obj{
 		"200": jsonResponse("Invalidation result.", ref("InternalInvalidateResponse"), obj{"invalidated": true, "matched": 1, "revoked": 1, "failures": 0}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
+		"403": responseRef("403"),
+		"409": responseRef("409"),
 		"500": responseRef("500"),
+		"503": responseRef("503"),
 	})}
 	paths["/graphql"] = obj{"post": operation("GraphQL", "Admin GraphQL", "Internal admin GraphQL endpoint over the ent graph. The internal-secret middleware marks the request internal so resolvers can bypass per-user tenant scoping.", "graphql", internalSecret(), nil, jsonRequest("GraphQL request body.", ref("GraphQLRequest"), obj{"query": "{ users(first: 10) { edges { node { id email } } } }"}), obj{
 		"200": jsonResponse("GraphQL response.", ref("GraphQLResponse"), obj{"data": obj{"users": obj{"edges": []any{}}}}),
@@ -2136,6 +2147,10 @@ func hookHMAC() []any {
 
 func internalSecret() []any {
 	return []any{obj{"InternalSecret": []any{}}}
+}
+
+func connectorInvalidationSecurity() []any {
+	return []any{obj{"ConnectorInvalidationHMAC": []any{}}, obj{"ConnectorInvalidationBearer": []any{}}}
 }
 
 func pathParam(name, description string, schema any) obj {

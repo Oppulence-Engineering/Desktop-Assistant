@@ -665,9 +665,35 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret, hookNonces)).
 		Post("/oauth-hooks/consent-audit", connectorsH.AppendConsentAudit)
 
-	// Server-to-server internal API (static shared secret).
-	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
+	// Product connector invalidation is not part of the global internal-secret
+	// trust domain. Each product/service authenticates as its own HMAC- or
+	// JWT-backed principal and is bounded to configured connector and selector
+	// classes. Global controls require an explicit platform_admin principal.
+	var invalidationJWTVerifier *oauthrs.Verifier
+	if strings.TrimSpace(cfg.ConnectorInvalidationJWTIssuer) != "" {
+		invalidationJWTVerifier, err = oauthrs.NewGeneric(ctx, oauthrs.GenericConfig{
+			IssuerURL:                 cfg.ConnectorInvalidationJWTIssuer,
+			Audience:                  cfg.ConnectorInvalidationJWTAudience,
+			JWKSURL:                   cfg.ConnectorInvalidationJWTJWKSURL,
+			AcceptableSkew:            time.Minute,
+			ValidMethods:              []string{"RS256"},
+			AllowLocalhostDevelopment: !cfg.IsProduction(),
+		})
+		if err != nil {
+			return fmt.Errorf("configure connector invalidation service JWT verifier: %w", err)
+		}
+	}
+	invalidationAuth, err := auth.NewConnectorInvalidationAuth(
+		cfg.ConnectorInvalidationPrincipalsJSON, invalidationJWTVerifier, hookNonces,
+	)
+	if err != nil {
+		return fmt.Errorf("configure connector invalidation principals: %w", err)
+	}
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), invalidationAuth.Require).
 		Post("/v1/internal/connections/invalidate", connectorsH.Invalidate)
+
+	// Other server-to-server APIs retain the separately scoped global internal
+	// capability. Possession of this secret no longer grants product invalidation.
 	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
 		Post("/v1/internal/events", cloudEventsH.IngestInternal)
 	if agentChannelsH != nil {

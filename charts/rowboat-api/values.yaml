@@ -377,6 +377,12 @@ secretValues: {}
   # WORKOS_API_KEY: ""
   # HOOK_HMAC_SECRET: ""
   # INTERNAL_API_SECRET: ""
+  # Product invalidation principals are independently authenticated and scoped.
+  # Keep HMAC keys distinct per product. An entry may omit hmac_secret only when
+  # CONNECTOR_INVALIDATION_JWT_* config is enabled and its JWT sub matches.
+  # Global invalidation requires a separate explicit capability:"platform_admin"
+  # entry rather than INTERNAL_API_SECRET.
+  # CONNECTOR_INVALIDATION_PRINCIPALS_JSON: '[{"principal":"canvas-api","connectors":["canvas"],"selector_classes":["connection","user","organization"],"hmac_secret":"..."}]'
   # SLACK_SIGNING_SECRET: ""
   # GOOGLE_WEBHOOK_TOKEN: ""
   # WEBHOOK_SIGNING_SECRET: ""

@@ -51,6 +51,14 @@ type Actor struct {
 
 	// ServiceName identifies a service actor (e.g. "service:scheduler").
 	ServiceName string
+	// Capabilities are explicit high-level service privileges. They are kept
+	// separate from token scopes so a configured product principal cannot become
+	// a platform administrator merely by presenting a broader token.
+	Capabilities []string
+	// AllowedConnectors and AllowedSelectorClasses bound product service actors
+	// to the connector data and invalidation selector shapes they own.
+	AllowedConnectors      []string
+	AllowedSelectorClasses []string
 
 	// Scopes and Permissions are authorization grants carried by the token.
 	// Scopes come from the OAuth `scope`/`scp` claim; Permissions from the
@@ -103,6 +111,38 @@ func (a *Actor) HasScope(scope string) bool {
 func (a *Actor) HasPermission(p string) bool {
 	for _, have := range a.Permissions {
 		if have == p {
+			return true
+		}
+	}
+	return false
+}
+
+// HasCapability reports whether a service actor has an explicitly configured
+// high-level capability.
+func (a *Actor) HasCapability(capability string) bool {
+	for _, have := range a.Capabilities {
+		if have == capability {
+			return true
+		}
+	}
+	return false
+}
+
+// AllowsConnector reports whether a scoped service actor owns the connector.
+func (a *Actor) AllowsConnector(connector string) bool {
+	for _, allowed := range a.AllowedConnectors {
+		if allowed == connector {
+			return true
+		}
+	}
+	return false
+}
+
+// AllowsSelectorClass reports whether a scoped service actor may use the
+// invalidation selector class.
+func (a *Actor) AllowsSelectorClass(selector string) bool {
+	for _, allowed := range a.AllowedSelectorClasses {
+		if allowed == selector {
 			return true
 		}
 	}

@@ -13422,6 +13422,18 @@
         "scheme": "bearer",
         "type": "http"
       },
+      "ConnectorInvalidationBearer": {
+        "bearerFormat": "JWT",
+        "description": "Service JWT whose verified sub maps to a configured invalidation principal and whose scope includes connector:invalidate.",
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "ConnectorInvalidationHMAC": {
+        "description": "Per-principal HMAC-SHA256 signature. Also requires X-Connector-Principal, X-Connector-Timestamp, and X-Connector-Nonce; the canonical request binds method, escaped path, principal, timestamp, nonce, and body digest.",
+        "in": "header",
+        "name": "X-Connector-Signature",
+        "type": "apiKey"
+      },
       "HookHMAC": {
         "description": "HMAC-SHA256 over the raw request body, formatted as sha256=\u003chex\u003e.",
         "in": "header",
@@ -18288,7 +18300,7 @@
     },
     "/v1/internal/connections/invalidate": {
       "post": {
-        "description": "Server-to-server endpoint supporting exact connection, user, org, connector, or combined targets. Matches become invalidated tombstones; credentials are cleared and upstream revocation is attempted.",
+        "description": "Server-to-server endpoint supporting exact connection, user, immutable credential-org, connector, or combined targets. Product/service principals are bound to configured connector(s) and selector classes. Global control requires an explicit platform_admin principal. Matches become invalidated tombstones; credentials are cleared and upstream revocation is attempted.",
         "operationId": "invalidateConnection",
         "requestBody": {
           "content": {
@@ -18329,13 +18341,25 @@
           "401": {
             "$ref": "#/components/responses/401"
           },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
           "500": {
             "$ref": "#/components/responses/500"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
           }
         },
         "security": [
           {
-            "InternalSecret": []
+            "ConnectorInvalidationHMAC": []
+          },
+          {
+            "ConnectorInvalidationBearer": []
           }
         ],
         "summary": "Force-invalidate connector connections",
@@ -24380,7 +24404,7 @@
       "name": "Entities"
     },
     {
-      "description": "Server-to-server APIs guarded by X-Internal-Secret.",
+      "description": "Server-to-server APIs. Most use X-Internal-Secret; connector invalidation uses individually scoped HMAC/JWT service principals.",
       "name": "Internal"
     },
     {

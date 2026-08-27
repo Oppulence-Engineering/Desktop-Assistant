@@ -536,8 +536,11 @@ type invalidateRequest struct {
 	Reason       string `json:"reason"`
 }
 
-// Invalidate supports precise connection, user, org, connector, or combined
-// targeting. Every match becomes an invalidated tombstone and retains semantic audit.
+// Invalidate supports precise connection, user, immutable credential-org,
+// connector, or combined targeting. Product callers are authenticated as named
+// service principals and may use only their configured connectors and selector
+// classes. Connector-wide/global controls require the explicit platform-admin
+// capability.
 func (h *Handler) Invalidate(w http.ResponseWriter, r *http.Request) {
 	var req invalidateRequest
 	if !httpx.DecodeJSON(w, r, 1<<16, &req) {
@@ -547,6 +550,29 @@ func (h *Handler) Invalidate(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "at least one invalidation target is required", "bad_request")
 		return
 	}
+	selectors := make([]string, 0, 3)
+	if req.ConnectionID != "" {
+		selectors = append(selectors, auth.ConnectorInvalidationSelectorConnection)
+	}
+	if req.WorkOSUserID != "" {
+		selectors = append(selectors, auth.ConnectorInvalidationSelectorUser)
+	}
+	if req.OrgID != "" {
+		selectors = append(selectors, auth.ConnectorInvalidationSelectorOrganization)
+	}
+	if len(selectors) == 0 && req.Connector != "" {
+		selectors = append(selectors, auth.ConnectorInvalidationSelectorConnector)
+	}
+	actor, authenticated := auth.ActorFromCtx(r.Context())
+	if !authenticated {
+		httpx.Error(w, http.StatusUnauthorized, "connector invalidation principal required", "unauthorized")
+		return
+	}
+	if !auth.ConnectorInvalidationPolicyAllows(actor, req.Connector, selectors) {
+		httpx.Error(w, http.StatusForbidden, "connector invalidation target is outside the service principal policy", "forbidden")
+		return
+	}
+	principal, _ := auth.ConnectorInvalidationPrincipalFromContext(r.Context())
 	predicates := make([]predicate.MCPConnection, 0, 3)
 	if req.ConnectionID != "" {
 		id, err := uuid.Parse(req.ConnectionID)
@@ -563,15 +589,13 @@ func (h *Handler) Invalidate(w http.ResponseWriter, r *http.Request) {
 		}
 		predicates = append(predicates, mcpconnection.ConnectorEQ(req.Connector))
 	}
-	userPredicates := make([]predicate.User, 0, 2)
 	if req.WorkOSUserID != "" {
-		userPredicates = append(userPredicates, user.WorkosUserIDEQ(req.WorkOSUserID))
+		predicates = append(predicates, mcpconnection.HasUserWith(user.WorkosUserIDEQ(req.WorkOSUserID)))
 	}
 	if req.OrgID != "" {
-		userPredicates = append(userPredicates, user.WorkosOrgIDEQ(req.OrgID))
-	}
-	if len(userPredicates) > 0 {
-		predicates = append(predicates, mcpconnection.HasUserWith(userPredicates...))
+		// OrganizationID is captured on the credential at grant time. User.WorkosOrgID
+		// is a mutable identity mirror and must never retarget an older grant.
+		predicates = append(predicates, mcpconnection.OrganizationIDEQ(req.OrgID))
 	}
 	connections, err := h.client.MCPConnection.Query().Where(predicates...).WithUser().All(r.Context())
 	if err != nil {
@@ -591,7 +615,7 @@ func (h *Handler) Invalidate(w http.ResponseWriter, r *http.Request) {
 			failures++
 			continue
 		}
-		if err := h.revokeConnection(r.Context(), owner, connection, reason, "internal", "invalidated"); err != nil {
+		if err := h.revokeConnection(r.Context(), owner, connection, reason, principal, "invalidated"); err != nil {
 			failures++
 			continue
 		}
@@ -634,7 +658,11 @@ func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connect
 				SetOwnerID(owner.ID).
 				SetConnector(fresh.Connector).
 				SetRefreshTokenEncrypted(revocationCredential).
-				SetCredentialGeneration(fresh.CredentialGeneration).
+				// The durable job completes against the tombstone generation written
+				// below, not the credential generation being revoked. This lets a
+				// successful retry mark that tombstone revocation_succeeded=true while
+				// the generation predicate protects any newer replacement grant.
+				SetCredentialGeneration(fresh.CredentialGeneration + 1).
 				SetTerminalStatus(finalStatus).
 				SetTerminalReason(reason).
 				SetTerminalActor(actor).
@@ -671,12 +699,19 @@ func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connect
 			}
 			return fmt.Errorf("persist connector tombstone: %w", err)
 		}
+		metadata := map[string]any{
+			"providerRevocationPending": len(revocationCredential) > 0,
+			"actor":                     actor,
+		}
+		if servicePrincipal, ok := auth.ConnectorInvalidationPrincipalFromContext(ctx); ok {
+			metadata["servicePrincipal"] = servicePrincipal
+		}
 		if err := h.persistAuditTransitionWithClient(ctx, tx.Client(), owner, auditRecord{
 			EventType: "connection_" + finalStatus,
 			EventID:   deterministicAuditEventID("connection_"+finalStatus, fresh.ID.String(), fmt.Sprint(fenced.CredentialGeneration), reason, actor),
 			Connector: fresh.Connector, ConnectionID: fresh.ID, OrganizationID: fresh.OrganizationID,
 			Audience: fresh.Audience, Granted: fresh.Scopes, Reason: reason,
-			Metadata: map[string]any{"providerRevocationPending": len(revocationCredential) > 0, "actor": actor},
+			Metadata: metadata,
 		}); err != nil {
 			_ = tx.Rollback()
 			return fmt.Errorf("persist connector revocation audit: %w", err)
@@ -783,7 +818,11 @@ func (h *Handler) ProcessRevocationJobs(ctx context.Context, limit int) (int, er
 		}
 		if txErr == nil {
 			completed++
-			h.appendAudit(ctx, owner, auditRecord{EventType: "connection_revocation_completed", Connector: job.Connector, ConnectionID: job.ConnectionID, Result: "retry_success"})
+			h.appendAudit(ctx, owner, auditRecord{
+				EventType: "connection_revocation_completed", Connector: job.Connector,
+				ConnectionID: job.ConnectionID, Result: "retry_success",
+				Metadata: map[string]any{"actor": job.TerminalActor},
+			})
 		}
 	}
 	return completed, nil
