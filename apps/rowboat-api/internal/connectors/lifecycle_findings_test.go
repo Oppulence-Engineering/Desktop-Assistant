@@ -53,7 +53,16 @@ func TestProductEntitlementConfigurationIsProductScoped(t *testing.T) {
 	if err := reg.ConfigureProductEntitlementsJSON(`{"missing":"https://product.example/v1/internal/entitlements"}`, `{"missing":"01234567890123456789012345678901"}`); err == nil {
 		t.Fatal("unknown connector entitlement configuration was accepted")
 	}
-	if err := reg.ConfigureProductEntitlementsJSON(`{"canvas":"https://127.0.0.1/v1/internal/entitlements"}`, `{"canvas":"01234567890123456789012345678901"}`); err != nil {
+	urls := make(map[string]string)
+	keys := make(map[string]string)
+	for _, connector := range reg.ordered {
+		if connector.AuthoritativeEntitlementRequired && connector.Status == "enabled" {
+			urls[connector.Name] = "https://product.example/v1/internal/entitlements/" + connector.Name
+			keys[connector.Name] = "01234567890123456789012345678901"
+		}
+	}
+	urls["canvas"] = "https://127.0.0.1/v1/internal/entitlements"
+	if err := reg.ConfigureProductEntitlements(urls, keys); err != nil {
 		t.Fatalf("static URL configuration should defer resolved-address enforcement to dial time: %v", err)
 	}
 	canvas, ok := reg.Get("canvas")
