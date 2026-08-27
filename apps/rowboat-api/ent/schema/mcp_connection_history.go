@@ -49,6 +49,9 @@ func (MCPConnectionHistory) Fields() []ent.Field {
 			Optional().
 			Sensitive().
 			Immutable(),
+		field.String("status").
+			Immutable().
+			Default("active"),
 		field.Time("connected_at").
 			Optional().
 			Immutable(),
@@ -56,6 +59,21 @@ func (MCPConnectionHistory) Fields() []ent.Field {
 			Optional().
 			Immutable(),
 		field.Time("expires_at").
+			Optional().
+			Immutable(),
+		field.Time("revoked_at").
+			Optional().
+			Immutable(),
+		field.String("revoked_reason").
+			Optional().
+			Immutable(),
+		field.String("revoked_by").
+			Optional().
+			Immutable(),
+		field.Time("revocation_attempted_at").
+			Optional().
+			Immutable(),
+		field.Bool("revocation_succeeded").
 			Optional().
 			Immutable()}
 }

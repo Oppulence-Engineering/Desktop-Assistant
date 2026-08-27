@@ -114,6 +114,21 @@ func (_u *MCPConnectionHistoryUpdate) sqlSave(ctx context.Context) (_node int, e
 	if _u.mutation.ExpiresAtCleared() {
 		_spec.ClearField(mcpconnectionhistory.FieldExpiresAt, field.TypeTime)
 	}
+	if _u.mutation.RevokedAtCleared() {
+		_spec.ClearField(mcpconnectionhistory.FieldRevokedAt, field.TypeTime)
+	}
+	if _u.mutation.RevokedReasonCleared() {
+		_spec.ClearField(mcpconnectionhistory.FieldRevokedReason, field.TypeString)
+	}
+	if _u.mutation.RevokedByCleared() {
+		_spec.ClearField(mcpconnectionhistory.FieldRevokedBy, field.TypeString)
+	}
+	if _u.mutation.RevocationAttemptedAtCleared() {
+		_spec.ClearField(mcpconnectionhistory.FieldRevocationAttemptedAt, field.TypeTime)
+	}
+	if _u.mutation.RevocationSucceededCleared() {
+		_spec.ClearField(mcpconnectionhistory.FieldRevocationSucceeded, field.TypeBool)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{mcpconnectionhistory.Label}
@@ -249,6 +264,21 @@ func (_u *MCPConnectionHistoryUpdateOne) sqlSave(ctx context.Context) (_node *MC
 	}
 	if _u.mutation.ExpiresAtCleared() {
 		_spec.ClearField(mcpconnectionhistory.FieldExpiresAt, field.TypeTime)
+	}
+	if _u.mutation.RevokedAtCleared() {
+		_spec.ClearField(mcpconnectionhistory.FieldRevokedAt, field.TypeTime)
+	}
+	if _u.mutation.RevokedReasonCleared() {
+		_spec.ClearField(mcpconnectionhistory.FieldRevokedReason, field.TypeString)
+	}
+	if _u.mutation.RevokedByCleared() {
+		_spec.ClearField(mcpconnectionhistory.FieldRevokedBy, field.TypeString)
+	}
+	if _u.mutation.RevocationAttemptedAtCleared() {
+		_spec.ClearField(mcpconnectionhistory.FieldRevocationAttemptedAt, field.TypeTime)
+	}
+	if _u.mutation.RevocationSucceededCleared() {
+		_spec.ClearField(mcpconnectionhistory.FieldRevocationSucceeded, field.TypeBool)
 	}
 	_node = &MCPConnectionHistory{config: _u.config}
 	_spec.Assign = _node.assignValues

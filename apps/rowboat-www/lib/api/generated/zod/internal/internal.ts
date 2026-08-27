@@ -8,27 +8,41 @@
 import * as zod from "zod";
 
 /**
- * Server-to-server endpoint for products to invalidate a user's connector connection. Unknown users are treated as successful no-ops.
- * @summary Force-disconnect a connector
+ * Server-to-server endpoint supporting exact connection, user, org, connector, or combined targets. Matches become invalidated tombstones; credentials are cleared and upstream revocation is attempted.
+ * @summary Force-invalidate connector connections
  */
 export const InvalidateConnectionBody = zod
   .strictObject({
-    connector: zod.string().describe("Connector slug."),
+    connection_id: zod.string().nullish().describe("Optional exact MCPConnection UUID target."),
+    connector: zod.string().optional().describe("Connector slug."),
+    org_id: zod.string().nullish().describe("Optional WorkOS organization target."),
+    reason: zod
+      .enum([
+        "llm_call",
+        "llm_call_reserve",
+        "llm_settle",
+        "voice_tts",
+        "exa_search",
+        "grant",
+        "refund",
+      ])
+      .nullish()
+      .describe("Reason code for the ledger entry."),
     workos_user_id: zod
       .string()
+      .optional()
       .describe("WorkOS user id used to resolve bearer tokens into local users."),
   })
   .describe("Server-to-server force disconnect request.");
 
 export const InvalidateConnection200Response = zod
   .strictObject({
-    deleted: zod
-      .int()
-      .optional()
-      .describe("Number of connection rows deleted. Omitted for unknown users."),
+    failures: zod.int().optional().describe("Number that could not be tombstoned."),
     invalidated: zod
       .boolean()
       .describe("Always true on successful handling, including no-op unknown users."),
+    matched: zod.int().optional().describe("Number of matching connection rows."),
+    revoked: zod.int().optional().describe("Number retained as revoked tombstones."),
   })
   .describe("Force disconnect result.");
 

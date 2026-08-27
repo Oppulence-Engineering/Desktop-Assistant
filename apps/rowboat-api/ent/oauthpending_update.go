@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
@@ -48,6 +49,26 @@ func (_u *OAuthPendingUpdate) SetNillableState(v *string) *OAuthPendingUpdate {
 	return _u
 }
 
+// SetStateHash sets the "state_hash" field.
+func (_u *OAuthPendingUpdate) SetStateHash(v string) *OAuthPendingUpdate {
+	_u.mutation.SetStateHash(v)
+	return _u
+}
+
+// SetNillableStateHash sets the "state_hash" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableStateHash(v *string) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetStateHash(*v)
+	}
+	return _u
+}
+
+// ClearStateHash clears the value of the "state_hash" field.
+func (_u *OAuthPendingUpdate) ClearStateHash() *OAuthPendingUpdate {
+	_u.mutation.ClearStateHash()
+	return _u
+}
+
 // SetProvider sets the "provider" field.
 func (_u *OAuthPendingUpdate) SetProvider(v string) *OAuthPendingUpdate {
 	_u.mutation.SetProvider(v)
@@ -79,6 +100,224 @@ func (_u *OAuthPendingUpdate) SetNillableExpiresAt(v *time.Time) *OAuthPendingUp
 	if v != nil {
 		_u.SetExpiresAt(*v)
 	}
+	return _u
+}
+
+// SetLifecycleStatus sets the "lifecycle_status" field.
+func (_u *OAuthPendingUpdate) SetLifecycleStatus(v string) *OAuthPendingUpdate {
+	_u.mutation.SetLifecycleStatus(v)
+	return _u
+}
+
+// SetNillableLifecycleStatus sets the "lifecycle_status" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableLifecycleStatus(v *string) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetLifecycleStatus(*v)
+	}
+	return _u
+}
+
+// ClearLifecycleStatus clears the value of the "lifecycle_status" field.
+func (_u *OAuthPendingUpdate) ClearLifecycleStatus() *OAuthPendingUpdate {
+	_u.mutation.ClearLifecycleStatus()
+	return _u
+}
+
+// SetOwnerWorkosUserID sets the "owner_workos_user_id" field.
+func (_u *OAuthPendingUpdate) SetOwnerWorkosUserID(v string) *OAuthPendingUpdate {
+	_u.mutation.SetOwnerWorkosUserID(v)
+	return _u
+}
+
+// SetNillableOwnerWorkosUserID sets the "owner_workos_user_id" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableOwnerWorkosUserID(v *string) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetOwnerWorkosUserID(*v)
+	}
+	return _u
+}
+
+// ClearOwnerWorkosUserID clears the value of the "owner_workos_user_id" field.
+func (_u *OAuthPendingUpdate) ClearOwnerWorkosUserID() *OAuthPendingUpdate {
+	_u.mutation.ClearOwnerWorkosUserID()
+	return _u
+}
+
+// SetOwnerOrgID sets the "owner_org_id" field.
+func (_u *OAuthPendingUpdate) SetOwnerOrgID(v string) *OAuthPendingUpdate {
+	_u.mutation.SetOwnerOrgID(v)
+	return _u
+}
+
+// SetNillableOwnerOrgID sets the "owner_org_id" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableOwnerOrgID(v *string) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetOwnerOrgID(*v)
+	}
+	return _u
+}
+
+// ClearOwnerOrgID clears the value of the "owner_org_id" field.
+func (_u *OAuthPendingUpdate) ClearOwnerOrgID() *OAuthPendingUpdate {
+	_u.mutation.ClearOwnerOrgID()
+	return _u
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *OAuthPendingUpdate) SetRequestedScopes(v []string) *OAuthPendingUpdate {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *OAuthPendingUpdate) AppendRequestedScopes(v []string) *OAuthPendingUpdate {
+	_u.mutation.AppendRequestedScopes(v)
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *OAuthPendingUpdate) ClearRequestedScopes() *OAuthPendingUpdate {
+	_u.mutation.ClearRequestedScopes()
+	return _u
+}
+
+// SetRedirectTarget sets the "redirect_target" field.
+func (_u *OAuthPendingUpdate) SetRedirectTarget(v string) *OAuthPendingUpdate {
+	_u.mutation.SetRedirectTarget(v)
+	return _u
+}
+
+// SetNillableRedirectTarget sets the "redirect_target" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableRedirectTarget(v *string) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetRedirectTarget(*v)
+	}
+	return _u
+}
+
+// ClearRedirectTarget clears the value of the "redirect_target" field.
+func (_u *OAuthPendingUpdate) ClearRedirectTarget() *OAuthPendingUpdate {
+	_u.mutation.ClearRedirectTarget()
+	return _u
+}
+
+// SetConsentChallenge sets the "consent_challenge" field.
+func (_u *OAuthPendingUpdate) SetConsentChallenge(v string) *OAuthPendingUpdate {
+	_u.mutation.SetConsentChallenge(v)
+	return _u
+}
+
+// SetNillableConsentChallenge sets the "consent_challenge" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableConsentChallenge(v *string) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetConsentChallenge(*v)
+	}
+	return _u
+}
+
+// ClearConsentChallenge clears the value of the "consent_challenge" field.
+func (_u *OAuthPendingUpdate) ClearConsentChallenge() *OAuthPendingUpdate {
+	_u.mutation.ClearConsentChallenge()
+	return _u
+}
+
+// SetContextRequestID sets the "context_request_id" field.
+func (_u *OAuthPendingUpdate) SetContextRequestID(v string) *OAuthPendingUpdate {
+	_u.mutation.SetContextRequestID(v)
+	return _u
+}
+
+// SetNillableContextRequestID sets the "context_request_id" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableContextRequestID(v *string) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetContextRequestID(*v)
+	}
+	return _u
+}
+
+// ClearContextRequestID clears the value of the "context_request_id" field.
+func (_u *OAuthPendingUpdate) ClearContextRequestID() *OAuthPendingUpdate {
+	_u.mutation.ClearContextRequestID()
+	return _u
+}
+
+// SetHydraClientID sets the "hydra_client_id" field.
+func (_u *OAuthPendingUpdate) SetHydraClientID(v string) *OAuthPendingUpdate {
+	_u.mutation.SetHydraClientID(v)
+	return _u
+}
+
+// SetNillableHydraClientID sets the "hydra_client_id" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableHydraClientID(v *string) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetHydraClientID(*v)
+	}
+	return _u
+}
+
+// ClearHydraClientID clears the value of the "hydra_client_id" field.
+func (_u *OAuthPendingUpdate) ClearHydraClientID() *OAuthPendingUpdate {
+	_u.mutation.ClearHydraClientID()
+	return _u
+}
+
+// SetCallbackAt sets the "callback_at" field.
+func (_u *OAuthPendingUpdate) SetCallbackAt(v time.Time) *OAuthPendingUpdate {
+	_u.mutation.SetCallbackAt(v)
+	return _u
+}
+
+// SetNillableCallbackAt sets the "callback_at" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableCallbackAt(v *time.Time) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetCallbackAt(*v)
+	}
+	return _u
+}
+
+// ClearCallbackAt clears the value of the "callback_at" field.
+func (_u *OAuthPendingUpdate) ClearCallbackAt() *OAuthPendingUpdate {
+	_u.mutation.ClearCallbackAt()
+	return _u
+}
+
+// SetClaimedAt sets the "claimed_at" field.
+func (_u *OAuthPendingUpdate) SetClaimedAt(v time.Time) *OAuthPendingUpdate {
+	_u.mutation.SetClaimedAt(v)
+	return _u
+}
+
+// SetNillableClaimedAt sets the "claimed_at" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableClaimedAt(v *time.Time) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetClaimedAt(*v)
+	}
+	return _u
+}
+
+// ClearClaimedAt clears the value of the "claimed_at" field.
+func (_u *OAuthPendingUpdate) ClearClaimedAt() *OAuthPendingUpdate {
+	_u.mutation.ClearClaimedAt()
+	return _u
+}
+
+// SetFailureReason sets the "failure_reason" field.
+func (_u *OAuthPendingUpdate) SetFailureReason(v string) *OAuthPendingUpdate {
+	_u.mutation.SetFailureReason(v)
+	return _u
+}
+
+// SetNillableFailureReason sets the "failure_reason" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableFailureReason(v *string) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetFailureReason(*v)
+	}
+	return _u
+}
+
+// ClearFailureReason clears the value of the "failure_reason" field.
+func (_u *OAuthPendingUpdate) ClearFailureReason() *OAuthPendingUpdate {
+	_u.mutation.ClearFailureReason()
 	return _u
 }
 
@@ -151,6 +390,12 @@ func (_u *OAuthPendingUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(oauthpending.FieldState, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.StateHash(); ok {
+		_spec.SetField(oauthpending.FieldStateHash, field.TypeString, value)
+	}
+	if _u.mutation.StateHashCleared() {
+		_spec.ClearField(oauthpending.FieldStateHash, field.TypeString)
+	}
 	if value, ok := _u.mutation.Provider(); ok {
 		_spec.SetField(oauthpending.FieldProvider, field.TypeString, value)
 	}
@@ -159,6 +404,77 @@ func (_u *OAuthPendingUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if value, ok := _u.mutation.ExpiresAt(); ok {
 		_spec.SetField(oauthpending.FieldExpiresAt, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.LifecycleStatus(); ok {
+		_spec.SetField(oauthpending.FieldLifecycleStatus, field.TypeString, value)
+	}
+	if _u.mutation.LifecycleStatusCleared() {
+		_spec.ClearField(oauthpending.FieldLifecycleStatus, field.TypeString)
+	}
+	if value, ok := _u.mutation.OwnerWorkosUserID(); ok {
+		_spec.SetField(oauthpending.FieldOwnerWorkosUserID, field.TypeString, value)
+	}
+	if _u.mutation.OwnerWorkosUserIDCleared() {
+		_spec.ClearField(oauthpending.FieldOwnerWorkosUserID, field.TypeString)
+	}
+	if value, ok := _u.mutation.OwnerOrgID(); ok {
+		_spec.SetField(oauthpending.FieldOwnerOrgID, field.TypeString, value)
+	}
+	if _u.mutation.OwnerOrgIDCleared() {
+		_spec.ClearField(oauthpending.FieldOwnerOrgID, field.TypeString)
+	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(oauthpending.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, oauthpending.FieldRequestedScopes, value)
+		})
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(oauthpending.FieldRequestedScopes, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.RedirectTarget(); ok {
+		_spec.SetField(oauthpending.FieldRedirectTarget, field.TypeString, value)
+	}
+	if _u.mutation.RedirectTargetCleared() {
+		_spec.ClearField(oauthpending.FieldRedirectTarget, field.TypeString)
+	}
+	if value, ok := _u.mutation.ConsentChallenge(); ok {
+		_spec.SetField(oauthpending.FieldConsentChallenge, field.TypeString, value)
+	}
+	if _u.mutation.ConsentChallengeCleared() {
+		_spec.ClearField(oauthpending.FieldConsentChallenge, field.TypeString)
+	}
+	if value, ok := _u.mutation.ContextRequestID(); ok {
+		_spec.SetField(oauthpending.FieldContextRequestID, field.TypeString, value)
+	}
+	if _u.mutation.ContextRequestIDCleared() {
+		_spec.ClearField(oauthpending.FieldContextRequestID, field.TypeString)
+	}
+	if value, ok := _u.mutation.HydraClientID(); ok {
+		_spec.SetField(oauthpending.FieldHydraClientID, field.TypeString, value)
+	}
+	if _u.mutation.HydraClientIDCleared() {
+		_spec.ClearField(oauthpending.FieldHydraClientID, field.TypeString)
+	}
+	if value, ok := _u.mutation.CallbackAt(); ok {
+		_spec.SetField(oauthpending.FieldCallbackAt, field.TypeTime, value)
+	}
+	if _u.mutation.CallbackAtCleared() {
+		_spec.ClearField(oauthpending.FieldCallbackAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.ClaimedAt(); ok {
+		_spec.SetField(oauthpending.FieldClaimedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ClaimedAtCleared() {
+		_spec.ClearField(oauthpending.FieldClaimedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.FailureReason(); ok {
+		_spec.SetField(oauthpending.FieldFailureReason, field.TypeString, value)
+	}
+	if _u.mutation.FailureReasonCleared() {
+		_spec.ClearField(oauthpending.FieldFailureReason, field.TypeString)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -200,6 +516,26 @@ func (_u *OAuthPendingUpdateOne) SetNillableState(v *string) *OAuthPendingUpdate
 	return _u
 }
 
+// SetStateHash sets the "state_hash" field.
+func (_u *OAuthPendingUpdateOne) SetStateHash(v string) *OAuthPendingUpdateOne {
+	_u.mutation.SetStateHash(v)
+	return _u
+}
+
+// SetNillableStateHash sets the "state_hash" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableStateHash(v *string) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetStateHash(*v)
+	}
+	return _u
+}
+
+// ClearStateHash clears the value of the "state_hash" field.
+func (_u *OAuthPendingUpdateOne) ClearStateHash() *OAuthPendingUpdateOne {
+	_u.mutation.ClearStateHash()
+	return _u
+}
+
 // SetProvider sets the "provider" field.
 func (_u *OAuthPendingUpdateOne) SetProvider(v string) *OAuthPendingUpdateOne {
 	_u.mutation.SetProvider(v)
@@ -231,6 +567,224 @@ func (_u *OAuthPendingUpdateOne) SetNillableExpiresAt(v *time.Time) *OAuthPendin
 	if v != nil {
 		_u.SetExpiresAt(*v)
 	}
+	return _u
+}
+
+// SetLifecycleStatus sets the "lifecycle_status" field.
+func (_u *OAuthPendingUpdateOne) SetLifecycleStatus(v string) *OAuthPendingUpdateOne {
+	_u.mutation.SetLifecycleStatus(v)
+	return _u
+}
+
+// SetNillableLifecycleStatus sets the "lifecycle_status" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableLifecycleStatus(v *string) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetLifecycleStatus(*v)
+	}
+	return _u
+}
+
+// ClearLifecycleStatus clears the value of the "lifecycle_status" field.
+func (_u *OAuthPendingUpdateOne) ClearLifecycleStatus() *OAuthPendingUpdateOne {
+	_u.mutation.ClearLifecycleStatus()
+	return _u
+}
+
+// SetOwnerWorkosUserID sets the "owner_workos_user_id" field.
+func (_u *OAuthPendingUpdateOne) SetOwnerWorkosUserID(v string) *OAuthPendingUpdateOne {
+	_u.mutation.SetOwnerWorkosUserID(v)
+	return _u
+}
+
+// SetNillableOwnerWorkosUserID sets the "owner_workos_user_id" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableOwnerWorkosUserID(v *string) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetOwnerWorkosUserID(*v)
+	}
+	return _u
+}
+
+// ClearOwnerWorkosUserID clears the value of the "owner_workos_user_id" field.
+func (_u *OAuthPendingUpdateOne) ClearOwnerWorkosUserID() *OAuthPendingUpdateOne {
+	_u.mutation.ClearOwnerWorkosUserID()
+	return _u
+}
+
+// SetOwnerOrgID sets the "owner_org_id" field.
+func (_u *OAuthPendingUpdateOne) SetOwnerOrgID(v string) *OAuthPendingUpdateOne {
+	_u.mutation.SetOwnerOrgID(v)
+	return _u
+}
+
+// SetNillableOwnerOrgID sets the "owner_org_id" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableOwnerOrgID(v *string) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetOwnerOrgID(*v)
+	}
+	return _u
+}
+
+// ClearOwnerOrgID clears the value of the "owner_org_id" field.
+func (_u *OAuthPendingUpdateOne) ClearOwnerOrgID() *OAuthPendingUpdateOne {
+	_u.mutation.ClearOwnerOrgID()
+	return _u
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_u *OAuthPendingUpdateOne) SetRequestedScopes(v []string) *OAuthPendingUpdateOne {
+	_u.mutation.SetRequestedScopes(v)
+	return _u
+}
+
+// AppendRequestedScopes appends value to the "requested_scopes" field.
+func (_u *OAuthPendingUpdateOne) AppendRequestedScopes(v []string) *OAuthPendingUpdateOne {
+	_u.mutation.AppendRequestedScopes(v)
+	return _u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (_u *OAuthPendingUpdateOne) ClearRequestedScopes() *OAuthPendingUpdateOne {
+	_u.mutation.ClearRequestedScopes()
+	return _u
+}
+
+// SetRedirectTarget sets the "redirect_target" field.
+func (_u *OAuthPendingUpdateOne) SetRedirectTarget(v string) *OAuthPendingUpdateOne {
+	_u.mutation.SetRedirectTarget(v)
+	return _u
+}
+
+// SetNillableRedirectTarget sets the "redirect_target" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableRedirectTarget(v *string) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetRedirectTarget(*v)
+	}
+	return _u
+}
+
+// ClearRedirectTarget clears the value of the "redirect_target" field.
+func (_u *OAuthPendingUpdateOne) ClearRedirectTarget() *OAuthPendingUpdateOne {
+	_u.mutation.ClearRedirectTarget()
+	return _u
+}
+
+// SetConsentChallenge sets the "consent_challenge" field.
+func (_u *OAuthPendingUpdateOne) SetConsentChallenge(v string) *OAuthPendingUpdateOne {
+	_u.mutation.SetConsentChallenge(v)
+	return _u
+}
+
+// SetNillableConsentChallenge sets the "consent_challenge" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableConsentChallenge(v *string) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetConsentChallenge(*v)
+	}
+	return _u
+}
+
+// ClearConsentChallenge clears the value of the "consent_challenge" field.
+func (_u *OAuthPendingUpdateOne) ClearConsentChallenge() *OAuthPendingUpdateOne {
+	_u.mutation.ClearConsentChallenge()
+	return _u
+}
+
+// SetContextRequestID sets the "context_request_id" field.
+func (_u *OAuthPendingUpdateOne) SetContextRequestID(v string) *OAuthPendingUpdateOne {
+	_u.mutation.SetContextRequestID(v)
+	return _u
+}
+
+// SetNillableContextRequestID sets the "context_request_id" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableContextRequestID(v *string) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetContextRequestID(*v)
+	}
+	return _u
+}
+
+// ClearContextRequestID clears the value of the "context_request_id" field.
+func (_u *OAuthPendingUpdateOne) ClearContextRequestID() *OAuthPendingUpdateOne {
+	_u.mutation.ClearContextRequestID()
+	return _u
+}
+
+// SetHydraClientID sets the "hydra_client_id" field.
+func (_u *OAuthPendingUpdateOne) SetHydraClientID(v string) *OAuthPendingUpdateOne {
+	_u.mutation.SetHydraClientID(v)
+	return _u
+}
+
+// SetNillableHydraClientID sets the "hydra_client_id" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableHydraClientID(v *string) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetHydraClientID(*v)
+	}
+	return _u
+}
+
+// ClearHydraClientID clears the value of the "hydra_client_id" field.
+func (_u *OAuthPendingUpdateOne) ClearHydraClientID() *OAuthPendingUpdateOne {
+	_u.mutation.ClearHydraClientID()
+	return _u
+}
+
+// SetCallbackAt sets the "callback_at" field.
+func (_u *OAuthPendingUpdateOne) SetCallbackAt(v time.Time) *OAuthPendingUpdateOne {
+	_u.mutation.SetCallbackAt(v)
+	return _u
+}
+
+// SetNillableCallbackAt sets the "callback_at" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableCallbackAt(v *time.Time) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetCallbackAt(*v)
+	}
+	return _u
+}
+
+// ClearCallbackAt clears the value of the "callback_at" field.
+func (_u *OAuthPendingUpdateOne) ClearCallbackAt() *OAuthPendingUpdateOne {
+	_u.mutation.ClearCallbackAt()
+	return _u
+}
+
+// SetClaimedAt sets the "claimed_at" field.
+func (_u *OAuthPendingUpdateOne) SetClaimedAt(v time.Time) *OAuthPendingUpdateOne {
+	_u.mutation.SetClaimedAt(v)
+	return _u
+}
+
+// SetNillableClaimedAt sets the "claimed_at" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableClaimedAt(v *time.Time) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetClaimedAt(*v)
+	}
+	return _u
+}
+
+// ClearClaimedAt clears the value of the "claimed_at" field.
+func (_u *OAuthPendingUpdateOne) ClearClaimedAt() *OAuthPendingUpdateOne {
+	_u.mutation.ClearClaimedAt()
+	return _u
+}
+
+// SetFailureReason sets the "failure_reason" field.
+func (_u *OAuthPendingUpdateOne) SetFailureReason(v string) *OAuthPendingUpdateOne {
+	_u.mutation.SetFailureReason(v)
+	return _u
+}
+
+// SetNillableFailureReason sets the "failure_reason" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableFailureReason(v *string) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetFailureReason(*v)
+	}
+	return _u
+}
+
+// ClearFailureReason clears the value of the "failure_reason" field.
+func (_u *OAuthPendingUpdateOne) ClearFailureReason() *OAuthPendingUpdateOne {
+	_u.mutation.ClearFailureReason()
 	return _u
 }
 
@@ -333,6 +887,12 @@ func (_u *OAuthPendingUpdateOne) sqlSave(ctx context.Context) (_node *OAuthPendi
 	if value, ok := _u.mutation.State(); ok {
 		_spec.SetField(oauthpending.FieldState, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.StateHash(); ok {
+		_spec.SetField(oauthpending.FieldStateHash, field.TypeString, value)
+	}
+	if _u.mutation.StateHashCleared() {
+		_spec.ClearField(oauthpending.FieldStateHash, field.TypeString)
+	}
 	if value, ok := _u.mutation.Provider(); ok {
 		_spec.SetField(oauthpending.FieldProvider, field.TypeString, value)
 	}
@@ -341,6 +901,77 @@ func (_u *OAuthPendingUpdateOne) sqlSave(ctx context.Context) (_node *OAuthPendi
 	}
 	if value, ok := _u.mutation.ExpiresAt(); ok {
 		_spec.SetField(oauthpending.FieldExpiresAt, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.LifecycleStatus(); ok {
+		_spec.SetField(oauthpending.FieldLifecycleStatus, field.TypeString, value)
+	}
+	if _u.mutation.LifecycleStatusCleared() {
+		_spec.ClearField(oauthpending.FieldLifecycleStatus, field.TypeString)
+	}
+	if value, ok := _u.mutation.OwnerWorkosUserID(); ok {
+		_spec.SetField(oauthpending.FieldOwnerWorkosUserID, field.TypeString, value)
+	}
+	if _u.mutation.OwnerWorkosUserIDCleared() {
+		_spec.ClearField(oauthpending.FieldOwnerWorkosUserID, field.TypeString)
+	}
+	if value, ok := _u.mutation.OwnerOrgID(); ok {
+		_spec.SetField(oauthpending.FieldOwnerOrgID, field.TypeString, value)
+	}
+	if _u.mutation.OwnerOrgIDCleared() {
+		_spec.ClearField(oauthpending.FieldOwnerOrgID, field.TypeString)
+	}
+	if value, ok := _u.mutation.RequestedScopes(); ok {
+		_spec.SetField(oauthpending.FieldRequestedScopes, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedRequestedScopes(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, oauthpending.FieldRequestedScopes, value)
+		})
+	}
+	if _u.mutation.RequestedScopesCleared() {
+		_spec.ClearField(oauthpending.FieldRequestedScopes, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.RedirectTarget(); ok {
+		_spec.SetField(oauthpending.FieldRedirectTarget, field.TypeString, value)
+	}
+	if _u.mutation.RedirectTargetCleared() {
+		_spec.ClearField(oauthpending.FieldRedirectTarget, field.TypeString)
+	}
+	if value, ok := _u.mutation.ConsentChallenge(); ok {
+		_spec.SetField(oauthpending.FieldConsentChallenge, field.TypeString, value)
+	}
+	if _u.mutation.ConsentChallengeCleared() {
+		_spec.ClearField(oauthpending.FieldConsentChallenge, field.TypeString)
+	}
+	if value, ok := _u.mutation.ContextRequestID(); ok {
+		_spec.SetField(oauthpending.FieldContextRequestID, field.TypeString, value)
+	}
+	if _u.mutation.ContextRequestIDCleared() {
+		_spec.ClearField(oauthpending.FieldContextRequestID, field.TypeString)
+	}
+	if value, ok := _u.mutation.HydraClientID(); ok {
+		_spec.SetField(oauthpending.FieldHydraClientID, field.TypeString, value)
+	}
+	if _u.mutation.HydraClientIDCleared() {
+		_spec.ClearField(oauthpending.FieldHydraClientID, field.TypeString)
+	}
+	if value, ok := _u.mutation.CallbackAt(); ok {
+		_spec.SetField(oauthpending.FieldCallbackAt, field.TypeTime, value)
+	}
+	if _u.mutation.CallbackAtCleared() {
+		_spec.ClearField(oauthpending.FieldCallbackAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.ClaimedAt(); ok {
+		_spec.SetField(oauthpending.FieldClaimedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ClaimedAtCleared() {
+		_spec.ClearField(oauthpending.FieldClaimedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.FailureReason(); ok {
+		_spec.SetField(oauthpending.FieldFailureReason, field.TypeString, value)
+	}
+	if _u.mutation.FailureReasonCleared() {
+		_spec.ClearField(oauthpending.FieldFailureReason, field.TypeString)
 	}
 	_node = &OAuthPending{config: _u.config}
 	_spec.Assign = _node.assignValues

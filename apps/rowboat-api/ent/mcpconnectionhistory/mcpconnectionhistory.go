@@ -38,12 +38,24 @@ const (
 	FieldRefreshTokenEncrypted = "refresh_token_encrypted"
 	// FieldAPIKeyEncrypted holds the string denoting the api_key_encrypted field in the database.
 	FieldAPIKeyEncrypted = "api_key_encrypted"
+	// FieldStatus holds the string denoting the status field in the database.
+	FieldStatus = "status"
 	// FieldConnectedAt holds the string denoting the connected_at field in the database.
 	FieldConnectedAt = "connected_at"
 	// FieldLastUsedAt holds the string denoting the last_used_at field in the database.
 	FieldLastUsedAt = "last_used_at"
 	// FieldExpiresAt holds the string denoting the expires_at field in the database.
 	FieldExpiresAt = "expires_at"
+	// FieldRevokedAt holds the string denoting the revoked_at field in the database.
+	FieldRevokedAt = "revoked_at"
+	// FieldRevokedReason holds the string denoting the revoked_reason field in the database.
+	FieldRevokedReason = "revoked_reason"
+	// FieldRevokedBy holds the string denoting the revoked_by field in the database.
+	FieldRevokedBy = "revoked_by"
+	// FieldRevocationAttemptedAt holds the string denoting the revocation_attempted_at field in the database.
+	FieldRevocationAttemptedAt = "revocation_attempted_at"
+	// FieldRevocationSucceeded holds the string denoting the revocation_succeeded field in the database.
+	FieldRevocationSucceeded = "revocation_succeeded"
 	// Table holds the table name of the mcpconnectionhistory in the database.
 	Table = "mcp_connection_histories"
 )
@@ -61,9 +73,15 @@ var Columns = []string{
 	FieldScopes,
 	FieldRefreshTokenEncrypted,
 	FieldAPIKeyEncrypted,
+	FieldStatus,
 	FieldConnectedAt,
 	FieldLastUsedAt,
 	FieldExpiresAt,
+	FieldRevokedAt,
+	FieldRevokedReason,
+	FieldRevokedBy,
+	FieldRevocationAttemptedAt,
+	FieldRevocationSucceeded,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -92,6 +110,8 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultHistoryTime holds the default value on creation for the "history_time" field.
 	DefaultHistoryTime func() time.Time
+	// DefaultStatus holds the default value on creation for the "status" field.
+	DefaultStatus string
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -149,6 +169,11 @@ func ByAudience(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAudience, opts...).ToFunc()
 }
 
+// ByStatus orders the results by the status field.
+func ByStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+}
+
 // ByConnectedAt orders the results by the connected_at field.
 func ByConnectedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldConnectedAt, opts...).ToFunc()
@@ -162,6 +187,31 @@ func ByLastUsedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByExpiresAt orders the results by the expires_at field.
 func ByExpiresAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldExpiresAt, opts...).ToFunc()
+}
+
+// ByRevokedAt orders the results by the revoked_at field.
+func ByRevokedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRevokedAt, opts...).ToFunc()
+}
+
+// ByRevokedReason orders the results by the revoked_reason field.
+func ByRevokedReason(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRevokedReason, opts...).ToFunc()
+}
+
+// ByRevokedBy orders the results by the revoked_by field.
+func ByRevokedBy(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRevokedBy, opts...).ToFunc()
+}
+
+// ByRevocationAttemptedAt orders the results by the revocation_attempted_at field.
+func ByRevocationAttemptedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRevocationAttemptedAt, opts...).ToFunc()
+}
+
+// ByRevocationSucceeded orders the results by the revocation_succeeded field.
+func ByRevocationSucceeded(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRevocationSucceeded, opts...).ToFunc()
 }
 
 var (

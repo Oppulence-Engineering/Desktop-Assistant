@@ -318,7 +318,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		cloudEventsH.SetGooglePushVerifier(googlePushVerifier, cfg.GoogleWebhookOIDCEmail)
 	}
 
-	registry, err := connectors.LoadRegistry([]byte(cfg.ConnectorsJSON))
+	registry, err := connectors.LoadRegistryForEnvironment([]byte(cfg.ConnectorsJSON), cfg.Environment, cfg.ConnectorEmergencyDisabled)
 	if err != nil {
 		return err
 	}
@@ -328,7 +328,22 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		OryBrokerClientSecret: cfg.OryBrokerClientSecret,
 		PublicBaseURL:         cfg.PublicBaseURL,
 		DeepLinkScheme:        cfg.DesktopDeepLinkScheme,
+		RedirectAllowlist:     cfg.ConnectorRedirectAllowlist,
 	}, log)
+	if strings.TrimSpace(cfg.BrokerTokenPrivateKey) != "" {
+		resourceTokenIssuer, issuerErr := connectors.NewRSAResourceTokenIssuer(
+			[]byte(cfg.BrokerTokenPrivateKey),
+			cfg.BrokerTokenKeyID,
+			cfg.BrokerTokenIssuer,
+			cfg.BrokerTokenTTL,
+		)
+		if issuerErr != nil {
+			return fmt.Errorf("configure connector resource-token issuer: %w", issuerErr)
+		}
+		connectorsH.SetResourceTokenIssuer(resourceTokenIssuer)
+	} else if cfg.IsProduction() {
+		return fmt.Errorf("BROKER_TOKEN_PRIVATE_KEY_PEM is required in production")
+	}
 	connectorsH.SetOutboundPolicy(vendorPolicy)
 	connectorsH.SetRefreshDedup(refreshCache, sealer)
 	hubspotClient := hubspotapi.New(client, sealer, vendorPolicy)
@@ -590,6 +605,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// OAuth callback is a browser redirect from Ory (no bearer); the user is
 	// resolved from the sealed pending ticket inside the handler.
 	r.Get("/v1/connections/{name}/callback", connectorsH.Callback)
+	r.Get("/v1/connectors/{name}/callback", connectorsH.Callback)
+	// Product resource servers verify short-lived, audience-bound connector
+	// tokens against this public key set. It contains public key material only.
+	r.Get("/.well-known/connector-jwks.json", connectorsH.BrokerJWKS)
 
 	// Provider callbacks are browser-facing and carry state minted by the
 	// authenticated /v1/*-oauth/start endpoints below.
@@ -627,6 +646,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// Ory pre-consent webhook (shared-secret HMAC, not a user bearer).
 	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret)).
 		Post("/oauth-hooks/pre-consent", connectorsH.PreConsent)
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret)).
+		Post("/oauth-hooks/consent-context", connectorsH.ConsentContext)
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret)).
+		Post("/oauth-hooks/consent-audit", connectorsH.AppendConsentAudit)
 
 	// Server-to-server internal API (static shared secret).
 	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
@@ -837,6 +860,11 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		}
 
 		r.Get("/v1/connectors", connectorsH.List)
+		// Canonical RFC 012 paths. The /v1/connections aliases below remain for
+		// shipped desktop clients and RFC 020 compatibility.
+		r.Post("/v1/connectors/{name}/start", connectorsH.Start)
+		r.Post("/v1/connectors/{name}/resource-token", connectorsH.MCPToken)
+		r.Delete("/v1/connectors/{name}/connections/{connectionID}", connectorsH.Delete)
 		r.With(rl.PerUserWindow(ratelimit.GroupConnections, 60, time.Minute)).
 			Post("/v1/hubspot/search", hubspotH.Search)
 		r.Route("/v1/connections", func(r chi.Router) {

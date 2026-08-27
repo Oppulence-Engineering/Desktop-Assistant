@@ -70,6 +70,11 @@ func State(v string) predicate.OAuthPending {
 	return predicate.OAuthPending(sql.FieldEQ(FieldState, v))
 }
 
+// StateHash applies equality check predicate on the "state_hash" field. It's identical to StateHashEQ.
+func StateHash(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldStateHash, v))
+}
+
 // Provider applies equality check predicate on the "provider" field. It's identical to ProviderEQ.
 func Provider(v string) predicate.OAuthPending {
 	return predicate.OAuthPending(sql.FieldEQ(FieldProvider, v))
@@ -83,6 +88,56 @@ func PayloadEncrypted(v []byte) predicate.OAuthPending {
 // ExpiresAt applies equality check predicate on the "expires_at" field. It's identical to ExpiresAtEQ.
 func ExpiresAt(v time.Time) predicate.OAuthPending {
 	return predicate.OAuthPending(sql.FieldEQ(FieldExpiresAt, v))
+}
+
+// LifecycleStatus applies equality check predicate on the "lifecycle_status" field. It's identical to LifecycleStatusEQ.
+func LifecycleStatus(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldLifecycleStatus, v))
+}
+
+// OwnerWorkosUserID applies equality check predicate on the "owner_workos_user_id" field. It's identical to OwnerWorkosUserIDEQ.
+func OwnerWorkosUserID(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldOwnerWorkosUserID, v))
+}
+
+// OwnerOrgID applies equality check predicate on the "owner_org_id" field. It's identical to OwnerOrgIDEQ.
+func OwnerOrgID(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldOwnerOrgID, v))
+}
+
+// RedirectTarget applies equality check predicate on the "redirect_target" field. It's identical to RedirectTargetEQ.
+func RedirectTarget(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldRedirectTarget, v))
+}
+
+// ConsentChallenge applies equality check predicate on the "consent_challenge" field. It's identical to ConsentChallengeEQ.
+func ConsentChallenge(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldConsentChallenge, v))
+}
+
+// ContextRequestID applies equality check predicate on the "context_request_id" field. It's identical to ContextRequestIDEQ.
+func ContextRequestID(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldContextRequestID, v))
+}
+
+// HydraClientID applies equality check predicate on the "hydra_client_id" field. It's identical to HydraClientIDEQ.
+func HydraClientID(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldHydraClientID, v))
+}
+
+// CallbackAt applies equality check predicate on the "callback_at" field. It's identical to CallbackAtEQ.
+func CallbackAt(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldCallbackAt, v))
+}
+
+// ClaimedAt applies equality check predicate on the "claimed_at" field. It's identical to ClaimedAtEQ.
+func ClaimedAt(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldClaimedAt, v))
+}
+
+// FailureReason applies equality check predicate on the "failure_reason" field. It's identical to FailureReasonEQ.
+func FailureReason(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldFailureReason, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -230,6 +285,81 @@ func StateContainsFold(v string) predicate.OAuthPending {
 	return predicate.OAuthPending(sql.FieldContainsFold(FieldState, v))
 }
 
+// StateHashEQ applies the EQ predicate on the "state_hash" field.
+func StateHashEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldStateHash, v))
+}
+
+// StateHashNEQ applies the NEQ predicate on the "state_hash" field.
+func StateHashNEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldStateHash, v))
+}
+
+// StateHashIn applies the In predicate on the "state_hash" field.
+func StateHashIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldStateHash, vs...))
+}
+
+// StateHashNotIn applies the NotIn predicate on the "state_hash" field.
+func StateHashNotIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldStateHash, vs...))
+}
+
+// StateHashGT applies the GT predicate on the "state_hash" field.
+func StateHashGT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldStateHash, v))
+}
+
+// StateHashGTE applies the GTE predicate on the "state_hash" field.
+func StateHashGTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldStateHash, v))
+}
+
+// StateHashLT applies the LT predicate on the "state_hash" field.
+func StateHashLT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldStateHash, v))
+}
+
+// StateHashLTE applies the LTE predicate on the "state_hash" field.
+func StateHashLTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldStateHash, v))
+}
+
+// StateHashContains applies the Contains predicate on the "state_hash" field.
+func StateHashContains(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContains(FieldStateHash, v))
+}
+
+// StateHashHasPrefix applies the HasPrefix predicate on the "state_hash" field.
+func StateHashHasPrefix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasPrefix(FieldStateHash, v))
+}
+
+// StateHashHasSuffix applies the HasSuffix predicate on the "state_hash" field.
+func StateHashHasSuffix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasSuffix(FieldStateHash, v))
+}
+
+// StateHashIsNil applies the IsNil predicate on the "state_hash" field.
+func StateHashIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldStateHash))
+}
+
+// StateHashNotNil applies the NotNil predicate on the "state_hash" field.
+func StateHashNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldStateHash))
+}
+
+// StateHashEqualFold applies the EqualFold predicate on the "state_hash" field.
+func StateHashEqualFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEqualFold(FieldStateHash, v))
+}
+
+// StateHashContainsFold applies the ContainsFold predicate on the "state_hash" field.
+func StateHashContainsFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContainsFold(FieldStateHash, v))
+}
+
 // ProviderEQ applies the EQ predicate on the "provider" field.
 func ProviderEQ(v string) predicate.OAuthPending {
 	return predicate.OAuthPending(sql.FieldEQ(FieldProvider, v))
@@ -373,6 +503,716 @@ func ExpiresAtLT(v time.Time) predicate.OAuthPending {
 // ExpiresAtLTE applies the LTE predicate on the "expires_at" field.
 func ExpiresAtLTE(v time.Time) predicate.OAuthPending {
 	return predicate.OAuthPending(sql.FieldLTE(FieldExpiresAt, v))
+}
+
+// LifecycleStatusEQ applies the EQ predicate on the "lifecycle_status" field.
+func LifecycleStatusEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldLifecycleStatus, v))
+}
+
+// LifecycleStatusNEQ applies the NEQ predicate on the "lifecycle_status" field.
+func LifecycleStatusNEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldLifecycleStatus, v))
+}
+
+// LifecycleStatusIn applies the In predicate on the "lifecycle_status" field.
+func LifecycleStatusIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldLifecycleStatus, vs...))
+}
+
+// LifecycleStatusNotIn applies the NotIn predicate on the "lifecycle_status" field.
+func LifecycleStatusNotIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldLifecycleStatus, vs...))
+}
+
+// LifecycleStatusGT applies the GT predicate on the "lifecycle_status" field.
+func LifecycleStatusGT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldLifecycleStatus, v))
+}
+
+// LifecycleStatusGTE applies the GTE predicate on the "lifecycle_status" field.
+func LifecycleStatusGTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldLifecycleStatus, v))
+}
+
+// LifecycleStatusLT applies the LT predicate on the "lifecycle_status" field.
+func LifecycleStatusLT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldLifecycleStatus, v))
+}
+
+// LifecycleStatusLTE applies the LTE predicate on the "lifecycle_status" field.
+func LifecycleStatusLTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldLifecycleStatus, v))
+}
+
+// LifecycleStatusContains applies the Contains predicate on the "lifecycle_status" field.
+func LifecycleStatusContains(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContains(FieldLifecycleStatus, v))
+}
+
+// LifecycleStatusHasPrefix applies the HasPrefix predicate on the "lifecycle_status" field.
+func LifecycleStatusHasPrefix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasPrefix(FieldLifecycleStatus, v))
+}
+
+// LifecycleStatusHasSuffix applies the HasSuffix predicate on the "lifecycle_status" field.
+func LifecycleStatusHasSuffix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasSuffix(FieldLifecycleStatus, v))
+}
+
+// LifecycleStatusIsNil applies the IsNil predicate on the "lifecycle_status" field.
+func LifecycleStatusIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldLifecycleStatus))
+}
+
+// LifecycleStatusNotNil applies the NotNil predicate on the "lifecycle_status" field.
+func LifecycleStatusNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldLifecycleStatus))
+}
+
+// LifecycleStatusEqualFold applies the EqualFold predicate on the "lifecycle_status" field.
+func LifecycleStatusEqualFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEqualFold(FieldLifecycleStatus, v))
+}
+
+// LifecycleStatusContainsFold applies the ContainsFold predicate on the "lifecycle_status" field.
+func LifecycleStatusContainsFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContainsFold(FieldLifecycleStatus, v))
+}
+
+// OwnerWorkosUserIDEQ applies the EQ predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldOwnerWorkosUserID, v))
+}
+
+// OwnerWorkosUserIDNEQ applies the NEQ predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDNEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldOwnerWorkosUserID, v))
+}
+
+// OwnerWorkosUserIDIn applies the In predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldOwnerWorkosUserID, vs...))
+}
+
+// OwnerWorkosUserIDNotIn applies the NotIn predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDNotIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldOwnerWorkosUserID, vs...))
+}
+
+// OwnerWorkosUserIDGT applies the GT predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDGT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldOwnerWorkosUserID, v))
+}
+
+// OwnerWorkosUserIDGTE applies the GTE predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDGTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldOwnerWorkosUserID, v))
+}
+
+// OwnerWorkosUserIDLT applies the LT predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDLT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldOwnerWorkosUserID, v))
+}
+
+// OwnerWorkosUserIDLTE applies the LTE predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDLTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldOwnerWorkosUserID, v))
+}
+
+// OwnerWorkosUserIDContains applies the Contains predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDContains(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContains(FieldOwnerWorkosUserID, v))
+}
+
+// OwnerWorkosUserIDHasPrefix applies the HasPrefix predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDHasPrefix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasPrefix(FieldOwnerWorkosUserID, v))
+}
+
+// OwnerWorkosUserIDHasSuffix applies the HasSuffix predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDHasSuffix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasSuffix(FieldOwnerWorkosUserID, v))
+}
+
+// OwnerWorkosUserIDIsNil applies the IsNil predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldOwnerWorkosUserID))
+}
+
+// OwnerWorkosUserIDNotNil applies the NotNil predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldOwnerWorkosUserID))
+}
+
+// OwnerWorkosUserIDEqualFold applies the EqualFold predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDEqualFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEqualFold(FieldOwnerWorkosUserID, v))
+}
+
+// OwnerWorkosUserIDContainsFold applies the ContainsFold predicate on the "owner_workos_user_id" field.
+func OwnerWorkosUserIDContainsFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContainsFold(FieldOwnerWorkosUserID, v))
+}
+
+// OwnerOrgIDEQ applies the EQ predicate on the "owner_org_id" field.
+func OwnerOrgIDEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldOwnerOrgID, v))
+}
+
+// OwnerOrgIDNEQ applies the NEQ predicate on the "owner_org_id" field.
+func OwnerOrgIDNEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldOwnerOrgID, v))
+}
+
+// OwnerOrgIDIn applies the In predicate on the "owner_org_id" field.
+func OwnerOrgIDIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldOwnerOrgID, vs...))
+}
+
+// OwnerOrgIDNotIn applies the NotIn predicate on the "owner_org_id" field.
+func OwnerOrgIDNotIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldOwnerOrgID, vs...))
+}
+
+// OwnerOrgIDGT applies the GT predicate on the "owner_org_id" field.
+func OwnerOrgIDGT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldOwnerOrgID, v))
+}
+
+// OwnerOrgIDGTE applies the GTE predicate on the "owner_org_id" field.
+func OwnerOrgIDGTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldOwnerOrgID, v))
+}
+
+// OwnerOrgIDLT applies the LT predicate on the "owner_org_id" field.
+func OwnerOrgIDLT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldOwnerOrgID, v))
+}
+
+// OwnerOrgIDLTE applies the LTE predicate on the "owner_org_id" field.
+func OwnerOrgIDLTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldOwnerOrgID, v))
+}
+
+// OwnerOrgIDContains applies the Contains predicate on the "owner_org_id" field.
+func OwnerOrgIDContains(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContains(FieldOwnerOrgID, v))
+}
+
+// OwnerOrgIDHasPrefix applies the HasPrefix predicate on the "owner_org_id" field.
+func OwnerOrgIDHasPrefix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasPrefix(FieldOwnerOrgID, v))
+}
+
+// OwnerOrgIDHasSuffix applies the HasSuffix predicate on the "owner_org_id" field.
+func OwnerOrgIDHasSuffix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasSuffix(FieldOwnerOrgID, v))
+}
+
+// OwnerOrgIDIsNil applies the IsNil predicate on the "owner_org_id" field.
+func OwnerOrgIDIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldOwnerOrgID))
+}
+
+// OwnerOrgIDNotNil applies the NotNil predicate on the "owner_org_id" field.
+func OwnerOrgIDNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldOwnerOrgID))
+}
+
+// OwnerOrgIDEqualFold applies the EqualFold predicate on the "owner_org_id" field.
+func OwnerOrgIDEqualFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEqualFold(FieldOwnerOrgID, v))
+}
+
+// OwnerOrgIDContainsFold applies the ContainsFold predicate on the "owner_org_id" field.
+func OwnerOrgIDContainsFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContainsFold(FieldOwnerOrgID, v))
+}
+
+// RequestedScopesIsNil applies the IsNil predicate on the "requested_scopes" field.
+func RequestedScopesIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldRequestedScopes))
+}
+
+// RequestedScopesNotNil applies the NotNil predicate on the "requested_scopes" field.
+func RequestedScopesNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldRequestedScopes))
+}
+
+// RedirectTargetEQ applies the EQ predicate on the "redirect_target" field.
+func RedirectTargetEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldRedirectTarget, v))
+}
+
+// RedirectTargetNEQ applies the NEQ predicate on the "redirect_target" field.
+func RedirectTargetNEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldRedirectTarget, v))
+}
+
+// RedirectTargetIn applies the In predicate on the "redirect_target" field.
+func RedirectTargetIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldRedirectTarget, vs...))
+}
+
+// RedirectTargetNotIn applies the NotIn predicate on the "redirect_target" field.
+func RedirectTargetNotIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldRedirectTarget, vs...))
+}
+
+// RedirectTargetGT applies the GT predicate on the "redirect_target" field.
+func RedirectTargetGT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldRedirectTarget, v))
+}
+
+// RedirectTargetGTE applies the GTE predicate on the "redirect_target" field.
+func RedirectTargetGTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldRedirectTarget, v))
+}
+
+// RedirectTargetLT applies the LT predicate on the "redirect_target" field.
+func RedirectTargetLT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldRedirectTarget, v))
+}
+
+// RedirectTargetLTE applies the LTE predicate on the "redirect_target" field.
+func RedirectTargetLTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldRedirectTarget, v))
+}
+
+// RedirectTargetContains applies the Contains predicate on the "redirect_target" field.
+func RedirectTargetContains(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContains(FieldRedirectTarget, v))
+}
+
+// RedirectTargetHasPrefix applies the HasPrefix predicate on the "redirect_target" field.
+func RedirectTargetHasPrefix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasPrefix(FieldRedirectTarget, v))
+}
+
+// RedirectTargetHasSuffix applies the HasSuffix predicate on the "redirect_target" field.
+func RedirectTargetHasSuffix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasSuffix(FieldRedirectTarget, v))
+}
+
+// RedirectTargetIsNil applies the IsNil predicate on the "redirect_target" field.
+func RedirectTargetIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldRedirectTarget))
+}
+
+// RedirectTargetNotNil applies the NotNil predicate on the "redirect_target" field.
+func RedirectTargetNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldRedirectTarget))
+}
+
+// RedirectTargetEqualFold applies the EqualFold predicate on the "redirect_target" field.
+func RedirectTargetEqualFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEqualFold(FieldRedirectTarget, v))
+}
+
+// RedirectTargetContainsFold applies the ContainsFold predicate on the "redirect_target" field.
+func RedirectTargetContainsFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContainsFold(FieldRedirectTarget, v))
+}
+
+// ConsentChallengeEQ applies the EQ predicate on the "consent_challenge" field.
+func ConsentChallengeEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldConsentChallenge, v))
+}
+
+// ConsentChallengeNEQ applies the NEQ predicate on the "consent_challenge" field.
+func ConsentChallengeNEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldConsentChallenge, v))
+}
+
+// ConsentChallengeIn applies the In predicate on the "consent_challenge" field.
+func ConsentChallengeIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldConsentChallenge, vs...))
+}
+
+// ConsentChallengeNotIn applies the NotIn predicate on the "consent_challenge" field.
+func ConsentChallengeNotIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldConsentChallenge, vs...))
+}
+
+// ConsentChallengeGT applies the GT predicate on the "consent_challenge" field.
+func ConsentChallengeGT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldConsentChallenge, v))
+}
+
+// ConsentChallengeGTE applies the GTE predicate on the "consent_challenge" field.
+func ConsentChallengeGTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldConsentChallenge, v))
+}
+
+// ConsentChallengeLT applies the LT predicate on the "consent_challenge" field.
+func ConsentChallengeLT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldConsentChallenge, v))
+}
+
+// ConsentChallengeLTE applies the LTE predicate on the "consent_challenge" field.
+func ConsentChallengeLTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldConsentChallenge, v))
+}
+
+// ConsentChallengeContains applies the Contains predicate on the "consent_challenge" field.
+func ConsentChallengeContains(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContains(FieldConsentChallenge, v))
+}
+
+// ConsentChallengeHasPrefix applies the HasPrefix predicate on the "consent_challenge" field.
+func ConsentChallengeHasPrefix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasPrefix(FieldConsentChallenge, v))
+}
+
+// ConsentChallengeHasSuffix applies the HasSuffix predicate on the "consent_challenge" field.
+func ConsentChallengeHasSuffix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasSuffix(FieldConsentChallenge, v))
+}
+
+// ConsentChallengeIsNil applies the IsNil predicate on the "consent_challenge" field.
+func ConsentChallengeIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldConsentChallenge))
+}
+
+// ConsentChallengeNotNil applies the NotNil predicate on the "consent_challenge" field.
+func ConsentChallengeNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldConsentChallenge))
+}
+
+// ConsentChallengeEqualFold applies the EqualFold predicate on the "consent_challenge" field.
+func ConsentChallengeEqualFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEqualFold(FieldConsentChallenge, v))
+}
+
+// ConsentChallengeContainsFold applies the ContainsFold predicate on the "consent_challenge" field.
+func ConsentChallengeContainsFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContainsFold(FieldConsentChallenge, v))
+}
+
+// ContextRequestIDEQ applies the EQ predicate on the "context_request_id" field.
+func ContextRequestIDEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldContextRequestID, v))
+}
+
+// ContextRequestIDNEQ applies the NEQ predicate on the "context_request_id" field.
+func ContextRequestIDNEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldContextRequestID, v))
+}
+
+// ContextRequestIDIn applies the In predicate on the "context_request_id" field.
+func ContextRequestIDIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldContextRequestID, vs...))
+}
+
+// ContextRequestIDNotIn applies the NotIn predicate on the "context_request_id" field.
+func ContextRequestIDNotIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldContextRequestID, vs...))
+}
+
+// ContextRequestIDGT applies the GT predicate on the "context_request_id" field.
+func ContextRequestIDGT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldContextRequestID, v))
+}
+
+// ContextRequestIDGTE applies the GTE predicate on the "context_request_id" field.
+func ContextRequestIDGTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldContextRequestID, v))
+}
+
+// ContextRequestIDLT applies the LT predicate on the "context_request_id" field.
+func ContextRequestIDLT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldContextRequestID, v))
+}
+
+// ContextRequestIDLTE applies the LTE predicate on the "context_request_id" field.
+func ContextRequestIDLTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldContextRequestID, v))
+}
+
+// ContextRequestIDContains applies the Contains predicate on the "context_request_id" field.
+func ContextRequestIDContains(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContains(FieldContextRequestID, v))
+}
+
+// ContextRequestIDHasPrefix applies the HasPrefix predicate on the "context_request_id" field.
+func ContextRequestIDHasPrefix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasPrefix(FieldContextRequestID, v))
+}
+
+// ContextRequestIDHasSuffix applies the HasSuffix predicate on the "context_request_id" field.
+func ContextRequestIDHasSuffix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasSuffix(FieldContextRequestID, v))
+}
+
+// ContextRequestIDIsNil applies the IsNil predicate on the "context_request_id" field.
+func ContextRequestIDIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldContextRequestID))
+}
+
+// ContextRequestIDNotNil applies the NotNil predicate on the "context_request_id" field.
+func ContextRequestIDNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldContextRequestID))
+}
+
+// ContextRequestIDEqualFold applies the EqualFold predicate on the "context_request_id" field.
+func ContextRequestIDEqualFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEqualFold(FieldContextRequestID, v))
+}
+
+// ContextRequestIDContainsFold applies the ContainsFold predicate on the "context_request_id" field.
+func ContextRequestIDContainsFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContainsFold(FieldContextRequestID, v))
+}
+
+// HydraClientIDEQ applies the EQ predicate on the "hydra_client_id" field.
+func HydraClientIDEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldHydraClientID, v))
+}
+
+// HydraClientIDNEQ applies the NEQ predicate on the "hydra_client_id" field.
+func HydraClientIDNEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldHydraClientID, v))
+}
+
+// HydraClientIDIn applies the In predicate on the "hydra_client_id" field.
+func HydraClientIDIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldHydraClientID, vs...))
+}
+
+// HydraClientIDNotIn applies the NotIn predicate on the "hydra_client_id" field.
+func HydraClientIDNotIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldHydraClientID, vs...))
+}
+
+// HydraClientIDGT applies the GT predicate on the "hydra_client_id" field.
+func HydraClientIDGT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldHydraClientID, v))
+}
+
+// HydraClientIDGTE applies the GTE predicate on the "hydra_client_id" field.
+func HydraClientIDGTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldHydraClientID, v))
+}
+
+// HydraClientIDLT applies the LT predicate on the "hydra_client_id" field.
+func HydraClientIDLT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldHydraClientID, v))
+}
+
+// HydraClientIDLTE applies the LTE predicate on the "hydra_client_id" field.
+func HydraClientIDLTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldHydraClientID, v))
+}
+
+// HydraClientIDContains applies the Contains predicate on the "hydra_client_id" field.
+func HydraClientIDContains(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContains(FieldHydraClientID, v))
+}
+
+// HydraClientIDHasPrefix applies the HasPrefix predicate on the "hydra_client_id" field.
+func HydraClientIDHasPrefix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasPrefix(FieldHydraClientID, v))
+}
+
+// HydraClientIDHasSuffix applies the HasSuffix predicate on the "hydra_client_id" field.
+func HydraClientIDHasSuffix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasSuffix(FieldHydraClientID, v))
+}
+
+// HydraClientIDIsNil applies the IsNil predicate on the "hydra_client_id" field.
+func HydraClientIDIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldHydraClientID))
+}
+
+// HydraClientIDNotNil applies the NotNil predicate on the "hydra_client_id" field.
+func HydraClientIDNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldHydraClientID))
+}
+
+// HydraClientIDEqualFold applies the EqualFold predicate on the "hydra_client_id" field.
+func HydraClientIDEqualFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEqualFold(FieldHydraClientID, v))
+}
+
+// HydraClientIDContainsFold applies the ContainsFold predicate on the "hydra_client_id" field.
+func HydraClientIDContainsFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContainsFold(FieldHydraClientID, v))
+}
+
+// CallbackAtEQ applies the EQ predicate on the "callback_at" field.
+func CallbackAtEQ(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldCallbackAt, v))
+}
+
+// CallbackAtNEQ applies the NEQ predicate on the "callback_at" field.
+func CallbackAtNEQ(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldCallbackAt, v))
+}
+
+// CallbackAtIn applies the In predicate on the "callback_at" field.
+func CallbackAtIn(vs ...time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldCallbackAt, vs...))
+}
+
+// CallbackAtNotIn applies the NotIn predicate on the "callback_at" field.
+func CallbackAtNotIn(vs ...time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldCallbackAt, vs...))
+}
+
+// CallbackAtGT applies the GT predicate on the "callback_at" field.
+func CallbackAtGT(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldCallbackAt, v))
+}
+
+// CallbackAtGTE applies the GTE predicate on the "callback_at" field.
+func CallbackAtGTE(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldCallbackAt, v))
+}
+
+// CallbackAtLT applies the LT predicate on the "callback_at" field.
+func CallbackAtLT(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldCallbackAt, v))
+}
+
+// CallbackAtLTE applies the LTE predicate on the "callback_at" field.
+func CallbackAtLTE(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldCallbackAt, v))
+}
+
+// CallbackAtIsNil applies the IsNil predicate on the "callback_at" field.
+func CallbackAtIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldCallbackAt))
+}
+
+// CallbackAtNotNil applies the NotNil predicate on the "callback_at" field.
+func CallbackAtNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldCallbackAt))
+}
+
+// ClaimedAtEQ applies the EQ predicate on the "claimed_at" field.
+func ClaimedAtEQ(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldClaimedAt, v))
+}
+
+// ClaimedAtNEQ applies the NEQ predicate on the "claimed_at" field.
+func ClaimedAtNEQ(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldClaimedAt, v))
+}
+
+// ClaimedAtIn applies the In predicate on the "claimed_at" field.
+func ClaimedAtIn(vs ...time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldClaimedAt, vs...))
+}
+
+// ClaimedAtNotIn applies the NotIn predicate on the "claimed_at" field.
+func ClaimedAtNotIn(vs ...time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldClaimedAt, vs...))
+}
+
+// ClaimedAtGT applies the GT predicate on the "claimed_at" field.
+func ClaimedAtGT(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldClaimedAt, v))
+}
+
+// ClaimedAtGTE applies the GTE predicate on the "claimed_at" field.
+func ClaimedAtGTE(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldClaimedAt, v))
+}
+
+// ClaimedAtLT applies the LT predicate on the "claimed_at" field.
+func ClaimedAtLT(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldClaimedAt, v))
+}
+
+// ClaimedAtLTE applies the LTE predicate on the "claimed_at" field.
+func ClaimedAtLTE(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldClaimedAt, v))
+}
+
+// ClaimedAtIsNil applies the IsNil predicate on the "claimed_at" field.
+func ClaimedAtIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldClaimedAt))
+}
+
+// ClaimedAtNotNil applies the NotNil predicate on the "claimed_at" field.
+func ClaimedAtNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldClaimedAt))
+}
+
+// FailureReasonEQ applies the EQ predicate on the "failure_reason" field.
+func FailureReasonEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldFailureReason, v))
+}
+
+// FailureReasonNEQ applies the NEQ predicate on the "failure_reason" field.
+func FailureReasonNEQ(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldFailureReason, v))
+}
+
+// FailureReasonIn applies the In predicate on the "failure_reason" field.
+func FailureReasonIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldFailureReason, vs...))
+}
+
+// FailureReasonNotIn applies the NotIn predicate on the "failure_reason" field.
+func FailureReasonNotIn(vs ...string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldFailureReason, vs...))
+}
+
+// FailureReasonGT applies the GT predicate on the "failure_reason" field.
+func FailureReasonGT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldFailureReason, v))
+}
+
+// FailureReasonGTE applies the GTE predicate on the "failure_reason" field.
+func FailureReasonGTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldFailureReason, v))
+}
+
+// FailureReasonLT applies the LT predicate on the "failure_reason" field.
+func FailureReasonLT(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldFailureReason, v))
+}
+
+// FailureReasonLTE applies the LTE predicate on the "failure_reason" field.
+func FailureReasonLTE(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldFailureReason, v))
+}
+
+// FailureReasonContains applies the Contains predicate on the "failure_reason" field.
+func FailureReasonContains(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContains(FieldFailureReason, v))
+}
+
+// FailureReasonHasPrefix applies the HasPrefix predicate on the "failure_reason" field.
+func FailureReasonHasPrefix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasPrefix(FieldFailureReason, v))
+}
+
+// FailureReasonHasSuffix applies the HasSuffix predicate on the "failure_reason" field.
+func FailureReasonHasSuffix(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldHasSuffix(FieldFailureReason, v))
+}
+
+// FailureReasonIsNil applies the IsNil predicate on the "failure_reason" field.
+func FailureReasonIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldFailureReason))
+}
+
+// FailureReasonNotNil applies the NotNil predicate on the "failure_reason" field.
+func FailureReasonNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldFailureReason))
+}
+
+// FailureReasonEqualFold applies the EqualFold predicate on the "failure_reason" field.
+func FailureReasonEqualFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEqualFold(FieldFailureReason, v))
+}
+
+// FailureReasonContainsFold applies the ContainsFold predicate on the "failure_reason" field.
+func FailureReasonContainsFold(v string) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldContainsFold(FieldFailureReason, v))
 }
 
 // And groups predicates with the AND operator between them.

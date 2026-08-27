@@ -1,48 +1,58 @@
 # RFC 012 public acceptance
 
 This is an opt-in, non-weakened acceptance suite. It uses real public HTTP,
-PostgreSQL 16, `cmd/devstack`, and `cmd/dev-product-mcp`. It is build-tagged so
-normal unit tests do not silently substitute mocks for missing broker behavior.
+PostgreSQL 16, `cmd/devstack`, the real `cmd/server`, and
+`cmd/dev-product-mcp`. It is build-tagged so normal unit tests do not silently
+substitute mocks for missing broker behavior.
 
-Run it with:
+## One-command run
+
+From `apps/rowboat-api`:
 
 ```sh
-go test -tags=rfc012acceptance ./integration -run TestRFC012PublicContract -v
+./integration/rfc012/postgres16.sh
 ```
 
-Required environment is declared by the test's `mustEnv` calls. In particular,
-provide tenant A, tenant B, and unentitled service JWTs plus deliberately wrong
-audience, expired, and missing-scope resource JWTs. Point both services at the
-same disposable PostgreSQL 16 database with `pgcrypto` enabled. Drop that
-database after the run.
+The runner:
+
+1. Builds all three real services.
+2. Creates an ephemeral RSA broker signing key.
+3. Starts a disposable PostgreSQL 16 container and enables `pgcrypto`.
+4. Applies the checked-in Atlas migrations with `AUTO_MIGRATE=false`.
+5. Starts the dev identity/Hydra fixture, rowboat-api, and the product MCP
+   resource server on dynamically allocated loopback ports.
+6. Mints three signed tenant JWTs through devstack.
+7. Runs the build-tagged public HTTP acceptance test.
+8. Stops every process and removes the disposable PostgreSQL container.
+
+Service logs and the test transcript are written below `JCODE_SCRATCH_DIR`
+when it is set, otherwise below the operating-system temporary directory. The
+runner prints the artifact path on success and on failure.
+
+The lower-level test can also be run directly after providing every environment
+variable enforced by its `mustEnv` calls:
+
+```sh
+go test -tags=rfc012acceptance ./integration \
+  -run TestRFC012PublicContract -count=1 -v
+```
 
 ## Assertions covered
 
-- JWT-authenticated list, start, callback, claim, resource-token mint, disconnect
-- SHA-256-only state storage, callback scope escalation denial, callback/claim replay denial
-- entitlement denial before start and before mint
-- audience-bound, scoped resource token with a maximum 15 minute lifetime
-- product MCP 401 wrong audience/expired, 403 missing scope, 428 approval challenge
-- successful approval retry and denial of approval reuse
+- JWT-authenticated list, start, callback, claim, resource-token mint, and disconnect
+- SHA-256-only state storage, callback scope-escalation denial, and callback/claim replay denial
+- entitlement denial before consent and before token mint
+- audience-bound, scoped resource tokens with a maximum 15-minute lifetime
+- product MCP rejection for wrong audience, expiration, and missing scope
+- product-owned HTTP 428 approval challenge, successful retry, and denial of approval reuse
 - cross-tenant connection isolation
-- upstream revoke result, local tombstone, broker and product audit
-- no provider/API credential fields in public connector output or audit metadata
+- upstream revocation result, local tombstone, broker audit, and product audit
+- no provider API key, access-token, or refresh-token fields in public output or audit metadata
 
-## Current contract blockers
+## Production boundary
 
-The suite deliberately reports these as failures rather than relaxing checks:
-
-1. A devstack authorization-code fixture must support `success` (exact requested
-   scopes) and `scope-escalation` (requested scopes plus an extra scope).
-2. The public mint response must expose `expires_in` and `scope`, and its JWT must
-   carry RFC 012 actor claims including connection and organization IDs.
-3. The runner must discover the claimed connection ID from a supported public
-   response and export `RFC012_CONNECTION_ID`. Until that public identifier is
-   returned, the harness cannot safely infer it across tenants.
-4. Product approval issuance/introspection is product-owned. The harness seeds a
-   hashed, five-minute fixture directly in the disposable product database, then
-   exercises the approval exclusively through public MCP HTTP.
-5. Entitlement-before-mint requires fixture-only public transitions. Export
-   `RFC012_ENTITLEMENT_DOWNGRADE_URL` and `RFC012_ENTITLEMENT_RESTORE_URL`; the
-   test requires both endpoints, performs the downgrade, asserts mint returns
-   403, and restores the disposable fixture. Their absence is a hard failure.
+The acceptance fixture deliberately replaces only external identity, Hydra, and
+product systems. It does not mock rowboat-api, PostgreSQL transaction behavior,
+connector persistence, JWT verification, scope enforcement, entitlement checks,
+or product MCP authorization. Production deployments still use the RFC 012
+Hydra, consent, WorkOS, KMS, secret-management, and incident-runbook artifacts.

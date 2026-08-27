@@ -43,3 +43,4 @@ c23e31af95badd639d2fd3605275dfa8491a5b0d:apps/rowboat-api/internal/openapidoc/en
 c23e31af95badd639d2fd3605275dfa8491a5b0d:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:878
 ad4ea23d79a1a5788233ae8eb3e84e60632bd3b1:apps/copilot/README.md:curl-auth-header:45
 10f76ef49f6f14cf9658b49963aef338f6bcd4d2:apps/rowboat/package.json:github-fine-grained-pat:41
+6500289db435205b46118f9d7bd5f0d412d9d589:charts/hydra/secrets.example.yaml:generic-api-key:11

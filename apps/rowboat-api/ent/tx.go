@@ -54,6 +54,8 @@ type Tx struct {
 	CommitmentDependency *CommitmentDependencyClient
 	// CommitmentEvent is the client for interacting with the CommitmentEvent builders.
 	CommitmentEvent *CommitmentEventClient
+	// ConnectorAuditEvent is the client for interacting with the ConnectorAuditEvent builders.
+	ConnectorAuditEvent *ConnectorAuditEventClient
 	// ConversationIntelligenceArtifact is the client for interacting with the ConversationIntelligenceArtifact builders.
 	ConversationIntelligenceArtifact *ConversationIntelligenceArtifactClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
@@ -314,6 +316,7 @@ func (tx *Tx) init() {
 	tx.Commitment = NewCommitmentClient(tx.config)
 	tx.CommitmentDependency = NewCommitmentDependencyClient(tx.config)
 	tx.CommitmentEvent = NewCommitmentEventClient(tx.config)
+	tx.ConnectorAuditEvent = NewConnectorAuditEventClient(tx.config)
 	tx.ConversationIntelligenceArtifact = NewConversationIntelligenceArtifactClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)
 	tx.Entity = NewEntityClient(tx.config)

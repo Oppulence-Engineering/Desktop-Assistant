@@ -37,9 +37,23 @@ func (MCPConnection) Fields() []ent.Field {
 		field.Strings("scopes").Optional(),
 		field.Bytes("refresh_token_encrypted").Optional().Sensitive(), // Ory-issued, rotated on use
 		field.Bytes("api_key_encrypted").Optional().Sensitive(),       // vendor-issued (api_key connectors)
+		field.String("status").Default("active").Validate(oneOf(
+			"mcp connection status",
+			"active",
+			"reauth_required",
+			"revoking",
+			"revoked",
+			"invalidated",
+			"error",
+		)),
 		field.Time("connected_at").Optional(),
 		field.Time("last_used_at").Optional(),
 		field.Time("expires_at").Optional(), // refresh-token / api-key expiry
+		field.Time("revoked_at").Optional(),
+		field.String("revoked_reason").Optional(),
+		field.String("revoked_by").Optional(),
+		field.Time("revocation_attempted_at").Optional(),
+		field.Bool("revocation_succeeded").Optional(),
 	}
 }
 
@@ -54,5 +68,7 @@ func (MCPConnection) Edges() []ent.Edge {
 func (MCPConnection) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("connector").Edges("user").Unique(),
+		index.Fields("status"),
+		index.Fields("connector", "status"),
 	}
 }

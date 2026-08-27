@@ -32,6 +32,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -303,6 +304,21 @@ func (_c *UserCreate) AddMcpConnections(v ...*MCPConnection) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddMcpConnectionIDs(ids...)
+}
+
+// AddConnectorAuditEventIDs adds the "connector_audit_events" edge to the ConnectorAuditEvent entity by IDs.
+func (_c *UserCreate) AddConnectorAuditEventIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddConnectorAuditEventIDs(ids...)
+	return _c
+}
+
+// AddConnectorAuditEvents adds the "connector_audit_events" edges to the ConnectorAuditEvent entity.
+func (_c *UserCreate) AddConnectorAuditEvents(v ...*ConnectorAuditEvent) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddConnectorAuditEventIDs(ids...)
 }
 
 // AddBackgroundTaskIDs adds the "background_tasks" edge to the BackgroundTask entity by IDs.
@@ -1418,6 +1434,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpconnection.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ConnectorAuditEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConnectorAuditEventsTable,
+			Columns: []string{user.ConnectorAuditEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(connectorauditevent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

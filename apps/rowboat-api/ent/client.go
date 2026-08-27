@@ -38,6 +38,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -141,6 +142,8 @@ type Client struct {
 	CommitmentDependency *CommitmentDependencyClient
 	// CommitmentEvent is the client for interacting with the CommitmentEvent builders.
 	CommitmentEvent *CommitmentEventClient
+	// ConnectorAuditEvent is the client for interacting with the ConnectorAuditEvent builders.
+	ConnectorAuditEvent *ConnectorAuditEventClient
 	// ConversationIntelligenceArtifact is the client for interacting with the ConversationIntelligenceArtifact builders.
 	ConversationIntelligenceArtifact *ConversationIntelligenceArtifactClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
@@ -286,6 +289,7 @@ func (c *Client) init() {
 	c.Commitment = NewCommitmentClient(c.config)
 	c.CommitmentDependency = NewCommitmentDependencyClient(c.config)
 	c.CommitmentEvent = NewCommitmentEventClient(c.config)
+	c.ConnectorAuditEvent = NewConnectorAuditEventClient(c.config)
 	c.ConversationIntelligenceArtifact = NewConversationIntelligenceArtifactClient(c.config)
 	c.CreditLedger = NewCreditLedgerClient(c.config)
 	c.Entity = NewEntityClient(c.config)
@@ -491,6 +495,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Commitment:                        NewCommitmentClient(cfg),
 		CommitmentDependency:              NewCommitmentDependencyClient(cfg),
 		CommitmentEvent:                   NewCommitmentEventClient(cfg),
+		ConnectorAuditEvent:               NewConnectorAuditEventClient(cfg),
 		ConversationIntelligenceArtifact:  NewConversationIntelligenceArtifactClient(cfg),
 		CreditLedger:                      NewCreditLedgerClient(cfg),
 		Entity:                            NewEntityClient(cfg),
@@ -585,6 +590,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Commitment:                        NewCommitmentClient(cfg),
 		CommitmentDependency:              NewCommitmentDependencyClient(cfg),
 		CommitmentEvent:                   NewCommitmentEventClient(cfg),
+		ConnectorAuditEvent:               NewConnectorAuditEventClient(cfg),
 		ConversationIntelligenceArtifact:  NewConversationIntelligenceArtifactClient(cfg),
 		CreditLedger:                      NewCreditLedgerClient(cfg),
 		Entity:                            NewEntityClient(cfg),
@@ -673,24 +679,25 @@ func (c *Client) Use(hooks ...Hook) {
 		c.AgentToolResultBlob, c.AgentTurn, c.ApprovalToken, c.BackgroundTask,
 		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
 		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
-		c.CommitmentDependency, c.CommitmentEvent, c.ConversationIntelligenceArtifact,
-		c.CreditLedger, c.Entity, c.EntityIdentifier, c.EntityResourceRef,
-		c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
-		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
-		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
-		c.OAuthConnectionHistory, c.OAuthPending, c.Person, c.PersonAttribute,
-		c.PersonIdentity, c.PersonInteractionStat, c.PersonMergeCandidate,
-		c.PersonSuppression, c.PolicyDecisionSnapshot, c.Relationship,
-		c.RelationshipAssertion, c.RelationshipAttentionItem, c.RelationshipIdentity,
-		c.RelationshipIdentityCandidate, c.RelationshipIdentityDecision,
-		c.RelationshipLineageEvent, c.RelationshipObservation,
-		c.RelationshipParticipant, c.RelationshipProjectionJob,
-		c.RelationshipReviewAcknowledgement, c.RelationshipSourceStatus,
-		c.RelationshipStateSnapshot, c.RevenueAction, c.RevenueActionRevision,
-		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent,
-		c.RevenueTrustEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
-		c.Subscription, c.SubscriptionHistory, c.TenantEvidenceKey, c.User,
-		c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem, c.WorkspaceFeatureControl,
+		c.CommitmentDependency, c.CommitmentEvent, c.ConnectorAuditEvent,
+		c.ConversationIntelligenceArtifact, c.CreditLedger, c.Entity,
+		c.EntityIdentifier, c.EntityResourceRef, c.GoogleWatch, c.LLMUsage,
+		c.LLMUsageHistory, c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache,
+		c.MailMessageMeta, c.MailSignal, c.MailThread, c.MeetingMinuteUsage,
+		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending, c.Person,
+		c.PersonAttribute, c.PersonIdentity, c.PersonInteractionStat,
+		c.PersonMergeCandidate, c.PersonSuppression, c.PolicyDecisionSnapshot,
+		c.Relationship, c.RelationshipAssertion, c.RelationshipAttentionItem,
+		c.RelationshipIdentity, c.RelationshipIdentityCandidate,
+		c.RelationshipIdentityDecision, c.RelationshipLineageEvent,
+		c.RelationshipObservation, c.RelationshipParticipant,
+		c.RelationshipProjectionJob, c.RelationshipReviewAcknowledgement,
+		c.RelationshipSourceStatus, c.RelationshipStateSnapshot, c.RevenueAction,
+		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
+		c.RevenueOutboxEvent, c.RevenueTrustEvent, c.RevenueWorkspace,
+		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory,
+		c.TenantEvidenceKey, c.User, c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem,
+		c.WorkspaceFeatureControl,
 	} {
 		n.Use(hooks...)
 	}
@@ -705,24 +712,25 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.AgentToolResultBlob, c.AgentTurn, c.ApprovalToken, c.BackgroundTask,
 		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
 		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
-		c.CommitmentDependency, c.CommitmentEvent, c.ConversationIntelligenceArtifact,
-		c.CreditLedger, c.Entity, c.EntityIdentifier, c.EntityResourceRef,
-		c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
-		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
-		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
-		c.OAuthConnectionHistory, c.OAuthPending, c.Person, c.PersonAttribute,
-		c.PersonIdentity, c.PersonInteractionStat, c.PersonMergeCandidate,
-		c.PersonSuppression, c.PolicyDecisionSnapshot, c.Relationship,
-		c.RelationshipAssertion, c.RelationshipAttentionItem, c.RelationshipIdentity,
-		c.RelationshipIdentityCandidate, c.RelationshipIdentityDecision,
-		c.RelationshipLineageEvent, c.RelationshipObservation,
-		c.RelationshipParticipant, c.RelationshipProjectionJob,
-		c.RelationshipReviewAcknowledgement, c.RelationshipSourceStatus,
-		c.RelationshipStateSnapshot, c.RevenueAction, c.RevenueActionRevision,
-		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent,
-		c.RevenueTrustEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
-		c.Subscription, c.SubscriptionHistory, c.TenantEvidenceKey, c.User,
-		c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem, c.WorkspaceFeatureControl,
+		c.CommitmentDependency, c.CommitmentEvent, c.ConnectorAuditEvent,
+		c.ConversationIntelligenceArtifact, c.CreditLedger, c.Entity,
+		c.EntityIdentifier, c.EntityResourceRef, c.GoogleWatch, c.LLMUsage,
+		c.LLMUsageHistory, c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache,
+		c.MailMessageMeta, c.MailSignal, c.MailThread, c.MeetingMinuteUsage,
+		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending, c.Person,
+		c.PersonAttribute, c.PersonIdentity, c.PersonInteractionStat,
+		c.PersonMergeCandidate, c.PersonSuppression, c.PolicyDecisionSnapshot,
+		c.Relationship, c.RelationshipAssertion, c.RelationshipAttentionItem,
+		c.RelationshipIdentity, c.RelationshipIdentityCandidate,
+		c.RelationshipIdentityDecision, c.RelationshipLineageEvent,
+		c.RelationshipObservation, c.RelationshipParticipant,
+		c.RelationshipProjectionJob, c.RelationshipReviewAcknowledgement,
+		c.RelationshipSourceStatus, c.RelationshipStateSnapshot, c.RevenueAction,
+		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
+		c.RevenueOutboxEvent, c.RevenueTrustEvent, c.RevenueWorkspace,
+		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory,
+		c.TenantEvidenceKey, c.User, c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem,
+		c.WorkspaceFeatureControl,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -773,6 +781,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.CommitmentDependency.mutate(ctx, m)
 	case *CommitmentEventMutation:
 		return c.CommitmentEvent.mutate(ctx, m)
+	case *ConnectorAuditEventMutation:
+		return c.ConnectorAuditEvent.mutate(ctx, m)
 	case *ConversationIntelligenceArtifactMutation:
 		return c.ConversationIntelligenceArtifact.mutate(ctx, m)
 	case *CreditLedgerMutation:
@@ -4609,6 +4619,156 @@ func (c *CommitmentEventClient) mutate(ctx context.Context, m *CommitmentEventMu
 		return (&CommitmentEventDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CommitmentEvent mutation op: %q", m.Op())
+	}
+}
+
+// ConnectorAuditEventClient is a client for the ConnectorAuditEvent schema.
+type ConnectorAuditEventClient struct {
+	config
+}
+
+// NewConnectorAuditEventClient returns a client for the ConnectorAuditEvent from the given config.
+func NewConnectorAuditEventClient(c config) *ConnectorAuditEventClient {
+	return &ConnectorAuditEventClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `connectorauditevent.Hooks(f(g(h())))`.
+func (c *ConnectorAuditEventClient) Use(hooks ...Hook) {
+	c.hooks.ConnectorAuditEvent = append(c.hooks.ConnectorAuditEvent, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `connectorauditevent.Intercept(f(g(h())))`.
+func (c *ConnectorAuditEventClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ConnectorAuditEvent = append(c.inters.ConnectorAuditEvent, interceptors...)
+}
+
+// Create returns a builder for creating a ConnectorAuditEvent entity.
+func (c *ConnectorAuditEventClient) Create() *ConnectorAuditEventCreate {
+	mutation := newConnectorAuditEventMutation(c.config, OpCreate)
+	return &ConnectorAuditEventCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ConnectorAuditEvent entities.
+func (c *ConnectorAuditEventClient) CreateBulk(builders ...*ConnectorAuditEventCreate) *ConnectorAuditEventCreateBulk {
+	return &ConnectorAuditEventCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ConnectorAuditEventClient) MapCreateBulk(slice any, setFunc func(*ConnectorAuditEventCreate, int)) *ConnectorAuditEventCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ConnectorAuditEventCreateBulk{err: fmt.Errorf("calling to ConnectorAuditEventClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ConnectorAuditEventCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ConnectorAuditEventCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ConnectorAuditEvent.
+func (c *ConnectorAuditEventClient) Update() *ConnectorAuditEventUpdate {
+	mutation := newConnectorAuditEventMutation(c.config, OpUpdate)
+	return &ConnectorAuditEventUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ConnectorAuditEventClient) UpdateOne(_m *ConnectorAuditEvent) *ConnectorAuditEventUpdateOne {
+	mutation := newConnectorAuditEventMutation(c.config, OpUpdateOne, withConnectorAuditEvent(_m))
+	return &ConnectorAuditEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ConnectorAuditEventClient) UpdateOneID(id uuid.UUID) *ConnectorAuditEventUpdateOne {
+	mutation := newConnectorAuditEventMutation(c.config, OpUpdateOne, withConnectorAuditEventID(id))
+	return &ConnectorAuditEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ConnectorAuditEvent.
+func (c *ConnectorAuditEventClient) Delete() *ConnectorAuditEventDelete {
+	mutation := newConnectorAuditEventMutation(c.config, OpDelete)
+	return &ConnectorAuditEventDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ConnectorAuditEventClient) DeleteOne(_m *ConnectorAuditEvent) *ConnectorAuditEventDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ConnectorAuditEventClient) DeleteOneID(id uuid.UUID) *ConnectorAuditEventDeleteOne {
+	builder := c.Delete().Where(connectorauditevent.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ConnectorAuditEventDeleteOne{builder}
+}
+
+// Query returns a query builder for ConnectorAuditEvent.
+func (c *ConnectorAuditEventClient) Query() *ConnectorAuditEventQuery {
+	return &ConnectorAuditEventQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeConnectorAuditEvent},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ConnectorAuditEvent entity by its id.
+func (c *ConnectorAuditEventClient) Get(ctx context.Context, id uuid.UUID) (*ConnectorAuditEvent, error) {
+	return c.Query().Where(connectorauditevent.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ConnectorAuditEventClient) GetX(ctx context.Context, id uuid.UUID) *ConnectorAuditEvent {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a ConnectorAuditEvent.
+func (c *ConnectorAuditEventClient) QueryUser(_m *ConnectorAuditEvent) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(connectorauditevent.Table, connectorauditevent.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, connectorauditevent.UserTable, connectorauditevent.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ConnectorAuditEventClient) Hooks() []Hook {
+	hooks := c.hooks.ConnectorAuditEvent
+	return append(hooks[:len(hooks):len(hooks)], connectorauditevent.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *ConnectorAuditEventClient) Interceptors() []Interceptor {
+	return c.inters.ConnectorAuditEvent
+}
+
+func (c *ConnectorAuditEventClient) mutate(ctx context.Context, m *ConnectorAuditEventMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ConnectorAuditEventCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ConnectorAuditEventUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ConnectorAuditEventUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ConnectorAuditEventDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ConnectorAuditEvent mutation op: %q", m.Op())
 	}
 }
 
@@ -14357,6 +14517,22 @@ func (c *UserClient) QueryMcpConnections(_m *User) *MCPConnectionQuery {
 	return query
 }
 
+// QueryConnectorAuditEvents queries the connector_audit_events edge of a User.
+func (c *UserClient) QueryConnectorAuditEvents(_m *User) *ConnectorAuditEventQuery {
+	query := (&ConnectorAuditEventClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(connectorauditevent.Table, connectorauditevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ConnectorAuditEventsTable, user.ConnectorAuditEventsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryBackgroundTasks queries the background_tasks edge of a User.
 func (c *UserClient) QueryBackgroundTasks(_m *User) *BackgroundTaskQuery {
 	query := (&BackgroundTaskClient{config: c.config}).Query()
@@ -15901,22 +16077,22 @@ type (
 		AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
-		CommitmentDependency, CommitmentEvent, ConversationIntelligenceArtifact,
-		CreditLedger, Entity, EntityIdentifier, EntityResourceRef, GoogleWatch,
-		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
-		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
-		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
-		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,
-		RelationshipAttentionItem, RelationshipIdentity, RelationshipIdentityCandidate,
-		RelationshipIdentityDecision, RelationshipLineageEvent,
-		RelationshipObservation, RelationshipParticipant, RelationshipProjectionJob,
-		RelationshipReviewAcknowledgement, RelationshipSourceStatus,
-		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
-		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
-		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		TenantEvidenceKey, User, UserHistory, VoiceAPIKey, VoiceSyncItem,
-		WorkspaceFeatureControl []ent.Hook
+		CommitmentDependency, CommitmentEvent, ConnectorAuditEvent,
+		ConversationIntelligenceArtifact, CreditLedger, Entity, EntityIdentifier,
+		EntityResourceRef, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
+		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailSignal, MailThread,
+		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		Person, PersonAttribute, PersonIdentity, PersonInteractionStat,
+		PersonMergeCandidate, PersonSuppression, PolicyDecisionSnapshot, Relationship,
+		RelationshipAssertion, RelationshipAttentionItem, RelationshipIdentity,
+		RelationshipIdentityCandidate, RelationshipIdentityDecision,
+		RelationshipLineageEvent, RelationshipObservation, RelationshipParticipant,
+		RelationshipProjectionJob, RelationshipReviewAcknowledgement,
+		RelationshipSourceStatus, RelationshipStateSnapshot, RevenueAction,
+		RevenueActionRevision, RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent,
+		RevenueTrustEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
+		SubscriptionHistory, TenantEvidenceKey, User, UserHistory, VoiceAPIKey,
+		VoiceSyncItem, WorkspaceFeatureControl []ent.Hook
 	}
 	inters struct {
 		ActionOutcome, ActionProposal, AgentApproval, AgentDefinition,
@@ -15924,21 +16100,21 @@ type (
 		AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
-		CommitmentDependency, CommitmentEvent, ConversationIntelligenceArtifact,
-		CreditLedger, Entity, EntityIdentifier, EntityResourceRef, GoogleWatch,
-		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
-		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
-		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
-		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,
-		RelationshipAttentionItem, RelationshipIdentity, RelationshipIdentityCandidate,
-		RelationshipIdentityDecision, RelationshipLineageEvent,
-		RelationshipObservation, RelationshipParticipant, RelationshipProjectionJob,
-		RelationshipReviewAcknowledgement, RelationshipSourceStatus,
-		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
-		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
-		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		TenantEvidenceKey, User, UserHistory, VoiceAPIKey, VoiceSyncItem,
-		WorkspaceFeatureControl []ent.Interceptor
+		CommitmentDependency, CommitmentEvent, ConnectorAuditEvent,
+		ConversationIntelligenceArtifact, CreditLedger, Entity, EntityIdentifier,
+		EntityResourceRef, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
+		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailSignal, MailThread,
+		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		Person, PersonAttribute, PersonIdentity, PersonInteractionStat,
+		PersonMergeCandidate, PersonSuppression, PolicyDecisionSnapshot, Relationship,
+		RelationshipAssertion, RelationshipAttentionItem, RelationshipIdentity,
+		RelationshipIdentityCandidate, RelationshipIdentityDecision,
+		RelationshipLineageEvent, RelationshipObservation, RelationshipParticipant,
+		RelationshipProjectionJob, RelationshipReviewAcknowledgement,
+		RelationshipSourceStatus, RelationshipStateSnapshot, RevenueAction,
+		RevenueActionRevision, RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent,
+		RevenueTrustEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
+		SubscriptionHistory, TenantEvidenceKey, User, UserHistory, VoiceAPIKey,
+		VoiceSyncItem, WorkspaceFeatureControl []ent.Interceptor
 	}
 )

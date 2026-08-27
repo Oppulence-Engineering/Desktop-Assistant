@@ -31,6 +31,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -292,6 +293,21 @@ func (_u *UserUpdate) AddMcpConnections(v ...*MCPConnection) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddMcpConnectionIDs(ids...)
+}
+
+// AddConnectorAuditEventIDs adds the "connector_audit_events" edge to the ConnectorAuditEvent entity by IDs.
+func (_u *UserUpdate) AddConnectorAuditEventIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddConnectorAuditEventIDs(ids...)
+	return _u
+}
+
+// AddConnectorAuditEvents adds the "connector_audit_events" edges to the ConnectorAuditEvent entity.
+func (_u *UserUpdate) AddConnectorAuditEvents(v ...*ConnectorAuditEvent) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConnectorAuditEventIDs(ids...)
 }
 
 // AddBackgroundTaskIDs adds the "background_tasks" edge to the BackgroundTask entity by IDs.
@@ -1326,6 +1342,27 @@ func (_u *UserUpdate) RemoveMcpConnections(v ...*MCPConnection) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMcpConnectionIDs(ids...)
+}
+
+// ClearConnectorAuditEvents clears all "connector_audit_events" edges to the ConnectorAuditEvent entity.
+func (_u *UserUpdate) ClearConnectorAuditEvents() *UserUpdate {
+	_u.mutation.ClearConnectorAuditEvents()
+	return _u
+}
+
+// RemoveConnectorAuditEventIDs removes the "connector_audit_events" edge to ConnectorAuditEvent entities by IDs.
+func (_u *UserUpdate) RemoveConnectorAuditEventIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveConnectorAuditEventIDs(ids...)
+	return _u
+}
+
+// RemoveConnectorAuditEvents removes "connector_audit_events" edges to ConnectorAuditEvent entities.
+func (_u *UserUpdate) RemoveConnectorAuditEvents(v ...*ConnectorAuditEvent) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConnectorAuditEventIDs(ids...)
 }
 
 // ClearBackgroundTasks clears all "background_tasks" edges to the BackgroundTask entity.
@@ -2983,6 +3020,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpconnection.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConnectorAuditEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConnectorAuditEventsTable,
+			Columns: []string{user.ConnectorAuditEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(connectorauditevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConnectorAuditEventsIDs(); len(nodes) > 0 && !_u.mutation.ConnectorAuditEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConnectorAuditEventsTable,
+			Columns: []string{user.ConnectorAuditEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(connectorauditevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConnectorAuditEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConnectorAuditEventsTable,
+			Columns: []string{user.ConnectorAuditEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(connectorauditevent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -5774,6 +5856,21 @@ func (_u *UserUpdateOne) AddMcpConnections(v ...*MCPConnection) *UserUpdateOne {
 	return _u.AddMcpConnectionIDs(ids...)
 }
 
+// AddConnectorAuditEventIDs adds the "connector_audit_events" edge to the ConnectorAuditEvent entity by IDs.
+func (_u *UserUpdateOne) AddConnectorAuditEventIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddConnectorAuditEventIDs(ids...)
+	return _u
+}
+
+// AddConnectorAuditEvents adds the "connector_audit_events" edges to the ConnectorAuditEvent entity.
+func (_u *UserUpdateOne) AddConnectorAuditEvents(v ...*ConnectorAuditEvent) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConnectorAuditEventIDs(ids...)
+}
+
 // AddBackgroundTaskIDs adds the "background_tasks" edge to the BackgroundTask entity by IDs.
 func (_u *UserUpdateOne) AddBackgroundTaskIDs(ids ...uuid.UUID) *UserUpdateOne {
 	_u.mutation.AddBackgroundTaskIDs(ids...)
@@ -6806,6 +6903,27 @@ func (_u *UserUpdateOne) RemoveMcpConnections(v ...*MCPConnection) *UserUpdateOn
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMcpConnectionIDs(ids...)
+}
+
+// ClearConnectorAuditEvents clears all "connector_audit_events" edges to the ConnectorAuditEvent entity.
+func (_u *UserUpdateOne) ClearConnectorAuditEvents() *UserUpdateOne {
+	_u.mutation.ClearConnectorAuditEvents()
+	return _u
+}
+
+// RemoveConnectorAuditEventIDs removes the "connector_audit_events" edge to ConnectorAuditEvent entities by IDs.
+func (_u *UserUpdateOne) RemoveConnectorAuditEventIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveConnectorAuditEventIDs(ids...)
+	return _u
+}
+
+// RemoveConnectorAuditEvents removes "connector_audit_events" edges to ConnectorAuditEvent entities.
+func (_u *UserUpdateOne) RemoveConnectorAuditEvents(v ...*ConnectorAuditEvent) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConnectorAuditEventIDs(ids...)
 }
 
 // ClearBackgroundTasks clears all "background_tasks" edges to the BackgroundTask entity.
@@ -8493,6 +8611,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpconnection.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConnectorAuditEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConnectorAuditEventsTable,
+			Columns: []string{user.ConnectorAuditEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(connectorauditevent.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConnectorAuditEventsIDs(); len(nodes) > 0 && !_u.mutation.ConnectorAuditEventsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConnectorAuditEventsTable,
+			Columns: []string{user.ConnectorAuditEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(connectorauditevent.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConnectorAuditEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConnectorAuditEventsTable,
+			Columns: []string{user.ConnectorAuditEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(connectorauditevent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

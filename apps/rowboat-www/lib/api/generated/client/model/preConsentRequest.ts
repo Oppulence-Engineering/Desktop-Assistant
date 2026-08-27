@@ -7,24 +7,19 @@
  */
 
 /**
- * Ory pre-consent webhook payload mapped by ops.
+ * Strict oauth-consent context request bound to one Hydra challenge and pending connector flow.
  */
 export interface PreConsentRequest {
-  /**
-   * Connector slug.
-   * @nullable
-   */
-  connector?: string | null;
-  /**
-   * Requested token audience. Used to resolve connector when connector is absent.
-   * @nullable
-   */
-  requested_audience: string | null;
-  /**
-   * Fallback subject/user id from Ory.
-   * @nullable
-   */
-  subject?: string | null;
+  /** Hydra consent challenge. */
+  challenge: string;
+  /** Hydra client id. Must match the configured Rowboat Desktop broker client. */
+  hydra_client_id: string;
+  /** Exactly one requested connector audience. */
+  requested_audience: string[];
+  /** Exact non-empty connector scope set requested from the catalog. */
+  requested_scopes: string[];
+  /** Hook contract version. Only version 1 is accepted. */
+  version: number;
   /** WorkOS user id used to resolve bearer tokens into local users. */
-  workos_user_id?: string;
+  workos_user_id: string;
 }

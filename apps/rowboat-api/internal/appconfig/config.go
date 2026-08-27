@@ -95,6 +95,9 @@ type Config struct {
 	// deferred service-token / broker modes are promoted.
 	ServiceTokenIssuer     string        // iss of first-party signed service tokens
 	BrokerTokenIssuer      string        // iss of broker-minted connector resource tokens
+	BrokerTokenPrivateKey  string        // RSA private key PEM used only to mint connector resource tokens
+	BrokerTokenKeyID       string        // stable JWKS kid for the active broker signing key
+	BrokerTokenTTL         time.Duration // short product-token lifetime; RFC 012 caps this at 15m
 	StepUpRecentAuthWindow time.Duration // recent-auth window for RequireStepUp
 
 	// WorkOS (user-metadata enrichment on first sight + sign-in broker).
@@ -127,7 +130,9 @@ type Config struct {
 	PublicBaseURL string
 
 	// ConnectorsJSON optionally overrides the built-in connector registry.
-	ConnectorsJSON string
+	ConnectorsJSON             string
+	ConnectorEmergencyDisabled []string
+	ConnectorRedirectAllowlist []string
 
 	// Shared-secret HMAC for /oauth-hooks/* (called by Ory, not users).
 	HookHMACSecret string
@@ -676,6 +681,9 @@ func Load() Config {
 		// classification works the moment those token modes are enabled.
 		ServiceTokenIssuer:     getenv("SERVICE_TOKEN_ISSUER", "rowboat-internal"),
 		BrokerTokenIssuer:      getenv("BROKER_TOKEN_ISSUER", "rowboat-broker"),
+		BrokerTokenPrivateKey:  getenvAllowEmpty("BROKER_TOKEN_PRIVATE_KEY_PEM", ""),
+		BrokerTokenKeyID:       getenv("BROKER_TOKEN_KEY_ID", "rowboat-broker-1"),
+		BrokerTokenTTL:         getdur("BROKER_TOKEN_TTL", 5*time.Minute),
 		StepUpRecentAuthWindow: getdur("STEPUP_RECENT_AUTH_WINDOW", 15*time.Minute),
 
 		WorkOSAPIKey:           getenv("WORKOS_API_KEY", ""),
@@ -685,12 +693,14 @@ func Load() Config {
 		// Default to the WorkOS client id so WorkOS-direct needs only WORKOS_CLIENT_ID.
 		OAuthClientID: getenv("OAUTH_CLIENT_ID", getenv("WORKOS_CLIENT_ID", "")),
 
-		OryPublicURL:          getenv("ORY_PUBLIC_URL", "https://oauth.solomon-ai.co"),
-		OryAdminURL:           getenv("ORY_ADMIN_URL", ""),
-		OryBrokerClientID:     getenv("ORY_BROKER_CLIENT_ID", ""),
-		OryBrokerClientSecret: getenv("ORY_BROKER_CLIENT_SECRET", ""),
-		PublicBaseURL:         getenv("PUBLIC_BASE_URL", "https://api.x.solomon-ai.co"),
-		ConnectorsJSON:        getenv("CONNECTORS_JSON", ""),
+		OryPublicURL:               getenv("ORY_PUBLIC_URL", "https://oauth.solomon-ai.co"),
+		OryAdminURL:                getenv("ORY_ADMIN_URL", ""),
+		OryBrokerClientID:          getenv("ORY_BROKER_CLIENT_ID", ""),
+		OryBrokerClientSecret:      getenv("ORY_BROKER_CLIENT_SECRET", ""),
+		PublicBaseURL:              getenv("PUBLIC_BASE_URL", "https://api.x.solomon-ai.co"),
+		ConnectorsJSON:             getenv("CONNECTORS_JSON", ""),
+		ConnectorEmergencyDisabled: getcsv("CONNECTOR_EMERGENCY_DISABLED", ""),
+		ConnectorRedirectAllowlist: getcsv("CONNECTOR_REDIRECT_ALLOWLIST", ""),
 
 		HookHMACSecret:    getenv("HOOK_HMAC_SECRET", ""),
 		InternalAPISecret: getenv("INTERNAL_API_SECRET", ""),

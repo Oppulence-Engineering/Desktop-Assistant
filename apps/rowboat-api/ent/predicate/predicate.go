@@ -69,6 +69,9 @@ type CommitmentDependency func(*sql.Selector)
 // CommitmentEvent is the predicate function for commitmentevent builders.
 type CommitmentEvent func(*sql.Selector)
 
+// ConnectorAuditEvent is the predicate function for connectorauditevent builders.
+type ConnectorAuditEvent func(*sql.Selector)
+
 // ConversationIntelligenceArtifact is the predicate function for conversationintelligenceartifact builders.
 type ConversationIntelligenceArtifact func(*sql.Selector)
 

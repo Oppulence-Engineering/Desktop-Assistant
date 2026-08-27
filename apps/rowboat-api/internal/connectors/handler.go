@@ -2,8 +2,11 @@ package connectors
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -12,7 +15,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectormetrics"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
@@ -27,17 +32,34 @@ type Config struct {
 	OryBrokerClientSecret string
 	PublicBaseURL         string
 	DeepLinkScheme        string
+	RedirectAllowlist     []string
 }
 
 // Handler serves the connector + connection endpoints.
 type Handler struct {
-	client   *ent.Client
-	sealer   *crypto.Sealer
-	registry *Registry
-	ory      *oryClient
-	cfg      Config
-	log      *zap.Logger
-	refresh  refreshDeduper
+	client         *ent.Client
+	sealer         *crypto.Sealer
+	registry       *Registry
+	resourceTokens ResourceTokenIssuer
+	ory            *oryClient
+	cfg            Config
+	log            *zap.Logger
+	refresh        refreshDeduper
+}
+
+// SetResourceTokenIssuer configures the RS256 broker key used for short-lived
+// product tokens. Provider access tokens and API keys remain server-side.
+func (h *Handler) SetResourceTokenIssuer(issuer ResourceTokenIssuer) {
+	h.resourceTokens = issuer
+}
+
+// BrokerJWKS publishes the public key used by RFC 012 product resource servers.
+func (h *Handler) BrokerJWKS(w http.ResponseWriter, _ *http.Request) {
+	if h.resourceTokens == nil {
+		httpx.Error(w, http.StatusServiceUnavailable, "connector resource token issuer is not configured", "broker_unconfigured")
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, h.resourceTokens.JWKS())
 }
 
 // SetRefreshDedup enables sealed result caching and cross-replica locking for
@@ -75,27 +97,36 @@ func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
 // populated by Callback after a successful code exchange and consumed by the
 // authenticated Claim step.
 type connectPending struct {
-	Connector    string `json:"connector"`
-	Verifier     string `json:"code_verifier"`
-	WorkOSUserID string `json:"workos_user_id"`
-	RefreshToken string `json:"refresh_token,omitempty"`
-	Scope        string `json:"scope,omitempty"`
+	Connector       string   `json:"connector"`
+	Verifier        string   `json:"code_verifier"`
+	WorkOSUserID    string   `json:"workos_user_id"`
+	OrgID           string   `json:"org_id,omitempty"`
+	RedirectTarget  string   `json:"redirect_target"`
+	RequestedScopes []string `json:"requested_scopes"`
+	RefreshToken    string   `json:"refresh_token,omitempty"`
+	GrantedScopes   []string `json:"granted_scopes,omitempty"`
 }
 
 type connectorView struct {
-	Name           string                     `json:"name"`
-	DisplayName    string                     `json:"displayName"`
-	Description    string                     `json:"description"`
-	MCPURL         string                     `json:"mcpUrl"`
-	Transport      string                     `json:"transport,omitempty"`
-	AuthType       string                     `json:"authType"`
-	Scopes         []string                   `json:"scopes,omitempty"`
-	IconURL        string                     `json:"iconUrl,omitempty"`
-	MCPTools       []MCPToolPolicy            `json:"mcpTools,omitempty"`
-	NativeTools    []MCPToolPolicy            `json:"nativeTools,omitempty"`
-	TemplateBlocks []IntegrationTemplateBlock `json:"templateBlocks,omitempty"`
-	Connected      bool                       `json:"connected"`
-	ConnectedAt    string                     `json:"connectedAt,omitempty"`
+	Name            string                     `json:"name"`
+	DisplayName     string                     `json:"displayName"`
+	Description     string                     `json:"description"`
+	MCPURL          string                     `json:"mcpUrl"`
+	Transport       string                     `json:"transport,omitempty"`
+	AuthType        string                     `json:"authType"`
+	Audience        string                     `json:"audience"`
+	Status          string                     `json:"status"`
+	Health          string                     `json:"health"`
+	AvailableScopes []ScopeDefinition          `json:"availableScopes,omitempty"`
+	GrantedScopes   []ScopeDefinition          `json:"grantedScopes,omitempty"`
+	IconURL         string                     `json:"iconUrl,omitempty"`
+	MCPTools        []MCPToolPolicy            `json:"mcpTools,omitempty"`
+	NativeTools     []MCPToolPolicy            `json:"nativeTools,omitempty"`
+	TemplateBlocks  []IntegrationTemplateBlock `json:"templateBlocks,omitempty"`
+	Connected       bool                       `json:"connected"`
+	ConnectedAt     string                     `json:"connectedAt,omitempty"`
+	LastUsedAt      string                     `json:"lastUsedAt,omitempty"`
+	RevokedAt       string                     `json:"revokedAt,omitempty"`
 }
 
 // List handles GET /v1/connectors.
@@ -119,13 +150,21 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	for _, c := range h.registry.List() {
 		v := connectorView{
 			Name: c.Name, DisplayName: c.DisplayName, Description: c.Description,
-			MCPURL: c.MCPURL, Transport: c.Transport, AuthType: c.AuthType, Scopes: c.Scopes, IconURL: c.IconURL,
+			MCPURL: c.MCPURL, Transport: c.Transport, AuthType: c.AuthType, Audience: c.Audience,
+			Status: h.registry.EffectiveStatus(c.Name), Health: c.Health, AvailableScopes: h.registry.AvailableScopes(c.Name), IconURL: c.IconURL,
 			MCPTools: c.MCPTools, NativeTools: c.NativeTools, TemplateBlocks: c.TemplateBlocks,
 		}
 		if mc, ok := connected[c.Name]; ok {
-			v.Connected = true
+			v.Connected = mc.Status == "active" && h.registry.Enabled(c.Name)
+			v.GrantedScopes = h.registry.definitionsForScopes(c.Name, mc.Scopes)
 			if !mc.ConnectedAt.IsZero() {
 				v.ConnectedAt = mc.ConnectedAt.UTC().Format(time.RFC3339)
+			}
+			if !mc.LastUsedAt.IsZero() {
+				v.LastUsedAt = mc.LastUsedAt.UTC().Format(time.RFC3339)
+			}
+			if !mc.RevokedAt.IsZero() {
+				v.RevokedAt = mc.RevokedAt.UTC().Format(time.RFC3339)
 			}
 		}
 		views = append(views, v)
@@ -150,6 +189,48 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "connector does not use the oauth flow", "unsupported_auth_type")
 		return
 	}
+	if !h.registry.Enabled(name) {
+		connectormetrics.Lifecycle.WithLabelValues(name, "start", "disabled").Inc()
+		h.appendAudit(r.Context(), u, auditRecord{EventType: "oauth_start_rejected", Connector: name, Audience: c.Audience, Reason: "connector_disabled"})
+		httpx.Error(w, http.StatusServiceUnavailable, "connector is disabled", "connector_disabled")
+		return
+	}
+	var req struct {
+		RequestedScopes      []string `json:"requestedScopes"`
+		RequestedScopesSnake []string `json:"requested_scopes"`
+		RedirectTarget       string   `json:"redirectTarget"`
+		RedirectAfter        string   `json:"redirect_after"`
+	}
+	if r.Body != nil && r.ContentLength != 0 {
+		if !httpx.DecodeJSON(w, r, 1<<16, &req) {
+			return
+		}
+	}
+	if len(req.RequestedScopes) == 0 {
+		req.RequestedScopes = req.RequestedScopesSnake
+	}
+	if req.RedirectTarget == "" {
+		req.RedirectTarget = req.RedirectAfter
+	}
+	requestedScopes, err := h.registry.validateRequestedScopes(name, req.RequestedScopes)
+	if err != nil {
+		connectormetrics.Lifecycle.WithLabelValues(name, "start", "invalid_scope").Inc()
+		h.appendAudit(r.Context(), u, auditRecord{EventType: "oauth_start_rejected", Connector: name, Audience: c.Audience, Requested: req.RequestedScopes, Reason: "invalid_scope"})
+		httpx.Error(w, http.StatusBadRequest, err.Error(), "invalid_scope")
+		return
+	}
+	redirectTarget, err := h.validateRedirectTarget(req.RedirectTarget)
+	if err != nil {
+		h.appendAudit(r.Context(), u, auditRecord{EventType: "oauth_start_rejected", Connector: name, Audience: c.Audience, Requested: requestedScopes, Reason: "invalid_redirect_target"})
+		httpx.Error(w, http.StatusBadRequest, err.Error(), "invalid_redirect_target")
+		return
+	}
+	if allowed, reason := h.isEntitled(r.Context(), u, c, requestedScopes); !allowed {
+		connectormetrics.Lifecycle.WithLabelValues(name, "start", "entitlement_denied").Inc()
+		h.appendAudit(r.Context(), u, auditRecord{EventType: "oauth_start_rejected", Connector: name, Audience: c.Audience, Requested: requestedScopes, Reason: reason})
+		httpx.Error(w, http.StatusForbidden, "connector entitlement denied", reason)
+		return
+	}
 
 	state, err1 := randomToken(32)
 	verifier, err2 := randomToken(48)
@@ -157,27 +238,67 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "could not generate state", "internal_error")
 		return
 	}
-	payload, _ := json.Marshal(connectPending{Connector: name, Verifier: verifier, WorkOSUserID: u.WorkosUserID})
+	payload, _ := json.Marshal(connectPending{Connector: name, Verifier: verifier, WorkOSUserID: u.WorkosUserID, OrgID: u.WorkosOrgID, RedirectTarget: redirectTarget, RequestedScopes: requestedScopes})
 	sealed, err := h.sealer.Seal(payload)
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "could not seal state", "internal_error")
 		return
 	}
-	if err := h.client.OAuthPending.Create().
-		SetState(state).
+	stateHash := hashState(state)
+	create := h.client.OAuthPending.Create().
+		SetState("sha256:" + stateHash).
+		SetStateHash(stateHash).
 		SetProvider(name).
 		SetPayloadEncrypted(sealed).
 		SetExpiresAt(time.Now().Add(10 * time.Minute)).
-		Exec(r.Context()); err != nil {
+		SetLifecycleStatus("started").
+		SetOwnerWorkosUserID(u.WorkosUserID).
+		SetRequestedScopes(requestedScopes).
+		SetRedirectTarget(redirectTarget)
+	if u.WorkosOrgID != "" {
+		create.SetOwnerOrgID(u.WorkosOrgID)
+	}
+	if err := create.Exec(r.Context()); err != nil {
 		h.log.Error("persist pending", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not start connection", "internal_error")
 		return
 	}
 
 	redirectURI := strings.TrimRight(h.cfg.PublicBaseURL, "/") + "/v1/connections/" + name + "/callback"
-	scope := strings.Join(append([]string{"offline_access"}, c.Scopes...), " ")
+	scope := strings.Join(append([]string{"offline_access"}, requestedScopes...), " ")
 	authURL := h.ory.authorizeURL(redirectURI, scope, state, codeChallengeS256(verifier), c.Audience)
-	httpx.WriteJSON(w, http.StatusOK, map[string]string{"authorize_url": authURL})
+	connectormetrics.Lifecycle.WithLabelValues(name, "start", "success").Inc()
+	h.appendAudit(r.Context(), u, auditRecord{EventType: "oauth_started", Connector: name, Audience: c.Audience, Requested: requestedScopes})
+	httpx.WriteJSON(w, http.StatusOK, map[string]string{
+		"authorization_url": authURL,
+		"authorize_url":     authURL,
+		"expires_at":        time.Now().Add(10 * time.Minute).UTC().Format(time.RFC3339),
+	})
+}
+
+func hashState(state string) string {
+	sum := sha256.Sum256([]byte(state))
+	return hex.EncodeToString(sum[:])
+}
+
+func (h *Handler) validateRedirectTarget(raw string) (string, error) {
+	if strings.TrimSpace(raw) == "" {
+		raw = h.cfg.DeepLinkScheme + "://connection-complete"
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme == "" || u.Host == "" || u.User != nil || u.Fragment != "" {
+		return "", fmt.Errorf("redirectTarget must be an absolute allowlisted deep link")
+	}
+	u.RawQuery = ""
+	normalized := strings.TrimRight(u.String(), "/")
+	allowlist := append([]string(nil), h.cfg.RedirectAllowlist...)
+	allowlist = append(allowlist, h.cfg.DeepLinkScheme+"://connection-complete")
+	for _, allowed := range allowlist {
+		if strings.EqualFold(normalized, strings.TrimRight(strings.TrimSpace(allowed), "/")) {
+			return normalized, nil
+		}
+	}
+	return "", fmt.Errorf("redirectTarget is not allowlisted")
 }
 
 // Callback handles GET /v1/connections/{name}/callback. This is the browser
@@ -193,29 +314,19 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
 	q := r.URL.Query()
 	state := q.Get("state")
-
-	if oauthErr := q.Get("error"); oauthErr != "" {
-		h.deepLink(w, r, name, "error", state)
-		return
-	}
 	code := q.Get("code")
-	if code == "" || state == "" {
+	if state == "" || (code == "" && q.Get("error") == "") {
 		httpx.Error(w, http.StatusBadRequest, "missing code or state", "bad_request")
 		return
 	}
 
 	ctx := r.Context()
-	pending, err := h.client.OAuthPending.Query().Where(oauthpending.StateEQ(state)).Only(ctx)
+	pending, err := h.client.OAuthPending.Query().Where(oauthpending.StateHashEQ(hashState(state))).Only(auth.WithInternal(ctx))
 	if err != nil {
+		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "replay_or_invalid").Inc()
 		httpx.Error(w, http.StatusBadRequest, "invalid or expired state", "bad_request")
 		return
 	}
-	if time.Now().After(pending.ExpiresAt) {
-		h.deleteTicket(ctx, pending)
-		h.deepLink(w, r, name, "error", state)
-		return
-	}
-
 	plain, err := h.sealer.Open(pending.PayloadEncrypted)
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "could not read state", "internal_error")
@@ -226,34 +337,82 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "state/connector mismatch", "bad_request")
 		return
 	}
+	owner, _ := h.client.User.Query().Where(user.WorkosUserIDEQ(cp.WorkOSUserID)).Only(auth.WithInternal(ctx))
+	if pending.LifecycleStatus != "started" {
+		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "replay").Inc()
+		h.appendAudit(ctx, owner, auditRecord{EventType: "oauth_callback_rejected", Connector: name, Requested: cp.RequestedScopes, Reason: "replay"})
+		httpx.Error(w, http.StatusConflict, "oauth callback already consumed", "replay")
+		return
+	}
+	if !h.registry.Enabled(name) {
+		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("connector_disabled").Exec(ctx)
+		h.appendAudit(ctx, owner, auditRecord{EventType: "oauth_callback_failed", Connector: name, Requested: cp.RequestedScopes, Reason: "connector_disabled"})
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
+		return
+	}
+	if time.Now().After(pending.ExpiresAt) {
+		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("expired").Exec(ctx)
+		h.appendAudit(ctx, owner, auditRecord{EventType: "oauth_callback_failed", Connector: name, Requested: cp.RequestedScopes, Reason: "expired"})
+		h.deleteTicket(ctx, pending)
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
+		return
+	}
+	if oauthErr := q.Get("error"); oauthErr != "" {
+		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("oauth_denied").Exec(ctx)
+		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "oauth_denied").Inc()
+		h.appendAudit(ctx, owner, auditRecord{EventType: "oauth_callback_failed", Connector: name, Requested: cp.RequestedScopes, Reason: "oauth_denied"})
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
+		return
+	}
+	if err := pending.Update().Where(oauthpending.LifecycleStatusEQ("started")).SetLifecycleStatus("callback_processing").Exec(ctx); err != nil {
+		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "replay").Inc()
+		httpx.Error(w, http.StatusConflict, "oauth callback already in progress", "replay")
+		return
+	}
 
 	redirectURI := strings.TrimRight(h.cfg.PublicBaseURL, "/") + "/v1/connections/" + name + "/callback"
 	tok, err := h.ory.exchange(ctx, code, redirectURI, cp.Verifier)
 	if err != nil {
 		h.log.Warn("token exchange failed", zap.String("connector", name), zap.Error(err))
-		h.deepLink(w, r, name, "error", state)
+		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("token_exchange_failed").Exec(ctx)
+		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "exchange_failed").Inc()
+		h.appendAudit(ctx, owner, auditRecord{EventType: "oauth_callback_failed", Connector: name, Requested: cp.RequestedScopes, Reason: "token_exchange_failed"})
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
+		return
+	}
+	granted, err := validateGrantedScopes(cp.RequestedScopes, strings.Fields(tok.Scope))
+	if err != nil {
+		if tok.RefreshToken != "" {
+			_ = h.ory.revoke(ctx, tok.RefreshToken)
+		}
+		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("scope_escalation").Exec(ctx)
+		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "scope_escalation").Inc()
+		h.appendAudit(ctx, owner, auditRecord{EventType: "oauth_callback_failed", Connector: name, Requested: cp.RequestedScopes, Reason: "scope_escalation"})
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
 		return
 	}
 
 	// Park the grant in the ticket for the authenticated Claim step.
 	cp.RefreshToken = tok.RefreshToken
-	cp.Scope = tok.Scope
+	cp.GrantedScopes = granted
 	resealed, mErr := json.Marshal(cp)
 	if mErr != nil {
-		h.deepLink(w, r, name, "error", state)
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
 		return
 	}
 	sealed, sErr := h.sealer.Seal(resealed)
 	if sErr != nil {
-		h.deepLink(w, r, name, "error", state)
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
 		return
 	}
-	if uErr := pending.Update().SetPayloadEncrypted(sealed).Exec(ctx); uErr != nil {
+	if uErr := pending.Update().Where(oauthpending.LifecycleStatusEQ("callback_processing")).SetPayloadEncrypted(sealed).SetLifecycleStatus("callback_completed").SetCallbackAt(time.Now().UTC()).Exec(ctx); uErr != nil {
 		h.log.Error("park connector grant", zap.Error(uErr))
-		h.deepLink(w, r, name, "error", state)
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
 		return
 	}
-	h.deepLink(w, r, name, "success", state)
+	connectormetrics.Lifecycle.WithLabelValues(name, "callback", "success").Inc()
+	h.appendAudit(ctx, owner, auditRecord{EventType: "oauth_callback_completed", Connector: name, Requested: cp.RequestedScopes, Granted: granted})
+	h.deepLinkTo(w, r, cp.RedirectTarget, name, "success", state)
 }
 
 // Claim handles POST /v1/connections/{name}/claim. The desktop calls it (with
@@ -285,8 +444,9 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	pending, err := h.client.OAuthPending.Query().Where(oauthpending.StateEQ(req.State)).Only(ctx)
+	pending, err := h.client.OAuthPending.Query().Where(oauthpending.StateHashEQ(hashState(req.State))).Only(ctx)
 	if err != nil {
+		connectormetrics.Lifecycle.WithLabelValues(name, "claim", "replay_or_expired").Inc()
 		httpx.Error(w, http.StatusNotFound, "ticket not found or already used", "ticket_expired")
 		return
 	}
@@ -307,6 +467,15 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "state/connector mismatch", "bad_request")
 		return
 	}
+	if pending.LifecycleStatus != "callback_completed" {
+		if pending.LifecycleStatus == "started" || pending.LifecycleStatus == "callback_processing" {
+			httpx.Error(w, http.StatusConflict, "connection not ready", "not_ready")
+			return
+		}
+		connectormetrics.Lifecycle.WithLabelValues(name, "claim", "replay").Inc()
+		httpx.Error(w, http.StatusConflict, "ticket already consumed", "replay")
+		return
+	}
 	// Ownership: only the user who STARTED the flow may claim it.
 	if cp.WorkOSUserID != u.WorkosUserID {
 		// Do NOT consume the ticket on a wrong-user rejection, so a probe can't
@@ -320,14 +489,39 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusConflict, "connection not ready", "not_ready")
 		return
 	}
+	if !h.registry.Enabled(name) {
+		httpx.Error(w, http.StatusServiceUnavailable, "connector is disabled", "connector_disabled")
+		return
+	}
+	if !isSubset(cp.GrantedScopes, cp.RequestedScopes) {
+		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("scope_escalation").Exec(ctx)
+		h.appendAudit(ctx, u, auditRecord{EventType: "oauth_claim_rejected", Connector: name, Requested: cp.RequestedScopes, Granted: cp.GrantedScopes, Reason: "scope_escalation"})
+		httpx.Error(w, http.StatusBadRequest, "granted scopes exceed requested scopes", "scope_escalation")
+		return
+	}
+	if err := pending.Update().Where(oauthpending.LifecycleStatusEQ("callback_completed")).SetLifecycleStatus("claimed").SetClaimedAt(time.Now().UTC()).Exec(ctx); err != nil {
+		connectormetrics.Lifecycle.WithLabelValues(name, "claim", "replay").Inc()
+		httpx.Error(w, http.StatusConflict, "ticket already consumed", "replay")
+		return
+	}
 
-	h.deleteTicket(ctx, pending) // single-use: consume on the terminal success path
-	if err := h.upsertConnection(auth.WithUser(ctx, u), u, c, &oryToken{RefreshToken: cp.RefreshToken, Scope: cp.Scope}); err != nil {
+	connection, err := h.upsertConnection(auth.WithUser(ctx, u), u, c, cp.RefreshToken, cp.GrantedScopes)
+	if err != nil {
 		h.log.Error("persist connection", zap.Error(err))
+		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("connection_persist_failed").Exec(ctx)
 		httpx.Error(w, http.StatusInternalServerError, "could not persist connection", "internal_error")
 		return
 	}
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{"connected": true})
+	h.appendAudit(ctx, u, auditRecord{EventType: "oauth_claimed", Connector: name, ConnectionID: connection.ID, Audience: c.Audience, Requested: cp.RequestedScopes, Granted: cp.GrantedScopes})
+	connectormetrics.Lifecycle.WithLabelValues(name, "claim", "success").Inc()
+	h.deleteTicket(ctx, pending)
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{
+		"connected":    true,
+		"connectionId": connection.ID.String(),
+		"connector":    name,
+		"audience":     c.Audience,
+		"scopes":       cp.GrantedScopes,
+	})
 }
 
 // SetAPIKey handles POST /v1/connections/{name}/api-key for connectors that
@@ -348,6 +542,10 @@ func (h *Handler) SetAPIKey(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "connector does not use api key auth", "unsupported_auth_type")
 		return
 	}
+	if !h.registry.Enabled(name) {
+		httpx.Error(w, http.StatusServiceUnavailable, "connector is disabled", "connector_disabled")
+		return
+	}
 	var req struct {
 		APIKey string `json:"apiKey"`
 	}
@@ -358,11 +556,17 @@ func (h *Handler) SetAPIKey(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "missing apiKey", "bad_request")
 		return
 	}
-	if err := h.upsertAPIKeyConnection(auth.WithUser(r.Context(), u), u, c, strings.TrimSpace(req.APIKey)); err != nil {
+	if allowed, reason := h.isEntitled(r.Context(), u, c, c.Scopes); !allowed {
+		httpx.Error(w, http.StatusForbidden, "connector entitlement denied", reason)
+		return
+	}
+	connection, err := h.upsertAPIKeyConnection(auth.WithUser(r.Context(), u), u, c, strings.TrimSpace(req.APIKey))
+	if err != nil {
 		h.log.Error("persist api key connector", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not persist connection", "internal_error")
 		return
 	}
+	h.appendAudit(r.Context(), u, auditRecord{EventType: "api_key_connected", Connector: name, ConnectionID: connection.ID, Audience: c.Audience, Granted: c.Scopes})
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"connected": true})
 }
 
@@ -377,24 +581,23 @@ func (h *Handler) deleteTicket(ctx context.Context, pending *ent.OAuthPending) {
 	}
 }
 
-func (h *Handler) upsertConnection(ctx context.Context, u *ent.User, c Connector, tok *oryToken) error {
-	sealed, err := h.sealer.SealString(tok.RefreshToken)
+func (h *Handler) upsertConnection(ctx context.Context, u *ent.User, c Connector, refreshToken string, scopes []string) (*ent.MCPConnection, error) {
+	sealed, err := h.sealer.SealString(refreshToken)
 	if err != nil {
-		return err
-	}
-	scopes := strings.Fields(tok.Scope)
-	if len(scopes) == 0 {
-		scopes = c.Scopes
+		return nil, err
 	}
 	existing, err := h.client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ(c.Name)).Only(ctx)
 	switch {
 	case err == nil:
 		return existing.Update().
 			SetRefreshTokenEncrypted(sealed).
+			ClearAPIKeyEncrypted().
 			SetScopes(scopes).
 			SetAudience(c.Audience).
+			SetStatus("active").
 			SetConnectedAt(time.Now()).
-			Exec(ctx)
+			ClearRevokedAt().ClearRevokedReason().ClearRevokedBy().ClearRevocationAttemptedAt().ClearRevocationSucceeded().
+			Save(ctx)
 	case ent.IsNotFound(err):
 		return h.client.MCPConnection.Create().
 			SetUser(u).
@@ -402,17 +605,18 @@ func (h *Handler) upsertConnection(ctx context.Context, u *ent.User, c Connector
 			SetAudience(c.Audience).
 			SetScopes(scopes).
 			SetRefreshTokenEncrypted(sealed).
+			SetStatus("active").
 			SetConnectedAt(time.Now()).
-			Exec(ctx)
+			Save(ctx)
 	default:
-		return err
+		return nil, err
 	}
 }
 
-func (h *Handler) upsertAPIKeyConnection(ctx context.Context, u *ent.User, c Connector, apiKey string) error {
+func (h *Handler) upsertAPIKeyConnection(ctx context.Context, u *ent.User, c Connector, apiKey string) (*ent.MCPConnection, error) {
 	sealed, err := h.sealer.SealString(apiKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	existing, err := h.client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ(c.Name)).Only(ctx)
 	switch {
@@ -422,8 +626,10 @@ func (h *Handler) upsertAPIKeyConnection(ctx context.Context, u *ent.User, c Con
 			ClearRefreshTokenEncrypted().
 			SetScopes(c.Scopes).
 			SetAudience(c.Audience).
+			SetStatus("active").
 			SetConnectedAt(time.Now()).
-			Exec(ctx)
+			ClearRevokedAt().ClearRevokedReason().ClearRevokedBy().ClearRevocationAttemptedAt().ClearRevocationSucceeded().
+			Save(ctx)
 	case ent.IsNotFound(err):
 		return h.client.MCPConnection.Create().
 			SetUser(u).
@@ -431,10 +637,11 @@ func (h *Handler) upsertAPIKeyConnection(ctx context.Context, u *ent.User, c Con
 			SetAudience(c.Audience).
 			SetScopes(c.Scopes).
 			SetAPIKeyEncrypted(sealed).
+			SetStatus("active").
 			SetConnectedAt(time.Now()).
-			Exec(ctx)
+			Save(ctx)
 	default:
-		return err
+		return nil, err
 	}
 }
 
@@ -445,7 +652,6 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
 		return
 	}
-	_ = u
 	name := chi.URLParam(r, "name")
 	c, ok := h.registry.Get(name)
 	if !ok {
@@ -456,24 +662,68 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "connector uses server-side native tools, not MCP", "unsupported_transport")
 		return
 	}
+	if !h.registry.Enabled(name) {
+		connectormetrics.TokenMint.WithLabelValues(name, "connector_disabled").Inc()
+		httpx.Error(w, http.StatusServiceUnavailable, "connector is disabled", "connector_disabled")
+		return
+	}
+	var req struct {
+		Audience        string   `json:"audience"`
+		RequestedScopes []string `json:"requestedScopes"`
+	}
+	if r.Body != nil && r.ContentLength != 0 {
+		if !httpx.DecodeJSON(w, r, 1<<16, &req) {
+			return
+		}
+	}
 	ctx := r.Context()
 	mc, err := h.client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ(name)).Only(ctx)
 	if err != nil {
 		httpx.Error(w, http.StatusNotFound, "connector not connected", "not_connected")
 		return
 	}
+	if mc.Status != "active" || !mc.RevokedAt.IsZero() {
+		connectormetrics.TokenMint.WithLabelValues(name, "revoked").Inc()
+		httpx.Error(w, http.StatusGone, "connector connection is revoked", "connection_revoked")
+		return
+	}
+	audience := strings.TrimSpace(req.Audience)
+	if audience == "" {
+		audience = c.Audience
+	}
+	if audience != c.Audience || audience != mc.Audience {
+		connectormetrics.TokenMint.WithLabelValues(name, "audience_mismatch").Inc()
+		h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Reason: "audience_mismatch"})
+		httpx.Error(w, http.StatusBadRequest, "requested audience does not match connection", "audience_mismatch")
+		return
+	}
+	requestedScopes := req.RequestedScopes
+	if len(requestedScopes) == 0 {
+		requestedScopes = append([]string(nil), mc.Scopes...)
+	}
+	validatedScopes, scopeErr := h.registry.validateRequestedScopes(name, requestedScopes)
+	if scopeErr != nil || !isSubset(validatedScopes, mc.Scopes) {
+		connectormetrics.TokenMint.WithLabelValues(name, "scope_not_granted").Inc()
+		h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Requested: requestedScopes, Granted: mc.Scopes, Reason: "scope_not_granted"})
+		httpx.Error(w, http.StatusForbidden, "requested scopes are not granted on this connection", "scope_not_granted")
+		return
+	}
+	if allowed, reason := h.isEntitled(ctx, u, c, validatedScopes); !allowed {
+		connectormetrics.TokenMint.WithLabelValues(name, "entitlement_denied").Inc()
+		h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Requested: validatedScopes, Reason: reason})
+		httpx.Error(w, http.StatusForbidden, "connector entitlement denied", reason)
+		return
+	}
 
-	// API-key connectors: return the stored vendor key directly.
+	// API-key connector credentials stay server-side. The desktop receives only
+	// a broker resource token accepted by the connector's MCP resource server.
 	if c.AuthType == "api_key" {
-		key, oErr := h.sealer.Open(mc.APIKeyEncrypted)
-		if oErr != nil {
+		if _, oErr := h.sealer.Open(mc.APIKeyEncrypted); oErr != nil {
 			httpx.Error(w, http.StatusInternalServerError, "could not read credential", "internal_error")
 			return
 		}
 		_ = mc.Update().SetLastUsedAt(time.Now()).Exec(ctx)
-		httpx.WriteJSON(w, http.StatusOK, map[string]any{
-			"access_token": string(key), "token_type": "Bearer", "mcpUrl": c.MCPURL,
-		})
+		h.writeResourceToken(ctx, w, u, c, mc, audience, validatedScopes)
 		return
 	}
 
@@ -489,22 +739,66 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 			httpx.Error(w, http.StatusTooManyRequests, "token refresh in progress; retry shortly", "refresh_in_progress")
 			return
 		}
+		status := "error"
+		code := "upstream_error"
+		if isOAuthErrorCode(err, "invalid_grant") {
+			status = "reauth_required"
+			code = "reauth_required"
+		}
+		_ = mc.Update().SetStatus(status).Exec(ctx)
 		h.log.Warn("mcp-token refresh failed", zap.String("connector", name), zap.Error(err))
-		httpx.Error(w, http.StatusBadGateway, "token refresh failed", "upstream_error")
+		httpx.Error(w, http.StatusBadGateway, "token refresh failed", code)
 		return
 	}
+	if tok.Scope != "" {
+		if _, err := validateGrantedScopes(validatedScopes, strings.Fields(tok.Scope)); err != nil {
+			connectormetrics.TokenMint.WithLabelValues(name, "scope_escalation").Inc()
+			h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Requested: validatedScopes, Reason: "scope_escalation"})
+			httpx.Error(w, http.StatusBadGateway, "upstream token scope mismatch", "scope_escalation")
+			return
+		}
+	}
+	h.writeResourceToken(ctx, w, u, c, mc, audience, validatedScopes)
+}
 
+func (h *Handler) writeResourceToken(ctx context.Context, w http.ResponseWriter, u *ent.User, c Connector, mc *ent.MCPConnection, audience string, scopes []string) {
+	if h.resourceTokens == nil {
+		connectormetrics.TokenMint.WithLabelValues(c.Name, "broker_unconfigured").Inc()
+		httpx.Error(w, http.StatusServiceUnavailable, "connector resource token issuer is not configured", "broker_unconfigured")
+		return
+	}
+	token, expiresAt, err := h.resourceTokens.Mint(ResourceTokenClaims{
+		UserID: u.WorkosUserID, OrganizationID: u.WorkosOrgID,
+		ConnectionID: mc.ID.String(), ConnectorID: c.Name, Audience: audience,
+		Scopes: scopes, TrustTier: trustTierForScopes(h.registry, c.Name, scopes),
+	})
+	if err != nil {
+		h.log.Error("mint connector resource token", zap.String("connector", c.Name), zap.Error(err))
+		connectormetrics.TokenMint.WithLabelValues(c.Name, "signing_failed").Inc()
+		httpx.Error(w, http.StatusInternalServerError, "could not mint connector resource token", "internal_error")
+		return
+	}
+	expiresIn := max(int64(time.Until(expiresAt).Seconds()), 1)
+	connectormetrics.TokenMint.WithLabelValues(c.Name, "success").Inc()
+	h.appendAudit(ctx, u, auditRecord{EventType: "token_minted", Connector: c.Name, ConnectionID: mc.ID, Audience: audience, Requested: scopes, Granted: mc.Scopes})
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{
-		"access_token": tok.AccessToken,
-		"token_type":   defaultStr(tok.TokenType, "Bearer"),
-		"expires_at":   time.Now().Add(time.Duration(tok.ExpiresIn) * time.Second).Unix(),
+		"access_token": token,
+		"token":        token,
+		"token_type":   "Bearer",
+		"expires_in":   expiresIn,
+		"expires_at":   expiresAt.Unix(),
+		"scope":        strings.Join(scopes, " "),
+		"scopes":       scopes,
 		"mcpUrl":       c.MCPURL,
+		"audience":     audience,
+		"connectionId": mc.ID.String(),
 	})
 }
 
 // Delete handles DELETE /v1/connections/{name}.
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	if _, ok := auth.UserFromCtx(r.Context()); !ok {
+	u, ok := auth.UserFromCtx(r.Context())
+	if !ok {
 		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
 		return
 	}
@@ -515,21 +809,18 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent) // idempotent
 		return
 	}
-	if len(mc.RefreshTokenEncrypted) > 0 {
-		if refresh, oErr := h.sealer.Open(mc.RefreshTokenEncrypted); oErr == nil {
-			if rErr := h.ory.revoke(ctx, string(refresh)); rErr != nil {
-				h.log.Warn("revoke at ory failed", zap.Error(rErr))
-			}
-		}
+	if connectionID := chi.URLParam(r, "connectionID"); connectionID != "" && connectionID != mc.ID.String() {
+		w.WriteHeader(http.StatusNoContent)
+		return
 	}
-	if err := h.client.MCPConnection.DeleteOne(mc).Exec(ctx); err != nil {
+	if err := h.revokeConnection(ctx, u, mc, "user_disconnect", "user", "revoked"); err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "could not disconnect", "internal_error")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *Handler) deepLink(w http.ResponseWriter, r *http.Request, connector, status, session string) {
+func (h *Handler) deepLinkTo(w http.ResponseWriter, r *http.Request, target, connector, status, session string) {
 	// URL-encode the query params: `connector` is a raw path segment (and on the
 	// error/expired branches is reflected before registry validation), so a
 	// crafted value containing `&`/`=` could otherwise inject extra params the
@@ -542,13 +833,10 @@ func (h *Handler) deepLink(w http.ResponseWriter, r *http.Request, connector, st
 		// endpoint to persist the connection.
 		q.Set("session", session)
 	}
-	target := h.cfg.DeepLinkScheme + "://connection-complete?" + q.Encode()
-	http.Redirect(w, r, target, http.StatusFound)
-}
-
-func defaultStr(v, def string) string {
-	if v == "" {
-		return def
+	if normalized, err := h.validateRedirectTarget(target); err == nil {
+		target = normalized
+	} else {
+		target = h.cfg.DeepLinkScheme + "://connection-complete"
 	}
-	return v
+	http.Redirect(w, r, target+"?"+q.Encode(), http.StatusFound)
 }

@@ -221,9 +221,10 @@ func (h *Handler) pendingForConsentContext(ctx context.Context, req preConsentRe
 		if !sameUniqueStringSet(pending.RequestedScopes, req.RequestedScopes) {
 			continue
 		}
-		if pending.ConsentChallenge == req.Challenge {
+		switch pending.ConsentChallenge {
+		case req.Challenge:
 			bound = append(bound, pending)
-		} else if pending.ConsentChallenge == "" {
+		case "":
 			unbound = append(unbound, pending)
 		}
 	}
@@ -482,14 +483,14 @@ func decodeStrictHookJSON(w http.ResponseWriter, r *http.Request, dst any) bool 
 	return true
 }
 
-func boundedValue(value string, max int) bool {
-	return value != "" && len(value) <= max && value == strings.TrimSpace(value)
+func boundedValue(value string, maxLen int) bool {
+	return value != "" && len(value) <= maxLen && value == strings.TrimSpace(value)
 }
 
-func uniqueBoundedValues(values []string, max int) bool {
+func uniqueBoundedValues(values []string, maxLen int) bool {
 	seen := make(map[string]struct{}, len(values))
 	for _, value := range values {
-		if !boundedValue(value, max) {
+		if !boundedValue(value, maxLen) {
 			return false
 		}
 		if _, duplicate := seen[value]; duplicate {
@@ -525,7 +526,7 @@ type invalidateRequest struct {
 }
 
 // Invalidate supports precise connection, user, org, connector, or combined
-// targeting. Every match becomes a revoked tombstone and retains semantic audit.
+// targeting. Every match becomes an invalidated tombstone and retains semantic audit.
 func (h *Handler) Invalidate(w http.ResponseWriter, r *http.Request) {
 	var req invalidateRequest
 	if !httpx.DecodeJSON(w, r, 1<<16, &req) {
@@ -579,7 +580,7 @@ func (h *Handler) Invalidate(w http.ResponseWriter, r *http.Request) {
 			failures++
 			continue
 		}
-		if err := h.revokeConnection(r.Context(), owner, connection, reason, "internal"); err != nil {
+		if err := h.revokeConnection(r.Context(), owner, connection, reason, "internal", "invalidated"); err != nil {
 			failures++
 			continue
 		}
@@ -588,11 +589,17 @@ func (h *Handler) Invalidate(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"invalidated": true, "matched": len(connections), "revoked": revoked, "failures": failures})
 }
 
-func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connection *ent.MCPConnection, reason, actor string) error {
-	if connection.Status == "revoked" {
+func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connection *ent.MCPConnection, reason, actor, finalStatus string) error {
+	if connection.Status == "revoked" || connection.Status == "invalidated" {
 		return nil
 	}
+	if finalStatus != "revoked" && finalStatus != "invalidated" {
+		return fmt.Errorf("unsupported connector terminal status %q", finalStatus)
+	}
 	now := time.Now().UTC()
+	if err := connection.Update().SetStatus("revoking").SetRevocationAttemptedAt(now).Exec(auth.WithUser(ctx, owner)); err != nil {
+		return fmt.Errorf("mark connector revoking: %w", err)
+	}
 	providerRevoked := true
 	if len(connection.RefreshTokenEncrypted) > 0 {
 		refresh, err := h.sealer.Open(connection.RefreshTokenEncrypted)
@@ -601,7 +608,7 @@ func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connect
 		}
 	}
 	update := connection.Update().
-		SetStatus("revoked").
+		SetStatus(finalStatus).
 		SetRevokedAt(now).
 		SetRevokedReason(reason).
 		SetRevokedBy(actor).
@@ -617,7 +624,7 @@ func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connect
 		outcome = "provider_failed"
 	}
 	connectormetrics.Revocation.WithLabelValues(connection.Connector, outcome).Inc()
-	h.appendAudit(ctx, owner, auditRecord{EventType: "connection_revoked", Connector: connection.Connector, ConnectionID: connection.ID, Audience: connection.Audience, Granted: connection.Scopes, Reason: reason, Metadata: map[string]any{"providerRevoked": providerRevoked, "actor": actor}})
+	h.appendAudit(ctx, owner, auditRecord{EventType: "connection_" + finalStatus, Connector: connection.Connector, ConnectionID: connection.ID, Audience: connection.Audience, Granted: connection.Scopes, Reason: reason, Metadata: map[string]any{"providerRevoked": providerRevoked, "actor": actor}})
 	return nil
 }
 

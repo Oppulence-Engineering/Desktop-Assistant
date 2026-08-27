@@ -106,7 +106,7 @@ func (d *refreshDeduper) refresh(ctx context.Context, connector string, mc *ent.
 		}
 
 		update := mc.Update().
-			Where(mcpconnection.RefreshTokenEncryptedEQ(mc.RefreshTokenEncrypted)).
+			Where(mcpconnection.RefreshTokenEncryptedEQ(mc.RefreshTokenEncrypted), mcpconnection.StatusEQ("active")).
 			SetLastUsedAt(time.Now().UTC())
 		if tok.RefreshToken != "" {
 			sealed, err := d.sealer.SealString(tok.RefreshToken)

@@ -27,6 +27,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -1324,6 +1325,46 @@ func init() {
 	commitmenteventDescID := commitmenteventMixinFields0[0].Descriptor()
 	// commitmentevent.DefaultID holds the default value on creation for the id field.
 	commitmentevent.DefaultID = commitmenteventDescID.Default.(func() uuid.UUID)
+	connectorauditeventMixin := schema.ConnectorAuditEvent{}.Mixin()
+	connectorauditevent.Policy = privacy.NewPolicies(connectorauditeventMixin[0], schema.ConnectorAuditEvent{})
+	connectorauditevent.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := connectorauditevent.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	connectorauditeventMixinFields0 := connectorauditeventMixin[0].Fields()
+	_ = connectorauditeventMixinFields0
+	connectorauditeventFields := schema.ConnectorAuditEvent{}.Fields()
+	_ = connectorauditeventFields
+	// connectorauditeventDescCreatedAt is the schema descriptor for created_at field.
+	connectorauditeventDescCreatedAt := connectorauditeventMixinFields0[1].Descriptor()
+	// connectorauditevent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	connectorauditevent.DefaultCreatedAt = connectorauditeventDescCreatedAt.Default.(func() time.Time)
+	// connectorauditeventDescUpdatedAt is the schema descriptor for updated_at field.
+	connectorauditeventDescUpdatedAt := connectorauditeventMixinFields0[2].Descriptor()
+	// connectorauditevent.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	connectorauditevent.DefaultUpdatedAt = connectorauditeventDescUpdatedAt.Default.(func() time.Time)
+	// connectorauditevent.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	connectorauditevent.UpdateDefaultUpdatedAt = connectorauditeventDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// connectorauditeventDescEventType is the schema descriptor for event_type field.
+	connectorauditeventDescEventType := connectorauditeventFields[0].Descriptor()
+	// connectorauditevent.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
+	connectorauditevent.EventTypeValidator = connectorauditeventDescEventType.Validators[0].(func(string) error)
+	// connectorauditeventDescConnector is the schema descriptor for connector field.
+	connectorauditeventDescConnector := connectorauditeventFields[2].Descriptor()
+	// connectorauditevent.ConnectorValidator is a validator for the "connector" field. It is called by the builders before save.
+	connectorauditevent.ConnectorValidator = connectorauditeventDescConnector.Validators[0].(func(string) error)
+	// connectorauditeventDescOwnerWorkosUserID is the schema descriptor for owner_workos_user_id field.
+	connectorauditeventDescOwnerWorkosUserID := connectorauditeventFields[4].Descriptor()
+	// connectorauditevent.OwnerWorkosUserIDValidator is a validator for the "owner_workos_user_id" field. It is called by the builders before save.
+	connectorauditevent.OwnerWorkosUserIDValidator = connectorauditeventDescOwnerWorkosUserID.Validators[0].(func(string) error)
+	// connectorauditeventDescID is the schema descriptor for id field.
+	connectorauditeventDescID := connectorauditeventMixinFields0[0].Descriptor()
+	// connectorauditevent.DefaultID holds the default value on creation for the id field.
+	connectorauditevent.DefaultID = connectorauditeventDescID.Default.(func() uuid.UUID)
 	conversationintelligenceartifactMixin := schema.ConversationIntelligenceArtifact{}.Mixin()
 	conversationintelligenceartifact.Policy = privacy.NewPolicies(conversationintelligenceartifactMixin[0], schema.ConversationIntelligenceArtifact{})
 	conversationintelligenceartifact.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -1738,6 +1779,12 @@ func init() {
 	mcpconnection.DefaultUpdatedAt = mcpconnectionDescUpdatedAt.Default.(func() time.Time)
 	// mcpconnection.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	mcpconnection.UpdateDefaultUpdatedAt = mcpconnectionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// mcpconnectionDescStatus is the schema descriptor for status field.
+	mcpconnectionDescStatus := mcpconnectionFields[5].Descriptor()
+	// mcpconnection.DefaultStatus holds the default value on creation for the status field.
+	mcpconnection.DefaultStatus = mcpconnectionDescStatus.Default.(string)
+	// mcpconnection.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	mcpconnection.StatusValidator = mcpconnectionDescStatus.Validators[0].(func(string) error)
 	// mcpconnectionDescID is the schema descriptor for id field.
 	mcpconnectionDescID := mcpconnectionMixinFields0[0].Descriptor()
 	// mcpconnection.DefaultID holds the default value on creation for the id field.
@@ -1770,6 +1817,10 @@ func init() {
 	mcpconnectionhistoryDescHistoryTime := mcpconnectionhistoryFields[1].Descriptor()
 	// mcpconnectionhistory.DefaultHistoryTime holds the default value on creation for the history_time field.
 	mcpconnectionhistory.DefaultHistoryTime = mcpconnectionhistoryDescHistoryTime.Default.(func() time.Time)
+	// mcpconnectionhistoryDescStatus is the schema descriptor for status field.
+	mcpconnectionhistoryDescStatus := mcpconnectionhistoryFields[9].Descriptor()
+	// mcpconnectionhistory.DefaultStatus holds the default value on creation for the status field.
+	mcpconnectionhistory.DefaultStatus = mcpconnectionhistoryDescStatus.Default.(string)
 	// mcpconnectionhistoryDescID is the schema descriptor for id field.
 	mcpconnectionhistoryDescID := mcpconnectionhistoryFields[0].Descriptor()
 	// mcpconnectionhistory.DefaultID holds the default value on creation for the id field.

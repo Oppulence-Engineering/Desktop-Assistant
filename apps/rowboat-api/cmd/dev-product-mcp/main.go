@@ -26,11 +26,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 	if err := db.PingContext(ctx); err != nil {
+		_ = db.Close()
 		log.Fatalf("postgres: %v", err)
 	}
 	if err := migrate(ctx, db); err != nil {
+		_ = db.Close()
 		log.Fatal(err)
 	}
 
@@ -40,8 +41,14 @@ func main() {
 		Audience: audience, AcceptableSkew: time.Second,
 	})
 	if err != nil {
+		_ = db.Close()
 		log.Fatal(err)
 	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("close postgres: %v", err)
+		}
+	}()
 	s := &server{db: db}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, 200, map[string]any{"ok": true}) })
@@ -54,7 +61,17 @@ func main() {
 	})(http.HandlerFunc(s.pay)))
 	addr := getenv("PRODUCT_MCP_ADDR", "127.0.0.1:18082")
 	log.Printf("dev product MCP listening on %s", addr)
-	log.Fatal(http.ListenAndServe(addr, mux))
+	httpServer := &http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+	if err := httpServer.ListenAndServe(); err != nil {
+		log.Printf("dev product MCP stopped: %v", err)
+	}
 }
 
 func migrate(ctx context.Context, db *sql.DB) error {
@@ -92,7 +109,7 @@ func (s *server) approve(r *http.Request, raw string, c *oauthrs.Claims) (bool, 
 	if err != nil {
 		return false, err
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 	res, err := tx.ExecContext(r.Context(), `UPDATE dev_product_approvals SET consumed_at=now()
  WHERE token_hash=encode(digest($1,'sha256'),'hex') AND connection_id=$2 AND action='pay'
  AND resource_id=$3 AND expires_at>now() AND consumed_at IS NULL`, raw, c.ConnectionID, resource)

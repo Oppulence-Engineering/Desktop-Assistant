@@ -261,6 +261,18 @@ func (f CommitmentEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommitmentEventMutation", m)
 }
 
+// The ConnectorAuditEventFunc type is an adapter to allow the use of ordinary
+// function as ConnectorAuditEvent mutator.
+type ConnectorAuditEventFunc func(context.Context, *ent.ConnectorAuditEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConnectorAuditEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConnectorAuditEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConnectorAuditEventMutation", m)
+}
+
 // The ConversationIntelligenceArtifactFunc type is an adapter to allow the use of ordinary
 // function as ConversationIntelligenceArtifact mutator.
 type ConversationIntelligenceArtifactFunc func(context.Context, *ent.ConversationIntelligenceArtifactMutation) (ent.Value, error)

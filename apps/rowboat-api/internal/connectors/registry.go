@@ -9,7 +9,10 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
+	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -25,13 +28,34 @@ type Connector struct {
 	Transport      string                     `json:"transport,omitempty"` // mcp (default) | native
 	AuthType       string                     `json:"authType"`            // "oauth" | "api_key"
 	Audience       string                     `json:"audience"`            // Ory token audience (e.g. canvas-api)
-	Scopes         []string                   `json:"scopes,omitempty"`
+	Scopes         []string                   `json:"-"`                   // derived canonical scope names
+	ScopeCatalog   []ScopeDefinition          `json:"scopes,omitempty"`
 	IconURL        string                     `json:"iconUrl,omitempty"`
 	PolicyURL      string                     `json:"policyUrl,omitempty"`
 	RequiredPlan   string                     `json:"requiredPlan,omitempty"`   // "" = available on all plans
+	Status         string                     `json:"status,omitempty"`         // enabled | maintenance | disabled
+	Health         string                     `json:"health,omitempty"`         // healthy | degraded | unavailable
+	Environments   []string                   `json:"environments,omitempty"`   // development | staging | production
 	MCPTools       []MCPToolPolicy            `json:"mcpTools,omitempty"`       // explicit upstream MCP allowlist
 	NativeTools    []MCPToolPolicy            `json:"nativeTools,omitempty"`    // server-side SDK capability allowlist
 	TemplateBlocks []IntegrationTemplateBlock `json:"templateBlocks,omitempty"` // onboarding capability blocks
+}
+
+// ScopeDefinition is the canonical consent and minting policy for one scope.
+// The same structured record is returned by the connector list and consent
+// context endpoints so clients never invent risk or consent copy.
+type ScopeDefinition struct {
+	Name                  string   `json:"name"`
+	DisplayName           string   `json:"displayName"`
+	Description           string   `json:"description"`
+	GrantTier             string   `json:"grantTier"` // required | optional
+	Risk                  string   `json:"risk"`      // low | medium | high | money-moving
+	Implies               []string `json:"implies,omitempty"`
+	ConflictsWith         []string `json:"conflictsWith,omitempty"`
+	StepUpRequired        bool     `json:"stepUpRequired,omitempty"`
+	PerInvocationApproval bool     `json:"perInvocationApproval,omitempty"`
+	RequiredPlan          string   `json:"requiredPlan,omitempty"`
+	Environments          []string `json:"environments,omitempty"`
 }
 
 // MCPToolPolicy allowlists one upstream tool exposed by a connector MCP server.
@@ -57,49 +81,103 @@ type IntegrationTemplateBlock struct {
 
 // Registry is an ordered, name-indexed connector set.
 type Registry struct {
-	ordered []Connector
-	byName  map[string]Connector
+	ordered     []Connector
+	byName      map[string]Connector
+	environment string
+	disabled    map[string]struct{}
 }
 
 // DefaultRegistry returns the built-in connector set.
 func DefaultRegistry() *Registry {
-	list, err := parseRegistry(defaultConnectorsJSON)
+	list, err := parseRegistry(defaultConnectorsJSON, "development")
 	if err != nil {
 		panic(fmt.Sprintf("invalid embedded connector registry: %v", err))
 	}
-	return newRegistry(list)
+	return newRegistry(list, "development", nil)
 }
 
 // LoadRegistry overlays a JSON connector list, or returns the default if empty.
 func LoadRegistry(data []byte) (*Registry, error) {
+	return LoadRegistryForEnvironment(data, "development", nil)
+}
+
+// LoadRegistryForEnvironment validates the complete catalog, applies the
+// selected environment, and records an operator emergency-disable allowlist.
+// Unknown disable entries fail boot instead of silently leaving a connector on.
+func LoadRegistryForEnvironment(data []byte, environment string, disabled []string) (*Registry, error) {
+	environment = normalizeEnvironment(environment)
 	if len(bytes.TrimSpace(data)) == 0 {
-		return DefaultRegistry(), nil
+		data = defaultConnectorsJSON
 	}
-	list, err := parseRegistry(data)
+	list, err := parseRegistry(data, environment)
 	if err != nil {
 		return nil, err
 	}
-	return newRegistry(list), nil
+	disabledSet := make(map[string]struct{}, len(disabled))
+	known := make(map[string]struct{}, len(list))
+	for _, c := range list {
+		known[c.Name] = struct{}{}
+	}
+	for _, raw := range disabled {
+		name := strings.TrimSpace(raw)
+		if name == "" {
+			continue
+		}
+		if _, ok := known[name]; !ok {
+			return nil, fmt.Errorf("emergency-disabled connector %q is not in the registry", name)
+		}
+		disabledSet[name] = struct{}{}
+	}
+	return newRegistry(list, environment, disabledSet), nil
 }
 
-func parseRegistry(data []byte) ([]Connector, error) {
+func parseRegistry(data []byte, environment string) ([]Connector, error) {
 	var list []Connector
-	if err := json.Unmarshal(data, &list); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&list); err != nil {
 		return nil, err
+	}
+	if err := dec.Decode(&struct{}{}); err != io.EOF {
+		return nil, fmt.Errorf("connector registry must contain exactly one JSON value")
+	}
+	if len(list) == 0 {
+		return nil, fmt.Errorf("connector registry must not be empty")
 	}
 	for i := range list {
 		if strings.TrimSpace(list[i].Transport) == "" {
 			list[i].Transport = "mcp"
 		}
+		if strings.TrimSpace(list[i].Status) == "" {
+			list[i].Status = "enabled"
+		}
+		if strings.TrimSpace(list[i].Health) == "" {
+			list[i].Health = "healthy"
+		}
+		if len(list[i].Environments) == 0 {
+			list[i].Environments = []string{"development", "staging", "production"}
+		}
+		for j := range list[i].ScopeCatalog {
+			if len(list[i].ScopeCatalog[j].Environments) == 0 {
+				list[i].ScopeCatalog[j].Environments = append([]string(nil), list[i].Environments...)
+			}
+		}
 	}
 	if err := validateRegistry(list); err != nil {
 		return nil, err
 	}
+	for i := range list {
+		list[i].Scopes = scopeNames(availableScopeDefinitions(list[i], environment))
+	}
 	return list, nil
 }
 
+var connectorNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_-]*$`)
+var scopeNamePattern = regexp.MustCompile(`^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*\.[a-z][a-z0-9_-]*$`)
+
 func validateRegistry(list []Connector) error {
 	seen := map[string]struct{}{}
+	audiences := map[string]string{}
 	for i, c := range list {
 		name := strings.TrimSpace(c.Name)
 		if name == "" {
@@ -109,6 +187,32 @@ func validateRegistry(list []Connector) error {
 			return fmt.Errorf("connector %q is duplicated", name)
 		}
 		seen[name] = struct{}{}
+		if !connectorNamePattern.MatchString(name) {
+			return fmt.Errorf("connector %q name must match %s", name, connectorNamePattern)
+		}
+		if strings.TrimSpace(c.DisplayName) == "" {
+			return fmt.Errorf("connector %q displayName is required", name)
+		}
+		audience := strings.TrimSpace(c.Audience)
+		if audience == "" {
+			return fmt.Errorf("connector %q audience is required", name)
+		}
+		if previous, ok := audiences[audience]; ok {
+			return fmt.Errorf("connector %q duplicates audience %q from connector %q", name, audience, previous)
+		}
+		audiences[audience] = name
+		if !validConnectorStatus(c.Status) {
+			return fmt.Errorf("connector %q has invalid status %q", name, c.Status)
+		}
+		if !validConnectorHealth(c.Health) {
+			return fmt.Errorf("connector %q has invalid health %q", name, c.Health)
+		}
+		if err := validateEnvironments("connector "+name, c.Environments); err != nil {
+			return err
+		}
+		if err := validateScopeCatalog(c); err != nil {
+			return err
+		}
 		authType := strings.TrimSpace(c.AuthType)
 		if authType != "oauth" && authType != "api_key" {
 			return fmt.Errorf("connector %q authType must be oauth or api_key", name)
@@ -161,6 +265,115 @@ func validateRegistry(list []Connector) error {
 	return nil
 }
 
+func validateScopeCatalog(c Connector) error {
+	seen := make(map[string]ScopeDefinition, len(c.ScopeCatalog))
+	for i, scope := range c.ScopeCatalog {
+		name := strings.TrimSpace(scope.Name)
+		if !scopeNamePattern.MatchString(name) || !strings.HasPrefix(name, c.Name+":") {
+			return fmt.Errorf("connector %q scopes[%d].name %q must be namespaced as %s:resource.action", c.Name, i, name, c.Name)
+		}
+		if _, ok := seen[name]; ok {
+			return fmt.Errorf("connector %q declares duplicate scope %q", c.Name, name)
+		}
+		if strings.TrimSpace(scope.DisplayName) == "" || strings.TrimSpace(scope.Description) == "" {
+			return fmt.Errorf("connector %q scope %q displayName and description are required", c.Name, name)
+		}
+		if scope.GrantTier != "required" && scope.GrantTier != "optional" {
+			return fmt.Errorf("connector %q scope %q grantTier must be required or optional", c.Name, name)
+		}
+		if !slices.Contains([]string{"low", "medium", "high", "money-moving"}, scope.Risk) {
+			return fmt.Errorf("connector %q scope %q has invalid risk %q", c.Name, name, scope.Risk)
+		}
+		if scope.Risk == "money-moving" && (!scope.StepUpRequired || !scope.PerInvocationApproval) {
+			return fmt.Errorf("connector %q money-moving scope %q requires stepUpRequired and perInvocationApproval", c.Name, name)
+		}
+		if scope.PerInvocationApproval && scope.Risk != "money-moving" {
+			return fmt.Errorf("connector %q scope %q may require per-invocation approval only for money-moving risk", c.Name, name)
+		}
+		if err := validateEnvironments("connector "+c.Name+" scope "+name, scope.Environments); err != nil {
+			return err
+		}
+		seen[name] = scope
+	}
+	for name, scope := range seen {
+		for _, implied := range scope.Implies {
+			if implied == name {
+				return fmt.Errorf("connector %q scope %q cannot imply itself", c.Name, name)
+			}
+			if _, ok := seen[implied]; !ok {
+				return fmt.Errorf("connector %q scope %q implies unknown scope %q", c.Name, name, implied)
+			}
+		}
+		for _, conflict := range scope.ConflictsWith {
+			other, ok := seen[conflict]
+			if !ok || conflict == name {
+				return fmt.Errorf("connector %q scope %q conflicts with invalid scope %q", c.Name, name, conflict)
+			}
+			if !slices.Contains(other.ConflictsWith, name) {
+				return fmt.Errorf("connector %q scope conflict %q <-> %q must be symmetric", c.Name, name, conflict)
+			}
+			if scope.GrantTier == "required" && other.GrantTier == "required" {
+				return fmt.Errorf("connector %q required scopes %q and %q conflict", c.Name, name, conflict)
+			}
+		}
+	}
+	return nil
+}
+
+func validateEnvironments(subject string, environments []string) error {
+	if len(environments) == 0 {
+		return fmt.Errorf("%s environments must not be empty", subject)
+	}
+	seen := map[string]struct{}{}
+	for _, environment := range environments {
+		if !slices.Contains([]string{"development", "staging", "production"}, environment) {
+			return fmt.Errorf("%s has invalid environment %q", subject, environment)
+		}
+		if _, ok := seen[environment]; ok {
+			return fmt.Errorf("%s duplicates environment %q", subject, environment)
+		}
+		seen[environment] = struct{}{}
+	}
+	return nil
+}
+
+func validConnectorStatus(status string) bool {
+	return slices.Contains([]string{"enabled", "maintenance", "disabled"}, status)
+}
+
+func validConnectorHealth(health string) bool {
+	return slices.Contains([]string{"healthy", "degraded", "unavailable"}, health)
+}
+
+func normalizeEnvironment(environment string) string {
+	switch strings.ToLower(strings.TrimSpace(environment)) {
+	case "prod", "production":
+		return "production"
+	case "stage", "staging":
+		return "staging"
+	default:
+		return "development"
+	}
+}
+
+func availableScopeDefinitions(c Connector, environment string) []ScopeDefinition {
+	result := make([]ScopeDefinition, 0, len(c.ScopeCatalog))
+	for _, scope := range c.ScopeCatalog {
+		if slices.Contains(scope.Environments, environment) {
+			result = append(result, scope)
+		}
+	}
+	return result
+}
+
+func scopeNames(scopes []ScopeDefinition) []string {
+	names := make([]string, 0, len(scopes))
+	for _, scope := range scopes {
+		names = append(names, scope.Name)
+	}
+	return names
+}
+
 func validateToolPolicies(connector, transport string, tools []MCPToolPolicy) error {
 	seen := map[string]struct{}{}
 	for i, tool := range tools {
@@ -191,8 +404,8 @@ func validMCPTrustTier(tier string) bool {
 func validateTemplateBlocks(c Connector, policies []MCPToolPolicy) error {
 	seen := map[string]struct{}{}
 	scopes := map[string]struct{}{}
-	for _, scope := range c.Scopes {
-		scopes[scope] = struct{}{}
+	for _, scope := range c.ScopeCatalog {
+		scopes[scope.Name] = struct{}{}
 	}
 	tools := map[string]struct{}{}
 	for _, tool := range policies {
@@ -244,8 +457,8 @@ func validateTemplateBlocks(c Connector, policies []MCPToolPolicy) error {
 	return nil
 }
 
-func newRegistry(list []Connector) *Registry {
-	r := &Registry{ordered: list, byName: make(map[string]Connector, len(list))}
+func newRegistry(list []Connector, environment string, disabled map[string]struct{}) *Registry {
+	r := &Registry{ordered: list, byName: make(map[string]Connector, len(list)), environment: environment, disabled: disabled}
 	for _, c := range list {
 		r.byName[c.Name] = c
 	}
@@ -260,3 +473,27 @@ func (r *Registry) Get(name string) (Connector, bool) {
 	c, ok := r.byName[name]
 	return c, ok
 }
+
+// AvailableScopes returns the structured catalog available in this process environment.
+func (r *Registry) AvailableScopes(name string) []ScopeDefinition {
+	c, ok := r.Get(name)
+	if !ok {
+		return nil
+	}
+	return availableScopeDefinitions(c, r.environment)
+}
+
+// EffectiveStatus applies the emergency-disable switch without mutating the catalog.
+func (r *Registry) EffectiveStatus(name string) string {
+	c, ok := r.Get(name)
+	if !ok {
+		return "disabled"
+	}
+	if _, disabled := r.disabled[name]; disabled {
+		return "disabled"
+	}
+	return c.Status
+}
+
+// Enabled reports whether new grants and token mints are permitted.
+func (r *Registry) Enabled(name string) bool { return r.EffectiveStatus(name) == "enabled" }

@@ -1114,6 +1114,82 @@ var (
 			},
 		},
 	}
+	// ConnectorAuditEventsColumns holds the columns for the "connector_audit_events" table.
+	ConnectorAuditEventsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "event_type", Type: field.TypeString},
+		{Name: "event_id", Type: field.TypeString, Unique: true, Nullable: true},
+		{Name: "connector", Type: field.TypeString},
+		{Name: "connection_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "owner_workos_user_id", Type: field.TypeString},
+		{Name: "org_id", Type: field.TypeString, Nullable: true},
+		{Name: "audience", Type: field.TypeString, Nullable: true},
+		{Name: "requested_scopes", Type: field.TypeJSON, Nullable: true},
+		{Name: "granted_scopes", Type: field.TypeJSON, Nullable: true},
+		{Name: "actor_kind", Type: field.TypeString, Nullable: true},
+		{Name: "reason", Type: field.TypeString, Nullable: true},
+		{Name: "metadata_json", Type: field.TypeString, Nullable: true},
+		{Name: "consent_session_id", Type: field.TypeString, Nullable: true},
+		{Name: "context_request_id", Type: field.TypeString, Nullable: true},
+		{Name: "challenge", Type: field.TypeString, Nullable: true},
+		{Name: "client_id", Type: field.TypeString, Nullable: true},
+		{Name: "result", Type: field.TypeString, Nullable: true},
+		{Name: "occurred_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_connector_audit_events", Type: field.TypeUUID},
+	}
+	// ConnectorAuditEventsTable holds the schema information for the "connector_audit_events" table.
+	ConnectorAuditEventsTable = &schema.Table{
+		Name:       "connector_audit_events",
+		Columns:    ConnectorAuditEventsColumns,
+		PrimaryKey: []*schema.Column{ConnectorAuditEventsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "connector_audit_events_users_connector_audit_events",
+				Columns:    []*schema.Column{ConnectorAuditEventsColumns[21]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "connectorauditevent_event_type_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectorAuditEventsColumns[3], ConnectorAuditEventsColumns[1]},
+			},
+			{
+				Name:    "connectorauditevent_connector_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectorAuditEventsColumns[5], ConnectorAuditEventsColumns[1]},
+			},
+			{
+				Name:    "connectorauditevent_connection_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectorAuditEventsColumns[6], ConnectorAuditEventsColumns[1]},
+			},
+			{
+				Name:    "connectorauditevent_owner_workos_user_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectorAuditEventsColumns[7], ConnectorAuditEventsColumns[1]},
+			},
+			{
+				Name:    "connectorauditevent_org_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectorAuditEventsColumns[8], ConnectorAuditEventsColumns[1]},
+			},
+			{
+				Name:    "connectorauditevent_consent_session_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectorAuditEventsColumns[15], ConnectorAuditEventsColumns[1]},
+			},
+			{
+				Name:    "connectorauditevent_context_request_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectorAuditEventsColumns[16], ConnectorAuditEventsColumns[1]},
+			},
+		},
+	}
 	// ConversationIntelligenceArtifactsColumns holds the columns for the "conversation_intelligence_artifacts" table.
 	ConversationIntelligenceArtifactsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1481,9 +1557,15 @@ var (
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "refresh_token_encrypted", Type: field.TypeBytes, Nullable: true},
 		{Name: "api_key_encrypted", Type: field.TypeBytes, Nullable: true},
+		{Name: "status", Type: field.TypeString, Default: "active"},
 		{Name: "connected_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
 		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revoked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revoked_reason", Type: field.TypeString, Nullable: true},
+		{Name: "revoked_by", Type: field.TypeString, Nullable: true},
+		{Name: "revocation_attempted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revocation_succeeded", Type: field.TypeBool, Nullable: true},
 		{Name: "user_mcp_connections", Type: field.TypeUUID},
 	}
 	// McpConnectionsTable holds the schema information for the "mcp_connections" table.
@@ -1494,7 +1576,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "mcp_connections_users_mcp_connections",
-				Columns:    []*schema.Column{McpConnectionsColumns[11]},
+				Columns:    []*schema.Column{McpConnectionsColumns[17]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1503,7 +1585,17 @@ var (
 			{
 				Name:    "mcpconnection_connector_user_mcp_connections",
 				Unique:  true,
-				Columns: []*schema.Column{McpConnectionsColumns[3], McpConnectionsColumns[11]},
+				Columns: []*schema.Column{McpConnectionsColumns[3], McpConnectionsColumns[17]},
+			},
+			{
+				Name:    "mcpconnection_status",
+				Unique:  false,
+				Columns: []*schema.Column{McpConnectionsColumns[8]},
+			},
+			{
+				Name:    "mcpconnection_connector_status",
+				Unique:  false,
+				Columns: []*schema.Column{McpConnectionsColumns[3], McpConnectionsColumns[8]},
 			},
 		},
 	}
@@ -1520,9 +1612,15 @@ var (
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "refresh_token_encrypted", Type: field.TypeBytes, Nullable: true},
 		{Name: "api_key_encrypted", Type: field.TypeBytes, Nullable: true},
+		{Name: "status", Type: field.TypeString, Default: "active"},
 		{Name: "connected_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
 		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revoked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revoked_reason", Type: field.TypeString, Nullable: true},
+		{Name: "revoked_by", Type: field.TypeString, Nullable: true},
+		{Name: "revocation_attempted_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revocation_succeeded", Type: field.TypeBool, Nullable: true},
 	}
 	// McpConnectionHistoriesTable holds the schema information for the "mcp_connection_histories" table.
 	McpConnectionHistoriesTable = &schema.Table{
@@ -1808,9 +1906,21 @@ var (
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "state", Type: field.TypeString, Unique: true},
+		{Name: "state_hash", Type: field.TypeString, Unique: true, Nullable: true},
 		{Name: "provider", Type: field.TypeString},
 		{Name: "payload_encrypted", Type: field.TypeBytes},
 		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "lifecycle_status", Type: field.TypeString, Nullable: true},
+		{Name: "owner_workos_user_id", Type: field.TypeString, Nullable: true},
+		{Name: "owner_org_id", Type: field.TypeString, Nullable: true},
+		{Name: "requested_scopes", Type: field.TypeJSON, Nullable: true},
+		{Name: "redirect_target", Type: field.TypeString, Nullable: true},
+		{Name: "consent_challenge", Type: field.TypeString, Nullable: true},
+		{Name: "context_request_id", Type: field.TypeString, Nullable: true},
+		{Name: "hydra_client_id", Type: field.TypeString, Nullable: true},
+		{Name: "callback_at", Type: field.TypeTime, Nullable: true},
+		{Name: "claimed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "failure_reason", Type: field.TypeString, Nullable: true},
 	}
 	// OauthPendingsTable holds the schema information for the "oauth_pendings" table.
 	OauthPendingsTable = &schema.Table{
@@ -1821,7 +1931,27 @@ var (
 			{
 				Name:    "oauthpending_expires_at",
 				Unique:  false,
-				Columns: []*schema.Column{OauthPendingsColumns[6]},
+				Columns: []*schema.Column{OauthPendingsColumns[7]},
+			},
+			{
+				Name:    "oauthpending_provider_lifecycle_status",
+				Unique:  false,
+				Columns: []*schema.Column{OauthPendingsColumns[5], OauthPendingsColumns[8]},
+			},
+			{
+				Name:    "oauthpending_owner_workos_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{OauthPendingsColumns[9]},
+			},
+			{
+				Name:    "oauthpending_context_request_id",
+				Unique:  false,
+				Columns: []*schema.Column{OauthPendingsColumns[14]},
+			},
+			{
+				Name:    "oauthpending_consent_challenge",
+				Unique:  false,
+				Columns: []*schema.Column{OauthPendingsColumns[13]},
 			},
 		},
 	}
@@ -3845,6 +3975,7 @@ var (
 		CommitmentsTable,
 		CommitmentDependenciesTable,
 		CommitmentEventsTable,
+		ConnectorAuditEventsTable,
 		ConversationIntelligenceArtifactsTable,
 		CreditLedgersTable,
 		EntitiesTable,
@@ -3951,6 +4082,7 @@ func init() {
 	CommitmentEventsTable.ForeignKeys[1].RefTable = RelationshipsTable
 	CommitmentEventsTable.ForeignKeys[2].RefTable = RevenueWorkspacesTable
 	CommitmentEventsTable.ForeignKeys[3].RefTable = UsersTable
+	ConnectorAuditEventsTable.ForeignKeys[0].RefTable = UsersTable
 	ConversationIntelligenceArtifactsTable.ForeignKeys[0].RefTable = RelationshipsTable
 	ConversationIntelligenceArtifactsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
 	ConversationIntelligenceArtifactsTable.ForeignKeys[2].RefTable = UsersTable

@@ -479,7 +479,7 @@ func TestInvalidate(t *testing.T) {
 		t.Fatalf("connection tombstone should be retained, got %d", n)
 	}
 	tombstone := client.MCPConnection.Query().OnlyX(auth.WithInternal(context.Background()))
-	if tombstone.Status != "revoked" || tombstone.RevokedAt.IsZero() || len(tombstone.RefreshTokenEncrypted) != 0 {
+	if tombstone.Status != "invalidated" || tombstone.RevokedAt.IsZero() || len(tombstone.RefreshTokenEncrypted) != 0 {
 		t.Fatalf("forced invalidation did not create a safe tombstone: %+v", tombstone)
 	}
 }
@@ -514,11 +514,12 @@ func TestMCPRuntimeResolverResolvesAPIKeyForExplicitUser(t *testing.T) {
 		SaveX(ctx)
 
 	resolver := connectors.NewMCPRuntimeResolver(client, sealer, reg, connectors.Config{})
+	resolver.SetResourceTokenIssuer(newTestResourceTokenIssuer(t))
 	mcpURL, tokenType, token, err := resolver.ResolveMCP(context.Background(), u.ID.String(), "wispr")
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
 	}
-	if mcpURL != "https://mcp.test/mcp" || tokenType != "Bearer" || token != "vendor-key" {
+	if mcpURL != "https://mcp.test/mcp" || tokenType != "Bearer" || strings.Count(token, ".") != 2 || strings.Contains(token, "vendor-key") {
 		t.Fatalf("resolved url/type/token = %q/%q/%q", mcpURL, tokenType, token)
 	}
 	if updated := client.MCPConnection.GetX(ctx, conn.ID); updated.LastUsedAt.IsZero() {
@@ -554,11 +555,12 @@ func TestMCPRuntimeResolverRefreshesOAuthConnector(t *testing.T) {
 		OryBrokerClientSecret: "secret",
 	})
 	resolver.SetRefreshDedup(workosauth.NewMemoryRefreshCache(), sealer, zap.NewNop())
+	resolver.SetResourceTokenIssuer(newTestResourceTokenIssuer(t))
 	mcpURL, tokenType, token, err := resolver.ResolveMCP(context.Background(), u.ID.String(), "canvas")
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
 	}
-	if mcpURL != "https://canvas.test/mcp" || tokenType != "Bearer" || token != "acc-refresh_token" {
+	if mcpURL != "https://canvas.test/mcp" || tokenType != "Bearer" || strings.Count(token, ".") != 2 || strings.Contains(token, "acc-refresh_token") {
 		t.Fatalf("resolved url/type/token = %q/%q/%q", mcpURL, tokenType, token)
 	}
 	updated := client.MCPConnection.GetX(ctx, conn.ID)
@@ -568,6 +570,44 @@ func TestMCPRuntimeResolverRefreshesOAuthConnector(t *testing.T) {
 	}
 	if rotated != "rt-rotated" || updated.LastUsedAt.IsZero() {
 		t.Fatalf("rotated/lastUsed = %q/%v", rotated, updated.LastUsedAt)
+	}
+}
+
+func TestMCPTokenInvalidGrantTransitionsToReauthRequired(t *testing.T) {
+	ory := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"invalid_grant"}`))
+	}))
+	t.Cleanup(ory.Close)
+
+	client, u, h := setup(t, connectors.DefaultRegistry())
+	h.SetOryBaseURL(ory.URL)
+	sealer, err := crypto.NewSealer("test-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sealed, err := sealer.SealString("expired-refresh-token")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := auth.WithUser(context.Background(), u)
+	connection := client.MCPConnection.Create().
+		SetUser(u).
+		SetConnector("canvas").
+		SetAudience("mcp:canvas").
+		SetScopes([]string{"canvas:invoices.read", "canvas:customers.read"}).
+		SetRefreshTokenEncrypted(sealed).
+		SaveX(ctx)
+
+	rec := httptest.NewRecorder()
+	h.MCPToken(rec, httptest.NewRequest(http.MethodPost, "/v1/connections/canvas/mcp-token", strings.NewReader(`{"audience":"mcp:canvas","requestedScopes":["canvas:invoices.read","canvas:customers.read"]}`)).
+		WithContext(withParam(ctx, "name", "canvas")))
+	if rec.Code != http.StatusBadGateway || !strings.Contains(rec.Body.String(), `"code":"reauth_required"`) {
+		t.Fatalf("invalid_grant response = %d %s", rec.Code, rec.Body.String())
+	}
+	if got := client.MCPConnection.GetX(ctx, connection.ID).Status; got != "reauth_required" {
+		t.Fatalf("connection status = %q, want reauth_required", got)
 	}
 }
 

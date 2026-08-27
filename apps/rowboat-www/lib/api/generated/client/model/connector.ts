@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ConnectorAuthType } from "./connectorAuthType";
+import type { ConnectorHealth } from "./connectorHealth";
+import type { ConnectorScope } from "./connectorScope";
+import type { ConnectorStatus } from "./connectorStatus";
 import type { ConnectorTransport } from "./connectorTransport";
 import type { IntegrationTemplateBlock } from "./integrationTemplateBlock";
 import type { MCPToolPolicy } from "./mCPToolPolicy";
@@ -14,8 +17,12 @@ import type { MCPToolPolicy } from "./mCPToolPolicy";
  * Connector entry shown by the desktop connector picker.
  */
 export interface Connector {
+  /** OAuth token audience for the connector. */
+  audience: string;
   /** Connector credential flow. */
   authType: ConnectorAuthType;
+  /** Structured scopes available in the current environment. */
+  availableScopes?: ConnectorScope[];
   /** Whether the authenticated user has an active connection. */
   connected: boolean;
   /**
@@ -27,11 +34,20 @@ export interface Connector {
   description: string;
   /** Human-readable connector name. */
   displayName: string;
+  /** Structured scopes granted on the active or tombstoned connection. */
+  grantedScopes?: ConnectorScope[];
+  /** Configured connector health state. */
+  health: ConnectorHealth;
   /**
    * Optional icon URL for UI display.
    * @nullable
    */
   iconUrl?: string | null;
+  /**
+   * RFC3339 timestamp of the last credential use.
+   * @nullable
+   */
+  lastUsedAt?: string | null;
   /** Allowlisted upstream MCP tools and trust tiers for cloud runtime calls. */
   mcpTools?: MCPToolPolicy[];
   /** MCP endpoint the desktop should call after obtaining an MCP token. Empty for native SDK connectors. */
@@ -40,8 +56,13 @@ export interface Connector {
   name: string;
   /** Allowlisted server-side native SDK tools and trust tiers. */
   nativeTools?: MCPToolPolicy[];
-  /** OAuth scopes granted or requested. */
-  scopes?: string[];
+  /**
+   * RFC3339 revocation tombstone timestamp.
+   * @nullable
+   */
+  revokedAt?: string | null;
+  /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
+  status: ConnectorStatus;
   /** Onboarding capability blocks shown when a user browses or connects this integration. */
   templateBlocks?: IntegrationTemplateBlock[];
   /** Connector execution transport. MCP is the default; native uses server-side SDK tools. */

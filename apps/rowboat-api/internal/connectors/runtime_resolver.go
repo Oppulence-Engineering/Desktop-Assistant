@@ -7,6 +7,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
@@ -24,6 +25,7 @@ type MCPRuntimeResolver struct {
 	registry *Registry
 	ory      *oryClient
 	refresh  refreshDeduper
+	issuer   ResourceTokenIssuer
 }
 
 // SetRefreshDedup enables the same rotation-safe refresh path used by the HTTP
@@ -50,6 +52,13 @@ func (r *MCPRuntimeResolver) SetOutboundPolicy(policy outbound.Policy) {
 	r.ory.setOutboundPolicy(policy)
 }
 
+// SetResourceTokenIssuer configures the same audience-bound product token
+// issuer used by the public resource-token endpoint. Worker-side tools must not
+// pass provider access tokens or API keys to product MCP servers.
+func (r *MCPRuntimeResolver) SetResourceTokenIssuer(issuer ResourceTokenIssuer) {
+	r.issuer = issuer
+}
+
 // ResolveMCP returns the MCP endpoint, token type, and bearer/API token for a
 // connected user's connector. The token is intended for immediate server-side
 // use only; cloud task tools must not surface it to the model.
@@ -68,8 +77,10 @@ func (r *MCPRuntimeResolver) ResolveMCP(ctx context.Context, userID, connectorNa
 	mc, err := r.client.MCPConnection.Query().
 		Where(
 			mcpconnection.ConnectorEQ(connectorName),
+			mcpconnection.StatusEQ("active"),
 			mcpconnection.HasUserWith(user.IDEQ(uid)),
 		).
+		WithUser().
 		Only(auth.WithInternal(ctx))
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -77,22 +88,68 @@ func (r *MCPRuntimeResolver) ResolveMCP(ctx context.Context, userID, connectorNa
 		}
 		return "", "", "", fmt.Errorf("load connector %q: %w", connectorName, err)
 	}
+	owner, err := mc.Edges.UserOrErr()
+	if err != nil {
+		return "", "", "", fmt.Errorf("load connector %q owner: %w", connectorName, err)
+	}
+	if allowed, reason := r.isEntitled(ctx, owner, c, mc.Scopes); !allowed {
+		return "", "", "", fmt.Errorf("connector %q entitlement denied: %s", connectorName, reason)
+	}
+	if r.issuer == nil {
+		return "", "", "", fmt.Errorf("connector resource token issuer not configured")
+	}
 	if c.AuthType == "api_key" {
-		key, err := r.sealer.OpenString(mc.APIKeyEncrypted)
-		if err != nil {
+		if _, err := r.sealer.OpenString(mc.APIKeyEncrypted); err != nil {
 			return "", "", "", fmt.Errorf("open connector %q api key: %w", connectorName, err)
 		}
-		_ = mc.Update().SetLastUsedAt(time.Now()).Exec(auth.WithInternal(ctx))
-		return c.MCPURL, "Bearer", key, nil
+	} else {
+		refresh, err := r.sealer.OpenString(mc.RefreshTokenEncrypted)
+		if err != nil {
+			return "", "", "", fmt.Errorf("open connector %q refresh token: %w", connectorName, err)
+		}
+		if _, err := r.refresh.refresh(auth.WithInternal(ctx), connectorName, mc, r.ory, refresh); err != nil {
+			status := "error"
+			if isOAuthErrorCode(err, "invalid_grant") {
+				status = "reauth_required"
+			}
+			_ = mc.Update().SetStatus(status).Exec(auth.WithInternal(ctx))
+			return "", "", "", fmt.Errorf("refresh connector %q token: %w", connectorName, err)
+		}
 	}
+	token, _, err := r.issuer.Mint(ResourceTokenClaims{
+		UserID: owner.WorkosUserID, OrganizationID: owner.WorkosOrgID,
+		ConnectionID: mc.ID.String(), ConnectorID: c.Name, Audience: c.Audience,
+		Scopes: mc.Scopes, TrustTier: trustTierForScopes(r.registry, c.Name, mc.Scopes),
+	})
+	if err != nil {
+		return "", "", "", fmt.Errorf("mint connector %q resource token: %w", connectorName, err)
+	}
+	_ = mc.Update().SetLastUsedAt(time.Now()).Exec(auth.WithInternal(ctx))
+	return c.MCPURL, "Bearer", token, nil
+}
 
-	refresh, err := r.sealer.OpenString(mc.RefreshTokenEncrypted)
-	if err != nil {
-		return "", "", "", fmt.Errorf("open connector %q refresh token: %w", connectorName, err)
+func (r *MCPRuntimeResolver) isEntitled(ctx context.Context, owner *ent.User, conn Connector, scopes []string) (bool, string) {
+	if owner == nil || !r.registry.Enabled(conn.Name) {
+		return false, "connector_disabled"
 	}
-	tok, err := r.refresh.refresh(auth.WithInternal(ctx), connectorName, mc, r.ory, refresh)
-	if err != nil {
-		return "", "", "", fmt.Errorf("refresh connector %q token: %w", connectorName, err)
+	requiredPlan := conn.RequiredPlan
+	for _, scope := range r.registry.definitionsForScopes(conn.Name, scopes) {
+		if planRank[scope.RequiredPlan] > planRank[requiredPlan] {
+			requiredPlan = scope.RequiredPlan
+		}
 	}
-	return c.MCPURL, defaultStr(tok.TokenType, "Bearer"), tok.AccessToken, nil
+	if requiredPlan == "" {
+		return true, ""
+	}
+	if _, known := planRank[requiredPlan]; !known {
+		return false, "scope_not_in_plan"
+	}
+	sub, err := r.client.Subscription.Query().Where(subscription.HasUserWith(user.IDEQ(owner.ID))).Only(auth.WithInternal(ctx))
+	if err != nil || (sub.Status != "active" && sub.Status != "trialing") {
+		return false, "no_subscription"
+	}
+	if planRank[sub.Plan] < planRank[requiredPlan] {
+		return false, "scope_not_in_plan"
+	}
+	return true, ""
 }

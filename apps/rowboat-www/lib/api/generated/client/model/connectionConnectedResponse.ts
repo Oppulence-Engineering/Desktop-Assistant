@@ -10,6 +10,14 @@
  * Connector connection result.
  */
 export interface ConnectionConnectedResponse {
+  /** OAuth token audience for the connector. */
+  audience?: string;
   /** Whether the connector is now connected. */
   connected: boolean;
+  /** Stable connection UUID used in product-side revocation checks. */
+  connectionId?: string;
+  /** Connector slug. */
+  connector?: string;
+  /** OAuth scopes granted or requested. */
+  scopes?: string[];
 }

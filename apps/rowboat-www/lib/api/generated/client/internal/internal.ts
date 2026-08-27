@@ -54,8 +54,8 @@ export const getInvalidateConnectionUrl = () => {
 };
 
 /**
- * Server-to-server endpoint for products to invalidate a user's connector connection. Unknown users are treated as successful no-ops.
- * @summary Force-disconnect a connector
+ * Server-to-server endpoint supporting exact connection, user, org, connector, or combined targets. Matches become invalidated tombstones; credentials are cleared and upstream revocation is attempted.
+ * @summary Force-invalidate connector connections
  */
 export const invalidateConnection = async (
   internalInvalidateRequest: InternalInvalidateRequest,

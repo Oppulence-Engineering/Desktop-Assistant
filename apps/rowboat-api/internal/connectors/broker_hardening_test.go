@@ -65,7 +65,7 @@ func TestStartValidatesRequiredScopesAndRedirectBeforeState(t *testing.T) {
 }
 
 func TestCallbackRejectsScopeEscalationAndReplay(t *testing.T) {
-	ory := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ory := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"access_token":"a","refresh_token":"r","expires_in":3600,"token_type":"Bearer","scope":"canvas:invoices.read canvas:customers.read canvas:admin.write"}`))
 	}))

@@ -662,16 +662,22 @@ type ComplexityRoot struct {
 	}
 
 	MCPConnection struct {
-		Audience    func(childComplexity int) int
-		ConnectedAt func(childComplexity int) int
-		Connector   func(childComplexity int) int
-		CreatedAt   func(childComplexity int) int
-		ExpiresAt   func(childComplexity int) int
-		ID          func(childComplexity int) int
-		LastUsedAt  func(childComplexity int) int
-		Scopes      func(childComplexity int) int
-		UpdatedAt   func(childComplexity int) int
-		User        func(childComplexity int) int
+		Audience              func(childComplexity int) int
+		ConnectedAt           func(childComplexity int) int
+		Connector             func(childComplexity int) int
+		CreatedAt             func(childComplexity int) int
+		ExpiresAt             func(childComplexity int) int
+		ID                    func(childComplexity int) int
+		LastUsedAt            func(childComplexity int) int
+		RevocationAttemptedAt func(childComplexity int) int
+		RevocationSucceeded   func(childComplexity int) int
+		RevokedAt             func(childComplexity int) int
+		RevokedBy             func(childComplexity int) int
+		RevokedReason         func(childComplexity int) int
+		Scopes                func(childComplexity int) int
+		Status                func(childComplexity int) int
+		UpdatedAt             func(childComplexity int) int
+		User                  func(childComplexity int) int
 	}
 
 	MCPConnectionConnection struct {
@@ -761,12 +767,24 @@ type ComplexityRoot struct {
 	}
 
 	OAuthPending struct {
-		CreatedAt func(childComplexity int) int
-		ExpiresAt func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Provider  func(childComplexity int) int
-		State     func(childComplexity int) int
-		UpdatedAt func(childComplexity int) int
+		CallbackAt        func(childComplexity int) int
+		ClaimedAt         func(childComplexity int) int
+		ConsentChallenge  func(childComplexity int) int
+		ContextRequestID  func(childComplexity int) int
+		CreatedAt         func(childComplexity int) int
+		ExpiresAt         func(childComplexity int) int
+		FailureReason     func(childComplexity int) int
+		HydraClientID     func(childComplexity int) int
+		ID                func(childComplexity int) int
+		LifecycleStatus   func(childComplexity int) int
+		OwnerOrgID        func(childComplexity int) int
+		OwnerWorkosUserID func(childComplexity int) int
+		Provider          func(childComplexity int) int
+		RedirectTarget    func(childComplexity int) int
+		RequestedScopes   func(childComplexity int) int
+		State             func(childComplexity int) int
+		StateHash         func(childComplexity int) int
+		UpdatedAt         func(childComplexity int) int
 	}
 
 	PageInfo struct {
@@ -4577,12 +4595,48 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.MCPConnection.LastUsedAt(childComplexity), true
+	case "MCPConnection.revocationAttemptedAt":
+		if e.ComplexityRoot.MCPConnection.RevocationAttemptedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MCPConnection.RevocationAttemptedAt(childComplexity), true
+	case "MCPConnection.revocationSucceeded":
+		if e.ComplexityRoot.MCPConnection.RevocationSucceeded == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MCPConnection.RevocationSucceeded(childComplexity), true
+	case "MCPConnection.revokedAt":
+		if e.ComplexityRoot.MCPConnection.RevokedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MCPConnection.RevokedAt(childComplexity), true
+	case "MCPConnection.revokedBy":
+		if e.ComplexityRoot.MCPConnection.RevokedBy == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MCPConnection.RevokedBy(childComplexity), true
+	case "MCPConnection.revokedReason":
+		if e.ComplexityRoot.MCPConnection.RevokedReason == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MCPConnection.RevokedReason(childComplexity), true
 	case "MCPConnection.scopes":
 		if e.ComplexityRoot.MCPConnection.Scopes == nil {
 			break
 		}
 
 		return e.ComplexityRoot.MCPConnection.Scopes(childComplexity), true
+	case "MCPConnection.status":
+		if e.ComplexityRoot.MCPConnection.Status == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MCPConnection.Status(childComplexity), true
 	case "MCPConnection.updatedAt":
 		if e.ComplexityRoot.MCPConnection.UpdatedAt == nil {
 			break
@@ -4976,6 +5030,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.OAuthConnection.User(childComplexity), true
 
+	case "OAuthPending.callbackAt":
+		if e.ComplexityRoot.OAuthPending.CallbackAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.CallbackAt(childComplexity), true
+	case "OAuthPending.claimedAt":
+		if e.ComplexityRoot.OAuthPending.ClaimedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.ClaimedAt(childComplexity), true
+	case "OAuthPending.consentChallenge":
+		if e.ComplexityRoot.OAuthPending.ConsentChallenge == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.ConsentChallenge(childComplexity), true
+	case "OAuthPending.contextRequestID":
+		if e.ComplexityRoot.OAuthPending.ContextRequestID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.ContextRequestID(childComplexity), true
 	case "OAuthPending.createdAt":
 		if e.ComplexityRoot.OAuthPending.CreatedAt == nil {
 			break
@@ -4988,24 +5066,72 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.OAuthPending.ExpiresAt(childComplexity), true
+	case "OAuthPending.failureReason":
+		if e.ComplexityRoot.OAuthPending.FailureReason == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.FailureReason(childComplexity), true
+	case "OAuthPending.hydraClientID":
+		if e.ComplexityRoot.OAuthPending.HydraClientID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.HydraClientID(childComplexity), true
 	case "OAuthPending.id":
 		if e.ComplexityRoot.OAuthPending.ID == nil {
 			break
 		}
 
 		return e.ComplexityRoot.OAuthPending.ID(childComplexity), true
+	case "OAuthPending.lifecycleStatus":
+		if e.ComplexityRoot.OAuthPending.LifecycleStatus == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.LifecycleStatus(childComplexity), true
+	case "OAuthPending.ownerOrgID":
+		if e.ComplexityRoot.OAuthPending.OwnerOrgID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.OwnerOrgID(childComplexity), true
+	case "OAuthPending.ownerWorkosUserID":
+		if e.ComplexityRoot.OAuthPending.OwnerWorkosUserID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.OwnerWorkosUserID(childComplexity), true
 	case "OAuthPending.provider":
 		if e.ComplexityRoot.OAuthPending.Provider == nil {
 			break
 		}
 
 		return e.ComplexityRoot.OAuthPending.Provider(childComplexity), true
+	case "OAuthPending.redirectTarget":
+		if e.ComplexityRoot.OAuthPending.RedirectTarget == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.RedirectTarget(childComplexity), true
+	case "OAuthPending.requestedScopes":
+		if e.ComplexityRoot.OAuthPending.RequestedScopes == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.RequestedScopes(childComplexity), true
 	case "OAuthPending.state":
 		if e.ComplexityRoot.OAuthPending.State == nil {
 			break
 		}
 
 		return e.ComplexityRoot.OAuthPending.State(childComplexity), true
+	case "OAuthPending.stateHash":
+		if e.ComplexityRoot.OAuthPending.StateHash == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.StateHash(childComplexity), true
 	case "OAuthPending.updatedAt":
 		if e.ComplexityRoot.OAuthPending.UpdatedAt == nil {
 			break
@@ -10617,12 +10743,24 @@ func (ec *executionContext) childFields_MCPConnection(ctx context.Context, field
 		return ec.fieldContext_MCPConnection_audience(ctx, field)
 	case "scopes":
 		return ec.fieldContext_MCPConnection_scopes(ctx, field)
+	case "status":
+		return ec.fieldContext_MCPConnection_status(ctx, field)
 	case "connectedAt":
 		return ec.fieldContext_MCPConnection_connectedAt(ctx, field)
 	case "lastUsedAt":
 		return ec.fieldContext_MCPConnection_lastUsedAt(ctx, field)
 	case "expiresAt":
 		return ec.fieldContext_MCPConnection_expiresAt(ctx, field)
+	case "revokedAt":
+		return ec.fieldContext_MCPConnection_revokedAt(ctx, field)
+	case "revokedReason":
+		return ec.fieldContext_MCPConnection_revokedReason(ctx, field)
+	case "revokedBy":
+		return ec.fieldContext_MCPConnection_revokedBy(ctx, field)
+	case "revocationAttemptedAt":
+		return ec.fieldContext_MCPConnection_revocationAttemptedAt(ctx, field)
+	case "revocationSucceeded":
+		return ec.fieldContext_MCPConnection_revocationSucceeded(ctx, field)
 	case "user":
 		return ec.fieldContext_MCPConnection_user(ctx, field)
 	}
@@ -25215,6 +25353,29 @@ func (ec *executionContext) fieldContext_MCPConnection_scopes(_ context.Context,
 	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _MCPConnection_status(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MCPConnection_status(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Status, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MCPConnection_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _MCPConnection_connectedAt(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -25282,6 +25443,121 @@ func (ec *executionContext) _MCPConnection_expiresAt(ctx context.Context, field 
 }
 func (ec *executionContext) fieldContext_MCPConnection_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _MCPConnection_revokedAt(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MCPConnection_revokedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RevokedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalOTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MCPConnection_revokedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _MCPConnection_revokedReason(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MCPConnection_revokedReason(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RevokedReason, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MCPConnection_revokedReason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _MCPConnection_revokedBy(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MCPConnection_revokedBy(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RevokedBy, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MCPConnection_revokedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _MCPConnection_revocationAttemptedAt(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MCPConnection_revocationAttemptedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RevocationAttemptedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalOTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MCPConnection_revocationAttemptedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _MCPConnection_revocationSucceeded(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MCPConnection_revocationSucceeded(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RevocationSucceeded, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalOBoolean2bool(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MCPConnection_revocationSucceeded(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type Boolean does not have child fields"))
 }
 
 func (ec *executionContext) _MCPConnection_user(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
@@ -26960,6 +27236,29 @@ func (ec *executionContext) fieldContext_OAuthPending_state(_ context.Context, f
 	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _OAuthPending_stateHash(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_stateHash(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.StateHash, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_stateHash(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _OAuthPending_provider(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -27004,6 +27303,259 @@ func (ec *executionContext) _OAuthPending_expiresAt(ctx context.Context, field g
 }
 func (ec *executionContext) fieldContext_OAuthPending_expiresAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_lifecycleStatus(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_lifecycleStatus(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LifecycleStatus, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_lifecycleStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_ownerWorkosUserID(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_ownerWorkosUserID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerWorkosUserID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_ownerWorkosUserID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_ownerOrgID(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_ownerOrgID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OwnerOrgID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_ownerOrgID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_requestedScopes(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_requestedScopes(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RequestedScopes, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalOString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_requestedScopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_redirectTarget(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_redirectTarget(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RedirectTarget, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_redirectTarget(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_consentChallenge(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_consentChallenge(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ConsentChallenge, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_consentChallenge(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_contextRequestID(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_contextRequestID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ContextRequestID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_contextRequestID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_hydraClientID(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_hydraClientID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.HydraClientID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_hydraClientID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_callbackAt(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_callbackAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CallbackAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalOTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_callbackAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_claimedAt(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_claimedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ClaimedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalOTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_claimedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_failureReason(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_failureReason(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.FailureReason, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_failureReason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
 func (ec *executionContext) _PageInfo_hasNextPage(ctx context.Context, field graphql.CollectedField, obj *entgql.PageInfo[uuid.UUID]) (ret graphql.Marshaler) {
@@ -76223,7 +76775,7 @@ func (ec *executionContext) unmarshalInputMCPConnectionWhereInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "connector", "connectorNEQ", "connectorIn", "connectorNotIn", "connectorGT", "connectorGTE", "connectorLT", "connectorLTE", "connectorContains", "connectorHasPrefix", "connectorHasSuffix", "connectorEqualFold", "connectorContainsFold", "audience", "audienceNEQ", "audienceIn", "audienceNotIn", "audienceGT", "audienceGTE", "audienceLT", "audienceLTE", "audienceContains", "audienceHasPrefix", "audienceHasSuffix", "audienceEqualFold", "audienceContainsFold", "connectedAt", "connectedAtNEQ", "connectedAtIn", "connectedAtNotIn", "connectedAtGT", "connectedAtGTE", "connectedAtLT", "connectedAtLTE", "connectedAtIsNil", "connectedAtNotNil", "lastUsedAt", "lastUsedAtNEQ", "lastUsedAtIn", "lastUsedAtNotIn", "lastUsedAtGT", "lastUsedAtGTE", "lastUsedAtLT", "lastUsedAtLTE", "lastUsedAtIsNil", "lastUsedAtNotNil", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "expiresAtIsNil", "expiresAtNotNil", "hasUser", "hasUserWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "connector", "connectorNEQ", "connectorIn", "connectorNotIn", "connectorGT", "connectorGTE", "connectorLT", "connectorLTE", "connectorContains", "connectorHasPrefix", "connectorHasSuffix", "connectorEqualFold", "connectorContainsFold", "audience", "audienceNEQ", "audienceIn", "audienceNotIn", "audienceGT", "audienceGTE", "audienceLT", "audienceLTE", "audienceContains", "audienceHasPrefix", "audienceHasSuffix", "audienceEqualFold", "audienceContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "connectedAt", "connectedAtNEQ", "connectedAtIn", "connectedAtNotIn", "connectedAtGT", "connectedAtGTE", "connectedAtLT", "connectedAtLTE", "connectedAtIsNil", "connectedAtNotNil", "lastUsedAt", "lastUsedAtNEQ", "lastUsedAtIn", "lastUsedAtNotIn", "lastUsedAtGT", "lastUsedAtGTE", "lastUsedAtLT", "lastUsedAtLTE", "lastUsedAtIsNil", "lastUsedAtNotNil", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "expiresAtIsNil", "expiresAtNotNil", "revokedAt", "revokedAtNEQ", "revokedAtIn", "revokedAtNotIn", "revokedAtGT", "revokedAtGTE", "revokedAtLT", "revokedAtLTE", "revokedAtIsNil", "revokedAtNotNil", "revokedReason", "revokedReasonNEQ", "revokedReasonIn", "revokedReasonNotIn", "revokedReasonGT", "revokedReasonGTE", "revokedReasonLT", "revokedReasonLTE", "revokedReasonContains", "revokedReasonHasPrefix", "revokedReasonHasSuffix", "revokedReasonIsNil", "revokedReasonNotNil", "revokedReasonEqualFold", "revokedReasonContainsFold", "revokedBy", "revokedByNEQ", "revokedByIn", "revokedByNotIn", "revokedByGT", "revokedByGTE", "revokedByLT", "revokedByLTE", "revokedByContains", "revokedByHasPrefix", "revokedByHasSuffix", "revokedByIsNil", "revokedByNotNil", "revokedByEqualFold", "revokedByContainsFold", "revocationAttemptedAt", "revocationAttemptedAtNEQ", "revocationAttemptedAtIn", "revocationAttemptedAtNotIn", "revocationAttemptedAtGT", "revocationAttemptedAtGTE", "revocationAttemptedAtLT", "revocationAttemptedAtLTE", "revocationAttemptedAtIsNil", "revocationAttemptedAtNotNil", "revocationSucceeded", "revocationSucceededNEQ", "revocationSucceededIsNil", "revocationSucceededNotNil", "hasUser", "hasUserWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -76601,6 +77153,97 @@ func (ec *executionContext) unmarshalInputMCPConnectionWhereInput(ctx context.Co
 				return it, err
 			}
 			it.AudienceContainsFold = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "statusNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusNEQ = data
+		case "statusIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusIn = data
+		case "statusNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusNotIn = data
+		case "statusGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusGT = data
+		case "statusGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusGTE = data
+		case "statusLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusLT = data
+		case "statusLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusLTE = data
+		case "statusContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusContains = data
+		case "statusHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusHasPrefix = data
+		case "statusHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusHasSuffix = data
+		case "statusEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusEqualFold = data
+		case "statusContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusContainsFold = data
 		case "connectedAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("connectedAt"))
 			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
@@ -76811,6 +77454,384 @@ func (ec *executionContext) unmarshalInputMCPConnectionWhereInput(ctx context.Co
 				return it, err
 			}
 			it.ExpiresAtNotNil = data
+		case "revokedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedAt = data
+		case "revokedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedAtNEQ = data
+		case "revokedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedAtIn = data
+		case "revokedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedAtNotIn = data
+		case "revokedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedAtGT = data
+		case "revokedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedAtGTE = data
+		case "revokedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedAtLT = data
+		case "revokedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedAtLTE = data
+		case "revokedAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedAtIsNil = data
+		case "revokedAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedAtNotNil = data
+		case "revokedReason":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReason"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReason = data
+		case "revokedReasonNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonNEQ = data
+		case "revokedReasonIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonIn = data
+		case "revokedReasonNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonNotIn = data
+		case "revokedReasonGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonGT = data
+		case "revokedReasonGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonGTE = data
+		case "revokedReasonLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonLT = data
+		case "revokedReasonLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonLTE = data
+		case "revokedReasonContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonContains = data
+		case "revokedReasonHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonHasPrefix = data
+		case "revokedReasonHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonHasSuffix = data
+		case "revokedReasonIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonIsNil = data
+		case "revokedReasonNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonNotNil = data
+		case "revokedReasonEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonEqualFold = data
+		case "revokedReasonContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedReasonContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedReasonContainsFold = data
+		case "revokedBy":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedBy"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedBy = data
+		case "revokedByNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByNEQ = data
+		case "revokedByIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByIn = data
+		case "revokedByNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByNotIn = data
+		case "revokedByGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByGT = data
+		case "revokedByGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByGTE = data
+		case "revokedByLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByLT = data
+		case "revokedByLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByLTE = data
+		case "revokedByContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByContains = data
+		case "revokedByHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByHasPrefix = data
+		case "revokedByHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByHasSuffix = data
+		case "revokedByIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByIsNil = data
+		case "revokedByNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByNotNil = data
+		case "revokedByEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByEqualFold = data
+		case "revokedByContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revokedByContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevokedByContainsFold = data
+		case "revocationAttemptedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationAttemptedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationAttemptedAt = data
+		case "revocationAttemptedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationAttemptedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationAttemptedAtNEQ = data
+		case "revocationAttemptedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationAttemptedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationAttemptedAtIn = data
+		case "revocationAttemptedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationAttemptedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationAttemptedAtNotIn = data
+		case "revocationAttemptedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationAttemptedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationAttemptedAtGT = data
+		case "revocationAttemptedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationAttemptedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationAttemptedAtGTE = data
+		case "revocationAttemptedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationAttemptedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationAttemptedAtLT = data
+		case "revocationAttemptedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationAttemptedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationAttemptedAtLTE = data
+		case "revocationAttemptedAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationAttemptedAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationAttemptedAtIsNil = data
+		case "revocationAttemptedAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationAttemptedAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationAttemptedAtNotNil = data
+		case "revocationSucceeded":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationSucceeded"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationSucceeded = data
+		case "revocationSucceededNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationSucceededNEQ"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationSucceededNEQ = data
+		case "revocationSucceededIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationSucceededIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationSucceededIsNil = data
+		case "revocationSucceededNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("revocationSucceededNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RevocationSucceededNotNil = data
 		case "hasUser":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasUser"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -80325,7 +81346,7 @@ func (ec *executionContext) unmarshalInputOAuthPendingWhereInput(ctx context.Con
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "state", "stateNEQ", "stateIn", "stateNotIn", "stateGT", "stateGTE", "stateLT", "stateLTE", "stateContains", "stateHasPrefix", "stateHasSuffix", "stateEqualFold", "stateContainsFold", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerEqualFold", "providerContainsFold", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "state", "stateNEQ", "stateIn", "stateNotIn", "stateGT", "stateGTE", "stateLT", "stateLTE", "stateContains", "stateHasPrefix", "stateHasSuffix", "stateEqualFold", "stateContainsFold", "stateHash", "stateHashNEQ", "stateHashIn", "stateHashNotIn", "stateHashGT", "stateHashGTE", "stateHashLT", "stateHashLTE", "stateHashContains", "stateHashHasPrefix", "stateHashHasSuffix", "stateHashIsNil", "stateHashNotNil", "stateHashEqualFold", "stateHashContainsFold", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerEqualFold", "providerContainsFold", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "lifecycleStatus", "lifecycleStatusNEQ", "lifecycleStatusIn", "lifecycleStatusNotIn", "lifecycleStatusGT", "lifecycleStatusGTE", "lifecycleStatusLT", "lifecycleStatusLTE", "lifecycleStatusContains", "lifecycleStatusHasPrefix", "lifecycleStatusHasSuffix", "lifecycleStatusIsNil", "lifecycleStatusNotNil", "lifecycleStatusEqualFold", "lifecycleStatusContainsFold", "ownerWorkosUserID", "ownerWorkosUserIDNEQ", "ownerWorkosUserIDIn", "ownerWorkosUserIDNotIn", "ownerWorkosUserIDGT", "ownerWorkosUserIDGTE", "ownerWorkosUserIDLT", "ownerWorkosUserIDLTE", "ownerWorkosUserIDContains", "ownerWorkosUserIDHasPrefix", "ownerWorkosUserIDHasSuffix", "ownerWorkosUserIDIsNil", "ownerWorkosUserIDNotNil", "ownerWorkosUserIDEqualFold", "ownerWorkosUserIDContainsFold", "ownerOrgID", "ownerOrgIDNEQ", "ownerOrgIDIn", "ownerOrgIDNotIn", "ownerOrgIDGT", "ownerOrgIDGTE", "ownerOrgIDLT", "ownerOrgIDLTE", "ownerOrgIDContains", "ownerOrgIDHasPrefix", "ownerOrgIDHasSuffix", "ownerOrgIDIsNil", "ownerOrgIDNotNil", "ownerOrgIDEqualFold", "ownerOrgIDContainsFold", "redirectTarget", "redirectTargetNEQ", "redirectTargetIn", "redirectTargetNotIn", "redirectTargetGT", "redirectTargetGTE", "redirectTargetLT", "redirectTargetLTE", "redirectTargetContains", "redirectTargetHasPrefix", "redirectTargetHasSuffix", "redirectTargetIsNil", "redirectTargetNotNil", "redirectTargetEqualFold", "redirectTargetContainsFold", "consentChallenge", "consentChallengeNEQ", "consentChallengeIn", "consentChallengeNotIn", "consentChallengeGT", "consentChallengeGTE", "consentChallengeLT", "consentChallengeLTE", "consentChallengeContains", "consentChallengeHasPrefix", "consentChallengeHasSuffix", "consentChallengeIsNil", "consentChallengeNotNil", "consentChallengeEqualFold", "consentChallengeContainsFold", "contextRequestID", "contextRequestIDNEQ", "contextRequestIDIn", "contextRequestIDNotIn", "contextRequestIDGT", "contextRequestIDGTE", "contextRequestIDLT", "contextRequestIDLTE", "contextRequestIDContains", "contextRequestIDHasPrefix", "contextRequestIDHasSuffix", "contextRequestIDIsNil", "contextRequestIDNotNil", "contextRequestIDEqualFold", "contextRequestIDContainsFold", "hydraClientID", "hydraClientIDNEQ", "hydraClientIDIn", "hydraClientIDNotIn", "hydraClientIDGT", "hydraClientIDGTE", "hydraClientIDLT", "hydraClientIDLTE", "hydraClientIDContains", "hydraClientIDHasPrefix", "hydraClientIDHasSuffix", "hydraClientIDIsNil", "hydraClientIDNotNil", "hydraClientIDEqualFold", "hydraClientIDContainsFold", "callbackAt", "callbackAtNEQ", "callbackAtIn", "callbackAtNotIn", "callbackAtGT", "callbackAtGTE", "callbackAtLT", "callbackAtLTE", "callbackAtIsNil", "callbackAtNotNil", "claimedAt", "claimedAtNEQ", "claimedAtIn", "claimedAtNotIn", "claimedAtGT", "claimedAtGTE", "claimedAtLT", "claimedAtLTE", "claimedAtIsNil", "claimedAtNotNil", "failureReason", "failureReasonNEQ", "failureReasonIn", "failureReasonNotIn", "failureReasonGT", "failureReasonGTE", "failureReasonLT", "failureReasonLTE", "failureReasonContains", "failureReasonHasPrefix", "failureReasonHasSuffix", "failureReasonIsNil", "failureReasonNotNil", "failureReasonEqualFold", "failureReasonContainsFold"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -80612,6 +81633,111 @@ func (ec *executionContext) unmarshalInputOAuthPendingWhereInput(ctx context.Con
 				return it, err
 			}
 			it.StateContainsFold = data
+		case "stateHash":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHash"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHash = data
+		case "stateHashNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashNEQ = data
+		case "stateHashIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashIn = data
+		case "stateHashNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashNotIn = data
+		case "stateHashGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashGT = data
+		case "stateHashGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashGTE = data
+		case "stateHashLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashLT = data
+		case "stateHashLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashLTE = data
+		case "stateHashContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashContains = data
+		case "stateHashHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashHasPrefix = data
+		case "stateHashHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashHasSuffix = data
+		case "stateHashIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashIsNil = data
+		case "stateHashNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashNotNil = data
+		case "stateHashEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashEqualFold = data
+		case "stateHashContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stateHashContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StateHashContainsFold = data
 		case "provider":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("provider"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -80759,6 +81885,986 @@ func (ec *executionContext) unmarshalInputOAuthPendingWhereInput(ctx context.Con
 				return it, err
 			}
 			it.ExpiresAtLTE = data
+		case "lifecycleStatus":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatus"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatus = data
+		case "lifecycleStatusNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusNEQ = data
+		case "lifecycleStatusIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusIn = data
+		case "lifecycleStatusNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusNotIn = data
+		case "lifecycleStatusGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusGT = data
+		case "lifecycleStatusGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusGTE = data
+		case "lifecycleStatusLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusLT = data
+		case "lifecycleStatusLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusLTE = data
+		case "lifecycleStatusContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusContains = data
+		case "lifecycleStatusHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusHasPrefix = data
+		case "lifecycleStatusHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusHasSuffix = data
+		case "lifecycleStatusIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusIsNil = data
+		case "lifecycleStatusNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusNotNil = data
+		case "lifecycleStatusEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusEqualFold = data
+		case "lifecycleStatusContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lifecycleStatusContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LifecycleStatusContainsFold = data
+		case "ownerWorkosUserID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserID = data
+		case "ownerWorkosUserIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDNEQ = data
+		case "ownerWorkosUserIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDIn = data
+		case "ownerWorkosUserIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDNotIn = data
+		case "ownerWorkosUserIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDGT = data
+		case "ownerWorkosUserIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDGTE = data
+		case "ownerWorkosUserIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDLT = data
+		case "ownerWorkosUserIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDLTE = data
+		case "ownerWorkosUserIDContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDContains = data
+		case "ownerWorkosUserIDHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDHasPrefix = data
+		case "ownerWorkosUserIDHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDHasSuffix = data
+		case "ownerWorkosUserIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDIsNil = data
+		case "ownerWorkosUserIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDNotNil = data
+		case "ownerWorkosUserIDEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDEqualFold = data
+		case "ownerWorkosUserIDContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerWorkosUserIDContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerWorkosUserIDContainsFold = data
+		case "ownerOrgID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgID = data
+		case "ownerOrgIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDNEQ = data
+		case "ownerOrgIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDIn = data
+		case "ownerOrgIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDNotIn = data
+		case "ownerOrgIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDGT = data
+		case "ownerOrgIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDGTE = data
+		case "ownerOrgIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDLT = data
+		case "ownerOrgIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDLTE = data
+		case "ownerOrgIDContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDContains = data
+		case "ownerOrgIDHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDHasPrefix = data
+		case "ownerOrgIDHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDHasSuffix = data
+		case "ownerOrgIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDIsNil = data
+		case "ownerOrgIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDNotNil = data
+		case "ownerOrgIDEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDEqualFold = data
+		case "ownerOrgIDContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ownerOrgIDContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OwnerOrgIDContainsFold = data
+		case "redirectTarget":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTarget"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTarget = data
+		case "redirectTargetNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetNEQ = data
+		case "redirectTargetIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetIn = data
+		case "redirectTargetNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetNotIn = data
+		case "redirectTargetGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetGT = data
+		case "redirectTargetGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetGTE = data
+		case "redirectTargetLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetLT = data
+		case "redirectTargetLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetLTE = data
+		case "redirectTargetContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetContains = data
+		case "redirectTargetHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetHasPrefix = data
+		case "redirectTargetHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetHasSuffix = data
+		case "redirectTargetIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetIsNil = data
+		case "redirectTargetNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetNotNil = data
+		case "redirectTargetEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetEqualFold = data
+		case "redirectTargetContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("redirectTargetContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RedirectTargetContainsFold = data
+		case "consentChallenge":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallenge"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallenge = data
+		case "consentChallengeNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeNEQ = data
+		case "consentChallengeIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeIn = data
+		case "consentChallengeNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeNotIn = data
+		case "consentChallengeGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeGT = data
+		case "consentChallengeGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeGTE = data
+		case "consentChallengeLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeLT = data
+		case "consentChallengeLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeLTE = data
+		case "consentChallengeContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeContains = data
+		case "consentChallengeHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeHasPrefix = data
+		case "consentChallengeHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeHasSuffix = data
+		case "consentChallengeIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeIsNil = data
+		case "consentChallengeNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeNotNil = data
+		case "consentChallengeEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeEqualFold = data
+		case "consentChallengeContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("consentChallengeContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ConsentChallengeContainsFold = data
+		case "contextRequestID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestID = data
+		case "contextRequestIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDNEQ = data
+		case "contextRequestIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDIn = data
+		case "contextRequestIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDNotIn = data
+		case "contextRequestIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDGT = data
+		case "contextRequestIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDGTE = data
+		case "contextRequestIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDLT = data
+		case "contextRequestIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDLTE = data
+		case "contextRequestIDContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDContains = data
+		case "contextRequestIDHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDHasPrefix = data
+		case "contextRequestIDHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDHasSuffix = data
+		case "contextRequestIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDIsNil = data
+		case "contextRequestIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDNotNil = data
+		case "contextRequestIDEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDEqualFold = data
+		case "contextRequestIDContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("contextRequestIDContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ContextRequestIDContainsFold = data
+		case "hydraClientID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientID = data
+		case "hydraClientIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDNEQ = data
+		case "hydraClientIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDIn = data
+		case "hydraClientIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDNotIn = data
+		case "hydraClientIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDGT = data
+		case "hydraClientIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDGTE = data
+		case "hydraClientIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDLT = data
+		case "hydraClientIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDLTE = data
+		case "hydraClientIDContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDContains = data
+		case "hydraClientIDHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDHasPrefix = data
+		case "hydraClientIDHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDHasSuffix = data
+		case "hydraClientIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDIsNil = data
+		case "hydraClientIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDNotNil = data
+		case "hydraClientIDEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDEqualFold = data
+		case "hydraClientIDContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hydraClientIDContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.HydraClientIDContainsFold = data
+		case "callbackAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAt = data
+		case "callbackAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAtNEQ = data
+		case "callbackAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAtIn = data
+		case "callbackAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAtNotIn = data
+		case "callbackAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAtGT = data
+		case "callbackAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAtGTE = data
+		case "callbackAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAtLT = data
+		case "callbackAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAtLTE = data
+		case "callbackAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAtIsNil = data
+		case "callbackAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAtNotNil = data
+		case "claimedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedAt = data
+		case "claimedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedAtNEQ = data
+		case "claimedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedAtIn = data
+		case "claimedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedAtNotIn = data
+		case "claimedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedAtGT = data
+		case "claimedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedAtGTE = data
+		case "claimedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedAtLT = data
+		case "claimedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedAtLTE = data
+		case "claimedAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedAtIsNil = data
+		case "claimedAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedAtNotNil = data
+		case "failureReason":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReason"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReason = data
+		case "failureReasonNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonNEQ = data
+		case "failureReasonIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonIn = data
+		case "failureReasonNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonNotIn = data
+		case "failureReasonGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonGT = data
+		case "failureReasonGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonGTE = data
+		case "failureReasonLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonLT = data
+		case "failureReasonLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonLTE = data
+		case "failureReasonContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonContains = data
+		case "failureReasonHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonHasPrefix = data
+		case "failureReasonHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonHasSuffix = data
+		case "failureReasonIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonIsNil = data
+		case "failureReasonNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonNotNil = data
+		case "failureReasonEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonEqualFold = data
+		case "failureReasonContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("failureReasonContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FailureReasonContainsFold = data
 		}
 	}
 	return it, nil
@@ -123266,12 +125372,27 @@ func (ec *executionContext) _MCPConnection(ctx context.Context, sel ast.Selectio
 			}
 		case "scopes":
 			out.Values[i] = ec._MCPConnection_scopes(ctx, field, obj)
+		case "status":
+			out.Values[i] = ec._MCPConnection_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "connectedAt":
 			out.Values[i] = ec._MCPConnection_connectedAt(ctx, field, obj)
 		case "lastUsedAt":
 			out.Values[i] = ec._MCPConnection_lastUsedAt(ctx, field, obj)
 		case "expiresAt":
 			out.Values[i] = ec._MCPConnection_expiresAt(ctx, field, obj)
+		case "revokedAt":
+			out.Values[i] = ec._MCPConnection_revokedAt(ctx, field, obj)
+		case "revokedReason":
+			out.Values[i] = ec._MCPConnection_revokedReason(ctx, field, obj)
+		case "revokedBy":
+			out.Values[i] = ec._MCPConnection_revokedBy(ctx, field, obj)
+		case "revocationAttemptedAt":
+			out.Values[i] = ec._MCPConnection_revocationAttemptedAt(ctx, field, obj)
+		case "revocationSucceeded":
+			out.Values[i] = ec._MCPConnection_revocationSucceeded(ctx, field, obj)
 		case "user":
 			field := field
 
@@ -124246,6 +126367,8 @@ func (ec *executionContext) _OAuthPending(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "stateHash":
+			out.Values[i] = ec._OAuthPending_stateHash(ctx, field, obj)
 		case "provider":
 			out.Values[i] = ec._OAuthPending_provider(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -124256,6 +126379,28 @@ func (ec *executionContext) _OAuthPending(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "lifecycleStatus":
+			out.Values[i] = ec._OAuthPending_lifecycleStatus(ctx, field, obj)
+		case "ownerWorkosUserID":
+			out.Values[i] = ec._OAuthPending_ownerWorkosUserID(ctx, field, obj)
+		case "ownerOrgID":
+			out.Values[i] = ec._OAuthPending_ownerOrgID(ctx, field, obj)
+		case "requestedScopes":
+			out.Values[i] = ec._OAuthPending_requestedScopes(ctx, field, obj)
+		case "redirectTarget":
+			out.Values[i] = ec._OAuthPending_redirectTarget(ctx, field, obj)
+		case "consentChallenge":
+			out.Values[i] = ec._OAuthPending_consentChallenge(ctx, field, obj)
+		case "contextRequestID":
+			out.Values[i] = ec._OAuthPending_contextRequestID(ctx, field, obj)
+		case "hydraClientID":
+			out.Values[i] = ec._OAuthPending_hydraClientID(ctx, field, obj)
+		case "callbackAt":
+			out.Values[i] = ec._OAuthPending_callbackAt(ctx, field, obj)
+		case "claimedAt":
+			out.Values[i] = ec._OAuthPending_claimedAt(ctx, field, obj)
+		case "failureReason":
+			out.Values[i] = ec._OAuthPending_failureReason(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

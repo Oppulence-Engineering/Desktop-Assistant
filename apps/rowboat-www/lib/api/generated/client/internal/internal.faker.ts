@@ -12,8 +12,10 @@ import type { CloudEventIngestResponse, InternalInvalidateResponse } from "../mo
 export const getInvalidateConnectionResponseMock = (
   overrideResponse: Partial<Extract<InternalInvalidateResponse, object>> = {},
 ): InternalInvalidateResponse => ({
-  deleted: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  failures: faker.helpers.arrayElement([faker.number.int(), undefined]),
   invalidated: faker.datatype.boolean(),
+  matched: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  revoked: faker.helpers.arrayElement([faker.number.int(), undefined]),
   ...overrideResponse,
 });
 

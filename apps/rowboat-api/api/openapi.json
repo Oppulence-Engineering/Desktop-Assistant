@@ -3857,10 +3857,38 @@
       "ConnectionConnectedResponse": {
         "description": "Connector connection result.",
         "properties": {
+          "audience": {
+            "description": "OAuth token audience for the connector.",
+            "example": "canvas-api",
+            "type": "string"
+          },
           "connected": {
             "description": "Whether the connector is now connected.",
             "example": true,
             "type": "boolean"
+          },
+          "connectionId": {
+            "description": "Stable connection UUID used in product-side revocation checks.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "connector": {
+            "description": "Connector slug.",
+            "example": "canvas",
+            "type": "string"
+          },
+          "scopes": {
+            "description": "OAuth scopes granted or requested.",
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
+            "items": {
+              "description": "Scope.",
+              "example": "canvas:invoices.read",
+              "type": "string"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -3868,23 +3896,76 @@
         ],
         "type": "object"
       },
+      "ConnectionStartRequest": {
+        "description": "Least-privilege connector OAuth request.",
+        "properties": {
+          "redirectTarget": {
+            "description": "Backward-compatible camelCase alias for redirect_after.",
+            "example": "solomon-ai://connection-complete",
+            "nullable": true,
+            "type": "string"
+          },
+          "redirect_after": {
+            "description": "Allowlisted desktop deep-link target.",
+            "example": "solomon-ai://connection-complete",
+            "nullable": true,
+            "type": "string"
+          },
+          "requestedScopes": {
+            "description": "Backward-compatible camelCase alias for requested_scopes.",
+            "items": {
+              "description": "Scope.",
+              "example": "canvas:invoices.read",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "requested_scopes": {
+            "description": "Requested canonical scopes. Omit to request only required scopes.",
+            "items": {
+              "description": "Scope.",
+              "example": "canvas:invoices.read",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
       "ConnectionStartResponse": {
         "description": "OAuth authorize URL for a connector.",
         "properties": {
-          "authorize_url": {
+          "authorization_url": {
             "description": "Browser URL the desktop opens to start the connector OAuth flow.",
             "example": "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api\u0026state=...",
+            "type": "string"
+          },
+          "authorize_url": {
+            "description": "Backward-compatible alias for authorization_url.",
+            "example": "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api\u0026state=...",
+            "type": "string"
+          },
+          "expires_at": {
+            "description": "Credential or one-time ticket expiry timestamp.",
+            "example": "2026-06-04T20:48:00Z",
             "type": "string"
           }
         },
         "required": [
-          "authorize_url"
+          "authorization_url",
+          "authorize_url",
+          "expires_at"
         ],
         "type": "object"
       },
       "Connector": {
         "description": "Connector entry shown by the desktop connector picker.",
         "properties": {
+          "audience": {
+            "description": "OAuth token audience for the connector.",
+            "example": "canvas-api",
+            "type": "string"
+          },
           "authType": {
             "description": "Connector credential flow.",
             "enum": [
@@ -3893,6 +3974,13 @@
             ],
             "example": "oauth",
             "type": "string"
+          },
+          "availableScopes": {
+            "description": "Structured scopes available in the current environment.",
+            "items": {
+              "$ref": "#/components/schemas/ConnectorScope"
+            },
+            "type": "array"
           },
           "connected": {
             "description": "Whether the authenticated user has an active connection.",
@@ -3915,9 +4003,32 @@
             "example": "Canvas",
             "type": "string"
           },
+          "grantedScopes": {
+            "description": "Structured scopes granted on the active or tombstoned connection.",
+            "items": {
+              "$ref": "#/components/schemas/ConnectorScope"
+            },
+            "type": "array"
+          },
+          "health": {
+            "description": "Configured connector health state.",
+            "enum": [
+              "healthy",
+              "degraded",
+              "unavailable"
+            ],
+            "example": "healthy",
+            "type": "string"
+          },
           "iconUrl": {
             "description": "Optional icon URL for UI display.",
             "example": "https://example.com/icon.png",
+            "nullable": true,
+            "type": "string"
+          },
+          "lastUsedAt": {
+            "description": "RFC3339 timestamp of the last credential use.",
+            "example": "2026-06-04T20:45:00Z",
             "nullable": true,
             "type": "string"
           },
@@ -3945,18 +4056,21 @@
             },
             "type": "array"
           },
-          "scopes": {
-            "description": "OAuth scopes granted or requested.",
-            "example": [
-              "invoices:read",
-              "customers:read"
+          "revokedAt": {
+            "description": "RFC3339 revocation tombstone timestamp.",
+            "example": "2026-06-04T20:50:00Z",
+            "nullable": true,
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "enum": [
+              "enabled",
+              "maintenance",
+              "disabled"
             ],
-            "items": {
-              "description": "Scope.",
-              "example": "invoices:read",
-              "type": "string"
-            },
-            "type": "array"
+            "example": "active",
+            "type": "string"
           },
           "templateBlocks": {
             "description": "Onboarding capability blocks shown when a user browses or connects this integration.",
@@ -3981,7 +4095,219 @@
           "description",
           "mcpUrl",
           "authType",
+          "audience",
+          "status",
+          "health",
           "connected"
+        ],
+        "type": "object"
+      },
+      "ConnectorAuditEvent": {
+        "properties": {
+          "actor_kind": {
+            "type": "string"
+          },
+          "audience": {
+            "description": "OAuth token audience for the connector.",
+            "example": "canvas-api",
+            "type": "string"
+          },
+          "challenge": {
+            "type": "string"
+          },
+          "client_id": {
+            "type": "string"
+          },
+          "connection_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "connector": {
+            "description": "Connector slug.",
+            "example": "canvas",
+            "type": "string"
+          },
+          "consent_session_id": {
+            "type": "string"
+          },
+          "context_request_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "granted_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "metadata_json": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "org_id": {
+            "type": "string"
+          },
+          "owner_workos_user_id": {
+            "type": "string"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          },
+          "requested_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "result": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User",
+            "description": "User that owns this row."
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "event_type",
+          "connector",
+          "owner_workos_user_id",
+          "user"
+        ],
+        "type": "object"
+      },
+      "ConnectorScope": {
+        "description": "Canonical connector scope consent and risk policy.",
+        "properties": {
+          "conflictsWith": {
+            "description": "Scopes that cannot coexist in one grant.",
+            "items": {
+              "description": "Conflicting scope.",
+              "example": "canvas:payments.readonly",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "description": {
+            "description": "Consent UI explanation.",
+            "example": "View invoice balances and status.",
+            "type": "string"
+          },
+          "displayName": {
+            "description": "Consent UI title.",
+            "example": "Read invoices",
+            "type": "string"
+          },
+          "environments": {
+            "description": "Environments where this scope is available.",
+            "items": {
+              "description": "Environment.",
+              "enum": [
+                "development",
+                "staging",
+                "production"
+              ],
+              "example": "production",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "grantTier": {
+            "description": "Whether every grant must include this scope.",
+            "enum": [
+              "required",
+              "optional"
+            ],
+            "example": "required",
+            "type": "string"
+          },
+          "implies": {
+            "description": "Scopes that must also be requested.",
+            "items": {
+              "description": "Implied scope.",
+              "example": "canvas:customers.read",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "name": {
+            "description": "Namespaced scope name.",
+            "example": "canvas:invoices.read",
+            "type": "string"
+          },
+          "perInvocationApproval": {
+            "description": "Whether each invocation also requires an approval token.",
+            "example": false,
+            "type": "boolean"
+          },
+          "requiredPlan": {
+            "description": "Optional minimum plan for this scope.",
+            "example": "pro",
+            "nullable": true,
+            "type": "string"
+          },
+          "risk": {
+            "description": "Scope risk tier.",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "money-moving"
+            ],
+            "example": "low",
+            "type": "string"
+          },
+          "stepUpRequired": {
+            "description": "Whether consent requires step-up authentication.",
+            "example": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "displayName",
+          "description",
+          "grantTier",
+          "risk"
         ],
         "type": "object"
       },
@@ -3998,6 +4324,269 @@
         },
         "required": [
           "connectors"
+        ],
+        "type": "object"
+      },
+      "ConsentAuditRequest": {
+        "description": "Append-only, replay-safe oauth-consent audit event. event_id is globally unique and conflicting replays are rejected.",
+        "properties": {
+          "audience": {
+            "description": "OAuth token audience for the connector.",
+            "example": "canvas-api",
+            "type": "string"
+          },
+          "client_id": {
+            "description": "Bound Hydra client id.",
+            "example": "rowboat-desktop",
+            "type": "string"
+          },
+          "connector_id": {
+            "description": "Bound connector slug.",
+            "example": "canvas",
+            "type": "string"
+          },
+          "consent_session_id": {
+            "description": "Consent UI session id.",
+            "example": "consent_01HABCDEF",
+            "type": "string"
+          },
+          "context_request_id": {
+            "description": "request_id returned by pre-consent.",
+            "example": "ctx_01HABCDEF",
+            "type": "string"
+          },
+          "event": {
+            "description": "Accepted semantic event.",
+            "enum": [
+              "consent.shown",
+              "consent.granted",
+              "consent.denied"
+            ],
+            "example": "consent.granted",
+            "type": "string"
+          },
+          "event_id": {
+            "description": "Globally unique idempotency id.",
+            "example": "evt_01HABCDEF",
+            "type": "string"
+          },
+          "occurred_at": {
+            "description": "RFC3339Nano event time.",
+            "example": "2026-08-27T20:00:00Z",
+            "type": "string"
+          },
+          "result": {
+            "additionalProperties": true,
+            "description": "Bounded JSON result object or string. It must not contain credentials.",
+            "type": "object"
+          },
+          "scopes": {
+            "description": "OAuth scopes granted or requested.",
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
+            "items": {
+              "description": "Connector scope.",
+              "example": "canvas:invoices.read",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "version": {
+            "description": "Hook contract version. Only version 1 is accepted.",
+            "example": 1,
+            "type": "integer"
+          },
+          "workos_user_id": {
+            "description": "WorkOS user id used to resolve bearer tokens into local users.",
+            "example": "user_01HABCDEF",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "event_id",
+          "event",
+          "occurred_at",
+          "consent_session_id",
+          "context_request_id",
+          "workos_user_id",
+          "client_id",
+          "connector_id",
+          "audience",
+          "scopes"
+        ],
+        "type": "object"
+      },
+      "ConsentAuditResponse": {
+        "description": "Durable audit acknowledgement.",
+        "properties": {
+          "accepted": {
+            "description": "True after persistence or an exact idempotent replay.",
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "accepted"
+        ],
+        "type": "object"
+      },
+      "ConsentClientIdentity": {
+        "description": "Bound OAuth client identity shown to the user.",
+        "properties": {
+          "display_name": {
+            "description": "Stable product display name.",
+            "example": "Rowboat Desktop",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "display_name"
+        ],
+        "type": "object"
+      },
+      "ConsentConnectorIdentity": {
+        "description": "Connector identity shown to the user.",
+        "properties": {
+          "audience": {
+            "description": "OAuth token audience for the connector.",
+            "example": "canvas-api",
+            "type": "string"
+          },
+          "display_name": {
+            "description": "Connector display name.",
+            "example": "Canvas",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "audience"
+        ],
+        "type": "object"
+      },
+      "ConsentContextRequest": {
+        "description": "Fetches consent context by opaque OAuth state.",
+        "properties": {
+          "state": {
+            "description": "Opaque one-time OAuth state/session ticket.",
+            "example": "state_abc123",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "ConsentEntitlement": {
+        "description": "Current entitlement decision, distinct from OAuth approval or denial.",
+        "properties": {
+          "allowed": {
+            "description": "Whether the current plan permits this connector and scope set.",
+            "example": true,
+            "type": "boolean"
+          },
+          "message": {
+            "description": "Human-readable entitlement explanation.",
+            "example": "This connector requires the pro plan.",
+            "nullable": true,
+            "type": "string"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "nullable": true,
+            "type": "string"
+          },
+          "required_plan": {
+            "description": "Minimum plan required after denial.",
+            "example": "pro",
+            "nullable": true,
+            "type": "string"
+          },
+          "upgrade_url": {
+            "description": "Desktop upgrade deep link.",
+            "example": "rowboat://billing",
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "allowed"
+        ],
+        "type": "object"
+      },
+      "ConsentScopeDefinition": {
+        "description": "Catalog-owned scope definition rendered by oauth-consent.",
+        "properties": {
+          "description": {
+            "description": "Purpose shown before consent.",
+            "example": "Read invoice records.",
+            "type": "string"
+          },
+          "display_name": {
+            "description": "Human-readable scope name.",
+            "example": "Read invoices",
+            "type": "string"
+          },
+          "name": {
+            "description": "Namespaced connector scope.",
+            "example": "canvas:invoices.read",
+            "type": "string"
+          },
+          "required": {
+            "description": "Whether the scope is required for this connection.",
+            "example": true,
+            "type": "boolean"
+          },
+          "requires_step_up": {
+            "description": "Whether approval requires a recent step-up.",
+            "example": false,
+            "type": "boolean"
+          },
+          "tier": {
+            "description": "Risk tier.",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "money-moving"
+            ],
+            "example": "low",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "display_name",
+          "description",
+          "tier",
+          "required",
+          "requires_step_up"
         ],
         "type": "object"
       },
@@ -5581,9 +6170,36 @@
       "InternalInvalidateRequest": {
         "description": "Server-to-server force disconnect request.",
         "properties": {
+          "connection_id": {
+            "description": "Optional exact MCPConnection UUID target.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "nullable": true,
+            "type": "string"
+          },
           "connector": {
             "description": "Connector slug.",
             "example": "canvas",
+            "type": "string"
+          },
+          "org_id": {
+            "description": "Optional WorkOS organization target.",
+            "example": "org_01HABCDEF",
+            "nullable": true,
+            "type": "string"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "nullable": true,
             "type": "string"
           },
           "workos_user_id": {
@@ -5592,24 +6208,30 @@
             "type": "string"
           }
         },
-        "required": [
-          "workos_user_id",
-          "connector"
-        ],
         "type": "object"
       },
       "InternalInvalidateResponse": {
         "description": "Force disconnect result.",
         "properties": {
-          "deleted": {
-            "description": "Number of connection rows deleted. Omitted for unknown users.",
-            "example": 1,
+          "failures": {
+            "description": "Number that could not be tombstoned.",
+            "example": 0,
             "type": "integer"
           },
           "invalidated": {
             "description": "Always true on successful handling, including no-op unknown users.",
             "example": true,
             "type": "boolean"
+          },
+          "matched": {
+            "description": "Number of matching connection rows.",
+            "example": 1,
+            "type": "integer"
+          },
+          "revoked": {
+            "description": "Number retained as revoked tombstones.",
+            "example": 1,
+            "type": "integer"
           }
         },
         "required": [
@@ -6028,6 +6650,23 @@
             "type": "string",
             "writeOnly": true
           },
+          "revocation_attempted_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "revocation_succeeded": {
+            "type": "boolean"
+          },
+          "revoked_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "revoked_by": {
+            "type": "string"
+          },
+          "revoked_reason": {
+            "type": "string"
+          },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
             "example": [
@@ -6038,6 +6677,11 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
           },
           "updated_at": {
             "description": "Last row update timestamp.",
@@ -6056,6 +6700,7 @@
           "updated_at",
           "connector",
           "audience",
+          "status",
           "user"
         ],
         "type": "object"
@@ -6137,6 +6782,23 @@
             "type": "string",
             "writeOnly": true
           },
+          "revocation_attempted_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "revocation_succeeded": {
+            "type": "boolean"
+          },
+          "revoked_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "revoked_by": {
+            "type": "string"
+          },
+          "revoked_reason": {
+            "type": "string"
+          },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
             "example": [
@@ -6147,6 +6809,11 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
           },
           "updated_at": {
             "description": "Last row update timestamp.",
@@ -6162,16 +6829,48 @@
           "history_time",
           "operation",
           "connector",
-          "audience"
+          "audience",
+          "status"
         ],
+        "type": "object"
+      },
+      "MCPTokenRequest": {
+        "description": "Audience and least-privilege scopes requested for one resource token.",
+        "properties": {
+          "audience": {
+            "description": "OAuth token audience for the connector.",
+            "example": "canvas-api",
+            "nullable": true,
+            "type": "string"
+          },
+          "requestedScopes": {
+            "description": "Must be a subset of currently granted scopes.",
+            "items": {
+              "description": "Scope.",
+              "example": "canvas:invoices.read",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
         "type": "object"
       },
       "MCPTokenResponse": {
         "description": "Short-lived credential and target URL for calling a connector MCP endpoint.",
         "properties": {
           "access_token": {
-            "description": "Bearer token or API key for the connector's MCP endpoint.",
-            "example": "mcp_access_token",
+            "description": "RS256 broker bearer token. This is never a provider access token or vendor API key.",
+            "example": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImJyb2tlci0yMDI2LTA4In0...",
+            "type": "string"
+          },
+          "audience": {
+            "description": "OAuth token audience for the connector.",
+            "example": "canvas-api",
+            "type": "string"
+          },
+          "connectionId": {
+            "description": "Connection UUID embedded in the token actor claims.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
             "type": "string"
           },
           "expires_at": {
@@ -6180,21 +6879,57 @@
             "format": "int64",
             "type": "integer"
           },
+          "expires_in": {
+            "description": "Remaining lifetime in seconds. Never exceeds 900.",
+            "example": 300,
+            "format": "int64",
+            "type": "integer"
+          },
           "mcpUrl": {
             "description": "Connector MCP endpoint URL.",
             "example": "https://api.canvas.solomon-ai.co/v1/mcp",
             "type": "string"
           },
+          "scope": {
+            "description": "Space-delimited granted scope subset.",
+            "example": "canvas:invoices.read",
+            "type": "string"
+          },
+          "scopes": {
+            "description": "OAuth scopes granted or requested.",
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
+            "items": {
+              "description": "Scope.",
+              "example": "canvas:invoices.read",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "token": {
+            "description": "Alias for access_token used by RFC 012 clients.",
+            "example": "eyJhbGciOiJSUzI1NiIsImtpZCI6ImJyb2tlci0yMDI2LTA4In0...",
+            "type": "string"
+          },
           "token_type": {
-            "description": "Token type, usually Bearer.",
+            "description": "OAuth token type.",
             "example": "Bearer",
             "type": "string"
           }
         },
         "required": [
           "access_token",
+          "token",
           "token_type",
-          "mcpUrl"
+          "expires_in",
+          "expires_at",
+          "scope",
+          "mcpUrl",
+          "audience",
+          "scopes",
+          "connectionId"
         ],
         "type": "object"
       },
@@ -7011,6 +7746,20 @@
       "OAuthPending": {
         "description": "Ephemeral one-time OAuth handoff ticket with sealed payload and expiry.",
         "properties": {
+          "callback_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "claimed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "consent_challenge": {
+            "type": "string"
+          },
+          "context_request_id": {
+            "type": "string"
+          },
           "created_at": {
             "description": "Row creation timestamp.",
             "example": "2026-06-04T20:38:00Z",
@@ -7023,10 +7772,25 @@
             "format": "date-time",
             "type": "string"
           },
+          "failure_reason": {
+            "type": "string"
+          },
+          "hydra_client_id": {
+            "type": "string"
+          },
           "id": {
             "description": "Stable UUID primary key.",
             "example": "123e4567-e89b-12d3-a456-426614174000",
             "format": "uuid",
+            "type": "string"
+          },
+          "lifecycle_status": {
+            "type": "string"
+          },
+          "owner_org_id": {
+            "type": "string"
+          },
+          "owner_workos_user_id": {
             "type": "string"
           },
           "payload_encrypted": {
@@ -7040,9 +7804,21 @@
             "example": "openai",
             "type": "string"
           },
+          "redirect_target": {
+            "type": "string"
+          },
+          "requested_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "state": {
             "description": "Opaque one-time OAuth state/session ticket.",
             "example": "state_abc123",
+            "type": "string"
+          },
+          "state_hash": {
             "type": "string"
           },
           "updated_at": {
@@ -7818,25 +8594,40 @@
         "type": "object"
       },
       "PreConsentRequest": {
-        "description": "Ory pre-consent webhook payload mapped by ops.",
+        "description": "Strict oauth-consent context request bound to one Hydra challenge and pending connector flow.",
         "properties": {
-          "connector": {
-            "description": "Connector slug.",
-            "example": "canvas",
-            "nullable": true,
+          "challenge": {
+            "description": "Hydra consent challenge.",
+            "example": "challenge_01HABCDEF",
+            "type": "string"
+          },
+          "hydra_client_id": {
+            "description": "Hydra client id. Must match the configured Rowboat Desktop broker client.",
+            "example": "rowboat-desktop",
             "type": "string"
           },
           "requested_audience": {
-            "description": "Requested token audience. Used to resolve connector when connector is absent.",
-            "example": "canvas-api",
-            "nullable": true,
-            "type": "string"
+            "description": "Exactly one requested connector audience.",
+            "items": {
+              "description": "Connector audience.",
+              "example": "mcp:canvas",
+              "type": "string"
+            },
+            "type": "array"
           },
-          "subject": {
-            "description": "Fallback subject/user id from Ory.",
-            "example": "user_01HABCDEF",
-            "nullable": true,
-            "type": "string"
+          "requested_scopes": {
+            "description": "Exact non-empty connector scope set requested from the catalog.",
+            "items": {
+              "description": "Connector scope.",
+              "example": "canvas:invoices.read",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "version": {
+            "description": "Hook contract version. Only version 1 is accepted.",
+            "example": 1,
+            "type": "integer"
           },
           "workos_user_id": {
             "description": "WorkOS user id used to resolve bearer tokens into local users.",
@@ -7845,24 +8636,58 @@
           }
         },
         "required": [
-          "requested_audience"
+          "version",
+          "challenge",
+          "workos_user_id",
+          "hydra_client_id",
+          "requested_audience",
+          "requested_scopes"
         ],
         "type": "object"
       },
       "PreConsentResponse": {
-        "description": "Connector entitlement decision.",
+        "description": "Strict structured consent context. It contains no state, PKCE verifier, provider credential, or raw owner metadata.",
         "properties": {
-          "allow": {
-            "description": "Whether Ory should continue the consent flow.",
-            "example": true,
-            "type": "boolean"
+          "client": {
+            "$ref": "#/components/schemas/ConsentClientIdentity"
           },
-          "upsell": {
-            "$ref": "#/components/schemas/Upsell"
+          "connector": {
+            "$ref": "#/components/schemas/ConsentConnectorIdentity",
+            "description": "Connector slug.",
+            "example": "canvas"
+          },
+          "entitlement": {
+            "$ref": "#/components/schemas/ConsentEntitlement"
+          },
+          "request_id": {
+            "description": "Idempotency and trace anchor for a metered request.",
+            "example": "9e2fb15a-936d-4f39-9372-73cfe0476ca8",
+            "type": "string"
+          },
+          "scopes": {
+            "description": "OAuth scopes granted or requested.",
+            "example": [
+              "invoices:read",
+              "customers:read"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ConsentScopeDefinition"
+            },
+            "type": "array"
+          },
+          "subject": {
+            "description": "WorkOS subject bound to the pending flow.",
+            "example": "user_01HABCDEF",
+            "type": "string"
           }
         },
         "required": [
-          "allow"
+          "request_id",
+          "subject",
+          "client",
+          "connector",
+          "scopes",
+          "entitlement"
         ],
         "type": "object"
       },
@@ -12359,30 +13184,6 @@
         ],
         "type": "object"
       },
-      "Upsell": {
-        "description": "Upgrade instruction returned when a connector requires a higher plan.",
-        "properties": {
-          "message": {
-            "description": "Human-readable upgrade copy.",
-            "example": "Upgrade to pro to connect Canvas",
-            "type": "string"
-          },
-          "requiredPlan": {
-            "description": "Minimum plan required.",
-            "enum": [
-              "starter",
-              "pro"
-            ],
-            "example": "pro",
-            "type": "string"
-          }
-        },
-        "required": [
-          "requiredPlan",
-          "message"
-        ],
-        "type": "object"
-      },
       "User": {
         "description": "Local mirror of a WorkOS identity. Upserted when a verified bearer token is first seen.",
         "properties": {
@@ -12507,6 +13308,12 @@
           "commitments": {
             "items": {
               "$ref": "#/components/schemas/Commitment"
+            },
+            "type": "array"
+          },
+          "connector_audit_events": {
+            "items": {
+              "$ref": "#/components/schemas/ConnectorAuditEvent"
             },
             "type": "array"
           },
@@ -13407,6 +14214,45 @@
   },
   "openapi": "3.0.3",
   "paths": {
+    "/.well-known/connector-jwks.json": {
+      "get": {
+        "description": "Public RS256 keys used by product MCP resource servers to verify short-lived RFC 012 connector tokens.",
+        "operationId": "getConnectorBrokerJWKS",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "keys": [
+                    {
+                      "alg": "RS256",
+                      "e": "AQAB",
+                      "kid": "broker-2026-08",
+                      "kty": "RSA",
+                      "n": "...",
+                      "use": "sig"
+                    }
+                  ]
+                },
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "RFC 7517 JSON Web Key Set.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Connector broker JSON Web Key Set."
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "summary": "Get connector broker JWKS",
+        "tags": [
+          "Connectors"
+        ]
+      }
+    },
     "/api/auth/get-session": {
       "get": {
         "description": "Adapts the authenticated WorkOS identity to the Better Auth session response shape expected by the upstream renderer. It does not mint or rotate credentials.",
@@ -13681,24 +14527,37 @@
         ]
       }
     },
-    "/oauth-hooks/pre-consent": {
+    "/oauth-hooks/consent-audit": {
       "post": {
-        "description": "Shared-secret webhook called by OAuth infrastructure before consent. It resolves the requested connector and returns allow=true or an upsell payload based on the user's billing plan.",
-        "operationId": "preConsent",
+        "description": "HMAC-signed endpoint accepting only consent.shown, consent.granted, or consent.denied. It validates every identity and scope against the pending flow and durably deduplicates event_id.",
+        "operationId": "appendConnectorConsentAudit",
         "requestBody": {
           "content": {
             "application/json": {
               "example": {
-                "connector": "canvas",
-                "requested_audience": "canvas-api",
+                "audience": "mcp:canvas",
+                "client_id": "rowboat-desktop",
+                "connector_id": "canvas",
+                "consent_session_id": "consent_01HABCDEF",
+                "context_request_id": "ctx_01HABCDEF",
+                "event": "consent.granted",
+                "event_id": "evt_01HABCDEF",
+                "occurred_at": "2026-08-27T20:00:00Z",
+                "result": {
+                  "approved": true
+                },
+                "scopes": [
+                  "canvas:invoices.read"
+                ],
+                "version": 1,
                 "workos_user_id": "user_01HABCDEF"
               },
               "schema": {
-                "$ref": "#/components/schemas/PreConsentRequest"
+                "$ref": "#/components/schemas/ConsentAuditRequest"
               }
             }
           },
-          "description": "Pre-consent webhook payload.",
+          "description": "Strict consent audit event.",
           "required": true
         },
         "responses": {
@@ -13706,24 +14565,29 @@
             "content": {
               "application/json": {
                 "example": {
-                  "allow": false,
-                  "upsell": {
-                    "message": "Upgrade to pro to connect Canvas",
-                    "requiredPlan": "pro"
-                  }
+                  "accepted": true
                 },
                 "schema": {
-                  "$ref": "#/components/schemas/PreConsentResponse"
+                  "$ref": "#/components/schemas/ConsentAuditResponse"
                 }
               }
             },
-            "description": "Consent decision."
+            "description": "Audit event persisted or exactly replayed."
           },
           "400": {
             "$ref": "#/components/responses/400"
           },
           "401": {
             "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
           },
           "500": {
             "$ref": "#/components/responses/500"
@@ -13734,7 +14598,127 @@
             "HookHMAC": []
           }
         ],
-        "summary": "Evaluate connector pre-consent entitlement",
+        "summary": "Append replay-safe connector consent audit",
+        "tags": [
+          "Webhooks"
+        ]
+      }
+    },
+    "/oauth-hooks/consent-context": {
+      "post": {
+        "description": "HMAC-authenticated endpoint returning owner, entitlement, and the exact structured requested scope catalog bound to a hashed pending state.",
+        "operationId": "connectorConsentContext",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "state": "state_abc123"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/ConsentContextRequest"
+              }
+            }
+          },
+          "description": "Consent state.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "description": "Structured consent context.",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Consent context."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "HookHMAC": []
+          }
+        ],
+        "summary": "Fetch connector consent context",
+        "tags": [
+          "Webhooks"
+        ]
+      }
+    },
+    "/oauth-hooks/pre-consent": {
+      "post": {
+        "description": "HMAC-signed oauth-consent hook. It binds the Hydra challenge, WorkOS subject, desktop client, one connector audience, exact scope catalog, and current entitlement to one pending flow.",
+        "operationId": "preConsent",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "challenge": "challenge_01HABCDEF",
+                "hydra_client_id": "rowboat-desktop",
+                "requested_audience": [
+                  "mcp:canvas"
+                ],
+                "requested_scopes": [
+                  "canvas:invoices.read"
+                ],
+                "version": 1,
+                "workos_user_id": "user_01HABCDEF"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/PreConsentRequest"
+              }
+            }
+          },
+          "description": "Strict pre-consent context request.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreConsentResponse"
+                }
+              }
+            },
+            "description": "Structured connector consent context."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "HookHMAC": []
+          }
+        ],
+        "summary": "Resolve strict connector consent context",
         "tags": [
           "Webhooks"
         ]
@@ -16466,7 +17450,7 @@
     },
     "/v1/connections/{name}": {
       "delete": {
-        "description": "Idempotently disconnects a connector for the authenticated user. If a refresh token exists, rowboat-api attempts to revoke it at Ory before deleting the local connection.",
+        "description": "Idempotently revokes upstream where possible, clears local credentials, and retains a revoked audit tombstone.",
         "operationId": "deleteConnection",
         "parameters": [
           {
@@ -16508,7 +17492,7 @@
     },
     "/v1/connections/{name}/api-key": {
       "post": {
-        "description": "Stores a vendor-issued API key for an api_key connector. The key is sealed at rest and later minted back only through the connector MCP token endpoint.",
+        "description": "Stores a vendor-issued API key for an api_key connector. The key remains sealed and server-side; product calls receive only short-lived broker tokens.",
         "operationId": "setConnectionAPIKey",
         "parameters": [
           {
@@ -16690,7 +17674,13 @@
             "content": {
               "application/json": {
                 "example": {
-                  "connected": true
+                  "audience": "mcp:canvas",
+                  "connected": true,
+                  "connectionId": "123e4567-e89b-12d3-a456-426614174000",
+                  "connector": "canvas",
+                  "scopes": [
+                    "canvas:invoices.read"
+                  ]
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ConnectionConnectedResponse"
@@ -16737,7 +17727,7 @@
     },
     "/v1/connections/{name}/mcp-token": {
       "post": {
-        "description": "Returns a short-lived MCP access token and target MCP URL for a connected connector. OAuth connectors refresh through Ory; api_key connectors return the sealed vendor key directly.",
+        "description": "Validates an active non-revoked connection, exact audience, granted scope subset, current catalog availability, and current entitlement. OAuth credentials are refreshed and rotated server-side, then rowboat-api returns an RS256 product token carrying bounded actor claims. Provider tokens and API keys are never returned.",
         "operationId": "createMCPToken",
         "parameters": [
           {
@@ -16752,14 +17742,39 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "audience": "mcp:canvas",
+                "requestedScopes": [
+                  "canvas:invoices.read"
+                ]
+              },
+              "schema": {
+                "$ref": "#/components/schemas/MCPTokenRequest"
+              }
+            }
+          },
+          "description": "Token audience and scope request.",
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "example": {
-                  "access_token": "mcp_access_token",
+                  "access_token": "eyJ...",
+                  "audience": "mcp:canvas",
+                  "connectionId": "123e4567-e89b-12d3-a456-426614174000",
                   "expires_at": 1790784000,
+                  "expires_in": 300,
                   "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
+                  "scope": "canvas:invoices.read",
+                  "scopes": [
+                    "canvas:invoices.read"
+                  ],
+                  "token": "eyJ...",
                   "token_type": "Bearer"
                 },
                 "schema": {
@@ -16801,7 +17816,7 @@
     },
     "/v1/connections/{name}/start": {
       "post": {
-        "description": "Creates a sealed pending connection ticket, builds the Ory authorize URL with PKCE, and returns it for the desktop to open in a browser.",
+        "description": "Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.",
         "operationId": "startConnection",
         "parameters": [
           {
@@ -16816,12 +17831,32 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "redirectTarget": "solomon-ai://connection-complete",
+                "requestedScopes": [
+                  "canvas:invoices.read",
+                  "canvas:customers.read"
+                ]
+              },
+              "schema": {
+                "$ref": "#/components/schemas/ConnectionStartRequest"
+              }
+            }
+          },
+          "description": "Connector OAuth request.",
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "example": {
-                  "authorize_url": "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api\u0026state=..."
+                  "authorization_url": "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api\u0026state=...",
+                  "authorize_url": "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api\u0026state=...",
+                  "expires_at": "2026-08-27T20:20:00Z"
                 },
                 "schema": {
                   "$ref": "#/components/schemas/ConnectionStartResponse"
@@ -16925,6 +17960,302 @@
           }
         ],
         "summary": "List connectors",
+        "tags": [
+          "Connectors"
+        ]
+      }
+    },
+    "/v1/connectors/{name}/callback": {
+      "get": {
+        "description": "Browser redirect target from Ory. The user is resolved from the sealed pending ticket, not from a bearer token. On success or failure it redirects to the desktop deep link.",
+        "operationId": "handleConnectorCallback",
+        "parameters": [
+          {
+            "description": "Connector slug, for example canvas, corinthian, or wispr.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "description": "Connector slug.",
+              "example": "canvas",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque connection state generated by /start.",
+            "in": "query",
+            "name": "state",
+            "required": true,
+            "schema": {
+              "description": "State.",
+              "example": "state_abc123",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Authorization code from Ory.",
+            "in": "query",
+            "name": "code",
+            "required": false,
+            "schema": {
+              "description": "Authorization code.",
+              "example": "code_abc123",
+              "type": "string"
+            }
+          },
+          {
+            "description": "OAuth error from Ory.",
+            "in": "query",
+            "name": "error",
+            "required": false,
+            "schema": {
+              "description": "OAuth error.",
+              "example": "access_denied",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to solomon-ai://connection-complete with connector and status.",
+            "headers": {
+              "Location": {
+                "description": "Redirect target.",
+                "schema": {
+                  "format": "uri",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "summary": "Handle connector OAuth callback",
+        "tags": [
+          "Connectors"
+        ]
+      }
+    },
+    "/v1/connectors/{name}/connections/{connectionID}": {
+      "delete": {
+        "description": "Canonical RFC 012 disconnect path. It transitions the matching user-owned connection through revoking, clears credentials, and retains an audit tombstone.",
+        "operationId": "deleteConnectorConnection",
+        "parameters": [
+          {
+            "description": "Connector slug, for example canvas, corinthian, or wispr.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "description": "Connector slug.",
+              "example": "canvas",
+              "type": "string"
+            }
+          },
+          {
+            "description": "User-owned connector connection UUID.",
+            "in": "path",
+            "name": "connectionID",
+            "required": true,
+            "schema": {
+              "description": "Connection UUID.",
+              "example": "123e4567-e89b-12d3-a456-426614174000",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Connector disconnected or was already absent."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Disconnect connector connection",
+        "tags": [
+          "Connectors"
+        ]
+      }
+    },
+    "/v1/connectors/{name}/resource-token": {
+      "post": {
+        "description": "Validates an active non-revoked connection, exact audience, granted scope subset, current catalog availability, and current entitlement. OAuth credentials are refreshed and rotated server-side, then rowboat-api returns an RS256 product token carrying bounded actor claims. Provider tokens and API keys are never returned.",
+        "operationId": "createConnectorResourceToken",
+        "parameters": [
+          {
+            "description": "Connector slug, for example canvas, corinthian, or wispr.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "description": "Connector slug.",
+              "example": "canvas",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "audience": "mcp:canvas",
+                "requestedScopes": [
+                  "canvas:invoices.read"
+                ]
+              },
+              "schema": {
+                "$ref": "#/components/schemas/MCPTokenRequest"
+              }
+            }
+          },
+          "description": "Token audience and scope request.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "access_token": "eyJ...",
+                  "audience": "mcp:canvas",
+                  "connectionId": "123e4567-e89b-12d3-a456-426614174000",
+                  "expires_at": 1790784000,
+                  "expires_in": 300,
+                  "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
+                  "scope": "canvas:invoices.read",
+                  "scopes": [
+                    "canvas:invoices.read"
+                  ],
+                  "token": "eyJ...",
+                  "token_type": "Bearer"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/MCPTokenResponse"
+                }
+              }
+            },
+            "description": "MCP token and endpoint."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "502": {
+            "$ref": "#/components/responses/502"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Mint connector MCP token",
+        "tags": [
+          "Connectors"
+        ]
+      }
+    },
+    "/v1/connectors/{name}/start": {
+      "post": {
+        "description": "Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.",
+        "operationId": "startConnector",
+        "parameters": [
+          {
+            "description": "Connector slug, for example canvas, corinthian, or wispr.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "description": "Connector slug.",
+              "example": "canvas",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "redirectTarget": "solomon-ai://connection-complete",
+                "requestedScopes": [
+                  "canvas:invoices.read",
+                  "canvas:customers.read"
+                ]
+              },
+              "schema": {
+                "$ref": "#/components/schemas/ConnectionStartRequest"
+              }
+            }
+          },
+          "description": "Connector OAuth request.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "authorization_url": "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api\u0026state=...",
+                  "authorize_url": "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api\u0026state=...",
+                  "expires_at": "2026-08-27T20:20:00Z"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionStartResponse"
+                }
+              }
+            },
+            "description": "Connector authorize URL."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Start connector OAuth flow",
         "tags": [
           "Connectors"
         ]
@@ -17841,14 +19172,15 @@
     },
     "/v1/internal/connections/invalidate": {
       "post": {
-        "description": "Server-to-server endpoint for products to invalidate a user's connector connection. Unknown users are treated as successful no-ops.",
+        "description": "Server-to-server endpoint supporting exact connection, user, org, connector, or combined targets. Matches become invalidated tombstones; credentials are cleared and upstream revocation is attempted.",
         "operationId": "invalidateConnection",
         "requestBody": {
           "content": {
             "application/json": {
               "example": {
                 "connector": "canvas",
-                "workos_user_id": "user_01HABCDEF"
+                "org_id": "org_01HABCDEF",
+                "reason": "subscription_ended"
               },
               "schema": {
                 "$ref": "#/components/schemas/InternalInvalidateRequest"
@@ -17863,8 +19195,10 @@
             "content": {
               "application/json": {
                 "example": {
-                  "deleted": 1,
-                  "invalidated": true
+                  "failures": 0,
+                  "invalidated": true,
+                  "matched": 1,
+                  "revoked": 1
                 },
                 "schema": {
                   "$ref": "#/components/schemas/InternalInvalidateResponse"
@@ -17888,7 +19222,7 @@
             "InternalSecret": []
           }
         ],
-        "summary": "Force-disconnect a connector",
+        "summary": "Force-invalidate connector connections",
         "tags": [
           "Internal"
         ]

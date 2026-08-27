@@ -472,7 +472,7 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 	if err != nil {
 		return nil, err
 	}
-	sealer, err := crypto.NewSealer(cfg.DBEncryptionKey)
+	sealer, err := workerColumnSealer(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -485,6 +485,17 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 		OryBrokerClientID:     cfg.OryBrokerClientID,
 		OryBrokerClientSecret: cfg.OryBrokerClientSecret,
 	})
+	if strings.TrimSpace(cfg.BrokerTokenPrivateKey) != "" {
+		resourceTokenIssuer, issuerErr := connectors.NewRSAResourceTokenIssuer(
+			[]byte(cfg.BrokerTokenPrivateKey), cfg.BrokerTokenKeyID, cfg.BrokerTokenIssuer, cfg.BrokerTokenTTL,
+		)
+		if issuerErr != nil {
+			return nil, fmt.Errorf("configure connector resource-token issuer: %w", issuerErr)
+		}
+		mcpResolver.SetResourceTokenIssuer(resourceTokenIssuer)
+	} else if cfg.IsProduction() {
+		return nil, fmt.Errorf("BROKER_TOKEN_PRIVATE_KEY_PEM is required in production")
+	}
 	mcpResolver.SetOutboundPolicy(outbound.Policy{
 		Timeout:          15 * time.Second,
 		MaxConcurrent:    64,
@@ -549,6 +560,18 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 		MCPConnectors: connectorNames(connectorRegistry),
 		MCPPolicies:   mcpPolicies(connectorRegistry),
 	}, nil
+}
+
+func workerColumnSealer(cfg appconfig.Config) (*crypto.Sealer, error) {
+	primaryKeyID, keyring, err := cfg.DBEncryptionKeyring()
+	if err != nil {
+		return nil, fmt.Errorf("column encryption configuration: %w", err)
+	}
+	sealer, err := crypto.NewKeyringSealer(primaryKeyID, keyring)
+	if err != nil {
+		return nil, fmt.Errorf("build column encryption keyring: %w", err)
+	}
+	return sealer, nil
 }
 
 func connectorNames(registry *connectors.Registry) []string {

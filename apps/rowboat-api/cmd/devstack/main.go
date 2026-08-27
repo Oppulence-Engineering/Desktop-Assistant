@@ -69,6 +69,7 @@ type authCode struct {
 	challenge   string
 	redirectURI string
 	clientID    string
+	audience    string
 	scope       string
 	sub         string
 	email       string
@@ -80,6 +81,7 @@ type session struct {
 	sub      string
 	email    string
 	clientID string
+	audience string
 	scope    string
 }
 
@@ -100,7 +102,12 @@ func main() {
 	mux.HandleFunc("/.well-known/openid-configuration", handleDiscovery)
 	mux.HandleFunc("/oauth2/register", handleRegister)
 	mux.HandleFunc("/authorize", handleAuthorize)
+	// Hydra exposes the authorization endpoint at /oauth2/auth. Keep /authorize
+	// for OIDC desktop tests and serve the same deterministic fixture behavior
+	// at the broker path used by the connector suite.
+	mux.HandleFunc("/oauth2/auth", handleAuthorize)
 	mux.HandleFunc("/oauth2/token", handleToken)
+	mux.HandleFunc("/oauth2/revoke", handleRevoke)
 	mux.HandleFunc("/mint", handleMint)
 	// WorkOS AuthKit mock (confidential): authorize reuses the OIDC code path;
 	// authenticate is WorkOS's proprietary, secret-required token exchange.
@@ -188,11 +195,16 @@ func handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	code, _ := randomToken(24)
+	scope := def(q.Get("scope"), "openid email profile")
+	if q.Get("fixture_scope_escalation") == "true" {
+		scope = strings.TrimSpace(scope + " dev:admin.write")
+	}
 	authCodes.Store(code, authCode{
 		challenge:   q.Get("code_challenge"),
 		redirectURI: redirectURI,
 		clientID:    q.Get("client_id"),
-		scope:       def(q.Get("scope"), "openid email profile"),
+		audience:    def(q.Get("audience"), audience),
+		scope:       scope,
 		sub:         "user_dev_1",
 		email:       "dev@solomon-ai.co",
 		nonce:       q.Get("nonce"),
@@ -226,6 +238,14 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handleRevoke(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	if token := strings.TrimSpace(r.Form.Get("token")); token != "" {
+		refreshDB.Delete(token)
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 func tokenFromCode(w http.ResponseWriter, r *http.Request) {
 	code := r.Form.Get("code")
 	v, ok := authCodes.LoadAndDelete(code)
@@ -251,8 +271,8 @@ func tokenFromCode(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	rt, _ := randomToken(32)
-	refreshDB.Store(rt, session{sub: ac.sub, email: ac.email, clientID: ac.clientID, scope: ac.scope})
-	writeTokenResponse(w, ac.sub, ac.email, ac.clientID, ac.scope, ac.nonce, rt)
+	refreshDB.Store(rt, session{sub: ac.sub, email: ac.email, clientID: ac.clientID, audience: ac.audience, scope: ac.scope})
+	writeTokenResponse(w, ac.sub, ac.email, ac.clientID, ac.audience, ac.scope, ac.nonce, rt)
 }
 
 func tokenFromRefresh(w http.ResponseWriter, r *http.Request) {
@@ -263,13 +283,13 @@ func tokenFromRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s := v.(session)
-	writeTokenResponse(w, s.sub, s.email, s.clientID, s.scope, "", rt)
+	writeTokenResponse(w, s.sub, s.email, s.clientID, s.audience, s.scope, "", rt)
 }
 
-func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, scope, nonce, refreshToken string) {
+func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, tokenAudience, scope, nonce, refreshToken string) {
 	access := signToken(jwt.MapClaims{
 		"iss":   issuer,
-		"aud":   audience,
+		"aud":   def(tokenAudience, audience),
 		"sub":   sub,
 		"iat":   time.Now().Unix(),
 		"exp":   time.Now().Add(time.Hour).Unix(),

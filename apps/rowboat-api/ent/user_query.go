@@ -32,6 +32,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -99,6 +100,7 @@ type UserQuery struct {
 	withLlmUsages                               *LLMUsageQuery
 	withOauthConnections                        *OAuthConnectionQuery
 	withMcpConnections                          *MCPConnectionQuery
+	withConnectorAuditEvents                    *ConnectorAuditEventQuery
 	withBackgroundTasks                         *BackgroundTaskQuery
 	withBackgroundTaskArtifacts                 *BackgroundTaskArtifactQuery
 	withBackgroundTaskRuns                      *BackgroundTaskRunQuery
@@ -166,6 +168,7 @@ type UserQuery struct {
 	withNamedLlmUsages                          map[string]*LLMUsageQuery
 	withNamedOauthConnections                   map[string]*OAuthConnectionQuery
 	withNamedMcpConnections                     map[string]*MCPConnectionQuery
+	withNamedConnectorAuditEvents               map[string]*ConnectorAuditEventQuery
 	withNamedBackgroundTasks                    map[string]*BackgroundTaskQuery
 	withNamedBackgroundTaskArtifacts            map[string]*BackgroundTaskArtifactQuery
 	withNamedBackgroundTaskRuns                 map[string]*BackgroundTaskRunQuery
@@ -450,6 +453,28 @@ func (_q *UserQuery) QueryMcpConnections() *MCPConnectionQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(mcpconnection.Table, mcpconnection.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.McpConnectionsTable, user.McpConnectionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryConnectorAuditEvents chains the current query on the "connector_audit_events" edge.
+func (_q *UserQuery) QueryConnectorAuditEvents() *ConnectorAuditEventQuery {
+	query := (&ConnectorAuditEventClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(connectorauditevent.Table, connectorauditevent.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ConnectorAuditEventsTable, user.ConnectorAuditEventsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -1912,6 +1937,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withLlmUsages:                          _q.withLlmUsages.Clone(),
 		withOauthConnections:                   _q.withOauthConnections.Clone(),
 		withMcpConnections:                     _q.withMcpConnections.Clone(),
+		withConnectorAuditEvents:               _q.withConnectorAuditEvents.Clone(),
 		withBackgroundTasks:                    _q.withBackgroundTasks.Clone(),
 		withBackgroundTaskArtifacts:            _q.withBackgroundTaskArtifacts.Clone(),
 		withBackgroundTaskRuns:                 _q.withBackgroundTaskRuns.Clone(),
@@ -2071,6 +2097,17 @@ func (_q *UserQuery) WithMcpConnections(opts ...func(*MCPConnectionQuery)) *User
 		opt(query)
 	}
 	_q.withMcpConnections = query
+	return _q
+}
+
+// WithConnectorAuditEvents tells the query-builder to eager-load the nodes that are connected to
+// the "connector_audit_events" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithConnectorAuditEvents(opts ...func(*ConnectorAuditEventQuery)) *UserQuery {
+	query := (&ConnectorAuditEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withConnectorAuditEvents = query
 	return _q
 }
 
@@ -2779,7 +2816,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [66]bool{
+		loadedTypes = [67]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -2789,6 +2826,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withLlmUsages != nil,
 			_q.withOauthConnections != nil,
 			_q.withMcpConnections != nil,
+			_q.withConnectorAuditEvents != nil,
 			_q.withBackgroundTasks != nil,
 			_q.withBackgroundTaskArtifacts != nil,
 			_q.withBackgroundTaskRuns != nil,
@@ -2930,6 +2968,15 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadMcpConnections(ctx, query, nodes,
 			func(n *User) { n.Edges.McpConnections = []*MCPConnection{} },
 			func(n *User, e *MCPConnection) { n.Edges.McpConnections = append(n.Edges.McpConnections, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withConnectorAuditEvents; query != nil {
+		if err := _q.loadConnectorAuditEvents(ctx, query, nodes,
+			func(n *User) { n.Edges.ConnectorAuditEvents = []*ConnectorAuditEvent{} },
+			func(n *User, e *ConnectorAuditEvent) {
+				n.Edges.ConnectorAuditEvents = append(n.Edges.ConnectorAuditEvents, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -3445,6 +3492,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadMcpConnections(ctx, query, nodes,
 			func(n *User) { n.appendNamedMcpConnections(name) },
 			func(n *User, e *MCPConnection) { n.appendNamedMcpConnections(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedConnectorAuditEvents {
+		if err := _q.loadConnectorAuditEvents(ctx, query, nodes,
+			func(n *User) { n.appendNamedConnectorAuditEvents(name) },
+			func(n *User, e *ConnectorAuditEvent) { n.appendNamedConnectorAuditEvents(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -4130,6 +4184,37 @@ func (_q *UserQuery) loadMcpConnections(ctx context.Context, query *MCPConnectio
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_mcp_connections" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadConnectorAuditEvents(ctx context.Context, query *ConnectorAuditEventQuery, nodes []*User, init func(*User), assign func(*User, *ConnectorAuditEvent)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.ConnectorAuditEvent(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ConnectorAuditEventsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_connector_audit_events
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_connector_audit_events" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_connector_audit_events" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
@@ -6096,6 +6181,20 @@ func (_q *UserQuery) WithNamedMcpConnections(name string, opts ...func(*MCPConne
 		_q.withNamedMcpConnections = make(map[string]*MCPConnectionQuery)
 	}
 	_q.withNamedMcpConnections[name] = query
+	return _q
+}
+
+// WithNamedConnectorAuditEvents tells the query-builder to eager-load the nodes that are connected to the "connector_audit_events"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedConnectorAuditEvents(name string, opts ...func(*ConnectorAuditEventQuery)) *UserQuery {
+	query := (&ConnectorAuditEventClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedConnectorAuditEvents == nil {
+		_q.withNamedConnectorAuditEvents = make(map[string]*ConnectorAuditEventQuery)
+	}
+	_q.withNamedConnectorAuditEvents[name] = query
 	return _q
 }
 

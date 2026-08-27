@@ -550,15 +550,19 @@ func addOAuthSchemas(schemas obj) {
 
 func addConnectorSchemas(schemas obj) {
 	schemas["Connector"] = objectSchema("Connector entry shown by the desktop connector picker.", obj{
-		"name":        stringSchema("Stable connector slug.", "canvas"),
-		"displayName": stringSchema("Human-readable connector name.", "Canvas"),
-		"description": stringSchema("Short product capability description.", "Banking, invoicing, dunning, transactions"),
-		"mcpUrl":      stringSchema("MCP endpoint the desktop should call after obtaining an MCP token. Empty for native SDK connectors.", "https://api.canvas.solomon-ai.co/v1/mcp"),
-		"transport":   stringEnum("Connector execution transport. MCP is the default; native uses server-side SDK tools.", "mcp", "mcp", "native"),
-		"authType":    stringEnum("Connector credential flow.", "oauth", "oauth", "api_key"),
-		"scopes":      arraySchema("OAuth scopes requested for this connector.", stringSchema("Scope.", "invoices:read")),
-		"mcpTools":    arraySchema("Allowlisted upstream MCP tools and trust tiers for cloud runtime calls.", ref("MCPToolPolicy")),
-		"nativeTools": arraySchema("Allowlisted server-side native SDK tools and trust tiers.", ref("MCPToolPolicy")),
+		"name":            stringSchema("Stable connector slug.", "canvas"),
+		"displayName":     stringSchema("Human-readable connector name.", "Canvas"),
+		"description":     stringSchema("Short product capability description.", "Banking, invoicing, dunning, transactions"),
+		"mcpUrl":          stringSchema("MCP endpoint the desktop should call after obtaining an MCP token. Empty for native SDK connectors.", "https://api.canvas.solomon-ai.co/v1/mcp"),
+		"transport":       stringEnum("Connector execution transport. MCP is the default; native uses server-side SDK tools.", "mcp", "mcp", "native"),
+		"authType":        stringEnum("Connector credential flow.", "oauth", "oauth", "api_key"),
+		"audience":        stringSchema("Audience accepted by this connector resource server.", "canvas-api"),
+		"status":          stringEnum("Effective catalog status including emergency disable.", "enabled", "enabled", "maintenance", "disabled"),
+		"health":          stringEnum("Configured connector health state.", "healthy", "healthy", "degraded", "unavailable"),
+		"availableScopes": arraySchema("Structured scopes available in the current environment.", ref("ConnectorScope")),
+		"grantedScopes":   arraySchema("Structured scopes granted on the active or tombstoned connection.", ref("ConnectorScope")),
+		"mcpTools":        arraySchema("Allowlisted upstream MCP tools and trust tiers for cloud runtime calls.", ref("MCPToolPolicy")),
+		"nativeTools":     arraySchema("Allowlisted server-side native SDK tools and trust tiers.", ref("MCPToolPolicy")),
 		"templateBlocks": arraySchema(
 			"Onboarding capability blocks shown when a user browses or connects this integration.",
 			ref("IntegrationTemplateBlock"),
@@ -566,7 +570,22 @@ func addConnectorSchemas(schemas obj) {
 		"iconUrl":     stringSchema("Optional icon URL for UI display.", "https://example.com/icon.png", nullable()),
 		"connected":   boolSchema("Whether the authenticated user has an active connection.", true),
 		"connectedAt": stringSchema("RFC3339 connection timestamp when connected.", "2026-06-04T20:38:00Z", nullable()),
-	}, "name", "displayName", "description", "mcpUrl", "authType", "connected")
+		"lastUsedAt":  stringSchema("RFC3339 timestamp of the last credential use.", "2026-06-04T20:45:00Z", nullable()),
+		"revokedAt":   stringSchema("RFC3339 revocation tombstone timestamp.", "2026-06-04T20:50:00Z", nullable()),
+	}, "name", "displayName", "description", "mcpUrl", "authType", "audience", "status", "health", "connected")
+	schemas["ConnectorScope"] = objectSchema("Canonical connector scope consent and risk policy.", obj{
+		"name":                  stringSchema("Namespaced scope name.", "canvas:invoices.read"),
+		"displayName":           stringSchema("Consent UI title.", "Read invoices"),
+		"description":           stringSchema("Consent UI explanation.", "View invoice balances and status."),
+		"grantTier":             stringEnum("Whether every grant must include this scope.", "required", "required", "optional"),
+		"risk":                  stringEnum("Scope risk tier.", "low", "low", "medium", "high", "money-moving"),
+		"implies":               arraySchema("Scopes that must also be requested.", stringSchema("Implied scope.", "canvas:customers.read")),
+		"conflictsWith":         arraySchema("Scopes that cannot coexist in one grant.", stringSchema("Conflicting scope.", "canvas:payments.readonly")),
+		"stepUpRequired":        boolSchema("Whether consent requires step-up authentication.", false),
+		"perInvocationApproval": boolSchema("Whether each invocation also requires an approval token.", false),
+		"requiredPlan":          stringSchema("Optional minimum plan for this scope.", "pro", nullable()),
+		"environments":          arraySchema("Environments where this scope is available.", stringEnum("Environment.", "production", "development", "staging", "production")),
+	}, "name", "displayName", "description", "grantTier", "risk")
 	schemas["IntegrationTemplateBlock"] = objectSchema("User-facing integration onboarding capability block. Blocks describe what an integration unlocks; they are not executable workflow nodes.", obj{
 		"id":             stringSchema("Stable block id within the connector.", "invoice-context"),
 		"title":          stringSchema("Short block title.", "Invoice context"),
@@ -586,8 +605,16 @@ func addConnectorSchemas(schemas obj) {
 		"connectors": arraySchema("Available connectors in configured order.", ref("Connector")),
 	}, "connectors")
 	schemas["ConnectionStartResponse"] = objectSchema("OAuth authorize URL for a connector.", obj{
-		"authorize_url": stringSchema("Browser URL the desktop opens to start the connector OAuth flow.", "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api&state=..."),
-	}, "authorize_url")
+		"authorization_url": stringSchema("Browser URL the desktop opens to start the connector OAuth flow.", "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api&state=..."),
+		"authorize_url":     stringSchema("Backward-compatible alias for authorization_url.", "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api&state=..."),
+		"expires_at":        stringSchema("RFC3339 expiry for the pending OAuth state.", "2026-08-27T20:20:00Z"),
+	}, "authorization_url", "authorize_url", "expires_at")
+	schemas["ConnectionStartRequest"] = objectSchema("Least-privilege connector OAuth request.", obj{
+		"requested_scopes": arraySchema("Requested canonical scopes. Omit to request only required scopes.", stringSchema("Scope.", "canvas:invoices.read")),
+		"redirect_after":   stringSchema("Allowlisted desktop deep-link target.", "solomon-ai://connection-complete", nullable()),
+		"requestedScopes":  arraySchema("Backward-compatible camelCase alias for requested_scopes.", stringSchema("Scope.", "canvas:invoices.read")),
+		"redirectTarget":   stringSchema("Backward-compatible camelCase alias for redirect_after.", "solomon-ai://connection-complete", nullable()),
+	})
 	schemas["ConnectionClaimRequest"] = objectSchema("Redeems a one-time connector OAuth ticket parked by /v1/connections/{name}/callback.", obj{
 		"state": stringSchema("Opaque state/session ticket returned to the desktop deep link.", "state_abc123"),
 	}, "state")
@@ -595,14 +622,28 @@ func addConnectorSchemas(schemas obj) {
 		"apiKey": stringSchema("Vendor API key. Stored sealed at rest and never returned by connector list endpoints.", "example-vendor-key"),
 	}, "apiKey")
 	schemas["ConnectionConnectedResponse"] = objectSchema("Connector connection result.", obj{
-		"connected": boolSchema("Whether the connector is now connected.", true),
+		"connected":    boolSchema("Whether the connector is now connected.", true),
+		"connectionId": stringSchema("Stable connection UUID used in product-side revocation checks.", "123e4567-e89b-12d3-a456-426614174000"),
+		"connector":    stringSchema("Connected connector slug.", "canvas"),
+		"audience":     stringSchema("Audience accepted by the product resource server.", "mcp:canvas"),
+		"scopes":       arraySchema("Scopes granted by the completed consent flow.", stringSchema("Scope.", "canvas:invoices.read")),
 	}, "connected")
 	schemas["MCPTokenResponse"] = objectSchema("Short-lived credential and target URL for calling a connector MCP endpoint.", obj{
-		"access_token": stringSchema("Bearer token or API key for the connector's MCP endpoint.", "mcp_access_token"),
-		"token_type":   stringSchema("Token type, usually Bearer.", "Bearer"),
-		"expires_at":   int64Schema("Unix timestamp in seconds for OAuth connector tokens. API-key connectors may omit it.", 1790784000),
+		"access_token": stringSchema("RS256 broker bearer token. This is never a provider access token or vendor API key.", "eyJhbGciOiJSUzI1NiIsImtpZCI6ImJyb2tlci0yMDI2LTA4In0..."),
+		"token":        stringSchema("Alias for access_token used by RFC 012 clients.", "eyJhbGciOiJSUzI1NiIsImtpZCI6ImJyb2tlci0yMDI2LTA4In0..."),
+		"token_type":   stringSchema("OAuth token type.", "Bearer"),
+		"expires_in":   int64Schema("Remaining lifetime in seconds. Never exceeds 900.", 300),
+		"expires_at":   int64Schema("Unix expiry timestamp in seconds.", 1790784000),
+		"scope":        stringSchema("Space-delimited granted scope subset.", "canvas:invoices.read"),
 		"mcpUrl":       stringSchema("Connector MCP endpoint URL.", "https://api.canvas.solomon-ai.co/v1/mcp"),
-	}, "access_token", "token_type", "mcpUrl")
+		"audience":     stringSchema("Exact product resource-server audience.", "mcp:canvas"),
+		"scopes":       arraySchema("Validated minted scope subset.", stringSchema("Scope.", "canvas:invoices.read")),
+		"connectionId": stringSchema("Connection UUID embedded in the token actor claims.", "123e4567-e89b-12d3-a456-426614174000"),
+	}, "access_token", "token", "token_type", "expires_in", "expires_at", "scope", "mcpUrl", "audience", "scopes", "connectionId")
+	schemas["MCPTokenRequest"] = objectSchema("Audience and least-privilege scopes requested for one resource token.", obj{
+		"audience":        stringSchema("Must exactly match the connector and stored connection audience.", "mcp:canvas", nullable()),
+		"requestedScopes": arraySchema("Must be a subset of currently granted scopes.", stringSchema("Scope.", "canvas:invoices.read")),
+	})
 	schemas["HubSpotSearchRequest"] = objectSchema("Bounded search of the authenticated user's connected HubSpot CRM.", obj{
 		"objectType": stringEnum("CRM object type.", "contact", "contact", "company", "deal", "ticket"),
 		"query":      stringSchema("HubSpot free-text search query.", "buyer@example.com"),
@@ -745,28 +786,77 @@ func addCloudEventSchemas(schemas obj) {
 }
 
 func addInternalSchemas(schemas obj) {
-	schemas["PreConsentRequest"] = objectSchema("Ory pre-consent webhook payload mapped by ops.", obj{
-		"workos_user_id":     stringSchema("WorkOS user id. If absent, subject is used.", "user_01HABCDEF"),
-		"subject":            stringSchema("Fallback subject/user id from Ory.", "user_01HABCDEF", nullable()),
-		"connector":          stringSchema("Connector slug being requested.", "canvas", nullable()),
-		"requested_audience": stringSchema("Requested token audience. Used to resolve connector when connector is absent.", "canvas-api", nullable()),
-	}, "requested_audience")
-	schemas["Upsell"] = objectSchema("Upgrade instruction returned when a connector requires a higher plan.", obj{
-		"requiredPlan": stringEnum("Minimum plan required.", "pro", "starter", "pro"),
-		"message":      stringSchema("Human-readable upgrade copy.", "Upgrade to pro to connect Canvas"),
-	}, "requiredPlan", "message")
-	schemas["PreConsentResponse"] = objectSchema("Connector entitlement decision.", obj{
-		"allow":  boolSchema("Whether Ory should continue the consent flow.", true),
-		"upsell": ref("Upsell"),
-	}, "allow")
+	schemas["PreConsentRequest"] = objectSchema("Strict oauth-consent context request bound to one Hydra challenge and pending connector flow.", obj{
+		"version":            intSchema("Hook contract version. Only version 1 is accepted.", 1),
+		"challenge":          stringSchema("Hydra consent challenge.", "challenge_01HABCDEF"),
+		"workos_user_id":     stringSchema("WorkOS subject that started the connector flow.", "user_01HABCDEF"),
+		"hydra_client_id":    stringSchema("Hydra client id. Must match the configured Rowboat Desktop broker client.", "rowboat-desktop"),
+		"requested_audience": arraySchema("Exactly one requested connector audience.", stringSchema("Connector audience.", "mcp:canvas")),
+		"requested_scopes":   arraySchema("Exact non-empty connector scope set requested from the catalog.", stringSchema("Connector scope.", "canvas:invoices.read")),
+	}, "version", "challenge", "workos_user_id", "hydra_client_id", "requested_audience", "requested_scopes")
+	schemas["ConsentClientIdentity"] = objectSchema("Bound OAuth client identity shown to the user.", obj{
+		"id":           stringSchema("Hydra client id.", "rowboat-desktop"),
+		"display_name": stringSchema("Stable product display name.", "Rowboat Desktop"),
+	}, "id", "display_name")
+	schemas["ConsentConnectorIdentity"] = objectSchema("Connector identity shown to the user.", obj{
+		"id":           stringSchema("Connector slug.", "canvas"),
+		"display_name": stringSchema("Connector display name.", "Canvas"),
+		"audience":     stringSchema("Audience bound to any resulting resource token.", "mcp:canvas"),
+	}, "id", "display_name", "audience")
+	schemas["ConsentScopeDefinition"] = objectSchema("Catalog-owned scope definition rendered by oauth-consent.", obj{
+		"name":             stringSchema("Namespaced connector scope.", "canvas:invoices.read"),
+		"display_name":     stringSchema("Human-readable scope name.", "Read invoices"),
+		"description":      stringSchema("Purpose shown before consent.", "Read invoice records."),
+		"tier":             stringEnum("Risk tier.", "low", "low", "medium", "high", "money-moving"),
+		"required":         boolSchema("Whether the scope is required for this connection.", true),
+		"requires_step_up": boolSchema("Whether approval requires a recent step-up.", false),
+	}, "name", "display_name", "description", "tier", "required", "requires_step_up")
+	schemas["ConsentEntitlement"] = objectSchema("Current entitlement decision, distinct from OAuth approval or denial.", obj{
+		"allowed":       boolSchema("Whether the current plan permits this connector and scope set.", true),
+		"reason":        stringSchema("Machine-readable denial reason.", "scope_not_in_plan", nullable()),
+		"required_plan": stringSchema("Minimum plan required after denial.", "pro", nullable()),
+		"upgrade_url":   stringSchema("Desktop upgrade deep link.", "rowboat://billing", nullable()),
+		"message":       stringSchema("Human-readable entitlement explanation.", "This connector requires the pro plan.", nullable()),
+	}, "allowed")
+	schemas["PreConsentResponse"] = objectSchema("Strict structured consent context. It contains no state, PKCE verifier, provider credential, or raw owner metadata.", obj{
+		"request_id":  stringSchema("Deterministic context request id bound to the challenge.", "ctx_01HABCDEF"),
+		"subject":     stringSchema("WorkOS subject bound to the pending flow.", "user_01HABCDEF"),
+		"client":      ref("ConsentClientIdentity"),
+		"connector":   ref("ConsentConnectorIdentity"),
+		"scopes":      arraySchema("Exact catalog scope definitions.", ref("ConsentScopeDefinition")),
+		"entitlement": ref("ConsentEntitlement"),
+	}, "request_id", "subject", "client", "connector", "scopes", "entitlement")
 	schemas["InternalInvalidateRequest"] = objectSchema("Server-to-server force disconnect request.", obj{
+		"connection_id":  stringSchema("Optional exact MCPConnection UUID target.", "123e4567-e89b-12d3-a456-426614174000", nullable()),
 		"workos_user_id": stringSchema("WorkOS user id whose connection should be invalidated.", "user_01HABCDEF"),
+		"org_id":         stringSchema("Optional WorkOS organization target.", "org_01HABCDEF", nullable()),
 		"connector":      stringSchema("Connector slug to disconnect.", "canvas"),
-	}, "workos_user_id", "connector")
+		"reason":         stringSchema("Semantic revocation reason.", "subscription_ended", nullable()),
+	})
 	schemas["InternalInvalidateResponse"] = objectSchema("Force disconnect result.", obj{
 		"invalidated": boolSchema("Always true on successful handling, including no-op unknown users.", true),
-		"deleted":     intSchema("Number of connection rows deleted. Omitted for unknown users.", 1),
+		"matched":     intSchema("Number of matching connection rows.", 1),
+		"revoked":     intSchema("Number retained as revoked tombstones.", 1),
+		"failures":    intSchema("Number that could not be tombstoned.", 0),
 	}, "invalidated")
+	schemas["ConsentContextRequest"] = objectSchema("Fetches consent context by opaque OAuth state.", obj{"state": stringSchema("Raw state received by the consent flow.", "state_abc123")}, "state")
+	schemas["ConsentAuditRequest"] = objectSchema("Append-only, replay-safe oauth-consent audit event. event_id is globally unique and conflicting replays are rejected.", obj{
+		"version":            intSchema("Hook contract version. Only version 1 is accepted.", 1),
+		"event_id":           stringSchema("Globally unique idempotency id.", "evt_01HABCDEF"),
+		"event":              stringEnum("Accepted semantic event.", "consent.granted", "consent.shown", "consent.granted", "consent.denied"),
+		"occurred_at":        stringSchema("RFC3339Nano event time.", "2026-08-27T20:00:00Z"),
+		"consent_session_id": stringSchema("Consent UI session id.", "consent_01HABCDEF"),
+		"context_request_id": stringSchema("request_id returned by pre-consent.", "ctx_01HABCDEF"),
+		"workos_user_id":     stringSchema("Bound WorkOS subject.", "user_01HABCDEF"),
+		"client_id":          stringSchema("Bound Hydra client id.", "rowboat-desktop"),
+		"connector_id":       stringSchema("Bound connector slug.", "canvas"),
+		"audience":           stringSchema("Bound connector audience.", "mcp:canvas"),
+		"scopes":             arraySchema("Shown or granted scope set.", stringSchema("Connector scope.", "canvas:invoices.read")),
+		"result":             freeFormSchema("Bounded JSON result object or string. It must not contain credentials."),
+	}, "version", "event_id", "event", "occurred_at", "consent_session_id", "context_request_id", "workos_user_id", "client_id", "connector_id", "audience", "scopes")
+	schemas["ConsentAuditResponse"] = objectSchema("Durable audit acknowledgement.", obj{
+		"accepted": boolSchema("True after persistence or an exact idempotent replay.", true),
+	}, "accepted")
 	schemas["GraphQLRequest"] = objectSchema("GraphQL request envelope.", obj{
 		"query":         stringSchema("GraphQL query or mutation.", "{ users(first: 10) { edges { node { id email } } } }"),
 		"variables":     freeFormSchema("Optional GraphQL variables."),
@@ -1413,8 +1503,8 @@ func addConnectorPaths(paths obj) {
 		"502": responseRef("502"),
 		"503": responseRef("503"),
 	})}
-	paths["/v1/connections/{name}/start"] = obj{"post": operation("Connectors", "Start connector OAuth flow", "Creates a sealed pending connection ticket, builds the Ory authorize URL with PKCE, and returns it for the desktop to open in a browser.", "startConnection", bearer(), connectorNameParam(), nil, obj{
-		"200": jsonResponse("Connector authorize URL.", ref("ConnectionStartResponse"), obj{"authorize_url": "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api&state=..."}),
+	paths["/v1/connections/{name}/start"] = obj{"post": operation("Connectors", "Start connector OAuth flow", "Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.", "startConnection", bearer(), connectorNameParam(), jsonRequest("Connector OAuth request.", ref("ConnectionStartRequest"), obj{"requestedScopes": []any{"canvas:invoices.read", "canvas:customers.read"}, "redirectTarget": "solomon-ai://connection-complete"}), obj{
+		"200": jsonResponse("Connector authorize URL.", ref("ConnectionStartResponse"), obj{"authorization_url": "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api&state=...", "authorize_url": "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api&state=...", "expires_at": "2026-08-27T20:20:00Z"}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
@@ -1431,7 +1521,7 @@ func addConnectorPaths(paths obj) {
 		"500": responseRef("500"),
 	})}
 	paths["/v1/connections/{name}/claim"] = obj{"post": operation("Connectors", "Claim connector OAuth flow", "Redeems the connector grant parked by the browser callback. Persistence is bound to the authenticated user that started the flow.", "claimConnection", bearer(), connectorNameParam(), jsonRequest("Connector claim ticket.", ref("ConnectionClaimRequest"), obj{"state": "state_abc123"}), obj{
-		"200": jsonResponse("Connector connected.", ref("ConnectionConnectedResponse"), obj{"connected": true}),
+		"200": jsonResponse("Connector connected.", ref("ConnectionConnectedResponse"), obj{"connected": true, "connectionId": "123e4567-e89b-12d3-a456-426614174000", "connector": "canvas", "audience": "mcp:canvas", "scopes": []any{"canvas:invoices.read"}}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"403": responseRef("403"),
@@ -1441,7 +1531,7 @@ func addConnectorPaths(paths obj) {
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
-	paths["/v1/connections/{name}/api-key"] = obj{"post": operation("Connectors", "Connect API-key connector", "Stores a vendor-issued API key for an api_key connector. The key is sealed at rest and later minted back only through the connector MCP token endpoint.", "setConnectionAPIKey", bearer(), connectorNameParam(), jsonRequest("Connector API key.", ref("ConnectionAPIKeyRequest"), obj{"apiKey": "example-vendor-key"}), obj{
+	paths["/v1/connections/{name}/api-key"] = obj{"post": operation("Connectors", "Connect API-key connector", "Stores a vendor-issued API key for an api_key connector. The key remains sealed and server-side; product calls receive only short-lived broker tokens.", "setConnectionAPIKey", bearer(), connectorNameParam(), jsonRequest("Connector API key.", ref("ConnectionAPIKeyRequest"), obj{"apiKey": "example-vendor-key"}), obj{
 		"200": jsonResponse("Connector connected.", ref("ConnectionConnectedResponse"), obj{"connected": true}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
@@ -1449,8 +1539,8 @@ func addConnectorPaths(paths obj) {
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
-	paths["/v1/connections/{name}/mcp-token"] = obj{"post": operation("Connectors", "Mint connector MCP token", "Returns a short-lived MCP access token and target MCP URL for a connected connector. OAuth connectors refresh through Ory; api_key connectors return the sealed vendor key directly.", "createMCPToken", bearer(), connectorNameParam(), nil, obj{
-		"200": jsonResponse("MCP token and endpoint.", ref("MCPTokenResponse"), obj{"access_token": "mcp_access_token", "token_type": "Bearer", "expires_at": 1790784000, "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp"}),
+	paths["/v1/connections/{name}/mcp-token"] = obj{"post": operation("Connectors", "Mint connector MCP token", "Validates an active non-revoked connection, exact audience, granted scope subset, current catalog availability, and current entitlement. OAuth credentials are refreshed and rotated server-side, then rowboat-api returns an RS256 product token carrying bounded actor claims. Provider tokens and API keys are never returned.", "createMCPToken", bearer(), connectorNameParam(), jsonRequest("Token audience and scope request.", ref("MCPTokenRequest"), obj{"audience": "mcp:canvas", "requestedScopes": []any{"canvas:invoices.read"}}), obj{
+		"200": jsonResponse("MCP token and endpoint.", ref("MCPTokenResponse"), obj{"access_token": "eyJ...", "token": "eyJ...", "token_type": "Bearer", "expires_in": 300, "expires_at": 1790784000, "scope": "canvas:invoices.read", "scopes": []any{"canvas:invoices.read"}, "audience": "mcp:canvas", "connectionId": "123e4567-e89b-12d3-a456-426614174000", "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp"}),
 		"401": responseRef("401"),
 		"400": responseRef("400"),
 		"404": responseRef("404"),
@@ -1458,7 +1548,20 @@ func addConnectorPaths(paths obj) {
 		"502": responseRef("502"),
 		"503": responseRef("503"),
 	})}
-	paths["/v1/connections/{name}"] = obj{"delete": operation("Connectors", "Disconnect connector", "Idempotently disconnects a connector for the authenticated user. If a refresh token exists, rowboat-api attempts to revoke it at Ory before deleting the local connection.", "deleteConnection", bearer(), connectorNameParam(), nil, obj{
+	paths["/.well-known/connector-jwks.json"] = obj{"get": operation("Connectors", "Get connector broker JWKS", "Public RS256 keys used by product MCP resource servers to verify short-lived RFC 012 connector tokens.", "getConnectorBrokerJWKS", nil, nil, nil, obj{
+		"200": jsonResponse("Connector broker JSON Web Key Set.", freeFormSchema("RFC 7517 JSON Web Key Set."), obj{"keys": []any{obj{"kty": "RSA", "use": "sig", "alg": "RS256", "kid": "broker-2026-08", "n": "...", "e": "AQAB"}}}),
+		"503": responseRef("503"),
+	})}
+	paths["/v1/connections/{name}"] = obj{"delete": operation("Connectors", "Disconnect connector", "Idempotently revokes upstream where possible, clears local credentials, and retains a revoked audit tombstone.", "deleteConnection", bearer(), connectorNameParam(), nil, obj{
+		"204": obj{"description": "Connector disconnected or was already absent."},
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+		"503": responseRef("503"),
+	})}
+	aliasConnectorPath(paths, "/v1/connections/{name}/start", "/v1/connectors/{name}/start", "post", "startConnector")
+	aliasConnectorPath(paths, "/v1/connections/{name}/callback", "/v1/connectors/{name}/callback", "get", "handleConnectorCallback")
+	aliasConnectorPath(paths, "/v1/connections/{name}/mcp-token", "/v1/connectors/{name}/resource-token", "post", "createConnectorResourceToken")
+	paths["/v1/connectors/{name}/connections/{connectionID}"] = obj{"delete": operation("Connectors", "Disconnect connector connection", "Canonical RFC 012 disconnect path. It transitions the matching user-owned connection through revoking, clears credentials, and retains an audit tombstone.", "deleteConnectorConnection", bearer(), append(connectorNameParam(), pathParam("connectionID", "User-owned connector connection UUID.", stringSchema("Connection UUID.", "123e4567-e89b-12d3-a456-426614174000"))), nil, obj{
 		"204": obj{"description": "Connector disconnected or was already absent."},
 		"401": responseRef("401"),
 		"500": responseRef("500"),
@@ -1466,15 +1569,40 @@ func addConnectorPaths(paths obj) {
 	})}
 }
 
+func aliasConnectorPath(paths obj, source, target, method, operationID string) {
+	raw, err := json.Marshal(paths[source])
+	if err != nil {
+		return
+	}
+	var cloned obj
+	if json.Unmarshal(raw, &cloned) != nil {
+		return
+	}
+	if operation := asObj(cloned[method]); operation != nil {
+		operation["operationId"] = operationID
+	}
+	paths[target] = cloned
+}
+
 func addInternalPaths(paths obj) {
-	paths["/oauth-hooks/pre-consent"] = obj{"post": operation("Webhooks", "Evaluate connector pre-consent entitlement", "Shared-secret webhook called by OAuth infrastructure before consent. It resolves the requested connector and returns allow=true or an upsell payload based on the user's billing plan.", "preConsent", hookHMAC(), nil, jsonRequest("Pre-consent webhook payload.", ref("PreConsentRequest"), obj{"workos_user_id": "user_01HABCDEF", "connector": "canvas", "requested_audience": "canvas-api"}), obj{
-		"200": jsonResponse("Consent decision.", ref("PreConsentResponse"), obj{"allow": false, "upsell": obj{"requiredPlan": "pro", "message": "Upgrade to pro to connect Canvas"}}),
+	paths["/oauth-hooks/pre-consent"] = obj{"post": operation("Webhooks", "Resolve strict connector consent context", "HMAC-signed oauth-consent hook. It binds the Hydra challenge, WorkOS subject, desktop client, one connector audience, exact scope catalog, and current entitlement to one pending flow.", "preConsent", hookHMAC(), nil, jsonRequest("Strict pre-consent context request.", ref("PreConsentRequest"), obj{"version": 1, "challenge": "challenge_01HABCDEF", "workos_user_id": "user_01HABCDEF", "hydra_client_id": "rowboat-desktop", "requested_audience": []any{"mcp:canvas"}, "requested_scopes": []any{"canvas:invoices.read"}}), obj{
+		"200": jsonResponse("Structured connector consent context.", ref("PreConsentResponse"), nil),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
+		"403": responseRef("403"),
+		"409": responseRef("409"),
 		"500": responseRef("500"),
 	})}
-	paths["/v1/internal/connections/invalidate"] = obj{"post": operation("Internal", "Force-disconnect a connector", "Server-to-server endpoint for products to invalidate a user's connector connection. Unknown users are treated as successful no-ops.", "invalidateConnection", internalSecret(), nil, jsonRequest("Invalidation target.", ref("InternalInvalidateRequest"), obj{"workos_user_id": "user_01HABCDEF", "connector": "canvas"}), obj{
-		"200": jsonResponse("Invalidation result.", ref("InternalInvalidateResponse"), obj{"invalidated": true, "deleted": 1}),
+	paths["/oauth-hooks/consent-context"] = obj{"post": operation("Webhooks", "Fetch connector consent context", "HMAC-authenticated endpoint returning owner, entitlement, and the exact structured requested scope catalog bound to a hashed pending state.", "connectorConsentContext", hookHMAC(), nil, jsonRequest("Consent state.", ref("ConsentContextRequest"), obj{"state": "state_abc123"}), obj{
+		"200": jsonResponse("Consent context.", freeFormSchema("Structured consent context."), nil),
+		"400": responseRef("400"), "401": responseRef("401"), "404": responseRef("404"), "503": responseRef("503"),
+	})}
+	paths["/oauth-hooks/consent-audit"] = obj{"post": operation("Webhooks", "Append replay-safe connector consent audit", "HMAC-signed endpoint accepting only consent.shown, consent.granted, or consent.denied. It validates every identity and scope against the pending flow and durably deduplicates event_id.", "appendConnectorConsentAudit", hookHMAC(), nil, jsonRequest("Strict consent audit event.", ref("ConsentAuditRequest"), obj{"version": 1, "event_id": "evt_01HABCDEF", "event": "consent.granted", "occurred_at": "2026-08-27T20:00:00Z", "consent_session_id": "consent_01HABCDEF", "context_request_id": "ctx_01HABCDEF", "workos_user_id": "user_01HABCDEF", "client_id": "rowboat-desktop", "connector_id": "canvas", "audience": "mcp:canvas", "scopes": []any{"canvas:invoices.read"}, "result": obj{"approved": true}}), obj{
+		"200": jsonResponse("Audit event persisted or exactly replayed.", ref("ConsentAuditResponse"), obj{"accepted": true}),
+		"400": responseRef("400"), "401": responseRef("401"), "403": responseRef("403"), "404": responseRef("404"), "409": responseRef("409"), "500": responseRef("500"),
+	})}
+	paths["/v1/internal/connections/invalidate"] = obj{"post": operation("Internal", "Force-invalidate connector connections", "Server-to-server endpoint supporting exact connection, user, org, connector, or combined targets. Matches become invalidated tombstones; credentials are cleared and upstream revocation is attempted.", "invalidateConnection", internalSecret(), nil, jsonRequest("Invalidation target.", ref("InternalInvalidateRequest"), obj{"org_id": "org_01HABCDEF", "connector": "canvas", "reason": "subscription_ended"}), obj{
+		"200": jsonResponse("Invalidation result.", ref("InternalInvalidateResponse"), obj{"invalidated": true, "matched": 1, "revoked": 1, "failures": 0}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
 		"500": responseRef("500"),

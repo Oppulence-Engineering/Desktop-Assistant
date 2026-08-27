@@ -42,7 +42,7 @@ func TestApplyPostgresIsIdempotent(t *testing.T) {
 	if err := database.QueryRowContext(context.Background(), `SELECT count(*) FROM atlas_schema_revisions`).Scan(&revisions); err != nil {
 		t.Fatal(err)
 	}
-	if revisions != 5 {
-		t.Fatalf("expected 5 applied revisions, got %d", revisions)
+	if revisions != 6 {
+		t.Fatalf("expected 6 applied revisions, got %d", revisions)
 	}
 }

@@ -10,12 +10,24 @@
  * Short-lived credential and target URL for calling a connector MCP endpoint.
  */
 export interface MCPTokenResponse {
-  /** Bearer token or API key for the connector's MCP endpoint. */
+  /** RS256 broker bearer token. This is never a provider access token or vendor API key. */
   access_token: string;
+  /** OAuth token audience for the connector. */
+  audience: string;
+  /** Connection UUID embedded in the token actor claims. */
+  connectionId: string;
   /** Credential or one-time ticket expiry timestamp. */
-  expires_at?: number;
+  expires_at: number;
+  /** Remaining lifetime in seconds. Never exceeds 900. */
+  expires_in: number;
   /** Connector MCP endpoint URL. */
   mcpUrl: string;
-  /** Token type, usually Bearer. */
+  /** Space-delimited granted scope subset. */
+  scope: string;
+  /** OAuth scopes granted or requested. */
+  scopes: string[];
+  /** Alias for access_token used by RFC 012 clients. */
+  token: string;
+  /** OAuth token type. */
   token_type: string;
 }

@@ -35,8 +35,15 @@ export interface MCPConnectionHistory {
   ref?: string;
   /** Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints. */
   refresh_token_encrypted?: string;
+  revocation_attempted_at?: string;
+  revocation_succeeded?: boolean;
+  revoked_at?: string;
+  revoked_by?: string;
+  revoked_reason?: string;
   /** OAuth scopes granted or requested. */
   scopes?: string[];
+  /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
+  status: string;
   /** Last row update timestamp. */
   updated_at: string;
 }

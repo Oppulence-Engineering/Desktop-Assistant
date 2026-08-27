@@ -11,24 +11,77 @@ import type {
   ConnectionConnectedResponse,
   ConnectionStartResponse,
   ConnectorsResponse,
+  GetConnectorBrokerJWKS200,
   HubSpotSearchResponse,
   MCPTokenResponse,
 } from "../model";
 
+export const getGetConnectorBrokerJWKSResponseMock = (): GetConnectorBrokerJWKS200 => ({});
+
 export const getSetConnectionAPIKeyResponseMock = (
   overrideResponse: Partial<Extract<ConnectionConnectedResponse, object>> = {},
-): ConnectionConnectedResponse => ({ connected: faker.datatype.boolean(), ...overrideResponse });
+): ConnectionConnectedResponse => ({
+  audience: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  connected: faker.datatype.boolean(),
+  connectionId: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  connector: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  scopes: faker.helpers.arrayElement([
+    Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+    ),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
 
 export const getClaimConnectionResponseMock = (
   overrideResponse: Partial<Extract<ConnectionConnectedResponse, object>> = {},
-): ConnectionConnectedResponse => ({ connected: faker.datatype.boolean(), ...overrideResponse });
+): ConnectionConnectedResponse => ({
+  audience: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  connected: faker.datatype.boolean(),
+  connectionId: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  connector: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  scopes: faker.helpers.arrayElement([
+    Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+    ),
+    undefined,
+  ]),
+  ...overrideResponse,
+});
 
 export const getCreateMCPTokenResponseMock = (
   overrideResponse: Partial<Extract<MCPTokenResponse, object>> = {},
 ): MCPTokenResponse => ({
   access_token: faker.string.alpha({ length: { min: 10, max: 20 } }),
-  expires_at: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  audience: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  connectionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  expires_at: faker.number.int(),
+  expires_in: faker.number.int(),
   mcpUrl: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  scope: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  scopes: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ),
+  token: faker.string.alpha({ length: { min: 10, max: 20 } }),
   token_type: faker.string.alpha({ length: { min: 10, max: 20 } }),
   ...overrideResponse,
 });
@@ -36,7 +89,9 @@ export const getCreateMCPTokenResponseMock = (
 export const getStartConnectionResponseMock = (
   overrideResponse: Partial<Extract<ConnectionStartResponse, object>> = {},
 ): ConnectionStartResponse => ({
+  authorization_url: faker.string.alpha({ length: { min: 10, max: 20 } }),
   authorize_url: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  expires_at: faker.string.alpha({ length: { min: 10, max: 20 } }),
   ...overrideResponse,
 });
 
@@ -45,7 +100,43 @@ export const getListConnectorsResponseMock = (
 ): ConnectorsResponse => ({
   connectors: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => ({
+      audience: faker.string.alpha({ length: { min: 10, max: 20 } }),
       authType: faker.helpers.arrayElement(["oauth", "api_key"] as const),
+      availableScopes: faker.helpers.arrayElement([
+        Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+          conflictsWith: faker.helpers.arrayElement([
+            Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+              faker.string.alpha({ length: { min: 10, max: 20 } }),
+            ),
+            undefined,
+          ]),
+          description: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          environments: faker.helpers.arrayElement([
+            faker.helpers.arrayElements(["development", "staging", "production"] as const),
+            undefined,
+          ]),
+          grantTier: faker.helpers.arrayElement(["required", "optional"] as const),
+          implies: faker.helpers.arrayElement([
+            Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+              faker.string.alpha({ length: { min: 10, max: 20 } }),
+            ),
+            undefined,
+          ]),
+          name: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          perInvocationApproval: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+          requiredPlan: faker.helpers.arrayElement([
+            faker.helpers.arrayElement([
+              faker.string.alpha({ length: { min: 10, max: 20 } }),
+              null,
+            ]),
+            undefined,
+          ]),
+          risk: faker.helpers.arrayElement(["low", "medium", "high", "money-moving"] as const),
+          stepUpRequired: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+        })),
+        undefined,
+      ]),
       connected: faker.datatype.boolean(),
       connectedAt: faker.helpers.arrayElement([
         faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
@@ -53,7 +144,47 @@ export const getListConnectorsResponseMock = (
       ]),
       description: faker.string.alpha({ length: { min: 10, max: 20 } }),
       displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      grantedScopes: faker.helpers.arrayElement([
+        Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+          conflictsWith: faker.helpers.arrayElement([
+            Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+              faker.string.alpha({ length: { min: 10, max: 20 } }),
+            ),
+            undefined,
+          ]),
+          description: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          environments: faker.helpers.arrayElement([
+            faker.helpers.arrayElements(["development", "staging", "production"] as const),
+            undefined,
+          ]),
+          grantTier: faker.helpers.arrayElement(["required", "optional"] as const),
+          implies: faker.helpers.arrayElement([
+            Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+              faker.string.alpha({ length: { min: 10, max: 20 } }),
+            ),
+            undefined,
+          ]),
+          name: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          perInvocationApproval: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+          requiredPlan: faker.helpers.arrayElement([
+            faker.helpers.arrayElement([
+              faker.string.alpha({ length: { min: 10, max: 20 } }),
+              null,
+            ]),
+            undefined,
+          ]),
+          risk: faker.helpers.arrayElement(["low", "medium", "high", "money-moving"] as const),
+          stepUpRequired: faker.helpers.arrayElement([faker.datatype.boolean(), undefined]),
+        })),
+        undefined,
+      ]),
+      health: faker.helpers.arrayElement(["healthy", "degraded", "unavailable"] as const),
       iconUrl: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+        undefined,
+      ]),
+      lastUsedAt: faker.helpers.arrayElement([
         faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
         undefined,
       ]),
@@ -73,12 +204,11 @@ export const getListConnectorsResponseMock = (
         })),
         undefined,
       ]),
-      scopes: faker.helpers.arrayElement([
-        Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
-          faker.string.alpha({ length: { min: 10, max: 20 } }),
-        ),
+      revokedAt: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
         undefined,
       ]),
+      status: faker.helpers.arrayElement(["enabled", "maintenance", "disabled"] as const),
       templateBlocks: faker.helpers.arrayElement([
         Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
           category: faker.string.alpha({ length: { min: 10, max: 20 } }),
@@ -120,6 +250,33 @@ export const getListConnectorsResponseMock = (
       ]),
     }),
   ),
+  ...overrideResponse,
+});
+
+export const getCreateConnectorResourceTokenResponseMock = (
+  overrideResponse: Partial<Extract<MCPTokenResponse, object>> = {},
+): MCPTokenResponse => ({
+  access_token: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  audience: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  connectionId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  expires_at: faker.number.int(),
+  expires_in: faker.number.int(),
+  mcpUrl: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  scope: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  scopes: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() =>
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ),
+  token: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  token_type: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ...overrideResponse,
+});
+
+export const getStartConnectorResponseMock = (
+  overrideResponse: Partial<Extract<ConnectionStartResponse, object>> = {},
+): ConnectionStartResponse => ({
+  authorization_url: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  authorize_url: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  expires_at: faker.string.alpha({ length: { min: 10, max: 20 } }),
   ...overrideResponse,
 });
 

@@ -635,6 +635,10 @@ func (m *MCPConnectionMutation) CreateHistoryFromCreate(ctx context.Context) err
 		create = create.SetAPIKeyEncrypted(apiKeyEncrypted)
 	}
 
+	if status, exists := m.Status(); exists {
+		create = create.SetStatus(status)
+	}
+
 	if connectedAt, exists := m.ConnectedAt(); exists {
 		create = create.SetConnectedAt(connectedAt)
 	}
@@ -645,6 +649,26 @@ func (m *MCPConnectionMutation) CreateHistoryFromCreate(ctx context.Context) err
 
 	if expiresAt, exists := m.ExpiresAt(); exists {
 		create = create.SetExpiresAt(expiresAt)
+	}
+
+	if revokedAt, exists := m.RevokedAt(); exists {
+		create = create.SetRevokedAt(revokedAt)
+	}
+
+	if revokedReason, exists := m.RevokedReason(); exists {
+		create = create.SetRevokedReason(revokedReason)
+	}
+
+	if revokedBy, exists := m.RevokedBy(); exists {
+		create = create.SetRevokedBy(revokedBy)
+	}
+
+	if revocationAttemptedAt, exists := m.RevocationAttemptedAt(); exists {
+		create = create.SetRevocationAttemptedAt(revocationAttemptedAt)
+	}
+
+	if revocationSucceeded, exists := m.RevocationSucceeded(); exists {
+		create = create.SetRevocationSucceeded(revocationSucceeded)
 	}
 
 	_, err = create.Save(ctx)
@@ -724,6 +748,12 @@ func (m *MCPConnectionMutation) CreateHistoryFromUpdate(ctx context.Context) err
 			create = create.SetAPIKeyEncrypted(mcpconnection.APIKeyEncrypted)
 		}
 
+		if status, exists := m.Status(); exists {
+			create = create.SetStatus(status)
+		} else {
+			create = create.SetStatus(mcpconnection.Status)
+		}
+
 		if connectedAt, exists := m.ConnectedAt(); exists {
 			create = create.SetConnectedAt(connectedAt)
 		} else {
@@ -740,6 +770,36 @@ func (m *MCPConnectionMutation) CreateHistoryFromUpdate(ctx context.Context) err
 			create = create.SetExpiresAt(expiresAt)
 		} else {
 			create = create.SetExpiresAt(mcpconnection.ExpiresAt)
+		}
+
+		if revokedAt, exists := m.RevokedAt(); exists {
+			create = create.SetRevokedAt(revokedAt)
+		} else {
+			create = create.SetRevokedAt(mcpconnection.RevokedAt)
+		}
+
+		if revokedReason, exists := m.RevokedReason(); exists {
+			create = create.SetRevokedReason(revokedReason)
+		} else {
+			create = create.SetRevokedReason(mcpconnection.RevokedReason)
+		}
+
+		if revokedBy, exists := m.RevokedBy(); exists {
+			create = create.SetRevokedBy(revokedBy)
+		} else {
+			create = create.SetRevokedBy(mcpconnection.RevokedBy)
+		}
+
+		if revocationAttemptedAt, exists := m.RevocationAttemptedAt(); exists {
+			create = create.SetRevocationAttemptedAt(revocationAttemptedAt)
+		} else {
+			create = create.SetRevocationAttemptedAt(mcpconnection.RevocationAttemptedAt)
+		}
+
+		if revocationSucceeded, exists := m.RevocationSucceeded(); exists {
+			create = create.SetRevocationSucceeded(revocationSucceeded)
+		} else {
+			create = create.SetRevocationSucceeded(mcpconnection.RevocationSucceeded)
 		}
 
 		_, err = create.Save(ctx)
@@ -785,9 +845,15 @@ func (m *MCPConnectionMutation) CreateHistoryFromDelete(ctx context.Context) err
 			SetScopes(mcpconnection.Scopes).
 			SetRefreshTokenEncrypted(mcpconnection.RefreshTokenEncrypted).
 			SetAPIKeyEncrypted(mcpconnection.APIKeyEncrypted).
+			SetStatus(mcpconnection.Status).
 			SetConnectedAt(mcpconnection.ConnectedAt).
 			SetLastUsedAt(mcpconnection.LastUsedAt).
 			SetExpiresAt(mcpconnection.ExpiresAt).
+			SetRevokedAt(mcpconnection.RevokedAt).
+			SetRevokedReason(mcpconnection.RevokedReason).
+			SetRevokedBy(mcpconnection.RevokedBy).
+			SetRevocationAttemptedAt(mcpconnection.RevocationAttemptedAt).
+			SetRevocationSucceeded(mcpconnection.RevocationSucceeded).
 			Save(ctx)
 		if err != nil {
 			rollback(tx, err)

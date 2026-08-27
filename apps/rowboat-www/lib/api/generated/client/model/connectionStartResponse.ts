@@ -11,5 +11,9 @@
  */
 export interface ConnectionStartResponse {
   /** Browser URL the desktop opens to start the connector OAuth flow. */
+  authorization_url: string;
+  /** Backward-compatible alias for authorization_url. */
   authorize_url: string;
+  /** Credential or one-time ticket expiry timestamp. */
+  expires_at: string;
 }

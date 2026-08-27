@@ -271,7 +271,9 @@ func marshalEnvelopeHeader(keyID string) []byte {
 	header := make([]byte, envelopeFixedHeaderSize+len(keyID))
 	copy(header, envelopeMagic)
 	header[len(envelopeMagic)] = envelopeVersion
-	binary.BigEndian.PutUint16(header[len(envelopeMagic)+1:], uint16(len(keyID)))
+	// Key IDs are bounded by NewKeyringSealerFromKeys before a Sealer can reach
+	// this helper, so the wire-format conversion cannot truncate.
+	binary.BigEndian.PutUint16(header[len(envelopeMagic)+1:], uint16(len(keyID))) // #nosec G115
 	copy(header[envelopeFixedHeaderSize:], keyID)
 	return header
 }

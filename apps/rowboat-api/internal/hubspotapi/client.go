@@ -99,6 +99,7 @@ func (c *Client) Token(ctx context.Context, userID uuid.UUID) (string, error) {
 	}
 	conn, err := c.client.MCPConnection.Query().Where(
 		mcpconnection.ConnectorEQ("hubspot"),
+		mcpconnection.StatusEQ("active"),
 		mcpconnection.HasUserWith(user.IDEQ(userID)),
 	).Only(auth.WithInternal(ctx))
 	if err != nil {

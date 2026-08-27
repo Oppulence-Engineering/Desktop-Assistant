@@ -198,6 +198,7 @@ func (a *Activities) toolRegistry(ctx context.Context, task *ent.BackgroundTask,
 	if owner != nil && a.HubSpot != nil {
 		_, err := a.Client.MCPConnection.Query().Where(
 			mcpconnection.ConnectorEQ("hubspot"),
+			mcpconnection.StatusEQ("active"),
 			mcpconnection.HasUserWith(user.IDEQ(owner.ID)),
 		).Only(auth.WithInternal(ctx))
 		if err == nil {

@@ -5,8 +5,11 @@ package integration
 import (
 	"bytes"
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
 	"database/sql"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
 )
@@ -37,6 +41,16 @@ func TestRFC012PublicContract(t *testing.T) {
 	require.NoError(t, db.PingContext(context.Background()))
 	c := &client{t: t, http: &http.Client{Timeout: 15 * time.Second}}
 
+	// Materialize each authenticated tenant through the real middleware, then
+	// grant only tenant A the disposable intelligence subscription required by
+	// the dev-product money-moving scope.
+	require.Equal(t, 200, c.json("GET", api+"/v1/connectors", tokenA, nil).status)
+	require.Equal(t, 200, c.json("GET", api+"/v1/connectors", tokenB, nil).status)
+	_, err = db.Exec(`INSERT INTO subscriptions(id,created_at,updated_at,plan,status,sanctioned_credits,stripe_customer_id,stripe_subscription_id,user_subscription)
+		SELECT gen_random_uuid(),now(),now(),'intelligence','active',10000,'','',id FROM users WHERE workos_user_id='user_rfc012_a'
+		ON CONFLICT(user_subscription) DO UPDATE SET plan='intelligence',status='active',updated_at=now()`)
+	require.NoError(t, err)
+
 	t.Run("entitlement denies before start", func(t *testing.T) {
 		deny := mustEnv(t, "RFC012_UNENTITLED_JWT")
 		r := c.json("POST", api+"/v1/connections/"+connector+"/start", deny, map[string]any{"requestedScopes": []string{"dev:records.read"}})
@@ -44,7 +58,6 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.NotEmpty(t, r.code())
 	})
 
-	var state string
 	t.Run("list and start use hashed state and reject scope escalation", func(t *testing.T) {
 		list := c.json("GET", api+"/v1/connectors", tokenA, nil)
 		require.Equal(t, 200, list.status, list.body)
@@ -57,20 +70,27 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.NoError(t, json.Unmarshal([]byte(start.body), &body))
 		u, err := url.Parse(body.AuthorizeURL)
 		require.NoError(t, err)
-		state = u.Query().Get("state")
+		state := u.Query().Get("state")
 		require.NotEmpty(t, state)
 		var rawCount, hashCount int
 		require.NoError(t, db.QueryRow(`SELECT count(*) FROM oauth_pendings WHERE state=$1`, state).Scan(&rawCount))
 		require.Zero(t, rawCount, "raw OAuth state must never be persisted")
 		require.NoError(t, db.QueryRow(`SELECT count(*) FROM oauth_pendings WHERE state_hash=encode(digest($1,'sha256'),'hex')`, state).Scan(&hashCount))
 		require.Equal(t, 1, hashCount)
-		escalated := c.json("GET", api+"/v1/connections/"+connector+"/callback?state="+url.QueryEscape(state)+"&code=scope-escalation", "", nil)
-		require.Equal(t, http.StatusForbidden, escalated.status, escalated.body)
+		q := u.Query()
+		q.Set("fixture_scope_escalation", "true")
+		u.RawQuery = q.Encode()
+		authorized := c.json("GET", u.String(), "", nil)
+		require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, authorized.status, authorized.body)
+		escalated := c.json("GET", authorized.header.Get("Location"), "", nil)
+		require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, escalated.status, escalated.body)
+		require.Equal(t, "error", queryFromLocation(t, escalated.header.Get("Location"), "status"))
 	})
 
+	var connectionID string
+	var resourceToken string
 	t.Run("callback claim replay mint and tenant isolation", func(t *testing.T) {
-		// Start a fresh flow because the scope-escalation callback must consume/fail
-		// its own ticket. devstack's `success` code grants exactly requested scopes.
+		// Start a fresh flow because the escalation callback failed its own ticket.
 		start := c.json("POST", api+"/v1/connections/"+connector+"/start", tokenA, map[string]any{"requestedScopes": []string{"dev:records.read", "dev:payments.execute"}})
 		require.Equal(t, 200, start.status, start.body)
 		var sb struct {
@@ -78,13 +98,22 @@ func TestRFC012PublicContract(t *testing.T) {
 		}
 		require.NoError(t, json.Unmarshal([]byte(start.body), &sb))
 		u, _ := url.Parse(sb.AuthorizeURL)
-		state = u.Query().Get("state")
-		cb := c.json("GET", api+"/v1/connections/"+connector+"/callback?state="+url.QueryEscape(state)+"&code=success", "", nil)
+		state := u.Query().Get("state")
+		authorized := c.json("GET", sb.AuthorizeURL, "", nil)
+		require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, authorized.status, authorized.body)
+		cb := c.json("GET", authorized.header.Get("Location"), "", nil)
 		require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, cb.status, cb.body)
-		claimTicket := queryFromLocation(t, cb.header.Get("Location"), "ticket")
-		claim := c.json("POST", api+"/v1/connections/"+connector+"/claim", tokenA, map[string]string{"ticket": claimTicket})
+		claimTicket := queryFromLocation(t, cb.header.Get("Location"), "session")
+		require.Equal(t, state, claimTicket)
+		claim := c.json("POST", api+"/v1/connections/"+connector+"/claim", tokenA, map[string]string{"state": claimTicket})
 		require.Equal(t, 200, claim.status, claim.body)
-		replay := c.json("POST", api+"/v1/connections/"+connector+"/claim", tokenA, map[string]string{"ticket": claimTicket})
+		var claimed struct {
+			ConnectionID string `json:"connectionId"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(claim.body), &claimed))
+		connectionID = claimed.ConnectionID
+		require.NotEmpty(t, connectionID)
+		replay := c.json("POST", api+"/v1/connections/"+connector+"/claim", tokenA, map[string]string{"state": claimTicket})
 		require.NotEqual(t, 200, replay.status, "claim ticket replay succeeded")
 		other := c.json("GET", api+"/v1/connectors", tokenB, nil)
 		require.Equal(t, 200, other.status, other.body)
@@ -101,16 +130,14 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.Positive(t, mt.ExpiresIn)
 		require.LessOrEqual(t, mt.ExpiresIn, int64(900), "resource token is not short-lived")
 		require.Contains(t, mt.Scope, "dev:records.read")
-		os.Setenv("RFC012_MINTED_RESOURCE_TOKEN", mt.AccessToken)
+		resourceToken = mt.AccessToken
 	})
 
 	t.Run("product MCP authorization approval retry and one-time use", func(t *testing.T) {
-		resourceToken := mustEnv(t, "RFC012_MINTED_RESOURCE_TOKEN")
-		wrongAudience := mustEnv(t, "RFC012_WRONG_AUDIENCE_TOKEN")
-		expired := mustEnv(t, "RFC012_EXPIRED_RESOURCE_TOKEN")
-		missingScope := mustEnv(t, "RFC012_MISSING_SCOPE_TOKEN")
-		connectionID := mustEnv(t, "RFC012_CONNECTION_ID")
 		tenantID := mustEnv(t, "RFC012_TENANT_A_ORG_ID")
+		wrongAudience := fixtureResourceToken(t, connectionID, tenantID, "wrong-audience", []string{"dev:records.read"}, time.Now().Add(5*time.Minute))
+		expired := fixtureResourceToken(t, connectionID, tenantID, "dev-product-api", []string{"dev:records.read"}, time.Now().Add(-time.Minute))
+		missingScope := fixtureResourceToken(t, connectionID, tenantID, "dev-product-api", []string{"dev:payments.execute"}, time.Now().Add(5*time.Minute))
 		_, err := db.Exec(`INSERT INTO dev_product_connections(connection_id,tenant_id,active) VALUES($1,$2,true) ON CONFLICT(connection_id) DO UPDATE SET tenant_id=$2,active=true`, connectionID, tenantID)
 		require.NoError(t, err)
 		require.Equal(t, 401, c.json("POST", product+"/v1/mcp/read", wrongAudience, nil).status)
@@ -129,21 +156,18 @@ func TestRFC012PublicContract(t *testing.T) {
 	})
 
 	t.Run("entitlement downgrade denies mint", func(t *testing.T) {
-		downgradeURL := mustEnv(t, "RFC012_ENTITLEMENT_DOWNGRADE_URL")
-		restoreURL := mustEnv(t, "RFC012_ENTITLEMENT_RESTORE_URL")
-		downgrade := c.json("POST", downgradeURL, tokenA, nil)
-		require.Contains(t, []int{200, 204}, downgrade.status, downgrade.body)
+		_, err := db.Exec(`UPDATE subscriptions SET status='past_due',updated_at=now() WHERE user_subscription=(SELECT id FROM users WHERE workos_user_id='user_rfc012_a')`)
+		require.NoError(t, err)
 		denied := c.json("POST", api+"/v1/connections/"+connector+"/mcp-token", tokenA, nil)
 		require.Equal(t, http.StatusForbidden, denied.status, denied.body)
 		require.NotEmpty(t, denied.code())
-		restore := c.json("POST", restoreURL, tokenA, nil)
-		require.Contains(t, []int{200, 204}, restore.status, restore.body)
+		_, err = db.Exec(`UPDATE subscriptions SET status='active',updated_at=now() WHERE user_subscription=(SELECT id FROM users WHERE workos_user_id='user_rfc012_a')`)
+		require.NoError(t, err)
 	})
 
 	t.Run("disconnect revokes upstream tombstones audits and denies product", func(t *testing.T) {
 		d := c.json("DELETE", api+"/v1/connections/"+connector, tokenA, nil)
 		require.Contains(t, []int{200, 204}, d.status, d.body)
-		connectionID := mustEnv(t, "RFC012_CONNECTION_ID")
 		var status string
 		var revokedAt sql.NullTime
 		var revokeOK sql.NullBool
@@ -156,13 +180,41 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.Positive(t, audits)
 		_, err := db.Exec(`UPDATE dev_product_connections SET active=false,revoked_at=now() WHERE connection_id=$1`, connectionID)
 		require.NoError(t, err)
-		denied := c.json("POST", product+"/v1/mcp/read", mustEnv(t, "RFC012_MINTED_RESOURCE_TOKEN"), nil)
+		denied := c.json("POST", product+"/v1/mcp/read", resourceToken, nil)
 		require.Equal(t, 403, denied.status)
 		require.Equal(t, "connection_revoked", denied.code())
 		var leaked int
 		require.NoError(t, db.QueryRow(`SELECT count(*) FROM connector_audit_events WHERE metadata_json ILIKE '%api_key%' OR metadata_json ILIKE '%access_token%' OR metadata_json ILIKE '%refresh_token%'`).Scan(&leaked))
 		require.Zero(t, leaked, "connector audit disclosed credential-shaped fields")
 	})
+}
+
+func fixtureResourceToken(t *testing.T, connectionID, organizationID, audience string, scopes []string, expiresAt time.Time) string {
+	t.Helper()
+	block, _ := pem.Decode([]byte(mustEnv(t, "RFC012_BROKER_PRIVATE_KEY_PEM")))
+	require.NotNil(t, block)
+	var key *rsa.PrivateKey
+	if parsed, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
+		key = parsed
+	} else {
+		parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		require.NoError(t, err)
+		var ok bool
+		key, ok = parsed.(*rsa.PrivateKey)
+		require.True(t, ok)
+	}
+	now := time.Now().UTC()
+	claims := jwt.MapClaims{
+		"iss": mustEnv(t, "RFC012_BROKER_TOKEN_ISSUER"), "aud": []string{audience}, "sub": "user_rfc012_a",
+		"iat": now.Unix(), "nbf": now.Add(-time.Minute).Unix(), "exp": expiresAt.Unix(), "jti": "fixture-" + fmt.Sprint(now.UnixNano()),
+		"scope": strings.Join(scopes, " "),
+		"ext":   map[string]any{"user_id": "user_rfc012_a", "organization_id": organizationID, "connection_id": connectionID, "connector_id": getenv("RFC012_CONNECTOR", "dev-product"), "trust_tier": "low"},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token.Header["kid"] = mustEnv(t, "RFC012_BROKER_TOKEN_KEY_ID")
+	signed, err := token.SignedString(key)
+	require.NoError(t, err)
+	return signed
 }
 
 type client struct {
