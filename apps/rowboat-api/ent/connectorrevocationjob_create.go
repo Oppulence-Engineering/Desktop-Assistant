@@ -76,6 +76,30 @@ func (_c *ConnectorRevocationJobCreate) SetRefreshTokenEncrypted(v []byte) *Conn
 	return _c
 }
 
+// SetCredentialGeneration sets the "credential_generation" field.
+func (_c *ConnectorRevocationJobCreate) SetCredentialGeneration(v int64) *ConnectorRevocationJobCreate {
+	_c.mutation.SetCredentialGeneration(v)
+	return _c
+}
+
+// SetTerminalStatus sets the "terminal_status" field.
+func (_c *ConnectorRevocationJobCreate) SetTerminalStatus(v string) *ConnectorRevocationJobCreate {
+	_c.mutation.SetTerminalStatus(v)
+	return _c
+}
+
+// SetTerminalReason sets the "terminal_reason" field.
+func (_c *ConnectorRevocationJobCreate) SetTerminalReason(v string) *ConnectorRevocationJobCreate {
+	_c.mutation.SetTerminalReason(v)
+	return _c
+}
+
+// SetTerminalActor sets the "terminal_actor" field.
+func (_c *ConnectorRevocationJobCreate) SetTerminalActor(v string) *ConnectorRevocationJobCreate {
+	_c.mutation.SetTerminalActor(v)
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *ConnectorRevocationJobCreate) SetStatus(v string) *ConnectorRevocationJobCreate {
 	_c.mutation.SetStatus(v)
@@ -107,6 +131,34 @@ func (_c *ConnectorRevocationJobCreate) SetNillableAttempts(v *int) *ConnectorRe
 // SetNextAttemptAt sets the "next_attempt_at" field.
 func (_c *ConnectorRevocationJobCreate) SetNextAttemptAt(v time.Time) *ConnectorRevocationJobCreate {
 	_c.mutation.SetNextAttemptAt(v)
+	return _c
+}
+
+// SetClaimID sets the "claim_id" field.
+func (_c *ConnectorRevocationJobCreate) SetClaimID(v uuid.UUID) *ConnectorRevocationJobCreate {
+	_c.mutation.SetClaimID(v)
+	return _c
+}
+
+// SetNillableClaimID sets the "claim_id" field if the given value is not nil.
+func (_c *ConnectorRevocationJobCreate) SetNillableClaimID(v *uuid.UUID) *ConnectorRevocationJobCreate {
+	if v != nil {
+		_c.SetClaimID(*v)
+	}
+	return _c
+}
+
+// SetClaimedUntil sets the "claimed_until" field.
+func (_c *ConnectorRevocationJobCreate) SetClaimedUntil(v time.Time) *ConnectorRevocationJobCreate {
+	_c.mutation.SetClaimedUntil(v)
+	return _c
+}
+
+// SetNillableClaimedUntil sets the "claimed_until" field if the given value is not nil.
+func (_c *ConnectorRevocationJobCreate) SetNillableClaimedUntil(v *time.Time) *ConnectorRevocationJobCreate {
+	if v != nil {
+		_c.SetClaimedUntil(*v)
+	}
 	return _c
 }
 
@@ -226,8 +278,22 @@ func (_c *ConnectorRevocationJobCreate) check() error {
 	if _, ok := _c.mutation.Connector(); !ok {
 		return &ValidationError{Name: "connector", err: errors.New(`ent: missing required field "ConnectorRevocationJob.connector"`)}
 	}
-	if _, ok := _c.mutation.RefreshTokenEncrypted(); !ok {
-		return &ValidationError{Name: "refresh_token_encrypted", err: errors.New(`ent: missing required field "ConnectorRevocationJob.refresh_token_encrypted"`)}
+	if _, ok := _c.mutation.CredentialGeneration(); !ok {
+		return &ValidationError{Name: "credential_generation", err: errors.New(`ent: missing required field "ConnectorRevocationJob.credential_generation"`)}
+	}
+	if v, ok := _c.mutation.CredentialGeneration(); ok {
+		if err := connectorrevocationjob.CredentialGenerationValidator(v); err != nil {
+			return &ValidationError{Name: "credential_generation", err: fmt.Errorf(`ent: validator failed for field "ConnectorRevocationJob.credential_generation": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.TerminalStatus(); !ok {
+		return &ValidationError{Name: "terminal_status", err: errors.New(`ent: missing required field "ConnectorRevocationJob.terminal_status"`)}
+	}
+	if _, ok := _c.mutation.TerminalReason(); !ok {
+		return &ValidationError{Name: "terminal_reason", err: errors.New(`ent: missing required field "ConnectorRevocationJob.terminal_reason"`)}
+	}
+	if _, ok := _c.mutation.TerminalActor(); !ok {
+		return &ValidationError{Name: "terminal_actor", err: errors.New(`ent: missing required field "ConnectorRevocationJob.terminal_actor"`)}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "ConnectorRevocationJob.status"`)}
@@ -298,6 +364,22 @@ func (_c *ConnectorRevocationJobCreate) createSpec() (*ConnectorRevocationJob, *
 		_spec.SetField(connectorrevocationjob.FieldRefreshTokenEncrypted, field.TypeBytes, value)
 		_node.RefreshTokenEncrypted = value
 	}
+	if value, ok := _c.mutation.CredentialGeneration(); ok {
+		_spec.SetField(connectorrevocationjob.FieldCredentialGeneration, field.TypeInt64, value)
+		_node.CredentialGeneration = value
+	}
+	if value, ok := _c.mutation.TerminalStatus(); ok {
+		_spec.SetField(connectorrevocationjob.FieldTerminalStatus, field.TypeString, value)
+		_node.TerminalStatus = value
+	}
+	if value, ok := _c.mutation.TerminalReason(); ok {
+		_spec.SetField(connectorrevocationjob.FieldTerminalReason, field.TypeString, value)
+		_node.TerminalReason = value
+	}
+	if value, ok := _c.mutation.TerminalActor(); ok {
+		_spec.SetField(connectorrevocationjob.FieldTerminalActor, field.TypeString, value)
+		_node.TerminalActor = value
+	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(connectorrevocationjob.FieldStatus, field.TypeString, value)
 		_node.Status = value
@@ -309,6 +391,14 @@ func (_c *ConnectorRevocationJobCreate) createSpec() (*ConnectorRevocationJob, *
 	if value, ok := _c.mutation.NextAttemptAt(); ok {
 		_spec.SetField(connectorrevocationjob.FieldNextAttemptAt, field.TypeTime, value)
 		_node.NextAttemptAt = value
+	}
+	if value, ok := _c.mutation.ClaimID(); ok {
+		_spec.SetField(connectorrevocationjob.FieldClaimID, field.TypeUUID, value)
+		_node.ClaimID = value
+	}
+	if value, ok := _c.mutation.ClaimedUntil(); ok {
+		_spec.SetField(connectorrevocationjob.FieldClaimedUntil, field.TypeTime, value)
+		_node.ClaimedUntil = value
 	}
 	if value, ok := _c.mutation.LastError(); ok {
 		_spec.SetField(connectorrevocationjob.FieldLastError, field.TypeString, value)
@@ -430,6 +520,66 @@ func (u *ConnectorRevocationJobUpsert) UpdateRefreshTokenEncrypted() *ConnectorR
 	return u
 }
 
+// ClearRefreshTokenEncrypted clears the value of the "refresh_token_encrypted" field.
+func (u *ConnectorRevocationJobUpsert) ClearRefreshTokenEncrypted() *ConnectorRevocationJobUpsert {
+	u.SetNull(connectorrevocationjob.FieldRefreshTokenEncrypted)
+	return u
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (u *ConnectorRevocationJobUpsert) SetCredentialGeneration(v int64) *ConnectorRevocationJobUpsert {
+	u.Set(connectorrevocationjob.FieldCredentialGeneration, v)
+	return u
+}
+
+// UpdateCredentialGeneration sets the "credential_generation" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsert) UpdateCredentialGeneration() *ConnectorRevocationJobUpsert {
+	u.SetExcluded(connectorrevocationjob.FieldCredentialGeneration)
+	return u
+}
+
+// AddCredentialGeneration adds v to the "credential_generation" field.
+func (u *ConnectorRevocationJobUpsert) AddCredentialGeneration(v int64) *ConnectorRevocationJobUpsert {
+	u.Add(connectorrevocationjob.FieldCredentialGeneration, v)
+	return u
+}
+
+// SetTerminalStatus sets the "terminal_status" field.
+func (u *ConnectorRevocationJobUpsert) SetTerminalStatus(v string) *ConnectorRevocationJobUpsert {
+	u.Set(connectorrevocationjob.FieldTerminalStatus, v)
+	return u
+}
+
+// UpdateTerminalStatus sets the "terminal_status" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsert) UpdateTerminalStatus() *ConnectorRevocationJobUpsert {
+	u.SetExcluded(connectorrevocationjob.FieldTerminalStatus)
+	return u
+}
+
+// SetTerminalReason sets the "terminal_reason" field.
+func (u *ConnectorRevocationJobUpsert) SetTerminalReason(v string) *ConnectorRevocationJobUpsert {
+	u.Set(connectorrevocationjob.FieldTerminalReason, v)
+	return u
+}
+
+// UpdateTerminalReason sets the "terminal_reason" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsert) UpdateTerminalReason() *ConnectorRevocationJobUpsert {
+	u.SetExcluded(connectorrevocationjob.FieldTerminalReason)
+	return u
+}
+
+// SetTerminalActor sets the "terminal_actor" field.
+func (u *ConnectorRevocationJobUpsert) SetTerminalActor(v string) *ConnectorRevocationJobUpsert {
+	u.Set(connectorrevocationjob.FieldTerminalActor, v)
+	return u
+}
+
+// UpdateTerminalActor sets the "terminal_actor" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsert) UpdateTerminalActor() *ConnectorRevocationJobUpsert {
+	u.SetExcluded(connectorrevocationjob.FieldTerminalActor)
+	return u
+}
+
 // SetStatus sets the "status" field.
 func (u *ConnectorRevocationJobUpsert) SetStatus(v string) *ConnectorRevocationJobUpsert {
 	u.Set(connectorrevocationjob.FieldStatus, v)
@@ -469,6 +619,42 @@ func (u *ConnectorRevocationJobUpsert) SetNextAttemptAt(v time.Time) *ConnectorR
 // UpdateNextAttemptAt sets the "next_attempt_at" field to the value that was provided on create.
 func (u *ConnectorRevocationJobUpsert) UpdateNextAttemptAt() *ConnectorRevocationJobUpsert {
 	u.SetExcluded(connectorrevocationjob.FieldNextAttemptAt)
+	return u
+}
+
+// SetClaimID sets the "claim_id" field.
+func (u *ConnectorRevocationJobUpsert) SetClaimID(v uuid.UUID) *ConnectorRevocationJobUpsert {
+	u.Set(connectorrevocationjob.FieldClaimID, v)
+	return u
+}
+
+// UpdateClaimID sets the "claim_id" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsert) UpdateClaimID() *ConnectorRevocationJobUpsert {
+	u.SetExcluded(connectorrevocationjob.FieldClaimID)
+	return u
+}
+
+// ClearClaimID clears the value of the "claim_id" field.
+func (u *ConnectorRevocationJobUpsert) ClearClaimID() *ConnectorRevocationJobUpsert {
+	u.SetNull(connectorrevocationjob.FieldClaimID)
+	return u
+}
+
+// SetClaimedUntil sets the "claimed_until" field.
+func (u *ConnectorRevocationJobUpsert) SetClaimedUntil(v time.Time) *ConnectorRevocationJobUpsert {
+	u.Set(connectorrevocationjob.FieldClaimedUntil, v)
+	return u
+}
+
+// UpdateClaimedUntil sets the "claimed_until" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsert) UpdateClaimedUntil() *ConnectorRevocationJobUpsert {
+	u.SetExcluded(connectorrevocationjob.FieldClaimedUntil)
+	return u
+}
+
+// ClearClaimedUntil clears the value of the "claimed_until" field.
+func (u *ConnectorRevocationJobUpsert) ClearClaimedUntil() *ConnectorRevocationJobUpsert {
+	u.SetNull(connectorrevocationjob.FieldClaimedUntil)
 	return u
 }
 
@@ -629,6 +815,76 @@ func (u *ConnectorRevocationJobUpsertOne) UpdateRefreshTokenEncrypted() *Connect
 	})
 }
 
+// ClearRefreshTokenEncrypted clears the value of the "refresh_token_encrypted" field.
+func (u *ConnectorRevocationJobUpsertOne) ClearRefreshTokenEncrypted() *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.ClearRefreshTokenEncrypted()
+	})
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (u *ConnectorRevocationJobUpsertOne) SetCredentialGeneration(v int64) *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.SetCredentialGeneration(v)
+	})
+}
+
+// AddCredentialGeneration adds v to the "credential_generation" field.
+func (u *ConnectorRevocationJobUpsertOne) AddCredentialGeneration(v int64) *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.AddCredentialGeneration(v)
+	})
+}
+
+// UpdateCredentialGeneration sets the "credential_generation" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsertOne) UpdateCredentialGeneration() *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.UpdateCredentialGeneration()
+	})
+}
+
+// SetTerminalStatus sets the "terminal_status" field.
+func (u *ConnectorRevocationJobUpsertOne) SetTerminalStatus(v string) *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.SetTerminalStatus(v)
+	})
+}
+
+// UpdateTerminalStatus sets the "terminal_status" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsertOne) UpdateTerminalStatus() *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.UpdateTerminalStatus()
+	})
+}
+
+// SetTerminalReason sets the "terminal_reason" field.
+func (u *ConnectorRevocationJobUpsertOne) SetTerminalReason(v string) *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.SetTerminalReason(v)
+	})
+}
+
+// UpdateTerminalReason sets the "terminal_reason" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsertOne) UpdateTerminalReason() *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.UpdateTerminalReason()
+	})
+}
+
+// SetTerminalActor sets the "terminal_actor" field.
+func (u *ConnectorRevocationJobUpsertOne) SetTerminalActor(v string) *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.SetTerminalActor(v)
+	})
+}
+
+// UpdateTerminalActor sets the "terminal_actor" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsertOne) UpdateTerminalActor() *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.UpdateTerminalActor()
+	})
+}
+
 // SetStatus sets the "status" field.
 func (u *ConnectorRevocationJobUpsertOne) SetStatus(v string) *ConnectorRevocationJobUpsertOne {
 	return u.Update(func(s *ConnectorRevocationJobUpsert) {
@@ -675,6 +931,48 @@ func (u *ConnectorRevocationJobUpsertOne) SetNextAttemptAt(v time.Time) *Connect
 func (u *ConnectorRevocationJobUpsertOne) UpdateNextAttemptAt() *ConnectorRevocationJobUpsertOne {
 	return u.Update(func(s *ConnectorRevocationJobUpsert) {
 		s.UpdateNextAttemptAt()
+	})
+}
+
+// SetClaimID sets the "claim_id" field.
+func (u *ConnectorRevocationJobUpsertOne) SetClaimID(v uuid.UUID) *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.SetClaimID(v)
+	})
+}
+
+// UpdateClaimID sets the "claim_id" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsertOne) UpdateClaimID() *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.UpdateClaimID()
+	})
+}
+
+// ClearClaimID clears the value of the "claim_id" field.
+func (u *ConnectorRevocationJobUpsertOne) ClearClaimID() *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.ClearClaimID()
+	})
+}
+
+// SetClaimedUntil sets the "claimed_until" field.
+func (u *ConnectorRevocationJobUpsertOne) SetClaimedUntil(v time.Time) *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.SetClaimedUntil(v)
+	})
+}
+
+// UpdateClaimedUntil sets the "claimed_until" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsertOne) UpdateClaimedUntil() *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.UpdateClaimedUntil()
+	})
+}
+
+// ClearClaimedUntil clears the value of the "claimed_until" field.
+func (u *ConnectorRevocationJobUpsertOne) ClearClaimedUntil() *ConnectorRevocationJobUpsertOne {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.ClearClaimedUntil()
 	})
 }
 
@@ -1008,6 +1306,76 @@ func (u *ConnectorRevocationJobUpsertBulk) UpdateRefreshTokenEncrypted() *Connec
 	})
 }
 
+// ClearRefreshTokenEncrypted clears the value of the "refresh_token_encrypted" field.
+func (u *ConnectorRevocationJobUpsertBulk) ClearRefreshTokenEncrypted() *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.ClearRefreshTokenEncrypted()
+	})
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (u *ConnectorRevocationJobUpsertBulk) SetCredentialGeneration(v int64) *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.SetCredentialGeneration(v)
+	})
+}
+
+// AddCredentialGeneration adds v to the "credential_generation" field.
+func (u *ConnectorRevocationJobUpsertBulk) AddCredentialGeneration(v int64) *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.AddCredentialGeneration(v)
+	})
+}
+
+// UpdateCredentialGeneration sets the "credential_generation" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsertBulk) UpdateCredentialGeneration() *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.UpdateCredentialGeneration()
+	})
+}
+
+// SetTerminalStatus sets the "terminal_status" field.
+func (u *ConnectorRevocationJobUpsertBulk) SetTerminalStatus(v string) *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.SetTerminalStatus(v)
+	})
+}
+
+// UpdateTerminalStatus sets the "terminal_status" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsertBulk) UpdateTerminalStatus() *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.UpdateTerminalStatus()
+	})
+}
+
+// SetTerminalReason sets the "terminal_reason" field.
+func (u *ConnectorRevocationJobUpsertBulk) SetTerminalReason(v string) *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.SetTerminalReason(v)
+	})
+}
+
+// UpdateTerminalReason sets the "terminal_reason" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsertBulk) UpdateTerminalReason() *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.UpdateTerminalReason()
+	})
+}
+
+// SetTerminalActor sets the "terminal_actor" field.
+func (u *ConnectorRevocationJobUpsertBulk) SetTerminalActor(v string) *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.SetTerminalActor(v)
+	})
+}
+
+// UpdateTerminalActor sets the "terminal_actor" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsertBulk) UpdateTerminalActor() *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.UpdateTerminalActor()
+	})
+}
+
 // SetStatus sets the "status" field.
 func (u *ConnectorRevocationJobUpsertBulk) SetStatus(v string) *ConnectorRevocationJobUpsertBulk {
 	return u.Update(func(s *ConnectorRevocationJobUpsert) {
@@ -1054,6 +1422,48 @@ func (u *ConnectorRevocationJobUpsertBulk) SetNextAttemptAt(v time.Time) *Connec
 func (u *ConnectorRevocationJobUpsertBulk) UpdateNextAttemptAt() *ConnectorRevocationJobUpsertBulk {
 	return u.Update(func(s *ConnectorRevocationJobUpsert) {
 		s.UpdateNextAttemptAt()
+	})
+}
+
+// SetClaimID sets the "claim_id" field.
+func (u *ConnectorRevocationJobUpsertBulk) SetClaimID(v uuid.UUID) *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.SetClaimID(v)
+	})
+}
+
+// UpdateClaimID sets the "claim_id" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsertBulk) UpdateClaimID() *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.UpdateClaimID()
+	})
+}
+
+// ClearClaimID clears the value of the "claim_id" field.
+func (u *ConnectorRevocationJobUpsertBulk) ClearClaimID() *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.ClearClaimID()
+	})
+}
+
+// SetClaimedUntil sets the "claimed_until" field.
+func (u *ConnectorRevocationJobUpsertBulk) SetClaimedUntil(v time.Time) *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.SetClaimedUntil(v)
+	})
+}
+
+// UpdateClaimedUntil sets the "claimed_until" field to the value that was provided on create.
+func (u *ConnectorRevocationJobUpsertBulk) UpdateClaimedUntil() *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.UpdateClaimedUntil()
+	})
+}
+
+// ClearClaimedUntil clears the value of the "claimed_until" field.
+func (u *ConnectorRevocationJobUpsertBulk) ClearClaimedUntil() *ConnectorRevocationJobUpsertBulk {
+	return u.Update(func(s *ConnectorRevocationJobUpsert) {
+		s.ClearClaimedUntil()
 	})
 }
 

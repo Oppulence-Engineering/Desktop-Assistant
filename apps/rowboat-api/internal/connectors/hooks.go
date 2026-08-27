@@ -608,9 +608,6 @@ func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connect
 		return fmt.Errorf("unsupported connector terminal status %q", finalStatus)
 	}
 	now := time.Now().UTC()
-	if err := connection.Update().SetStatus("revoking").SetRevocationAttemptedAt(now).Exec(auth.WithUser(ctx, owner)); err != nil {
-		return fmt.Errorf("mark connector revoking: %w", err)
-	}
 	providerRevoked := true
 	var revocationCredential []byte
 	if len(connection.RefreshTokenEncrypted) > 0 {
@@ -620,22 +617,33 @@ func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connect
 			providerRevoked = false
 		}
 	}
+	tx, err := h.client.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("begin connector revocation transaction: %w", err)
+	}
+	txc := tx.Client()
 	if !providerRevoked && len(revocationCredential) > 0 {
-		_, err := h.client.ConnectorRevocationJob.Create().
+		_, err = txc.ConnectorRevocationJob.Create().
 			SetConnectionID(connection.ID).
 			SetOwnerID(owner.ID).
 			SetConnector(connection.Connector).
 			SetRefreshTokenEncrypted(revocationCredential).
+			SetCredentialGeneration(connection.CredentialGeneration).
+			SetTerminalStatus(finalStatus).
+			SetTerminalReason(reason).
+			SetTerminalActor(actor).
 			SetStatus("pending").
 			SetNextAttemptAt(now).
 			OnConflictColumns(connectorrevocationjob.FieldConnectionID).
 			UpdateNewValues().
 			ID(auth.WithInternal(ctx))
 		if err != nil {
+			_ = tx.Rollback()
 			return fmt.Errorf("enqueue connector revocation: %w", err)
 		}
 	}
-	update := connection.Update().
+	update := txc.MCPConnection.UpdateOneID(connection.ID).
+		Where(mcpconnection.CredentialGenerationEQ(connection.CredentialGeneration)).
 		SetStatus(finalStatus).
 		SetRevokedAt(now).
 		SetRevokedReason(reason).
@@ -645,7 +653,14 @@ func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connect
 		ClearRefreshTokenEncrypted().
 		ClearAPIKeyEncrypted()
 	if err := update.Exec(auth.WithUser(ctx, owner)); err != nil {
+		_ = tx.Rollback()
+		if ent.IsNotFound(err) {
+			return nil // A reconnect replaced this generation while revoke was in flight.
+		}
 		return fmt.Errorf("persist connector tombstone: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit connector revocation: %w", err)
 	}
 	outcome := "success"
 	if !providerRevoked {
@@ -663,32 +678,69 @@ func (h *Handler) ProcessRevocationJobs(ctx context.Context, limit int) (int, er
 	if limit <= 0 || limit > 100 {
 		limit = 25
 	}
+	now := time.Now().UTC()
 	jobs, err := h.client.ConnectorRevocationJob.Query().Where(
-		connectorrevocationjob.StatusEQ("pending"),
-		connectorrevocationjob.NextAttemptAtLTE(time.Now().UTC()),
+		connectorrevocationjob.Or(
+			connectorrevocationjob.And(connectorrevocationjob.StatusEQ("pending"), connectorrevocationjob.NextAttemptAtLTE(now)),
+			connectorrevocationjob.And(connectorrevocationjob.StatusEQ("processing"), connectorrevocationjob.ClaimedUntilLTE(now)),
+		),
 	).Order(ent.Asc(connectorrevocationjob.FieldNextAttemptAt)).Limit(limit).All(auth.WithInternal(ctx))
 	if err != nil {
 		return 0, err
 	}
 	completed := 0
 	for _, job := range jobs {
+		claimID := uuid.New()
+		claimed, claimErr := job.Update().Where(
+			connectorrevocationjob.Or(
+				connectorrevocationjob.And(connectorrevocationjob.StatusEQ("pending"), connectorrevocationjob.NextAttemptAtLTE(now)),
+				connectorrevocationjob.And(connectorrevocationjob.StatusEQ("processing"), connectorrevocationjob.ClaimedUntilLTE(now)),
+			),
+		).SetStatus("processing").SetClaimID(claimID).SetClaimedUntil(now.Add(2 * time.Minute)).Save(auth.WithInternal(ctx))
+		if claimErr != nil || claimed.ClaimID != claimID {
+			continue
+		}
+		job = claimed
 		owner, ownerErr := h.client.User.Get(auth.WithInternal(ctx), job.OwnerID)
 		if ownerErr != nil {
+			_ = job.Update().Where(connectorrevocationjob.ClaimIDEQ(claimID)).SetStatus("pending").ClearClaimID().ClearClaimedUntil().SetNextAttemptAt(now.Add(time.Minute)).Exec(auth.WithInternal(ctx))
 			continue
 		}
 		plain, openErr := h.sealer.Open(job.RefreshTokenEncrypted)
 		if openErr != nil {
+			_ = job.Update().Where(connectorrevocationjob.ClaimIDEQ(claimID)).SetStatus("pending").ClearClaimID().ClearClaimedUntil().SetLastError("credential_open_failed").SetNextAttemptAt(now.Add(time.Minute)).Exec(auth.WithInternal(ctx))
 			continue
 		}
-		now := time.Now().UTC()
 		if revokeErr := h.ory.revoke(ctx, string(plain)); revokeErr != nil {
 			delay := time.Duration(min(job.Attempts+1, 8)) * time.Minute
-			_ = job.Update().AddAttempts(1).SetLastError("provider_revoke_failed").SetNextAttemptAt(now.Add(delay)).Exec(auth.WithInternal(ctx))
+			_ = job.Update().Where(connectorrevocationjob.ClaimIDEQ(claimID), connectorrevocationjob.StatusEQ("processing")).SetStatus("pending").ClearClaimID().ClearClaimedUntil().AddAttempts(1).SetLastError("provider_revoke_failed").SetNextAttemptAt(now.Add(delay)).Exec(auth.WithInternal(ctx))
 			continue
 		}
-		if updateErr := h.client.ConnectorRevocationJob.DeleteOne(job).Exec(auth.WithInternal(ctx)); updateErr == nil {
+		tx, txErr := h.client.Tx(ctx)
+		if txErr != nil {
+			continue
+		}
+		txc := tx.Client()
+		txErr = txc.MCPConnection.UpdateOneID(job.ConnectionID).
+			Where(mcpconnection.CredentialGenerationEQ(job.CredentialGeneration)).
+			SetStatus(job.TerminalStatus).SetRevokedAt(now).SetRevokedReason(job.TerminalReason).SetRevokedBy(job.TerminalActor).
+			SetRevocationSucceeded(true).SetRevocationAttemptedAt(now).ClearRefreshTokenEncrypted().ClearAPIKeyEncrypted().Exec(auth.WithUser(ctx, owner))
+		if ent.IsNotFound(txErr) {
+			txErr = nil // Replacement grant is newer; only retire this old job.
+		}
+		if txErr == nil {
+			_, txErr = txc.ConnectorRevocationJob.UpdateOneID(job.ID).Where(connectorrevocationjob.ClaimIDEQ(claimID), connectorrevocationjob.StatusEQ("processing")).ClearRefreshTokenEncrypted().SetStatus("completed").SetCompletedAt(now).Save(auth.WithInternal(ctx))
+		}
+		if txErr == nil {
+			txErr = txc.ConnectorRevocationJob.DeleteOneID(job.ID).Exec(auth.WithInternal(ctx))
+		}
+		if txErr == nil {
+			txErr = tx.Commit()
+		} else {
+			_ = tx.Rollback()
+		}
+		if txErr == nil {
 			completed++
-			_ = h.client.MCPConnection.UpdateOneID(job.ConnectionID).SetRevocationSucceeded(true).SetRevocationAttemptedAt(now).Exec(auth.WithUser(ctx, owner))
 			h.appendAudit(ctx, owner, auditRecord{EventType: "connection_revocation_completed", Connector: job.Connector, ConnectionID: job.ConnectionID, Result: "retry_success"})
 		}
 	}

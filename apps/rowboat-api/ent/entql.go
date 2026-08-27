@@ -712,9 +712,15 @@ var schemaGraph = func() *sqlgraph.Schema {
 			connectorrevocationjob.FieldOwnerID:               {Type: field.TypeUUID, Column: connectorrevocationjob.FieldOwnerID},
 			connectorrevocationjob.FieldConnector:             {Type: field.TypeString, Column: connectorrevocationjob.FieldConnector},
 			connectorrevocationjob.FieldRefreshTokenEncrypted: {Type: field.TypeBytes, Column: connectorrevocationjob.FieldRefreshTokenEncrypted},
+			connectorrevocationjob.FieldCredentialGeneration:  {Type: field.TypeInt64, Column: connectorrevocationjob.FieldCredentialGeneration},
+			connectorrevocationjob.FieldTerminalStatus:        {Type: field.TypeString, Column: connectorrevocationjob.FieldTerminalStatus},
+			connectorrevocationjob.FieldTerminalReason:        {Type: field.TypeString, Column: connectorrevocationjob.FieldTerminalReason},
+			connectorrevocationjob.FieldTerminalActor:         {Type: field.TypeString, Column: connectorrevocationjob.FieldTerminalActor},
 			connectorrevocationjob.FieldStatus:                {Type: field.TypeString, Column: connectorrevocationjob.FieldStatus},
 			connectorrevocationjob.FieldAttempts:              {Type: field.TypeInt, Column: connectorrevocationjob.FieldAttempts},
 			connectorrevocationjob.FieldNextAttemptAt:         {Type: field.TypeTime, Column: connectorrevocationjob.FieldNextAttemptAt},
+			connectorrevocationjob.FieldClaimID:               {Type: field.TypeUUID, Column: connectorrevocationjob.FieldClaimID},
+			connectorrevocationjob.FieldClaimedUntil:          {Type: field.TypeTime, Column: connectorrevocationjob.FieldClaimedUntil},
 			connectorrevocationjob.FieldLastError:             {Type: field.TypeString, Column: connectorrevocationjob.FieldLastError},
 			connectorrevocationjob.FieldCompletedAt:           {Type: field.TypeTime, Column: connectorrevocationjob.FieldCompletedAt},
 		},
@@ -905,6 +911,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			mcpconnection.FieldScopes:                {Type: field.TypeJSON, Column: mcpconnection.FieldScopes},
 			mcpconnection.FieldRefreshTokenEncrypted: {Type: field.TypeBytes, Column: mcpconnection.FieldRefreshTokenEncrypted},
 			mcpconnection.FieldAPIKeyEncrypted:       {Type: field.TypeBytes, Column: mcpconnection.FieldAPIKeyEncrypted},
+			mcpconnection.FieldCredentialGeneration:  {Type: field.TypeInt64, Column: mcpconnection.FieldCredentialGeneration},
 			mcpconnection.FieldStatus:                {Type: field.TypeString, Column: mcpconnection.FieldStatus},
 			mcpconnection.FieldConnectedAt:           {Type: field.TypeTime, Column: mcpconnection.FieldConnectedAt},
 			mcpconnection.FieldLastUsedAt:            {Type: field.TypeTime, Column: mcpconnection.FieldLastUsedAt},
@@ -937,6 +944,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			mcpconnectionhistory.FieldScopes:                {Type: field.TypeJSON, Column: mcpconnectionhistory.FieldScopes},
 			mcpconnectionhistory.FieldRefreshTokenEncrypted: {Type: field.TypeBytes, Column: mcpconnectionhistory.FieldRefreshTokenEncrypted},
 			mcpconnectionhistory.FieldAPIKeyEncrypted:       {Type: field.TypeBytes, Column: mcpconnectionhistory.FieldAPIKeyEncrypted},
+			mcpconnectionhistory.FieldCredentialGeneration:  {Type: field.TypeInt64, Column: mcpconnectionhistory.FieldCredentialGeneration},
 			mcpconnectionhistory.FieldStatus:                {Type: field.TypeString, Column: mcpconnectionhistory.FieldStatus},
 			mcpconnectionhistory.FieldConnectedAt:           {Type: field.TypeTime, Column: mcpconnectionhistory.FieldConnectedAt},
 			mcpconnectionhistory.FieldLastUsedAt:            {Type: field.TypeTime, Column: mcpconnectionhistory.FieldLastUsedAt},
@@ -9215,6 +9223,26 @@ func (f *ConnectorRevocationJobFilter) WhereRefreshTokenEncrypted(p entql.BytesP
 	f.Where(p.Field(connectorrevocationjob.FieldRefreshTokenEncrypted))
 }
 
+// WhereCredentialGeneration applies the entql int64 predicate on the credential_generation field.
+func (f *ConnectorRevocationJobFilter) WhereCredentialGeneration(p entql.Int64P) {
+	f.Where(p.Field(connectorrevocationjob.FieldCredentialGeneration))
+}
+
+// WhereTerminalStatus applies the entql string predicate on the terminal_status field.
+func (f *ConnectorRevocationJobFilter) WhereTerminalStatus(p entql.StringP) {
+	f.Where(p.Field(connectorrevocationjob.FieldTerminalStatus))
+}
+
+// WhereTerminalReason applies the entql string predicate on the terminal_reason field.
+func (f *ConnectorRevocationJobFilter) WhereTerminalReason(p entql.StringP) {
+	f.Where(p.Field(connectorrevocationjob.FieldTerminalReason))
+}
+
+// WhereTerminalActor applies the entql string predicate on the terminal_actor field.
+func (f *ConnectorRevocationJobFilter) WhereTerminalActor(p entql.StringP) {
+	f.Where(p.Field(connectorrevocationjob.FieldTerminalActor))
+}
+
 // WhereStatus applies the entql string predicate on the status field.
 func (f *ConnectorRevocationJobFilter) WhereStatus(p entql.StringP) {
 	f.Where(p.Field(connectorrevocationjob.FieldStatus))
@@ -9228,6 +9256,16 @@ func (f *ConnectorRevocationJobFilter) WhereAttempts(p entql.IntP) {
 // WhereNextAttemptAt applies the entql time.Time predicate on the next_attempt_at field.
 func (f *ConnectorRevocationJobFilter) WhereNextAttemptAt(p entql.TimeP) {
 	f.Where(p.Field(connectorrevocationjob.FieldNextAttemptAt))
+}
+
+// WhereClaimID applies the entql [16]byte predicate on the claim_id field.
+func (f *ConnectorRevocationJobFilter) WhereClaimID(p entql.ValueP) {
+	f.Where(p.Field(connectorrevocationjob.FieldClaimID))
+}
+
+// WhereClaimedUntil applies the entql time.Time predicate on the claimed_until field.
+func (f *ConnectorRevocationJobFilter) WhereClaimedUntil(p entql.TimeP) {
+	f.Where(p.Field(connectorrevocationjob.FieldClaimedUntil))
 }
 
 // WhereLastError applies the entql string predicate on the last_error field.
@@ -10179,6 +10217,11 @@ func (f *MCPConnectionFilter) WhereAPIKeyEncrypted(p entql.BytesP) {
 	f.Where(p.Field(mcpconnection.FieldAPIKeyEncrypted))
 }
 
+// WhereCredentialGeneration applies the entql int64 predicate on the credential_generation field.
+func (f *MCPConnectionFilter) WhereCredentialGeneration(p entql.Int64P) {
+	f.Where(p.Field(mcpconnection.FieldCredentialGeneration))
+}
+
 // WhereStatus applies the entql string predicate on the status field.
 func (f *MCPConnectionFilter) WhereStatus(p entql.StringP) {
 	f.Where(p.Field(mcpconnection.FieldStatus))
@@ -10326,6 +10369,11 @@ func (f *MCPConnectionHistoryFilter) WhereRefreshTokenEncrypted(p entql.BytesP) 
 // WhereAPIKeyEncrypted applies the entql []byte predicate on the api_key_encrypted field.
 func (f *MCPConnectionHistoryFilter) WhereAPIKeyEncrypted(p entql.BytesP) {
 	f.Where(p.Field(mcpconnectionhistory.FieldAPIKeyEncrypted))
+}
+
+// WhereCredentialGeneration applies the entql int64 predicate on the credential_generation field.
+func (f *MCPConnectionHistoryFilter) WhereCredentialGeneration(p entql.Int64P) {
+	f.Where(p.Field(mcpconnectionhistory.FieldCredentialGeneration))
 }
 
 // WhereStatus applies the entql string predicate on the status field.

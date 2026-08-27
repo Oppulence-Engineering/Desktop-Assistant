@@ -23,6 +23,7 @@ const (
 )
 
 var errConnectorRefreshInProgress = errors.New("connector refresh in progress")
+var errConnectorCredentialSuperseded = errors.New("connector credential generation superseded")
 
 // RefreshCache is structurally compatible with workosauth.RefreshCache. The
 // connector package owns only the behavior it needs and does not depend on the
@@ -106,19 +107,22 @@ func (d *refreshDeduper) refresh(ctx context.Context, connector string, mc *ent.
 		}
 
 		update := mc.Update().
-			Where(mcpconnection.RefreshTokenEncryptedEQ(mc.RefreshTokenEncrypted), mcpconnection.StatusEQ("active")).
+			Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active")).
 			SetLastUsedAt(time.Now().UTC())
 		if tok.RefreshToken != "" {
 			sealed, err := d.sealer.SealString(tok.RefreshToken)
 			if err != nil {
 				return nil, fmt.Errorf("seal rotated connector refresh token: %w", err)
 			}
-			update = update.SetRefreshTokenEncrypted(sealed)
+			update = update.SetRefreshTokenEncrypted(sealed).AddCredentialGeneration(1)
 		}
-		if err := update.Exec(detached); err != nil {
+		if _, err := update.Save(detached); err != nil {
 			// The one-use upstream token may already be consumed. Keep the lock
 			// until its TTL rather than immediately allowing a second rotation.
 			unlock = false
+			if ent.IsNotFound(err) {
+				return nil, errConnectorCredentialSuperseded
+			}
 			return nil, fmt.Errorf("persist rotated connector refresh token: %w", err)
 		}
 		if err := d.store(detached, resultKey, tok); err != nil {

@@ -105,6 +105,27 @@ func (_u *MCPConnectionUpdate) ClearAPIKeyEncrypted() *MCPConnectionUpdate {
 	return _u
 }
 
+// SetCredentialGeneration sets the "credential_generation" field.
+func (_u *MCPConnectionUpdate) SetCredentialGeneration(v int64) *MCPConnectionUpdate {
+	_u.mutation.ResetCredentialGeneration()
+	_u.mutation.SetCredentialGeneration(v)
+	return _u
+}
+
+// SetNillableCredentialGeneration sets the "credential_generation" field if the given value is not nil.
+func (_u *MCPConnectionUpdate) SetNillableCredentialGeneration(v *int64) *MCPConnectionUpdate {
+	if v != nil {
+		_u.SetCredentialGeneration(*v)
+	}
+	return _u
+}
+
+// AddCredentialGeneration adds value to the "credential_generation" field.
+func (_u *MCPConnectionUpdate) AddCredentialGeneration(v int64) *MCPConnectionUpdate {
+	_u.mutation.AddCredentialGeneration(v)
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *MCPConnectionUpdate) SetStatus(v string) *MCPConnectionUpdate {
 	_u.mutation.SetStatus(v)
@@ -328,6 +349,11 @@ func (_u *MCPConnectionUpdate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *MCPConnectionUpdate) check() error {
+	if v, ok := _u.mutation.CredentialGeneration(); ok {
+		if err := mcpconnection.CredentialGenerationValidator(v); err != nil {
+			return &ValidationError{Name: "credential_generation", err: fmt.Errorf(`ent: validator failed for field "MCPConnection.credential_generation": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := mcpconnection.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "MCPConnection.status": %w`, err)}
@@ -382,6 +408,12 @@ func (_u *MCPConnectionUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	}
 	if _u.mutation.APIKeyEncryptedCleared() {
 		_spec.ClearField(mcpconnection.FieldAPIKeyEncrypted, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.CredentialGeneration(); ok {
+		_spec.SetField(mcpconnection.FieldCredentialGeneration, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedCredentialGeneration(); ok {
+		_spec.AddField(mcpconnection.FieldCredentialGeneration, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(mcpconnection.FieldStatus, field.TypeString, value)
@@ -527,6 +559,27 @@ func (_u *MCPConnectionUpdateOne) SetAPIKeyEncrypted(v []byte) *MCPConnectionUpd
 // ClearAPIKeyEncrypted clears the value of the "api_key_encrypted" field.
 func (_u *MCPConnectionUpdateOne) ClearAPIKeyEncrypted() *MCPConnectionUpdateOne {
 	_u.mutation.ClearAPIKeyEncrypted()
+	return _u
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (_u *MCPConnectionUpdateOne) SetCredentialGeneration(v int64) *MCPConnectionUpdateOne {
+	_u.mutation.ResetCredentialGeneration()
+	_u.mutation.SetCredentialGeneration(v)
+	return _u
+}
+
+// SetNillableCredentialGeneration sets the "credential_generation" field if the given value is not nil.
+func (_u *MCPConnectionUpdateOne) SetNillableCredentialGeneration(v *int64) *MCPConnectionUpdateOne {
+	if v != nil {
+		_u.SetCredentialGeneration(*v)
+	}
+	return _u
+}
+
+// AddCredentialGeneration adds value to the "credential_generation" field.
+func (_u *MCPConnectionUpdateOne) AddCredentialGeneration(v int64) *MCPConnectionUpdateOne {
+	_u.mutation.AddCredentialGeneration(v)
 	return _u
 }
 
@@ -766,6 +819,11 @@ func (_u *MCPConnectionUpdateOne) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *MCPConnectionUpdateOne) check() error {
+	if v, ok := _u.mutation.CredentialGeneration(); ok {
+		if err := mcpconnection.CredentialGenerationValidator(v); err != nil {
+			return &ValidationError{Name: "credential_generation", err: fmt.Errorf(`ent: validator failed for field "MCPConnection.credential_generation": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := mcpconnection.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "MCPConnection.status": %w`, err)}
@@ -837,6 +895,12 @@ func (_u *MCPConnectionUpdateOne) sqlSave(ctx context.Context) (_node *MCPConnec
 	}
 	if _u.mutation.APIKeyEncryptedCleared() {
 		_spec.ClearField(mcpconnection.FieldAPIKeyEncrypted, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.CredentialGeneration(); ok {
+		_spec.SetField(mcpconnection.FieldCredentialGeneration, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedCredentialGeneration(); ok {
+		_spec.AddField(mcpconnection.FieldCredentialGeneration, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(mcpconnection.FieldStatus, field.TypeString, value)

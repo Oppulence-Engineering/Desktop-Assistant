@@ -635,6 +635,10 @@ func (m *MCPConnectionMutation) CreateHistoryFromCreate(ctx context.Context) err
 		create = create.SetAPIKeyEncrypted(apiKeyEncrypted)
 	}
 
+	if credentialGeneration, exists := m.CredentialGeneration(); exists {
+		create = create.SetCredentialGeneration(credentialGeneration)
+	}
+
 	if status, exists := m.Status(); exists {
 		create = create.SetStatus(status)
 	}
@@ -748,6 +752,12 @@ func (m *MCPConnectionMutation) CreateHistoryFromUpdate(ctx context.Context) err
 			create = create.SetAPIKeyEncrypted(mcpconnection.APIKeyEncrypted)
 		}
 
+		if credentialGeneration, exists := m.CredentialGeneration(); exists {
+			create = create.SetCredentialGeneration(credentialGeneration)
+		} else {
+			create = create.SetCredentialGeneration(mcpconnection.CredentialGeneration)
+		}
+
 		if status, exists := m.Status(); exists {
 			create = create.SetStatus(status)
 		} else {
@@ -845,6 +855,7 @@ func (m *MCPConnectionMutation) CreateHistoryFromDelete(ctx context.Context) err
 			SetScopes(mcpconnection.Scopes).
 			SetRefreshTokenEncrypted(mcpconnection.RefreshTokenEncrypted).
 			SetAPIKeyEncrypted(mcpconnection.APIKeyEncrypted).
+			SetCredentialGeneration(mcpconnection.CredentialGeneration).
 			SetStatus(mcpconnection.Status).
 			SetConnectedAt(mcpconnection.ConnectedAt).
 			SetLastUsedAt(mcpconnection.LastUsedAt).

@@ -30,12 +30,24 @@ type ConnectorRevocationJob struct {
 	Connector string `json:"connector,omitempty"`
 	// RefreshTokenEncrypted holds the value of the "refresh_token_encrypted" field.
 	RefreshTokenEncrypted []byte `json:"-"`
+	// CredentialGeneration holds the value of the "credential_generation" field.
+	CredentialGeneration int64 `json:"credential_generation,omitempty"`
+	// TerminalStatus holds the value of the "terminal_status" field.
+	TerminalStatus string `json:"terminal_status,omitempty"`
+	// TerminalReason holds the value of the "terminal_reason" field.
+	TerminalReason string `json:"terminal_reason,omitempty"`
+	// TerminalActor holds the value of the "terminal_actor" field.
+	TerminalActor string `json:"terminal_actor,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
 	// Attempts holds the value of the "attempts" field.
 	Attempts int `json:"attempts,omitempty"`
 	// NextAttemptAt holds the value of the "next_attempt_at" field.
 	NextAttemptAt time.Time `json:"next_attempt_at,omitempty"`
+	// ClaimID holds the value of the "claim_id" field.
+	ClaimID uuid.UUID `json:"claim_id,omitempty"`
+	// ClaimedUntil holds the value of the "claimed_until" field.
+	ClaimedUntil time.Time `json:"claimed_until,omitempty"`
 	// LastError holds the value of the "last_error" field.
 	LastError string `json:"last_error,omitempty"`
 	// CompletedAt holds the value of the "completed_at" field.
@@ -50,13 +62,13 @@ func (*ConnectorRevocationJob) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case connectorrevocationjob.FieldRefreshTokenEncrypted:
 			values[i] = new([]byte)
-		case connectorrevocationjob.FieldAttempts:
+		case connectorrevocationjob.FieldCredentialGeneration, connectorrevocationjob.FieldAttempts:
 			values[i] = new(sql.NullInt64)
-		case connectorrevocationjob.FieldConnector, connectorrevocationjob.FieldStatus, connectorrevocationjob.FieldLastError:
+		case connectorrevocationjob.FieldConnector, connectorrevocationjob.FieldTerminalStatus, connectorrevocationjob.FieldTerminalReason, connectorrevocationjob.FieldTerminalActor, connectorrevocationjob.FieldStatus, connectorrevocationjob.FieldLastError:
 			values[i] = new(sql.NullString)
-		case connectorrevocationjob.FieldCreatedAt, connectorrevocationjob.FieldUpdatedAt, connectorrevocationjob.FieldNextAttemptAt, connectorrevocationjob.FieldCompletedAt:
+		case connectorrevocationjob.FieldCreatedAt, connectorrevocationjob.FieldUpdatedAt, connectorrevocationjob.FieldNextAttemptAt, connectorrevocationjob.FieldClaimedUntil, connectorrevocationjob.FieldCompletedAt:
 			values[i] = new(sql.NullTime)
-		case connectorrevocationjob.FieldID, connectorrevocationjob.FieldConnectionID, connectorrevocationjob.FieldOwnerID:
+		case connectorrevocationjob.FieldID, connectorrevocationjob.FieldConnectionID, connectorrevocationjob.FieldOwnerID, connectorrevocationjob.FieldClaimID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -115,6 +127,30 @@ func (_m *ConnectorRevocationJob) assignValues(columns []string, values []any) e
 			} else if value != nil {
 				_m.RefreshTokenEncrypted = *value
 			}
+		case connectorrevocationjob.FieldCredentialGeneration:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field credential_generation", values[i])
+			} else if value.Valid {
+				_m.CredentialGeneration = value.Int64
+			}
+		case connectorrevocationjob.FieldTerminalStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field terminal_status", values[i])
+			} else if value.Valid {
+				_m.TerminalStatus = value.String
+			}
+		case connectorrevocationjob.FieldTerminalReason:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field terminal_reason", values[i])
+			} else if value.Valid {
+				_m.TerminalReason = value.String
+			}
+		case connectorrevocationjob.FieldTerminalActor:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field terminal_actor", values[i])
+			} else if value.Valid {
+				_m.TerminalActor = value.String
+			}
 		case connectorrevocationjob.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field status", values[i])
@@ -132,6 +168,18 @@ func (_m *ConnectorRevocationJob) assignValues(columns []string, values []any) e
 				return fmt.Errorf("unexpected type %T for field next_attempt_at", values[i])
 			} else if value.Valid {
 				_m.NextAttemptAt = value.Time
+			}
+		case connectorrevocationjob.FieldClaimID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field claim_id", values[i])
+			} else if value != nil {
+				_m.ClaimID = *value
+			}
+		case connectorrevocationjob.FieldClaimedUntil:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field claimed_until", values[i])
+			} else if value.Valid {
+				_m.ClaimedUntil = value.Time
 			}
 		case connectorrevocationjob.FieldLastError:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -198,6 +246,18 @@ func (_m *ConnectorRevocationJob) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("refresh_token_encrypted=<sensitive>")
 	builder.WriteString(", ")
+	builder.WriteString("credential_generation=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CredentialGeneration))
+	builder.WriteString(", ")
+	builder.WriteString("terminal_status=")
+	builder.WriteString(_m.TerminalStatus)
+	builder.WriteString(", ")
+	builder.WriteString("terminal_reason=")
+	builder.WriteString(_m.TerminalReason)
+	builder.WriteString(", ")
+	builder.WriteString("terminal_actor=")
+	builder.WriteString(_m.TerminalActor)
+	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)
 	builder.WriteString(", ")
@@ -206,6 +266,12 @@ func (_m *ConnectorRevocationJob) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("next_attempt_at=")
 	builder.WriteString(_m.NextAttemptAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("claim_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ClaimID))
+	builder.WriteString(", ")
+	builder.WriteString("claimed_until=")
+	builder.WriteString(_m.ClaimedUntil.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("last_error=")
 	builder.WriteString(_m.LastError)

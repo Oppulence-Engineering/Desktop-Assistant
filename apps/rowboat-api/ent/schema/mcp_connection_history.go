@@ -49,6 +49,9 @@ func (MCPConnectionHistory) Fields() []ent.Field {
 			Optional().
 			Sensitive().
 			Immutable(),
+		field.Int64("credential_generation").
+			Immutable().
+			Default(1),
 		field.String("status").
 			Immutable().
 			Default("active"),

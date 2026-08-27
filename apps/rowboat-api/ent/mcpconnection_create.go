@@ -83,6 +83,20 @@ func (_c *MCPConnectionCreate) SetAPIKeyEncrypted(v []byte) *MCPConnectionCreate
 	return _c
 }
 
+// SetCredentialGeneration sets the "credential_generation" field.
+func (_c *MCPConnectionCreate) SetCredentialGeneration(v int64) *MCPConnectionCreate {
+	_c.mutation.SetCredentialGeneration(v)
+	return _c
+}
+
+// SetNillableCredentialGeneration sets the "credential_generation" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableCredentialGeneration(v *int64) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetCredentialGeneration(*v)
+	}
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *MCPConnectionCreate) SetStatus(v string) *MCPConnectionCreate {
 	_c.mutation.SetStatus(v)
@@ -285,6 +299,10 @@ func (_c *MCPConnectionCreate) defaults() error {
 		v := mcpconnection.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.CredentialGeneration(); !ok {
+		v := mcpconnection.DefaultCredentialGeneration
+		_c.mutation.SetCredentialGeneration(v)
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := mcpconnection.DefaultStatus
 		_c.mutation.SetStatus(v)
@@ -312,6 +330,14 @@ func (_c *MCPConnectionCreate) check() error {
 	}
 	if _, ok := _c.mutation.Audience(); !ok {
 		return &ValidationError{Name: "audience", err: errors.New(`ent: missing required field "MCPConnection.audience"`)}
+	}
+	if _, ok := _c.mutation.CredentialGeneration(); !ok {
+		return &ValidationError{Name: "credential_generation", err: errors.New(`ent: missing required field "MCPConnection.credential_generation"`)}
+	}
+	if v, ok := _c.mutation.CredentialGeneration(); ok {
+		if err := mcpconnection.CredentialGenerationValidator(v); err != nil {
+			return &ValidationError{Name: "credential_generation", err: fmt.Errorf(`ent: validator failed for field "MCPConnection.credential_generation": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "MCPConnection.status"`)}
@@ -387,6 +413,10 @@ func (_c *MCPConnectionCreate) createSpec() (*MCPConnection, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.APIKeyEncrypted(); ok {
 		_spec.SetField(mcpconnection.FieldAPIKeyEncrypted, field.TypeBytes, value)
 		_node.APIKeyEncrypted = value
+	}
+	if value, ok := _c.mutation.CredentialGeneration(); ok {
+		_spec.SetField(mcpconnection.FieldCredentialGeneration, field.TypeInt64, value)
+		_node.CredentialGeneration = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(mcpconnection.FieldStatus, field.TypeString, value)
@@ -580,6 +610,24 @@ func (u *MCPConnectionUpsert) UpdateAPIKeyEncrypted() *MCPConnectionUpsert {
 // ClearAPIKeyEncrypted clears the value of the "api_key_encrypted" field.
 func (u *MCPConnectionUpsert) ClearAPIKeyEncrypted() *MCPConnectionUpsert {
 	u.SetNull(mcpconnection.FieldAPIKeyEncrypted)
+	return u
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (u *MCPConnectionUpsert) SetCredentialGeneration(v int64) *MCPConnectionUpsert {
+	u.Set(mcpconnection.FieldCredentialGeneration, v)
+	return u
+}
+
+// UpdateCredentialGeneration sets the "credential_generation" field to the value that was provided on create.
+func (u *MCPConnectionUpsert) UpdateCredentialGeneration() *MCPConnectionUpsert {
+	u.SetExcluded(mcpconnection.FieldCredentialGeneration)
+	return u
+}
+
+// AddCredentialGeneration adds v to the "credential_generation" field.
+func (u *MCPConnectionUpsert) AddCredentialGeneration(v int64) *MCPConnectionUpsert {
+	u.Add(mcpconnection.FieldCredentialGeneration, v)
 	return u
 }
 
@@ -892,6 +940,27 @@ func (u *MCPConnectionUpsertOne) UpdateAPIKeyEncrypted() *MCPConnectionUpsertOne
 func (u *MCPConnectionUpsertOne) ClearAPIKeyEncrypted() *MCPConnectionUpsertOne {
 	return u.Update(func(s *MCPConnectionUpsert) {
 		s.ClearAPIKeyEncrypted()
+	})
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (u *MCPConnectionUpsertOne) SetCredentialGeneration(v int64) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetCredentialGeneration(v)
+	})
+}
+
+// AddCredentialGeneration adds v to the "credential_generation" field.
+func (u *MCPConnectionUpsertOne) AddCredentialGeneration(v int64) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.AddCredentialGeneration(v)
+	})
+}
+
+// UpdateCredentialGeneration sets the "credential_generation" field to the value that was provided on create.
+func (u *MCPConnectionUpsertOne) UpdateCredentialGeneration() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateCredentialGeneration()
 	})
 }
 
@@ -1397,6 +1466,27 @@ func (u *MCPConnectionUpsertBulk) UpdateAPIKeyEncrypted() *MCPConnectionUpsertBu
 func (u *MCPConnectionUpsertBulk) ClearAPIKeyEncrypted() *MCPConnectionUpsertBulk {
 	return u.Update(func(s *MCPConnectionUpsert) {
 		s.ClearAPIKeyEncrypted()
+	})
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (u *MCPConnectionUpsertBulk) SetCredentialGeneration(v int64) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetCredentialGeneration(v)
+	})
+}
+
+// AddCredentialGeneration adds v to the "credential_generation" field.
+func (u *MCPConnectionUpsertBulk) AddCredentialGeneration(v int64) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.AddCredentialGeneration(v)
+	})
+}
+
+// UpdateCredentialGeneration sets the "credential_generation" field to the value that was provided on create.
+func (u *MCPConnectionUpsertBulk) UpdateCredentialGeneration() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateCredentialGeneration()
 	})
 }
 

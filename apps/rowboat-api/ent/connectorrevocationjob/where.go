@@ -85,6 +85,26 @@ func RefreshTokenEncrypted(v []byte) predicate.ConnectorRevocationJob {
 	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldRefreshTokenEncrypted, v))
 }
 
+// CredentialGeneration applies equality check predicate on the "credential_generation" field. It's identical to CredentialGenerationEQ.
+func CredentialGeneration(v int64) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldCredentialGeneration, v))
+}
+
+// TerminalStatus applies equality check predicate on the "terminal_status" field. It's identical to TerminalStatusEQ.
+func TerminalStatus(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldTerminalStatus, v))
+}
+
+// TerminalReason applies equality check predicate on the "terminal_reason" field. It's identical to TerminalReasonEQ.
+func TerminalReason(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldTerminalReason, v))
+}
+
+// TerminalActor applies equality check predicate on the "terminal_actor" field. It's identical to TerminalActorEQ.
+func TerminalActor(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldTerminalActor, v))
+}
+
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v string) predicate.ConnectorRevocationJob {
 	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldStatus, v))
@@ -98,6 +118,16 @@ func Attempts(v int) predicate.ConnectorRevocationJob {
 // NextAttemptAt applies equality check predicate on the "next_attempt_at" field. It's identical to NextAttemptAtEQ.
 func NextAttemptAt(v time.Time) predicate.ConnectorRevocationJob {
 	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldNextAttemptAt, v))
+}
+
+// ClaimID applies equality check predicate on the "claim_id" field. It's identical to ClaimIDEQ.
+func ClaimID(v uuid.UUID) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldClaimID, v))
+}
+
+// ClaimedUntil applies equality check predicate on the "claimed_until" field. It's identical to ClaimedUntilEQ.
+func ClaimedUntil(v time.Time) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldClaimedUntil, v))
 }
 
 // LastError applies equality check predicate on the "last_error" field. It's identical to LastErrorEQ.
@@ -375,6 +405,251 @@ func RefreshTokenEncryptedLTE(v []byte) predicate.ConnectorRevocationJob {
 	return predicate.ConnectorRevocationJob(sql.FieldLTE(FieldRefreshTokenEncrypted, v))
 }
 
+// RefreshTokenEncryptedIsNil applies the IsNil predicate on the "refresh_token_encrypted" field.
+func RefreshTokenEncryptedIsNil() predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldIsNull(FieldRefreshTokenEncrypted))
+}
+
+// RefreshTokenEncryptedNotNil applies the NotNil predicate on the "refresh_token_encrypted" field.
+func RefreshTokenEncryptedNotNil() predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNotNull(FieldRefreshTokenEncrypted))
+}
+
+// CredentialGenerationEQ applies the EQ predicate on the "credential_generation" field.
+func CredentialGenerationEQ(v int64) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationNEQ applies the NEQ predicate on the "credential_generation" field.
+func CredentialGenerationNEQ(v int64) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNEQ(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationIn applies the In predicate on the "credential_generation" field.
+func CredentialGenerationIn(vs ...int64) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldIn(FieldCredentialGeneration, vs...))
+}
+
+// CredentialGenerationNotIn applies the NotIn predicate on the "credential_generation" field.
+func CredentialGenerationNotIn(vs ...int64) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNotIn(FieldCredentialGeneration, vs...))
+}
+
+// CredentialGenerationGT applies the GT predicate on the "credential_generation" field.
+func CredentialGenerationGT(v int64) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldGT(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationGTE applies the GTE predicate on the "credential_generation" field.
+func CredentialGenerationGTE(v int64) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldGTE(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationLT applies the LT predicate on the "credential_generation" field.
+func CredentialGenerationLT(v int64) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldLT(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationLTE applies the LTE predicate on the "credential_generation" field.
+func CredentialGenerationLTE(v int64) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldLTE(FieldCredentialGeneration, v))
+}
+
+// TerminalStatusEQ applies the EQ predicate on the "terminal_status" field.
+func TerminalStatusEQ(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldTerminalStatus, v))
+}
+
+// TerminalStatusNEQ applies the NEQ predicate on the "terminal_status" field.
+func TerminalStatusNEQ(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNEQ(FieldTerminalStatus, v))
+}
+
+// TerminalStatusIn applies the In predicate on the "terminal_status" field.
+func TerminalStatusIn(vs ...string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldIn(FieldTerminalStatus, vs...))
+}
+
+// TerminalStatusNotIn applies the NotIn predicate on the "terminal_status" field.
+func TerminalStatusNotIn(vs ...string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNotIn(FieldTerminalStatus, vs...))
+}
+
+// TerminalStatusGT applies the GT predicate on the "terminal_status" field.
+func TerminalStatusGT(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldGT(FieldTerminalStatus, v))
+}
+
+// TerminalStatusGTE applies the GTE predicate on the "terminal_status" field.
+func TerminalStatusGTE(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldGTE(FieldTerminalStatus, v))
+}
+
+// TerminalStatusLT applies the LT predicate on the "terminal_status" field.
+func TerminalStatusLT(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldLT(FieldTerminalStatus, v))
+}
+
+// TerminalStatusLTE applies the LTE predicate on the "terminal_status" field.
+func TerminalStatusLTE(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldLTE(FieldTerminalStatus, v))
+}
+
+// TerminalStatusContains applies the Contains predicate on the "terminal_status" field.
+func TerminalStatusContains(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldContains(FieldTerminalStatus, v))
+}
+
+// TerminalStatusHasPrefix applies the HasPrefix predicate on the "terminal_status" field.
+func TerminalStatusHasPrefix(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldHasPrefix(FieldTerminalStatus, v))
+}
+
+// TerminalStatusHasSuffix applies the HasSuffix predicate on the "terminal_status" field.
+func TerminalStatusHasSuffix(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldHasSuffix(FieldTerminalStatus, v))
+}
+
+// TerminalStatusEqualFold applies the EqualFold predicate on the "terminal_status" field.
+func TerminalStatusEqualFold(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEqualFold(FieldTerminalStatus, v))
+}
+
+// TerminalStatusContainsFold applies the ContainsFold predicate on the "terminal_status" field.
+func TerminalStatusContainsFold(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldContainsFold(FieldTerminalStatus, v))
+}
+
+// TerminalReasonEQ applies the EQ predicate on the "terminal_reason" field.
+func TerminalReasonEQ(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldTerminalReason, v))
+}
+
+// TerminalReasonNEQ applies the NEQ predicate on the "terminal_reason" field.
+func TerminalReasonNEQ(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNEQ(FieldTerminalReason, v))
+}
+
+// TerminalReasonIn applies the In predicate on the "terminal_reason" field.
+func TerminalReasonIn(vs ...string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldIn(FieldTerminalReason, vs...))
+}
+
+// TerminalReasonNotIn applies the NotIn predicate on the "terminal_reason" field.
+func TerminalReasonNotIn(vs ...string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNotIn(FieldTerminalReason, vs...))
+}
+
+// TerminalReasonGT applies the GT predicate on the "terminal_reason" field.
+func TerminalReasonGT(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldGT(FieldTerminalReason, v))
+}
+
+// TerminalReasonGTE applies the GTE predicate on the "terminal_reason" field.
+func TerminalReasonGTE(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldGTE(FieldTerminalReason, v))
+}
+
+// TerminalReasonLT applies the LT predicate on the "terminal_reason" field.
+func TerminalReasonLT(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldLT(FieldTerminalReason, v))
+}
+
+// TerminalReasonLTE applies the LTE predicate on the "terminal_reason" field.
+func TerminalReasonLTE(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldLTE(FieldTerminalReason, v))
+}
+
+// TerminalReasonContains applies the Contains predicate on the "terminal_reason" field.
+func TerminalReasonContains(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldContains(FieldTerminalReason, v))
+}
+
+// TerminalReasonHasPrefix applies the HasPrefix predicate on the "terminal_reason" field.
+func TerminalReasonHasPrefix(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldHasPrefix(FieldTerminalReason, v))
+}
+
+// TerminalReasonHasSuffix applies the HasSuffix predicate on the "terminal_reason" field.
+func TerminalReasonHasSuffix(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldHasSuffix(FieldTerminalReason, v))
+}
+
+// TerminalReasonEqualFold applies the EqualFold predicate on the "terminal_reason" field.
+func TerminalReasonEqualFold(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEqualFold(FieldTerminalReason, v))
+}
+
+// TerminalReasonContainsFold applies the ContainsFold predicate on the "terminal_reason" field.
+func TerminalReasonContainsFold(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldContainsFold(FieldTerminalReason, v))
+}
+
+// TerminalActorEQ applies the EQ predicate on the "terminal_actor" field.
+func TerminalActorEQ(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldTerminalActor, v))
+}
+
+// TerminalActorNEQ applies the NEQ predicate on the "terminal_actor" field.
+func TerminalActorNEQ(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNEQ(FieldTerminalActor, v))
+}
+
+// TerminalActorIn applies the In predicate on the "terminal_actor" field.
+func TerminalActorIn(vs ...string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldIn(FieldTerminalActor, vs...))
+}
+
+// TerminalActorNotIn applies the NotIn predicate on the "terminal_actor" field.
+func TerminalActorNotIn(vs ...string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNotIn(FieldTerminalActor, vs...))
+}
+
+// TerminalActorGT applies the GT predicate on the "terminal_actor" field.
+func TerminalActorGT(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldGT(FieldTerminalActor, v))
+}
+
+// TerminalActorGTE applies the GTE predicate on the "terminal_actor" field.
+func TerminalActorGTE(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldGTE(FieldTerminalActor, v))
+}
+
+// TerminalActorLT applies the LT predicate on the "terminal_actor" field.
+func TerminalActorLT(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldLT(FieldTerminalActor, v))
+}
+
+// TerminalActorLTE applies the LTE predicate on the "terminal_actor" field.
+func TerminalActorLTE(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldLTE(FieldTerminalActor, v))
+}
+
+// TerminalActorContains applies the Contains predicate on the "terminal_actor" field.
+func TerminalActorContains(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldContains(FieldTerminalActor, v))
+}
+
+// TerminalActorHasPrefix applies the HasPrefix predicate on the "terminal_actor" field.
+func TerminalActorHasPrefix(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldHasPrefix(FieldTerminalActor, v))
+}
+
+// TerminalActorHasSuffix applies the HasSuffix predicate on the "terminal_actor" field.
+func TerminalActorHasSuffix(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldHasSuffix(FieldTerminalActor, v))
+}
+
+// TerminalActorEqualFold applies the EqualFold predicate on the "terminal_actor" field.
+func TerminalActorEqualFold(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEqualFold(FieldTerminalActor, v))
+}
+
+// TerminalActorContainsFold applies the ContainsFold predicate on the "terminal_actor" field.
+func TerminalActorContainsFold(v string) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldContainsFold(FieldTerminalActor, v))
+}
+
 // StatusEQ applies the EQ predicate on the "status" field.
 func StatusEQ(v string) predicate.ConnectorRevocationJob {
 	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldStatus, v))
@@ -518,6 +793,106 @@ func NextAttemptAtLT(v time.Time) predicate.ConnectorRevocationJob {
 // NextAttemptAtLTE applies the LTE predicate on the "next_attempt_at" field.
 func NextAttemptAtLTE(v time.Time) predicate.ConnectorRevocationJob {
 	return predicate.ConnectorRevocationJob(sql.FieldLTE(FieldNextAttemptAt, v))
+}
+
+// ClaimIDEQ applies the EQ predicate on the "claim_id" field.
+func ClaimIDEQ(v uuid.UUID) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldClaimID, v))
+}
+
+// ClaimIDNEQ applies the NEQ predicate on the "claim_id" field.
+func ClaimIDNEQ(v uuid.UUID) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNEQ(FieldClaimID, v))
+}
+
+// ClaimIDIn applies the In predicate on the "claim_id" field.
+func ClaimIDIn(vs ...uuid.UUID) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldIn(FieldClaimID, vs...))
+}
+
+// ClaimIDNotIn applies the NotIn predicate on the "claim_id" field.
+func ClaimIDNotIn(vs ...uuid.UUID) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNotIn(FieldClaimID, vs...))
+}
+
+// ClaimIDGT applies the GT predicate on the "claim_id" field.
+func ClaimIDGT(v uuid.UUID) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldGT(FieldClaimID, v))
+}
+
+// ClaimIDGTE applies the GTE predicate on the "claim_id" field.
+func ClaimIDGTE(v uuid.UUID) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldGTE(FieldClaimID, v))
+}
+
+// ClaimIDLT applies the LT predicate on the "claim_id" field.
+func ClaimIDLT(v uuid.UUID) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldLT(FieldClaimID, v))
+}
+
+// ClaimIDLTE applies the LTE predicate on the "claim_id" field.
+func ClaimIDLTE(v uuid.UUID) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldLTE(FieldClaimID, v))
+}
+
+// ClaimIDIsNil applies the IsNil predicate on the "claim_id" field.
+func ClaimIDIsNil() predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldIsNull(FieldClaimID))
+}
+
+// ClaimIDNotNil applies the NotNil predicate on the "claim_id" field.
+func ClaimIDNotNil() predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNotNull(FieldClaimID))
+}
+
+// ClaimedUntilEQ applies the EQ predicate on the "claimed_until" field.
+func ClaimedUntilEQ(v time.Time) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldEQ(FieldClaimedUntil, v))
+}
+
+// ClaimedUntilNEQ applies the NEQ predicate on the "claimed_until" field.
+func ClaimedUntilNEQ(v time.Time) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNEQ(FieldClaimedUntil, v))
+}
+
+// ClaimedUntilIn applies the In predicate on the "claimed_until" field.
+func ClaimedUntilIn(vs ...time.Time) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldIn(FieldClaimedUntil, vs...))
+}
+
+// ClaimedUntilNotIn applies the NotIn predicate on the "claimed_until" field.
+func ClaimedUntilNotIn(vs ...time.Time) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNotIn(FieldClaimedUntil, vs...))
+}
+
+// ClaimedUntilGT applies the GT predicate on the "claimed_until" field.
+func ClaimedUntilGT(v time.Time) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldGT(FieldClaimedUntil, v))
+}
+
+// ClaimedUntilGTE applies the GTE predicate on the "claimed_until" field.
+func ClaimedUntilGTE(v time.Time) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldGTE(FieldClaimedUntil, v))
+}
+
+// ClaimedUntilLT applies the LT predicate on the "claimed_until" field.
+func ClaimedUntilLT(v time.Time) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldLT(FieldClaimedUntil, v))
+}
+
+// ClaimedUntilLTE applies the LTE predicate on the "claimed_until" field.
+func ClaimedUntilLTE(v time.Time) predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldLTE(FieldClaimedUntil, v))
+}
+
+// ClaimedUntilIsNil applies the IsNil predicate on the "claimed_until" field.
+func ClaimedUntilIsNil() predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldIsNull(FieldClaimedUntil))
+}
+
+// ClaimedUntilNotNil applies the NotNil predicate on the "claimed_until" field.
+func ClaimedUntilNotNil() predicate.ConnectorRevocationJob {
+	return predicate.ConnectorRevocationJob(sql.FieldNotNull(FieldClaimedUntil))
 }
 
 // LastErrorEQ applies the EQ predicate on the "last_error" field.

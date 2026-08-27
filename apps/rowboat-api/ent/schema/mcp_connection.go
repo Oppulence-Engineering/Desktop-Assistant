@@ -37,6 +37,10 @@ func (MCPConnection) Fields() []ent.Field {
 		field.Strings("scopes").Optional(),
 		field.Bytes("refresh_token_encrypted").Optional().Sensitive(), // Ory-issued, rotated on use
 		field.Bytes("api_key_encrypted").Optional().Sensitive(),       // vendor-issued (api_key connectors)
+		// credential_generation is advanced whenever a credential is replaced.
+		// Long-running refresh/revoke operations use it as a fencing token so an
+		// older operation cannot mutate a newly reconnected grant.
+		field.Int64("credential_generation").Default(1).Positive(),
 		field.String("status").Default("active").Validate(oneOf(
 			"mcp connection status",
 			"active",

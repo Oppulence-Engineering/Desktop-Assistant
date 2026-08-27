@@ -207,6 +207,7 @@ func (_m *MCPConnectionHistory) Restore(ctx context.Context) (*MCPConnection, er
 		SetScopes(_m.Scopes).
 		SetRefreshTokenEncrypted(_m.RefreshTokenEncrypted).
 		SetAPIKeyEncrypted(_m.APIKeyEncrypted).
+		SetCredentialGeneration(_m.CredentialGeneration).
 		SetStatus(_m.Status).
 		SetConnectedAt(_m.ConnectedAt).
 		SetLastUsedAt(_m.LastUsedAt).

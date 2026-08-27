@@ -1381,12 +1381,16 @@ func init() {
 	connectorrevocationjob.DefaultUpdatedAt = connectorrevocationjobDescUpdatedAt.Default.(func() time.Time)
 	// connectorrevocationjob.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	connectorrevocationjob.UpdateDefaultUpdatedAt = connectorrevocationjobDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// connectorrevocationjobDescCredentialGeneration is the schema descriptor for credential_generation field.
+	connectorrevocationjobDescCredentialGeneration := connectorrevocationjobFields[4].Descriptor()
+	// connectorrevocationjob.CredentialGenerationValidator is a validator for the "credential_generation" field. It is called by the builders before save.
+	connectorrevocationjob.CredentialGenerationValidator = connectorrevocationjobDescCredentialGeneration.Validators[0].(func(int64) error)
 	// connectorrevocationjobDescStatus is the schema descriptor for status field.
-	connectorrevocationjobDescStatus := connectorrevocationjobFields[4].Descriptor()
+	connectorrevocationjobDescStatus := connectorrevocationjobFields[8].Descriptor()
 	// connectorrevocationjob.DefaultStatus holds the default value on creation for the status field.
 	connectorrevocationjob.DefaultStatus = connectorrevocationjobDescStatus.Default.(string)
 	// connectorrevocationjobDescAttempts is the schema descriptor for attempts field.
-	connectorrevocationjobDescAttempts := connectorrevocationjobFields[5].Descriptor()
+	connectorrevocationjobDescAttempts := connectorrevocationjobFields[9].Descriptor()
 	// connectorrevocationjob.DefaultAttempts holds the default value on creation for the attempts field.
 	connectorrevocationjob.DefaultAttempts = connectorrevocationjobDescAttempts.Default.(int)
 	// connectorrevocationjobDescID is the schema descriptor for id field.
@@ -1807,8 +1811,14 @@ func init() {
 	mcpconnection.DefaultUpdatedAt = mcpconnectionDescUpdatedAt.Default.(func() time.Time)
 	// mcpconnection.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	mcpconnection.UpdateDefaultUpdatedAt = mcpconnectionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// mcpconnectionDescCredentialGeneration is the schema descriptor for credential_generation field.
+	mcpconnectionDescCredentialGeneration := mcpconnectionFields[5].Descriptor()
+	// mcpconnection.DefaultCredentialGeneration holds the default value on creation for the credential_generation field.
+	mcpconnection.DefaultCredentialGeneration = mcpconnectionDescCredentialGeneration.Default.(int64)
+	// mcpconnection.CredentialGenerationValidator is a validator for the "credential_generation" field. It is called by the builders before save.
+	mcpconnection.CredentialGenerationValidator = mcpconnectionDescCredentialGeneration.Validators[0].(func(int64) error)
 	// mcpconnectionDescStatus is the schema descriptor for status field.
-	mcpconnectionDescStatus := mcpconnectionFields[5].Descriptor()
+	mcpconnectionDescStatus := mcpconnectionFields[6].Descriptor()
 	// mcpconnection.DefaultStatus holds the default value on creation for the status field.
 	mcpconnection.DefaultStatus = mcpconnectionDescStatus.Default.(string)
 	// mcpconnection.StatusValidator is a validator for the "status" field. It is called by the builders before save.
@@ -1845,8 +1855,12 @@ func init() {
 	mcpconnectionhistoryDescHistoryTime := mcpconnectionhistoryFields[1].Descriptor()
 	// mcpconnectionhistory.DefaultHistoryTime holds the default value on creation for the history_time field.
 	mcpconnectionhistory.DefaultHistoryTime = mcpconnectionhistoryDescHistoryTime.Default.(func() time.Time)
+	// mcpconnectionhistoryDescCredentialGeneration is the schema descriptor for credential_generation field.
+	mcpconnectionhistoryDescCredentialGeneration := mcpconnectionhistoryFields[9].Descriptor()
+	// mcpconnectionhistory.DefaultCredentialGeneration holds the default value on creation for the credential_generation field.
+	mcpconnectionhistory.DefaultCredentialGeneration = mcpconnectionhistoryDescCredentialGeneration.Default.(int64)
 	// mcpconnectionhistoryDescStatus is the schema descriptor for status field.
-	mcpconnectionhistoryDescStatus := mcpconnectionhistoryFields[9].Descriptor()
+	mcpconnectionhistoryDescStatus := mcpconnectionhistoryFields[10].Descriptor()
 	// mcpconnectionhistory.DefaultStatus holds the default value on creation for the status field.
 	mcpconnectionhistory.DefaultStatus = mcpconnectionhistoryDescStatus.Default.(string)
 	// mcpconnectionhistoryDescID is the schema descriptor for id field.

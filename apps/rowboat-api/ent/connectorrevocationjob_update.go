@@ -83,6 +83,75 @@ func (_u *ConnectorRevocationJobUpdate) SetRefreshTokenEncrypted(v []byte) *Conn
 	return _u
 }
 
+// ClearRefreshTokenEncrypted clears the value of the "refresh_token_encrypted" field.
+func (_u *ConnectorRevocationJobUpdate) ClearRefreshTokenEncrypted() *ConnectorRevocationJobUpdate {
+	_u.mutation.ClearRefreshTokenEncrypted()
+	return _u
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (_u *ConnectorRevocationJobUpdate) SetCredentialGeneration(v int64) *ConnectorRevocationJobUpdate {
+	_u.mutation.ResetCredentialGeneration()
+	_u.mutation.SetCredentialGeneration(v)
+	return _u
+}
+
+// SetNillableCredentialGeneration sets the "credential_generation" field if the given value is not nil.
+func (_u *ConnectorRevocationJobUpdate) SetNillableCredentialGeneration(v *int64) *ConnectorRevocationJobUpdate {
+	if v != nil {
+		_u.SetCredentialGeneration(*v)
+	}
+	return _u
+}
+
+// AddCredentialGeneration adds value to the "credential_generation" field.
+func (_u *ConnectorRevocationJobUpdate) AddCredentialGeneration(v int64) *ConnectorRevocationJobUpdate {
+	_u.mutation.AddCredentialGeneration(v)
+	return _u
+}
+
+// SetTerminalStatus sets the "terminal_status" field.
+func (_u *ConnectorRevocationJobUpdate) SetTerminalStatus(v string) *ConnectorRevocationJobUpdate {
+	_u.mutation.SetTerminalStatus(v)
+	return _u
+}
+
+// SetNillableTerminalStatus sets the "terminal_status" field if the given value is not nil.
+func (_u *ConnectorRevocationJobUpdate) SetNillableTerminalStatus(v *string) *ConnectorRevocationJobUpdate {
+	if v != nil {
+		_u.SetTerminalStatus(*v)
+	}
+	return _u
+}
+
+// SetTerminalReason sets the "terminal_reason" field.
+func (_u *ConnectorRevocationJobUpdate) SetTerminalReason(v string) *ConnectorRevocationJobUpdate {
+	_u.mutation.SetTerminalReason(v)
+	return _u
+}
+
+// SetNillableTerminalReason sets the "terminal_reason" field if the given value is not nil.
+func (_u *ConnectorRevocationJobUpdate) SetNillableTerminalReason(v *string) *ConnectorRevocationJobUpdate {
+	if v != nil {
+		_u.SetTerminalReason(*v)
+	}
+	return _u
+}
+
+// SetTerminalActor sets the "terminal_actor" field.
+func (_u *ConnectorRevocationJobUpdate) SetTerminalActor(v string) *ConnectorRevocationJobUpdate {
+	_u.mutation.SetTerminalActor(v)
+	return _u
+}
+
+// SetNillableTerminalActor sets the "terminal_actor" field if the given value is not nil.
+func (_u *ConnectorRevocationJobUpdate) SetNillableTerminalActor(v *string) *ConnectorRevocationJobUpdate {
+	if v != nil {
+		_u.SetTerminalActor(*v)
+	}
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *ConnectorRevocationJobUpdate) SetStatus(v string) *ConnectorRevocationJobUpdate {
 	_u.mutation.SetStatus(v)
@@ -129,6 +198,46 @@ func (_u *ConnectorRevocationJobUpdate) SetNillableNextAttemptAt(v *time.Time) *
 	if v != nil {
 		_u.SetNextAttemptAt(*v)
 	}
+	return _u
+}
+
+// SetClaimID sets the "claim_id" field.
+func (_u *ConnectorRevocationJobUpdate) SetClaimID(v uuid.UUID) *ConnectorRevocationJobUpdate {
+	_u.mutation.SetClaimID(v)
+	return _u
+}
+
+// SetNillableClaimID sets the "claim_id" field if the given value is not nil.
+func (_u *ConnectorRevocationJobUpdate) SetNillableClaimID(v *uuid.UUID) *ConnectorRevocationJobUpdate {
+	if v != nil {
+		_u.SetClaimID(*v)
+	}
+	return _u
+}
+
+// ClearClaimID clears the value of the "claim_id" field.
+func (_u *ConnectorRevocationJobUpdate) ClearClaimID() *ConnectorRevocationJobUpdate {
+	_u.mutation.ClearClaimID()
+	return _u
+}
+
+// SetClaimedUntil sets the "claimed_until" field.
+func (_u *ConnectorRevocationJobUpdate) SetClaimedUntil(v time.Time) *ConnectorRevocationJobUpdate {
+	_u.mutation.SetClaimedUntil(v)
+	return _u
+}
+
+// SetNillableClaimedUntil sets the "claimed_until" field if the given value is not nil.
+func (_u *ConnectorRevocationJobUpdate) SetNillableClaimedUntil(v *time.Time) *ConnectorRevocationJobUpdate {
+	if v != nil {
+		_u.SetClaimedUntil(*v)
+	}
+	return _u
+}
+
+// ClearClaimedUntil clears the value of the "claimed_until" field.
+func (_u *ConnectorRevocationJobUpdate) ClearClaimedUntil() *ConnectorRevocationJobUpdate {
+	_u.mutation.ClearClaimedUntil()
 	return _u
 }
 
@@ -213,7 +322,20 @@ func (_u *ConnectorRevocationJobUpdate) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *ConnectorRevocationJobUpdate) check() error {
+	if v, ok := _u.mutation.CredentialGeneration(); ok {
+		if err := connectorrevocationjob.CredentialGenerationValidator(v); err != nil {
+			return &ValidationError{Name: "credential_generation", err: fmt.Errorf(`ent: validator failed for field "ConnectorRevocationJob.credential_generation": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (_u *ConnectorRevocationJobUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(connectorrevocationjob.Table, connectorrevocationjob.Columns, sqlgraph.NewFieldSpec(connectorrevocationjob.FieldID, field.TypeUUID))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -237,6 +359,24 @@ func (_u *ConnectorRevocationJobUpdate) sqlSave(ctx context.Context) (_node int,
 	if value, ok := _u.mutation.RefreshTokenEncrypted(); ok {
 		_spec.SetField(connectorrevocationjob.FieldRefreshTokenEncrypted, field.TypeBytes, value)
 	}
+	if _u.mutation.RefreshTokenEncryptedCleared() {
+		_spec.ClearField(connectorrevocationjob.FieldRefreshTokenEncrypted, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.CredentialGeneration(); ok {
+		_spec.SetField(connectorrevocationjob.FieldCredentialGeneration, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedCredentialGeneration(); ok {
+		_spec.AddField(connectorrevocationjob.FieldCredentialGeneration, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.TerminalStatus(); ok {
+		_spec.SetField(connectorrevocationjob.FieldTerminalStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TerminalReason(); ok {
+		_spec.SetField(connectorrevocationjob.FieldTerminalReason, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TerminalActor(); ok {
+		_spec.SetField(connectorrevocationjob.FieldTerminalActor, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(connectorrevocationjob.FieldStatus, field.TypeString, value)
 	}
@@ -248,6 +388,18 @@ func (_u *ConnectorRevocationJobUpdate) sqlSave(ctx context.Context) (_node int,
 	}
 	if value, ok := _u.mutation.NextAttemptAt(); ok {
 		_spec.SetField(connectorrevocationjob.FieldNextAttemptAt, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.ClaimID(); ok {
+		_spec.SetField(connectorrevocationjob.FieldClaimID, field.TypeUUID, value)
+	}
+	if _u.mutation.ClaimIDCleared() {
+		_spec.ClearField(connectorrevocationjob.FieldClaimID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ClaimedUntil(); ok {
+		_spec.SetField(connectorrevocationjob.FieldClaimedUntil, field.TypeTime, value)
+	}
+	if _u.mutation.ClaimedUntilCleared() {
+		_spec.ClearField(connectorrevocationjob.FieldClaimedUntil, field.TypeTime)
 	}
 	if value, ok := _u.mutation.LastError(); ok {
 		_spec.SetField(connectorrevocationjob.FieldLastError, field.TypeString, value)
@@ -335,6 +487,75 @@ func (_u *ConnectorRevocationJobUpdateOne) SetRefreshTokenEncrypted(v []byte) *C
 	return _u
 }
 
+// ClearRefreshTokenEncrypted clears the value of the "refresh_token_encrypted" field.
+func (_u *ConnectorRevocationJobUpdateOne) ClearRefreshTokenEncrypted() *ConnectorRevocationJobUpdateOne {
+	_u.mutation.ClearRefreshTokenEncrypted()
+	return _u
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (_u *ConnectorRevocationJobUpdateOne) SetCredentialGeneration(v int64) *ConnectorRevocationJobUpdateOne {
+	_u.mutation.ResetCredentialGeneration()
+	_u.mutation.SetCredentialGeneration(v)
+	return _u
+}
+
+// SetNillableCredentialGeneration sets the "credential_generation" field if the given value is not nil.
+func (_u *ConnectorRevocationJobUpdateOne) SetNillableCredentialGeneration(v *int64) *ConnectorRevocationJobUpdateOne {
+	if v != nil {
+		_u.SetCredentialGeneration(*v)
+	}
+	return _u
+}
+
+// AddCredentialGeneration adds value to the "credential_generation" field.
+func (_u *ConnectorRevocationJobUpdateOne) AddCredentialGeneration(v int64) *ConnectorRevocationJobUpdateOne {
+	_u.mutation.AddCredentialGeneration(v)
+	return _u
+}
+
+// SetTerminalStatus sets the "terminal_status" field.
+func (_u *ConnectorRevocationJobUpdateOne) SetTerminalStatus(v string) *ConnectorRevocationJobUpdateOne {
+	_u.mutation.SetTerminalStatus(v)
+	return _u
+}
+
+// SetNillableTerminalStatus sets the "terminal_status" field if the given value is not nil.
+func (_u *ConnectorRevocationJobUpdateOne) SetNillableTerminalStatus(v *string) *ConnectorRevocationJobUpdateOne {
+	if v != nil {
+		_u.SetTerminalStatus(*v)
+	}
+	return _u
+}
+
+// SetTerminalReason sets the "terminal_reason" field.
+func (_u *ConnectorRevocationJobUpdateOne) SetTerminalReason(v string) *ConnectorRevocationJobUpdateOne {
+	_u.mutation.SetTerminalReason(v)
+	return _u
+}
+
+// SetNillableTerminalReason sets the "terminal_reason" field if the given value is not nil.
+func (_u *ConnectorRevocationJobUpdateOne) SetNillableTerminalReason(v *string) *ConnectorRevocationJobUpdateOne {
+	if v != nil {
+		_u.SetTerminalReason(*v)
+	}
+	return _u
+}
+
+// SetTerminalActor sets the "terminal_actor" field.
+func (_u *ConnectorRevocationJobUpdateOne) SetTerminalActor(v string) *ConnectorRevocationJobUpdateOne {
+	_u.mutation.SetTerminalActor(v)
+	return _u
+}
+
+// SetNillableTerminalActor sets the "terminal_actor" field if the given value is not nil.
+func (_u *ConnectorRevocationJobUpdateOne) SetNillableTerminalActor(v *string) *ConnectorRevocationJobUpdateOne {
+	if v != nil {
+		_u.SetTerminalActor(*v)
+	}
+	return _u
+}
+
 // SetStatus sets the "status" field.
 func (_u *ConnectorRevocationJobUpdateOne) SetStatus(v string) *ConnectorRevocationJobUpdateOne {
 	_u.mutation.SetStatus(v)
@@ -381,6 +602,46 @@ func (_u *ConnectorRevocationJobUpdateOne) SetNillableNextAttemptAt(v *time.Time
 	if v != nil {
 		_u.SetNextAttemptAt(*v)
 	}
+	return _u
+}
+
+// SetClaimID sets the "claim_id" field.
+func (_u *ConnectorRevocationJobUpdateOne) SetClaimID(v uuid.UUID) *ConnectorRevocationJobUpdateOne {
+	_u.mutation.SetClaimID(v)
+	return _u
+}
+
+// SetNillableClaimID sets the "claim_id" field if the given value is not nil.
+func (_u *ConnectorRevocationJobUpdateOne) SetNillableClaimID(v *uuid.UUID) *ConnectorRevocationJobUpdateOne {
+	if v != nil {
+		_u.SetClaimID(*v)
+	}
+	return _u
+}
+
+// ClearClaimID clears the value of the "claim_id" field.
+func (_u *ConnectorRevocationJobUpdateOne) ClearClaimID() *ConnectorRevocationJobUpdateOne {
+	_u.mutation.ClearClaimID()
+	return _u
+}
+
+// SetClaimedUntil sets the "claimed_until" field.
+func (_u *ConnectorRevocationJobUpdateOne) SetClaimedUntil(v time.Time) *ConnectorRevocationJobUpdateOne {
+	_u.mutation.SetClaimedUntil(v)
+	return _u
+}
+
+// SetNillableClaimedUntil sets the "claimed_until" field if the given value is not nil.
+func (_u *ConnectorRevocationJobUpdateOne) SetNillableClaimedUntil(v *time.Time) *ConnectorRevocationJobUpdateOne {
+	if v != nil {
+		_u.SetClaimedUntil(*v)
+	}
+	return _u
+}
+
+// ClearClaimedUntil clears the value of the "claimed_until" field.
+func (_u *ConnectorRevocationJobUpdateOne) ClearClaimedUntil() *ConnectorRevocationJobUpdateOne {
+	_u.mutation.ClearClaimedUntil()
 	return _u
 }
 
@@ -478,7 +739,20 @@ func (_u *ConnectorRevocationJobUpdateOne) defaults() {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *ConnectorRevocationJobUpdateOne) check() error {
+	if v, ok := _u.mutation.CredentialGeneration(); ok {
+		if err := connectorrevocationjob.CredentialGenerationValidator(v); err != nil {
+			return &ValidationError{Name: "credential_generation", err: fmt.Errorf(`ent: validator failed for field "ConnectorRevocationJob.credential_generation": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (_u *ConnectorRevocationJobUpdateOne) sqlSave(ctx context.Context) (_node *ConnectorRevocationJob, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(connectorrevocationjob.Table, connectorrevocationjob.Columns, sqlgraph.NewFieldSpec(connectorrevocationjob.FieldID, field.TypeUUID))
 	id, ok := _u.mutation.ID()
 	if !ok {
@@ -519,6 +793,24 @@ func (_u *ConnectorRevocationJobUpdateOne) sqlSave(ctx context.Context) (_node *
 	if value, ok := _u.mutation.RefreshTokenEncrypted(); ok {
 		_spec.SetField(connectorrevocationjob.FieldRefreshTokenEncrypted, field.TypeBytes, value)
 	}
+	if _u.mutation.RefreshTokenEncryptedCleared() {
+		_spec.ClearField(connectorrevocationjob.FieldRefreshTokenEncrypted, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.CredentialGeneration(); ok {
+		_spec.SetField(connectorrevocationjob.FieldCredentialGeneration, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedCredentialGeneration(); ok {
+		_spec.AddField(connectorrevocationjob.FieldCredentialGeneration, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.TerminalStatus(); ok {
+		_spec.SetField(connectorrevocationjob.FieldTerminalStatus, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TerminalReason(); ok {
+		_spec.SetField(connectorrevocationjob.FieldTerminalReason, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.TerminalActor(); ok {
+		_spec.SetField(connectorrevocationjob.FieldTerminalActor, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(connectorrevocationjob.FieldStatus, field.TypeString, value)
 	}
@@ -530,6 +822,18 @@ func (_u *ConnectorRevocationJobUpdateOne) sqlSave(ctx context.Context) (_node *
 	}
 	if value, ok := _u.mutation.NextAttemptAt(); ok {
 		_spec.SetField(connectorrevocationjob.FieldNextAttemptAt, field.TypeTime, value)
+	}
+	if value, ok := _u.mutation.ClaimID(); ok {
+		_spec.SetField(connectorrevocationjob.FieldClaimID, field.TypeUUID, value)
+	}
+	if _u.mutation.ClaimIDCleared() {
+		_spec.ClearField(connectorrevocationjob.FieldClaimID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.ClaimedUntil(); ok {
+		_spec.SetField(connectorrevocationjob.FieldClaimedUntil, field.TypeTime, value)
+	}
+	if _u.mutation.ClaimedUntilCleared() {
+		_spec.ClearField(connectorrevocationjob.FieldClaimedUntil, field.TypeTime)
 	}
 	if value, ok := _u.mutation.LastError(); ok {
 		_spec.SetField(connectorrevocationjob.FieldLastError, field.TypeString, value)

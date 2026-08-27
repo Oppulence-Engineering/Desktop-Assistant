@@ -40,6 +40,8 @@ type MCPConnectionHistory struct {
 	RefreshTokenEncrypted []byte `json:"-"`
 	// APIKeyEncrypted holds the value of the "api_key_encrypted" field.
 	APIKeyEncrypted []byte `json:"-"`
+	// CredentialGeneration holds the value of the "credential_generation" field.
+	CredentialGeneration int64 `json:"credential_generation,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
 	// ConnectedAt holds the value of the "connected_at" field.
@@ -70,6 +72,8 @@ func (*MCPConnectionHistory) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case mcpconnectionhistory.FieldRevocationSucceeded:
 			values[i] = new(sql.NullBool)
+		case mcpconnectionhistory.FieldCredentialGeneration:
+			values[i] = new(sql.NullInt64)
 		case mcpconnectionhistory.FieldOperation, mcpconnectionhistory.FieldConnector, mcpconnectionhistory.FieldAudience, mcpconnectionhistory.FieldStatus, mcpconnectionhistory.FieldRevokedReason, mcpconnectionhistory.FieldRevokedBy:
 			values[i] = new(sql.NullString)
 		case mcpconnectionhistory.FieldCreatedAt, mcpconnectionhistory.FieldUpdatedAt, mcpconnectionhistory.FieldHistoryTime, mcpconnectionhistory.FieldConnectedAt, mcpconnectionhistory.FieldLastUsedAt, mcpconnectionhistory.FieldExpiresAt, mcpconnectionhistory.FieldRevokedAt, mcpconnectionhistory.FieldRevocationAttemptedAt:
@@ -158,6 +162,12 @@ func (_m *MCPConnectionHistory) assignValues(columns []string, values []any) err
 				return fmt.Errorf("unexpected type %T for field api_key_encrypted", values[i])
 			} else if value != nil {
 				_m.APIKeyEncrypted = *value
+			}
+		case mcpconnectionhistory.FieldCredentialGeneration:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field credential_generation", values[i])
+			} else if value.Valid {
+				_m.CredentialGeneration = value.Int64
 			}
 		case mcpconnectionhistory.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -276,6 +286,9 @@ func (_m *MCPConnectionHistory) String() string {
 	builder.WriteString("refresh_token_encrypted=<sensitive>")
 	builder.WriteString(", ")
 	builder.WriteString("api_key_encrypted=<sensitive>")
+	builder.WriteString(", ")
+	builder.WriteString("credential_generation=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CredentialGeneration))
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(_m.Status)

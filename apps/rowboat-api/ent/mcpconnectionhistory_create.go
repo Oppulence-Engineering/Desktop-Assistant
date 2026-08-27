@@ -117,6 +117,20 @@ func (_c *MCPConnectionHistoryCreate) SetAPIKeyEncrypted(v []byte) *MCPConnectio
 	return _c
 }
 
+// SetCredentialGeneration sets the "credential_generation" field.
+func (_c *MCPConnectionHistoryCreate) SetCredentialGeneration(v int64) *MCPConnectionHistoryCreate {
+	_c.mutation.SetCredentialGeneration(v)
+	return _c
+}
+
+// SetNillableCredentialGeneration sets the "credential_generation" field if the given value is not nil.
+func (_c *MCPConnectionHistoryCreate) SetNillableCredentialGeneration(v *int64) *MCPConnectionHistoryCreate {
+	if v != nil {
+		_c.SetCredentialGeneration(*v)
+	}
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *MCPConnectionHistoryCreate) SetStatus(v string) *MCPConnectionHistoryCreate {
 	_c.mutation.SetStatus(v)
@@ -315,6 +329,10 @@ func (_c *MCPConnectionHistoryCreate) defaults() error {
 		v := mcpconnectionhistory.DefaultHistoryTime()
 		_c.mutation.SetHistoryTime(v)
 	}
+	if _, ok := _c.mutation.CredentialGeneration(); !ok {
+		v := mcpconnectionhistory.DefaultCredentialGeneration
+		_c.mutation.SetCredentialGeneration(v)
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := mcpconnectionhistory.DefaultStatus
 		_c.mutation.SetStatus(v)
@@ -353,6 +371,9 @@ func (_c *MCPConnectionHistoryCreate) check() error {
 	}
 	if _, ok := _c.mutation.Audience(); !ok {
 		return &ValidationError{Name: "audience", err: errors.New(`ent: missing required field "MCPConnectionHistory.audience"`)}
+	}
+	if _, ok := _c.mutation.CredentialGeneration(); !ok {
+		return &ValidationError{Name: "credential_generation", err: errors.New(`ent: missing required field "MCPConnectionHistory.credential_generation"`)}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "MCPConnectionHistory.status"`)}
@@ -432,6 +453,10 @@ func (_c *MCPConnectionHistoryCreate) createSpec() (*MCPConnectionHistory, *sqlg
 	if value, ok := _c.mutation.APIKeyEncrypted(); ok {
 		_spec.SetField(mcpconnectionhistory.FieldAPIKeyEncrypted, field.TypeBytes, value)
 		_node.APIKeyEncrypted = value
+	}
+	if value, ok := _c.mutation.CredentialGeneration(); ok {
+		_spec.SetField(mcpconnectionhistory.FieldCredentialGeneration, field.TypeInt64, value)
+		_node.CredentialGeneration = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(mcpconnectionhistory.FieldStatus, field.TypeString, value)
@@ -576,6 +601,9 @@ func (u *MCPConnectionHistoryUpsertOne) UpdateNewValues() *MCPConnectionHistoryU
 		}
 		if _, exists := u.create.mutation.APIKeyEncrypted(); exists {
 			s.SetIgnore(mcpconnectionhistory.FieldAPIKeyEncrypted)
+		}
+		if _, exists := u.create.mutation.CredentialGeneration(); exists {
+			s.SetIgnore(mcpconnectionhistory.FieldCredentialGeneration)
 		}
 		if _, exists := u.create.mutation.Status(); exists {
 			s.SetIgnore(mcpconnectionhistory.FieldStatus)
@@ -858,6 +886,9 @@ func (u *MCPConnectionHistoryUpsertBulk) UpdateNewValues() *MCPConnectionHistory
 			}
 			if _, exists := b.mutation.APIKeyEncrypted(); exists {
 				s.SetIgnore(mcpconnectionhistory.FieldAPIKeyEncrypted)
+			}
+			if _, exists := b.mutation.CredentialGeneration(); exists {
+				s.SetIgnore(mcpconnectionhistory.FieldCredentialGeneration)
 			}
 			if _, exists := b.mutation.Status(); exists {
 				s.SetIgnore(mcpconnectionhistory.FieldStatus)

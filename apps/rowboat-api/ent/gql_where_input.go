@@ -17168,6 +17168,61 @@ type ConnectorRevocationJobWhereInput struct {
 	ConnectorEqualFold    *string  `json:"connectorEqualFold,omitempty"`
 	ConnectorContainsFold *string  `json:"connectorContainsFold,omitempty"`
 
+	// "credential_generation" field predicates.
+	CredentialGeneration      *int64  `json:"credentialGeneration,omitempty"`
+	CredentialGenerationNEQ   *int64  `json:"credentialGenerationNEQ,omitempty"`
+	CredentialGenerationIn    []int64 `json:"credentialGenerationIn,omitempty"`
+	CredentialGenerationNotIn []int64 `json:"credentialGenerationNotIn,omitempty"`
+	CredentialGenerationGT    *int64  `json:"credentialGenerationGT,omitempty"`
+	CredentialGenerationGTE   *int64  `json:"credentialGenerationGTE,omitempty"`
+	CredentialGenerationLT    *int64  `json:"credentialGenerationLT,omitempty"`
+	CredentialGenerationLTE   *int64  `json:"credentialGenerationLTE,omitempty"`
+
+	// "terminal_status" field predicates.
+	TerminalStatus             *string  `json:"terminalStatus,omitempty"`
+	TerminalStatusNEQ          *string  `json:"terminalStatusNEQ,omitempty"`
+	TerminalStatusIn           []string `json:"terminalStatusIn,omitempty"`
+	TerminalStatusNotIn        []string `json:"terminalStatusNotIn,omitempty"`
+	TerminalStatusGT           *string  `json:"terminalStatusGT,omitempty"`
+	TerminalStatusGTE          *string  `json:"terminalStatusGTE,omitempty"`
+	TerminalStatusLT           *string  `json:"terminalStatusLT,omitempty"`
+	TerminalStatusLTE          *string  `json:"terminalStatusLTE,omitempty"`
+	TerminalStatusContains     *string  `json:"terminalStatusContains,omitempty"`
+	TerminalStatusHasPrefix    *string  `json:"terminalStatusHasPrefix,omitempty"`
+	TerminalStatusHasSuffix    *string  `json:"terminalStatusHasSuffix,omitempty"`
+	TerminalStatusEqualFold    *string  `json:"terminalStatusEqualFold,omitempty"`
+	TerminalStatusContainsFold *string  `json:"terminalStatusContainsFold,omitempty"`
+
+	// "terminal_reason" field predicates.
+	TerminalReason             *string  `json:"terminalReason,omitempty"`
+	TerminalReasonNEQ          *string  `json:"terminalReasonNEQ,omitempty"`
+	TerminalReasonIn           []string `json:"terminalReasonIn,omitempty"`
+	TerminalReasonNotIn        []string `json:"terminalReasonNotIn,omitempty"`
+	TerminalReasonGT           *string  `json:"terminalReasonGT,omitempty"`
+	TerminalReasonGTE          *string  `json:"terminalReasonGTE,omitempty"`
+	TerminalReasonLT           *string  `json:"terminalReasonLT,omitempty"`
+	TerminalReasonLTE          *string  `json:"terminalReasonLTE,omitempty"`
+	TerminalReasonContains     *string  `json:"terminalReasonContains,omitempty"`
+	TerminalReasonHasPrefix    *string  `json:"terminalReasonHasPrefix,omitempty"`
+	TerminalReasonHasSuffix    *string  `json:"terminalReasonHasSuffix,omitempty"`
+	TerminalReasonEqualFold    *string  `json:"terminalReasonEqualFold,omitempty"`
+	TerminalReasonContainsFold *string  `json:"terminalReasonContainsFold,omitempty"`
+
+	// "terminal_actor" field predicates.
+	TerminalActor             *string  `json:"terminalActor,omitempty"`
+	TerminalActorNEQ          *string  `json:"terminalActorNEQ,omitempty"`
+	TerminalActorIn           []string `json:"terminalActorIn,omitempty"`
+	TerminalActorNotIn        []string `json:"terminalActorNotIn,omitempty"`
+	TerminalActorGT           *string  `json:"terminalActorGT,omitempty"`
+	TerminalActorGTE          *string  `json:"terminalActorGTE,omitempty"`
+	TerminalActorLT           *string  `json:"terminalActorLT,omitempty"`
+	TerminalActorLTE          *string  `json:"terminalActorLTE,omitempty"`
+	TerminalActorContains     *string  `json:"terminalActorContains,omitempty"`
+	TerminalActorHasPrefix    *string  `json:"terminalActorHasPrefix,omitempty"`
+	TerminalActorHasSuffix    *string  `json:"terminalActorHasSuffix,omitempty"`
+	TerminalActorEqualFold    *string  `json:"terminalActorEqualFold,omitempty"`
+	TerminalActorContainsFold *string  `json:"terminalActorContainsFold,omitempty"`
+
 	// "status" field predicates.
 	Status             *string  `json:"status,omitempty"`
 	StatusNEQ          *string  `json:"statusNEQ,omitempty"`
@@ -17202,6 +17257,30 @@ type ConnectorRevocationJobWhereInput struct {
 	NextAttemptAtGTE   *time.Time  `json:"nextAttemptAtGTE,omitempty"`
 	NextAttemptAtLT    *time.Time  `json:"nextAttemptAtLT,omitempty"`
 	NextAttemptAtLTE   *time.Time  `json:"nextAttemptAtLTE,omitempty"`
+
+	// "claim_id" field predicates.
+	ClaimID       *uuid.UUID  `json:"claimID,omitempty"`
+	ClaimIDNEQ    *uuid.UUID  `json:"claimIDNEQ,omitempty"`
+	ClaimIDIn     []uuid.UUID `json:"claimIDIn,omitempty"`
+	ClaimIDNotIn  []uuid.UUID `json:"claimIDNotIn,omitempty"`
+	ClaimIDGT     *uuid.UUID  `json:"claimIDGT,omitempty"`
+	ClaimIDGTE    *uuid.UUID  `json:"claimIDGTE,omitempty"`
+	ClaimIDLT     *uuid.UUID  `json:"claimIDLT,omitempty"`
+	ClaimIDLTE    *uuid.UUID  `json:"claimIDLTE,omitempty"`
+	ClaimIDIsNil  bool        `json:"claimIDIsNil,omitempty"`
+	ClaimIDNotNil bool        `json:"claimIDNotNil,omitempty"`
+
+	// "claimed_until" field predicates.
+	ClaimedUntil       *time.Time  `json:"claimedUntil,omitempty"`
+	ClaimedUntilNEQ    *time.Time  `json:"claimedUntilNEQ,omitempty"`
+	ClaimedUntilIn     []time.Time `json:"claimedUntilIn,omitempty"`
+	ClaimedUntilNotIn  []time.Time `json:"claimedUntilNotIn,omitempty"`
+	ClaimedUntilGT     *time.Time  `json:"claimedUntilGT,omitempty"`
+	ClaimedUntilGTE    *time.Time  `json:"claimedUntilGTE,omitempty"`
+	ClaimedUntilLT     *time.Time  `json:"claimedUntilLT,omitempty"`
+	ClaimedUntilLTE    *time.Time  `json:"claimedUntilLTE,omitempty"`
+	ClaimedUntilIsNil  bool        `json:"claimedUntilIsNil,omitempty"`
+	ClaimedUntilNotNil bool        `json:"claimedUntilNotNil,omitempty"`
 
 	// "last_error" field predicates.
 	LastError             *string  `json:"lastError,omitempty"`
@@ -17463,6 +17542,147 @@ func (i *ConnectorRevocationJobWhereInput) P() (predicate.ConnectorRevocationJob
 	if i.ConnectorContainsFold != nil {
 		predicates = append(predicates, connectorrevocationjob.ConnectorContainsFold(*i.ConnectorContainsFold))
 	}
+	if i.CredentialGeneration != nil {
+		predicates = append(predicates, connectorrevocationjob.CredentialGenerationEQ(*i.CredentialGeneration))
+	}
+	if i.CredentialGenerationNEQ != nil {
+		predicates = append(predicates, connectorrevocationjob.CredentialGenerationNEQ(*i.CredentialGenerationNEQ))
+	}
+	if len(i.CredentialGenerationIn) > 0 {
+		predicates = append(predicates, connectorrevocationjob.CredentialGenerationIn(i.CredentialGenerationIn...))
+	}
+	if len(i.CredentialGenerationNotIn) > 0 {
+		predicates = append(predicates, connectorrevocationjob.CredentialGenerationNotIn(i.CredentialGenerationNotIn...))
+	}
+	if i.CredentialGenerationGT != nil {
+		predicates = append(predicates, connectorrevocationjob.CredentialGenerationGT(*i.CredentialGenerationGT))
+	}
+	if i.CredentialGenerationGTE != nil {
+		predicates = append(predicates, connectorrevocationjob.CredentialGenerationGTE(*i.CredentialGenerationGTE))
+	}
+	if i.CredentialGenerationLT != nil {
+		predicates = append(predicates, connectorrevocationjob.CredentialGenerationLT(*i.CredentialGenerationLT))
+	}
+	if i.CredentialGenerationLTE != nil {
+		predicates = append(predicates, connectorrevocationjob.CredentialGenerationLTE(*i.CredentialGenerationLTE))
+	}
+	if i.TerminalStatus != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalStatusEQ(*i.TerminalStatus))
+	}
+	if i.TerminalStatusNEQ != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalStatusNEQ(*i.TerminalStatusNEQ))
+	}
+	if len(i.TerminalStatusIn) > 0 {
+		predicates = append(predicates, connectorrevocationjob.TerminalStatusIn(i.TerminalStatusIn...))
+	}
+	if len(i.TerminalStatusNotIn) > 0 {
+		predicates = append(predicates, connectorrevocationjob.TerminalStatusNotIn(i.TerminalStatusNotIn...))
+	}
+	if i.TerminalStatusGT != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalStatusGT(*i.TerminalStatusGT))
+	}
+	if i.TerminalStatusGTE != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalStatusGTE(*i.TerminalStatusGTE))
+	}
+	if i.TerminalStatusLT != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalStatusLT(*i.TerminalStatusLT))
+	}
+	if i.TerminalStatusLTE != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalStatusLTE(*i.TerminalStatusLTE))
+	}
+	if i.TerminalStatusContains != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalStatusContains(*i.TerminalStatusContains))
+	}
+	if i.TerminalStatusHasPrefix != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalStatusHasPrefix(*i.TerminalStatusHasPrefix))
+	}
+	if i.TerminalStatusHasSuffix != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalStatusHasSuffix(*i.TerminalStatusHasSuffix))
+	}
+	if i.TerminalStatusEqualFold != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalStatusEqualFold(*i.TerminalStatusEqualFold))
+	}
+	if i.TerminalStatusContainsFold != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalStatusContainsFold(*i.TerminalStatusContainsFold))
+	}
+	if i.TerminalReason != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalReasonEQ(*i.TerminalReason))
+	}
+	if i.TerminalReasonNEQ != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalReasonNEQ(*i.TerminalReasonNEQ))
+	}
+	if len(i.TerminalReasonIn) > 0 {
+		predicates = append(predicates, connectorrevocationjob.TerminalReasonIn(i.TerminalReasonIn...))
+	}
+	if len(i.TerminalReasonNotIn) > 0 {
+		predicates = append(predicates, connectorrevocationjob.TerminalReasonNotIn(i.TerminalReasonNotIn...))
+	}
+	if i.TerminalReasonGT != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalReasonGT(*i.TerminalReasonGT))
+	}
+	if i.TerminalReasonGTE != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalReasonGTE(*i.TerminalReasonGTE))
+	}
+	if i.TerminalReasonLT != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalReasonLT(*i.TerminalReasonLT))
+	}
+	if i.TerminalReasonLTE != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalReasonLTE(*i.TerminalReasonLTE))
+	}
+	if i.TerminalReasonContains != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalReasonContains(*i.TerminalReasonContains))
+	}
+	if i.TerminalReasonHasPrefix != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalReasonHasPrefix(*i.TerminalReasonHasPrefix))
+	}
+	if i.TerminalReasonHasSuffix != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalReasonHasSuffix(*i.TerminalReasonHasSuffix))
+	}
+	if i.TerminalReasonEqualFold != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalReasonEqualFold(*i.TerminalReasonEqualFold))
+	}
+	if i.TerminalReasonContainsFold != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalReasonContainsFold(*i.TerminalReasonContainsFold))
+	}
+	if i.TerminalActor != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalActorEQ(*i.TerminalActor))
+	}
+	if i.TerminalActorNEQ != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalActorNEQ(*i.TerminalActorNEQ))
+	}
+	if len(i.TerminalActorIn) > 0 {
+		predicates = append(predicates, connectorrevocationjob.TerminalActorIn(i.TerminalActorIn...))
+	}
+	if len(i.TerminalActorNotIn) > 0 {
+		predicates = append(predicates, connectorrevocationjob.TerminalActorNotIn(i.TerminalActorNotIn...))
+	}
+	if i.TerminalActorGT != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalActorGT(*i.TerminalActorGT))
+	}
+	if i.TerminalActorGTE != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalActorGTE(*i.TerminalActorGTE))
+	}
+	if i.TerminalActorLT != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalActorLT(*i.TerminalActorLT))
+	}
+	if i.TerminalActorLTE != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalActorLTE(*i.TerminalActorLTE))
+	}
+	if i.TerminalActorContains != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalActorContains(*i.TerminalActorContains))
+	}
+	if i.TerminalActorHasPrefix != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalActorHasPrefix(*i.TerminalActorHasPrefix))
+	}
+	if i.TerminalActorHasSuffix != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalActorHasSuffix(*i.TerminalActorHasSuffix))
+	}
+	if i.TerminalActorEqualFold != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalActorEqualFold(*i.TerminalActorEqualFold))
+	}
+	if i.TerminalActorContainsFold != nil {
+		predicates = append(predicates, connectorrevocationjob.TerminalActorContainsFold(*i.TerminalActorContainsFold))
+	}
 	if i.Status != nil {
 		predicates = append(predicates, connectorrevocationjob.StatusEQ(*i.Status))
 	}
@@ -17549,6 +17769,66 @@ func (i *ConnectorRevocationJobWhereInput) P() (predicate.ConnectorRevocationJob
 	}
 	if i.NextAttemptAtLTE != nil {
 		predicates = append(predicates, connectorrevocationjob.NextAttemptAtLTE(*i.NextAttemptAtLTE))
+	}
+	if i.ClaimID != nil {
+		predicates = append(predicates, connectorrevocationjob.ClaimIDEQ(*i.ClaimID))
+	}
+	if i.ClaimIDNEQ != nil {
+		predicates = append(predicates, connectorrevocationjob.ClaimIDNEQ(*i.ClaimIDNEQ))
+	}
+	if len(i.ClaimIDIn) > 0 {
+		predicates = append(predicates, connectorrevocationjob.ClaimIDIn(i.ClaimIDIn...))
+	}
+	if len(i.ClaimIDNotIn) > 0 {
+		predicates = append(predicates, connectorrevocationjob.ClaimIDNotIn(i.ClaimIDNotIn...))
+	}
+	if i.ClaimIDGT != nil {
+		predicates = append(predicates, connectorrevocationjob.ClaimIDGT(*i.ClaimIDGT))
+	}
+	if i.ClaimIDGTE != nil {
+		predicates = append(predicates, connectorrevocationjob.ClaimIDGTE(*i.ClaimIDGTE))
+	}
+	if i.ClaimIDLT != nil {
+		predicates = append(predicates, connectorrevocationjob.ClaimIDLT(*i.ClaimIDLT))
+	}
+	if i.ClaimIDLTE != nil {
+		predicates = append(predicates, connectorrevocationjob.ClaimIDLTE(*i.ClaimIDLTE))
+	}
+	if i.ClaimIDIsNil {
+		predicates = append(predicates, connectorrevocationjob.ClaimIDIsNil())
+	}
+	if i.ClaimIDNotNil {
+		predicates = append(predicates, connectorrevocationjob.ClaimIDNotNil())
+	}
+	if i.ClaimedUntil != nil {
+		predicates = append(predicates, connectorrevocationjob.ClaimedUntilEQ(*i.ClaimedUntil))
+	}
+	if i.ClaimedUntilNEQ != nil {
+		predicates = append(predicates, connectorrevocationjob.ClaimedUntilNEQ(*i.ClaimedUntilNEQ))
+	}
+	if len(i.ClaimedUntilIn) > 0 {
+		predicates = append(predicates, connectorrevocationjob.ClaimedUntilIn(i.ClaimedUntilIn...))
+	}
+	if len(i.ClaimedUntilNotIn) > 0 {
+		predicates = append(predicates, connectorrevocationjob.ClaimedUntilNotIn(i.ClaimedUntilNotIn...))
+	}
+	if i.ClaimedUntilGT != nil {
+		predicates = append(predicates, connectorrevocationjob.ClaimedUntilGT(*i.ClaimedUntilGT))
+	}
+	if i.ClaimedUntilGTE != nil {
+		predicates = append(predicates, connectorrevocationjob.ClaimedUntilGTE(*i.ClaimedUntilGTE))
+	}
+	if i.ClaimedUntilLT != nil {
+		predicates = append(predicates, connectorrevocationjob.ClaimedUntilLT(*i.ClaimedUntilLT))
+	}
+	if i.ClaimedUntilLTE != nil {
+		predicates = append(predicates, connectorrevocationjob.ClaimedUntilLTE(*i.ClaimedUntilLTE))
+	}
+	if i.ClaimedUntilIsNil {
+		predicates = append(predicates, connectorrevocationjob.ClaimedUntilIsNil())
+	}
+	if i.ClaimedUntilNotNil {
+		predicates = append(predicates, connectorrevocationjob.ClaimedUntilNotNil())
 	}
 	if i.LastError != nil {
 		predicates = append(predicates, connectorrevocationjob.LastErrorEQ(*i.LastError))
@@ -21205,6 +21485,16 @@ type MCPConnectionWhereInput struct {
 	AudienceEqualFold    *string  `json:"audienceEqualFold,omitempty"`
 	AudienceContainsFold *string  `json:"audienceContainsFold,omitempty"`
 
+	// "credential_generation" field predicates.
+	CredentialGeneration      *int64  `json:"credentialGeneration,omitempty"`
+	CredentialGenerationNEQ   *int64  `json:"credentialGenerationNEQ,omitempty"`
+	CredentialGenerationIn    []int64 `json:"credentialGenerationIn,omitempty"`
+	CredentialGenerationNotIn []int64 `json:"credentialGenerationNotIn,omitempty"`
+	CredentialGenerationGT    *int64  `json:"credentialGenerationGT,omitempty"`
+	CredentialGenerationGTE   *int64  `json:"credentialGenerationGTE,omitempty"`
+	CredentialGenerationLT    *int64  `json:"credentialGenerationLT,omitempty"`
+	CredentialGenerationLTE   *int64  `json:"credentialGenerationLTE,omitempty"`
+
 	// "status" field predicates.
 	Status             *string  `json:"status,omitempty"`
 	StatusNEQ          *string  `json:"statusNEQ,omitempty"`
@@ -21545,6 +21835,30 @@ func (i *MCPConnectionWhereInput) P() (predicate.MCPConnection, error) {
 	}
 	if i.AudienceContainsFold != nil {
 		predicates = append(predicates, mcpconnection.AudienceContainsFold(*i.AudienceContainsFold))
+	}
+	if i.CredentialGeneration != nil {
+		predicates = append(predicates, mcpconnection.CredentialGenerationEQ(*i.CredentialGeneration))
+	}
+	if i.CredentialGenerationNEQ != nil {
+		predicates = append(predicates, mcpconnection.CredentialGenerationNEQ(*i.CredentialGenerationNEQ))
+	}
+	if len(i.CredentialGenerationIn) > 0 {
+		predicates = append(predicates, mcpconnection.CredentialGenerationIn(i.CredentialGenerationIn...))
+	}
+	if len(i.CredentialGenerationNotIn) > 0 {
+		predicates = append(predicates, mcpconnection.CredentialGenerationNotIn(i.CredentialGenerationNotIn...))
+	}
+	if i.CredentialGenerationGT != nil {
+		predicates = append(predicates, mcpconnection.CredentialGenerationGT(*i.CredentialGenerationGT))
+	}
+	if i.CredentialGenerationGTE != nil {
+		predicates = append(predicates, mcpconnection.CredentialGenerationGTE(*i.CredentialGenerationGTE))
+	}
+	if i.CredentialGenerationLT != nil {
+		predicates = append(predicates, mcpconnection.CredentialGenerationLT(*i.CredentialGenerationLT))
+	}
+	if i.CredentialGenerationLTE != nil {
+		predicates = append(predicates, mcpconnection.CredentialGenerationLTE(*i.CredentialGenerationLTE))
 	}
 	if i.Status != nil {
 		predicates = append(predicates, mcpconnection.StatusEQ(*i.Status))

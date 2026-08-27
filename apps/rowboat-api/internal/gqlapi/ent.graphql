@@ -5381,9 +5381,15 @@ type ConnectorRevocationJob implements Node {
   connectionID: UUID!
   ownerID: UUID!
   connector: String!
+  credentialGeneration: Int!
+  terminalStatus: String!
+  terminalReason: String!
+  terminalActor: String!
   status: String!
   attempts: Int!
   nextAttemptAt: Time!
+  claimID: UUID
+  claimedUntil: Time
   lastError: String
   completedAt: Time
 }
@@ -5467,6 +5473,65 @@ input ConnectorRevocationJobWhereInput {
   connectorEqualFold: String
   connectorContainsFold: String
   """
+  credential_generation field predicates
+  """
+  credentialGeneration: Int
+  credentialGenerationNEQ: Int
+  credentialGenerationIn: [Int!]
+  credentialGenerationNotIn: [Int!]
+  credentialGenerationGT: Int
+  credentialGenerationGTE: Int
+  credentialGenerationLT: Int
+  credentialGenerationLTE: Int
+  """
+  terminal_status field predicates
+  """
+  terminalStatus: String
+  terminalStatusNEQ: String
+  terminalStatusIn: [String!]
+  terminalStatusNotIn: [String!]
+  terminalStatusGT: String
+  terminalStatusGTE: String
+  terminalStatusLT: String
+  terminalStatusLTE: String
+  terminalStatusContains: String
+  terminalStatusHasPrefix: String
+  terminalStatusHasSuffix: String
+  terminalStatusEqualFold: String
+  terminalStatusContainsFold: String
+  """
+  terminal_reason field predicates
+  """
+  terminalReason: String
+  terminalReasonNEQ: String
+  terminalReasonIn: [String!]
+  terminalReasonNotIn: [String!]
+  terminalReasonGT: String
+  terminalReasonGTE: String
+  terminalReasonLT: String
+  terminalReasonLTE: String
+  terminalReasonContains: String
+  terminalReasonHasPrefix: String
+  terminalReasonHasSuffix: String
+  terminalReasonEqualFold: String
+  terminalReasonContainsFold: String
+  """
+  terminal_actor field predicates
+  """
+  terminalActor: String
+  terminalActorNEQ: String
+  terminalActorIn: [String!]
+  terminalActorNotIn: [String!]
+  terminalActorGT: String
+  terminalActorGTE: String
+  terminalActorLT: String
+  terminalActorLTE: String
+  terminalActorContains: String
+  terminalActorHasPrefix: String
+  terminalActorHasSuffix: String
+  terminalActorEqualFold: String
+  terminalActorContainsFold: String
+  """
   status field predicates
   """
   status: String
@@ -5504,6 +5569,32 @@ input ConnectorRevocationJobWhereInput {
   nextAttemptAtGTE: Time
   nextAttemptAtLT: Time
   nextAttemptAtLTE: Time
+  """
+  claim_id field predicates
+  """
+  claimID: UUID
+  claimIDNEQ: UUID
+  claimIDIn: [UUID!]
+  claimIDNotIn: [UUID!]
+  claimIDGT: UUID
+  claimIDGTE: UUID
+  claimIDLT: UUID
+  claimIDLTE: UUID
+  claimIDIsNil: Boolean
+  claimIDNotNil: Boolean
+  """
+  claimed_until field predicates
+  """
+  claimedUntil: Time
+  claimedUntilNEQ: Time
+  claimedUntilIn: [Time!]
+  claimedUntilNotIn: [Time!]
+  claimedUntilGT: Time
+  claimedUntilGTE: Time
+  claimedUntilLT: Time
+  claimedUntilLTE: Time
+  claimedUntilIsNil: Boolean
+  claimedUntilNotNil: Boolean
   """
   last_error field predicates
   """
@@ -6575,6 +6666,7 @@ type MCPConnection implements Node {
   connector: String!
   audience: String!
   scopes: [String!]
+  credentialGeneration: Int!
   status: String!
   connectedAt: Time
   lastUsedAt: Time
@@ -6689,6 +6781,17 @@ input MCPConnectionWhereInput {
   audienceHasSuffix: String
   audienceEqualFold: String
   audienceContainsFold: String
+  """
+  credential_generation field predicates
+  """
+  credentialGeneration: Int
+  credentialGenerationNEQ: Int
+  credentialGenerationIn: [Int!]
+  credentialGenerationNotIn: [Int!]
+  credentialGenerationGT: Int
+  credentialGenerationGTE: Int
+  credentialGenerationLT: Int
+  credentialGenerationLTE: Int
   """
   status field predicates
   """

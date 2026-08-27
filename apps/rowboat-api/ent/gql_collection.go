@@ -3405,6 +3405,26 @@ func (_q *ConnectorRevocationJobQuery) collectField(ctx context.Context, oneNode
 				selectedFields = append(selectedFields, connectorrevocationjob.FieldConnector)
 				fieldSeen[connectorrevocationjob.FieldConnector] = struct{}{}
 			}
+		case "credentialGeneration":
+			if _, ok := fieldSeen[connectorrevocationjob.FieldCredentialGeneration]; !ok {
+				selectedFields = append(selectedFields, connectorrevocationjob.FieldCredentialGeneration)
+				fieldSeen[connectorrevocationjob.FieldCredentialGeneration] = struct{}{}
+			}
+		case "terminalStatus":
+			if _, ok := fieldSeen[connectorrevocationjob.FieldTerminalStatus]; !ok {
+				selectedFields = append(selectedFields, connectorrevocationjob.FieldTerminalStatus)
+				fieldSeen[connectorrevocationjob.FieldTerminalStatus] = struct{}{}
+			}
+		case "terminalReason":
+			if _, ok := fieldSeen[connectorrevocationjob.FieldTerminalReason]; !ok {
+				selectedFields = append(selectedFields, connectorrevocationjob.FieldTerminalReason)
+				fieldSeen[connectorrevocationjob.FieldTerminalReason] = struct{}{}
+			}
+		case "terminalActor":
+			if _, ok := fieldSeen[connectorrevocationjob.FieldTerminalActor]; !ok {
+				selectedFields = append(selectedFields, connectorrevocationjob.FieldTerminalActor)
+				fieldSeen[connectorrevocationjob.FieldTerminalActor] = struct{}{}
+			}
 		case "status":
 			if _, ok := fieldSeen[connectorrevocationjob.FieldStatus]; !ok {
 				selectedFields = append(selectedFields, connectorrevocationjob.FieldStatus)
@@ -3419,6 +3439,16 @@ func (_q *ConnectorRevocationJobQuery) collectField(ctx context.Context, oneNode
 			if _, ok := fieldSeen[connectorrevocationjob.FieldNextAttemptAt]; !ok {
 				selectedFields = append(selectedFields, connectorrevocationjob.FieldNextAttemptAt)
 				fieldSeen[connectorrevocationjob.FieldNextAttemptAt] = struct{}{}
+			}
+		case "claimID":
+			if _, ok := fieldSeen[connectorrevocationjob.FieldClaimID]; !ok {
+				selectedFields = append(selectedFields, connectorrevocationjob.FieldClaimID)
+				fieldSeen[connectorrevocationjob.FieldClaimID] = struct{}{}
+			}
+		case "claimedUntil":
+			if _, ok := fieldSeen[connectorrevocationjob.FieldClaimedUntil]; !ok {
+				selectedFields = append(selectedFields, connectorrevocationjob.FieldClaimedUntil)
+				fieldSeen[connectorrevocationjob.FieldClaimedUntil] = struct{}{}
 			}
 		case "lastError":
 			if _, ok := fieldSeen[connectorrevocationjob.FieldLastError]; !ok {
@@ -4386,6 +4416,11 @@ func (_q *MCPConnectionQuery) collectField(ctx context.Context, oneNode bool, op
 			if _, ok := fieldSeen[mcpconnection.FieldScopes]; !ok {
 				selectedFields = append(selectedFields, mcpconnection.FieldScopes)
 				fieldSeen[mcpconnection.FieldScopes] = struct{}{}
+			}
+		case "credentialGeneration":
+			if _, ok := fieldSeen[mcpconnection.FieldCredentialGeneration]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldCredentialGeneration)
+				fieldSeen[mcpconnection.FieldCredentialGeneration] = struct{}{}
 			}
 		case "status":
 			if _, ok := fieldSeen[mcpconnection.FieldStatus]; !ok {

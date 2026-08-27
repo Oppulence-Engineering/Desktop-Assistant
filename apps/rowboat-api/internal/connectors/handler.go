@@ -661,7 +661,9 @@ func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Cl
 	case err == nil:
 		old := append([]byte(nil), existing.RefreshTokenEncrypted...)
 		updated, updateErr := existing.Update().
+			Where(mcpconnection.CredentialGenerationEQ(existing.CredentialGeneration)).
 			SetRefreshTokenEncrypted(sealed).
+			AddCredentialGeneration(1).
 			ClearAPIKeyEncrypted().
 			SetScopes(scopes).
 			SetAudience(c.Audience).
@@ -669,6 +671,9 @@ func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Cl
 			SetConnectedAt(time.Now()).
 			ClearRevokedAt().ClearRevokedReason().ClearRevokedBy().ClearRevocationAttemptedAt().ClearRevocationSucceeded().
 			Save(ctx)
+		if ent.IsNotFound(updateErr) {
+			return h.upsertConnectionWithClient(ctx, client, u, c, refreshToken, scopes)
+		}
 		return updated, old, updateErr
 	case ent.IsNotFound(err):
 		created, createErr := client.MCPConnection.Create().
@@ -694,8 +699,10 @@ func (h *Handler) upsertAPIKeyConnection(ctx context.Context, u *ent.User, c Con
 	existing, err := h.client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ(c.Name)).Only(ctx)
 	switch {
 	case err == nil:
-		return existing.Update().
+		updated, updateErr := existing.Update().
+			Where(mcpconnection.CredentialGenerationEQ(existing.CredentialGeneration)).
 			SetAPIKeyEncrypted(sealed).
+			AddCredentialGeneration(1).
 			ClearRefreshTokenEncrypted().
 			SetScopes(c.Scopes).
 			SetAudience(c.Audience).
@@ -703,6 +710,10 @@ func (h *Handler) upsertAPIKeyConnection(ctx context.Context, u *ent.User, c Con
 			SetConnectedAt(time.Now()).
 			ClearRevokedAt().ClearRevokedReason().ClearRevokedBy().ClearRevocationAttemptedAt().ClearRevocationSucceeded().
 			Save(ctx)
+		if ent.IsNotFound(updateErr) {
+			return h.upsertAPIKeyConnection(ctx, u, c, apiKey)
+		}
+		return updated, updateErr
 	case ent.IsNotFound(err):
 		return h.client.MCPConnection.Create().
 			SetUser(u).
@@ -818,16 +829,16 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		code := "upstream_error"
 		switch {
 		case isRefreshFamilyInvalidation(err):
-			_ = mc.Update().SetStatus("invalidated").SetRevokedAt(time.Now().UTC()).SetRevokedReason("refresh_token_reuse").SetRevokedBy("provider").SetRevocationSucceeded(true).ClearRefreshTokenEncrypted().ClearAPIKeyEncrypted().Exec(ctx)
+			_ = mc.Update().Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active")).SetStatus("invalidated").SetRevokedAt(time.Now().UTC()).SetRevokedReason("refresh_token_reuse").SetRevokedBy("provider").SetRevocationSucceeded(true).ClearRefreshTokenEncrypted().ClearAPIKeyEncrypted().Exec(ctx)
 			h.appendAudit(ctx, u, auditRecord{EventType: "connection_invalidated", Connector: name, ConnectionID: mc.ID, Audience: mc.Audience, Granted: mc.Scopes, Reason: "refresh_token_reuse", Result: "credential_family_invalidated"})
 			connectormetrics.Revocation.WithLabelValues(name, "refresh_family_invalidated").Inc()
 			code = "connection_revoked"
 		case isOAuthErrorCode(err, "invalid_grant"):
 			code = "reauth_required"
-			_ = mc.Update().SetStatus("reauth_required").ClearRefreshTokenEncrypted().Exec(ctx)
+			_ = mc.Update().Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active")).SetStatus("reauth_required").ClearRefreshTokenEncrypted().Exec(ctx)
 			h.appendAudit(ctx, u, auditRecord{EventType: "connection_reauth_required", Connector: name, ConnectionID: mc.ID, Audience: mc.Audience, Granted: mc.Scopes, Reason: "invalid_grant"})
 		default:
-			_ = mc.Update().SetStatus("error").Exec(ctx)
+			_ = mc.Update().Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active")).SetStatus("error").Exec(ctx)
 		}
 		h.log.Warn("mcp-token refresh failed", zap.String("connector", name), zap.Error(err))
 		httpx.Error(w, http.StatusBadGateway, "token refresh failed", code)

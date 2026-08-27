@@ -112,3 +112,85 @@ func TestConnectorLifecyclePostgresConcurrencyCrashAndRetry(t *testing.T) {
 		t.Fatalf("completed revocation was not idempotent: %d rows", n)
 	}
 }
+
+func TestConnectorLifecyclePostgresTwoClientFencingAndClaim(t *testing.T) {
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		t.Skip("DATABASE_URL is required")
+	}
+	db1, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db1.Close()
+	db2, err := sql.Open("pgx", dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db2.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	suffix := time.Now().UTC().Format("20060102150405.000000000")
+	var userID, connectionID, jobID string
+	if err := db1.QueryRowContext(ctx, `INSERT INTO users(id,created_at,updated_at,workos_user_id,email) VALUES(gen_random_uuid(),now(),now(),$1,$2) RETURNING id`, "lifecycle-"+suffix, "lifecycle-"+suffix+"@example.invalid").Scan(&userID); err != nil {
+		t.Fatal(err)
+	}
+	defer db1.ExecContext(context.Background(), `DELETE FROM users WHERE id=$1`, userID)
+	if err := db1.QueryRowContext(ctx, `INSERT INTO mcp_connections(id,created_at,updated_at,connector,audience,scopes,refresh_token_encrypted,credential_generation,status,user_mcp_connections) VALUES(gen_random_uuid(),now(),now(),$1,$2,'[]',decode('01','hex'),1,'active',$3) RETURNING id`, "race-"+suffix, "race-api", userID).Scan(&connectionID); err != nil {
+		t.Fatal(err)
+	}
+	if err := db1.QueryRowContext(ctx, `INSERT INTO connector_revocation_jobs(id,created_at,updated_at,connection_id,owner_id,connector,refresh_token_encrypted,credential_generation,terminal_status,terminal_reason,terminal_actor,status,attempts,next_attempt_at) VALUES(gen_random_uuid(),now(),now(),$1,$2,$3,decode('01','hex'),1,'revoked','user_disconnect','user','pending',0,now()) RETURNING id`, connectionID, userID, "race-"+suffix).Scan(&jobID); err != nil {
+		t.Fatal(err)
+	}
+
+	start := make(chan struct{})
+	var reconnectWinners atomic.Int32
+	var wg sync.WaitGroup
+	for i, db := range []*sql.DB{db1, db2} {
+		wg.Add(1)
+		go func(i int, db *sql.DB) {
+			defer wg.Done()
+			<-start
+			res, execErr := db.ExecContext(ctx, `UPDATE mcp_connections SET credential_generation=credential_generation+1,refresh_token_encrypted=$1,updated_at=now() WHERE id=$2 AND credential_generation=1`, []byte{byte(i + 2)}, connectionID)
+			if execErr == nil {
+				if n, _ := res.RowsAffected(); n == 1 {
+					reconnectWinners.Add(1)
+				}
+			}
+		}(i, db)
+	}
+	close(start)
+	wg.Wait()
+	if reconnectWinners.Load() != 1 {
+		t.Fatalf("reconnect CAS winners=%d, want 1", reconnectWinners.Load())
+	}
+	res, err := db1.ExecContext(ctx, `UPDATE mcp_connections SET status='revoked',refresh_token_encrypted=NULL WHERE id=$1 AND credential_generation=1`, connectionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n, _ := res.RowsAffected(); n != 0 {
+		t.Fatal("stale revoke cleared replacement generation")
+	}
+
+	start = make(chan struct{})
+	var claimWinners atomic.Int32
+	for i, db := range []*sql.DB{db1, db2} {
+		wg.Add(1)
+		go func(i int, db *sql.DB) {
+			defer wg.Done()
+			<-start
+			res, execErr := db.ExecContext(ctx, `UPDATE connector_revocation_jobs SET status='processing',claim_id=$1,claimed_until=now()+interval '2 minutes',updated_at=now() WHERE id=$2 AND status='pending'`, []string{"00000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000002"}[i], jobID)
+			if execErr == nil {
+				if n, _ := res.RowsAffected(); n == 1 {
+					claimWinners.Add(1)
+				}
+			}
+		}(i, db)
+	}
+	close(start)
+	wg.Wait()
+	if claimWinners.Load() != 1 {
+		t.Fatalf("revocation claim winners=%d, want 1", claimWinners.Load())
+	}
+}

@@ -26,12 +26,24 @@ const (
 	FieldConnector = "connector"
 	// FieldRefreshTokenEncrypted holds the string denoting the refresh_token_encrypted field in the database.
 	FieldRefreshTokenEncrypted = "refresh_token_encrypted"
+	// FieldCredentialGeneration holds the string denoting the credential_generation field in the database.
+	FieldCredentialGeneration = "credential_generation"
+	// FieldTerminalStatus holds the string denoting the terminal_status field in the database.
+	FieldTerminalStatus = "terminal_status"
+	// FieldTerminalReason holds the string denoting the terminal_reason field in the database.
+	FieldTerminalReason = "terminal_reason"
+	// FieldTerminalActor holds the string denoting the terminal_actor field in the database.
+	FieldTerminalActor = "terminal_actor"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldAttempts holds the string denoting the attempts field in the database.
 	FieldAttempts = "attempts"
 	// FieldNextAttemptAt holds the string denoting the next_attempt_at field in the database.
 	FieldNextAttemptAt = "next_attempt_at"
+	// FieldClaimID holds the string denoting the claim_id field in the database.
+	FieldClaimID = "claim_id"
+	// FieldClaimedUntil holds the string denoting the claimed_until field in the database.
+	FieldClaimedUntil = "claimed_until"
 	// FieldLastError holds the string denoting the last_error field in the database.
 	FieldLastError = "last_error"
 	// FieldCompletedAt holds the string denoting the completed_at field in the database.
@@ -49,9 +61,15 @@ var Columns = []string{
 	FieldOwnerID,
 	FieldConnector,
 	FieldRefreshTokenEncrypted,
+	FieldCredentialGeneration,
+	FieldTerminalStatus,
+	FieldTerminalReason,
+	FieldTerminalActor,
 	FieldStatus,
 	FieldAttempts,
 	FieldNextAttemptAt,
+	FieldClaimID,
+	FieldClaimedUntil,
 	FieldLastError,
 	FieldCompletedAt,
 }
@@ -73,6 +91,8 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// CredentialGenerationValidator is a validator for the "credential_generation" field. It is called by the builders before save.
+	CredentialGenerationValidator func(int64) error
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus string
 	// DefaultAttempts holds the default value on creation for the "attempts" field.
@@ -114,6 +134,26 @@ func ByConnector(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldConnector, opts...).ToFunc()
 }
 
+// ByCredentialGeneration orders the results by the credential_generation field.
+func ByCredentialGeneration(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCredentialGeneration, opts...).ToFunc()
+}
+
+// ByTerminalStatus orders the results by the terminal_status field.
+func ByTerminalStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTerminalStatus, opts...).ToFunc()
+}
+
+// ByTerminalReason orders the results by the terminal_reason field.
+func ByTerminalReason(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTerminalReason, opts...).ToFunc()
+}
+
+// ByTerminalActor orders the results by the terminal_actor field.
+func ByTerminalActor(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTerminalActor, opts...).ToFunc()
+}
+
 // ByStatus orders the results by the status field.
 func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStatus, opts...).ToFunc()
@@ -127,6 +167,16 @@ func ByAttempts(opts ...sql.OrderTermOption) OrderOption {
 // ByNextAttemptAt orders the results by the next_attempt_at field.
 func ByNextAttemptAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldNextAttemptAt, opts...).ToFunc()
+}
+
+// ByClaimID orders the results by the claim_id field.
+func ByClaimID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldClaimID, opts...).ToFunc()
+}
+
+// ByClaimedUntil orders the results by the claimed_until field.
+func ByClaimedUntil(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldClaimedUntil, opts...).ToFunc()
 }
 
 // ByLastError orders the results by the last_error field.

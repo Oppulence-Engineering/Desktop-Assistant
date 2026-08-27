@@ -96,6 +96,11 @@ func APIKeyEncrypted(v []byte) predicate.MCPConnectionHistory {
 	return predicate.MCPConnectionHistory(sql.FieldEQ(FieldAPIKeyEncrypted, v))
 }
 
+// CredentialGeneration applies equality check predicate on the "credential_generation" field. It's identical to CredentialGenerationEQ.
+func CredentialGeneration(v int64) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldEQ(FieldCredentialGeneration, v))
+}
+
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v string) predicate.MCPConnectionHistory {
 	return predicate.MCPConnectionHistory(sql.FieldEQ(FieldStatus, v))
@@ -569,6 +574,46 @@ func APIKeyEncryptedIsNil() predicate.MCPConnectionHistory {
 // APIKeyEncryptedNotNil applies the NotNil predicate on the "api_key_encrypted" field.
 func APIKeyEncryptedNotNil() predicate.MCPConnectionHistory {
 	return predicate.MCPConnectionHistory(sql.FieldNotNull(FieldAPIKeyEncrypted))
+}
+
+// CredentialGenerationEQ applies the EQ predicate on the "credential_generation" field.
+func CredentialGenerationEQ(v int64) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldEQ(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationNEQ applies the NEQ predicate on the "credential_generation" field.
+func CredentialGenerationNEQ(v int64) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldNEQ(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationIn applies the In predicate on the "credential_generation" field.
+func CredentialGenerationIn(vs ...int64) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldIn(FieldCredentialGeneration, vs...))
+}
+
+// CredentialGenerationNotIn applies the NotIn predicate on the "credential_generation" field.
+func CredentialGenerationNotIn(vs ...int64) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldNotIn(FieldCredentialGeneration, vs...))
+}
+
+// CredentialGenerationGT applies the GT predicate on the "credential_generation" field.
+func CredentialGenerationGT(v int64) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldGT(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationGTE applies the GTE predicate on the "credential_generation" field.
+func CredentialGenerationGTE(v int64) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldGTE(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationLT applies the LT predicate on the "credential_generation" field.
+func CredentialGenerationLT(v int64) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldLT(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationLTE applies the LTE predicate on the "credential_generation" field.
+func CredentialGenerationLTE(v int64) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldLTE(FieldCredentialGeneration, v))
 }
 
 // StatusEQ applies the EQ predicate on the "status" field.

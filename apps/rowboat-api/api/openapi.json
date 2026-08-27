@@ -4238,6 +4238,14 @@
           "attempts": {
             "type": "integer"
           },
+          "claim_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "claimed_until": {
+            "format": "date-time",
+            "type": "string"
+          },
           "completed_at": {
             "format": "date-time",
             "type": "string"
@@ -4256,6 +4264,10 @@
             "example": "2026-06-04T20:38:00Z",
             "format": "date-time",
             "type": "string"
+          },
+          "credential_generation": {
+            "format": "int64",
+            "type": "integer"
           },
           "id": {
             "description": "Stable UUID primary key.",
@@ -4285,6 +4297,15 @@
             "example": "active",
             "type": "string"
           },
+          "terminal_actor": {
+            "type": "string"
+          },
+          "terminal_reason": {
+            "type": "string"
+          },
+          "terminal_status": {
+            "type": "string"
+          },
           "updated_at": {
             "description": "Last row update timestamp.",
             "example": "2026-06-04T20:39:00Z",
@@ -4299,7 +4320,10 @@
           "connection_id",
           "owner_id",
           "connector",
-          "refresh_token_encrypted",
+          "credential_generation",
+          "terminal_status",
+          "terminal_reason",
+          "terminal_actor",
           "status",
           "attempts",
           "next_attempt_at"
@@ -6717,6 +6741,10 @@
             "format": "date-time",
             "type": "string"
           },
+          "credential_generation": {
+            "format": "int64",
+            "type": "integer"
+          },
           "expires_at": {
             "description": "Credential or one-time ticket expiry timestamp.",
             "example": "2026-06-04T20:48:00Z",
@@ -6791,6 +6819,7 @@
           "updated_at",
           "connector",
           "audience",
+          "credential_generation",
           "status",
           "user"
         ],
@@ -6826,6 +6855,10 @@
             "example": "2026-06-04T20:38:00Z",
             "format": "date-time",
             "type": "string"
+          },
+          "credential_generation": {
+            "format": "int64",
+            "type": "integer"
           },
           "expires_at": {
             "description": "Credential or one-time ticket expiry timestamp.",
@@ -6921,6 +6954,7 @@
           "operation",
           "connector",
           "audience",
+          "credential_generation",
           "status"
         ],
         "type": "object"

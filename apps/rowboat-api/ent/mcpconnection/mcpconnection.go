@@ -30,6 +30,8 @@ const (
 	FieldRefreshTokenEncrypted = "refresh_token_encrypted"
 	// FieldAPIKeyEncrypted holds the string denoting the api_key_encrypted field in the database.
 	FieldAPIKeyEncrypted = "api_key_encrypted"
+	// FieldCredentialGeneration holds the string denoting the credential_generation field in the database.
+	FieldCredentialGeneration = "credential_generation"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldConnectedAt holds the string denoting the connected_at field in the database.
@@ -71,6 +73,7 @@ var Columns = []string{
 	FieldScopes,
 	FieldRefreshTokenEncrypted,
 	FieldAPIKeyEncrypted,
+	FieldCredentialGeneration,
 	FieldStatus,
 	FieldConnectedAt,
 	FieldLastUsedAt,
@@ -117,6 +120,10 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// DefaultCredentialGeneration holds the default value on creation for the "credential_generation" field.
+	DefaultCredentialGeneration int64
+	// CredentialGenerationValidator is a validator for the "credential_generation" field. It is called by the builders before save.
+	CredentialGenerationValidator func(int64) error
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
@@ -151,6 +158,11 @@ func ByConnector(opts ...sql.OrderTermOption) OrderOption {
 // ByAudience orders the results by the audience field.
 func ByAudience(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAudience, opts...).ToFunc()
+}
+
+// ByCredentialGeneration orders the results by the credential_generation field.
+func ByCredentialGeneration(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCredentialGeneration, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.

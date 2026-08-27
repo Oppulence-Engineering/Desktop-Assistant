@@ -1198,10 +1198,16 @@ var (
 		{Name: "connection_id", Type: field.TypeUUID},
 		{Name: "owner_id", Type: field.TypeUUID},
 		{Name: "connector", Type: field.TypeString},
-		{Name: "refresh_token_encrypted", Type: field.TypeBytes},
+		{Name: "refresh_token_encrypted", Type: field.TypeBytes, Nullable: true},
+		{Name: "credential_generation", Type: field.TypeInt64},
+		{Name: "terminal_status", Type: field.TypeString},
+		{Name: "terminal_reason", Type: field.TypeString},
+		{Name: "terminal_actor", Type: field.TypeString},
 		{Name: "status", Type: field.TypeString, Default: "pending"},
 		{Name: "attempts", Type: field.TypeInt, Default: 0},
 		{Name: "next_attempt_at", Type: field.TypeTime},
+		{Name: "claim_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "claimed_until", Type: field.TypeTime, Nullable: true},
 		{Name: "last_error", Type: field.TypeString, Nullable: true},
 		{Name: "completed_at", Type: field.TypeTime, Nullable: true},
 	}
@@ -1219,7 +1225,7 @@ var (
 			{
 				Name:    "connectorrevocationjob_status_next_attempt_at",
 				Unique:  false,
-				Columns: []*schema.Column{ConnectorRevocationJobsColumns[7], ConnectorRevocationJobsColumns[9]},
+				Columns: []*schema.Column{ConnectorRevocationJobsColumns[11], ConnectorRevocationJobsColumns[13]},
 			},
 		},
 	}
@@ -1590,6 +1596,7 @@ var (
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "refresh_token_encrypted", Type: field.TypeBytes, Nullable: true},
 		{Name: "api_key_encrypted", Type: field.TypeBytes, Nullable: true},
+		{Name: "credential_generation", Type: field.TypeInt64, Default: 1},
 		{Name: "status", Type: field.TypeString, Default: "active"},
 		{Name: "connected_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
@@ -1609,7 +1616,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "mcp_connections_users_mcp_connections",
-				Columns:    []*schema.Column{McpConnectionsColumns[17]},
+				Columns:    []*schema.Column{McpConnectionsColumns[18]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1618,17 +1625,17 @@ var (
 			{
 				Name:    "mcpconnection_connector_user_mcp_connections",
 				Unique:  true,
-				Columns: []*schema.Column{McpConnectionsColumns[3], McpConnectionsColumns[17]},
+				Columns: []*schema.Column{McpConnectionsColumns[3], McpConnectionsColumns[18]},
 			},
 			{
 				Name:    "mcpconnection_status",
 				Unique:  false,
-				Columns: []*schema.Column{McpConnectionsColumns[8]},
+				Columns: []*schema.Column{McpConnectionsColumns[9]},
 			},
 			{
 				Name:    "mcpconnection_connector_status",
 				Unique:  false,
-				Columns: []*schema.Column{McpConnectionsColumns[3], McpConnectionsColumns[8]},
+				Columns: []*schema.Column{McpConnectionsColumns[3], McpConnectionsColumns[9]},
 			},
 		},
 	}
@@ -1645,6 +1652,7 @@ var (
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "refresh_token_encrypted", Type: field.TypeBytes, Nullable: true},
 		{Name: "api_key_encrypted", Type: field.TypeBytes, Nullable: true},
+		{Name: "credential_generation", Type: field.TypeInt64, Default: 1},
 		{Name: "status", Type: field.TypeString, Default: "active"},
 		{Name: "connected_at", Type: field.TypeTime, Nullable: true},
 		{Name: "last_used_at", Type: field.TypeTime, Nullable: true},
