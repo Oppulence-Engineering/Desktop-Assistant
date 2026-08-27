@@ -258,6 +258,44 @@ func TestWorkerRuntimeMultiReplicaLifecycleRaceFencesMint(t *testing.T) {
 	}
 }
 
+func TestWorkerRuntimeScopeDowngradeRaceFencesMint(t *testing.T) {
+	requestStarted := make(chan struct{})
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		close(requestStarted)
+		<-release
+		_, _ = w.Write([]byte(`{"allowed":true,"reason":""}`))
+	}))
+	t.Cleanup(server.Close)
+	client, owner, sealer := runtimeTestDB(t)
+	connection := seedRuntimeAPIKey(t, client, owner, sealer)
+	issuer := &countingIssuer{}
+	registry := runtimeRegistry(t, runtimeAPIKeyRegistry, server.URL)
+	resolverA := newRuntimeResolver(client, sealer, registry, issuer, Config{})
+	_ = newRuntimeResolver(client, sealer, registry, issuer, Config{})
+
+	errCh := make(chan error, 1)
+	go func() {
+		_, _, _, err := resolverA.ResolveMCP(context.Background(), owner.ID.String(), "canvas")
+		errCh <- err
+	}()
+	select {
+	case <-requestStarted:
+	case <-time.After(2 * time.Second):
+		t.Fatal("entitlement request did not start")
+	}
+	client.MCPConnection.UpdateOneID(connection.ID).
+		Where(mcpconnection.CredentialGenerationEQ(connection.CredentialGeneration), mcpconnection.StatusEQ("active")).
+		ClearScopes().ExecX(auth.WithInternal(context.Background()))
+	close(release)
+	if err := <-errCh; !errors.Is(err, errConnectorCredentialSuperseded) && (err == nil || !strings.Contains(err.Error(), errConnectorCredentialSuperseded.Error())) {
+		t.Fatalf("scope downgrade race error = %v", err)
+	}
+	if issuer.calls.Load() != 0 {
+		t.Fatalf("scope downgrade loser minted %d tokens", issuer.calls.Load())
+	}
+}
+
 func TestWorkerRuntimeRefreshFailureGenerationFenceAndFamilyInvalidation(t *testing.T) {
 	t.Run("stale invalid grant cannot poison reconnect", func(t *testing.T) {
 		started := make(chan struct{})

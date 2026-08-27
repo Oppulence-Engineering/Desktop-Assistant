@@ -271,8 +271,31 @@ func (s *LifecycleService) Mint(ctx context.Context, owner *ent.User, conn Conne
 		return "", fmt.Errorf("connector %q entitlement denied: %s", conn.Name, reason)
 	}
 
-	// Fence once more after the outbound entitlement call. A revocation or scope
-	// replacement that won during that call makes this no-op update miss.
+	// Re-read after the outbound entitlement call so an organization, audience,
+	// scope, status, or generation change that won while the product decided is
+	// observed before signing.
+	currentAfterEntitlement, err := s.client.MCPConnection.Query().Where(
+		mcpconnection.IDEQ(current.ID),
+		mcpconnection.ConnectorEQ(conn.Name),
+		mcpconnection.OrganizationIDEQ(orgID),
+		mcpconnection.StatusEQ("active"),
+		mcpconnection.CredentialGenerationEQ(current.CredentialGeneration),
+		mcpconnection.HasUserWith(user.IDEQ(owner.ID)),
+	).Only(auth.WithInternal(ctx))
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return "", errConnectorCredentialSuperseded
+		}
+		return "", fmt.Errorf("reload connector after entitlement: %w", err)
+	}
+	if currentAfterEntitlement.Audience != current.Audience || !slices.Equal(currentAfterEntitlement.Scopes, current.Scopes) {
+		return "", errConnectorCredentialSuperseded
+	}
+	current = currentAfterEntitlement
+
+	// Fence once more after the re-read. Lifecycle writers advance credential
+	// generation, so a revocation or replacement that wins now makes this update
+	// miss before signing.
 	if err := current.Update().Where(
 		mcpconnection.CredentialGenerationEQ(current.CredentialGeneration),
 		mcpconnection.StatusEQ("active"),
