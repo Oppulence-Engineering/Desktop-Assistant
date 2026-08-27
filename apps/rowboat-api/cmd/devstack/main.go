@@ -61,6 +61,7 @@ var (
 
 	authCodes sync.Map // code -> authCode
 	refreshDB sync.Map // refresh_token -> session
+	hydraDB   sync.Map // consent challenge -> hydraConsent
 )
 
 var routeTaskIDRe = regexp.MustCompile(`(?m)^\d+\.\s+id:\s+([^\n]+)`)
@@ -74,6 +75,21 @@ type authCode struct {
 	sub         string
 	email       string
 	nonce       string
+	amr         []string
+	acr         string
+	expires     time.Time
+}
+
+type hydraConsent struct {
+	challenge   string
+	clientID    string
+	redirectURI string
+	audience    []string
+	scopes      []string
+	state       string
+	subject     string
+	email       string
+	pkce        string
 	expires     time.Time
 }
 
@@ -108,6 +124,9 @@ func main() {
 	mux.HandleFunc("/oauth2/auth", handleAuthorize)
 	mux.HandleFunc("/oauth2/token", handleToken)
 	mux.HandleFunc("/oauth2/revoke", handleRevoke)
+	mux.HandleFunc("/admin/oauth2/auth/requests/consent", handleHydraConsentRequest)
+	mux.HandleFunc("/admin/oauth2/auth/requests/consent/accept", handleHydraConsentAccept)
+	mux.HandleFunc("/admin/oauth2/auth/requests/consent/reject", handleHydraConsentReject)
 	mux.HandleFunc("/mint", handleMint)
 	// WorkOS AuthKit mock (confidential): authorize reuses the OIDC code path;
 	// authenticate is WorkOS's proprietary, secret-required token exchange.
@@ -134,6 +153,12 @@ func main() {
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      60 * time.Second,
 		IdleTimeout:       120 * time.Second,
+	}
+	if cert, key := strings.TrimSpace(os.Getenv("TLS_CERT_FILE")), strings.TrimSpace(os.Getenv("TLS_KEY_FILE")); cert != "" || key != "" {
+		if cert == "" || key == "" {
+			log.Fatal("TLS_CERT_FILE and TLS_KEY_FILE must be configured together")
+		}
+		log.Fatal(srv.ListenAndServeTLS(cert, key))
 	}
 	log.Fatal(srv.ListenAndServe())
 }
@@ -194,6 +219,26 @@ func handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing redirect_uri", http.StatusBadRequest)
 		return
 	}
+	if r.URL.Path == "/oauth2/auth" && strings.TrimSpace(os.Getenv("HYDRA_CONSENT_URL")) != "" {
+		challenge, _ := randomToken(24)
+		scope := strings.Fields(def(q.Get("scope"), "openid email profile"))
+		aud := strings.Fields(q.Get("audience"))
+		if len(aud) == 0 {
+			aud = []string{audience}
+		}
+		hydraDB.Store(challenge, hydraConsent{
+			challenge: challenge, clientID: q.Get("client_id"), redirectURI: redirectURI,
+			audience: aud, scopes: scope, state: q.Get("state"),
+			subject: getenv("FIXTURE_SUBJECT", "user_rfc012_a"), email: getenv("FIXTURE_EMAIL", "a@example.test"),
+			pkce: q.Get("code_challenge"), expires: time.Now().Add(5 * time.Minute),
+		})
+		u, _ := url.Parse(strings.TrimRight(os.Getenv("HYDRA_CONSENT_URL"), "/") + "/consent")
+		qq := u.Query()
+		qq.Set("consent_challenge", challenge)
+		u.RawQuery = qq.Encode()
+		http.Redirect(w, r, u.String(), http.StatusFound)
+		return
+	}
 	code, _ := randomToken(24)
 	scope := def(q.Get("scope"), "openid email profile")
 	if q.Get("fixture_scope_escalation") == "true" {
@@ -205,9 +250,11 @@ func handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		clientID:    q.Get("client_id"),
 		audience:    def(q.Get("audience"), audience),
 		scope:       scope,
-		sub:         "user_dev_1",
-		email:       "dev@solomon-ai.co",
+		sub:         getenv("FIXTURE_SUBJECT", "user_dev_1"),
+		email:       getenv("FIXTURE_EMAIL", "dev@solomon-ai.co"),
 		nonce:       q.Get("nonce"),
+		amr:         workOSAMR(q),
+		acr:         q.Get("acr_values"),
 		expires:     time.Now().Add(5 * time.Minute),
 	})
 
@@ -224,6 +271,76 @@ func handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	rq.Set("iss", issuer) // RFC 9207 (advertised in discovery)
 	u.RawQuery = rq.Encode()
 	http.Redirect(w, r, u.String(), http.StatusFound)
+}
+
+func workOSAMR(q url.Values) []string {
+	if q.Get("acr_values") != "" || q.Get("prompt") == "login" {
+		return []string{"pwd", "mfa"}
+	}
+	return []string{"pwd"}
+}
+
+func handleHydraConsentRequest(w http.ResponseWriter, r *http.Request) {
+	challenge := r.URL.Query().Get("consent_challenge")
+	v, ok := hydraDB.Load(challenge)
+	if !ok {
+		http.Error(w, "unknown consent challenge", http.StatusNotFound)
+		return
+	}
+	h := v.(hydraConsent)
+	writeJSON(w, map[string]any{"skip": false, "subject": h.subject, "challenge": h.challenge,
+		"requested_scope": h.scopes, "requested_access_token_audience": h.audience,
+		"client": map[string]string{"client_id": h.clientID}})
+}
+
+func handleHydraConsentAccept(w http.ResponseWriter, r *http.Request) {
+	challenge := r.URL.Query().Get("consent_challenge")
+	v, ok := hydraDB.LoadAndDelete(challenge)
+	if !ok {
+		http.Error(w, "unknown consent challenge", http.StatusNotFound)
+		return
+	}
+	h := v.(hydraConsent)
+	if time.Now().After(h.expires) {
+		http.Error(w, "expired consent challenge", http.StatusGone)
+		return
+	}
+	var body struct {
+		GrantScope    []string `json:"grant_scope"`
+		GrantAudience []string `json:"grant_access_token_audience"`
+	}
+	_ = json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&body)
+	code, _ := randomToken(24)
+	authCodes.Store(code, authCode{challenge: h.pkce, redirectURI: h.redirectURI, clientID: h.clientID,
+		audience: strings.Join(body.GrantAudience, " "), scope: strings.Join(body.GrantScope, " "),
+		sub: h.subject, email: h.email, expires: time.Now().Add(5 * time.Minute)})
+	u, err := url.Parse(h.redirectURI)
+	if err != nil {
+		http.Error(w, "bad redirect", 500)
+		return
+	}
+	q := u.Query()
+	q.Set("code", code)
+	q.Set("state", h.state)
+	q.Set("iss", issuer)
+	u.RawQuery = q.Encode()
+	writeJSON(w, map[string]string{"redirect_to": u.String()})
+}
+
+func handleHydraConsentReject(w http.ResponseWriter, r *http.Request) {
+	challenge := r.URL.Query().Get("consent_challenge")
+	v, ok := hydraDB.LoadAndDelete(challenge)
+	if !ok {
+		http.Error(w, "unknown consent challenge", http.StatusNotFound)
+		return
+	}
+	h := v.(hydraConsent)
+	u, _ := url.Parse(h.redirectURI)
+	q := u.Query()
+	q.Set("error", "access_denied")
+	q.Set("state", h.state)
+	u.RawQuery = q.Encode()
+	writeJSON(w, map[string]string{"redirect_to": u.String()})
 }
 
 func handleToken(w http.ResponseWriter, r *http.Request) {
@@ -272,7 +389,7 @@ func tokenFromCode(w http.ResponseWriter, r *http.Request) {
 	}
 	rt, _ := randomToken(32)
 	refreshDB.Store(rt, session{sub: ac.sub, email: ac.email, clientID: ac.clientID, audience: ac.audience, scope: ac.scope})
-	writeTokenResponse(w, ac.sub, ac.email, ac.clientID, ac.audience, ac.scope, ac.nonce, rt)
+	writeTokenResponse(w, ac.sub, ac.email, ac.clientID, ac.audience, ac.scope, ac.nonce, rt, ac.amr, ac.acr)
 }
 
 func tokenFromRefresh(w http.ResponseWriter, r *http.Request) {
@@ -283,10 +400,10 @@ func tokenFromRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s := v.(session)
-	writeTokenResponse(w, s.sub, s.email, s.clientID, s.audience, s.scope, "", rt)
+	writeTokenResponse(w, s.sub, s.email, s.clientID, s.audience, s.scope, "", rt, nil, "")
 }
 
-func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, tokenAudience, scope, nonce, refreshToken string) {
+func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, tokenAudience, scope, nonce, refreshToken string, amr []string, acr string) {
 	access := signToken(jwt.MapClaims{
 		"iss":   issuer,
 		"aud":   def(tokenAudience, audience),
@@ -306,6 +423,12 @@ func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, tokenAudien
 	}
 	if nonce != "" {
 		idClaims["nonce"] = nonce
+	}
+	if len(amr) > 0 {
+		idClaims["amr"] = amr
+	}
+	if acr != "" {
+		idClaims["acr"] = acr
 	}
 	writeJSON(w, map[string]any{
 		"access_token":  access,

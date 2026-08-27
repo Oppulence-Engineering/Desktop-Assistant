@@ -13,9 +13,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -50,6 +53,8 @@ func TestRFC012PublicContract(t *testing.T) {
 		SELECT gen_random_uuid(),now(),now(),'intelligence','active',10000,'','',id FROM users WHERE workos_user_id='user_rfc012_a'
 		ON CONFLICT(user_subscription) DO UPDATE SET plan='intelligence',status='active',updated_at=now()`)
 	require.NoError(t, err)
+	fixtureSecret := mustEnv(t, "RFC012_FIXTURE_SECRET")
+	require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/entitlements", "", map[string]any{"user_id": "user_rfc012_a", "allowed": true}, "X-Fixture-Secret", fixtureSecret).status)
 
 	t.Run("entitlement denies before start", func(t *testing.T) {
 		deny := mustEnv(t, "RFC012_UNENTITLED_JWT")
@@ -58,7 +63,7 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.NotEmpty(t, r.code())
 	})
 
-	t.Run("list and start use hashed state and reject scope escalation", func(t *testing.T) {
+	t.Run("list and start use hashed state and route consent across instances", func(t *testing.T) {
 		list := c.json("GET", api+"/v1/connectors", tokenA, nil)
 		require.Equal(t, 200, list.status, list.body)
 		require.NotContains(t, strings.ToLower(list.body), "api_key")
@@ -77,20 +82,16 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.Zero(t, rawCount, "raw OAuth state must never be persisted")
 		require.NoError(t, db.QueryRow(`SELECT count(*) FROM oauth_pendings WHERE state_hash=encode(digest($1,'sha256'),'hex')`, state).Scan(&hashCount))
 		require.Equal(t, 1, hashCount)
-		q := u.Query()
-		q.Set("fixture_scope_escalation", "true")
-		u.RawQuery = q.Encode()
-		authorized := c.json("GET", u.String(), "", nil)
-		require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, authorized.status, authorized.body)
-		escalated := c.json("GET", authorized.header.Get("Location"), "", nil)
-		require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, escalated.status, escalated.body)
-		require.Equal(t, "error", queryFromLocation(t, escalated.header.Get("Location"), "status"))
+		callback := completeConsent(t, u.String(), []string{"dev:records.read", "dev:payments.execute"})
+		require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, callback.status, callback.body)
+		require.Equal(t, "success", queryFromLocation(t, callback.header.Get("Location"), "status"))
 	})
 
 	var connectionID string
 	var resourceToken string
 	t.Run("callback claim replay mint and tenant isolation", func(t *testing.T) {
-		// Start a fresh flow because the escalation callback failed its own ticket.
+		// Start a fresh flow and finish it through the real consent UI. The browser
+		// deliberately reads from consent instance one and posts to instance two.
 		start := c.json("POST", api+"/v1/connections/"+connector+"/start", tokenA, map[string]any{"requestedScopes": []string{"dev:records.read", "dev:payments.execute"}})
 		require.Equal(t, 200, start.status, start.body)
 		var sb struct {
@@ -99,21 +100,33 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.NoError(t, json.Unmarshal([]byte(start.body), &sb))
 		u, _ := url.Parse(sb.AuthorizeURL)
 		state := u.Query().Get("state")
-		authorized := c.json("GET", sb.AuthorizeURL, "", nil)
-		require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, authorized.status, authorized.body)
-		cb := c.json("GET", authorized.header.Get("Location"), "", nil)
+		cb := completeConsent(t, sb.AuthorizeURL, []string{"dev:records.read", "dev:payments.execute"})
 		require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, cb.status, cb.body)
 		claimTicket := queryFromLocation(t, cb.header.Get("Location"), "session")
 		require.Equal(t, state, claimTicket)
-		claim := c.json("POST", api+"/v1/connections/"+connector+"/claim", tokenA, map[string]string{"state": claimTicket})
-		require.Equal(t, 200, claim.status, claim.body)
+		claims := make([]response, 2)
+		var wg sync.WaitGroup
+		for i := range claims {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				claims[i] = c.json("POST", api+"/v1/connections/"+connector+"/claim", tokenA, map[string]string{"state": claimTicket})
+			}(i)
+		}
+		wg.Wait()
+		claim := claims[0]
+		if claim.status != http.StatusOK {
+			claim = claims[1]
+		}
+		require.Equal(t, 200, claim.status, fmt.Sprintf("first=%d %s second=%d %s", claims[0].status, claims[0].body, claims[1].status, claims[1].body))
+		require.NotEqual(t, http.StatusOK, claims[0].status+claims[1].status-http.StatusOK, "both concurrent claims succeeded")
 		var claimed struct {
 			ConnectionID string `json:"connectionId"`
 		}
 		require.NoError(t, json.Unmarshal([]byte(claim.body), &claimed))
 		connectionID = claimed.ConnectionID
 		require.NotEmpty(t, connectionID)
-		replay := c.json("POST", api+"/v1/connections/"+connector+"/claim", tokenA, map[string]string{"state": claimTicket})
+		replay := c.json("POST", mustEnv(t, "RFC012_API2_URL")+"/v1/connections/"+connector+"/claim", tokenA, map[string]string{"state": claimTicket})
 		require.NotEqual(t, 200, replay.status, "claim ticket replay succeeded")
 		other := c.json("GET", api+"/v1/connectors", tokenB, nil)
 		require.Equal(t, 200, other.status, other.body)
@@ -187,6 +200,55 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.NoError(t, db.QueryRow(`SELECT count(*) FROM connector_audit_events WHERE metadata_json ILIKE '%api_key%' OR metadata_json ILIKE '%access_token%' OR metadata_json ILIKE '%refresh_token%'`).Scan(&leaked))
 		require.Zero(t, leaked, "connector audit disclosed credential-shaped fields")
 	})
+}
+
+var csrfPattern = regexp.MustCompile(`name="csrf" value="([^"]+)"`)
+
+// completeConsent models the desktop protocol driver. It keeps browser cookies,
+// refuses implicit redirects, posts the consent decision to the second consent
+// replica, completes WorkOS MFA when requested, and stops at the rowboat://
+// deep link returned by the public callback.
+func completeConsent(t *testing.T, authorizeURL string, scopes []string) response {
+	t.Helper()
+	jar, err := cookiejar.New(nil)
+	require.NoError(t, err)
+	h := &http.Client{Timeout: 15 * time.Second, Jar: jar, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
+	do := func(method, endpoint string, body io.Reader, contentType string) response {
+		req, err := http.NewRequest(method, endpoint, body)
+		require.NoError(t, err)
+		if contentType != "" {
+			req.Header.Set("Content-Type", contentType)
+		}
+		resp, err := h.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		b, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+		require.NoError(t, err)
+		return response{status: resp.StatusCode, body: string(b), header: resp.Header.Clone()}
+	}
+	next := do(http.MethodGet, authorizeURL, nil, "")
+	require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, next.status, next.body)
+	page := do(http.MethodGet, next.header.Get("Location"), nil, "")
+	require.Equal(t, http.StatusOK, page.status, page.body)
+	match := csrfPattern.FindStringSubmatch(page.body)
+	require.Len(t, match, 2, page.body)
+	form := url.Values{"csrf": {match[1]}, "decision": {"approve"}, "confirm_high": {"yes"}}
+	for _, scope := range scopes {
+		form.Add("scope", scope)
+	}
+	next = do(http.MethodPost, strings.TrimRight(mustEnv(t, "RFC012_CONSENT2_URL"), "/")+"/consent/decision", strings.NewReader(form.Encode()), "application/x-www-form-urlencoded")
+	require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, next.status, next.body)
+	for i := 0; i < 5; i++ {
+		location := next.header.Get("Location")
+		require.NotEmpty(t, location)
+		if strings.HasPrefix(location, "rowboat://") {
+			return next
+		}
+		next = do(http.MethodGet, location, nil, "")
+		require.Contains(t, []int{http.StatusFound, http.StatusSeeOther}, next.status, next.body)
+	}
+	t.Fatalf("desktop protocol driver exceeded redirect budget: %+v", next.header)
+	return response{}
 }
 
 func fixtureResourceToken(t *testing.T, connectionID, organizationID, audience string, scopes []string, expiresAt time.Time) string {

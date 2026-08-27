@@ -38,7 +38,7 @@ func main() {
 	audience := getenv("PRODUCT_MCP_AUDIENCE", "dev-product-api")
 	verifier, err := oauthrs.New(ctx, oauthrs.Config{
 		IssuerURL: required("PRODUCT_MCP_ISSUER"), JWKSURL: required("PRODUCT_MCP_JWKS_URL"),
-		Audience: audience, AcceptableSkew: time.Second,
+		Audience: audience, AcceptableSkew: time.Second, AllowLocalhostDevelopment: true,
 	})
 	if err != nil {
 		_ = db.Close()
@@ -52,6 +52,9 @@ func main() {
 	s := &server{db: db}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, 200, map[string]any{"ok": true}) })
+	mux.HandleFunc("GET /v1/entitlements", s.entitlement)
+	mux.HandleFunc("POST /fixture/entitlements", s.setEntitlement)
+	mux.HandleFunc("POST /v1/approvals", s.issueApproval)
 	mux.Handle("POST /v1/mcp/read", verifier.RequireMCPToken(oauthrs.MCPTokenOptions{
 		Audience: audience, RequiredScopes: []string{"dev:records.read"}, ConnectionValidator: s.active,
 	})(http.HandlerFunc(s.read)))
@@ -87,8 +90,89 @@ CREATE TABLE IF NOT EXISTS dev_product_approvals (
 CREATE TABLE IF NOT EXISTS dev_product_audit (
  id bigserial PRIMARY KEY, tenant_id text NOT NULL, connection_id text NOT NULL,
  event_type text NOT NULL, resource_id text, created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS dev_product_entitlements (
+ user_id text PRIMARY KEY, allowed boolean NOT NULL, reason text NOT NULL DEFAULT '', updated_at timestamptz NOT NULL DEFAULT now()
 );`)
 	return err
+}
+
+func (s *server) entitlement(w http.ResponseWriter, r *http.Request) {
+	userID := strings.TrimSpace(r.URL.Query().Get("user_id"))
+	if userID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"code": "user_id_required"})
+		return
+	}
+	var allowed bool
+	var reason string
+	err := s.db.QueryRowContext(r.Context(), `SELECT allowed,reason FROM dev_product_entitlements WHERE user_id=$1`, userID).Scan(&allowed, &reason)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeJSON(w, http.StatusOK, map[string]any{"allowed": false, "reason": "no_subscription"})
+		return
+	}
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"code": "entitlement_failed"})
+		return
+	}
+	if allowed {
+		writeJSON(w, http.StatusOK, map[string]any{"allowed": true})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"allowed": false, "reason": reason})
+}
+
+func (s *server) setEntitlement(w http.ResponseWriter, r *http.Request) {
+	if required("PRODUCT_MCP_FIXTURE_SECRET") != r.Header.Get("X-Fixture-Secret") {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"code": "fixture_unauthorized"})
+		return
+	}
+	var body struct {
+		UserID  string `json:"user_id"`
+		Allowed bool   `json:"allowed"`
+		Reason  string `json:"reason"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&body); err != nil || strings.TrimSpace(body.UserID) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"code": "invalid_entitlement"})
+		return
+	}
+	if body.Allowed {
+		body.Reason = ""
+	}
+	if !body.Allowed {
+		valid := map[string]bool{"no_subscription": true, "scope_not_in_plan": true, "user_banned": true, "org_mismatch": true, "connector_disabled": true}
+		if !valid[body.Reason] {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"code": "invalid_reason"})
+			return
+		}
+	}
+	_, err := s.db.ExecContext(r.Context(), `INSERT INTO dev_product_entitlements(user_id,allowed,reason) VALUES($1,$2,$3) ON CONFLICT(user_id) DO UPDATE SET allowed=$2,reason=$3,updated_at=now()`, body.UserID, body.Allowed, body.Reason)
+	if err != nil {
+		writeJSON(w, 500, map[string]string{"code": "entitlement_failed"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"updated": true})
+}
+
+func (s *server) issueApproval(w http.ResponseWriter, r *http.Request) {
+	if required("PRODUCT_MCP_FIXTURE_SECRET") != r.Header.Get("X-Fixture-Secret") {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"code": "fixture_unauthorized"})
+		return
+	}
+	var body struct {
+		ConnectionID string `json:"connection_id"`
+		ResourceID   string `json:"resource_id"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&body); err != nil || body.ConnectionID == "" || body.ResourceID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"code": "invalid_approval"})
+		return
+	}
+	token := "approval-" + body.ConnectionID + "-" + body.ResourceID + "-" + time.Now().UTC().Format("150405.000000000")
+	_, err := s.db.ExecContext(r.Context(), `INSERT INTO dev_product_approvals(token_hash,connection_id,action,resource_id,expires_at) VALUES(encode(digest($1,'sha256'),'hex'),$2,'pay',$3,now()+interval '5 minutes')`, token, body.ConnectionID, body.ResourceID)
+	if err != nil {
+		writeJSON(w, 500, map[string]string{"code": "approval_failed"})
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]string{"approval_token": token})
 }
 
 func (s *server) active(ctx context.Context, c *oauthrs.Claims) (bool, error) {
