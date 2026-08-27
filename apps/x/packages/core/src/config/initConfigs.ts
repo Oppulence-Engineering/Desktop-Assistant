@@ -8,6 +8,8 @@ import path from "path";
 import { pruneRunLogs } from "../runs/repo.js";
 import { reapStalePartials } from "../voice/whisper/model-manager.js";
 import { WorkDir } from "./config.js";
+import { backfillEntityIds } from "../knowledge/entity-identity.js";
+import { ensureEntityConfig } from "../knowledge/entity-config.js";
 
 /**
  * Initialize all config files at app startup.
@@ -26,6 +28,8 @@ export async function initConfigs(): Promise<void> {
         agentScheduleRepo.ensureConfig(),
         agentScheduleStateRepo.ensureState(),
         ensureSecurityConfig(),
+        ensureEntityConfig(WorkDir),
+        backfillEntityIds(WorkDir),
         // Startup is the natural moment: the directory only grows during a
         // session, and nothing else ever removed a run log. Best-effort — a
         // failure here must not stop the app from starting.

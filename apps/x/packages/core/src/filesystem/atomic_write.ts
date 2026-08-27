@@ -82,3 +82,20 @@ export async function writeJsonAtomic(
     throw error;
   }
 }
+
+/** Atomically replace UTF-8 text while preserving an existing target's mode. */
+export async function writeTextAtomic(file: string, value: string): Promise<void> {
+  const tmp = tmpPathFor(file);
+  try {
+    const mode = await fsp.stat(file).then((stat) => stat.mode).catch((cause: NodeJS.ErrnoException) => {
+      if (cause.code === "ENOENT") return undefined;
+      throw cause;
+    });
+    // eslint-disable-next-line x-architecture/no-unsafe-fs-write -- this module is the atomic persistence API
+    await fsp.writeFile(tmp, value, { encoding: "utf8", ...(mode === undefined ? {} : { mode }) });
+    await fsp.rename(tmp, file);
+  } catch (error) {
+    await fsp.rm(tmp, { force: true }).catch(() => undefined);
+    throw error;
+  }
+}

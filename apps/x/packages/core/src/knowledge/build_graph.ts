@@ -19,6 +19,8 @@ import { buildKnowledgeIndex, formatIndexForPrompt } from './knowledge_index.js'
 import { limitEventItems } from './limit_event_items.js';
 import { commitAll } from './version_history.js';
 import { getTagDefinitions } from './tag_system.js';
+import { captureEntityIdentities, stabilizeEntityNotes } from './entity-identity.js';
+import { syncEntityNotes } from './entity-spine.js';
 
 /**
  * Build obsidian-style knowledge graph by running topic extraction
@@ -399,6 +401,7 @@ async function buildGraphWithFiles(
                 });
             }
             const agentStartTime = Date.now();
+            const protectedIdentities = await captureEntityIdentities(NOTES_OUTPUT_DIR);
             const batchResult = await createNotesFromBatch(batch, batchNumber, indexForPrompt);
             const agentDuration = ((Date.now() - agentStartTime) / 1000).toFixed(2);
             console.log(`Batch ${batchNumber}/${totalBatches} complete in ${agentDuration}s`);
@@ -409,6 +412,10 @@ async function buildGraphWithFiles(
             for (const note of batchResult.notesModified) {
                 notesModified.add(note);
             }
+
+            const changedNotes = [...batchResult.notesCreated, ...batchResult.notesModified];
+            await stabilizeEntityNotes(changedNotes, WorkDir, protectedIdentities);
+            await syncEntityNotes(changedNotes, WorkDir);
 
             // Mark files in this batch as processed
             for (const file of batch) {

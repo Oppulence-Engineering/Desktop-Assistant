@@ -7,6 +7,7 @@ import { WorkDir } from "../config/config.js";
 import { workspace } from "@x/shared";
 import z from "zod";
 import { Stats } from "node:fs";
+import { captureEntityIdentities, entityKindForPath, stabilizeEntityNoteMutation } from "../knowledge/entity-identity.js";
 
 export type WorkspaceChangeCallback = (
   event: z.infer<typeof workspace.WorkspaceChangeEvent>,
@@ -35,9 +36,24 @@ export async function createWorkspaceWatcher(
       pollInterval: 50,
     },
   });
+  const identities = await captureEntityIdentities(path.join(WorkDir, "knowledge"));
+  const identityRewrites = new Set<string>();
+  const stabilizeExternalEntity = async (absPath: string): Promise<void> => {
+    if (!entityKindForPath(absPath, path.join(WorkDir, "knowledge")) || identityRewrites.has(absPath)) return;
+    identityRewrites.add(absPath);
+    try {
+      const identity = await stabilizeEntityNoteMutation(absPath, WorkDir, identities.get(path.resolve(absPath)));
+      if (identity) identities.set(path.resolve(absPath), identity);
+    } catch (error) {
+      console.error("Workspace watcher could not stabilize entity identity:", error);
+    } finally {
+      setTimeout(() => identityRewrites.delete(absPath), 500);
+    }
+  };
 
   watcher
-    .on("add", (absPath: string) => {
+    .on("add", async (absPath: string) => {
+      await stabilizeExternalEntity(absPath);
       const relPath = absToRelPosix(absPath);
       if (relPath) {
         fs.lstat(absPath)
@@ -56,7 +72,8 @@ export async function createWorkspaceWatcher(
         callback({ type: "created", path: relPath, kind: "dir" });
       }
     })
-    .on("change", (absPath: string) => {
+    .on("change", async (absPath: string) => {
+      await stabilizeExternalEntity(absPath);
       const relPath = absToRelPosix(absPath);
       if (relPath) {
         // Emit change event immediately - debouncing handled by caller
@@ -64,6 +81,7 @@ export async function createWorkspaceWatcher(
       }
     })
     .on("unlink", (absPath: string) => {
+      identities.delete(path.resolve(absPath));
       const relPath = absToRelPosix(absPath);
       if (relPath) {
         callback({ type: "deleted", path: relPath, kind: "file" });
