@@ -5,6 +5,7 @@ kind: Job
 metadata:
   name: rowboat-desktop-oauth-client
   labels:
+    app.kubernetes.io/component: hydra-client-reconciler
     app.kubernetes.io/part-of: rowboat
 spec:
   backoffLimit: 5
@@ -12,6 +13,9 @@ spec:
   template:
     metadata:
       name: rowboat-desktop-oauth-client
+      labels:
+        app.kubernetes.io/component: hydra-client-reconciler
+        networking.rowboat.dev/hydra-admin-access: "true"
     spec:
       restartPolicy: OnFailure
       automountServiceAccountToken: false

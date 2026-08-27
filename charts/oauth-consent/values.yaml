@@ -1,4 +1,5 @@
 replicaCount: 2
+deploymentEnvironment: development
 
 image:
   repository: ghcr.io/oppulence-engineering/oauth-consent
@@ -63,8 +64,22 @@ existingSecret: oauth-consent-secrets
 createSecret: false
 secretValues: {}
 
+# DATABASE_URL is always read explicitly from this key. A missing key prevents
+# both the migration init container and application container from starting.
+database:
+  urlSecretKey: DATABASE_URL
+
 networkPolicy:
   enabled: true
+  hydraAdmin:
+    port: 4445
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: ory
+    podSelector:
+      matchLabels:
+        app.kubernetes.io/name: hydra
+        app.kubernetes.io/instance: hydra
   postgresql:
     port: 5432
     # Explicit database destination CIDRs. Never use 0.0.0.0/0 in production.
@@ -78,3 +93,4 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 podAnnotations: {}
+podLabels: {}

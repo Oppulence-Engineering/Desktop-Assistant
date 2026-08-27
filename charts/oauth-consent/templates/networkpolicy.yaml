@@ -19,7 +19,14 @@ spec:
         - { protocol: TCP, port: 53 }
     - ports:
         - { protocol: TCP, port: 443 }
-        - { protocol: TCP, port: 4445 }
+    - to:
+        - namespaceSelector:
+            {{- toYaml .Values.networkPolicy.hydraAdmin.namespaceSelector | nindent 12 }}
+          podSelector:
+            {{- toYaml .Values.networkPolicy.hydraAdmin.podSelector | nindent 12 }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.networkPolicy.hydraAdmin.port }}
     {{- range .Values.networkPolicy.postgresql.cidrs }}
     - to:
         - ipBlock:

@@ -49,6 +49,9 @@ hydra:
 
 deployment:
   replicaCount: 2
+  podMetadata:
+    labels:
+      networking.rowboat.dev/network-policy: hydra
   strategy:
     rollingUpdate:
       maxUnavailable: 0
@@ -81,4 +84,6 @@ ingress:
     enabled: false
 
 serviceMonitor:
-  enabled: true
+  # The admin port is intentionally reachable only by oauth-consent and labeled
+  # reconciliation jobs. Do not create a monitor that cannot reach port 4445.
+  enabled: false

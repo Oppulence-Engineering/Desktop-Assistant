@@ -16,7 +16,7 @@ This guide covers the deployed RFC 012 connector authorization plane alongside t
 
 Provision separate resources and credentials for staging and production:
 
-1. Managed Postgres databases for rowboat-api and Hydra. Never share Hydra DSNs across environments.
+1. Managed Postgres databases for rowboat-api, Hydra, and oauth-consent. Never share database credentials or DSNs across environments.
 2. Redis for rowboat-api.
 3. WorkOS projects or explicitly isolated environments with AuthKit, MFA enabled, and callback URIs for `/callback` and `/step-up/callback` on the matching consent host.
 4. DNS/TLS for the rowboat-api origin, Hydra public endpoint, and consent app. These are distinct token issuers.
@@ -28,10 +28,73 @@ Provision separate resources and credentials for staging and production:
 Generate independent values with `openssl rand -hex 32`. Never place live values in Helm values files.
 
 - `rowboat-api-secrets`: existing backend keys plus `ORY_BROKER_CLIENT_SECRET`, `HOOK_HMAC_SECRET`, `DB_ENCRYPTION_KEY`, `BROKER_TOKEN_PRIVATE_KEY_PEM`, and `BROKER_TOKEN_KEYRING_JSON`.
-- `oauth-consent-secrets`: `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `HOOK_HMAC_SECRET`, and `COOKIE_SECRET`. `HOOK_HMAC_SECRET` must equal rowboat-api's value so consent context and append-audit hooks authenticate.
+- `oauth-consent-secrets`: `DATABASE_URL`, `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `HOOK_HMAC_SECRET`, and `COOKIE_SECRET`. `HOOK_HMAC_SECRET` must equal rowboat-api's value so consent context and append-audit hooks authenticate.
 - `hydra-secrets`: `dsn`, `secretsSystem`, and `secretsCookie`. See `charts/hydra/secrets.example.yaml`.
 
 The HMAC secret authenticates only consent context/audit bodies. Do not reuse it for cookies, database encryption, provider OAuth clients, or approval tokens. Rotate it by accepting old and new verification keys in the application release when supported, deploying verifiers first, switching the signer, waiting at least the 10-minute consent TTL, then removing the old key. If dual verification is unavailable, disable new consent during the coordinated restart.
+
+## oauth-consent PostgreSQL contract
+
+`DATABASE_URL` is mandatory. The chart references that exact key explicitly for
+both the migration init container and the application container, so a missing
+key prevents the Pod from starting. Use an environment-local direct PostgreSQL
+DSN with TLS enabled in staging and production. Do not use a PgBouncer
+transaction-pool endpoint because the init container applies DDL migrations.
+
+The preferred topology is a dedicated logical database and role for
+oauth-consent. A shared PostgreSQL server or cluster is supported. Sharing a
+logical database with rowboat-api is also technically supported when planned,
+but the oauth-consent role must be able to create and alter its
+`oauth_consent_*` tables in the target schema, backup/restore and maintenance
+become coupled, and the failure blast radius is shared. Never share a logical
+database or credentials between staging and production.
+
+Before Helm deployment, confirm the externally managed Secret contains the key
+without printing the value:
+
+```bash
+test -n "$(kubectl -n rowboat get secret oauth-consent-secrets \
+  -o jsonpath='{.data.DATABASE_URL}')"
+```
+
+The Helm environment overlays intentionally leave PostgreSQL CIDRs empty. Each
+deployment must provide private endpoint CIDRs through an environment-owned,
+uncommitted values file. Empty lists, `0.0.0.0/0`, and the former example
+`10.0.0.10/32` fail schema/template validation.
+
+```yaml
+# $OAUTH_CONSENT_NETWORK_VALUES
+networkPolicy:
+  postgresql:
+    cidrs:
+      - 10.42.18.7/32
+
+# $HYDRA_NETWORK_VALUES
+egress:
+  postgresql:
+    cidrs:
+      - 10.42.18.8/32
+```
+
+Use the actual environment-specific managed PostgreSQL private endpoint CIDRs.
+Do not copy the documentation addresses above into a deployment.
+
+## Hydra Admin network isolation
+
+`charts/hydra/network-policy/` is a companion Helm chart for the upstream Ory
+Hydra release. It default-denies ingress and egress for Hydra Pods, permits
+public port 4444 only from the configured ingress-controller namespace/pod
+selectors, allows DNS and the explicit PostgreSQL CIDRs, and permits Admin port
+4445 only from both of these labeled peer classes:
+
+- oauth-consent Pods in the matching `rowboat` environment namespace
+- Hydra client reconciliation/operator Jobs in the matching `ory` namespace
+
+The oauth-consent chart applies the inverse restriction: port 4445 egress has
+both Hydra namespace and Hydra Pod selectors. A different Pod listening on 4445
+is not reachable. Keep namespace names and ingress-controller selectors aligned
+with the cluster before deployment. Hydra `ServiceMonitor` is disabled because
+the Admin port is intentionally not open to monitoring Pods.
 
 Internal hook signatures use canonical version `v1` and bind the HTTP method,
 escaped path, millisecond timestamp, base64url nonce, and SHA-256 body digest.
@@ -107,15 +170,20 @@ kubectl -n rowboat get secret rowboat-api-secrets oauth-consent-secrets
 # 2. Apply rowboat-api migrations with the direct migration DSN.
 DATABASE_URL="$MIGRATION_DATABASE_URL" go run ./apps/rowboat-api/cmd/migrate apply
 
-# 3. Hydra and clients.
+# 3. Hydra, default-deny policies, and clients. Both network values files are
+# required environment-owned inputs and must contain real private endpoint CIDRs.
 helm upgrade --install hydra ory/hydra -n ory --create-namespace \
   -f charts/hydra/values-production.yaml --wait
+helm upgrade --install hydra-policy charts/hydra/network-policy -n ory \
+  -f charts/hydra/network-policy/values-production.yaml \
+  -f "$HYDRA_NETWORK_VALUES" --wait
 kubectl apply -n ory -f charts/hydra/clients/rowboat-desktop.yaml
 kubectl -n ory wait --for=condition=complete job/rowboat-oauth-clients --timeout=180s
 
 # 4. Consent app.
 helm upgrade --install oauth-consent charts/oauth-consent -n rowboat --create-namespace \
-  -f charts/oauth-consent/values-production.yaml --set image.tag=<git-sha> --wait
+  -f charts/oauth-consent/values-production.yaml \
+  -f "$OAUTH_CONSENT_NETWORK_VALUES" --set image.tag=<git-sha> --wait
 
 # 5. Broker API.
 helm upgrade --install rowboat-api charts/rowboat-api -n rowboat \
@@ -167,8 +235,18 @@ Every product MCP must configure its RFC 012 middleware with the exact rowboat-a
 
 ```bash
 helm lint charts/oauth-consent
+helm lint charts/oauth-consent -f charts/oauth-consent/values-production.yaml \
+  -f "$OAUTH_CONSENT_NETWORK_VALUES"
+helm lint charts/hydra/network-policy \
+  -f charts/hydra/network-policy/values-production.yaml \
+  -f "$HYDRA_NETWORK_VALUES"
 helm lint charts/rowboat-api -f charts/rowboat-api/values-production.yaml
-helm template oauth-consent charts/oauth-consent -f charts/oauth-consent/values-production.yaml >/dev/null
+helm template oauth-consent charts/oauth-consent \
+  -f charts/oauth-consent/values-production.yaml \
+  -f "$OAUTH_CONSENT_NETWORK_VALUES" >/dev/null
+helm template hydra-policy charts/hydra/network-policy \
+  -f charts/hydra/network-policy/values-production.yaml \
+  -f "$HYDRA_NETWORK_VALUES" >/dev/null
 helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-production.yaml >/dev/null
 helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-staging.yaml >/dev/null
 curl -fsS https://oauth.solomon-ai.co/.well-known/openid-configuration
@@ -179,6 +257,10 @@ curl -fsS https://api.oppulence.io/.well-known/connector-jwks.json
 
 # Render-contract and product-verifier configuration probe.
 charts/rowboat-api/tests/deployment-contract.sh
+
+# Docker + kind + Calico: applies real consent migrations, observes /readyz=200,
+# and proves the rendered allow/deny paths while NetworkPolicy is enforced.
+charts/hydra/tests/network-policy-kind.sh
 ```
 
 Run a staging consent flow for read and money-moving scopes, verify HMAC-authenticated context/audit delivery and entitlement denial copy, then mint a rowboat-api resource token. Confirm its `iss` is the staging API origin, its `kid` exists in the staging connector JWKS, its `aud` is exact, and the product returns the expected 401/403/428 responses. Rollback procedures are in `docs/runbooks/connectors.md#rollback`.

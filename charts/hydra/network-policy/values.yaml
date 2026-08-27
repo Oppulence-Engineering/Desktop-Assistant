@@ -1,0 +1,48 @@
+deploymentEnvironment: development
+
+hydra:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: hydra
+      app.kubernetes.io/instance: hydra
+  publicPort: 4444
+  adminPort: 4445
+
+publicIngress:
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: ingress-nginx
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-nginx
+
+adminIngress:
+  oauthConsent:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: rowboat
+    podSelector:
+      matchLabels:
+        app.kubernetes.io/component: oauth-consent
+        networking.rowboat.dev/hydra-admin-access: "true"
+  reconcilers:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: ory
+    podSelector:
+      matchLabels:
+        app.kubernetes.io/component: hydra-client-reconciler
+        networking.rowboat.dev/hydra-admin-access: "true"
+
+egress:
+  dns:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: kube-system
+    podSelector:
+      matchLabels:
+        k8s-app: kube-dns
+    port: 53
+  postgresql:
+    port: 5432
+    cidrs: []

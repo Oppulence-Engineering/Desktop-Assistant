@@ -1,6 +1,17 @@
 replicaCount: 1
+deploymentEnvironment: staging
 existingSecret: oauth-consent-secrets
 createSecret: false
+networkPolicy:
+  enabled: true
+  hydraAdmin:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: ory-staging
+  postgresql:
+    # REQUIRED deployment input. Supply staging's PostgreSQL private endpoint
+    # CIDR(s) in a separate environment-owned values file.
+    cidrs: []
 ingress:
   host: consent.staging.solomon-ai.co
   annotations:

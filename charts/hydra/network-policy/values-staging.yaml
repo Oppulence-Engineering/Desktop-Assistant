@@ -1,0 +1,17 @@
+deploymentEnvironment: staging
+
+adminIngress:
+  oauthConsent:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: rowboat-staging
+  reconcilers:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: ory-staging
+
+egress:
+  postgresql:
+    # REQUIRED deployment input. Supply the staging Hydra PostgreSQL private
+    # endpoint CIDR(s) in a separate environment-owned values file.
+    cidrs: []

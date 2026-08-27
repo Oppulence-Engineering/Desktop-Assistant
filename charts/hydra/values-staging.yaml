@@ -35,6 +35,9 @@ hydra:
 
 deployment:
   replicaCount: 1
+  podMetadata:
+    labels:
+      networking.rowboat.dev/network-policy: hydra
 
 ingress:
   public:
@@ -55,4 +58,5 @@ ingress:
     enabled: false
 
 serviceMonitor:
-  enabled: true
+  # Hydra Admin 4445 is not exposed to the monitoring namespace.
+  enabled: false

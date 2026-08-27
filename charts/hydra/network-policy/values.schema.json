@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "deploymentEnvironment": {
+      "type": "string",
+      "enum": ["development", "staging", "production"]
+    },
+    "hydra": {
+      "type": "object",
+      "required": ["podSelector", "publicPort", "adminPort"],
+      "properties": {
+        "podSelector": { "$ref": "#/$defs/selector" },
+        "publicPort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "adminPort": { "type": "integer", "minimum": 1, "maximum": 65535 }
+      }
+    },
+    "publicIngress": { "$ref": "#/$defs/peer" },
+    "adminIngress": {
+      "type": "object",
+      "required": ["oauthConsent", "reconcilers"],
+      "properties": {
+        "oauthConsent": { "$ref": "#/$defs/peer" },
+        "reconcilers": { "$ref": "#/$defs/peer" }
+      }
+    },
+    "egress": {
+      "type": "object",
+      "required": ["dns", "postgresql"],
+      "properties": {
+        "dns": {
+          "allOf": [
+            { "$ref": "#/$defs/peer" },
+            {
+              "type": "object",
+              "required": ["port"],
+              "properties": {
+                "port": { "type": "integer", "minimum": 1, "maximum": 65535 }
+              }
+            }
+          ]
+        },
+        "postgresql": {
+          "type": "object",
+          "required": ["port", "cidrs"],
+          "properties": {
+            "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+            "cidrs": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^([0-9]{1,3}\\.){3}[0-9]{1,3}/([0-9]|[12][0-9]|3[0-2])$",
+                "not": { "enum": ["0.0.0.0/0", "10.0.0.10/32"] }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "deploymentEnvironment": { "enum": ["staging", "production"] }
+        },
+        "required": ["deploymentEnvironment"]
+      },
+      "then": {
+        "properties": {
+          "egress": {
+            "properties": {
+              "postgresql": {
+                "properties": { "cidrs": { "minItems": 1 } }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "selector": {
+      "type": "object",
+      "required": ["matchLabels"],
+      "properties": {
+        "matchLabels": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "peer": {
+      "type": "object",
+      "required": ["namespaceSelector", "podSelector"],
+      "properties": {
+        "namespaceSelector": { "$ref": "#/$defs/selector" },
+        "podSelector": { "$ref": "#/$defs/selector" }
+      }
+    }
+  }
+}
