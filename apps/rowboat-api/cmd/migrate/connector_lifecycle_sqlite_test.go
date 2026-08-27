@@ -21,12 +21,20 @@ func TestConnectorLifecycleSQLiteTwoClientCAS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db1.Close()
+	t.Cleanup(func() {
+		if err := db1.Close(); err != nil {
+			t.Errorf("close first lifecycle database: %v", err)
+		}
+	})
 	db2, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db2.Close()
+	t.Cleanup(func() {
+		if err := db2.Close(); err != nil {
+			t.Errorf("close second lifecycle database: %v", err)
+		}
+	})
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if _, err := db1.ExecContext(ctx, `CREATE TABLE connections(id TEXT PRIMARY KEY, credential_generation INTEGER NOT NULL, status TEXT NOT NULL, credential TEXT);
