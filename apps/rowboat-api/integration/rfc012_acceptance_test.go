@@ -174,8 +174,13 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.NoError(t, json.Unmarshal([]byte(mints[1].body), &mt2))
 		require.Equal(t, "rfc012-broker-key", jwtKeyID(t, mt.AccessToken))
 		require.Equal(t, "rfc012-broker-next", jwtKeyID(t, mt2.AccessToken))
-		require.Equal(t, 200, c.json("POST", product+"/v1/mcp/read", mt.AccessToken, nil).status, "old signer token rejected during overlap")
-		require.Equal(t, 200, c.json("POST", product+"/v1/mcp/read", mt2.AccessToken, nil).status, "new signer token rejected during overlap")
+		tenantID := mustEnv(t, "RFC012_TENANT_A_ORG_ID")
+		_, err = db.Exec(`INSERT INTO dev_product_connections(connection_id,tenant_id,active) VALUES($1,$2,true) ON CONFLICT(connection_id) DO UPDATE SET tenant_id=$2,active=true`, connectionID, tenantID)
+		require.NoError(t, err)
+		oldSigner := c.json("POST", product+"/v1/mcp/read", mt.AccessToken, nil)
+		require.Equal(t, 200, oldSigner.status, "old signer token rejected during overlap: %s", oldSigner.body)
+		newSigner := c.json("POST", product+"/v1/mcp/read", mt2.AccessToken, nil)
+		require.Equal(t, 200, newSigner.status, "new signer token rejected during overlap: %s", newSigner.body)
 	})
 
 	t.Run("product MCP authorization approval retry and one-time use", func(t *testing.T) {
@@ -201,6 +206,11 @@ func TestRFC012PublicContract(t *testing.T) {
 	})
 
 	t.Run("entitlement downgrade denies mint", func(t *testing.T) {
+		// The public connection routes intentionally enforce an eight-request burst
+		// window. Earlier subtests exercise concurrent claims and mints against that
+		// same authenticated principal, so wait for the production bucket to roll
+		// rather than weakening or bypassing the limiter in acceptance.
+		time.Sleep(11 * time.Second)
 		_, err := db.Exec(`UPDATE subscriptions SET status='past_due',updated_at=now() WHERE user_subscription=(SELECT id FROM users WHERE workos_user_id='user_rfc012_a')`)
 		require.NoError(t, err)
 		denied := c.json("POST", api+"/v1/connections/"+connector+"/mcp-token", tokenA, nil)

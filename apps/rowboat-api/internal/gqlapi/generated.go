@@ -547,17 +547,23 @@ type ComplexityRoot struct {
 	}
 
 	ConnectorRevocationJob struct {
-		Attempts      func(childComplexity int) int
-		CompletedAt   func(childComplexity int) int
-		ConnectionID  func(childComplexity int) int
-		Connector     func(childComplexity int) int
-		CreatedAt     func(childComplexity int) int
-		ID            func(childComplexity int) int
-		LastError     func(childComplexity int) int
-		NextAttemptAt func(childComplexity int) int
-		OwnerID       func(childComplexity int) int
-		Status        func(childComplexity int) int
-		UpdatedAt     func(childComplexity int) int
+		Attempts             func(childComplexity int) int
+		ClaimID              func(childComplexity int) int
+		ClaimedUntil         func(childComplexity int) int
+		CompletedAt          func(childComplexity int) int
+		ConnectionID         func(childComplexity int) int
+		Connector            func(childComplexity int) int
+		CreatedAt            func(childComplexity int) int
+		CredentialGeneration func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		LastError            func(childComplexity int) int
+		NextAttemptAt        func(childComplexity int) int
+		OwnerID              func(childComplexity int) int
+		Status               func(childComplexity int) int
+		TerminalActor        func(childComplexity int) int
+		TerminalReason       func(childComplexity int) int
+		TerminalStatus       func(childComplexity int) int
+		UpdatedAt            func(childComplexity int) int
 	}
 
 	ConversationIntelligenceArtifact struct {
@@ -680,6 +686,7 @@ type ComplexityRoot struct {
 		ConnectedAt           func(childComplexity int) int
 		Connector             func(childComplexity int) int
 		CreatedAt             func(childComplexity int) int
+		CredentialGeneration  func(childComplexity int) int
 		ExpiresAt             func(childComplexity int) int
 		ID                    func(childComplexity int) int
 		LastUsedAt            func(childComplexity int) int
@@ -4070,6 +4077,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ConnectorRevocationJob.Attempts(childComplexity), true
+	case "ConnectorRevocationJob.claimID":
+		if e.ComplexityRoot.ConnectorRevocationJob.ClaimID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectorRevocationJob.ClaimID(childComplexity), true
+	case "ConnectorRevocationJob.claimedUntil":
+		if e.ComplexityRoot.ConnectorRevocationJob.ClaimedUntil == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectorRevocationJob.ClaimedUntil(childComplexity), true
 	case "ConnectorRevocationJob.completedAt":
 		if e.ComplexityRoot.ConnectorRevocationJob.CompletedAt == nil {
 			break
@@ -4094,6 +4113,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ConnectorRevocationJob.CreatedAt(childComplexity), true
+	case "ConnectorRevocationJob.credentialGeneration":
+		if e.ComplexityRoot.ConnectorRevocationJob.CredentialGeneration == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectorRevocationJob.CredentialGeneration(childComplexity), true
 	case "ConnectorRevocationJob.id":
 		if e.ComplexityRoot.ConnectorRevocationJob.ID == nil {
 			break
@@ -4124,6 +4149,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ConnectorRevocationJob.Status(childComplexity), true
+	case "ConnectorRevocationJob.terminalActor":
+		if e.ComplexityRoot.ConnectorRevocationJob.TerminalActor == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectorRevocationJob.TerminalActor(childComplexity), true
+	case "ConnectorRevocationJob.terminalReason":
+		if e.ComplexityRoot.ConnectorRevocationJob.TerminalReason == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectorRevocationJob.TerminalReason(childComplexity), true
+	case "ConnectorRevocationJob.terminalStatus":
+		if e.ComplexityRoot.ConnectorRevocationJob.TerminalStatus == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ConnectorRevocationJob.TerminalStatus(childComplexity), true
 	case "ConnectorRevocationJob.updatedAt":
 		if e.ComplexityRoot.ConnectorRevocationJob.UpdatedAt == nil {
 			break
@@ -4658,6 +4701,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.MCPConnection.CreatedAt(childComplexity), true
+	case "MCPConnection.credentialGeneration":
+		if e.ComplexityRoot.MCPConnection.CredentialGeneration == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MCPConnection.CredentialGeneration(childComplexity), true
 	case "MCPConnection.expiresAt":
 		if e.ComplexityRoot.MCPConnection.ExpiresAt == nil {
 			break
@@ -10825,6 +10874,8 @@ func (ec *executionContext) childFields_MCPConnection(ctx context.Context, field
 		return ec.fieldContext_MCPConnection_audience(ctx, field)
 	case "scopes":
 		return ec.fieldContext_MCPConnection_scopes(ctx, field)
+	case "credentialGeneration":
+		return ec.fieldContext_MCPConnection_credentialGeneration(ctx, field)
 	case "status":
 		return ec.fieldContext_MCPConnection_status(ctx, field)
 	case "connectedAt":
@@ -23351,6 +23402,98 @@ func (ec *executionContext) fieldContext_ConnectorRevocationJob_connector(_ cont
 	return graphql.NewScalarFieldContext("ConnectorRevocationJob", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _ConnectorRevocationJob_credentialGeneration(ctx context.Context, field graphql.CollectedField, obj *ent.ConnectorRevocationJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ConnectorRevocationJob_credentialGeneration(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CredentialGeneration, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int64) graphql.Marshaler {
+			return ec.marshalNInt2int64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ConnectorRevocationJob_credentialGeneration(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ConnectorRevocationJob", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _ConnectorRevocationJob_terminalStatus(ctx context.Context, field graphql.CollectedField, obj *ent.ConnectorRevocationJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ConnectorRevocationJob_terminalStatus(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TerminalStatus, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ConnectorRevocationJob_terminalStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ConnectorRevocationJob", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ConnectorRevocationJob_terminalReason(ctx context.Context, field graphql.CollectedField, obj *ent.ConnectorRevocationJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ConnectorRevocationJob_terminalReason(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TerminalReason, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ConnectorRevocationJob_terminalReason(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ConnectorRevocationJob", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _ConnectorRevocationJob_terminalActor(ctx context.Context, field graphql.CollectedField, obj *ent.ConnectorRevocationJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ConnectorRevocationJob_terminalActor(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.TerminalActor, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalNString2string(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_ConnectorRevocationJob_terminalActor(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ConnectorRevocationJob", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _ConnectorRevocationJob_status(ctx context.Context, field graphql.CollectedField, obj *ent.ConnectorRevocationJob) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -23417,6 +23560,52 @@ func (ec *executionContext) _ConnectorRevocationJob_nextAttemptAt(ctx context.Co
 	)
 }
 func (ec *executionContext) fieldContext_ConnectorRevocationJob_nextAttemptAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ConnectorRevocationJob", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _ConnectorRevocationJob_claimID(ctx context.Context, field graphql.CollectedField, obj *ent.ConnectorRevocationJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ConnectorRevocationJob_claimID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ClaimID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v uuid.UUID) graphql.Marshaler {
+			return ec.marshalOUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ConnectorRevocationJob_claimID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("ConnectorRevocationJob", field, false, false, errors.New("field of type UUID does not have child fields"))
+}
+
+func (ec *executionContext) _ConnectorRevocationJob_claimedUntil(ctx context.Context, field graphql.CollectedField, obj *ent.ConnectorRevocationJob) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_ConnectorRevocationJob_claimedUntil(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ClaimedUntil, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalOTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_ConnectorRevocationJob_claimedUntil(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("ConnectorRevocationJob", field, false, false, errors.New("field of type Time does not have child fields"))
 }
 
@@ -25686,6 +25875,29 @@ func (ec *executionContext) _MCPConnection_scopes(ctx context.Context, field gra
 }
 func (ec *executionContext) fieldContext_MCPConnection_scopes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _MCPConnection_credentialGeneration(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MCPConnection_credentialGeneration(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CredentialGeneration, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int64) graphql.Marshaler {
+			return ec.marshalNInt2int64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MCPConnection_credentialGeneration(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
 func (ec *executionContext) _MCPConnection_status(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
@@ -72546,7 +72758,7 @@ func (ec *executionContext) unmarshalInputConnectorRevocationJobWhereInput(ctx c
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "connectionID", "connectionIDNEQ", "connectionIDIn", "connectionIDNotIn", "connectionIDGT", "connectionIDGTE", "connectionIDLT", "connectionIDLTE", "ownerID", "ownerIDNEQ", "ownerIDIn", "ownerIDNotIn", "ownerIDGT", "ownerIDGTE", "ownerIDLT", "ownerIDLTE", "connector", "connectorNEQ", "connectorIn", "connectorNotIn", "connectorGT", "connectorGTE", "connectorLT", "connectorLTE", "connectorContains", "connectorHasPrefix", "connectorHasSuffix", "connectorEqualFold", "connectorContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "attempts", "attemptsNEQ", "attemptsIn", "attemptsNotIn", "attemptsGT", "attemptsGTE", "attemptsLT", "attemptsLTE", "nextAttemptAt", "nextAttemptAtNEQ", "nextAttemptAtIn", "nextAttemptAtNotIn", "nextAttemptAtGT", "nextAttemptAtGTE", "nextAttemptAtLT", "nextAttemptAtLTE", "lastError", "lastErrorNEQ", "lastErrorIn", "lastErrorNotIn", "lastErrorGT", "lastErrorGTE", "lastErrorLT", "lastErrorLTE", "lastErrorContains", "lastErrorHasPrefix", "lastErrorHasSuffix", "lastErrorIsNil", "lastErrorNotNil", "lastErrorEqualFold", "lastErrorContainsFold", "completedAt", "completedAtNEQ", "completedAtIn", "completedAtNotIn", "completedAtGT", "completedAtGTE", "completedAtLT", "completedAtLTE", "completedAtIsNil", "completedAtNotNil"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "connectionID", "connectionIDNEQ", "connectionIDIn", "connectionIDNotIn", "connectionIDGT", "connectionIDGTE", "connectionIDLT", "connectionIDLTE", "ownerID", "ownerIDNEQ", "ownerIDIn", "ownerIDNotIn", "ownerIDGT", "ownerIDGTE", "ownerIDLT", "ownerIDLTE", "connector", "connectorNEQ", "connectorIn", "connectorNotIn", "connectorGT", "connectorGTE", "connectorLT", "connectorLTE", "connectorContains", "connectorHasPrefix", "connectorHasSuffix", "connectorEqualFold", "connectorContainsFold", "credentialGeneration", "credentialGenerationNEQ", "credentialGenerationIn", "credentialGenerationNotIn", "credentialGenerationGT", "credentialGenerationGTE", "credentialGenerationLT", "credentialGenerationLTE", "terminalStatus", "terminalStatusNEQ", "terminalStatusIn", "terminalStatusNotIn", "terminalStatusGT", "terminalStatusGTE", "terminalStatusLT", "terminalStatusLTE", "terminalStatusContains", "terminalStatusHasPrefix", "terminalStatusHasSuffix", "terminalStatusEqualFold", "terminalStatusContainsFold", "terminalReason", "terminalReasonNEQ", "terminalReasonIn", "terminalReasonNotIn", "terminalReasonGT", "terminalReasonGTE", "terminalReasonLT", "terminalReasonLTE", "terminalReasonContains", "terminalReasonHasPrefix", "terminalReasonHasSuffix", "terminalReasonEqualFold", "terminalReasonContainsFold", "terminalActor", "terminalActorNEQ", "terminalActorIn", "terminalActorNotIn", "terminalActorGT", "terminalActorGTE", "terminalActorLT", "terminalActorLTE", "terminalActorContains", "terminalActorHasPrefix", "terminalActorHasSuffix", "terminalActorEqualFold", "terminalActorContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "attempts", "attemptsNEQ", "attemptsIn", "attemptsNotIn", "attemptsGT", "attemptsGTE", "attemptsLT", "attemptsLTE", "nextAttemptAt", "nextAttemptAtNEQ", "nextAttemptAtIn", "nextAttemptAtNotIn", "nextAttemptAtGT", "nextAttemptAtGTE", "nextAttemptAtLT", "nextAttemptAtLTE", "claimID", "claimIDNEQ", "claimIDIn", "claimIDNotIn", "claimIDGT", "claimIDGTE", "claimIDLT", "claimIDLTE", "claimIDIsNil", "claimIDNotNil", "claimedUntil", "claimedUntilNEQ", "claimedUntilIn", "claimedUntilNotIn", "claimedUntilGT", "claimedUntilGTE", "claimedUntilLT", "claimedUntilLTE", "claimedUntilIsNil", "claimedUntilNotNil", "lastError", "lastErrorNEQ", "lastErrorIn", "lastErrorNotIn", "lastErrorGT", "lastErrorGTE", "lastErrorLT", "lastErrorLTE", "lastErrorContains", "lastErrorHasPrefix", "lastErrorHasSuffix", "lastErrorIsNil", "lastErrorNotNil", "lastErrorEqualFold", "lastErrorContainsFold", "completedAt", "completedAtNEQ", "completedAtIn", "completedAtNotIn", "completedAtGT", "completedAtGTE", "completedAtLT", "completedAtLTE", "completedAtIsNil", "completedAtNotNil"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -72945,6 +73157,335 @@ func (ec *executionContext) unmarshalInputConnectorRevocationJobWhereInput(ctx c
 				return it, err
 			}
 			it.ConnectorContainsFold = data
+		case "credentialGeneration":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGeneration"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGeneration = data
+		case "credentialGenerationNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationNEQ = data
+		case "credentialGenerationIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationIn = data
+		case "credentialGenerationNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationNotIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationNotIn = data
+		case "credentialGenerationGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationGT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationGT = data
+		case "credentialGenerationGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationGTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationGTE = data
+		case "credentialGenerationLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationLT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationLT = data
+		case "credentialGenerationLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationLTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationLTE = data
+		case "terminalStatus":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalStatus"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalStatus = data
+		case "terminalStatusNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalStatusNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalStatusNEQ = data
+		case "terminalStatusIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalStatusIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalStatusIn = data
+		case "terminalStatusNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalStatusNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalStatusNotIn = data
+		case "terminalStatusGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalStatusGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalStatusGT = data
+		case "terminalStatusGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalStatusGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalStatusGTE = data
+		case "terminalStatusLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalStatusLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalStatusLT = data
+		case "terminalStatusLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalStatusLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalStatusLTE = data
+		case "terminalStatusContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalStatusContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalStatusContains = data
+		case "terminalStatusHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalStatusHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalStatusHasPrefix = data
+		case "terminalStatusHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalStatusHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalStatusHasSuffix = data
+		case "terminalStatusEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalStatusEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalStatusEqualFold = data
+		case "terminalStatusContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalStatusContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalStatusContainsFold = data
+		case "terminalReason":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalReason"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalReason = data
+		case "terminalReasonNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalReasonNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalReasonNEQ = data
+		case "terminalReasonIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalReasonIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalReasonIn = data
+		case "terminalReasonNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalReasonNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalReasonNotIn = data
+		case "terminalReasonGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalReasonGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalReasonGT = data
+		case "terminalReasonGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalReasonGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalReasonGTE = data
+		case "terminalReasonLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalReasonLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalReasonLT = data
+		case "terminalReasonLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalReasonLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalReasonLTE = data
+		case "terminalReasonContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalReasonContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalReasonContains = data
+		case "terminalReasonHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalReasonHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalReasonHasPrefix = data
+		case "terminalReasonHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalReasonHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalReasonHasSuffix = data
+		case "terminalReasonEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalReasonEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalReasonEqualFold = data
+		case "terminalReasonContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalReasonContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalReasonContainsFold = data
+		case "terminalActor":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalActor"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalActor = data
+		case "terminalActorNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalActorNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalActorNEQ = data
+		case "terminalActorIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalActorIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalActorIn = data
+		case "terminalActorNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalActorNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalActorNotIn = data
+		case "terminalActorGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalActorGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalActorGT = data
+		case "terminalActorGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalActorGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalActorGTE = data
+		case "terminalActorLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalActorLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalActorLT = data
+		case "terminalActorLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalActorLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalActorLTE = data
+		case "terminalActorContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalActorContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalActorContains = data
+		case "terminalActorHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalActorHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalActorHasPrefix = data
+		case "terminalActorHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalActorHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalActorHasSuffix = data
+		case "terminalActorEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalActorEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalActorEqualFold = data
+		case "terminalActorContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("terminalActorContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TerminalActorContainsFold = data
 		case "status":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -73148,6 +73689,146 @@ func (ec *executionContext) unmarshalInputConnectorRevocationJobWhereInput(ctx c
 				return it, err
 			}
 			it.NextAttemptAtLTE = data
+		case "claimID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimID"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimID = data
+		case "claimIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimIDNEQ"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimIDNEQ = data
+		case "claimIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimIDIn"))
+			data, err := ec.unmarshalOUUID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimIDIn = data
+		case "claimIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimIDNotIn"))
+			data, err := ec.unmarshalOUUID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimIDNotIn = data
+		case "claimIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimIDGT"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimIDGT = data
+		case "claimIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimIDGTE"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimIDGTE = data
+		case "claimIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimIDLT"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimIDLT = data
+		case "claimIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimIDLTE"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimIDLTE = data
+		case "claimIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimIDIsNil = data
+		case "claimIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimIDNotNil = data
+		case "claimedUntil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedUntil"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedUntil = data
+		case "claimedUntilNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedUntilNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedUntilNEQ = data
+		case "claimedUntilIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedUntilIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedUntilIn = data
+		case "claimedUntilNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedUntilNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedUntilNotIn = data
+		case "claimedUntilGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedUntilGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedUntilGT = data
+		case "claimedUntilGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedUntilGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedUntilGTE = data
+		case "claimedUntilLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedUntilLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedUntilLT = data
+		case "claimedUntilLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedUntilLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedUntilLTE = data
+		case "claimedUntilIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedUntilIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedUntilIsNil = data
+		case "claimedUntilNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedUntilNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ClaimedUntilNotNil = data
 		case "lastError":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastError"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -77903,7 +78584,7 @@ func (ec *executionContext) unmarshalInputMCPConnectionWhereInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "connector", "connectorNEQ", "connectorIn", "connectorNotIn", "connectorGT", "connectorGTE", "connectorLT", "connectorLTE", "connectorContains", "connectorHasPrefix", "connectorHasSuffix", "connectorEqualFold", "connectorContainsFold", "audience", "audienceNEQ", "audienceIn", "audienceNotIn", "audienceGT", "audienceGTE", "audienceLT", "audienceLTE", "audienceContains", "audienceHasPrefix", "audienceHasSuffix", "audienceEqualFold", "audienceContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "connectedAt", "connectedAtNEQ", "connectedAtIn", "connectedAtNotIn", "connectedAtGT", "connectedAtGTE", "connectedAtLT", "connectedAtLTE", "connectedAtIsNil", "connectedAtNotNil", "lastUsedAt", "lastUsedAtNEQ", "lastUsedAtIn", "lastUsedAtNotIn", "lastUsedAtGT", "lastUsedAtGTE", "lastUsedAtLT", "lastUsedAtLTE", "lastUsedAtIsNil", "lastUsedAtNotNil", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "expiresAtIsNil", "expiresAtNotNil", "revokedAt", "revokedAtNEQ", "revokedAtIn", "revokedAtNotIn", "revokedAtGT", "revokedAtGTE", "revokedAtLT", "revokedAtLTE", "revokedAtIsNil", "revokedAtNotNil", "revokedReason", "revokedReasonNEQ", "revokedReasonIn", "revokedReasonNotIn", "revokedReasonGT", "revokedReasonGTE", "revokedReasonLT", "revokedReasonLTE", "revokedReasonContains", "revokedReasonHasPrefix", "revokedReasonHasSuffix", "revokedReasonIsNil", "revokedReasonNotNil", "revokedReasonEqualFold", "revokedReasonContainsFold", "revokedBy", "revokedByNEQ", "revokedByIn", "revokedByNotIn", "revokedByGT", "revokedByGTE", "revokedByLT", "revokedByLTE", "revokedByContains", "revokedByHasPrefix", "revokedByHasSuffix", "revokedByIsNil", "revokedByNotNil", "revokedByEqualFold", "revokedByContainsFold", "revocationAttemptedAt", "revocationAttemptedAtNEQ", "revocationAttemptedAtIn", "revocationAttemptedAtNotIn", "revocationAttemptedAtGT", "revocationAttemptedAtGTE", "revocationAttemptedAtLT", "revocationAttemptedAtLTE", "revocationAttemptedAtIsNil", "revocationAttemptedAtNotNil", "revocationSucceeded", "revocationSucceededNEQ", "revocationSucceededIsNil", "revocationSucceededNotNil", "hasUser", "hasUserWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "connector", "connectorNEQ", "connectorIn", "connectorNotIn", "connectorGT", "connectorGTE", "connectorLT", "connectorLTE", "connectorContains", "connectorHasPrefix", "connectorHasSuffix", "connectorEqualFold", "connectorContainsFold", "audience", "audienceNEQ", "audienceIn", "audienceNotIn", "audienceGT", "audienceGTE", "audienceLT", "audienceLTE", "audienceContains", "audienceHasPrefix", "audienceHasSuffix", "audienceEqualFold", "audienceContainsFold", "credentialGeneration", "credentialGenerationNEQ", "credentialGenerationIn", "credentialGenerationNotIn", "credentialGenerationGT", "credentialGenerationGTE", "credentialGenerationLT", "credentialGenerationLTE", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "connectedAt", "connectedAtNEQ", "connectedAtIn", "connectedAtNotIn", "connectedAtGT", "connectedAtGTE", "connectedAtLT", "connectedAtLTE", "connectedAtIsNil", "connectedAtNotNil", "lastUsedAt", "lastUsedAtNEQ", "lastUsedAtIn", "lastUsedAtNotIn", "lastUsedAtGT", "lastUsedAtGTE", "lastUsedAtLT", "lastUsedAtLTE", "lastUsedAtIsNil", "lastUsedAtNotNil", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "expiresAtIsNil", "expiresAtNotNil", "revokedAt", "revokedAtNEQ", "revokedAtIn", "revokedAtNotIn", "revokedAtGT", "revokedAtGTE", "revokedAtLT", "revokedAtLTE", "revokedAtIsNil", "revokedAtNotNil", "revokedReason", "revokedReasonNEQ", "revokedReasonIn", "revokedReasonNotIn", "revokedReasonGT", "revokedReasonGTE", "revokedReasonLT", "revokedReasonLTE", "revokedReasonContains", "revokedReasonHasPrefix", "revokedReasonHasSuffix", "revokedReasonIsNil", "revokedReasonNotNil", "revokedReasonEqualFold", "revokedReasonContainsFold", "revokedBy", "revokedByNEQ", "revokedByIn", "revokedByNotIn", "revokedByGT", "revokedByGTE", "revokedByLT", "revokedByLTE", "revokedByContains", "revokedByHasPrefix", "revokedByHasSuffix", "revokedByIsNil", "revokedByNotNil", "revokedByEqualFold", "revokedByContainsFold", "revocationAttemptedAt", "revocationAttemptedAtNEQ", "revocationAttemptedAtIn", "revocationAttemptedAtNotIn", "revocationAttemptedAtGT", "revocationAttemptedAtGTE", "revocationAttemptedAtLT", "revocationAttemptedAtLTE", "revocationAttemptedAtIsNil", "revocationAttemptedAtNotNil", "revocationSucceeded", "revocationSucceededNEQ", "revocationSucceededIsNil", "revocationSucceededNotNil", "hasUser", "hasUserWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -78281,6 +78962,62 @@ func (ec *executionContext) unmarshalInputMCPConnectionWhereInput(ctx context.Co
 				return it, err
 			}
 			it.AudienceContainsFold = data
+		case "credentialGeneration":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGeneration"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGeneration = data
+		case "credentialGenerationNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationNEQ = data
+		case "credentialGenerationIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationIn = data
+		case "credentialGenerationNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationNotIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationNotIn = data
+		case "credentialGenerationGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationGT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationGT = data
+		case "credentialGenerationGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationGTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationGTE = data
+		case "credentialGenerationLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationLT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationLT = data
+		case "credentialGenerationLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationLTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationLTE = data
 		case "status":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -125285,6 +126022,26 @@ func (ec *executionContext) _ConnectorRevocationJob(ctx context.Context, sel ast
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "credentialGeneration":
+			out.Values[i] = ec._ConnectorRevocationJob_credentialGeneration(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "terminalStatus":
+			out.Values[i] = ec._ConnectorRevocationJob_terminalStatus(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "terminalReason":
+			out.Values[i] = ec._ConnectorRevocationJob_terminalReason(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "terminalActor":
+			out.Values[i] = ec._ConnectorRevocationJob_terminalActor(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "status":
 			out.Values[i] = ec._ConnectorRevocationJob_status(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -125300,6 +126057,10 @@ func (ec *executionContext) _ConnectorRevocationJob(ctx context.Context, sel ast
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "claimID":
+			out.Values[i] = ec._ConnectorRevocationJob_claimID(ctx, field, obj)
+		case "claimedUntil":
+			out.Values[i] = ec._ConnectorRevocationJob_claimedUntil(ctx, field, obj)
 		case "lastError":
 			out.Values[i] = ec._ConnectorRevocationJob_lastError(ctx, field, obj)
 		case "completedAt":
@@ -126588,6 +127349,11 @@ func (ec *executionContext) _MCPConnection(ctx context.Context, sel ast.Selectio
 			}
 		case "scopes":
 			out.Values[i] = ec._MCPConnection_scopes(ctx, field, obj)
+		case "credentialGeneration":
+			out.Values[i] = ec._MCPConnection_credentialGeneration(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "status":
 			out.Values[i] = ec._MCPConnection_status(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

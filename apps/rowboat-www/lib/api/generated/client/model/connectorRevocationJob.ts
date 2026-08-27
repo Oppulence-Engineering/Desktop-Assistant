@@ -8,21 +8,27 @@
 
 export interface ConnectorRevocationJob {
   attempts: number;
+  claim_id?: string;
+  claimed_until?: string;
   completed_at?: string;
   connection_id: string;
   /** Connector slug. */
   connector: string;
   /** Row creation timestamp. */
   created_at: string;
+  credential_generation: number;
   /** Stable UUID primary key. */
   id: string;
   last_error?: string;
   next_attempt_at: string;
   owner_id: string;
   /** Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints. */
-  refresh_token_encrypted: string;
+  refresh_token_encrypted?: string;
   /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
   status: string;
+  terminal_actor: string;
+  terminal_reason: string;
+  terminal_status: string;
   /** Last row update timestamp. */
   updated_at: string;
 }

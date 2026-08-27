@@ -2,6 +2,12 @@
 ALTER TABLE "mcp_connections"
   ADD COLUMN "credential_generation" bigint NOT NULL DEFAULT 1;
 
+-- History hooks persist every connection mutation using the generated history
+-- schema. Keep the audit table in lockstep with the live entity so PostgreSQL
+-- deployments do not roll back otherwise-valid connection claims.
+ALTER TABLE "mcp_connection_histories"
+  ADD COLUMN "credential_generation" bigint NOT NULL DEFAULT 1;
+
 ALTER TABLE "connector_revocation_jobs"
   ALTER COLUMN "refresh_token_encrypted" DROP NOT NULL,
   ADD COLUMN "credential_generation" bigint NOT NULL DEFAULT 1,

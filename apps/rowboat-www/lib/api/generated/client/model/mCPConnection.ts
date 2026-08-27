@@ -21,6 +21,7 @@ export interface MCPConnection {
   connector: string;
   /** Row creation timestamp. */
   created_at: string;
+  credential_generation: number;
   /** Credential or one-time ticket expiry timestamp. */
   expires_at?: string;
   /** Stable UUID primary key. */

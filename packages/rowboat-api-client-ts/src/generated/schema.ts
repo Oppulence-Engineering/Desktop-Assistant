@@ -5338,6 +5338,10 @@ export interface components {
     };
     ConnectorRevocationJob: {
       attempts: number;
+      /** Format: uuid */
+      claim_id?: string;
+      /** Format: date-time */
+      claimed_until?: string;
       /** Format: date-time */
       completed_at?: string;
       /** Format: uuid */
@@ -5353,6 +5357,8 @@ export interface components {
        * @example 2026-06-04T20:38:00Z
        */
       created_at: string;
+      /** Format: int64 */
+      credential_generation: number;
       /**
        * Format: uuid
        * @description Stable UUID primary key.
@@ -5368,12 +5374,15 @@ export interface components {
        * Format: byte
        * @description Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.
        */
-      refresh_token_encrypted: string;
+      refresh_token_encrypted?: string;
       /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
        * @example active
        */
       status: string;
+      terminal_actor: string;
+      terminal_reason: string;
+      terminal_status: string;
       /**
        * Format: date-time
        * @description Last row update timestamp.
@@ -6935,6 +6944,8 @@ export interface components {
        * @example 2026-06-04T20:38:00Z
        */
       created_at: string;
+      /** Format: int64 */
+      credential_generation: number;
       /**
        * Format: date-time
        * @description Credential or one-time ticket expiry timestamp.
@@ -7016,6 +7027,8 @@ export interface components {
        * @example 2026-06-04T20:38:00Z
        */
       created_at: string;
+      /** Format: int64 */
+      credential_generation: number;
       /**
        * Format: date-time
        * @description Credential or one-time ticket expiry timestamp.

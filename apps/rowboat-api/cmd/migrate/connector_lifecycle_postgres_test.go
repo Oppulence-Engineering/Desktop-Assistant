@@ -74,9 +74,9 @@ func TestConnectorLifecyclePostgresConcurrencyCrashAndRetry(t *testing.T) {
 		RETURNING id`, userID).Scan(&connectionID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := db.ExecContext(ctx, `INSERT INTO connector_revocation_jobs(id,created_at,updated_at,connection_id,owner_id,connector,refresh_token_encrypted,status,attempts,next_attempt_at)
-		VALUES(gen_random_uuid(),now(),now(),$1,$2,'dev-product',decode('010203','hex'),'pending',0,now())
-		ON CONFLICT(connection_id) DO UPDATE SET refresh_token_encrypted=decode('010203','hex'),status='pending',attempts=0,next_attempt_at=now()`, connectionID, userID); err != nil {
+	if _, err := db.ExecContext(ctx, `INSERT INTO connector_revocation_jobs(id,created_at,updated_at,connection_id,owner_id,connector,refresh_token_encrypted,credential_generation,terminal_status,terminal_reason,terminal_actor,status,attempts,next_attempt_at)
+		VALUES(gen_random_uuid(),now(),now(),$1,$2,'dev-product',decode('010203','hex'),1,'invalidated','refresh_failed','system','pending',0,now())
+		ON CONFLICT(connection_id) DO UPDATE SET refresh_token_encrypted=decode('010203','hex'),credential_generation=1,terminal_status='invalidated',terminal_reason='refresh_failed',terminal_actor='system',status='pending',attempts=0,next_attempt_at=now()`, connectionID, userID); err != nil {
 		t.Fatal(err)
 	}
 	tx, err := db.BeginTx(ctx, nil)
