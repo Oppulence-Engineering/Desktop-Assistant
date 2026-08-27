@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/hex"
+	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
@@ -103,14 +105,20 @@ func TestRequireHookHMAC(t *testing.T) {
 	var internalSeen bool
 	h := auth.RequireHookHMAC(secret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		internalSeen = auth.IsInternalCaller(r.Context())
-		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"accepted":true}`))
 	}))
 
-	body := `{"subject":"user_1"}`
-	sig := hmacHex(t, secret, body)
+	body := `{"version":1}`
+	timestamp := strconv.FormatInt(time.Now().UnixMilli(), 10)
+	nonce := base64.RawURLEncoding.EncodeToString([]byte("request-nonce"))
+	sig := hookHMAC(t, secret, timestamp, nonce, body)
 
-	// Valid signature → 200 + internal context.
+	// Valid signature produces an internal request and an exact-body signed
+	// response that echoes the nonce.
 	req := httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(body))
+	req.Header.Set("X-Hook-Timestamp", timestamp)
+	req.Header.Set("X-Hook-Nonce", nonce)
 	req.Header.Set("X-Hook-Signature", "sha256="+sig)
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
@@ -120,9 +128,27 @@ func TestRequireHookHMAC(t *testing.T) {
 	if !internalSeen {
 		t.Fatal("hook handler should run as internal caller")
 	}
+	if rec.Header().Get("X-Hook-Nonce") != nonce {
+		t.Fatalf("response nonce = %q, want request nonce", rec.Header().Get("X-Hook-Nonce"))
+	}
+	responseTimestamp := rec.Header().Get("X-Hook-Timestamp")
+	wantResponseSignature := "sha256=" + hookHMAC(t, secret, responseTimestamp, nonce, rec.Body.String())
+	if rec.Header().Get("X-Hook-Signature") != wantResponseSignature {
+		t.Fatalf("response signature = %q, want %q", rec.Header().Get("X-Hook-Signature"), wantResponseSignature)
+	}
 
-	// Tampered signature → 401.
+	// Missing freshness/nonce headers and tampered signatures fail closed.
 	req = httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(body))
+	req.Header.Set("X-Hook-Signature", "sha256="+sig)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("missing signed headers: want 401, got %d", rec.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(body))
+	req.Header.Set("X-Hook-Timestamp", timestamp)
+	req.Header.Set("X-Hook-Nonce", nonce)
 	req.Header.Set("X-Hook-Signature", "sha256=deadbeef")
 	rec = httptest.NewRecorder()
 	h.ServeHTTP(rec, req)
@@ -153,9 +179,9 @@ func TestRequireInternalSecret(t *testing.T) {
 	}
 }
 
-func hmacHex(t *testing.T, secret, body string) string {
+func hookHMAC(t *testing.T, secret, timestamp, nonce, body string) string {
 	t.Helper()
 	mac := hmac.New(sha256.New, []byte(secret))
-	_, _ = mac.Write([]byte(body))
-	return hex.EncodeToString(mac.Sum(nil))
+	_, _ = mac.Write([]byte(timestamp + "." + nonce + "." + body))
+	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 }

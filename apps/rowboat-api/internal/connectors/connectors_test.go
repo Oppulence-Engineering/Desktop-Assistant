@@ -2,9 +2,14 @@ package connectors_test
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -29,7 +34,7 @@ func mockOry(t *testing.T) *httptest.Server {
 		case "/oauth2/token":
 			_ = r.ParseForm()
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"access_token":"acc-` + r.Form.Get("grant_type") + `","refresh_token":"rt-rotated","expires_in":3600,"token_type":"Bearer","scope":"invoices:read"}`))
+			_, _ = w.Write([]byte(`{"access_token":"acc-` + r.Form.Get("grant_type") + `","refresh_token":"rt-rotated","expires_in":3600,"token_type":"Bearer","scope":"canvas:invoices.read canvas:customers.read"}`))
 		case "/oauth2/revoke":
 			w.WriteHeader(http.StatusOK)
 		default:
@@ -58,8 +63,23 @@ func setup(t *testing.T, registry *connectors.Registry) (*ent.Client, *ent.User,
 		PublicBaseURL:         "https://api.test",
 		DeepLinkScheme:        "solomon-ai",
 	}, zap.NewNop())
+	h.SetResourceTokenIssuer(newTestResourceTokenIssuer(t))
 	h.SetRefreshDedup(workosauth.NewMemoryRefreshCache(), sealer)
 	return d.Client, u, h
+}
+
+func newTestResourceTokenIssuer(t *testing.T) connectors.ResourceTokenIssuer {
+	t.Helper()
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("generate resource token key: %v", err)
+	}
+	pemBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
+	issuer, err := connectors.NewRSAResourceTokenIssuer(pemBytes, "test-key", "https://broker.test", 5*time.Minute)
+	if err != nil {
+		t.Fatalf("resource token issuer: %v", err)
+	}
+	return issuer
 }
 
 // withParam injects a chi URL param.
@@ -88,15 +108,20 @@ func TestOAuthConnectorFlow(t *testing.T) {
 		AuthorizeURL string `json:"authorize_url"`
 	}
 	_ = json.Unmarshal(startRec.Body.Bytes(), &startBody)
-	for _, want := range []string{"/oauth2/auth", "code_challenge=", "state=", "audience=canvas-api", "offline_access"} {
+	for _, want := range []string{"/oauth2/auth", "code_challenge=", "state=", "audience=mcp%3Acanvas", "offline_access"} {
 		if !strings.Contains(startBody.AuthorizeURL, want) {
 			t.Errorf("authorize_url missing %q: %s", want, startBody.AuthorizeURL)
 		}
 	}
 
-	// Grab the state that Start parked.
+	// The raw state is present only in the authorize URL. At rest, the pending
+	// row stores SHA-256(state), never the bearer-equivalent raw state.
 	pending := client.OAuthPending.Query().FirstX(context.Background())
-	state := pending.State
+	authorizeURL, _ := url.Parse(startBody.AuthorizeURL)
+	state := authorizeURL.Query().Get("state")
+	if state == "" || pending.State == state || pending.StateHash == "" || !strings.HasPrefix(pending.State, "sha256:") {
+		t.Fatalf("pending state was not hashed at rest: raw=%q stored=%q hash=%q", state, pending.State, pending.StateHash)
+	}
 
 	// 2. Callback (browser redirect — no user in context). It parks the grant and
 	// deep-links back with the session; it must NOT persist the connection itself.
@@ -152,6 +177,9 @@ func TestOAuthConnectorFlow(t *testing.T) {
 	if !strings.Contains(listRec.Body.String(), `"templateBlocks"`) || !strings.Contains(listRec.Body.String(), `"invoice-context"`) {
 		t.Fatalf("list should expose connector template blocks: %s", listRec.Body.String())
 	}
+	if !strings.Contains(listRec.Body.String(), `"availableScopes"`) || !strings.Contains(listRec.Body.String(), `"grantTier":"required"`) || !strings.Contains(listRec.Body.String(), `"grantedScopes"`) {
+		t.Fatalf("list should expose structured available/granted scopes: %s", listRec.Body.String())
+	}
 
 	// 4. mcp-token refreshes via Ory.
 	tokRec := httptest.NewRecorder()
@@ -160,19 +188,26 @@ func TestOAuthConnectorFlow(t *testing.T) {
 	if tokRec.Code != http.StatusOK {
 		t.Fatalf("mcp-token: want 200, got %d: %s", tokRec.Code, tokRec.Body.String())
 	}
-	if !strings.Contains(tokRec.Body.String(), "acc-refresh_token") {
-		t.Errorf("mcp-token should return refreshed access token: %s", tokRec.Body.String())
+	if strings.Contains(tokRec.Body.String(), "acc-refresh_token") || !strings.Contains(tokRec.Body.String(), `"scope":"canvas:invoices.read canvas:customers.read"`) {
+		t.Errorf("mcp-token should return a scoped broker token without the upstream access token: %s", tokRec.Body.String())
 	}
 
-	// 5. Delete revokes + removes.
+	// 5. Delete revokes and retains an audit tombstone without credentials.
 	delRec := httptest.NewRecorder()
 	h.Delete(delRec, httptest.NewRequest(http.MethodDelete, "/v1/connections/canvas", nil).
 		WithContext(withParam(authed, "name", "canvas")))
 	if delRec.Code != http.StatusNoContent {
 		t.Fatalf("delete: want 204, got %d", delRec.Code)
 	}
-	if n := client.MCPConnection.Query().CountX(authed); n != 0 {
-		t.Fatalf("connection should be removed, got %d", n)
+	if n := client.MCPConnection.Query().CountX(authed); n != 1 {
+		t.Fatalf("connection tombstone should be retained, got %d", n)
+	}
+	tombstone := client.MCPConnection.Query().OnlyX(authed)
+	if tombstone.Status != "revoked" || tombstone.RevokedAt.IsZero() || len(tombstone.RefreshTokenEncrypted) != 0 {
+		t.Fatalf("invalid revocation tombstone: %+v", tombstone)
+	}
+	if n := client.ConnectorAuditEvent.Query().CountX(authed); n == 0 {
+		t.Fatal("semantic connector audit events should be retained")
 	}
 }
 
@@ -377,8 +412,8 @@ func TestAPIKeyConnectorFlow(t *testing.T) {
 	if tokRec.Code != http.StatusOK {
 		t.Fatalf("mcp-token: want 200, got %d: %s", tokRec.Code, tokRec.Body.String())
 	}
-	if !strings.Contains(tokRec.Body.String(), "ghp_test") {
-		t.Fatalf("mcp-token should return stored api key: %s", tokRec.Body.String())
+	if strings.Contains(tokRec.Body.String(), "ghp_test") || !strings.Contains(tokRec.Body.String(), `"expires_in"`) {
+		t.Fatalf("mcp-token must return a short-lived broker token without the stored API key: %s", tokRec.Body.String())
 	}
 
 	badRec := httptest.NewRecorder()
@@ -391,27 +426,36 @@ func TestAPIKeyConnectorFlow(t *testing.T) {
 
 func TestPreConsentEntitlement(t *testing.T) {
 	// Canvas requires the pro plan; our user is on free → deny + upsell.
-	reg, _ := connectors.LoadRegistry([]byte(`[{"name":"canvas","displayName":"Canvas","authType":"oauth","audience":"canvas-api","requiredPlan":"pro"}]`))
-	_, _, h := setup(t, reg)
+	reg, _ := connectors.LoadRegistry([]byte(`[{"name":"canvas","displayName":"Canvas","authType":"oauth","audience":"mcp:canvas","requiredPlan":"pro","scopes":[{"name":"canvas:invoices.read","displayName":"Read invoices","description":"View invoices.","grantTier":"required","risk":"low"}]}]`))
+	client, u, h := setup(t, reg)
+	client.OAuthPending.Create().
+		SetState("sha256:test-entitlement").
+		SetProvider("canvas").
+		SetPayloadEncrypted([]byte("sealed")).
+		SetExpiresAt(time.Now().Add(time.Minute)).
+		SetLifecycleStatus("started").
+		SetOwnerWorkosUserID(u.WorkosUserID).
+		SetRequestedScopes([]string{"canvas:invoices.read"}).
+		ExecX(context.Background())
 
-	body := `{"workos_user_id":"user_1","connector":"canvas"}`
+	body := `{"version":1,"challenge":"hydra-challenge","workos_user_id":"user_1","hydra_client_id":"broker","requested_audience":["mcp:canvas"],"requested_scopes":["canvas:invoices.read"]}`
 	req := httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(body)).
 		WithContext(auth.WithInternal(context.Background()))
 	rec := httptest.NewRecorder()
 	h.PreConsent(rec, req)
 
 	var resp struct {
-		Allow  bool `json:"allow"`
-		Upsell struct {
-			RequiredPlan string `json:"requiredPlan"`
-		} `json:"upsell"`
+		Entitlement struct {
+			Allowed      bool   `json:"allowed"`
+			RequiredPlan string `json:"required_plan"`
+		} `json:"entitlement"`
 	}
 	_ = json.Unmarshal(rec.Body.Bytes(), &resp)
-	if resp.Allow {
+	if resp.Entitlement.Allowed {
 		t.Fatal("free user should be denied a pro connector")
 	}
-	if resp.Upsell.RequiredPlan != "pro" {
-		t.Fatalf("upsell plan = %q", resp.Upsell.RequiredPlan)
+	if resp.Entitlement.RequiredPlan != "pro" {
+		t.Fatalf("upsell plan = %q", resp.Entitlement.RequiredPlan)
 	}
 }
 
@@ -431,8 +475,12 @@ func TestInvalidate(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("invalidate: want 200, got %d", rec.Code)
 	}
-	if n := client.MCPConnection.Query().CountX(auth.WithInternal(context.Background())); n != 0 {
-		t.Fatalf("connection should be invalidated, got %d", n)
+	if n := client.MCPConnection.Query().CountX(auth.WithInternal(context.Background())); n != 1 {
+		t.Fatalf("connection tombstone should be retained, got %d", n)
+	}
+	tombstone := client.MCPConnection.Query().OnlyX(auth.WithInternal(context.Background()))
+	if tombstone.Status != "revoked" || tombstone.RevokedAt.IsZero() || len(tombstone.RefreshTokenEncrypted) != 0 {
+		t.Fatalf("forced invalidation did not create a safe tombstone: %+v", tombstone)
 	}
 }
 
@@ -481,7 +529,7 @@ func TestMCPRuntimeResolverResolvesAPIKeyForExplicitUser(t *testing.T) {
 func TestMCPRuntimeResolverRefreshesOAuthConnector(t *testing.T) {
 	ory := mockOry(t)
 	defer ory.Close()
-	reg, err := connectors.LoadRegistry([]byte(`[{"name":"canvas","displayName":"Canvas","mcpUrl":"https://canvas.test/mcp","authType":"oauth","audience":"canvas-api","scopes":["invoices:read"],"mcpTools":[{"name":"invoice.lookup","trustTier":"read"}]}]`))
+	reg, err := connectors.LoadRegistry([]byte(`[{"name":"canvas","displayName":"Canvas","mcpUrl":"https://canvas.test/mcp","authType":"oauth","audience":"canvas-api","scopes":[{"name":"canvas:invoices.read","displayName":"Read invoices","description":"Read invoices","grantTier":"required","risk":"low"}],"mcpTools":[{"name":"invoice.lookup","trustTier":"read"}]}]`))
 	if err != nil {
 		t.Fatalf("registry: %v", err)
 	}
@@ -496,6 +544,7 @@ func TestMCPRuntimeResolverRefreshesOAuthConnector(t *testing.T) {
 		SetUser(u).
 		SetConnector("canvas").
 		SetAudience("canvas-api").
+		SetScopes([]string{"canvas:invoices.read"}).
 		SetRefreshTokenEncrypted(sealed).
 		SaveX(ctx)
 
@@ -556,7 +605,8 @@ func TestMCPTokenCollapsesConcurrentRotatingRefreshes(t *testing.T) {
 	client.MCPConnection.Create().
 		SetUser(u).
 		SetConnector("canvas").
-		SetAudience("canvas-api").
+		SetAudience("mcp:canvas").
+		SetScopes([]string{"canvas:invoices.read", "canvas:customers.read"}).
 		SetRefreshTokenEncrypted(sealed).
 		SaveX(ctx)
 
