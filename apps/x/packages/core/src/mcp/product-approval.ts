@@ -79,7 +79,9 @@ function deepFreeze<T>(value: T): T {
 }
 
 /** Capture the exact JSON arguments that were presented to the product for approval. */
-export function snapshotMcpArguments(input: Record<string, unknown>): Readonly<Record<string, unknown>> {
+export function snapshotMcpArguments(
+  input: Record<string, unknown>,
+): Readonly<Record<string, unknown>> {
   const canonical = canonicalize(input);
   return deepFreeze(JSON.parse(canonical) as Record<string, unknown>);
 }
