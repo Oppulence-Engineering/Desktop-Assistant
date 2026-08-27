@@ -8,13 +8,26 @@ package appconfig
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+)
+
+const (
+	// legacyDBEncryptionKeyID is deliberately stable: the first keyring-aware
+	// deployment writes this ID into envelopes while retaining the exact legacy
+	// DB_ENCRYPTION_KEY derivation for pre-envelope ciphertext.
+	legacyDBEncryptionKeyID       = "legacy-db-encryption-key"
+	maxDBEncryptionKeyringBytes   = 64 << 10
+	maxDBEncryptionKeyringEntries = 32
+	maxDBEncryptionKeyIDBytes     = 128
+	maxDBEncryptionKeyBytes       = 4 << 10
 )
 
 // Config is the single configuration surface for rowboat-api. It is loaded
@@ -56,8 +69,15 @@ type Config struct {
 	DBConnMaxLifetime time.Duration
 	DBConnMaxIdleTime time.Duration
 
-	// Column encryption passphrase for pgcrypto-sealed columns.
-	DBEncryptionKey string
+	// Column encryption. DB_ENCRYPTION_PRIMARY_KEY_ID defaults to the stable
+	// "legacy-db-encryption-key" ID. DB_ENCRYPTION_KEYRING_JSON, when set, is a
+	// bounded JSON object mapping stable IDs to high-entropy passphrases, for
+	// example {"legacy-db-encryption-key":"...","2026-08":"..."}. When it is
+	// unset, DB_ENCRYPTION_KEY is seeded under the stable legacy ID so old
+	// nonce||ciphertext rows remain readable while new writes use envelopes.
+	DBEncryptionKey          string
+	DBEncryptionPrimaryKeyID string
+	DBEncryptionKeyringJSON  string
 
 	// Public values served by GET /v1/config (consumed by the desktop).
 	AppURL          string
@@ -474,6 +494,119 @@ func (c Config) AgentSigningSecret() string {
 	return "dev-agent-signing-secret-do-not-use-in-prod"
 }
 
+// DBEncryptionKeyring resolves the rotation configuration consumed by
+// crypto.NewKeyringSealer. If no explicit ring is configured, the legacy
+// DB_ENCRYPTION_KEY is placed under legacyDBEncryptionKeyID. This preserves the
+// old SHA-256-derived AES key for unversioned ciphertext while giving all new
+// ciphertext a stable, self-describing key ID.
+func (c Config) DBEncryptionKeyring() (string, map[string]string, error) {
+	primaryKeyID := strings.TrimSpace(c.DBEncryptionPrimaryKeyID)
+	if err := validateDBEncryptionKeyID(primaryKeyID); err != nil {
+		return "", nil, fmt.Errorf("DB_ENCRYPTION_PRIMARY_KEY_ID %w", err)
+	}
+
+	if len(c.DBEncryptionKeyringJSON) > maxDBEncryptionKeyringBytes {
+		return "", nil, fmt.Errorf("DB_ENCRYPTION_KEYRING_JSON exceeds %d bytes", maxDBEncryptionKeyringBytes)
+	}
+	raw := strings.TrimSpace(c.DBEncryptionKeyringJSON)
+	if raw == "" {
+		if strings.TrimSpace(c.DBEncryptionKey) == "" {
+			return "", nil, fmt.Errorf("DB_ENCRYPTION_KEY is required when DB_ENCRYPTION_KEYRING_JSON is unset")
+		}
+		keyring := map[string]string{legacyDBEncryptionKeyID: c.DBEncryptionKey}
+		if primaryKeyID != legacyDBEncryptionKeyID {
+			return "", nil, fmt.Errorf("DB_ENCRYPTION_PRIMARY_KEY_ID %q is not present in the legacy fallback keyring; use %q or configure DB_ENCRYPTION_KEYRING_JSON", primaryKeyID, legacyDBEncryptionKeyID)
+		}
+		return primaryKeyID, keyring, nil
+	}
+	keyring, err := decodeDBEncryptionKeyring(raw)
+	if err != nil {
+		return "", nil, fmt.Errorf("DB_ENCRYPTION_KEYRING_JSON: %w", err)
+	}
+	if len(keyring) == 0 {
+		return "", nil, fmt.Errorf("DB_ENCRYPTION_KEYRING_JSON must contain at least one key")
+	}
+	if len(keyring) > maxDBEncryptionKeyringEntries {
+		return "", nil, fmt.Errorf("DB_ENCRYPTION_KEYRING_JSON contains %d keys; maximum is %d", len(keyring), maxDBEncryptionKeyringEntries)
+	}
+	for keyID, passphrase := range keyring {
+		if err := validateDBEncryptionKeyID(keyID); err != nil {
+			return "", nil, fmt.Errorf("DB_ENCRYPTION_KEYRING_JSON key ID %q %w", keyID, err)
+		}
+		if strings.TrimSpace(passphrase) == "" {
+			return "", nil, fmt.Errorf("DB_ENCRYPTION_KEYRING_JSON key %q has an empty passphrase", keyID)
+		}
+		if len(passphrase) > maxDBEncryptionKeyBytes {
+			return "", nil, fmt.Errorf("DB_ENCRYPTION_KEYRING_JSON key %q exceeds %d bytes", keyID, maxDBEncryptionKeyBytes)
+		}
+	}
+	if _, ok := keyring[primaryKeyID]; !ok {
+		return "", nil, fmt.Errorf("DB_ENCRYPTION_PRIMARY_KEY_ID %q is not present in DB_ENCRYPTION_KEYRING_JSON", primaryKeyID)
+	}
+	return primaryKeyID, keyring, nil
+}
+
+func decodeDBEncryptionKeyring(raw string) (map[string]string, error) {
+	decoder := json.NewDecoder(strings.NewReader(raw))
+	start, err := decoder.Token()
+	if err != nil {
+		return nil, fmt.Errorf("invalid JSON: %w", err)
+	}
+	if delim, ok := start.(json.Delim); !ok || delim != '{' {
+		return nil, fmt.Errorf("must be a JSON object mapping key IDs to passphrases")
+	}
+
+	keyring := make(map[string]string)
+	for decoder.More() {
+		keyToken, err := decoder.Token()
+		if err != nil {
+			return nil, fmt.Errorf("invalid key ID: %w", err)
+		}
+		keyID, ok := keyToken.(string)
+		if !ok {
+			return nil, fmt.Errorf("key IDs must be strings")
+		}
+		if _, duplicate := keyring[keyID]; duplicate {
+			return nil, fmt.Errorf("duplicate key ID %q", keyID)
+		}
+		var passphrase string
+		if err := decoder.Decode(&passphrase); err != nil {
+			return nil, fmt.Errorf("key %q passphrase must be a string: %w", keyID, err)
+		}
+		keyring[keyID] = passphrase
+		if len(keyring) > maxDBEncryptionKeyringEntries {
+			return nil, fmt.Errorf("contains more than %d keys", maxDBEncryptionKeyringEntries)
+		}
+	}
+	if _, err := decoder.Token(); err != nil {
+		return nil, fmt.Errorf("invalid JSON object: %w", err)
+	}
+	if _, err := decoder.Token(); err != io.EOF {
+		if err == nil {
+			return nil, fmt.Errorf("contains trailing JSON data")
+		}
+		return nil, fmt.Errorf("invalid trailing JSON data: %w", err)
+	}
+	return keyring, nil
+}
+
+func validateDBEncryptionKeyID(keyID string) error {
+	if keyID == "" {
+		return fmt.Errorf("must not be empty")
+	}
+	if len(keyID) > maxDBEncryptionKeyIDBytes {
+		return fmt.Errorf("exceeds %d bytes", maxDBEncryptionKeyIDBytes)
+	}
+	for _, r := range keyID {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') || r == '.' || r == '_' || r == '-' {
+			continue
+		}
+		return fmt.Errorf("must contain only ASCII letters, digits, '.', '_', or '-'")
+	}
+	return nil
+}
+
 // Load reads configuration from the environment, applying defaults.
 func Load() Config {
 	environment := getenv("ENVIRONMENT", "development")
@@ -519,7 +652,9 @@ func Load() Config {
 			30*time.Minute),
 		DBConnMaxIdleTime: getdur("DB_CONN_MAX_IDLE_TIME",
 			5*time.Minute),
-		DBEncryptionKey: getenv("DB_ENCRYPTION_KEY", "dev-insecure-encryption-key-change-me"),
+		DBEncryptionKey:          getenvAllowEmpty("DB_ENCRYPTION_KEY", "dev-insecure-encryption-key-change-me"),
+		DBEncryptionPrimaryKeyID: getenvAllowEmpty("DB_ENCRYPTION_PRIMARY_KEY_ID", legacyDBEncryptionKeyID),
+		DBEncryptionKeyringJSON:  getenvAllowEmpty("DB_ENCRYPTION_KEYRING_JSON", ""),
 
 		AppURL: getenv("APP_URL", "https://app.solomon-ai.co"),
 		// WorkOS-direct: the desktop signs into WorkOS AuthKit directly (no Ory
@@ -818,6 +953,9 @@ func (c Config) Validate() error {
 	if c.AppURL == "" {
 		return fmt.Errorf("APP_URL is required")
 	}
+	if _, _, err := c.DBEncryptionKeyring(); err != nil {
+		return err
+	}
 	if c.ReadTimeout <= 0 {
 		return fmt.Errorf("READ_TIMEOUT must be > 0")
 	}
@@ -1052,7 +1190,6 @@ func (c Config) validateProduction() error {
 	required := map[string]string{
 		"DATABASE_URL":        c.DatabaseURL,
 		"REDIS_URL":           c.RedisURL,
-		"DB_ENCRYPTION_KEY":   c.DBEncryptionKey,
 		"TOKEN_ISSUER":        c.TokenIssuer,
 		"WORKOS_API_KEY":      c.WorkOSAPIKey,
 		"WORKOS_CLIENT_ID":    c.WorkOSClientID,
@@ -1066,8 +1203,20 @@ func (c Config) validateProduction() error {
 			return fmt.Errorf("%s is required in production", key)
 		}
 	}
-	if strings.Contains(c.DBEncryptionKey, "dev-insecure") || len(c.DBEncryptionKey) < 32 {
-		return fmt.Errorf("DB_ENCRYPTION_KEY must be a non-dev secret of at least 32 bytes in production")
+	primaryKeyID, keyring, err := c.DBEncryptionKeyring()
+	if err != nil {
+		return err
+	}
+	for keyID, passphrase := range keyring {
+		if strings.Contains(passphrase, "dev-insecure") || len(passphrase) < 32 {
+			return fmt.Errorf("database encryption key %q must be a non-dev secret of at least 32 bytes in production", keyID)
+		}
+	}
+	if strings.TrimSpace(keyring[primaryKeyID]) == "" {
+		// DBEncryptionKeyring already verifies membership. Keep this explicit
+		// production guard next to the strength checks so future parsing changes
+		// cannot accidentally permit a write key with no key material.
+		return fmt.Errorf("DB_ENCRYPTION_PRIMARY_KEY_ID %q has no key material in production", primaryKeyID)
 	}
 	for key, value := range map[string]string{
 		"HOOK_HMAC_SECRET":    c.HookHMACSecret,

@@ -99,7 +99,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}
 
 	// --- Column encryption --------------------------------------------------
-	sealer, err := crypto.NewSealer(cfg.DBEncryptionKey)
+	sealer, err := newColumnSealer(cfg)
 	if err != nil {
 		return err
 	}
@@ -851,6 +851,21 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	})
 
 	return nil
+}
+
+// newColumnSealer is kept separate from the full composition root so keyring
+// parsing, legacy compatibility, and fail-closed startup behavior can be tested
+// without opening a database or binding listeners.
+func newColumnSealer(cfg appconfig.Config) (*crypto.Sealer, error) {
+	primaryKeyID, keyring, err := cfg.DBEncryptionKeyring()
+	if err != nil {
+		return nil, fmt.Errorf("column encryption configuration: %w", err)
+	}
+	sealer, err := crypto.NewKeyringSealer(primaryKeyID, keyring)
+	if err != nil {
+		return nil, fmt.Errorf("build column encryption keyring: %w", err)
+	}
+	return sealer, nil
 }
 
 // dialTemporalWithRetry connects to Temporal, retrying for up to ~2 minutes.

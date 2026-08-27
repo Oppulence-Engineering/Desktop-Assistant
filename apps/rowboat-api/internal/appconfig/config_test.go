@@ -1,6 +1,8 @@
 package appconfig
 
 import (
+	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +17,7 @@ func validProductionSecurityConfig() Config {
 		DatabaseURL:                   "postgres://db.example.com/rowboat",
 		RedisURL:                      "redis://redis.example.com:6379",
 		DBEncryptionKey:               strings.Repeat("e", 32),
+		DBEncryptionPrimaryKeyID:      legacyDBEncryptionKeyID,
 		TokenIssuer:                   "https://auth.example.com",
 		WorkOSAPIKey:                  "sk_test",
 		WorkOSClientID:                "client_test",
@@ -29,6 +32,169 @@ func validProductionSecurityConfig() Config {
 		GoogleOAuthClientID:           "google-client",
 		GoogleOAuthClientSecret:       "google-secret",
 		AgentRequireMFAForMoneyMoving: true,
+	}
+}
+
+func TestLoadDBEncryptionKeyringSeedsLegacyKey(t *testing.T) {
+	legacyKey := strings.Repeat("l", 32)
+	t.Setenv("DB_ENCRYPTION_KEY", legacyKey)
+	t.Setenv("DB_ENCRYPTION_KEYRING_JSON", "")
+	previousPrimary, hadPrimary := os.LookupEnv("DB_ENCRYPTION_PRIMARY_KEY_ID")
+	if err := os.Unsetenv("DB_ENCRYPTION_PRIMARY_KEY_ID"); err != nil {
+		t.Fatalf("unset DB_ENCRYPTION_PRIMARY_KEY_ID: %v", err)
+	}
+	t.Cleanup(func() {
+		if hadPrimary {
+			_ = os.Setenv("DB_ENCRYPTION_PRIMARY_KEY_ID", previousPrimary)
+		} else {
+			_ = os.Unsetenv("DB_ENCRYPTION_PRIMARY_KEY_ID")
+		}
+	})
+
+	cfg := Load()
+	primaryKeyID, keyring, err := cfg.DBEncryptionKeyring()
+	if err != nil {
+		t.Fatalf("resolve legacy keyring: %v", err)
+	}
+	if primaryKeyID != legacyDBEncryptionKeyID {
+		t.Fatalf("primary key ID = %q, want %q", primaryKeyID, legacyDBEncryptionKeyID)
+	}
+	if len(keyring) != 1 || keyring[legacyDBEncryptionKeyID] != legacyKey {
+		t.Fatalf("legacy keyring = %#v, want one stable legacy entry", keyring)
+	}
+}
+
+func TestDBEncryptionKeyringParsesExplicitRotationRing(t *testing.T) {
+	cfg := Config{
+		DBEncryptionPrimaryKeyID: "2026-08",
+		DBEncryptionKeyringJSON:  `{"legacy-db-encryption-key":"old-secret","2026-08":"new-secret"}`,
+	}
+
+	primaryKeyID, keyring, err := cfg.DBEncryptionKeyring()
+	if err != nil {
+		t.Fatalf("resolve explicit keyring: %v", err)
+	}
+	if primaryKeyID != "2026-08" || keyring[legacyDBEncryptionKeyID] != "old-secret" || keyring["2026-08"] != "new-secret" {
+		t.Fatalf("resolved primary/keyring = %q/%#v", primaryKeyID, keyring)
+	}
+}
+
+func TestDBEncryptionKeyringRejectsInvalidOrUnboundedConfiguration(t *testing.T) {
+	tooManyEntries := make([]string, 0, maxDBEncryptionKeyringEntries+1)
+	for i := 0; i <= maxDBEncryptionKeyringEntries; i++ {
+		tooManyEntries = append(tooManyEntries, `"key-`+strconv.Itoa(i)+`":"`+strings.Repeat("k", 32)+`"`)
+	}
+
+	for _, tc := range []struct {
+		name string
+		cfg  Config
+		want string
+	}{
+		{
+			name: "missing primary",
+			cfg: Config{
+				DBEncryptionKeyringJSON: `{"current":"secret"}`,
+			},
+			want: "must not be empty",
+		},
+		{
+			name: "primary absent from ring",
+			cfg: Config{
+				DBEncryptionPrimaryKeyID: "current",
+				DBEncryptionKeyringJSON:  `{"old":"secret"}`,
+			},
+			want: "is not present",
+		},
+		{
+			name: "duplicate key id",
+			cfg: Config{
+				DBEncryptionPrimaryKeyID: "current",
+				DBEncryptionKeyringJSON:  `{"current":"first","current":"second"}`,
+			},
+			want: "duplicate key ID",
+		},
+		{
+			name: "non object",
+			cfg: Config{
+				DBEncryptionPrimaryKeyID: "current",
+				DBEncryptionKeyringJSON:  `["secret"]`,
+			},
+			want: "must be a JSON object",
+		},
+		{
+			name: "too many entries",
+			cfg: Config{
+				DBEncryptionPrimaryKeyID: "key-0",
+				DBEncryptionKeyringJSON:  `{` + strings.Join(tooManyEntries, ",") + `}`,
+			},
+			want: "more than 32 keys",
+		},
+		{
+			name: "oversized document",
+			cfg: Config{
+				DBEncryptionPrimaryKeyID: legacyDBEncryptionKeyID,
+				DBEncryptionKeyringJSON:  strings.Repeat(" ", maxDBEncryptionKeyringBytes+1),
+			},
+			want: "exceeds 65536 bytes",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, _, err := tc.cfg.DBEncryptionKeyring(); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("DBEncryptionKeyring error = %v, want containing %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestValidateProductionAcceptsExplicitKeyringWithoutLegacyEnv(t *testing.T) {
+	cfg := validProductionSecurityConfig()
+	cfg.DBEncryptionKey = ""
+	cfg.DBEncryptionPrimaryKeyID = "2026-08"
+	cfg.DBEncryptionKeyringJSON = `{"legacy-db-encryption-key":"` + strings.Repeat("o", 32) + `","2026-08":"` + strings.Repeat("n", 32) + `"}`
+	if err := cfg.validateProduction(); err != nil {
+		t.Fatalf("valid explicit production keyring rejected: %v", err)
+	}
+}
+
+func TestValidateProductionRejectsMissingOrWeakPrimaryKey(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		mutate func(*Config)
+		want   string
+	}{
+		{
+			name: "missing primary id",
+			mutate: func(c *Config) {
+				c.DBEncryptionPrimaryKeyID = ""
+				c.DBEncryptionKeyringJSON = `{"current":"` + strings.Repeat("k", 32) + `"}`
+			},
+			want: "DB_ENCRYPTION_PRIMARY_KEY_ID must not be empty",
+		},
+		{
+			name: "primary absent",
+			mutate: func(c *Config) {
+				c.DBEncryptionPrimaryKeyID = "current"
+				c.DBEncryptionKeyringJSON = `{"old":"` + strings.Repeat("k", 32) + `"}`
+			},
+			want: "is not present",
+		},
+		{
+			name: "weak primary material",
+			mutate: func(c *Config) {
+				c.DBEncryptionKey = ""
+				c.DBEncryptionPrimaryKeyID = "current"
+				c.DBEncryptionKeyringJSON = `{"current":"short"}`
+			},
+			want: "non-dev secret of at least 32 bytes",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := validProductionSecurityConfig()
+			tc.mutate(&cfg)
+			if err := cfg.validateProduction(); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("validateProduction error = %v, want containing %q", err, tc.want)
+			}
+		})
 	}
 }
 
