@@ -1,12 +1,11 @@
 # @oppulence/oauth-resource-server
 
-OAuth 2.0 resource-server toolkit for TypeScript services. Verifies bearer JWTs
-against a JWKS (cached + kid-miss refresh via [`jose`](https://github.com/panva/jose)),
-validates issuer/audience/expiry, extracts scopes, and ships framework
-middleware. It is the TypeScript sibling of `packages/oauth-resource-server-go`;
-the two behave identically so Canvas / Corinthian / Billflow MCP servers enforce
-auth the same way as `rowboat-api`. See
-[`apps/rfc/012-connector-suite-and-consent-broker.md`](../../apps/rfc/012-connector-suite-and-consent-broker.md).
+TypeScript resource-server toolkit implementing the RFC 012 connector token
+contract. It verifies audience-bound JWTs against a cached JWKS, immediately
+refetches on an unknown `kid`, defaults to **RS256 only**, validates `iss`, `aud`,
+`exp`, `nbf`, and `iat` with 60 seconds of clock skew, and normalizes connector
+actor claims. It is the API-equivalent sibling of
+`packages/oauth-resource-server-go`.
 
 ## Install
 
@@ -14,59 +13,94 @@ auth the same way as `rowboat-api`. See
 npm install @oppulence/oauth-resource-server
 ```
 
-## Express
+## Verify tokens
 
 ```ts
-import express from "express";
-import { Verifier, requireAuth, requireScopes } from "@oppulence/oauth-resource-server";
+import { Verifier } from "@oppulence/oauth-resource-server";
 
 const verifier = new Verifier({
-  issuerUrl: "https://oauth.solomon-ai.co",
-  audience: "canvas-api",
-  jwksUrl: "https://oauth.solomon-ai.co/.well-known/jwks.json",
+  issuerUrl: "https://oauth.example.com",
+  audience: "mcp:canvas",
+  jwksUrl: "https://oauth.example.com/.well-known/jwks.json",
 });
 
-const app = express();
-app.use(requireAuth(verifier)); // attaches req.claims, 401 on failure
-app.get("/v1/mcp/invoices", requireScopes("invoices:read"), (req, res) => {
-  res.json({ user: (req as any).claims.workosUserId });
-});
+const actor = await verifier.verify(rawToken);
+// actor.userId, organizationId, connectionId, connectorId,
+// tokenId, trustTier, scopes
 ```
 
-## Hono / Fastify (framework-agnostic)
+The default clock tolerance is 60 seconds. `algorithms` can explicitly override
+the RS256-only default when an issuer contract requires another algorithm.
+
+## Express/connect middleware
 
 ```ts
-import { Verifier, verifyAuthorizationHeader } from "@oppulence/oauth-resource-server";
+import { requireMCPToken } from "@oppulence/oauth-resource-server";
 
-const verifier = new Verifier({ audience: "corinthian-api", jwksUrl: JWKS_URL });
-
-app.use(async (c, next) => {
-  try {
-    const claims = await verifyAuthorizationHeader(verifier, c.req.header("authorization"));
-    c.set("claims", claims);
-    await next();
-  } catch {
-    return c.json({ error: "invalid or expired token", code: "unauthorized" }, 401);
-  }
-});
+app.post("/payments", requireMCPToken(verifier, {
+  audience: "mcp:cadence",
+  requiredScopes: ["cadence.payment_run.execute"], // all-of
+  anyScopes: ["cadence.admin", "cadence.operator"], // any-of
+  connectionValidator: async (actor) => connections.isActive(actor.connectionId),
+  approvalValidator: async (token, actor, req) => {
+    // Introspect token and match it to request action/resource details.
+    return approvals.validate(token, actor.connectionId, req.url);
+  },
+}), paymentHandler);
 ```
 
-## API
+When `approvalValidator` is configured, `X-Approval-Token` is mandatory. Missing
+or invalid approval returns HTTP 428 with `approval_required`.
 
-- `new Verifier(config)` — `config.jwksUrl` required; optional `issuerUrl`,
-  `audience`, `clockToleranceSec` (default 60), `algorithms` (default asymmetric;
-  HS\* excluded by design).
-- `verifier.verify(token): Promise<Claims>` — throws `TokenError` on any failure.
-- `Claims` — `{ subject, issuer, audience[], scopes[], expiresAt, workosUserId?, workosOrgId?, email?, raw }`.
-- `hasScope`, `hasAllScopes`, `hasAnyScope`.
-- `requireAuth(verifier)`, `requireScopes(...scopes)` — Express/connect middleware.
-- `verifyAuthorizationHeader(verifier, header)` — for any framework.
-- `bearerToken(header)` — parse `Authorization: Bearer …`.
+Standalone middleware is also exported:
+
+- `requireAuth(verifier)`
+- `requireAllScopes(...)`, with `requireScopes(...)` retained as an alias
+- `requireAnyScope(...)`
+- `verifyAuthorizationHeader(verifier, header)` for framework-neutral use
+
+## Claims
+
+`Claims` contains:
+
+- `userId`, `organizationId`
+- `connectionId`, `connectorId`
+- `scopes`
+- `tokenId` from `jti` or `token_id`
+- `trustTier`
+- standard `subject`, `issuer`, `audience`, `expiresAt`, `notBefore`, `issuedAt`
+- compatibility fields `workosUserId`, `workosOrgId`, `email`, and `raw`
+
+Runtime schemas and helpers are exported as `ClaimsSchema`, `hasScope`,
+`hasAllScopes`, and `hasAnyScope`.
+
+## Errors
+
+Middleware denies by default and responds with:
+
+```json
+{"error":"required scope missing","code":"scope_missing"}
+```
+
+Stable RFC 012 codes are:
+
+- `token_missing`
+- `token_expired`
+- `token_invalid_signature`
+- `audience_mismatch`
+- `scope_missing`
+- `connection_revoked`
+- `approval_required`
+
+`Verifier.verify` throws `AuthorizationError` with `code`, `status`, and a
+server-side `cause`. `TokenError` remains a compatibility subclass. Issuer,
+malformed-claim, `nbf`, `iat`, algorithm, unknown key, and other invalid-token
+failures intentionally collapse to `token_invalid_signature`.
 
 ## Develop
 
 ```bash
-npm install
+npm ci
 npm run typecheck
 npm test
 npm run build

@@ -29,10 +29,10 @@ type Config struct {
 	// WorkOS AuthKit) without hardcoding its provider-specific JWKS path.
 	JWKSURL string
 	// AcceptableSkew tolerates small clock differences on exp/nbf/iat.
+	// Defaults to 60 seconds.
 	AcceptableSkew time.Duration
-	// ValidMethods restricts accepted signing algorithms. Defaults to the
-	// common asymmetric set; symmetric (HS*) is intentionally excluded so a
-	// leaked JWKS public key can't be used to forge tokens.
+	// ValidMethods restricts accepted signing algorithms. Defaults to RS256 only.
+	// Add methods only when the issuer contract explicitly requires them.
 	ValidMethods []string
 }
 
@@ -45,8 +45,14 @@ type Verifier struct {
 // New builds a Verifier and starts background JWKS refresh. The JWKS is fetched
 // once eagerly; unknown-kid lookups trigger an on-demand refresh.
 func New(ctx context.Context, cfg Config) (*Verifier, error) {
+	if cfg.AcceptableSkew < 0 {
+		return nil, errors.New("oauthrs: AcceptableSkew must not be negative")
+	}
 	if len(cfg.ValidMethods) == 0 {
-		cfg.ValidMethods = []string{"RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "PS256", "PS384", "PS512"}
+		cfg.ValidMethods = []string{"RS256"}
+	}
+	if cfg.AcceptableSkew == 0 {
+		cfg.AcceptableSkew = 60 * time.Second
 	}
 	jwksURL := cfg.JWKSURL
 	if jwksURL == "" {
@@ -115,6 +121,8 @@ func (v *Verifier) Verify(tokenString string) (*Claims, error) {
 	opts := []jwt.ParserOption{
 		jwt.WithValidMethods(v.cfg.ValidMethods),
 		jwt.WithExpirationRequired(),
+		jwt.WithIssuedAt(),
+		jwt.WithLeeway(v.cfg.AcceptableSkew),
 	}
 	if v.cfg.IssuerURL != "" {
 		opts = append(opts, jwt.WithIssuer(v.cfg.IssuerURL))
@@ -122,17 +130,13 @@ func (v *Verifier) Verify(tokenString string) (*Claims, error) {
 	if v.cfg.Audience != "" {
 		opts = append(opts, jwt.WithAudience(v.cfg.Audience))
 	}
-	if v.cfg.AcceptableSkew > 0 {
-		opts = append(opts, jwt.WithLeeway(v.cfg.AcceptableSkew))
-	}
-
 	tok, err := jwt.Parse(tokenString, v.kf.Keyfunc, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("oauthrs: verify: %w", err)
+		return nil, classifyTokenError(err)
 	}
 	mc, ok := tok.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, errors.New("oauthrs: unexpected claims type")
+		return nil, classifyTokenError(errors.New("unexpected claims type"))
 	}
 	return claimsFromMap(mc), nil
 }

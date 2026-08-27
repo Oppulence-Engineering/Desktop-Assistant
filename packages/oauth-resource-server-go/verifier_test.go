@@ -9,6 +9,8 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -51,6 +53,35 @@ func sign(t *testing.T, key *rsa.PrivateKey, claims jwt.MapClaims) string {
 	return s
 }
 
+func signWithMethod(t *testing.T, method jwt.SigningMethod, key any, kid string, claims jwt.MapClaims) string {
+	t.Helper()
+	tok := jwt.NewWithClaims(method, claims)
+	tok.Header["kid"] = kid
+	s, err := tok.SignedString(key)
+	if err != nil {
+		t.Fatalf("sign with %s: %v", method.Alg(), err)
+	}
+	return s
+}
+
+func validClaims() jwt.MapClaims {
+	return jwt.MapClaims{
+		"sub": "usr_123", "iss": "https://oauth.solomon-ai.co", "aud": "rowboat-api",
+		"exp": time.Now().Add(time.Hour).Unix(), "iat": time.Now().Unix(), "nbf": time.Now().Add(-time.Second).Unix(),
+		"jti": "tok_123", "scope": "canvas.read canvas.watch",
+		"organization_id": "org_123", "connection_id": "conn_123", "connector_id": "canvas", "trust_tier": "act",
+	}
+}
+
+func errorCode(t *testing.T, err error) oauthrs.ErrorCode {
+	t.Helper()
+	authErr, ok := err.(*oauthrs.AuthorizationError)
+	if !ok {
+		t.Fatalf("error type = %T, want *AuthorizationError (%v)", err, err)
+	}
+	return authErr.Code
+}
+
 func newVerifier(t *testing.T, jwksURL string) *oauthrs.Verifier {
 	t.Helper()
 	v, err := oauthrs.New(context.Background(), oauthrs.Config{
@@ -69,14 +100,21 @@ func TestVerifyValidToken(t *testing.T) {
 	v := newVerifier(t, srv.URL)
 
 	tokenStr := sign(t, key, jwt.MapClaims{
-		"sub":   "user_internal_id",
-		"iss":   "https://oauth.solomon-ai.co",
-		"aud":   "rowboat-api",
-		"exp":   time.Now().Add(time.Hour).Unix(),
-		"scope": "invoices:read customers:read",
+		"sub":           "user_internal_id",
+		"iss":           "https://oauth.solomon-ai.co",
+		"aud":           "rowboat-api",
+		"exp":           time.Now().Add(time.Hour).Unix(),
+		"scope":         "invoices:read customers:read",
+		"iat":           time.Now().Unix(),
+		"nbf":           time.Now().Add(-time.Second).Unix(),
+		"jti":           "tok_abc",
+		"connection_id": "conn_abc",
+		"connector_id":  "canvas",
+		"trust_tier":    "read",
 		"ext": map[string]any{
-			"workos_user_id": "user_abc123",
-			"email":          "u@example.com",
+			"workos_user_id":  "user_abc123",
+			"organization_id": "org_abc",
+			"email":           "u@example.com",
 		},
 	})
 
@@ -89,6 +127,9 @@ func TestVerifyValidToken(t *testing.T) {
 	}
 	if claims.Email != "u@example.com" {
 		t.Errorf("email = %q", claims.Email)
+	}
+	if claims.UserID != "user_abc123" || claims.OrganizationID != "org_abc" || claims.ConnectionID != "conn_abc" || claims.ConnectorID != "canvas" || claims.TokenID != "tok_abc" || claims.TrustTier != "read" {
+		t.Errorf("normalized actor = %#v", claims)
 	}
 	if !claims.HasAllScopes("invoices:read", "customers:read") {
 		t.Errorf("scopes = %v", claims.Scopes)
@@ -124,6 +165,8 @@ func TestVerifyRejectsWrongAudience(t *testing.T) {
 	})
 	if _, err := v.Verify(tokenStr); err == nil {
 		t.Fatal("expected wrong-audience rejection")
+	} else if code := errorCode(t, err); code != oauthrs.CodeAudienceMismatch {
+		t.Fatalf("code = %q", code)
 	}
 }
 
@@ -144,10 +187,37 @@ func TestVerifyRejectsExpired(t *testing.T) {
 	v := newVerifier(t, srv.URL)
 	tokenStr := sign(t, key, jwt.MapClaims{
 		"iss": "https://oauth.solomon-ai.co", "aud": "rowboat-api",
-		"exp": time.Now().Add(-time.Minute).Unix(),
+		"exp": time.Now().Add(-2 * time.Minute).Unix(),
 	})
 	if _, err := v.Verify(tokenStr); err == nil {
 		t.Fatal("expected expired-token rejection")
+	} else if code := errorCode(t, err); code != oauthrs.CodeTokenExpired {
+		t.Fatalf("code = %q", code)
+	}
+}
+
+func TestVerifyValidatesNBFAndIATWithSkew(t *testing.T) {
+	srv, key := jwksServer(t)
+	v := newVerifier(t, srv.URL)
+
+	for name, claim := range map[string]string{"nbf": "nbf", "iat": "iat"} {
+		t.Run(name+" beyond skew", func(t *testing.T) {
+			claims := validClaims()
+			claims[claim] = time.Now().Add(2 * time.Minute).Unix()
+			tokenStr := sign(t, key, claims)
+			if _, err := v.Verify(tokenStr); err == nil {
+				t.Fatalf("expected future %s rejection", claim)
+			} else if code := errorCode(t, err); code != oauthrs.CodeTokenInvalidSignature {
+				t.Fatalf("code = %q", code)
+			}
+		})
+		t.Run(name+" within skew", func(t *testing.T) {
+			claims := validClaims()
+			claims[claim] = time.Now().Add(30 * time.Second).Unix()
+			if _, err := v.Verify(sign(t, key, claims)); err != nil {
+				t.Fatalf("within-skew %s rejected: %v", claim, err)
+			}
+		})
 	}
 }
 
@@ -163,6 +233,51 @@ func TestVerifyRejectsHS256AlgConfusion(t *testing.T) {
 	forged, _ := tok.SignedString([]byte("anything"))
 	if _, err := v.Verify(forged); err == nil {
 		t.Fatal("expected HS256 to be rejected (alg confusion)")
+	} else if code := errorCode(t, err); code != oauthrs.CodeTokenInvalidSignature {
+		t.Fatalf("code = %q", code)
+	}
+}
+
+func TestVerifyRejectsOtherAsymmetricAlgorithmByDefault(t *testing.T) {
+	srv, key := jwksServer(t)
+	v := newVerifier(t, srv.URL)
+	tokenStr := signWithMethod(t, jwt.SigningMethodRS512, key, testKID, validClaims())
+	if _, err := v.Verify(tokenStr); err == nil {
+		t.Fatal("expected RS512 rejection under RS256-only default")
+	} else if code := errorCode(t, err); code != oauthrs.CodeTokenInvalidSignature {
+		t.Fatalf("code = %q", code)
+	}
+}
+
+func TestVerifyRefetchesJWKSForUnknownKID(t *testing.T) {
+	key1, _ := rsa.GenerateKey(rand.Reader, 2048)
+	key2, _ := rsa.GenerateKey(rand.Reader, 2048)
+	jwk := func(key *rsa.PrivateKey, kid string) map[string]string {
+		return map[string]string{
+			"kty": "RSA", "use": "sig", "alg": "RS256", "kid": kid,
+			"n": base64.RawURLEncoding.EncodeToString(key.N.Bytes()),
+			"e": base64.RawURLEncoding.EncodeToString(big.NewInt(int64(key.E)).Bytes()),
+		}
+	}
+	var rotated atomic.Bool
+	var requests atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests.Add(1)
+		keys := []map[string]string{jwk(key1, "kid-1")}
+		if rotated.Load() {
+			keys = append(keys, jwk(key2, "kid-2"))
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"keys": keys})
+	}))
+	t.Cleanup(srv.Close)
+	v := newVerifier(t, srv.URL)
+	rotated.Store(true)
+	tokenStr := signWithMethod(t, jwt.SigningMethodRS256, key2, "kid-2", validClaims())
+	if _, err := v.Verify(tokenStr); err != nil {
+		t.Fatalf("unknown kid should trigger refetch: %v", err)
+	}
+	if requests.Load() < 2 {
+		t.Fatalf("JWKS requests = %d, want at least 2", requests.Load())
 	}
 }
 
@@ -226,6 +341,9 @@ func TestRequireMiddleware(t *testing.T) {
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("missing bearer: want 401, got %d", rec.Code)
 	}
+	if !strings.Contains(rec.Body.String(), `"code":"token_missing"`) {
+		t.Fatalf("missing bearer body = %s", rec.Body.String())
+	}
 
 	// Valid bearer → 200 + claims in context.
 	tokenStr := sign(t, key, jwt.MapClaims{
@@ -263,5 +381,60 @@ func TestRequireScopesMiddleware(t *testing.T) {
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("want 403 for missing scope, got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), `"code":"scope_missing"`) {
+		t.Fatalf("body = %s", rec.Body.String())
+	}
+}
+
+func TestRequireMCPTokenParityContract(t *testing.T) {
+	srv, key := jwksServer(t)
+	v := newVerifier(t, srv.URL)
+	tokenStr := sign(t, key, validClaims())
+	final := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+
+	run := func(t *testing.T, opts oauthrs.MCPTokenOptions, approval string) *httptest.ResponseRecorder {
+		t.Helper()
+		h := v.RequireMCPToken(opts)(final)
+		req := httptest.NewRequest(http.MethodPost, "/money", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenStr)
+		if approval != "" {
+			req.Header.Set("X-Approval-Token", approval)
+		}
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec
+	}
+
+	tests := []struct {
+		name     string
+		opts     oauthrs.MCPTokenOptions
+		approval string
+		status   int
+		code     oauthrs.ErrorCode
+	}{
+		{name: "all scopes pass", opts: oauthrs.MCPTokenOptions{RequiredScopes: []string{"canvas.read", "canvas.watch"}}, status: 204},
+		{name: "route audience pass", opts: oauthrs.MCPTokenOptions{Audience: "rowboat-api"}, status: 204},
+		{name: "route audience fail", opts: oauthrs.MCPTokenOptions{Audience: "mcp:other"}, status: 401, code: oauthrs.CodeAudienceMismatch},
+		{name: "all scopes fail", opts: oauthrs.MCPTokenOptions{RequiredScopes: []string{"canvas.read", "canvas.write"}}, status: 403, code: oauthrs.CodeScopeMissing},
+		{name: "any scope pass", opts: oauthrs.MCPTokenOptions{AnyScopes: []string{"canvas.write", "canvas.watch"}}, status: 204},
+		{name: "any scope fail", opts: oauthrs.MCPTokenOptions{AnyScopes: []string{"canvas.write", "canvas.pay"}}, status: 403, code: oauthrs.CodeScopeMissing},
+		{name: "connection revoked", opts: oauthrs.MCPTokenOptions{ConnectionValidator: func(context.Context, *oauthrs.Claims) (bool, error) { return false, nil }}, status: 403, code: oauthrs.CodeConnectionRevoked},
+		{name: "approval missing", opts: oauthrs.MCPTokenOptions{ApprovalValidator: func(*http.Request, string, *oauthrs.Claims) (bool, error) { return true, nil }}, status: 428, code: oauthrs.CodeApprovalRequired},
+		{name: "approval invalid", approval: "bad", opts: oauthrs.MCPTokenOptions{ApprovalValidator: func(_ *http.Request, token string, _ *oauthrs.Claims) (bool, error) { return token == "good", nil }}, status: 428, code: oauthrs.CodeApprovalRequired},
+		{name: "approval valid", approval: "good", opts: oauthrs.MCPTokenOptions{ApprovalValidator: func(req *http.Request, token string, claims *oauthrs.Claims) (bool, error) {
+			return req.URL.Path == "/money" && token == "good" && claims.ConnectionID == "conn_123", nil
+		}}, status: 204},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := run(t, tt.opts, tt.approval)
+			if rec.Code != tt.status {
+				t.Fatalf("status = %d, want %d: %s", rec.Code, tt.status, rec.Body.String())
+			}
+			if tt.code != "" && !strings.Contains(rec.Body.String(), `"code":"`+string(tt.code)+`"`) {
+				t.Fatalf("body = %s", rec.Body.String())
+			}
+		})
 	}
 }

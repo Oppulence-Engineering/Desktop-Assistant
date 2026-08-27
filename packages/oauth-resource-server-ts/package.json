@@ -1,7 +1,7 @@
 {
   "name": "@oppulence/oauth-resource-server",
   "version": "0.1.0",
-  "description": "OAuth 2.0 resource-server toolkit: JWKS-backed JWT verification + scope enforcement middleware. TypeScript sibling of oauth-resource-server-go.",
+  "description": "RFC 012 OAuth resource-server toolkit with RS256 JWT verification, normalized connector actors, scopes, revocation, and approval middleware.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

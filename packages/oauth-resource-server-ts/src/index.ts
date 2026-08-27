@@ -2,9 +2,10 @@
  * @oppulence/oauth-resource-server
  *
  * A lightweight OAuth 2.0 resource-server toolkit for TypeScript services. It
- * verifies bearer JWTs against a JWKS (cached, with kid-miss refresh via jose),
- * validates issuer/audience/expiry, extracts scopes, and provides framework
- * middleware for authentication and scope enforcement.
+ * implements RFC 012 with RS256-only verification by default, cached JWKS
+ * kid-miss refresh, issuer/audience/time validation, normalized connector
+ * actors, all/any scope enforcement, connection status checks, and
+ * per-invocation approval validation.
  *
  * It is the TypeScript sibling of packages/oauth-resource-server-go; the two
  * behave identically so the product suite (Canvas, Corinthian, Billflow MCP
@@ -12,9 +13,13 @@
  */
 export { ClaimsSchema, type Claims, hasScope, hasAllScopes, hasAnyScope, claimsFromPayload } from './claims.js';
 export { Verifier, VerifierConfigSchema, type VerifierConfig, TokenError, bearerToken } from './verifier.js';
+export { AuthorizationError, errorCodes, type ErrorCode } from './errors.js';
 export {
   requireAuth,
   requireScopes,
+  requireAllScopes,
+  requireAnyScope,
+  requireMCPToken,
   verifyAuthorizationHeader,
   AuthedRequestSchema,
   type AuthedRequest,
@@ -22,4 +27,7 @@ export {
   type ResponseLike,
   NextFnSchema,
   type NextFn,
+  type MCPTokenOptions,
+  type ConnectionStatusValidator,
+  type ApprovalValidator,
 } from './middleware.js';

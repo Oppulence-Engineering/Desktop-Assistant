@@ -1,6 +1,7 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { z } from 'zod';
 import { type Claims, claimsFromPayload } from './claims.js';
+import { AuthorizationError, classifyTokenError } from './errors.js';
 
 /**
  * VerifierConfigSchema is the zod schema for a {@link Verifier}'s configuration.
@@ -15,19 +16,24 @@ export const VerifierConfigSchema = z.object({
   /** JWKS endpoint URL (required). */
   jwksUrl: z.string(),
   /** Allowed clock skew in seconds (default 60). */
-  clockToleranceSec: z.number().optional(),
+  clockToleranceSec: z.number().nonnegative().optional(),
   /**
-   * Accepted signing algorithms. Defaults to the asymmetric set; symmetric
-   * (HS*) is intentionally excluded so a leaked public key can't forge tokens.
+   * Accepted signing algorithms. Defaults to RS256 only.
    */
   algorithms: z.array(z.string()).optional(),
 });
 
 export type VerifierConfig = z.infer<typeof VerifierConfigSchema>;
 
-const DEFAULT_ALGS = ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512', 'PS256', 'PS384', 'PS512'];
+const DEFAULT_ALGS = ['RS256'];
 
-export class TokenError extends Error {}
+/** @deprecated Use AuthorizationError. */
+export class TokenError extends AuthorizationError {
+  constructor(...args: ConstructorParameters<typeof AuthorizationError>) {
+    super(...args);
+    this.name = 'TokenError';
+  }
+}
 
 /**
  * Verifier validates bearer JWTs against a cached JWKS, mirroring the Go
@@ -38,24 +44,31 @@ export class Verifier {
   private readonly cfg: VerifierConfig;
 
   constructor(cfg: VerifierConfig) {
-    if (!cfg.jwksUrl) throw new Error('oauthrs: jwksUrl is required');
-    this.cfg = cfg;
-    this.jwks = createRemoteJWKSet(new URL(cfg.jwksUrl));
+    this.cfg = VerifierConfigSchema.parse(cfg);
+    // A zero cooldown makes an unknown kid trigger one immediate re-fetch. jose
+    // still coalesces concurrent reloads and caches successful JWKS responses.
+    this.jwks = createRemoteJWKSet(new URL(this.cfg.jwksUrl), { cooldownDuration: 0 });
   }
 
   /** Verifies signature + standard claims and returns normalized Claims. */
   async verify(token: string): Promise<Claims> {
     try {
+      const clockTolerance = this.cfg.clockToleranceSec ?? 60;
       const { payload } = await jwtVerify(token, this.jwks, {
         issuer: this.cfg.issuerUrl,
         audience: this.cfg.audience,
-        clockTolerance: this.cfg.clockToleranceSec ?? 60,
+        clockTolerance,
         algorithms: this.cfg.algorithms ?? DEFAULT_ALGS,
         requiredClaims: ['exp'],
       });
+      const now = Math.floor(Date.now() / 1000);
+      if (typeof payload.iat === 'number' && payload.iat > now + clockTolerance) {
+        throw new Error('"iat" claim timestamp check failed');
+      }
       return claimsFromPayload(payload);
     } catch (err) {
-      throw new TokenError(`oauthrs: verify failed: ${(err as Error).message}`);
+      const classified = classifyTokenError(err);
+      throw new TokenError(classified.code, classified.status, classified.message, err);
     }
   }
 }

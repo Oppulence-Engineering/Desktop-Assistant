@@ -4,13 +4,24 @@ import "time"
 
 // Claims is the verified, normalized set of claims extracted from a token.
 type Claims struct {
-	Subject  string
-	Issuer   string
-	Audience []string
-	Scopes   []string
-	Expiry   time.Time
+	Subject   string
+	Issuer    string
+	Audience  []string
+	Scopes    []string
+	Expiry    time.Time
+	NotBefore time.Time
+	IssuedAt  time.Time
+
+	// RFC 012 connector actor fields.
+	UserID         string
+	OrganizationID string
+	ConnectionID   string
+	ConnectorID    string
+	TokenID        string
+	TrustTier      string
 
 	// Identity enrichment commonly carried by WorkOS/Ory tokens.
+	// Deprecated: use UserID and OrganizationID for connector authorization.
 	WorkOSUserID string
 	WorkOSOrgID  string
 	Email        string

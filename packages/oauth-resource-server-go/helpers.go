@@ -18,11 +18,23 @@ func claimsFromMap(m jwt.MapClaims) *Claims {
 	if exp, err := m.GetExpirationTime(); err == nil && exp != nil {
 		c.Expiry = exp.Time
 	}
+	if nbf, err := m.GetNotBefore(); err == nil && nbf != nil {
+		c.NotBefore = nbf.Time
+	}
+	if iat, err := m.GetIssuedAt(); err == nil && iat != nil {
+		c.IssuedAt = iat.Time
+	}
 
 	// Ory carries custom claims under an `ext` object; fall back to top-level.
 	ext, _ := m["ext"].(map[string]any)
-	c.WorkOSUserID = firstString(get(ext, "workos_user_id"), m["workos_user_id"], m["sub"])
-	c.WorkOSOrgID = firstString(get(ext, "workos_org_id"), m["workos_org_id"], m["org_id"])
+	c.UserID = firstString(get(ext, "user_id"), m["user_id"], get(ext, "workos_user_id"), m["workos_user_id"], m["sub"])
+	c.OrganizationID = firstString(get(ext, "organization_id"), m["organization_id"], get(ext, "org_id"), m["org_id"], get(ext, "workos_org_id"), m["workos_org_id"])
+	c.ConnectionID = firstString(get(ext, "connection_id"), m["connection_id"])
+	c.ConnectorID = firstString(get(ext, "connector_id"), m["connector_id"])
+	c.TokenID = firstString(m["jti"], get(ext, "token_id"), m["token_id"])
+	c.TrustTier = firstString(get(ext, "trust_tier"), m["trust_tier"])
+	c.WorkOSUserID = firstString(get(ext, "workos_user_id"), m["workos_user_id"], c.UserID)
+	c.WorkOSOrgID = firstString(get(ext, "workos_org_id"), m["workos_org_id"], c.OrganizationID)
 	c.Email = firstString(get(ext, "email"), m["email"])
 	return c
 }
