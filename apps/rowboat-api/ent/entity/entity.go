@@ -42,6 +42,10 @@ const (
 	EdgeWorkspace = "workspace"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
+	// EdgeNormalizedResourceRefs holds the string denoting the normalized_resource_refs edge name in mutations.
+	EdgeNormalizedResourceRefs = "normalized_resource_refs"
+	// EdgeNormalizedIdentifiers holds the string denoting the normalized_identifiers edge name in mutations.
+	EdgeNormalizedIdentifiers = "normalized_identifiers"
 	// Table holds the table name of the entity in the database.
 	Table = "entities"
 	// WorkspaceTable is the table that holds the workspace relation/edge.
@@ -58,6 +62,20 @@ const (
 	UserInverseTable = "users"
 	// UserColumn is the table column denoting the user relation/edge.
 	UserColumn = "user_entities"
+	// NormalizedResourceRefsTable is the table that holds the normalized_resource_refs relation/edge.
+	NormalizedResourceRefsTable = "entity_resource_refs"
+	// NormalizedResourceRefsInverseTable is the table name for the EntityResourceRef entity.
+	// It exists in this package in order to avoid circular dependency with the "entityresourceref" package.
+	NormalizedResourceRefsInverseTable = "entity_resource_refs"
+	// NormalizedResourceRefsColumn is the table column denoting the normalized_resource_refs relation/edge.
+	NormalizedResourceRefsColumn = "entity_normalized_resource_refs"
+	// NormalizedIdentifiersTable is the table that holds the normalized_identifiers relation/edge.
+	NormalizedIdentifiersTable = "entity_identifiers"
+	// NormalizedIdentifiersInverseTable is the table name for the EntityIdentifier entity.
+	// It exists in this package in order to avoid circular dependency with the "entityidentifier" package.
+	NormalizedIdentifiersInverseTable = "entity_identifiers"
+	// NormalizedIdentifiersColumn is the table column denoting the normalized_identifiers relation/edge.
+	NormalizedIdentifiersColumn = "entity_normalized_identifiers"
 )
 
 // Columns holds all SQL columns for entity fields.
@@ -204,6 +222,34 @@ func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByNormalizedResourceRefsCount orders the results by normalized_resource_refs count.
+func ByNormalizedResourceRefsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newNormalizedResourceRefsStep(), opts...)
+	}
+}
+
+// ByNormalizedResourceRefs orders the results by normalized_resource_refs terms.
+func ByNormalizedResourceRefs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newNormalizedResourceRefsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByNormalizedIdentifiersCount orders the results by normalized_identifiers count.
+func ByNormalizedIdentifiersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newNormalizedIdentifiersStep(), opts...)
+	}
+}
+
+// ByNormalizedIdentifiers orders the results by normalized_identifiers terms.
+func ByNormalizedIdentifiers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newNormalizedIdentifiersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newWorkspaceStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -216,5 +262,19 @@ func newUserStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UserInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+	)
+}
+func newNormalizedResourceRefsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(NormalizedResourceRefsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, NormalizedResourceRefsTable, NormalizedResourceRefsColumn),
+	)
+}
+func newNormalizedIdentifiersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(NormalizedIdentifiersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, NormalizedIdentifiersTable, NormalizedIdentifiersColumn),
 	)
 }

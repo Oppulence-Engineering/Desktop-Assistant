@@ -34,6 +34,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
@@ -5882,6 +5884,504 @@ func (_m *Entity) ToEdge(order *EntityOrder) *EntityEdge {
 		order = DefaultEntityOrder
 	}
 	return &EntityEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// EntityIdentifierEdge is the edge representation of EntityIdentifier.
+type EntityIdentifierEdge struct {
+	Node   *EntityIdentifier `json:"node"`
+	Cursor Cursor            `json:"cursor"`
+}
+
+// EntityIdentifierConnection is the connection containing edges to EntityIdentifier.
+type EntityIdentifierConnection struct {
+	Edges      []*EntityIdentifierEdge `json:"edges"`
+	PageInfo   PageInfo                `json:"pageInfo"`
+	TotalCount int                     `json:"totalCount"`
+}
+
+func (c *EntityIdentifierConnection) build(nodes []*EntityIdentifier, pager *entityidentifierPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *EntityIdentifier
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *EntityIdentifier {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *EntityIdentifier {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*EntityIdentifierEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &EntityIdentifierEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// EntityIdentifierPaginateOption enables pagination customization.
+type EntityIdentifierPaginateOption func(*entityidentifierPager) error
+
+// WithEntityIdentifierOrder configures pagination ordering.
+func WithEntityIdentifierOrder(order *EntityIdentifierOrder) EntityIdentifierPaginateOption {
+	if order == nil {
+		order = DefaultEntityIdentifierOrder
+	}
+	o := *order
+	return func(pager *entityidentifierPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultEntityIdentifierOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithEntityIdentifierFilter configures pagination filter.
+func WithEntityIdentifierFilter(filter func(*EntityIdentifierQuery) (*EntityIdentifierQuery, error)) EntityIdentifierPaginateOption {
+	return func(pager *entityidentifierPager) error {
+		if filter == nil {
+			return errors.New("EntityIdentifierQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type entityidentifierPager struct {
+	reverse bool
+	order   *EntityIdentifierOrder
+	filter  func(*EntityIdentifierQuery) (*EntityIdentifierQuery, error)
+}
+
+func newEntityIdentifierPager(opts []EntityIdentifierPaginateOption, reverse bool) (*entityidentifierPager, error) {
+	pager := &entityidentifierPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultEntityIdentifierOrder
+	}
+	return pager, nil
+}
+
+func (p *entityidentifierPager) applyFilter(query *EntityIdentifierQuery) (*EntityIdentifierQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *entityidentifierPager) toCursor(_m *EntityIdentifier) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *entityidentifierPager) applyCursors(query *EntityIdentifierQuery, after, before *Cursor) (*EntityIdentifierQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultEntityIdentifierOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *entityidentifierPager) applyOrder(query *EntityIdentifierQuery) *EntityIdentifierQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultEntityIdentifierOrder.Field {
+		query = query.Order(DefaultEntityIdentifierOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *entityidentifierPager) orderExpr(query *EntityIdentifierQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultEntityIdentifierOrder.Field {
+			b.Comma().Ident(DefaultEntityIdentifierOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to EntityIdentifier.
+func (_m *EntityIdentifierQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...EntityIdentifierPaginateOption,
+) (*EntityIdentifierConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newEntityIdentifierPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &EntityIdentifierConnection{Edges: []*EntityIdentifierEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// EntityIdentifierOrderField defines the ordering field of EntityIdentifier.
+type EntityIdentifierOrderField struct {
+	// Value extracts the ordering value from the given EntityIdentifier.
+	Value    func(*EntityIdentifier) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) entityidentifier.OrderOption
+	toCursor func(*EntityIdentifier) Cursor
+}
+
+// EntityIdentifierOrder defines the ordering of EntityIdentifier.
+type EntityIdentifierOrder struct {
+	Direction OrderDirection              `json:"direction"`
+	Field     *EntityIdentifierOrderField `json:"field"`
+}
+
+// DefaultEntityIdentifierOrder is the default ordering of EntityIdentifier.
+var DefaultEntityIdentifierOrder = &EntityIdentifierOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &EntityIdentifierOrderField{
+		Value: func(_m *EntityIdentifier) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: entityidentifier.FieldID,
+		toTerm: entityidentifier.ByID,
+		toCursor: func(_m *EntityIdentifier) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts EntityIdentifier into EntityIdentifierEdge.
+func (_m *EntityIdentifier) ToEdge(order *EntityIdentifierOrder) *EntityIdentifierEdge {
+	if order == nil {
+		order = DefaultEntityIdentifierOrder
+	}
+	return &EntityIdentifierEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// EntityResourceRefEdge is the edge representation of EntityResourceRef.
+type EntityResourceRefEdge struct {
+	Node   *EntityResourceRef `json:"node"`
+	Cursor Cursor             `json:"cursor"`
+}
+
+// EntityResourceRefConnection is the connection containing edges to EntityResourceRef.
+type EntityResourceRefConnection struct {
+	Edges      []*EntityResourceRefEdge `json:"edges"`
+	PageInfo   PageInfo                 `json:"pageInfo"`
+	TotalCount int                      `json:"totalCount"`
+}
+
+func (c *EntityResourceRefConnection) build(nodes []*EntityResourceRef, pager *entityresourcerefPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *EntityResourceRef
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *EntityResourceRef {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *EntityResourceRef {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*EntityResourceRefEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &EntityResourceRefEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// EntityResourceRefPaginateOption enables pagination customization.
+type EntityResourceRefPaginateOption func(*entityresourcerefPager) error
+
+// WithEntityResourceRefOrder configures pagination ordering.
+func WithEntityResourceRefOrder(order *EntityResourceRefOrder) EntityResourceRefPaginateOption {
+	if order == nil {
+		order = DefaultEntityResourceRefOrder
+	}
+	o := *order
+	return func(pager *entityresourcerefPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultEntityResourceRefOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithEntityResourceRefFilter configures pagination filter.
+func WithEntityResourceRefFilter(filter func(*EntityResourceRefQuery) (*EntityResourceRefQuery, error)) EntityResourceRefPaginateOption {
+	return func(pager *entityresourcerefPager) error {
+		if filter == nil {
+			return errors.New("EntityResourceRefQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type entityresourcerefPager struct {
+	reverse bool
+	order   *EntityResourceRefOrder
+	filter  func(*EntityResourceRefQuery) (*EntityResourceRefQuery, error)
+}
+
+func newEntityResourceRefPager(opts []EntityResourceRefPaginateOption, reverse bool) (*entityresourcerefPager, error) {
+	pager := &entityresourcerefPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultEntityResourceRefOrder
+	}
+	return pager, nil
+}
+
+func (p *entityresourcerefPager) applyFilter(query *EntityResourceRefQuery) (*EntityResourceRefQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *entityresourcerefPager) toCursor(_m *EntityResourceRef) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *entityresourcerefPager) applyCursors(query *EntityResourceRefQuery, after, before *Cursor) (*EntityResourceRefQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultEntityResourceRefOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *entityresourcerefPager) applyOrder(query *EntityResourceRefQuery) *EntityResourceRefQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultEntityResourceRefOrder.Field {
+		query = query.Order(DefaultEntityResourceRefOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *entityresourcerefPager) orderExpr(query *EntityResourceRefQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultEntityResourceRefOrder.Field {
+			b.Comma().Ident(DefaultEntityResourceRefOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to EntityResourceRef.
+func (_m *EntityResourceRefQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...EntityResourceRefPaginateOption,
+) (*EntityResourceRefConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newEntityResourceRefPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &EntityResourceRefConnection{Edges: []*EntityResourceRefEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// EntityResourceRefOrderField defines the ordering field of EntityResourceRef.
+type EntityResourceRefOrderField struct {
+	// Value extracts the ordering value from the given EntityResourceRef.
+	Value    func(*EntityResourceRef) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) entityresourceref.OrderOption
+	toCursor func(*EntityResourceRef) Cursor
+}
+
+// EntityResourceRefOrder defines the ordering of EntityResourceRef.
+type EntityResourceRefOrder struct {
+	Direction OrderDirection               `json:"direction"`
+	Field     *EntityResourceRefOrderField `json:"field"`
+}
+
+// DefaultEntityResourceRefOrder is the default ordering of EntityResourceRef.
+var DefaultEntityResourceRefOrder = &EntityResourceRefOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &EntityResourceRefOrderField{
+		Value: func(_m *EntityResourceRef) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: entityresourceref.FieldID,
+		toTerm: entityresourceref.ByID,
+		toCursor: func(_m *EntityResourceRef) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts EntityResourceRef into EntityResourceRefEdge.
+func (_m *EntityResourceRef) ToEdge(order *EntityResourceRefOrder) *EntityResourceRefEdge {
+	if order == nil {
+		order = DefaultEntityResourceRefOrder
+	}
+	return &EntityResourceRefEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

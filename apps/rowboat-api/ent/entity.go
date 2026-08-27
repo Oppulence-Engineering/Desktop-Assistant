@@ -57,11 +57,18 @@ type EntityEdges struct {
 	Workspace *RevenueWorkspace `json:"workspace,omitempty"`
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
+	// NormalizedResourceRefs holds the value of the normalized_resource_refs edge.
+	NormalizedResourceRefs []*EntityResourceRef `json:"normalized_resource_refs,omitempty"`
+	// NormalizedIdentifiers holds the value of the normalized_identifiers edge.
+	NormalizedIdentifiers []*EntityIdentifier `json:"normalized_identifiers,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [4]bool
 	// totalCount holds the count of the edges above.
-	totalCount [2]map[string]int
+	totalCount [4]map[string]int
+
+	namedNormalizedResourceRefs map[string][]*EntityResourceRef
+	namedNormalizedIdentifiers  map[string][]*EntityIdentifier
 }
 
 // WorkspaceOrErr returns the Workspace value or an error if the edge
@@ -84,6 +91,24 @@ func (e EntityEdges) UserOrErr() (*User, error) {
 		return nil, &NotFoundError{label: user.Label}
 	}
 	return nil, &NotLoadedError{edge: "user"}
+}
+
+// NormalizedResourceRefsOrErr returns the NormalizedResourceRefs value or an error if the edge
+// was not loaded in eager-loading.
+func (e EntityEdges) NormalizedResourceRefsOrErr() ([]*EntityResourceRef, error) {
+	if e.loadedTypes[2] {
+		return e.NormalizedResourceRefs, nil
+	}
+	return nil, &NotLoadedError{edge: "normalized_resource_refs"}
+}
+
+// NormalizedIdentifiersOrErr returns the NormalizedIdentifiers value or an error if the edge
+// was not loaded in eager-loading.
+func (e EntityEdges) NormalizedIdentifiersOrErr() ([]*EntityIdentifier, error) {
+	if e.loadedTypes[3] {
+		return e.NormalizedIdentifiers, nil
+	}
+	return nil, &NotLoadedError{edge: "normalized_identifiers"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -233,6 +258,16 @@ func (_m *Entity) QueryUser() *UserQuery {
 	return NewEntityClient(_m.config).QueryUser(_m)
 }
 
+// QueryNormalizedResourceRefs queries the "normalized_resource_refs" edge of the Entity entity.
+func (_m *Entity) QueryNormalizedResourceRefs() *EntityResourceRefQuery {
+	return NewEntityClient(_m.config).QueryNormalizedResourceRefs(_m)
+}
+
+// QueryNormalizedIdentifiers queries the "normalized_identifiers" edge of the Entity entity.
+func (_m *Entity) QueryNormalizedIdentifiers() *EntityIdentifierQuery {
+	return NewEntityClient(_m.config).QueryNormalizedIdentifiers(_m)
+}
+
 // Update returns a builder for updating this Entity.
 // Note that you need to call Entity.Unwrap() before calling this method if this Entity
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -289,6 +324,54 @@ func (_m *Entity) String() string {
 	builder.WriteString(fmt.Sprintf("%v", _m.Version))
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedNormalizedResourceRefs returns the NormalizedResourceRefs named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Entity) NamedNormalizedResourceRefs(name string) ([]*EntityResourceRef, error) {
+	if _m.Edges.namedNormalizedResourceRefs == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedNormalizedResourceRefs[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Entity) appendNamedNormalizedResourceRefs(name string, edges ...*EntityResourceRef) {
+	if _m.Edges.namedNormalizedResourceRefs == nil {
+		_m.Edges.namedNormalizedResourceRefs = make(map[string][]*EntityResourceRef)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedNormalizedResourceRefs[name] = []*EntityResourceRef{}
+	} else {
+		_m.Edges.namedNormalizedResourceRefs[name] = append(_m.Edges.namedNormalizedResourceRefs[name], edges...)
+	}
+}
+
+// NamedNormalizedIdentifiers returns the NormalizedIdentifiers named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *Entity) NamedNormalizedIdentifiers(name string) ([]*EntityIdentifier, error) {
+	if _m.Edges.namedNormalizedIdentifiers == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedNormalizedIdentifiers[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *Entity) appendNamedNormalizedIdentifiers(name string, edges ...*EntityIdentifier) {
+	if _m.Edges.namedNormalizedIdentifiers == nil {
+		_m.Edges.namedNormalizedIdentifiers = make(map[string][]*EntityIdentifier)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedNormalizedIdentifiers[name] = []*EntityIdentifier{}
+	} else {
+		_m.Edges.namedNormalizedIdentifiers[name] = append(_m.Edges.namedNormalizedIdentifiers[name], edges...)
+	}
 }
 
 // Entities is a parsable slice of Entity.

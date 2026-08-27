@@ -63,6 +63,21 @@ func request(t *testing.T, h http.Handler, method, path, body string) *httptest.
 	return w
 }
 
+func scopedHandler(client *ent.Client, user *ent.User, workspace *ent.RevenueWorkspace, authorize Authorize) http.Handler {
+	resolve := func(ctx context.Context) (Scope, error) {
+		auth.GrantRevenueWorkspace(ctx, workspace.ID, "member")
+		return Scope{Workspace: workspace, User: user}, nil
+	}
+	r := chi.NewRouter()
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			next.ServeHTTP(w, r.WithContext(auth.WithUser(r.Context(), user)))
+		})
+	})
+	NewHandler(New(client, resolve, authorize)).Mount(r)
+	return r
+}
+
 const id1 = "01J9Z8Q5K3R7V2C4M6N8P0T1S3"
 const id2 = "01J9Z8Q5K3R7V2C4M6N8P0T1S4"
 
@@ -128,6 +143,11 @@ func TestHTTPStrictProjectionBoundary(t *testing.T) {
 	if w.Code != 400 {
 		t.Fatalf("raw identifier=%d %s", w.Code, w.Body.String())
 	}
+	invalidRef := `{"kind":"company","displayName":"Acme","resourceRefs":["Gmail.com:thread:1"],"identifiers":{}}`
+	w = request(t, f.handler, "PUT", "/v1/entities/"+id1, invalidRef)
+	if w.Code != 400 {
+		t.Fatalf("invalid ref=%d %s", w.Code, w.Body.String())
+	}
 }
 func TestHTTPMergeIsIdempotent(t *testing.T) {
 	f := newFixture(t)
@@ -145,6 +165,11 @@ func TestHTTPMergeIsIdempotent(t *testing.T) {
 	w = request(t, f.handler, "POST", "/v1/entities/merge", body)
 	if w.Code != 200 || !bytes.Contains(w.Body.Bytes(), []byte(`"idempotent":true`)) {
 		t.Fatalf("replay=%d %s", w.Code, w.Body.String())
+	}
+	// The source-only ref is moved to the canonical normalized reverse index.
+	w = request(t, f.handler, "GET", "/v1/entities?ref=desktop%3Acompany%3A2", "")
+	if w.Code != 200 || !bytes.Contains(w.Body.Bytes(), []byte(id1)) {
+		t.Fatalf("merged reverse ref=%d %s", w.Code, w.Body.String())
 	}
 }
 
@@ -167,5 +192,153 @@ func TestHTTPDuplicateRemintAdoptionReplayPreservesBothRefs(t *testing.T) {
 	w = request(t, f.handler, "GET", "/v1/entities/"+id1, "")
 	if w.Code != 200 || !bytes.Contains(w.Body.Bytes(), []byte("conduit:company:1")) || !bytes.Contains(w.Body.Bytes(), []byte("cadence:vendor:2")) {
 		t.Fatalf("canonical refs: %d %s", w.Code, w.Body.String())
+	}
+	if count := f.client.EntityResourceRef.Query().CountX(f.ctx); count != 2 {
+		t.Fatalf("normalized ref count=%d, want 2", count)
+	}
+	if count := f.client.EntityIdentifier.Query().CountX(f.ctx); count != 1 {
+		t.Fatalf("normalized identifier count=%d, want 1", count)
+	}
+}
+
+func TestHTTPExistingRemintAdoptionTransfersPreviouslyKnownRefs(t *testing.T) {
+	f := newFixture(t)
+	if w := request(t, f.handler, "PUT", "/v1/entities/"+id1, projection("Acme", "conduit:company:1")); w.Code != http.StatusOK {
+		t.Fatalf("canonical: %d %s", w.Code, w.Body.String())
+	}
+	if w := request(t, f.handler, "PUT", "/v1/entities/"+id2, projection("Beta", "cadence:vendor:legacy")); w.Code != http.StatusOK {
+		t.Fatalf("independent remint: %d %s", w.Code, w.Body.String())
+	}
+
+	// The second device later learns Acme's deterministic identifier and ref.
+	// Its previously known Cadence ref must move to the canonical reverse index.
+	w := request(t, f.handler, "PUT", "/v1/entities/"+id2, projection("Acme", "conduit:company:1"))
+	if w.Code != http.StatusOK || !bytes.Contains(w.Body.Bytes(), []byte(`"canonicalEntityId":"`+id1+`"`)) {
+		t.Fatalf("adoption: %d %s", w.Code, w.Body.String())
+	}
+	w = request(t, f.handler, "GET", "/v1/entities?ref=cadence%3Avendor%3Alegacy", "")
+	if w.Code != http.StatusOK || !bytes.Contains(w.Body.Bytes(), []byte(id1)) {
+		t.Fatalf("transferred reverse ref: %d %s", w.Code, w.Body.String())
+	}
+	if count := f.client.EntityResourceRef.Query().CountX(f.ctx); count != 2 {
+		t.Fatalf("normalized ref count=%d, want 2", count)
+	}
+}
+
+func TestHTTPEarlierRemintBecomesCanonicalRegardlessOfArrivalOrder(t *testing.T) {
+	f := newFixture(t)
+	if w := request(t, f.handler, "PUT", "/v1/entities/"+id2, projection("Acme", "cadence:vendor:2")); w.Code != http.StatusOK {
+		t.Fatalf("later id first: %d %s", w.Code, w.Body.String())
+	}
+	w := request(t, f.handler, "PUT", "/v1/entities/"+id1, projection("Acme", "conduit:company:1"))
+	if w.Code != http.StatusOK || !bytes.Contains(w.Body.Bytes(), []byte(`"id":"`+id1+`"`)) || bytes.Contains(w.Body.Bytes(), []byte(`"canonicalEntityId"`)) {
+		t.Fatalf("earlier canonical: %d %s", w.Code, w.Body.String())
+	}
+	w = request(t, f.handler, "GET", "/v1/entities/"+id2, "")
+	if w.Code != http.StatusOK || !bytes.Contains(w.Body.Bytes(), []byte(`"canonicalEntityId":"`+id1+`"`)) {
+		t.Fatalf("later tombstone: %d %s", w.Code, w.Body.String())
+	}
+	for _, ref := range []string{"cadence%3Avendor%3A2", "conduit%3Acompany%3A1"} {
+		w = request(t, f.handler, "GET", "/v1/entities?ref="+ref, "")
+		if w.Code != http.StatusOK || !bytes.Contains(w.Body.Bytes(), []byte(id1)) {
+			t.Fatalf("canonical reverse ref %s: %d %s", ref, w.Code, w.Body.String())
+		}
+	}
+}
+
+func TestHTTPExistingEarlierRemintKeepsItsPriorRefsWhenItBecomesCanonical(t *testing.T) {
+	f := newFixture(t)
+	if w := request(t, f.handler, "PUT", "/v1/entities/"+id1, projection("Beta", "desktop:company:legacy")); w.Code != http.StatusOK {
+		t.Fatalf("earlier independent id: %d %s", w.Code, w.Body.String())
+	}
+	if w := request(t, f.handler, "PUT", "/v1/entities/"+id2, projection("Acme", "cadence:vendor:2")); w.Code != http.StatusOK {
+		t.Fatalf("later id: %d %s", w.Code, w.Body.String())
+	}
+	w := request(t, f.handler, "PUT", "/v1/entities/"+id1, projection("Acme", "conduit:company:1"))
+	if w.Code != http.StatusOK || !bytes.Contains(w.Body.Bytes(), []byte(`"id":"`+id1+`"`)) {
+		t.Fatalf("existing earlier canonical: %d %s", w.Code, w.Body.String())
+	}
+	for _, ref := range []string{"desktop%3Acompany%3Alegacy", "cadence%3Avendor%3A2", "conduit%3Acompany%3A1"} {
+		w = request(t, f.handler, "GET", "/v1/entities?ref="+ref, "")
+		if w.Code != http.StatusOK || !bytes.Contains(w.Body.Bytes(), []byte(id1)) {
+			t.Fatalf("transferred reverse ref %s: %d %s", ref, w.Code, w.Body.String())
+		}
+	}
+}
+
+func TestHTTPConcurrentDeviceRemintsConvergeAfterReplay(t *testing.T) {
+	f := newFixture(t)
+	start := make(chan struct{})
+	results := make(chan *httptest.ResponseRecorder, 2)
+	for _, tc := range []struct {
+		id  string
+		ref string
+	}{{id1, "conduit:company:1"}, {id2, "cadence:vendor:2"}} {
+		tc := tc
+		go func() {
+			<-start
+			results <- request(t, f.handler, "PUT", "/v1/entities/"+tc.id, projection("Acme", tc.ref))
+		}()
+	}
+	close(start)
+	for range 2 {
+		w := <-results
+		if w.Code != http.StatusOK {
+			t.Fatalf("concurrent upsert: %d %s", w.Code, w.Body.String())
+		}
+	}
+
+	// A lost-response retry from each device is enough to reconcile a race in
+	// which both transactions initially observed an empty workspace.
+	for _, tc := range []struct {
+		id  string
+		ref string
+	}{{id1, "conduit:company:1"}, {id2, "cadence:vendor:2"}} {
+		if w := request(t, f.handler, "PUT", "/v1/entities/"+tc.id, projection("Acme", tc.ref)); w.Code != http.StatusOK {
+			t.Fatalf("replay %s: %d %s", tc.id, w.Code, w.Body.String())
+		}
+	}
+	var earlier, later View
+	for id, out := range map[string]*View{id1: &earlier, id2: &later} {
+		w := request(t, f.handler, "GET", "/v1/entities/"+id, "")
+		if w.Code != http.StatusOK {
+			t.Fatalf("get %s: %d %s", id, w.Code, w.Body.String())
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), out); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if earlier.Status != "active" || later.Status != "merged" || later.CanonicalEntityID != id1 {
+		t.Fatalf("did not deterministically converge: earlier=%+v later=%+v", earlier, later)
+	}
+}
+
+func TestHTTPOrgIsolationAndAuthorization(t *testing.T) {
+	f := newFixture(t)
+	if w := request(t, f.handler, "PUT", "/v1/entities/"+id1, projection("Acme", "conduit:company:org-one")); w.Code != http.StatusOK {
+		t.Fatalf("seed entity: %d %s", w.Code, w.Body.String())
+	}
+	internal := auth.WithInternal(context.Background())
+	workspace := f.client.RevenueWorkspace.Query().OnlyX(internal)
+	sameOrg := f.client.User.Create().SetEmail("member@example.com").SetWorkosUserID("user_member").SetWorkosOrgID("org_one").SaveX(internal)
+	sameOrgHandler := scopedHandler(f.client, sameOrg, workspace, func(context.Context, Scope, Operation) error { return nil })
+	if w := request(t, sameOrgHandler, "GET", "/v1/entities/"+id1, ""); w.Code != http.StatusOK {
+		t.Fatalf("same-org read: %d %s", w.Code, w.Body.String())
+	}
+
+	otherUser := f.client.User.Create().SetEmail("other@example.com").SetWorkosUserID("user_other").SetWorkosOrgID("org_two").SaveX(internal)
+	otherWorkspace := f.client.RevenueWorkspace.Create().SetUser(otherUser).SetWorkosOrgID("org_two").SaveX(internal)
+	otherHandler := scopedHandler(f.client, otherUser, otherWorkspace, func(context.Context, Scope, Operation) error { return nil })
+	if w := request(t, otherHandler, "GET", "/v1/entities/"+id1, ""); w.Code != http.StatusNotFound {
+		t.Fatalf("cross-org read: %d %s", w.Code, w.Body.String())
+	}
+
+	mismatchedOrgHandler := scopedHandler(f.client, sameOrg, otherWorkspace, func(context.Context, Scope, Operation) error { return nil })
+	if w := request(t, mismatchedOrgHandler, "GET", "/v1/entities/"+id1, ""); w.Code != http.StatusForbidden {
+		t.Fatalf("mismatched org: %d %s", w.Code, w.Body.String())
+	}
+	deniedHandler := scopedHandler(f.client, sameOrg, workspace, func(context.Context, Scope, Operation) error { return ErrForbidden })
+	if w := request(t, deniedHandler, "GET", "/v1/entities/"+id1, ""); w.Code != http.StatusForbidden {
+		t.Fatalf("capability denial: %d %s", w.Code, w.Body.String())
 	}
 }

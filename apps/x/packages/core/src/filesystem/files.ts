@@ -14,6 +14,7 @@ import {
   stabilizeEntityNoteMutation,
   type EntityIdentitySnapshot,
 } from "../knowledge/entity-identity.js";
+import { syncEntityNotes } from "../knowledge/entity-spine.js";
 
 export type FileOperation = "read" | "list" | "search" | "write" | "delete";
 
@@ -452,7 +453,10 @@ export async function writeText(inputPath: string, data: string, opts?: WriteTex
     const entityNote = entityKindForPath(resolved.resolvedPath, path.join(WorkDir, "knowledge"));
     if (entityNote) {
       try {
-        previousIdentity = await readEntityIdentity(resolved.resolvedPath, path.join(WorkDir, "knowledge"));
+        previousIdentity = await readEntityIdentity(
+          resolved.resolvedPath,
+          path.join(WorkDir, "knowledge"),
+        );
       } catch (cause) {
         if ((cause as NodeJS.ErrnoException).code !== "ENOENT") throw cause;
       }
@@ -482,6 +486,9 @@ export async function writeText(inputPath: string, data: string, opts?: WriteTex
   });
 
   scheduleKnowledgeCommitIfNeeded(resolved);
+  if (entityKindForPath(resolved.resolvedPath, path.join(WorkDir, "knowledge"))) {
+    void syncEntityNotes([resolved.resolvedPath], WorkDir);
+  }
   return {
     path: resolved.originalPath,
     resolvedPath: resolved.resolvedPath,

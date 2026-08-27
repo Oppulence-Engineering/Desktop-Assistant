@@ -11,6 +11,10 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	entitypred "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	identifierpred "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	refpred "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	workspacepred "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/entitymetrics"
 )
@@ -24,6 +28,7 @@ var (
 
 var ulidRE = regexp.MustCompile(`^[0-9A-HJKMNP-TV-Z]{26}$`)
 var identifierFingerprintRE = regexp.MustCompile(`^sha256:v1:[0-9a-f]{64}$`)
+var resourceRefPartRE = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,63}$`)
 
 type Operation string
 
@@ -86,7 +91,7 @@ func (s *Service) scope(ctx context.Context, op Operation) (Scope, error) {
 	if err != nil {
 		return Scope{}, err
 	}
-	if sc.Workspace == nil || sc.User == nil || strings.TrimSpace(sc.Workspace.WorkosOrgID) == "" {
+	if sc.Workspace == nil || sc.User == nil || strings.TrimSpace(sc.Workspace.WorkosOrgID) == "" || sc.User.WorkosOrgID != sc.Workspace.WorkosOrgID {
 		return Scope{}, ErrForbidden
 	}
 	if s.authorize != nil {
@@ -118,9 +123,15 @@ func normalizeProjection(p Projection) (Projection, error) {
 	for _, raw := range p.ResourceRefs {
 		r := strings.TrimSpace(raw)
 		parts := strings.SplitN(r, ":", 3)
-		if len(parts) != 3 || parts[0] == "" || parts[1] == "" || parts[2] == "" || len(r) > 512 {
+		if len(parts) != 3 || !resourceRefPartRE.MatchString(parts[0]) || !resourceRefPartRE.MatchString(parts[1]) || strings.TrimSpace(parts[2]) == "" || len(parts[2]) > 256 {
 			return p, fmt.Errorf("invalid resourceRef")
 		}
+		for _, character := range parts[2] {
+			if character < 32 || character == 127 {
+				return p, fmt.Errorf("invalid resourceRef")
+			}
+		}
+		r = parts[0] + ":" + parts[1] + ":" + strings.TrimSpace(parts[2])
 		refs[r] = struct{}{}
 	}
 	p.ResourceRefs = sortedKeys(refs)
@@ -162,11 +173,10 @@ func view(e *ent.Entity) View {
 
 func (s *Service) Get(ctx context.Context, id string) (View, error) {
 	sc, err := s.scope(ctx, OperationRead)
-	_ = sc
 	if err != nil {
 		return View{}, err
 	}
-	e, err := s.client.Entity.Query().Where(entitypred.EntityIDEQ(strings.TrimSpace(id)), entitypred.HasWorkspaceWith()).Only(ctx)
+	e, err := s.client.Entity.Query().Where(entitypred.EntityIDEQ(strings.TrimSpace(id)), entitypred.HasWorkspaceWith(workspacepred.IDEQ(sc.Workspace.ID))).Only(ctx)
 	if ent.IsNotFound(err) {
 		return View{}, ErrNotFound
 	}
@@ -178,7 +188,6 @@ func (s *Service) Get(ctx context.Context, id string) (View, error) {
 }
 func (s *Service) ResolveRef(ctx context.Context, ref string) (View, error) {
 	sc, err := s.scope(ctx, OperationRead)
-	_ = sc
 	if err != nil {
 		return View{}, err
 	}
@@ -186,130 +195,295 @@ func (s *Service) ResolveRef(ctx context.Context, ref string) (View, error) {
 	if ref == "" {
 		return View{}, fmt.Errorf("ref is required")
 	}
-	rows, err := s.client.Entity.Query().Where(entitypred.StatusEQ("active")).Limit(501).All(ctx)
-	if err != nil {
-		return View{}, err
-	}
-	var found []*ent.Entity
-	for _, e := range rows {
-		for _, r := range e.ResourceRefs {
-			if r == ref {
-				found = append(found, e)
-				break
-			}
-		}
-	}
-	if len(found) == 0 {
+	row, err := s.client.EntityResourceRef.Query().
+		Where(refpred.RefEQ(ref), refpred.HasWorkspaceWith(workspacepred.IDEQ(sc.Workspace.ID)), refpred.HasEntityWith(entitypred.StatusEQ("active"))).
+		Only(ctx)
+	if ent.IsNotFound(err) {
 		entitymetrics.Resolve.WithLabelValues("unlinked").Inc()
 		return View{}, ErrNotFound
 	}
-	if len(found) > 1 {
-		entitymetrics.Resolve.WithLabelValues("ambiguous").Inc()
-		return View{}, ErrAmbiguous
+	if err != nil {
+		return View{}, err
+	}
+	found, err := row.QueryEntity().Only(ctx)
+	if err != nil {
+		return View{}, err
 	}
 	entitymetrics.Resolve.WithLabelValues("linked").Inc()
 	entitymetrics.SpineSync.WithLabelValues("down").Inc()
-	return view(found[0]), nil
+	return view(found), nil
 }
 
-func exactMatch(a Projection, e *ent.Entity) bool {
-	for _, ar := range a.ResourceRefs {
-		for _, er := range e.ResourceRefs {
-			if ar == er {
-				return true
+func findMatches(ctx context.Context, refs *ent.EntityResourceRefClient, identifiers *ent.EntityIdentifierClient, workspace *ent.RevenueWorkspace, p Projection, excludeID string) ([]*ent.Entity, error) {
+	byID := map[string]*ent.Entity{}
+	if len(p.ResourceRefs) > 0 {
+		rows, err := refs.Query().
+			Where(refpred.RefIn(p.ResourceRefs...), refpred.HasWorkspaceWith(workspacepred.IDEQ(workspace.ID)), refpred.HasEntityWith(entitypred.StatusEQ("active"))).
+			QueryEntity().All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, row := range rows {
+			if row.EntityID != excludeID {
+				byID[row.EntityID] = row
 			}
 		}
 	}
-	for k, av := range a.Identifiers {
-		ev := e.Identifiers[k]
-		for _, x := range av {
-			for _, y := range ev {
-				if x == strings.ToLower(strings.TrimSpace(y)) {
-					return true
-				}
+	identifierPredicates := make([]predicate.EntityIdentifier, 0, len(p.Identifiers))
+	for key, fingerprints := range p.Identifiers {
+		if len(fingerprints) > 0 {
+			identifierPredicates = append(identifierPredicates, identifierpred.And(identifierpred.KeyEQ(key), identifierpred.FingerprintIn(fingerprints...)))
+		}
+	}
+	if len(identifierPredicates) > 0 {
+		rows, err := identifiers.Query().
+			Where(identifierpred.Or(identifierPredicates...), identifierpred.HasWorkspaceWith(workspacepred.IDEQ(workspace.ID)), identifierpred.HasEntityWith(entitypred.StatusEQ("active"))).
+			QueryEntity().All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, row := range rows {
+			if row.EntityID != excludeID {
+				byID[row.EntityID] = row
 			}
 		}
 	}
-	return false
+	out := make([]*ent.Entity, 0, len(byID))
+	for _, row := range byID {
+		out = append(out, row)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].EntityID < out[j].EntityID })
+	return out, nil
 }
+
+func syncNormalized(ctx context.Context, refs *ent.EntityResourceRefClient, identifiers *ent.EntityIdentifierClient, workspace *ent.RevenueWorkspace, entity *ent.Entity, resourceRefs []string, values map[string][]string) error {
+	existingRefs, err := refs.Query().Where(refpred.HasEntityWith(entitypred.IDEQ(entity.ID))).All(ctx)
+	if err != nil {
+		return err
+	}
+	seenRefs := map[string]struct{}{}
+	for _, row := range existingRefs {
+		seenRefs[row.Ref] = struct{}{}
+	}
+	for _, ref := range resourceRefs {
+		if _, ok := seenRefs[ref]; ok {
+			continue
+		}
+		if _, err := refs.Create().SetRef(ref).SetWorkspace(workspace).SetEntity(entity).Save(ctx); err != nil {
+			return err
+		}
+	}
+	existingIdentifiers, err := identifiers.Query().Where(identifierpred.HasEntityWith(entitypred.IDEQ(entity.ID))).All(ctx)
+	if err != nil {
+		return err
+	}
+	seenIdentifiers := map[string]struct{}{}
+	for _, row := range existingIdentifiers {
+		seenIdentifiers[row.Key+"\x00"+row.Fingerprint] = struct{}{}
+	}
+	for key, fingerprints := range values {
+		for _, fingerprint := range fingerprints {
+			compound := key + "\x00" + fingerprint
+			if _, ok := seenIdentifiers[compound]; ok {
+				continue
+			}
+			if _, err := identifiers.Create().SetKey(key).SetFingerprint(fingerprint).SetWorkspace(workspace).SetEntity(entity).Save(ctx); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (s *Service) Upsert(ctx context.Context, pathID string, p Projection) (View, error) {
 	sc, err := s.scope(ctx, OperationWrite)
 	if err != nil {
 		return View{}, err
 	}
 	p.ID = strings.TrimSpace(pathID)
-	mutationCtx := auth.WithInternalOnly(ctx)
 	p, err = normalizeProjection(p)
 	if err != nil {
 		return View{}, err
 	}
-	existing, err := s.client.Entity.Query().Where(entitypred.EntityIDEQ(p.ID)).Only(ctx)
-	if err == nil {
-		if existing.Status == "merged" {
-			// Return the durable tombstone on every replay so a device that lost the
-			// first response still receives canonicalEntityId and converges.
-			return view(existing), nil
+	for attempt := 0; attempt < 2; attempt++ {
+		result, retry, upsertErr := s.upsertOnce(ctx, sc, p)
+		if !retry {
+			return result, upsertErr
 		}
-		if p.ExpectedVersion != nil && *p.ExpectedVersion != existing.Version {
-			return View{}, ErrConflict
-		}
-		mergedRefs := union(existing.ResourceRefs, p.ResourceRefs)
-		mergedIdentifiers := unionIDs(existing.Identifiers, p.Identifiers)
-		if existing.Kind == p.Kind && existing.DisplayName == p.DisplayName && reflect.DeepEqual(existing.ResourceRefs, mergedRefs) && reflect.DeepEqual(existing.Identifiers, mergedIdentifiers) && existing.OneLineSummary == p.OneLineSummary {
-			entitymetrics.SpineSync.WithLabelValues("up").Inc()
-			return view(existing), nil
-		}
-		_, err := s.client.Entity.UpdateOne(existing).SetKind(p.Kind).SetDisplayName(p.DisplayName).SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers).SetOneLineSummary(p.OneLineSummary).SetVersion(existing.Version + 1).Save(mutationCtx)
-		if err != nil {
-			return View{}, err
-		}
-		e, err := s.client.Entity.Get(ctx, existing.ID)
-		if err != nil {
-			return View{}, err
-		}
-		entitymetrics.SpineSync.WithLabelValues("up").Inc()
-		return view(e), nil
 	}
-	if !ent.IsNotFound(err) {
-		return View{}, err
-	}
-	rows, err := s.client.Entity.Query().Where(entitypred.StatusEQ("active")).Limit(501).All(ctx)
+	return View{}, ErrConflict
+}
+
+func (s *Service) upsertOnce(ctx context.Context, sc Scope, p Projection) (View, bool, error) {
+	mutationCtx := auth.WithInternalOnly(ctx)
+	tx, err := s.client.Tx(mutationCtx)
 	if err != nil {
-		return View{}, err
+		return View{}, false, err
 	}
-	matches := []*ent.Entity{}
-	for _, e := range rows {
-		if exactMatch(p, e) {
-			matches = append(matches, e)
-		}
+	defer func() { _ = tx.Rollback() }()
+	existing, err := tx.Entity.Query().Where(entitypred.EntityIDEQ(p.ID), entitypred.HasWorkspaceWith(workspacepred.IDEQ(sc.Workspace.ID))).Only(ctx)
+	if err != nil && !ent.IsNotFound(err) {
+		return View{}, false, err
+	}
+	if err == nil && existing.Status == "merged" {
+		return view(existing), false, nil
+	}
+	if err == nil && p.ExpectedVersion != nil && *p.ExpectedVersion != existing.Version {
+		return View{}, false, ErrConflict
+	}
+	excludeID := ""
+	if existing != nil {
+		excludeID = existing.EntityID
+	}
+	matches, err := findMatches(ctx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, p, excludeID)
+	if err != nil {
+		return View{}, false, err
 	}
 	if len(matches) > 1 {
 		entitymetrics.Resolve.WithLabelValues("ambiguous").Inc()
-		return View{}, ErrAmbiguous
+		return View{}, false, ErrAmbiguous
 	}
-	status, canonical := "active", ""
 	if len(matches) == 1 {
-		status = "merged"
-		canonical = matches[0].EntityID
-		candidate := matches[0]
-		_, updateErr := s.client.Entity.UpdateOne(candidate).SetResourceRefs(union(candidate.ResourceRefs, p.ResourceRefs)).SetIdentifiers(unionIDs(candidate.Identifiers, p.Identifiers)).SetVersion(candidate.Version + 1).Save(mutationCtx)
-		if updateErr != nil {
-			return View{}, updateErr
+		matched := matches[0]
+		// Independent devices can discover the same entity in either order. The
+		// lexicographically earliest ULID is a deterministic canonical choice, so
+		// retries cannot create alias cycles by alternately adopting one another.
+		if p.ID < matched.EntityID {
+			mergedRefs := union(matched.ResourceRefs, p.ResourceRefs)
+			mergedIdentifiers := unionIDs(matched.Identifiers, p.Identifiers)
+			if existing != nil {
+				mergedRefs = union(mergedRefs, existing.ResourceRefs)
+				mergedIdentifiers = unionIDs(mergedIdentifiers, existing.Identifiers)
+			}
+			if _, err := tx.EntityResourceRef.Delete().Where(refpred.HasEntityWith(entitypred.IDEQ(matched.ID))).Exec(mutationCtx); err != nil {
+				return View{}, false, err
+			}
+			if _, err := tx.EntityIdentifier.Delete().Where(identifierpred.HasEntityWith(entitypred.IDEQ(matched.ID))).Exec(mutationCtx); err != nil {
+				return View{}, false, err
+			}
+			var canonical *ent.Entity
+			if existing == nil {
+				canonical, err = tx.Entity.Create().
+					SetEntityID(p.ID).SetKind(p.Kind).SetDisplayName(p.DisplayName).
+					SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers).
+					SetOneLineSummary(p.OneLineSummary).SetStatus("active").
+					SetWorkspace(sc.Workspace).SetUser(sc.User).Save(mutationCtx)
+			} else {
+				canonical, err = tx.Entity.UpdateOne(existing).
+					SetKind(p.Kind).SetDisplayName(p.DisplayName).
+					SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers).
+					SetOneLineSummary(p.OneLineSummary).SetVersion(existing.Version + 1).
+					Save(mutationCtx)
+			}
+			if err != nil {
+				return View{}, ent.IsConstraintError(err), err
+			}
+			if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, canonical, mergedRefs, mergedIdentifiers); err != nil {
+				return View{}, ent.IsConstraintError(err), err
+			}
+			if _, err := tx.Entity.UpdateOne(matched).
+				SetStatus("merged").SetCanonicalEntityID(canonical.EntityID).
+				SetVersion(matched.Version + 1).Save(mutationCtx); err != nil {
+				return View{}, false, err
+			}
+			if err := tx.Commit(); err != nil {
+				return View{}, ent.IsConstraintError(err), err
+			}
+			entitymetrics.Resolve.WithLabelValues("linked").Inc()
+			entitymetrics.SpineSync.WithLabelValues("up").Inc()
+			return view(canonical), false, nil
+		}
+
+		canonical := matched
+		mergedRefs := union(canonical.ResourceRefs, p.ResourceRefs)
+		mergedIdentifiers := unionIDs(canonical.Identifiers, p.Identifiers)
+		if existing != nil {
+			// A device can first create an independent active entity and only later
+			// discover a deterministic key for an existing canonical entity. Move
+			// every ref and fingerprint accumulated by that device, not just the
+			// latest payload, before turning its row into a durable alias.
+			mergedRefs = union(mergedRefs, existing.ResourceRefs)
+			mergedIdentifiers = unionIDs(mergedIdentifiers, existing.Identifiers)
+			if _, err := tx.EntityResourceRef.Delete().Where(refpred.HasEntityWith(entitypred.IDEQ(existing.ID))).Exec(mutationCtx); err != nil {
+				return View{}, false, err
+			}
+			if _, err := tx.EntityIdentifier.Delete().Where(identifierpred.HasEntityWith(entitypred.IDEQ(existing.ID))).Exec(mutationCtx); err != nil {
+				return View{}, false, err
+			}
+		}
+		canonical, err = tx.Entity.UpdateOne(canonical).
+			SetResourceRefs(mergedRefs).
+			SetIdentifiers(mergedIdentifiers).
+			SetVersion(canonical.Version + 1).
+			Save(mutationCtx)
+		if err != nil {
+			return View{}, false, err
+		}
+		if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, canonical, mergedRefs, mergedIdentifiers); err != nil {
+			return View{}, ent.IsConstraintError(err), err
+		}
+		if existing == nil {
+			existing, err = tx.Entity.Create().
+				SetEntityID(p.ID).SetKind(p.Kind).SetDisplayName(p.DisplayName).
+				SetResourceRefs(p.ResourceRefs).SetIdentifiers(p.Identifiers).
+				SetOneLineSummary(p.OneLineSummary).SetStatus("merged").
+				SetCanonicalEntityID(canonical.EntityID).SetWorkspace(sc.Workspace).SetUser(sc.User).
+				Save(mutationCtx)
+		} else {
+			existing, err = tx.Entity.UpdateOne(existing).
+				SetStatus("merged").SetCanonicalEntityID(canonical.EntityID).
+				SetResourceRefs(union(existing.ResourceRefs, p.ResourceRefs)).
+				SetIdentifiers(unionIDs(existing.Identifiers, p.Identifiers)).
+				SetVersion(existing.Version + 1).Save(mutationCtx)
+		}
+		if err != nil {
+			return View{}, false, err
+		}
+		if err := tx.Commit(); err != nil {
+			return View{}, ent.IsConstraintError(err), err
 		}
 		entitymetrics.Resolve.WithLabelValues("linked").Inc()
+		entitymetrics.SpineSync.WithLabelValues("up").Inc()
+		return view(existing), false, nil
+	}
+
+	if existing == nil {
+		existing, err = tx.Entity.Create().
+			SetEntityID(p.ID).SetKind(p.Kind).SetDisplayName(p.DisplayName).
+			SetResourceRefs(p.ResourceRefs).SetIdentifiers(p.Identifiers).
+			SetOneLineSummary(p.OneLineSummary).SetStatus("active").
+			SetWorkspace(sc.Workspace).SetUser(sc.User).Save(mutationCtx)
 	} else {
-		entitymetrics.Resolve.WithLabelValues("unlinked").Inc()
+		mergedRefs := union(existing.ResourceRefs, p.ResourceRefs)
+		mergedIdentifiers := unionIDs(existing.Identifiers, p.Identifiers)
+		if existing.Kind == p.Kind && existing.DisplayName == p.DisplayName && reflect.DeepEqual(existing.ResourceRefs, mergedRefs) && reflect.DeepEqual(existing.Identifiers, mergedIdentifiers) && existing.OneLineSummary == p.OneLineSummary {
+			if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, existing, mergedRefs, mergedIdentifiers); err != nil {
+				return View{}, ent.IsConstraintError(err), err
+			}
+			if err := tx.Commit(); err != nil {
+				return View{}, ent.IsConstraintError(err), err
+			}
+			entitymetrics.SpineSync.WithLabelValues("up").Inc()
+			return view(existing), false, nil
+		}
+		existing, err = tx.Entity.UpdateOne(existing).
+			SetKind(p.Kind).SetDisplayName(p.DisplayName).
+			SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers).
+			SetOneLineSummary(p.OneLineSummary).SetVersion(existing.Version + 1).
+			Save(mutationCtx)
 	}
-	create := s.client.Entity.Create().SetEntityID(p.ID).SetKind(p.Kind).SetDisplayName(p.DisplayName).SetResourceRefs(p.ResourceRefs).SetIdentifiers(p.Identifiers).SetOneLineSummary(p.OneLineSummary).SetStatus(status).SetWorkspace(sc.Workspace).SetUser(sc.User)
-	if canonical != "" {
-		create.SetCanonicalEntityID(canonical)
-	}
-	e, err := create.Save(mutationCtx)
 	if err != nil {
-		return View{}, err
+		return View{}, ent.IsConstraintError(err), err
 	}
+	if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, existing, existing.ResourceRefs, existing.Identifiers); err != nil {
+		return View{}, ent.IsConstraintError(err), err
+	}
+	if err := tx.Commit(); err != nil {
+		return View{}, ent.IsConstraintError(err), err
+	}
+	entitymetrics.Resolve.WithLabelValues("unlinked").Inc()
 	entitymetrics.SpineSync.WithLabelValues("up").Inc()
-	return view(e), nil
+	return view(existing), false, nil
 }
 
 func union(a, b []string) []string {
@@ -330,7 +504,7 @@ func unionIDs(a, b map[string][]string) map[string][]string {
 	return out
 }
 func (s *Service) Merge(ctx context.Context, in MergeInput) (MergeResult, error) {
-	_, err := s.scope(ctx, OperationWrite)
+	sc, err := s.scope(ctx, OperationWrite)
 	if err != nil {
 		return MergeResult{}, err
 	}
@@ -345,7 +519,7 @@ func (s *Service) Merge(ctx context.Context, in MergeInput) (MergeResult, error)
 		return MergeResult{}, err
 	}
 	defer func() { _ = tx.Rollback() }()
-	src, err := tx.Entity.Query().Where(entitypred.EntityIDEQ(in.SourceID)).Only(mutationCtx)
+	src, err := tx.Entity.Query().Where(entitypred.EntityIDEQ(in.SourceID), entitypred.HasWorkspaceWith(workspacepred.IDEQ(sc.Workspace.ID))).Only(ctx)
 	if ent.IsNotFound(err) {
 		return MergeResult{}, ErrNotFound
 	}
@@ -353,14 +527,14 @@ func (s *Service) Merge(ctx context.Context, in MergeInput) (MergeResult, error)
 		return MergeResult{}, err
 	}
 	if src.Status == "merged" && src.CanonicalEntityID == in.TargetID {
-		target, er := tx.Entity.Query().Where(entitypred.EntityIDEQ(in.TargetID)).Only(mutationCtx)
+		target, er := tx.Entity.Query().Where(entitypred.EntityIDEQ(in.TargetID), entitypred.HasWorkspaceWith(workspacepred.IDEQ(sc.Workspace.ID))).Only(ctx)
 		if er != nil {
 			return MergeResult{}, er
 		}
 		_ = tx.Commit()
 		return MergeResult{Canonical: view(target), Tombstone: view(src), Idempotent: true}, nil
 	}
-	target, err := tx.Entity.Query().Where(entitypred.EntityIDEQ(in.TargetID), entitypred.StatusEQ("active")).Only(mutationCtx)
+	target, err := tx.Entity.Query().Where(entitypred.EntityIDEQ(in.TargetID), entitypred.StatusEQ("active"), entitypred.HasWorkspaceWith(workspacepred.IDEQ(sc.Workspace.ID))).Only(ctx)
 	if ent.IsNotFound(err) {
 		return MergeResult{}, ErrNotFound
 	}
@@ -370,8 +544,21 @@ func (s *Service) Merge(ctx context.Context, in MergeInput) (MergeResult, error)
 	if in.ExpectedSourceVersion == nil || in.ExpectedTargetVersion == nil || *in.ExpectedSourceVersion != src.Version || *in.ExpectedTargetVersion != target.Version {
 		return MergeResult{}, ErrConflict
 	}
-	_, err = tx.Entity.UpdateOne(target).SetResourceRefs(union(target.ResourceRefs, src.ResourceRefs)).SetIdentifiers(unionIDs(target.Identifiers, src.Identifiers)).SetVersion(target.Version + 1).Save(mutationCtx)
+	mergedRefs := union(target.ResourceRefs, src.ResourceRefs)
+	mergedIdentifiers := unionIDs(target.Identifiers, src.Identifiers)
+	_, err = tx.EntityResourceRef.Delete().Where(refpred.HasEntityWith(entitypred.IDEQ(src.ID))).Exec(mutationCtx)
 	if err != nil {
+		return MergeResult{}, ErrConflict
+	}
+	_, err = tx.EntityIdentifier.Delete().Where(identifierpred.HasEntityWith(entitypred.IDEQ(src.ID))).Exec(mutationCtx)
+	if err != nil {
+		return MergeResult{}, ErrConflict
+	}
+	target, err = tx.Entity.UpdateOne(target).SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers).SetVersion(target.Version + 1).Save(mutationCtx)
+	if err != nil {
+		return MergeResult{}, ErrConflict
+	}
+	if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, target, mergedRefs, mergedIdentifiers); err != nil {
 		return MergeResult{}, ErrConflict
 	}
 	_, err = tx.Entity.UpdateOne(src).SetStatus("merged").SetCanonicalEntityID(target.EntityID).SetVersion(src.Version + 1).Save(mutationCtx)

@@ -13,6 +13,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
@@ -174,6 +176,36 @@ func (_c *EntityCreate) SetUserID(id uuid.UUID) *EntityCreate {
 // SetUser sets the "user" edge to the User entity.
 func (_c *EntityCreate) SetUser(v *User) *EntityCreate {
 	return _c.SetUserID(v.ID)
+}
+
+// AddNormalizedResourceRefIDs adds the "normalized_resource_refs" edge to the EntityResourceRef entity by IDs.
+func (_c *EntityCreate) AddNormalizedResourceRefIDs(ids ...uuid.UUID) *EntityCreate {
+	_c.mutation.AddNormalizedResourceRefIDs(ids...)
+	return _c
+}
+
+// AddNormalizedResourceRefs adds the "normalized_resource_refs" edges to the EntityResourceRef entity.
+func (_c *EntityCreate) AddNormalizedResourceRefs(v ...*EntityResourceRef) *EntityCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddNormalizedResourceRefIDs(ids...)
+}
+
+// AddNormalizedIdentifierIDs adds the "normalized_identifiers" edge to the EntityIdentifier entity by IDs.
+func (_c *EntityCreate) AddNormalizedIdentifierIDs(ids ...uuid.UUID) *EntityCreate {
+	_c.mutation.AddNormalizedIdentifierIDs(ids...)
+	return _c
+}
+
+// AddNormalizedIdentifiers adds the "normalized_identifiers" edges to the EntityIdentifier entity.
+func (_c *EntityCreate) AddNormalizedIdentifiers(v ...*EntityIdentifier) *EntityCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddNormalizedIdentifierIDs(ids...)
 }
 
 // Mutation returns the EntityMutation object of the builder.
@@ -435,6 +467,38 @@ func (_c *EntityCreate) createSpec() (*Entity, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.user_entities = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.NormalizedResourceRefsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedResourceRefsTable,
+			Columns: []string{entity.NormalizedResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.NormalizedIdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedIdentifiersTable,
+			Columns: []string{entity.NormalizedIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

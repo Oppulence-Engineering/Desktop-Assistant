@@ -560,6 +560,62 @@ func (_m *Entity) User(ctx context.Context) (*User, error) {
 	return result, err
 }
 
+func (_m *Entity) NormalizedResourceRefs(ctx context.Context) (result []*EntityResourceRef, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedNormalizedResourceRefs(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.NormalizedResourceRefsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryNormalizedResourceRefs().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Entity) NormalizedIdentifiers(ctx context.Context) (result []*EntityIdentifier, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedNormalizedIdentifiers(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.NormalizedIdentifiersOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryNormalizedIdentifiers().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *EntityIdentifier) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *EntityIdentifier) Entity(ctx context.Context) (*Entity, error) {
+	result, err := _m.Edges.EntityOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryEntity().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *EntityResourceRef) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *EntityResourceRef) Entity(ctx context.Context) (*Entity, error) {
+	result, err := _m.Edges.EntityOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryEntity().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *GoogleWatch) User(ctx context.Context) (*User, error) {
 	result, err := _m.Edges.UserOrErr()
 	if IsNotLoaded(err) {
@@ -2080,6 +2136,30 @@ func (_m *RevenueWorkspace) Entities(ctx context.Context) (result []*Entity, err
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryEntities().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) EntityResourceRefs(ctx context.Context) (result []*EntityResourceRef, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedEntityResourceRefs(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.EntityResourceRefsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryEntityResourceRefs().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) EntityIdentifiers(ctx context.Context) (result []*EntityIdentifier, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedEntityIdentifiers(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.EntityIdentifiersOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryEntityIdentifiers().All(ctx)
 	}
 	return result, err
 }

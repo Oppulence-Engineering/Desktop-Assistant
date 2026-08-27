@@ -13,7 +13,10 @@ import (
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/google/uuid"
 )
 
 // EntityUpdate is the builder for updating Entity entities.
@@ -156,9 +159,81 @@ func (_u *EntityUpdate) AddVersion(v int) *EntityUpdate {
 	return _u
 }
 
+// AddNormalizedResourceRefIDs adds the "normalized_resource_refs" edge to the EntityResourceRef entity by IDs.
+func (_u *EntityUpdate) AddNormalizedResourceRefIDs(ids ...uuid.UUID) *EntityUpdate {
+	_u.mutation.AddNormalizedResourceRefIDs(ids...)
+	return _u
+}
+
+// AddNormalizedResourceRefs adds the "normalized_resource_refs" edges to the EntityResourceRef entity.
+func (_u *EntityUpdate) AddNormalizedResourceRefs(v ...*EntityResourceRef) *EntityUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddNormalizedResourceRefIDs(ids...)
+}
+
+// AddNormalizedIdentifierIDs adds the "normalized_identifiers" edge to the EntityIdentifier entity by IDs.
+func (_u *EntityUpdate) AddNormalizedIdentifierIDs(ids ...uuid.UUID) *EntityUpdate {
+	_u.mutation.AddNormalizedIdentifierIDs(ids...)
+	return _u
+}
+
+// AddNormalizedIdentifiers adds the "normalized_identifiers" edges to the EntityIdentifier entity.
+func (_u *EntityUpdate) AddNormalizedIdentifiers(v ...*EntityIdentifier) *EntityUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddNormalizedIdentifierIDs(ids...)
+}
+
 // Mutation returns the EntityMutation object of the builder.
 func (_u *EntityUpdate) Mutation() *EntityMutation {
 	return _u.mutation
+}
+
+// ClearNormalizedResourceRefs clears all "normalized_resource_refs" edges to the EntityResourceRef entity.
+func (_u *EntityUpdate) ClearNormalizedResourceRefs() *EntityUpdate {
+	_u.mutation.ClearNormalizedResourceRefs()
+	return _u
+}
+
+// RemoveNormalizedResourceRefIDs removes the "normalized_resource_refs" edge to EntityResourceRef entities by IDs.
+func (_u *EntityUpdate) RemoveNormalizedResourceRefIDs(ids ...uuid.UUID) *EntityUpdate {
+	_u.mutation.RemoveNormalizedResourceRefIDs(ids...)
+	return _u
+}
+
+// RemoveNormalizedResourceRefs removes "normalized_resource_refs" edges to EntityResourceRef entities.
+func (_u *EntityUpdate) RemoveNormalizedResourceRefs(v ...*EntityResourceRef) *EntityUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveNormalizedResourceRefIDs(ids...)
+}
+
+// ClearNormalizedIdentifiers clears all "normalized_identifiers" edges to the EntityIdentifier entity.
+func (_u *EntityUpdate) ClearNormalizedIdentifiers() *EntityUpdate {
+	_u.mutation.ClearNormalizedIdentifiers()
+	return _u
+}
+
+// RemoveNormalizedIdentifierIDs removes the "normalized_identifiers" edge to EntityIdentifier entities by IDs.
+func (_u *EntityUpdate) RemoveNormalizedIdentifierIDs(ids ...uuid.UUID) *EntityUpdate {
+	_u.mutation.RemoveNormalizedIdentifierIDs(ids...)
+	return _u
+}
+
+// RemoveNormalizedIdentifiers removes "normalized_identifiers" edges to EntityIdentifier entities.
+func (_u *EntityUpdate) RemoveNormalizedIdentifiers(v ...*EntityIdentifier) *EntityUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveNormalizedIdentifierIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -296,6 +371,96 @@ func (_u *EntityUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedVersion(); ok {
 		_spec.AddField(entity.FieldVersion, field.TypeInt, value)
+	}
+	if _u.mutation.NormalizedResourceRefsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedResourceRefsTable,
+			Columns: []string{entity.NormalizedResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedNormalizedResourceRefsIDs(); len(nodes) > 0 && !_u.mutation.NormalizedResourceRefsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedResourceRefsTable,
+			Columns: []string{entity.NormalizedResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.NormalizedResourceRefsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedResourceRefsTable,
+			Columns: []string{entity.NormalizedResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.NormalizedIdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedIdentifiersTable,
+			Columns: []string{entity.NormalizedIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedNormalizedIdentifiersIDs(); len(nodes) > 0 && !_u.mutation.NormalizedIdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedIdentifiersTable,
+			Columns: []string{entity.NormalizedIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.NormalizedIdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedIdentifiersTable,
+			Columns: []string{entity.NormalizedIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -444,9 +609,81 @@ func (_u *EntityUpdateOne) AddVersion(v int) *EntityUpdateOne {
 	return _u
 }
 
+// AddNormalizedResourceRefIDs adds the "normalized_resource_refs" edge to the EntityResourceRef entity by IDs.
+func (_u *EntityUpdateOne) AddNormalizedResourceRefIDs(ids ...uuid.UUID) *EntityUpdateOne {
+	_u.mutation.AddNormalizedResourceRefIDs(ids...)
+	return _u
+}
+
+// AddNormalizedResourceRefs adds the "normalized_resource_refs" edges to the EntityResourceRef entity.
+func (_u *EntityUpdateOne) AddNormalizedResourceRefs(v ...*EntityResourceRef) *EntityUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddNormalizedResourceRefIDs(ids...)
+}
+
+// AddNormalizedIdentifierIDs adds the "normalized_identifiers" edge to the EntityIdentifier entity by IDs.
+func (_u *EntityUpdateOne) AddNormalizedIdentifierIDs(ids ...uuid.UUID) *EntityUpdateOne {
+	_u.mutation.AddNormalizedIdentifierIDs(ids...)
+	return _u
+}
+
+// AddNormalizedIdentifiers adds the "normalized_identifiers" edges to the EntityIdentifier entity.
+func (_u *EntityUpdateOne) AddNormalizedIdentifiers(v ...*EntityIdentifier) *EntityUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddNormalizedIdentifierIDs(ids...)
+}
+
 // Mutation returns the EntityMutation object of the builder.
 func (_u *EntityUpdateOne) Mutation() *EntityMutation {
 	return _u.mutation
+}
+
+// ClearNormalizedResourceRefs clears all "normalized_resource_refs" edges to the EntityResourceRef entity.
+func (_u *EntityUpdateOne) ClearNormalizedResourceRefs() *EntityUpdateOne {
+	_u.mutation.ClearNormalizedResourceRefs()
+	return _u
+}
+
+// RemoveNormalizedResourceRefIDs removes the "normalized_resource_refs" edge to EntityResourceRef entities by IDs.
+func (_u *EntityUpdateOne) RemoveNormalizedResourceRefIDs(ids ...uuid.UUID) *EntityUpdateOne {
+	_u.mutation.RemoveNormalizedResourceRefIDs(ids...)
+	return _u
+}
+
+// RemoveNormalizedResourceRefs removes "normalized_resource_refs" edges to EntityResourceRef entities.
+func (_u *EntityUpdateOne) RemoveNormalizedResourceRefs(v ...*EntityResourceRef) *EntityUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveNormalizedResourceRefIDs(ids...)
+}
+
+// ClearNormalizedIdentifiers clears all "normalized_identifiers" edges to the EntityIdentifier entity.
+func (_u *EntityUpdateOne) ClearNormalizedIdentifiers() *EntityUpdateOne {
+	_u.mutation.ClearNormalizedIdentifiers()
+	return _u
+}
+
+// RemoveNormalizedIdentifierIDs removes the "normalized_identifiers" edge to EntityIdentifier entities by IDs.
+func (_u *EntityUpdateOne) RemoveNormalizedIdentifierIDs(ids ...uuid.UUID) *EntityUpdateOne {
+	_u.mutation.RemoveNormalizedIdentifierIDs(ids...)
+	return _u
+}
+
+// RemoveNormalizedIdentifiers removes "normalized_identifiers" edges to EntityIdentifier entities.
+func (_u *EntityUpdateOne) RemoveNormalizedIdentifiers(v ...*EntityIdentifier) *EntityUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveNormalizedIdentifierIDs(ids...)
 }
 
 // Where appends a list predicates to the EntityUpdate builder.
@@ -614,6 +851,96 @@ func (_u *EntityUpdateOne) sqlSave(ctx context.Context) (_node *Entity, err erro
 	}
 	if value, ok := _u.mutation.AddedVersion(); ok {
 		_spec.AddField(entity.FieldVersion, field.TypeInt, value)
+	}
+	if _u.mutation.NormalizedResourceRefsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedResourceRefsTable,
+			Columns: []string{entity.NormalizedResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedNormalizedResourceRefsIDs(); len(nodes) > 0 && !_u.mutation.NormalizedResourceRefsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedResourceRefsTable,
+			Columns: []string{entity.NormalizedResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.NormalizedResourceRefsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedResourceRefsTable,
+			Columns: []string{entity.NormalizedResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.NormalizedIdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedIdentifiersTable,
+			Columns: []string{entity.NormalizedIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedNormalizedIdentifiersIDs(); len(nodes) > 0 && !_u.mutation.NormalizedIdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedIdentifiersTable,
+			Columns: []string{entity.NormalizedIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.NormalizedIdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   entity.NormalizedIdentifiersTable,
+			Columns: []string{entity.NormalizedIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Entity{config: _u.config}
 	_spec.Assign = _node.assignValues

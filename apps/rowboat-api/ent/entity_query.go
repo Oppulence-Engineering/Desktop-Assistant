@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math"
@@ -13,6 +14,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -22,15 +25,19 @@ import (
 // EntityQuery is the builder for querying Entity entities.
 type EntityQuery struct {
 	config
-	ctx           *QueryContext
-	order         []entity.OrderOption
-	inters        []Interceptor
-	predicates    []predicate.Entity
-	withWorkspace *RevenueWorkspaceQuery
-	withUser      *UserQuery
-	withFKs       bool
-	modifiers     []func(*sql.Selector)
-	loadTotal     []func(context.Context, []*Entity) error
+	ctx                             *QueryContext
+	order                           []entity.OrderOption
+	inters                          []Interceptor
+	predicates                      []predicate.Entity
+	withWorkspace                   *RevenueWorkspaceQuery
+	withUser                        *UserQuery
+	withNormalizedResourceRefs      *EntityResourceRefQuery
+	withNormalizedIdentifiers       *EntityIdentifierQuery
+	withFKs                         bool
+	modifiers                       []func(*sql.Selector)
+	loadTotal                       []func(context.Context, []*Entity) error
+	withNamedNormalizedResourceRefs map[string]*EntityResourceRefQuery
+	withNamedNormalizedIdentifiers  map[string]*EntityIdentifierQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -104,6 +111,50 @@ func (_q *EntityQuery) QueryUser() *UserQuery {
 			sqlgraph.From(entity.Table, entity.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, entity.UserTable, entity.UserColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryNormalizedResourceRefs chains the current query on the "normalized_resource_refs" edge.
+func (_q *EntityQuery) QueryNormalizedResourceRefs() *EntityResourceRefQuery {
+	query := (&EntityResourceRefClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entity.Table, entity.FieldID, selector),
+			sqlgraph.To(entityresourceref.Table, entityresourceref.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, entity.NormalizedResourceRefsTable, entity.NormalizedResourceRefsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryNormalizedIdentifiers chains the current query on the "normalized_identifiers" edge.
+func (_q *EntityQuery) QueryNormalizedIdentifiers() *EntityIdentifierQuery {
+	query := (&EntityIdentifierClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entity.Table, entity.FieldID, selector),
+			sqlgraph.To(entityidentifier.Table, entityidentifier.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, entity.NormalizedIdentifiersTable, entity.NormalizedIdentifiersColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -298,13 +349,15 @@ func (_q *EntityQuery) Clone() *EntityQuery {
 		return nil
 	}
 	return &EntityQuery{
-		config:        _q.config,
-		ctx:           _q.ctx.Clone(),
-		order:         append([]entity.OrderOption{}, _q.order...),
-		inters:        append([]Interceptor{}, _q.inters...),
-		predicates:    append([]predicate.Entity{}, _q.predicates...),
-		withWorkspace: _q.withWorkspace.Clone(),
-		withUser:      _q.withUser.Clone(),
+		config:                     _q.config,
+		ctx:                        _q.ctx.Clone(),
+		order:                      append([]entity.OrderOption{}, _q.order...),
+		inters:                     append([]Interceptor{}, _q.inters...),
+		predicates:                 append([]predicate.Entity{}, _q.predicates...),
+		withWorkspace:              _q.withWorkspace.Clone(),
+		withUser:                   _q.withUser.Clone(),
+		withNormalizedResourceRefs: _q.withNormalizedResourceRefs.Clone(),
+		withNormalizedIdentifiers:  _q.withNormalizedIdentifiers.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -330,6 +383,28 @@ func (_q *EntityQuery) WithUser(opts ...func(*UserQuery)) *EntityQuery {
 		opt(query)
 	}
 	_q.withUser = query
+	return _q
+}
+
+// WithNormalizedResourceRefs tells the query-builder to eager-load the nodes that are connected to
+// the "normalized_resource_refs" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *EntityQuery) WithNormalizedResourceRefs(opts ...func(*EntityResourceRefQuery)) *EntityQuery {
+	query := (&EntityResourceRefClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withNormalizedResourceRefs = query
+	return _q
+}
+
+// WithNormalizedIdentifiers tells the query-builder to eager-load the nodes that are connected to
+// the "normalized_identifiers" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *EntityQuery) WithNormalizedIdentifiers(opts ...func(*EntityIdentifierQuery)) *EntityQuery {
+	query := (&EntityIdentifierClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withNormalizedIdentifiers = query
 	return _q
 }
 
@@ -418,9 +493,11 @@ func (_q *EntityQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Entit
 		nodes       = []*Entity{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [4]bool{
 			_q.withWorkspace != nil,
 			_q.withUser != nil,
+			_q.withNormalizedResourceRefs != nil,
+			_q.withNormalizedIdentifiers != nil,
 		}
 	)
 	if _q.withWorkspace != nil || _q.withUser != nil {
@@ -459,6 +536,38 @@ func (_q *EntityQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Entit
 	if query := _q.withUser; query != nil {
 		if err := _q.loadUser(ctx, query, nodes, nil,
 			func(n *Entity, e *User) { n.Edges.User = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withNormalizedResourceRefs; query != nil {
+		if err := _q.loadNormalizedResourceRefs(ctx, query, nodes,
+			func(n *Entity) { n.Edges.NormalizedResourceRefs = []*EntityResourceRef{} },
+			func(n *Entity, e *EntityResourceRef) {
+				n.Edges.NormalizedResourceRefs = append(n.Edges.NormalizedResourceRefs, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withNormalizedIdentifiers; query != nil {
+		if err := _q.loadNormalizedIdentifiers(ctx, query, nodes,
+			func(n *Entity) { n.Edges.NormalizedIdentifiers = []*EntityIdentifier{} },
+			func(n *Entity, e *EntityIdentifier) {
+				n.Edges.NormalizedIdentifiers = append(n.Edges.NormalizedIdentifiers, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedNormalizedResourceRefs {
+		if err := _q.loadNormalizedResourceRefs(ctx, query, nodes,
+			func(n *Entity) { n.appendNamedNormalizedResourceRefs(name) },
+			func(n *Entity, e *EntityResourceRef) { n.appendNamedNormalizedResourceRefs(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedNormalizedIdentifiers {
+		if err := _q.loadNormalizedIdentifiers(ctx, query, nodes,
+			func(n *Entity) { n.appendNamedNormalizedIdentifiers(name) },
+			func(n *Entity, e *EntityIdentifier) { n.appendNamedNormalizedIdentifiers(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -531,6 +640,68 @@ func (_q *EntityQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*
 		for i := range nodes {
 			assign(nodes[i], n)
 		}
+	}
+	return nil
+}
+func (_q *EntityQuery) loadNormalizedResourceRefs(ctx context.Context, query *EntityResourceRefQuery, nodes []*Entity, init func(*Entity), assign func(*Entity, *EntityResourceRef)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Entity)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.EntityResourceRef(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(entity.NormalizedResourceRefsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.entity_normalized_resource_refs
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "entity_normalized_resource_refs" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "entity_normalized_resource_refs" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *EntityQuery) loadNormalizedIdentifiers(ctx context.Context, query *EntityIdentifierQuery, nodes []*Entity, init func(*Entity), assign func(*Entity, *EntityIdentifier)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Entity)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.EntityIdentifier(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(entity.NormalizedIdentifiersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.entity_normalized_identifiers
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "entity_normalized_identifiers" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "entity_normalized_identifiers" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }
@@ -617,6 +788,34 @@ func (_q *EntityQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedNormalizedResourceRefs tells the query-builder to eager-load the nodes that are connected to the "normalized_resource_refs"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *EntityQuery) WithNamedNormalizedResourceRefs(name string, opts ...func(*EntityResourceRefQuery)) *EntityQuery {
+	query := (&EntityResourceRefClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedNormalizedResourceRefs == nil {
+		_q.withNamedNormalizedResourceRefs = make(map[string]*EntityResourceRefQuery)
+	}
+	_q.withNamedNormalizedResourceRefs[name] = query
+	return _q
+}
+
+// WithNamedNormalizedIdentifiers tells the query-builder to eager-load the nodes that are connected to the "normalized_identifiers"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *EntityQuery) WithNamedNormalizedIdentifiers(name string, opts ...func(*EntityIdentifierQuery)) *EntityQuery {
+	query := (&EntityIdentifierClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedNormalizedIdentifiers == nil {
+		_q.withNamedNormalizedIdentifiers = make(map[string]*EntityIdentifierQuery)
+	}
+	_q.withNamedNormalizedIdentifiers[name] = query
+	return _q
 }
 
 // EntityGroupBy is the group-by builder for Entity entities.

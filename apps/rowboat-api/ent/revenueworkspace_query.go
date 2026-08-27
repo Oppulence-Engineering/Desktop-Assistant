@@ -19,6 +19,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
@@ -90,6 +92,8 @@ type RevenueWorkspaceQuery struct {
 	withRelationshipSourceStatuses              *RelationshipSourceStatusQuery
 	withRelationshipPersons                     *PersonQuery
 	withEntities                                *EntityQuery
+	withEntityResourceRefs                      *EntityResourceRefQuery
+	withEntityIdentifiers                       *EntityIdentifierQuery
 	withPersonIdentities                        *PersonIdentityQuery
 	withPersonSuppressions                      *PersonSuppressionQuery
 	withPersonAttributes                        *PersonAttributeQuery
@@ -127,6 +131,8 @@ type RevenueWorkspaceQuery struct {
 	withNamedRelationshipSourceStatuses         map[string]*RelationshipSourceStatusQuery
 	withNamedRelationshipPersons                map[string]*PersonQuery
 	withNamedEntities                           map[string]*EntityQuery
+	withNamedEntityResourceRefs                 map[string]*EntityResourceRefQuery
+	withNamedEntityIdentifiers                  map[string]*EntityIdentifierQuery
 	withNamedPersonIdentities                   map[string]*PersonIdentityQuery
 	withNamedPersonSuppressions                 map[string]*PersonSuppressionQuery
 	withNamedPersonAttributes                   map[string]*PersonAttributeQuery
@@ -828,6 +834,50 @@ func (_q *RevenueWorkspaceQuery) QueryEntities() *EntityQuery {
 	return query
 }
 
+// QueryEntityResourceRefs chains the current query on the "entity_resource_refs" edge.
+func (_q *RevenueWorkspaceQuery) QueryEntityResourceRefs() *EntityResourceRefQuery {
+	query := (&EntityResourceRefClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(entityresourceref.Table, entityresourceref.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.EntityResourceRefsTable, revenueworkspace.EntityResourceRefsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEntityIdentifiers chains the current query on the "entity_identifiers" edge.
+func (_q *RevenueWorkspaceQuery) QueryEntityIdentifiers() *EntityIdentifierQuery {
+	query := (&EntityIdentifierClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(entityidentifier.Table, entityidentifier.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.EntityIdentifiersTable, revenueworkspace.EntityIdentifiersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryPersonIdentities chains the current query on the "person_identities" edge.
 func (_q *RevenueWorkspaceQuery) QueryPersonIdentities() *PersonIdentityQuery {
 	query := (&PersonIdentityClient{config: _q.config}).Query()
@@ -1160,6 +1210,8 @@ func (_q *RevenueWorkspaceQuery) Clone() *RevenueWorkspaceQuery {
 		withRelationshipSourceStatuses:         _q.withRelationshipSourceStatuses.Clone(),
 		withRelationshipPersons:                _q.withRelationshipPersons.Clone(),
 		withEntities:                           _q.withEntities.Clone(),
+		withEntityResourceRefs:                 _q.withEntityResourceRefs.Clone(),
+		withEntityIdentifiers:                  _q.withEntityIdentifiers.Clone(),
 		withPersonIdentities:                   _q.withPersonIdentities.Clone(),
 		withPersonSuppressions:                 _q.withPersonSuppressions.Clone(),
 		withPersonAttributes:                   _q.withPersonAttributes.Clone(),
@@ -1501,6 +1553,28 @@ func (_q *RevenueWorkspaceQuery) WithEntities(opts ...func(*EntityQuery)) *Reven
 	return _q
 }
 
+// WithEntityResourceRefs tells the query-builder to eager-load the nodes that are connected to
+// the "entity_resource_refs" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithEntityResourceRefs(opts ...func(*EntityResourceRefQuery)) *RevenueWorkspaceQuery {
+	query := (&EntityResourceRefClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEntityResourceRefs = query
+	return _q
+}
+
+// WithEntityIdentifiers tells the query-builder to eager-load the nodes that are connected to
+// the "entity_identifiers" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithEntityIdentifiers(opts ...func(*EntityIdentifierQuery)) *RevenueWorkspaceQuery {
+	query := (&EntityIdentifierClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEntityIdentifiers = query
+	return _q
+}
+
 // WithPersonIdentities tells the query-builder to eager-load the nodes that are connected to
 // the "person_identities" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *RevenueWorkspaceQuery) WithPersonIdentities(opts ...func(*PersonIdentityQuery)) *RevenueWorkspaceQuery {
@@ -1641,7 +1715,7 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		nodes       = []*RevenueWorkspace{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [35]bool{
+		loadedTypes = [37]bool{
 			_q.withUser != nil,
 			_q.withMembers != nil,
 			_q.withRelationships != nil,
@@ -1672,6 +1746,8 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			_q.withRelationshipSourceStatuses != nil,
 			_q.withRelationshipPersons != nil,
 			_q.withEntities != nil,
+			_q.withEntityResourceRefs != nil,
+			_q.withEntityIdentifiers != nil,
 			_q.withPersonIdentities != nil,
 			_q.withPersonSuppressions != nil,
 			_q.withPersonAttributes != nil,
@@ -1957,6 +2033,24 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			return nil, err
 		}
 	}
+	if query := _q.withEntityResourceRefs; query != nil {
+		if err := _q.loadEntityResourceRefs(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.EntityResourceRefs = []*EntityResourceRef{} },
+			func(n *RevenueWorkspace, e *EntityResourceRef) {
+				n.Edges.EntityResourceRefs = append(n.Edges.EntityResourceRefs, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withEntityIdentifiers; query != nil {
+		if err := _q.loadEntityIdentifiers(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.EntityIdentifiers = []*EntityIdentifier{} },
+			func(n *RevenueWorkspace, e *EntityIdentifier) {
+				n.Edges.EntityIdentifiers = append(n.Edges.EntityIdentifiers, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withPersonIdentities; query != nil {
 		if err := _q.loadPersonIdentities(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.Edges.PersonIdentities = []*PersonIdentity{} },
@@ -2218,6 +2312,20 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		if err := _q.loadEntities(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.appendNamedEntities(name) },
 			func(n *RevenueWorkspace, e *Entity) { n.appendNamedEntities(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedEntityResourceRefs {
+		if err := _q.loadEntityResourceRefs(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedEntityResourceRefs(name) },
+			func(n *RevenueWorkspace, e *EntityResourceRef) { n.appendNamedEntityResourceRefs(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedEntityIdentifiers {
+		if err := _q.loadEntityIdentifiers(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedEntityIdentifiers(name) },
+			func(n *RevenueWorkspace, e *EntityIdentifier) { n.appendNamedEntityIdentifiers(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -3195,6 +3303,68 @@ func (_q *RevenueWorkspaceQuery) loadEntities(ctx context.Context, query *Entity
 	}
 	return nil
 }
+func (_q *RevenueWorkspaceQuery) loadEntityResourceRefs(ctx context.Context, query *EntityResourceRefQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *EntityResourceRef)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.EntityResourceRef(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.EntityResourceRefsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadEntityIdentifiers(ctx context.Context, query *EntityIdentifierQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *EntityIdentifier)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.EntityIdentifier(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.EntityIdentifiersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *RevenueWorkspaceQuery) loadPersonIdentities(ctx context.Context, query *PersonIdentityQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *PersonIdentity)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
@@ -3838,6 +4008,34 @@ func (_q *RevenueWorkspaceQuery) WithNamedEntities(name string, opts ...func(*En
 		_q.withNamedEntities = make(map[string]*EntityQuery)
 	}
 	_q.withNamedEntities[name] = query
+	return _q
+}
+
+// WithNamedEntityResourceRefs tells the query-builder to eager-load the nodes that are connected to the "entity_resource_refs"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedEntityResourceRefs(name string, opts ...func(*EntityResourceRefQuery)) *RevenueWorkspaceQuery {
+	query := (&EntityResourceRefClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedEntityResourceRefs == nil {
+		_q.withNamedEntityResourceRefs = make(map[string]*EntityResourceRefQuery)
+	}
+	_q.withNamedEntityResourceRefs[name] = query
+	return _q
+}
+
+// WithNamedEntityIdentifiers tells the query-builder to eager-load the nodes that are connected to the "entity_identifiers"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedEntityIdentifiers(name string, opts ...func(*EntityIdentifierQuery)) *RevenueWorkspaceQuery {
+	query := (&EntityIdentifierClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedEntityIdentifiers == nil {
+		_q.withNamedEntityIdentifiers = make(map[string]*EntityIdentifierQuery)
+	}
+	_q.withNamedEntityIdentifiers[name] = query
 	return _q
 }
 

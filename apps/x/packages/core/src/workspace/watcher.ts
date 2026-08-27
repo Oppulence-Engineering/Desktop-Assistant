@@ -7,7 +7,12 @@ import { WorkDir } from "../config/config.js";
 import { workspace } from "@x/shared";
 import z from "zod";
 import { Stats } from "node:fs";
-import { captureEntityIdentities, entityKindForPath, stabilizeEntityNoteMutation } from "../knowledge/entity-identity.js";
+import {
+  captureEntityIdentities,
+  entityKindForPath,
+  stabilizeEntityNoteMutation,
+} from "../knowledge/entity-identity.js";
+import { syncEntityNotes } from "../knowledge/entity-spine.js";
 
 export type WorkspaceChangeCallback = (
   event: z.infer<typeof workspace.WorkspaceChangeEvent>,
@@ -39,11 +44,22 @@ export async function createWorkspaceWatcher(
   const identities = await captureEntityIdentities(path.join(WorkDir, "knowledge"));
   const identityRewrites = new Set<string>();
   const stabilizeExternalEntity = async (absPath: string): Promise<void> => {
-    if (!entityKindForPath(absPath, path.join(WorkDir, "knowledge")) || identityRewrites.has(absPath)) return;
+    if (
+      !entityKindForPath(absPath, path.join(WorkDir, "knowledge")) ||
+      identityRewrites.has(absPath)
+    )
+      return;
     identityRewrites.add(absPath);
     try {
-      const identity = await stabilizeEntityNoteMutation(absPath, WorkDir, identities.get(path.resolve(absPath)));
-      if (identity) identities.set(path.resolve(absPath), identity);
+      const identity = await stabilizeEntityNoteMutation(
+        absPath,
+        WorkDir,
+        identities.get(path.resolve(absPath)),
+      );
+      if (identity) {
+        identities.set(path.resolve(absPath), identity);
+        await syncEntityNotes([absPath], WorkDir);
+      }
     } catch (error) {
       console.error("Workspace watcher could not stabilize entity identity:", error);
     } finally {

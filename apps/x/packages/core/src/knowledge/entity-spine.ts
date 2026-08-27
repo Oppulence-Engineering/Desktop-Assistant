@@ -8,17 +8,23 @@ import { API_URL } from "../config/env.js";
 import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import { readEntityConfig } from "./entity-config.js";
 import { readJsonConfig } from "../config/json_config.js";
-import { isEntityId, updateEntityIdentity } from "./entity-identity.js";
-import { parseResourceRef } from "./entity-resolver.js";
+import { captureEntityIdentities, isEntityId, updateEntityIdentity } from "./entity-identity.js";
+import {
+  formatResourceRef,
+  normalizeEntityIdentifiers,
+  parseResourceRef,
+} from "./entity-resolver.js";
 
-const ProjectionSchema = z.object({
-  id: z.string(),
-  kind: z.string(),
-  displayName: z.string().max(200),
-  resourceRefs: z.array(z.string()),
-  identifiers: z.record(z.string(), z.array(z.string())),
-  oneLineSummary: z.string().max(500).optional(),
-}).strict();
+const ProjectionSchema = z
+  .object({
+    id: z.string(),
+    kind: z.string(),
+    displayName: z.string().max(200).optional(),
+    resourceRefs: z.array(z.string()).optional(),
+    identifiers: z.record(z.string(), z.array(z.string())).optional(),
+    oneLineSummary: z.string().max(500).optional(),
+  })
+  .strict();
 const EntityViewSchema = ProjectionSchema.extend({
   canonicalEntityId: z.string().optional(),
   status: z.string().optional(),
@@ -26,23 +32,51 @@ const EntityViewSchema = ProjectionSchema.extend({
 }).passthrough();
 
 export type EntityProjection = z.infer<typeof ProjectionSchema>;
-interface OutboxItem { id: string; notePath: string; projection: EntityProjection; queuedAt: string; attempts: number }
-const OutboxSchema = z.object({ schema: z.literal(1), items: z.array(z.object({
-  id: z.string(), notePath: z.string(), projection: ProjectionSchema, queuedAt: z.string(), attempts: z.number().int().nonnegative(),
-})) });
+interface OutboxItem {
+  id: string;
+  notePath: string;
+  projection: EntityProjection;
+  queuedAt: string;
+  attempts: number;
+}
+const OutboxSchema = z.object({
+  schema: z.literal(1),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      notePath: z.string(),
+      projection: ProjectionSchema,
+      queuedAt: z.string(),
+      attempts: z.number().int().nonnegative(),
+    }),
+  ),
+});
 
 const queues = new Map<string, Promise<unknown>>();
 function serialize<T>(workDir: string, operation: () => Promise<T>): Promise<T> {
   const prior = queues.get(workDir) ?? Promise.resolve();
   const next = prior.catch(() => undefined).then(operation);
   queues.set(workDir, next);
-  void next.finally(() => { if (queues.get(workDir) === next) queues.delete(workDir); });
+  void next.finally(() => {
+    if (queues.get(workDir) === next) queues.delete(workDir);
+  });
   return next;
 }
-function outboxPath(workDir: string): string { return path.join(workDir, "config", "entity-projection-outbox.json"); }
+function outboxPath(workDir: string): string {
+  return path.join(workDir, "config", "entity-projection-outbox.json");
+}
 async function readOutbox(workDir: string): Promise<OutboxItem[]> {
-  try { return (await readJsonConfig(outboxPath(workDir), OutboxSchema, () => ({ schema: 1 as const, items: [] }))).config.items; }
-  catch (cause) { if ((cause as NodeJS.ErrnoException).code === "ENOENT") return []; throw cause; }
+  try {
+    return (
+      await readJsonConfig(outboxPath(workDir), OutboxSchema, () => ({
+        schema: 1 as const,
+        items: [],
+      }))
+    ).config.items;
+  } catch (cause) {
+    if ((cause as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw cause;
+  }
 }
 async function saveOutbox(workDir: string, items: OutboxItem[]): Promise<void> {
   await fs.mkdir(path.join(workDir, "config"), { recursive: true });
@@ -54,37 +88,72 @@ function hashIdentifier(value: string): string {
 }
 function privateIdentifiers(raw: Record<string, unknown>): Record<string, string[]> {
   const output: Record<string, string[]> = {};
+  const stringValues: Record<string, string | string[]> = {};
   for (const [key, value] of Object.entries(raw)) {
-    const values = (Array.isArray(value) ? value : [value]).filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+    const values = (Array.isArray(value) ? value : [value]).filter(
+      (item): item is string => typeof item === "string" && item.trim().length > 0,
+    );
+    if (values.length) stringValues[key] = values;
+  }
+  for (const [key, values] of Object.entries(normalizeEntityIdentifiers(stringValues))) {
     if (values.length) output[key] = [...new Set(values.map(hashIdentifier))].sort();
   }
   return output;
 }
 
 /** Build the only payload allowed to leave the device. Identifier values are one-way hashed. */
-export async function buildEntityProjection(notePath: string, _workDir: string): Promise<EntityProjection | undefined> {
+export async function buildEntityProjection(
+  notePath: string,
+  workDir: string,
+): Promise<EntityProjection | undefined> {
+  const config = await readEntityConfig(workDir);
+  const fields = new Set(config.projectionFields);
   const content = await fs.readFile(notePath, "utf8");
   const { frontmatter } = splitFrontmatter(content);
   if (typeof frontmatter.id !== "string" || typeof frontmatter.kind !== "string") return undefined;
   const resourceRefs = Array.isArray(frontmatter.resourceRefs)
-    ? [...new Set(frontmatter.resourceRefs.filter((v): v is string => typeof v === "string").map((v) => {
-        parseResourceRef(v); return v;
-      }))].sort()
+    ? [
+        ...new Set(
+          frontmatter.resourceRefs
+            .filter((v): v is string => typeof v === "string")
+            .map((v) => {
+              return formatResourceRef(parseResourceRef(v));
+            }),
+        ),
+      ].sort()
     : [];
-  const display = [frontmatter.displayName, frontmatter.name, frontmatter.title]
-    .find((value) => typeof value === "string" && value.trim()) as string | undefined;
-  const summary = [frontmatter.oneLineSummary, frontmatter.summary]
-    .find((value) => typeof value === "string" && value.trim()) as string | undefined;
+  const display = [frontmatter.displayName, frontmatter.name, frontmatter.title].find(
+    (value) => typeof value === "string" && value.trim(),
+  ) as string | undefined;
+  const summary = [frontmatter.oneLineSummary, frontmatter.summary].find(
+    (value) => typeof value === "string" && value.trim(),
+  ) as string | undefined;
   return ProjectionSchema.parse({
     id: frontmatter.id,
     kind: frontmatter.kind,
-    displayName: (display?.trim() || path.basename(notePath, path.extname(notePath))).slice(0, 200),
-    resourceRefs,
-    identifiers: privateIdentifiers(
-      frontmatter.identifiers && typeof frontmatter.identifiers === "object" && !Array.isArray(frontmatter.identifiers)
-        ? frontmatter.identifiers as Record<string, unknown> : {},
-    ),
-    ...(summary ? { oneLineSummary: summary.trim().replace(/\s+/g, " ").slice(0, 500) } : {}),
+    ...(fields.has("displayName")
+      ? {
+          displayName: (display?.trim() || path.basename(notePath, path.extname(notePath))).slice(
+            0,
+            200,
+          ),
+        }
+      : {}),
+    ...(fields.has("resourceRefs") ? { resourceRefs } : {}),
+    ...(fields.has("identifiers")
+      ? {
+          identifiers: privateIdentifiers(
+            frontmatter.identifiers &&
+              typeof frontmatter.identifiers === "object" &&
+              !Array.isArray(frontmatter.identifiers)
+              ? (frontmatter.identifiers as Record<string, unknown>)
+              : {},
+          ),
+        }
+      : {}),
+    ...(fields.has("oneLineSummary") && summary
+      ? { oneLineSummary: summary.trim().replace(/\s+/g, " ").slice(0, 500) }
+      : {}),
   });
 }
 
@@ -95,10 +164,19 @@ export async function enqueueEntityProjection(notePath: string, workDir: string)
   if (!projection) return false;
   await serialize(workDir, async () => {
     const items = await readOutbox(workDir);
-    const item: OutboxItem = { id: projection.id, notePath: path.relative(workDir, notePath), projection, queuedAt: new Date().toISOString(), attempts: 0 };
+    const item: OutboxItem = {
+      id: projection.id,
+      notePath: path.relative(workDir, notePath),
+      projection,
+      queuedAt: new Date().toISOString(),
+      attempts: 0,
+    };
     const index = items.findIndex((existing) => existing.id === item.id);
-    if (index >= 0) items[index] = item; else items.push(item);
-    if (items.length > 10_000) items.splice(0, items.length - 10_000);
+    if (index >= 0) items[index] = item;
+    else {
+      if (items.length >= 10_000) throw new Error("entity projection outbox is full");
+      items.push(item);
+    }
     await saveOutbox(workDir, items);
   });
   return true;
@@ -110,19 +188,32 @@ export interface EntitySpineClient {
   resolve(ref: string): Promise<EntityProjection | undefined>;
 }
 
-export function createEntitySpineClient(deps: { fetch?: typeof fetch; accessToken?: () => Promise<string>; apiURL?: string } = {}): EntitySpineClient {
+export function createEntitySpineClient(
+  deps: { fetch?: typeof fetch; accessToken?: () => Promise<string>; apiURL?: string } = {},
+): EntitySpineClient {
   const request = deps.fetch ?? fetch;
   const token = deps.accessToken ?? getAccessToken;
   const base = deps.apiURL ?? API_URL;
   async function call(url: string, init?: RequestInit): Promise<Response> {
     const bearer = await token();
-    return request(url, { ...init, signal: init?.signal ?? AbortSignal.timeout(5_000), headers: { "content-type": "application/json", authorization: `Bearer ${bearer}`, ...init?.headers } });
+    return request(url, {
+      ...init,
+      signal: init?.signal ?? AbortSignal.timeout(5_000),
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${bearer}`,
+        ...init?.headers,
+      },
+    });
   }
   return {
     async put(projection) {
-      const response = await call(`${base}/v1/entities/${encodeURIComponent(projection.id)}`, { method: "PUT", body: JSON.stringify(ProjectionSchema.parse(projection)) });
+      const response = await call(`${base}/v1/entities/${encodeURIComponent(projection.id)}`, {
+        method: "PUT",
+        body: JSON.stringify(ProjectionSchema.parse(projection)),
+      });
       if (!response.ok) throw new Error(`entity spine upsert failed: ${response.status}`);
-      const body = await response.json().catch(() => ({})) as { canonicalEntityId?: string };
+      const body = (await response.json().catch(() => ({}))) as { canonicalEntityId?: string };
       return { canonicalId: body.canonicalEntityId };
     },
     async get(id) {
@@ -141,21 +232,33 @@ export function createEntitySpineClient(deps: { fetch?: typeof fetch; accessToke
   };
 }
 
-export async function flushEntityProjectionOutbox(workDir: string, client = createEntitySpineClient()): Promise<{ sent: number; remaining: number }> {
+export async function flushEntityProjectionOutbox(
+  workDir: string,
+  client = createEntitySpineClient(),
+): Promise<{ sent: number; remaining: number }> {
   return serialize(workDir, async () => {
     const items = await readOutbox(workDir);
     let sent = 0;
     const remaining: OutboxItem[] = [];
-    for (const item of items.slice(0, 100)) {
+    const batch = items.slice(0, 100);
+    for (let index = 0; index < batch.length; index += 1) {
+      const item = batch[index];
       try {
         const response = await client.put(item.projection);
         if (response.canonicalId && response.canonicalId !== item.projection.id) {
-          if (!isEntityId(response.canonicalId)) throw new Error("server returned invalid canonical entity id");
-          await updateEntityIdentity(path.join(workDir, item.notePath), path.join(workDir, "knowledge"), { id: response.canonicalId });
+          if (!isEntityId(response.canonicalId))
+            throw new Error("server returned invalid canonical entity id");
+          await updateEntityIdentity(
+            path.join(workDir, item.notePath),
+            path.join(workDir, "knowledge"),
+            { id: response.canonicalId },
+          );
         }
         sent += 1;
       } catch {
         remaining.push({ ...item, attempts: item.attempts + 1 });
+        remaining.push(...batch.slice(index + 1));
+        break;
       }
     }
     remaining.push(...items.slice(100));
@@ -164,9 +267,33 @@ export async function flushEntityProjectionOutbox(workDir: string, client = crea
   });
 }
 
-export async function syncEntityNotes(notePaths: Iterable<string>, workDir: string, client?: EntitySpineClient): Promise<void> {
+export async function syncEntityNotes(
+  notePaths: Iterable<string>,
+  workDir: string,
+  client?: EntitySpineClient,
+): Promise<void> {
   try {
-    for (const notePath of notePaths) await enqueueEntityProjection(path.isAbsolute(notePath) ? notePath : path.join(workDir, notePath), workDir);
+    for (const notePath of notePaths)
+      await enqueueEntityProjection(
+        path.isAbsolute(notePath) ? notePath : path.join(workDir, notePath),
+        workDir,
+      );
     await flushEntityProjectionOutbox(workDir, client);
-  } catch { /* local graph ingestion must not depend on cloud availability */ }
+  } catch (error) {
+    // Local graph ingestion must not depend on cloud availability, but failed
+    // durable sync remains observable and its queue is never discarded.
+    console.error("[EntitySpine] Projection sync deferred:", error);
+  }
+}
+
+/** Resume a durable offline queue and seed enabled shared-spine sync on startup. */
+export async function resumeEntitySpineSync(
+  workDir: string,
+  client?: EntitySpineClient,
+): Promise<{ sent: number; remaining: number }> {
+  const config = await readEntityConfig(workDir);
+  if (!config.sharedSpine) return { sent: 0, remaining: 0 };
+  const identities = await captureEntityIdentities(path.join(workDir, "knowledge"));
+  for (const notePath of identities.keys()) await enqueueEntityProjection(notePath, workDir);
+  return flushEntityProjectionOutbox(workDir, client);
 }

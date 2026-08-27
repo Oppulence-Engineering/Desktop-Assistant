@@ -32,6 +32,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -786,6 +788,60 @@ func (f TraverseEntity) Traverse(ctx context.Context, q ent.Query) error {
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.EntityQuery", q)
+}
+
+// The EntityIdentifierFunc type is an adapter to allow the use of ordinary function as a Querier.
+type EntityIdentifierFunc func(context.Context, *ent.EntityIdentifierQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f EntityIdentifierFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.EntityIdentifierQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.EntityIdentifierQuery", q)
+}
+
+// The TraverseEntityIdentifier type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseEntityIdentifier func(context.Context, *ent.EntityIdentifierQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseEntityIdentifier) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseEntityIdentifier) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.EntityIdentifierQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.EntityIdentifierQuery", q)
+}
+
+// The EntityResourceRefFunc type is an adapter to allow the use of ordinary function as a Querier.
+type EntityResourceRefFunc func(context.Context, *ent.EntityResourceRefQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f EntityResourceRefFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.EntityResourceRefQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.EntityResourceRefQuery", q)
+}
+
+// The TraverseEntityResourceRef type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseEntityResourceRef func(context.Context, *ent.EntityResourceRefQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseEntityResourceRef) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseEntityResourceRef) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.EntityResourceRefQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.EntityResourceRefQuery", q)
 }
 
 // The GoogleWatchFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -2162,6 +2218,10 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.CreditLedgerQuery, predicate.CreditLedger, creditledger.OrderOption]{typ: ent.TypeCreditLedger, tq: q}, nil
 	case *ent.EntityQuery:
 		return &query[*ent.EntityQuery, predicate.Entity, entity.OrderOption]{typ: ent.TypeEntity, tq: q}, nil
+	case *ent.EntityIdentifierQuery:
+		return &query[*ent.EntityIdentifierQuery, predicate.EntityIdentifier, entityidentifier.OrderOption]{typ: ent.TypeEntityIdentifier, tq: q}, nil
+	case *ent.EntityResourceRefQuery:
+		return &query[*ent.EntityResourceRefQuery, predicate.EntityResourceRef, entityresourceref.OrderOption]{typ: ent.TypeEntityResourceRef, tq: q}, nil
 	case *ent.GoogleWatchQuery:
 		return &query[*ent.GoogleWatchQuery, predicate.GoogleWatch, googlewatch.OrderOption]{typ: ent.TypeGoogleWatch, tq: q}, nil
 	case *ent.LLMUsageQuery:

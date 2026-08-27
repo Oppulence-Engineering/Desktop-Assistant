@@ -46,6 +46,8 @@ func (Entity) Edges() []ent.Edge {
 			Ref("entities").Unique().Required().Immutable(),
 		edge.From("user", User.Type).
 			Ref("entities").Unique().Required().Immutable(),
+		edge.To("normalized_resource_refs", EntityResourceRef.Type),
+		edge.To("normalized_identifiers", EntityIdentifier.Type),
 	}
 }
 

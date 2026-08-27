@@ -1560,6 +1560,12 @@ func enrichEntitySchemas(schemas obj) {
 		if schemaName == "ErrorEnvelope" || schemaName == "ReconnectErrorEnvelope" || schemaName == "RevisionConflictEnvelope" {
 			continue
 		}
+		// RFC 022's public spine uses stable ULIDs and a purpose-specific
+		// lifecycle contract. Do not overwrite those explicit descriptions and
+		// examples with the generic Ent UUID/status metadata below.
+		if schemaName == "EntitySpine" || schemaName == "EntityProjection" {
+			continue
+		}
 		s := asObj(schemaAny)
 		if s == nil {
 			continue

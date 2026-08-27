@@ -149,6 +149,10 @@ func (RevenueWorkspace) Edges() []ent.Edge {
 			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("entities", Entity.Type).
 			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("entity_resource_refs", EntityResourceRef.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
+		edge.To("entity_identifiers", EntityIdentifier.Type).
+			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("person_identities", PersonIdentity.Type).
 			StorageKey(edge.Column("revenue_workspace_id")),
 		edge.To("person_suppressions", PersonSuppression.Type).

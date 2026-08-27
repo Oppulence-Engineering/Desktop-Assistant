@@ -13,11 +13,25 @@ export const ENTITY_PROJECTION_FIELDS = [
   "oneLineSummary",
 ] as const;
 
-const EntityConfigSchema = z.object({
-  sharedSpine: z.boolean().default(false),
-  projectionFields: z.array(z.enum(ENTITY_PROJECTION_FIELDS)).default([...ENTITY_PROJECTION_FIELDS]),
-  resolveOnSync: z.boolean().default(true),
-});
+const EntityConfigSchema = z
+  .object({
+    sharedSpine: z.boolean().default(false),
+    projectionFields: z
+      .array(z.enum(ENTITY_PROJECTION_FIELDS))
+      .default([...ENTITY_PROJECTION_FIELDS]),
+    resolveOnSync: z.boolean().default(true),
+  })
+  .superRefine((value, context) => {
+    for (const required of ["id", "kind", "displayName"] as const) {
+      if (!value.projectionFields.includes(required)) {
+        context.addIssue({
+          code: "custom",
+          path: ["projectionFields"],
+          message: `${required} is required by the entity spine protocol`,
+        });
+      }
+    }
+  });
 
 export type EntityConfig = z.infer<typeof EntityConfigSchema>;
 export const DEFAULT_ENTITY_CONFIG: EntityConfig = {
@@ -33,7 +47,11 @@ export function entityConfigPath(workDir: string): string {
 export async function ensureEntityConfig(workDir: string): Promise<EntityConfig> {
   const filePath = entityConfigPath(workDir);
   try {
-    const { config } = await readJsonConfig(filePath, EntityConfigSchema, () => DEFAULT_ENTITY_CONFIG);
+    const { config } = await readJsonConfig(
+      filePath,
+      EntityConfigSchema,
+      () => DEFAULT_ENTITY_CONFIG,
+    );
     return config;
   } catch (cause) {
     if ((cause as NodeJS.ErrnoException).code !== "ENOENT") throw cause;

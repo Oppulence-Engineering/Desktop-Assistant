@@ -60,6 +60,10 @@ type Tx struct {
 	CreditLedger *CreditLedgerClient
 	// Entity is the client for interacting with the Entity builders.
 	Entity *EntityClient
+	// EntityIdentifier is the client for interacting with the EntityIdentifier builders.
+	EntityIdentifier *EntityIdentifierClient
+	// EntityResourceRef is the client for interacting with the EntityResourceRef builders.
+	EntityResourceRef *EntityResourceRefClient
 	// GoogleWatch is the client for interacting with the GoogleWatch builders.
 	GoogleWatch *GoogleWatchClient
 	// LLMUsage is the client for interacting with the LLMUsage builders.
@@ -313,6 +317,8 @@ func (tx *Tx) init() {
 	tx.ConversationIntelligenceArtifact = NewConversationIntelligenceArtifactClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)
 	tx.Entity = NewEntityClient(tx.config)
+	tx.EntityIdentifier = NewEntityIdentifierClient(tx.config)
+	tx.EntityResourceRef = NewEntityResourceRefClient(tx.config)
 	tx.GoogleWatch = NewGoogleWatchClient(tx.config)
 	tx.LLMUsage = NewLLMUsageClient(tx.config)
 	tx.LLMUsageHistory = NewLLMUsageHistoryClient(tx.config)

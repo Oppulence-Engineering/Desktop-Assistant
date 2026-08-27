@@ -687,6 +687,54 @@ func (f EntityMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.EntityMutation", m)
 }
 
+// The EntityIdentifierQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type EntityIdentifierQueryRuleFunc func(context.Context, *ent.EntityIdentifierQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f EntityIdentifierQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.EntityIdentifierQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.EntityIdentifierQuery", q)
+}
+
+// The EntityIdentifierMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type EntityIdentifierMutationRuleFunc func(context.Context, *ent.EntityIdentifierMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f EntityIdentifierMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.EntityIdentifierMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.EntityIdentifierMutation", m)
+}
+
+// The EntityResourceRefQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type EntityResourceRefQueryRuleFunc func(context.Context, *ent.EntityResourceRefQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f EntityResourceRefQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.EntityResourceRefQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.EntityResourceRefQuery", q)
+}
+
+// The EntityResourceRefMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type EntityResourceRefMutationRuleFunc func(context.Context, *ent.EntityResourceRefMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f EntityResourceRefMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.EntityResourceRefMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.EntityResourceRefMutation", m)
+}
+
 // The GoogleWatchQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type GoogleWatchQueryRuleFunc func(context.Context, *ent.GoogleWatchQuery) error
@@ -1946,6 +1994,10 @@ func queryFilter(q ent.Query) (Filter, error) {
 		return q.Filter(), nil
 	case *ent.EntityQuery:
 		return q.Filter(), nil
+	case *ent.EntityIdentifierQuery:
+		return q.Filter(), nil
+	case *ent.EntityResourceRefQuery:
+		return q.Filter(), nil
 	case *ent.GoogleWatchQuery:
 		return q.Filter(), nil
 	case *ent.LLMUsageQuery:
@@ -2098,6 +2150,10 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 	case *ent.CreditLedgerMutation:
 		return m.Filter(), nil
 	case *ent.EntityMutation:
+		return m.Filter(), nil
+	case *ent.EntityIdentifierMutation:
+		return m.Filter(), nil
+	case *ent.EntityResourceRefMutation:
 		return m.Filter(), nil
 	case *ent.GoogleWatchMutation:
 		return m.Filter(), nil

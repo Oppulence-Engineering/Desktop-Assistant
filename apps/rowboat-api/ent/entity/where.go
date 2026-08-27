@@ -677,6 +677,52 @@ func HasUserWith(preds ...predicate.User) predicate.Entity {
 	})
 }
 
+// HasNormalizedResourceRefs applies the HasEdge predicate on the "normalized_resource_refs" edge.
+func HasNormalizedResourceRefs() predicate.Entity {
+	return predicate.Entity(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, NormalizedResourceRefsTable, NormalizedResourceRefsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasNormalizedResourceRefsWith applies the HasEdge predicate on the "normalized_resource_refs" edge with a given conditions (other predicates).
+func HasNormalizedResourceRefsWith(preds ...predicate.EntityResourceRef) predicate.Entity {
+	return predicate.Entity(func(s *sql.Selector) {
+		step := newNormalizedResourceRefsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasNormalizedIdentifiers applies the HasEdge predicate on the "normalized_identifiers" edge.
+func HasNormalizedIdentifiers() predicate.Entity {
+	return predicate.Entity(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, NormalizedIdentifiersTable, NormalizedIdentifiersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasNormalizedIdentifiersWith applies the HasEdge predicate on the "normalized_identifiers" edge with a given conditions (other predicates).
+func HasNormalizedIdentifiersWith(preds ...predicate.EntityIdentifier) predicate.Entity {
+	return predicate.Entity(func(s *sql.Selector) {
+		step := newNormalizedIdentifiersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Entity) predicate.Entity {
 	return predicate.Entity(sql.AndPredicates(predicates...))

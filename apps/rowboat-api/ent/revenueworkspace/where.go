@@ -1476,6 +1476,52 @@ func HasEntitiesWith(preds ...predicate.Entity) predicate.RevenueWorkspace {
 	})
 }
 
+// HasEntityResourceRefs applies the HasEdge predicate on the "entity_resource_refs" edge.
+func HasEntityResourceRefs() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EntityResourceRefsTable, EntityResourceRefsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEntityResourceRefsWith applies the HasEdge predicate on the "entity_resource_refs" edge with a given conditions (other predicates).
+func HasEntityResourceRefsWith(preds ...predicate.EntityResourceRef) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newEntityResourceRefsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEntityIdentifiers applies the HasEdge predicate on the "entity_identifiers" edge.
+func HasEntityIdentifiers() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EntityIdentifiersTable, EntityIdentifiersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEntityIdentifiersWith applies the HasEdge predicate on the "entity_identifiers" edge with a given conditions (other predicates).
+func HasEntityIdentifiersWith(preds ...predicate.EntityIdentifier) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newEntityIdentifiersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasPersonIdentities applies the HasEdge predicate on the "person_identities" edge.
 func HasPersonIdentities() predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(func(s *sql.Selector) {
