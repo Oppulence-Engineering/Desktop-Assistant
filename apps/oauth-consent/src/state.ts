@@ -3,7 +3,10 @@ import { badRequest, conflict } from './errors.js';
 import { hashToken, randomToken } from './crypto.js';
 import type { ConsentContext } from './rowboat.js';
 
-export type ConsentStatus = 'created' | 'shown' | 'step_up_pending' | 'processing' | 'approved' | 'denied' | 'failed';
+export type ConsentStatus =
+  'created' | 'shown' | 'step_up_pending' | 'processing' | 'approved' | 'denied' | 'invalidated' | 'failed';
+
+export type HydraOutcomePhase = 'accept_pending' | 'accepted' | 'reject_pending' | 'rejected';
 
 export interface ConsentSession {
   id: string;
@@ -16,8 +19,10 @@ export interface ConsentSession {
   selectedScopes?: string[];
   decision?: 'approve' | 'deny';
   decisionPayload?: unknown;
+  hydraOutcomePhase?: HydraOutcomePhase;
   hydraCommittedAt?: number;
   hydraRedirectTo?: string;
+  grantRecordedAt?: number;
   expiresAt: number;
   createdAt: number;
 }
@@ -30,6 +35,15 @@ export interface BrowserFlow {
   expiresAt: number;
   challenge?: string;
   consentSessionId?: string;
+  loginSubject?: string;
+  upstreamPhase?: 'workos_exchanged' | 'hydra_pending' | 'completed';
+  upstreamRedirectTo?: string;
+  completedAt?: number;
+}
+
+export interface LoginFlowClaim {
+  flow: BrowserFlow;
+  claimToken?: string;
 }
 
 export interface StepUpFlowClaim {
@@ -59,8 +73,10 @@ type NewConsent = Omit<
   | 'selectedScopes'
   | 'decision'
   | 'decisionPayload'
+  | 'hydraOutcomePhase'
   | 'hydraCommittedAt'
   | 'hydraRedirectTo'
+  | 'grantRecordedAt'
 >;
 
 export interface ConsentStateStore {
@@ -78,7 +94,15 @@ export interface ConsentStateStore {
   setSelectedScopes(id: string, scopes: string[]): Promise<ConsentSession> | ConsentSession;
   failConsent(id: string): Promise<void> | void;
   createLoginFlow(challenge: string): Promise<BrowserFlow & { state: string }> | (BrowserFlow & { state: string });
-  consumeLoginFlow(state: string, cookieBinding: string | undefined): Promise<BrowserFlow> | BrowserFlow;
+  claimLoginFlow(
+    state: string,
+    cookieBinding: string | undefined,
+    leaseMs: number,
+  ): Promise<LoginFlowClaim> | LoginFlowClaim;
+  recordLoginIdentity(claim: LoginFlowClaim, subject: string): Promise<LoginFlowClaim> | LoginFlowClaim;
+  markLoginHydraPending(claim: LoginFlowClaim): Promise<LoginFlowClaim> | LoginFlowClaim;
+  finalizeLoginFlow(claim: LoginFlowClaim, redirectTo?: string): Promise<void> | void;
+  retryLoginFlow(claim: LoginFlowClaim, error: string): Promise<void> | void;
   createStepUpFlow(
     consentSessionId: string,
   ): Promise<BrowserFlow & { state: string }> | (BrowserFlow & { state: string });
@@ -107,6 +131,15 @@ export interface ConsentStateStore {
     decision: 'approve' | 'deny',
     payload: unknown,
   ): Promise<DecisionClaim> | DecisionClaim;
+  markHydraPending(claim: DecisionClaim): Promise<DecisionClaim> | DecisionClaim;
+  resetHydraPending(claim: DecisionClaim): Promise<DecisionClaim> | DecisionClaim;
+  recordHydraOutcome(
+    claim: DecisionClaim,
+    outcome: 'accepted' | 'rejected',
+    redirectTo?: string,
+  ): Promise<DecisionClaim> | DecisionClaim;
+  recordAcceptedGrant(claim: DecisionClaim): Promise<DecisionClaim> | DecisionClaim;
+  invalidateAcceptedDecision(claim: DecisionClaim, payload: unknown): Promise<void> | void;
   finalizeDecision(claim: DecisionClaim, redirectTo?: string): Promise<void> | void;
   retryDecision(claim: DecisionClaim, error: string): Promise<void> | void;
   ready(): Promise<boolean> | boolean;
@@ -194,13 +227,53 @@ export class StateStore implements ConsentStateStore {
     return this.createFlow('login', { challenge });
   }
 
-  consumeLoginFlow(state: string, binding: string | undefined) {
+  claimLoginFlow(state: string, binding: string | undefined, leaseMs: number): LoginFlowClaim {
     if (!state || !binding) throw badRequest('login_state_invalid');
     const key = hashToken(state);
     const flow = this.flows.get(key);
-    this.flows.delete(key);
     if (!flow || flow.kind !== 'login' || flow.cookieBinding !== binding || flow.expiresAt <= this.now())
       throw conflict('login_state_replay');
+    if (flow.completedAt) return { flow };
+    if (flow.leaseUntil && flow.leaseUntil > this.now()) throw conflict('login_state_busy');
+    flow.claimToken = randomToken();
+    flow.leaseUntil = this.now() + leaseMs;
+    return { flow, claimToken: flow.claimToken };
+  }
+
+  recordLoginIdentity(claim: LoginFlowClaim, subject: string): LoginFlowClaim {
+    const flow = this.assertLoginClaim(claim);
+    if (flow.loginSubject && flow.loginSubject !== subject) throw conflict('login_identity_mismatch');
+    flow.loginSubject = subject;
+    flow.upstreamPhase = 'workos_exchanged';
+    return { flow, claimToken: claim.claimToken };
+  }
+
+  markLoginHydraPending(claim: LoginFlowClaim): LoginFlowClaim {
+    const flow = this.assertLoginClaim(claim);
+    if (!flow.loginSubject) throw conflict('login_identity_missing');
+    flow.upstreamPhase = 'hydra_pending';
+    return { flow, claimToken: claim.claimToken };
+  }
+
+  finalizeLoginFlow(claim: LoginFlowClaim, redirectTo?: string): void {
+    const flow = this.assertLoginClaim(claim);
+    flow.upstreamPhase = 'completed';
+    flow.upstreamRedirectTo = redirectTo ?? flow.upstreamRedirectTo;
+    flow.completedAt = this.now();
+    flow.claimToken = undefined;
+    flow.leaseUntil = undefined;
+  }
+
+  retryLoginFlow(claim: LoginFlowClaim, _error: string): void {
+    const flow = this.assertLoginClaim(claim);
+    flow.claimToken = undefined;
+    flow.leaseUntil = undefined;
+  }
+
+  private assertLoginClaim(claim: LoginFlowClaim) {
+    if (!claim.claimToken) throw conflict('login_claim_invalid');
+    const flow = this.flows.get(claim.flow.stateHash);
+    if (!flow || flow.kind !== 'login' || flow.claimToken !== claim.claimToken) throw conflict('login_claim_invalid');
     return flow;
   }
 
@@ -315,18 +388,71 @@ export class StateStore implements ConsentStateStore {
 
   replaceClaimedDecision(claim: DecisionClaim, decision: 'approve' | 'deny', payload: unknown): DecisionClaim {
     this.assertDecisionClaim(claim);
+    if (claim.session.hydraOutcomePhase) throw conflict('hydra_outcome_irreversible');
     claim.session.decision = decision;
     claim.session.decisionPayload = payload;
     return claim;
   }
 
+  markHydraPending(claim: DecisionClaim): DecisionClaim {
+    this.assertDecisionClaim(claim);
+    const expected = claim.session.decision === 'approve' ? 'accept_pending' : 'reject_pending';
+    if (claim.session.hydraOutcomePhase && claim.session.hydraOutcomePhase !== expected)
+      throw conflict('hydra_outcome_irreversible');
+    claim.session.hydraOutcomePhase = expected;
+    return claim;
+  }
+
+  resetHydraPending(claim: DecisionClaim): DecisionClaim {
+    this.assertDecisionClaim(claim);
+    const expected = claim.session.decision === 'approve' ? 'accept_pending' : 'reject_pending';
+    if (claim.session.hydraOutcomePhase !== expected) throw conflict('hydra_outcome_irreversible');
+    claim.session.hydraOutcomePhase = undefined;
+    return claim;
+  }
+
+  recordHydraOutcome(claim: DecisionClaim, outcome: 'accepted' | 'rejected', redirectTo?: string): DecisionClaim {
+    this.assertDecisionClaim(claim);
+    const expected = claim.session.decision === 'approve' ? 'accepted' : 'rejected';
+    if (outcome !== expected) throw conflict('hydra_outcome_irreversible');
+    const pending = outcome === 'accepted' ? 'accept_pending' : 'reject_pending';
+    if (claim.session.hydraOutcomePhase !== pending && claim.session.hydraOutcomePhase !== outcome)
+      throw conflict('hydra_outcome_irreversible');
+    claim.session.hydraOutcomePhase = outcome;
+    claim.session.hydraCommittedAt ??= this.now();
+    claim.session.hydraRedirectTo = redirectTo ?? claim.session.hydraRedirectTo;
+    return claim;
+  }
+
+  recordAcceptedGrant(claim: DecisionClaim): DecisionClaim {
+    this.assertDecisionClaim(claim);
+    if (claim.session.hydraOutcomePhase !== 'accepted') throw conflict('hydra_outcome_missing');
+    if (!claim.session.grantRecordedAt) {
+      claim.session.grantRecordedAt = this.now();
+      this.enqueueAudit(`${claim.session.id}:final`, claim.session.decisionPayload);
+    }
+    return claim;
+  }
+
+  invalidateAcceptedDecision(claim: DecisionClaim, payload: unknown): void {
+    this.assertDecisionClaim(claim);
+    if (claim.session.hydraOutcomePhase !== 'accepted' || !claim.session.grantRecordedAt)
+      throw conflict('hydra_outcome_missing');
+    claim.session.status = 'invalidated';
+    this.enqueueAudit(`${claim.session.id}:invalidated`, payload);
+    this.decisions.delete(claim.session.id);
+  }
+
   finalizeDecision(claim: DecisionClaim, redirectTo?: string): void {
     this.assertDecisionClaim(claim);
     const value = claim.session;
+    const expected = value.decision === 'approve' ? 'accepted' : 'rejected';
+    if (value.hydraOutcomePhase !== expected) throw conflict('hydra_outcome_missing');
+    if (value.decision === 'approve' && !value.grantRecordedAt) throw conflict('grant_not_recorded');
     value.status = value.decision === 'approve' ? 'approved' : 'denied';
-    value.hydraCommittedAt = this.now();
-    value.hydraRedirectTo = redirectTo;
-    this.enqueueAudit(`${value.id}:final`, value.decisionPayload);
+    value.hydraCommittedAt ??= this.now();
+    value.hydraRedirectTo = redirectTo ?? value.hydraRedirectTo;
+    if (value.decision === 'deny') this.enqueueAudit(`${value.id}:final`, value.decisionPayload);
     this.decisions.delete(value.id);
   }
 
@@ -469,16 +595,83 @@ export class PostgresStateStore implements ConsentStateStore {
     return this.createFlow('login', { challenge });
   }
 
-  async consumeLoginFlow(state: string, binding: string | undefined) {
+  async claimLoginFlow(state: string, binding: string | undefined, leaseMs: number): Promise<LoginFlowClaim> {
     if (!state || !binding) throw badRequest('login_state_invalid');
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const current = await client.query(
+        `SELECT ${FLOW_COLUMNS}, claim_token, extract(epoch from lease_until)*1000 AS lease_until_ms
+         FROM oauth_consent_browser_flows
+         WHERE state_hash=$1 AND kind='login' AND cookie_binding=$2 AND expires_at > now() FOR UPDATE`,
+        [hashToken(state), binding],
+      );
+      if (!current.rowCount) throw conflict('login_state_replay');
+      const flow = rowToFlow(current.rows[0]);
+      if (flow.completedAt) {
+        await client.query('COMMIT');
+        return { flow };
+      }
+      if (current.rows[0].lease_until_ms && Number(current.rows[0].lease_until_ms) > Date.now())
+        throw conflict('login_state_busy');
+      const claimToken = randomToken();
+      const result = await client.query(
+        `UPDATE oauth_consent_browser_flows
+         SET claim_token=$2, lease_until=now() + ($3::int * interval '1 millisecond')
+         WHERE state_hash=$1 RETURNING ${FLOW_COLUMNS}`,
+        [flow.stateHash, claimToken, leaseMs],
+      );
+      await client.query('COMMIT');
+      return { flow: rowToFlow(result.rows[0]), claimToken };
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async recordLoginIdentity(claim: LoginFlowClaim, subject: string): Promise<LoginFlowClaim> {
     const result = await this.pool.query(
-      `DELETE FROM oauth_consent_browser_flows
-       WHERE state_hash=$1 AND kind='login' AND cookie_binding=$2 AND expires_at > now()
-       RETURNING ${FLOW_COLUMNS}`,
-      [hashToken(state), binding],
+      `UPDATE oauth_consent_browser_flows
+       SET login_subject=COALESCE(login_subject,$3), upstream_phase='workos_exchanged'
+       WHERE state_hash=$1 AND kind='login' AND claim_token=$2
+         AND (login_subject IS NULL OR login_subject=$3) RETURNING ${FLOW_COLUMNS}`,
+      [claim.flow.stateHash, claim.claimToken, subject],
     );
-    if (!result.rowCount) throw conflict('login_state_replay');
-    return rowToFlow(result.rows[0]);
+    if (!result.rowCount) throw conflict('login_claim_invalid');
+    return { flow: rowToFlow(result.rows[0]), claimToken: claim.claimToken };
+  }
+
+  async markLoginHydraPending(claim: LoginFlowClaim): Promise<LoginFlowClaim> {
+    const result = await this.pool.query(
+      `UPDATE oauth_consent_browser_flows SET upstream_phase='hydra_pending'
+       WHERE state_hash=$1 AND kind='login' AND claim_token=$2 AND login_subject IS NOT NULL
+         AND upstream_phase IN ('workos_exchanged','hydra_pending') RETURNING ${FLOW_COLUMNS}`,
+      [claim.flow.stateHash, claim.claimToken],
+    );
+    if (!result.rowCount) throw conflict('login_claim_invalid');
+    return { flow: rowToFlow(result.rows[0]), claimToken: claim.claimToken };
+  }
+
+  async finalizeLoginFlow(claim: LoginFlowClaim, redirectTo?: string): Promise<void> {
+    const result = await this.pool.query(
+      `UPDATE oauth_consent_browser_flows
+       SET upstream_phase='completed', upstream_redirect_to=COALESCE($3,upstream_redirect_to), completed_at=now(),
+           claim_token=NULL, lease_until=NULL
+       WHERE state_hash=$1 AND kind='login' AND claim_token=$2 AND upstream_phase='hydra_pending'`,
+      [claim.flow.stateHash, claim.claimToken, redirectTo ?? null],
+    );
+    if (!result.rowCount) throw conflict('login_claim_invalid');
+  }
+
+  async retryLoginFlow(claim: LoginFlowClaim, _error: string): Promise<void> {
+    const result = await this.pool.query(
+      `UPDATE oauth_consent_browser_flows SET claim_token=NULL, lease_until=NULL
+       WHERE state_hash=$1 AND kind='login' AND claim_token=$2 AND completed_at IS NULL`,
+      [claim.flow.stateHash, claim.claimToken],
+    );
+    if (!result.rowCount) throw conflict('login_claim_invalid');
   }
 
   async createStepUpFlow(consentSessionId: string) {
@@ -699,11 +892,103 @@ export class PostgresStateStore implements ConsentStateStore {
   ): Promise<DecisionClaim> {
     const result = await this.pool.query(
       `UPDATE oauth_consent_sessions SET decision=$3, decision_payload=$4, version=version+1
-       WHERE id=$1 AND status='processing' AND decision_claim_token=$2 RETURNING ${CONSENT_COLUMNS}`,
+       WHERE id=$1 AND status='processing' AND decision_claim_token=$2 AND hydra_outcome_phase IS NULL
+       RETURNING ${CONSENT_COLUMNS}`,
       [claim.session.id, claim.claimToken, decision, JSON.stringify(payload)],
     );
     if (!result.rowCount) throw conflict('decision_claim_invalid');
     return { session: rowToConsent(result.rows[0]), claimToken: claim.claimToken };
+  }
+
+  async markHydraPending(claim: DecisionClaim): Promise<DecisionClaim> {
+    const result = await this.pool.query(
+      `UPDATE oauth_consent_sessions
+       SET hydra_outcome_phase=CASE decision WHEN 'approve' THEN 'accept_pending' ELSE 'reject_pending' END,
+           version=version+1
+       WHERE id=$1 AND status='processing' AND decision_claim_token=$2
+         AND (hydra_outcome_phase IS NULL OR hydra_outcome_phase=CASE decision WHEN 'approve' THEN 'accept_pending' ELSE 'reject_pending' END)
+       RETURNING ${CONSENT_COLUMNS}`,
+      [claim.session.id, claim.claimToken],
+    );
+    if (!result.rowCount) throw conflict('hydra_outcome_irreversible');
+    return { session: rowToConsent(result.rows[0]), claimToken: claim.claimToken };
+  }
+
+  async resetHydraPending(claim: DecisionClaim): Promise<DecisionClaim> {
+    const result = await this.pool.query(
+      `UPDATE oauth_consent_sessions SET hydra_outcome_phase=NULL, version=version+1
+       WHERE id=$1 AND status='processing' AND decision_claim_token=$2
+         AND hydra_outcome_phase=CASE decision WHEN 'approve' THEN 'accept_pending' ELSE 'reject_pending' END
+       RETURNING ${CONSENT_COLUMNS}`,
+      [claim.session.id, claim.claimToken],
+    );
+    if (!result.rowCount) throw conflict('hydra_outcome_irreversible');
+    return { session: rowToConsent(result.rows[0]), claimToken: claim.claimToken };
+  }
+
+  async recordHydraOutcome(
+    claim: DecisionClaim,
+    outcome: 'accepted' | 'rejected',
+    redirectTo?: string,
+  ): Promise<DecisionClaim> {
+    const expectedDecision = outcome === 'accepted' ? 'approve' : 'deny';
+    const pending = outcome === 'accepted' ? 'accept_pending' : 'reject_pending';
+    const result = await this.pool.query(
+      `UPDATE oauth_consent_sessions
+       SET hydra_outcome_phase=$3, hydra_committed_at=COALESCE(hydra_committed_at,now()),
+           hydra_redirect_to=COALESCE($4,hydra_redirect_to), version=version+1
+       WHERE id=$1 AND status='processing' AND decision_claim_token=$2 AND decision=$5
+         AND hydra_outcome_phase IN ($6,$3) RETURNING ${CONSENT_COLUMNS}`,
+      [claim.session.id, claim.claimToken, outcome, redirectTo ?? null, expectedDecision, pending],
+    );
+    if (!result.rowCount) throw conflict('hydra_outcome_irreversible');
+    return { session: rowToConsent(result.rows[0]), claimToken: claim.claimToken };
+  }
+
+  async recordAcceptedGrant(claim: DecisionClaim): Promise<DecisionClaim> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await client.query(
+        `UPDATE oauth_consent_sessions SET grant_recorded_at=COALESCE(grant_recorded_at,now()), version=version+1
+         WHERE id=$1 AND status='processing' AND decision_claim_token=$2 AND decision='approve'
+           AND hydra_outcome_phase='accepted' RETURNING ${CONSENT_COLUMNS}`,
+        [claim.session.id, claim.claimToken],
+      );
+      if (!result.rowCount) throw conflict('hydra_outcome_missing');
+      const session = rowToConsent(result.rows[0]);
+      await insertAudit(client, `${session.id}:final`, session.decisionPayload);
+      await client.query('COMMIT');
+      return { session, claimToken: claim.claimToken };
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async invalidateAcceptedDecision(claim: DecisionClaim, payload: unknown): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await client.query(
+        `UPDATE oauth_consent_sessions
+         SET status='invalidated', decision_claim_token=NULL, decision_lease_until=NULL,
+             decision_last_error=NULL, version=version+1
+         WHERE id=$1 AND status='processing' AND decision_claim_token=$2 AND decision='approve'
+           AND hydra_outcome_phase='accepted' AND grant_recorded_at IS NOT NULL RETURNING id`,
+        [claim.session.id, claim.claimToken],
+      );
+      if (!result.rowCount) throw conflict('hydra_outcome_missing');
+      await insertAudit(client, `${claim.session.id}:invalidated`, payload);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async finalizeDecision(claim: DecisionClaim, redirectTo?: string): Promise<void> {
@@ -716,11 +1001,14 @@ export class PostgresStateStore implements ConsentStateStore {
              hydra_committed_at=COALESCE(hydra_committed_at,now()), hydra_redirect_to=COALESCE($3,hydra_redirect_to),
              decision_claim_token=NULL, decision_lease_until=NULL, decision_last_error=NULL, version=version+1
          WHERE id=$1 AND status='processing' AND decision IS NOT NULL AND decision_claim_token=$2
+           AND hydra_outcome_phase=CASE decision WHEN 'approve' THEN 'accepted' ELSE 'rejected' END
+           AND (decision='deny' OR grant_recorded_at IS NOT NULL)
          RETURNING id, decision_payload`,
         [claim.session.id, claim.claimToken, redirectTo ?? null],
       );
       if (!result.rowCount) throw conflict('decision_claim_invalid');
-      await insertAudit(client, `${claim.session.id}:final`, result.rows[0].decision_payload);
+      if (claim.session.decision === 'deny')
+        await insertAudit(client, `${claim.session.id}:final`, result.rows[0].decision_payload);
       await client.query('COMMIT');
     } catch (error) {
       await client.query('ROLLBACK').catch(() => undefined);
@@ -755,17 +1043,21 @@ export class PostgresStateStore implements ConsentStateStore {
 }
 
 const CONSENT_COLUMNS = `id, challenge, csrf, subject, hydra_client_id, context, status, selected_scopes, decision,
- decision_payload, extract(epoch from hydra_committed_at)*1000 AS hydra_committed_at_ms, hydra_redirect_to,
+ decision_payload, hydra_outcome_phase, extract(epoch from hydra_committed_at)*1000 AS hydra_committed_at_ms,
+ hydra_redirect_to, extract(epoch from grant_recorded_at)*1000 AS grant_recorded_at_ms,
  extract(epoch from expires_at)*1000 AS expires_at_ms, extract(epoch from created_at)*1000 AS created_at_ms`;
 const CONSENT_SELECT = `SELECT ${CONSENT_COLUMNS} FROM oauth_consent_sessions`;
 const FLOW_COLUMNS = `state_hash, state_value, cookie_binding, nonce, challenge, consent_session_id,
+ login_subject, upstream_phase, upstream_redirect_to, extract(epoch from completed_at)*1000 AS completed_at_ms,
  extract(epoch from expires_at)*1000 AS expires_at_ms`;
 
 function prefixedConsentColumns(prefix: string): string {
   return `
     ${prefix}.id, ${prefix}.challenge, ${prefix}.csrf, ${prefix}.subject, ${prefix}.hydra_client_id,
     ${prefix}.context, ${prefix}.status, ${prefix}.selected_scopes, ${prefix}.decision, ${prefix}.decision_payload,
+    ${prefix}.hydra_outcome_phase,
     extract(epoch from ${prefix}.hydra_committed_at)*1000 AS hydra_committed_at_ms, ${prefix}.hydra_redirect_to,
+    extract(epoch from ${prefix}.grant_recorded_at)*1000 AS grant_recorded_at_ms,
     extract(epoch from ${prefix}.expires_at)*1000 AS expires_at_ms,
     extract(epoch from ${prefix}.created_at)*1000 AS created_at_ms`;
 }
@@ -801,8 +1093,10 @@ function rowToConsent(row: Record<string, unknown>): ConsentSession {
     selectedScopes: (row.selected_scopes as string[] | null) ?? undefined,
     decision: row.decision === 'approve' || row.decision === 'deny' ? row.decision : undefined,
     decisionPayload: row.decision_payload ?? undefined,
+    hydraOutcomePhase: row.hydra_outcome_phase ? (String(row.hydra_outcome_phase) as HydraOutcomePhase) : undefined,
     hydraCommittedAt: row.hydra_committed_at_ms ? Number(row.hydra_committed_at_ms) : undefined,
     hydraRedirectTo: row.hydra_redirect_to ? String(row.hydra_redirect_to) : undefined,
+    grantRecordedAt: row.grant_recorded_at_ms ? Number(row.grant_recorded_at_ms) : undefined,
     expiresAt: Number(row.expires_at_ms),
     createdAt: Number(row.created_at_ms),
   };
@@ -816,6 +1110,10 @@ function rowToFlow(row: Record<string, unknown>): BrowserFlow {
     nonce: String(row.nonce),
     challenge: row.challenge ? String(row.challenge) : undefined,
     consentSessionId: row.consent_session_id ? String(row.consent_session_id) : undefined,
+    loginSubject: row.login_subject ? String(row.login_subject) : undefined,
+    upstreamPhase: row.upstream_phase ? (String(row.upstream_phase) as BrowserFlow['upstreamPhase']) : undefined,
+    upstreamRedirectTo: row.upstream_redirect_to ? String(row.upstream_redirect_to) : undefined,
+    completedAt: row.completed_at_ms ? Number(row.completed_at_ms) : undefined,
     expiresAt: Number(row.expires_at_ms),
   };
 }

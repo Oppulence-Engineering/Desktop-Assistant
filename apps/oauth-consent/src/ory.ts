@@ -72,6 +72,16 @@ export class OryAdmin {
     );
   }
 
+  async loginRequestPending(challenge: string): Promise<boolean> {
+    try {
+      await this.getLoginRequest(challenge);
+      return true;
+    } catch (error) {
+      if (error instanceof OryRequestError && [404, 409, 410].includes(error.upstreamStatus)) return false;
+      throw error;
+    }
+  }
+
   acceptLogin(challenge: string, subject: string, remember = true): Promise<Completion> {
     return this.req(
       CompletionSchema,

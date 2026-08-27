@@ -84,12 +84,52 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
       const code = ChallengeSchema.parse(req.query.code);
       const state = ChallengeSchema.parse(req.query.state);
       const binding = readSignedCookie(req, LOGIN_COOKIE, cfg.cookieSecret);
-      const flow = await store.consumeLoginFlow(state, binding);
-      if (!flow.challenge) throw badRequest('login_flow_invalid');
-      const identity = await workos.exchangeLogin(code, flow.nonce);
-      const { redirect_to } = await ory.acceptLogin(flow.challenge, identity.workosUserId);
-      res.clearCookie(LOGIN_COOKIE, { ...cookieOptions, maxAge: undefined });
-      return res.redirect(redirect_to);
+      let claim = await store.claimLoginFlow(state, binding, cfg.decisionLeaseMs);
+      if (claim.flow.completedAt) {
+        res.clearCookie(LOGIN_COOKIE, { ...cookieOptions, maxAge: undefined });
+        return claim.flow.upstreamRedirectTo
+          ? res.redirect(claim.flow.upstreamRedirectTo)
+          : res.status(200).type('html').send(completedPage('Sign-in is complete. You may return to the application.'));
+      }
+      if (!claim.flow.challenge) throw badRequest('login_flow_invalid');
+      const loginChallenge = claim.flow.challenge;
+      try {
+        if (!claim.flow.loginSubject) {
+          const identity = await workos.exchangeLogin(code, claim.flow.nonce);
+          claim = await store.recordLoginIdentity(claim, identity.workosUserId);
+        }
+        if (claim.flow.upstreamPhase === 'hydra_pending' && !(await ory.loginRequestPending(loginChallenge))) {
+          await store.finalizeLoginFlow(claim);
+          res.clearCookie(LOGIN_COOKIE, { ...cookieOptions, maxAge: undefined });
+          return res
+            .status(200)
+            .type('html')
+            .send(completedPage('Sign-in is complete. You may return to the application.'));
+        }
+        claim = await store.markLoginHydraPending(claim);
+        const { redirect_to } = await ory.acceptLogin(loginChallenge, claim.flow.loginSubject!);
+        await store.finalizeLoginFlow(claim, redirect_to);
+        res.clearCookie(LOGIN_COOKIE, { ...cookieOptions, maxAge: undefined });
+        return res.redirect(redirect_to);
+      } catch (error) {
+        if (claim.flow.upstreamPhase === 'hydra_pending') {
+          try {
+            if (!(await ory.loginRequestPending(loginChallenge))) {
+              await store.finalizeLoginFlow(claim);
+              res.clearCookie(LOGIN_COOKIE, { ...cookieOptions, maxAge: undefined });
+              return res
+                .status(200)
+                .type('html')
+                .send(completedPage('Sign-in is complete. You may return to the application.'));
+            }
+          } catch (probeError) {
+            await store.retryLoginFlow(claim, errorMessage(probeError));
+            throw probeError;
+          }
+        }
+        await store.retryLoginFlow(claim, errorMessage(error));
+        throw error;
+      }
     }),
   );
 
@@ -144,7 +184,7 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
       const session = await consentSession(req, cfg, store);
       verifyCsrf(session, req.body.csrf);
       const decision = DecisionSchema.parse(req.body.decision);
-      if (session.status === 'approved' || session.status === 'denied') {
+      if (session.status === 'approved' || session.status === 'denied' || session.status === 'invalidated') {
         if (session.decision !== decision)
           throw new AppError(409, 'consent_replay', 'This decision is already complete.');
         res.clearCookie(CONSENT_COOKIE, { ...cookieOptions, maxAge: undefined });
@@ -289,10 +329,11 @@ function finalAudit(
   event: 'consent.granted' | 'consent.denied',
   scopes: string[],
   result: string,
+  eventId = `${session.id}:final`,
 ): AuditRequest {
   return {
     event,
-    eventId: `${session.id}:final`,
+    eventId,
     occurredAt: new Date().toISOString(),
     sessionId: session.id,
     context: session.context,
@@ -334,6 +375,25 @@ async function executeDecision(
   faults: ReconciliationFaults = {},
 ): Promise<string | undefined> {
   let claim = initialClaim;
+  if (claim.session.hydraOutcomePhase === 'accept_pending' || claim.session.hydraOutcomePhase === 'reject_pending') {
+    try {
+      if (await ory.consentRequestPending(claim.session.challenge)) {
+        claim = await store.resetHydraPending(claim);
+      } else {
+        claim = await store.recordHydraOutcome(claim, claim.session.decision === 'approve' ? 'accepted' : 'rejected');
+      }
+    } catch (error) {
+      await store.retryDecision(claim, errorMessage(error));
+      throw error;
+    }
+  }
+
+  if (claim.session.hydraOutcomePhase === 'accepted') return convergeAcceptedDecision(claim, store, hooks);
+  if (claim.session.hydraOutcomePhase === 'rejected') {
+    await store.finalizeDecision(claim, claim.session.hydraRedirectTo);
+    return claim.session.hydraRedirectTo;
+  }
+
   if (claim.session.decision === 'approve') {
     try {
       await revalidateApproval(claim.session, claim.session.selectedScopes ?? [], hooks);
@@ -342,7 +402,7 @@ async function executeDecision(
         const denial = finalAudit(
           claim.session,
           'consent.denied',
-          claim.session.selectedScopes ?? [],
+          claim.session.context.scopes.map((scope) => scope.name),
           'authorization_context_changed',
         );
         claim = await store.replaceClaimedDecision(claim, 'deny', denial);
@@ -353,6 +413,7 @@ async function executeDecision(
     }
   }
 
+  claim = await store.markHydraPending(claim);
   try {
     const completion =
       claim.session.decision === 'approve'
@@ -363,26 +424,62 @@ async function executeDecision(
           })
         : await ory.rejectConsent(claim.session.challenge, 'The user denied the connector authorization request.');
     await faults.afterHydra?.(claim);
-    await store.finalizeDecision(claim, completion.redirect_to);
-    return completion.redirect_to;
+    claim = await store.recordHydraOutcome(
+      claim,
+      claim.session.decision === 'approve' ? 'accepted' : 'rejected',
+      completion.redirect_to,
+    );
   } catch (error) {
     if (error instanceof InjectedPostHydraCrash) throw error;
+    let pending: boolean;
     try {
-      const terminal =
+      pending =
         error instanceof OryRequestError && [409, 410].includes(error.upstreamStatus)
-          ? true
-          : !(await ory.consentRequestPending(claim.session.challenge));
-      if (terminal) {
-        await store.finalizeDecision(claim);
-        return undefined;
-      }
+          ? false
+          : await ory.consentRequestPending(claim.session.challenge);
     } catch (probeError) {
       await store.retryDecision(claim, errorMessage(probeError));
       throw probeError;
     }
+    if (!pending) {
+      claim = await store.recordHydraOutcome(claim, claim.session.decision === 'approve' ? 'accepted' : 'rejected');
+    } else {
+      claim = await store.resetHydraPending(claim);
+      await store.retryDecision(claim, errorMessage(error));
+      throw error;
+    }
+  }
+
+  if (claim.session.hydraOutcomePhase === 'accepted') return convergeAcceptedDecision(claim, store, hooks);
+  await store.finalizeDecision(claim, claim.session.hydraRedirectTo);
+  return claim.session.hydraRedirectTo;
+}
+
+async function convergeAcceptedDecision(
+  initialClaim: DecisionClaim,
+  store: ConsentStateStore,
+  hooks: RowboatHooks,
+): Promise<string | undefined> {
+  let claim = await store.recordAcceptedGrant(initialClaim);
+  try {
+    await revalidateApproval(claim.session, claim.session.selectedScopes ?? [], hooks);
+  } catch (error) {
+    if (error instanceof AppError && error.status < 500) {
+      const invalidation = finalAudit(
+        claim.session,
+        'consent.denied',
+        claim.session.context.scopes.map((scope) => scope.name),
+        `post_commit_${error.code}`,
+        `${claim.session.id}:invalidated`,
+      );
+      await store.invalidateAcceptedDecision(claim, invalidation);
+      return claim.session.hydraRedirectTo;
+    }
     await store.retryDecision(claim, errorMessage(error));
     throw error;
   }
+  await store.finalizeDecision(claim, claim.session.hydraRedirectTo);
+  return claim.session.hydraRedirectTo;
 }
 
 /** Fault-injection sentinel used to model a process death after Hydra commits. */

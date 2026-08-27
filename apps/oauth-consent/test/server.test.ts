@@ -385,7 +385,7 @@ afterEach(async () => {
 });
 
 describe('Hydra login and logout', () => {
-  it('uses nonce-bound WorkOS login, accepts Hydra login, rejects callback replay, and preserves logout', async () => {
+  it('uses nonce-bound WorkOS login, accepts Hydra login, safely replays completion, and preserves logout', async () => {
     const login = await harness.browser.get(harness.app.url, '/login?login_challenge=login_1');
     expect(login.status).toBe(302);
     const authorize = new URL(login.headers.get('location')!);
@@ -408,7 +408,9 @@ describe('Hydra login and logout', () => {
       `/callback?code=login-code&state=${encodeURIComponent(state)}`,
       originalCookies,
     );
-    expect(replay.status).toBe(409);
+    expect(replay.status).toBe(302);
+    expect(replay.headers.get('location')).toBe('http://desktop.test/login-complete');
+    expect(harness.ory.acceptedLogins).toHaveLength(1);
 
     const logout = await harness.browser.get(harness.app.url, '/logout?logout_challenge=logout_1');
     expect(logout.status).toBe(302);
@@ -454,7 +456,7 @@ describe('consent rendering and decisions', () => {
         }),
       }),
     ]);
-    expect(harness.rowboat.verifiedRequests).toBe(4);
+    expect(harness.rowboat.verifiedRequests).toBe(5);
   });
 
   it('supports an explicit deny POST and audits it after rejecting with Hydra', async () => {

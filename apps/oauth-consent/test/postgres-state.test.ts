@@ -66,8 +66,11 @@ const config: Config = {
 
 class FakeOry {
   terminal = false;
+  loginTerminal = false;
   hydraCommits = 0;
   acceptCalls = 0;
+  loginAcceptCalls = 0;
+  failNextLoginAccept = 0;
   readonly challenge: string;
   readonly consentContext: ConsentContext;
 
@@ -86,6 +89,24 @@ class FakeOry {
       requested_access_token_audience: [this.consentContext.connector.audience],
       client: { client_id: this.consentContext.client.id },
     };
+  }
+
+  async getLoginRequest(challenge: string) {
+    if (challenge !== this.challenge || this.loginTerminal) throw new OryRequestError(410);
+    return { skip: false, subject: '', challenge };
+  }
+
+  async acceptLogin(challenge: string, subject: string) {
+    this.loginAcceptCalls += 1;
+    if (challenge !== this.challenge || !subject) throw new OryRequestError(400);
+    if (this.failNextLoginAccept-- > 0) throw new OryRequestError(503);
+    if (this.loginTerminal) throw new OryRequestError(409);
+    this.loginTerminal = true;
+    return { redirect_to: 'http://desktop.test/login-complete' };
+  }
+
+  async loginRequestPending() {
+    return !this.loginTerminal;
   }
 
   async acceptConsent() {
@@ -112,7 +133,7 @@ class FakeHooks {
   readonly audits = new Map<string, AuditRequest>();
   contextCalls = 0;
 
-  constructor(private readonly policy = context) {}
+  constructor(public policy = context) {}
 
   async context() {
     this.contextCalls += 1;
@@ -129,6 +150,7 @@ class WorkOSFaultServer {
   readonly tokenClaims = new Map<string, JWTPayload>();
   failNextToken = 0;
   failNextJwks = 0;
+  tokenCalls = 0;
   private privateKey!: KeyLike;
   private publicJwk!: JWK;
   private baseUrl = '';
@@ -151,6 +173,7 @@ class WorkOSFaultServer {
       return res.json({ keys: [this.publicJwk] });
     });
     this.app.post('/token', async (req, res) => {
+      this.tokenCalls += 1;
       if (this.failNextToken-- > 0) return res.status(503).json({ error: 'temporary' });
       const claims = this.tokenClaims.get(String(req.body.code));
       if (!claims) return res.status(400).json({ error: 'invalid_grant' });
@@ -238,6 +261,10 @@ suite('PostgreSQL state store multi-instance behavior', () => {
     const migrations = await Promise.all([
       readFile(new URL('../migrations/20260827210000_shared_state_and_audit_outbox.sql', import.meta.url), 'utf8'),
       readFile(new URL('../migrations/20260827220700_final_review_b_remediations.sql', import.meta.url), 'utf8'),
+      readFile(
+        new URL('../migrations/20260827232500_irreversible_outcomes_and_login_leases.sql', import.meta.url),
+        'utf8',
+      ),
     ]);
     await poolA.query(
       'DROP TABLE IF EXISTS oauth_consent_audit_outbox, oauth_consent_browser_flows, oauth_consent_sessions CASCADE',
@@ -248,14 +275,82 @@ suite('PostgreSQL state store multi-instance behavior', () => {
     await Promise.all([poolA.end(), poolB.end()]);
   });
 
-  it('shares flows across replicas and atomically consumes them once', async () => {
+  it('shares flows across replicas and permits only one active login lease', async () => {
     const flow = await a.createLoginFlow('challenge_cross_process');
     const [first, second] = await Promise.allSettled([
-      a.consumeLoginFlow(flow.state, flow.cookieBinding),
-      b.consumeLoginFlow(flow.state, flow.cookieBinding),
+      a.claimLoginFlow(flow.state, flow.cookieBinding, 1_000),
+      b.claimLoginFlow(flow.state, flow.cookieBinding, 1_000),
     ]);
     expect([first.status, second.status].sort()).toEqual(['fulfilled', 'rejected']);
   });
+
+  it.each(['workos', 'hydra'] as const)(
+    'recovers the same login state across replicas after transient %s failure without consuming it early',
+    async (failure) => {
+      const challenge = `login_recovery_${failure}`;
+      const ory = new FakeOry(challenge);
+      const issuer = new WorkOSFaultServer();
+      await issuer.initialize();
+      const issuerApp = await listen(issuer.app);
+      issuer.setBaseUrl(issuerApp.url);
+      const workos = new WorkOS({ ...config.workos, issuer: issuerApp.url }, 2_000);
+      const hooks = new FakeHooks();
+      const leftApp = await listen(
+        buildApp(config, {
+          store: a,
+          ory: ory as unknown as OryAdmin,
+          hooks: hooks as unknown as RowboatHooks,
+          workos,
+        }),
+      );
+      const rightApp = await listen(
+        buildApp(config, {
+          store: b,
+          ory: ory as unknown as OryAdmin,
+          hooks: hooks as unknown as RowboatHooks,
+          workos,
+        }),
+      );
+      try {
+        const browser = new HttpBrowser();
+        const login = await browser.get(leftApp.url, `/login?login_challenge=${challenge}`);
+        const authorize = new URL(login.headers.get('location')!);
+        const state = authorize.searchParams.get('state')!;
+        const nonce = authorize.searchParams.get('nonce')!;
+        const cookies = browser.cookieHeader();
+        issuer.tokenClaims.set('login-recovery-code', { sub: context.subject, nonce, amr: ['pwd'] });
+        if (failure === 'workos') issuer.failNextToken = 1;
+        else ory.failNextLoginAccept = 1;
+
+        const first = await browser.get(
+          rightApp.url,
+          `/callback?code=login-recovery-code&state=${encodeURIComponent(state)}`,
+        );
+        expect(first.status).toBe(502);
+
+        const callbackPath = `/callback?code=login-recovery-code&state=${encodeURIComponent(state)}`;
+        const recovered = await Promise.all([
+          fetch(leftApp.url + callbackPath, { headers: { cookie: cookies }, redirect: 'manual' }),
+          fetch(rightApp.url + callbackPath, { headers: { cookie: cookies }, redirect: 'manual' }),
+        ]);
+        expect(recovered.map((response) => response.status).sort()).toEqual([302, 409]);
+
+        const replay = await fetch(leftApp.url + callbackPath, { headers: { cookie: cookies }, redirect: 'manual' });
+        expect(replay.status).toBe(302);
+        expect(replay.headers.get('location')).toBe('http://desktop.test/login-complete');
+        expect(ory.loginAcceptCalls).toBe(failure === 'hydra' ? 2 : 1);
+        expect(issuer.tokenCalls).toBe(failure === 'workos' ? 2 : 1);
+        const rows = await poolA.query(
+          `SELECT upstream_phase, login_subject, completed_at IS NOT NULL AS completed
+           FROM oauth_consent_browser_flows WHERE challenge=$1`,
+          [challenge],
+        );
+        expect(rows.rows).toEqual([{ upstream_phase: 'completed', login_subject: context.subject, completed: true }]);
+      } finally {
+        await Promise.all([close(leftApp.server), close(rightApp.server), close(issuerApp.server)]);
+      }
+    },
+  );
 
   it('uses CAS transitions across replicas', async () => {
     const session = await a.createConsent({
@@ -299,7 +394,10 @@ suite('PostgreSQL state store multi-instance behavior', () => {
     const [replayed] = await restarted.claimDecisions(10, 1_000);
     expect(replayed?.session.id).toBe(session.id);
     expect(replayed?.claimToken).not.toBe(initialClaim.claimToken);
-    await restarted.finalizeDecision(replayed!);
+    let accepted = await restarted.markHydraPending(replayed!);
+    accepted = await restarted.recordHydraOutcome(accepted, 'accepted');
+    accepted = await restarted.recordAcceptedGrant(accepted);
+    await restarted.finalizeDecision(accepted);
     const audits = await a.claimAudits(10);
     expect(audits.filter((item) => item.id === `${session.id}:final`)).toHaveLength(1);
   });
@@ -343,13 +441,18 @@ suite('PostgreSQL state store multi-instance behavior', () => {
     expect([...left, ...right].filter((claim) => claim.session.id === session.id)).toHaveLength(1);
   });
 
-  it('converges after a post-Hydra crash with two reconcilers and one semantic final audit', async () => {
+  it('keeps an accepted Hydra outcome irreversible, then explicitly invalidates after entitlement removal', async () => {
     const challenge = 'challenge_post_hydra_crash';
-    const ory = new FakeOry(challenge);
-    const hooks = new FakeHooks();
-    const session = await a.createConsent({ challenge, subject: context.subject, hydraClientId: 'desktop', context });
+    const ory = new FakeOry(challenge, moneyContext);
+    const hooks = new FakeHooks(moneyContext);
+    const session = await a.createConsent({
+      challenge,
+      subject: moneyContext.subject,
+      hydraClientId: 'desktop',
+      context: moneyContext,
+    });
     await a.transition(session.id, 'created', 'shown');
-    await a.setSelectedScopes(session.id, []);
+    await a.setSelectedScopes(session.id, [moneyContext.scopes[0].name]);
     await a.prepareDecision(
       session.id,
       'approve',
@@ -358,8 +461,8 @@ suite('PostgreSQL state store multi-instance behavior', () => {
         eventId: `${session.id}:final`,
         occurredAt: new Date().toISOString(),
         sessionId: session.id,
-        context,
-        scopes: [],
+        context: moneyContext,
+        scopes: [moneyContext.scopes[0].name],
         result: 'approved',
       },
       1_000,
@@ -375,7 +478,15 @@ suite('PostgreSQL state store multi-instance behavior', () => {
       },
     });
     expect(ory.hydraCommits).toBe(1);
-    expect((await a.getConsent(session.id)).status).toBe('processing');
+    const crashed = await a.getConsent(session.id);
+    expect(crashed.status).toBe('processing');
+    expect(crashed.decision).toBe('approve');
+    expect(crashed.hydraOutcomePhase).toBe('accept_pending');
+
+    hooks.policy = {
+      ...moneyContext,
+      entitlement: { allowed: false, reason: 'scope_not_in_plan' },
+    };
 
     await poolA.query(
       `UPDATE oauth_consent_sessions SET decision_lease_until=now() - interval '1 second' WHERE id=$1`,
@@ -387,13 +498,37 @@ suite('PostgreSQL state store multi-instance behavior', () => {
     ]);
     expect(reconciled.sort()).toEqual([0, 1]);
     expect(ory.hydraCommits).toBe(1);
-    expect(ory.acceptCalls).toBe(2);
-    expect((await a.getConsent(session.id)).status).toBe('approved');
+    expect(ory.acceptCalls).toBe(1);
+    const converged = await a.getConsent(session.id);
+    expect(converged.status).toBe('invalidated');
+    expect(converged.decision).toBe('approve');
+    expect(converged.hydraOutcomePhase).toBe('accepted');
+    expect(converged.grantRecordedAt).toBeTypeOf('number');
     expect([...hooks.audits].filter(([id]) => id === `${session.id}:final`)).toHaveLength(1);
-    const rows = await poolA.query('SELECT count(*)::int AS count FROM oauth_consent_audit_outbox WHERE id=$1', [
-      `${session.id}:final`,
+    expect([...hooks.audits].filter(([id]) => id === `${session.id}:invalidated`)).toHaveLength(1);
+    expect(hooks.audits.get(`${session.id}:final`)).toEqual(
+      expect.objectContaining({
+        event: 'consent.granted',
+        result: 'approved',
+        scopes: [moneyContext.scopes[0].name],
+      }),
+    );
+    expect(hooks.audits.get(`${session.id}:invalidated`)).toEqual(
+      expect.objectContaining({
+        event: 'consent.denied',
+        result: 'post_commit_entitlement_revoked',
+        scopes: moneyContext.scopes.map((scope) => scope.name),
+      }),
+    );
+    const rows = await poolA.query(
+      `SELECT id, payload, delivered_at IS NOT NULL AS delivered
+       FROM oauth_consent_audit_outbox WHERE id = ANY($1::text[]) ORDER BY id`,
+      [[`${session.id}:final`, `${session.id}:invalidated`]],
+    );
+    expect(rows.rows).toEqual([
+      expect.objectContaining({ id: `${session.id}:final`, delivered: true }),
+      expect.objectContaining({ id: `${session.id}:invalidated`, delivered: true }),
     ]);
-    expect(rows.rows[0].count).toBe(1);
   });
 
   it.each(['exchange', 'jwks'] as const)(

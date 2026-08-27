@@ -13,7 +13,10 @@ cross-product or self-hosted deployment.
   WorkOS.
 - `/callback` verifies the WorkOS `id_token` signature, issuer, audience,
   subject, and OIDC nonce before accepting the Hydra login.
-- Login state and browser cookies are opaque, signed, expiring, and one-time.
+- Login state and browser cookies are opaque, signed, and expiring. The callback
+  claims state with a database lease, persists the verified WorkOS subject,
+  records the may-have-committed Hydra phase before accepting, and retains the
+  completion redirect for safe replay after transient failures or process death.
 - `/logout` preserves Hydra's logout challenge/accept flow.
 
 ### Consent state machine
@@ -24,6 +27,7 @@ PostgreSQL-backed expiring state machine:
 ```text
 created -> shown -> processing -> approved
                  \-> processing -> denied
+                 \-> processing -> invalidated
                  \-> step_up_pending -> processing -> approved
 created/shown/step_up_pending/processing -> failed
 ```
@@ -56,13 +60,16 @@ failures atomically create a fresh flow with the same browser binding; the old
 state remains a retry alias so a dropped recovery redirect returns the same
 fresh authorization URL.
 
-Before every approval, including reconciled approvals, the service repeats the
-signed context/entitlement request and checks identity, audience, connector,
-scope policy, selected scopes, and current entitlement. Policy drift is
+Before the first Hydra approval attempt, the service repeats the signed
+context/entitlement request and checks identity, audience, connector, scope
+policy, selected scopes, and current entitlement. Policy drift at that point is
 converted to a Hydra denial; hook timeout or signature failure makes no Hydra
-decision and leaves durable retry work. Replayed forms, stale cookies, and
-replaced challenges fail closed. Upstream errors expose only stable local error
-codes and never include upstream response bodies.
+decision and leaves durable retry work. After Hydra acceptance is known, the
+accepted fact and grant audit are irreversible. A second authoritative check
+then either completes `approved` or performs an explicit `invalidated`
+transition with its own deterministic denial audit. Replayed forms, stale
+cookies, and replaced challenges fail closed. Upstream errors expose only
+stable local error codes and never include upstream response bodies.
 
 ### Shared state and audit delivery
 
@@ -72,19 +79,19 @@ advisory lock before any application container starts. Login, consent, CSRF,
 challenge, and step-up records use database TTL checks and atomic compare-and-set
 transitions, so requests may move between replicas.
 
-Before Hydra is called, the chosen decision, selected scopes, and complete final
-audit payload are durably committed as decision intent and leased to one worker.
-A unique index permits only one session per Hydra challenge. After Hydra accepts
-or rejects, the session transition, returned redirect, and stable
-`<session>:final` outbox event are committed in one database transaction. If a
-process dies after Hydra commits, a later lease holder treats Hydra's terminal
-`409`/`410` response as convergence and finalizes the same durable intent. Two
-reconcilers cannot own the same live lease. The stable event ID and persisted
-`occurred_at` provide exactly-once semantic audit delivery when the receiver
-applies its documented event-ID deduplication. Any replica claims outbox rows
-with `FOR UPDATE SKIP LOCKED` and exponential backoff. Expired browser flows and
-non-processing sessions, plus delivered audit rows older than 30 days, are
-cleaned periodically.
+Before Hydra is called, the chosen decision, selected scopes, complete final
+audit payload, and an `accept_pending` or `reject_pending` may-have-committed
+phase are durably committed and leased to one worker. A unique index permits
+only one session per Hydra challenge. Recovery probes Hydra before doing
+anything that could change the decision. A terminal approval challenge is
+persisted as `accepted`, can never be rewritten to denial, and first converges
+the stable `<session>:final` grant audit. Post-commit entitlement or policy drift
+then commits `invalidated` and `<session>:invalidated` as a separate explicit
+transition. Repeated and concurrent recovery uses the same deterministic IDs,
+so both semantic events converge exactly once. Two reconcilers cannot own the
+same live lease. Any replica claims outbox rows with `FOR UPDATE SKIP LOCKED`
+and exponential backoff. Expired browser flows and non-processing sessions,
+plus delivered audit rows older than 30 days, are cleaned periodically.
 
 `/healthz` is process liveness only. `/readyz` executes `SELECT 1` and returns
 503 when PostgreSQL is unavailable. The chart uses `/readyz` for readiness.
@@ -94,7 +101,8 @@ When NetworkPolicy is enabled, PostgreSQL egress is denied unless
 to the managed database private endpoint ranges and set
 `networkPolicy.postgresql.port` if it is not 5432. Do not use `0.0.0.0/0`.
 
-Run PostgreSQL multi-instance, CAS, consume, and restart/replay tests with:
+Run PostgreSQL multi-instance, lease, crash, entitlement-drift, and
+restart/replay tests with:
 
 ```bash
 TEST_DATABASE_URL=postgres://... npm test
