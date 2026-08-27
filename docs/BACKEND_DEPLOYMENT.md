@@ -1,6 +1,6 @@
 # Rowboat Backend Deployment and Operations
 
-This guide covers the deployed RFC 012 connector authorization plane alongside the WorkOS-direct service-plane login defined by RFC 011. WorkOS remains the human identity provider. Ory Hydra issues audience-bound connector resource tokens, `oauth-consent` performs login/consent and MFA step-up, and rowboat-api brokers connections without proxying product MCP traffic.
+This guide covers the deployed RFC 012 connector authorization plane alongside the WorkOS-direct service-plane login defined by RFC 011. WorkOS remains the human identity provider. Ory Hydra runs the authorization-code, consent, refresh, and revocation flow; `oauth-consent` performs login/consent and MFA step-up. Those Hydra consent-plane credentials are exchanged and retained by rowboat-api and are never product MCP bearer tokens. After checking the connection, scopes, and entitlement, rowboat-api mints its own short-lived, audience-bound connector resource token for direct product MCP traffic.
 
 ## Repository artifacts
 
@@ -19,7 +19,7 @@ Provision separate resources and credentials for staging and production:
 1. Managed Postgres databases for rowboat-api and Hydra. Never share Hydra DSNs across environments.
 2. Redis for rowboat-api.
 3. WorkOS projects or explicitly isolated environments with AuthKit, MFA enabled, and callback URIs for `/callback` and `/step-up/callback` on the matching consent host.
-4. DNS/TLS for the API, Hydra public endpoint, and consent app.
+4. DNS/TLS for the rowboat-api origin, Hydra public endpoint, and consent app. These are distinct token issuers.
 5. An external secret manager that writes `rowboat-api-secrets`, `hydra-secrets`, and `oauth-consent-secrets`.
 6. Product MCP deployments with environment-specific issuer, audience, JWKS, and entitlement configuration.
 
@@ -57,14 +57,38 @@ Rotate without invalidating in-flight tokens:
 5. Remove the old public key and deploy. Resource servers refetch JWKS once on
    an unknown `kid`, so publishing the overlap before switching signers is required.
 
+## Connector token issuer contract
+
+The canonical connector resource-token issuer is the externally reachable
+rowboat-api origin:
+
+| Environment | `BROKER_TOKEN_ISSUER` / verifier issuer | Verifier JWKS URL |
+|---|---|---|
+| Production | `https://api.oppulence.io` | `https://api.oppulence.io/.well-known/connector-jwks.json` |
+| Staging | `https://api.x.staging.solomon-ai.co` | `https://api.x.staging.solomon-ai.co/.well-known/connector-jwks.json` |
+
+This contract is separate from Hydra. `ORY_PUBLIC_URL` points rowboat-api at
+Hydra's consent-plane OAuth endpoints. Hydra-issued access and refresh tokens
+must not be sent to product MCPs, and product verifiers must not use Hydra's
+issuer or `/.well-known/jwks.json` for connector resource tokens.
+
+Production Helm renders fail when `config.BROKER_TOKEN_ISSUER` differs from
+`config.PUBLIC_BASE_URL`, or when that public base differs from the TLS ingress
+origin. A reviewed deployment may set
+`connectorBroker.allowSeparateIssuer=true` and configure a distinct exact
+`BROKER_TOKEN_ISSUER`. In that exceptional topology, every product verifier must
+pin the distinct issuer while its `OAUTH_JWKS_URL` still points to the externally
+reachable rowboat-api `/.well-known/connector-jwks.json` endpoint. Record the
+reason, verifier rollout order, and rollback plan in the deployment change.
+
 ## Environment isolation
 
 Each environment must have unique:
 
-- Hydra database, issuer, public hostname, client IDs, and client secrets
+- Hydra database, consent-plane issuer, public hostname, client IDs, and client secrets
 - consent hostname, cookie secret, WorkOS callbacks, and HMAC secret
 - connector definitions, provider credentials, callback URLs, MCP URLs, and audiences
-- product resource-server issuer/audience configuration
+- rowboat-api connector resource-token signing keys and product resource-server issuer/audience/JWKS configuration
 
 Production audiences use `mcp:<product>`. Staging uses a distinct audience such as `mcp:<product>-staging`. Promotion is rejected if any staging hostname, client id, callback, or audience appears in production rendered manifests.
 
@@ -130,7 +154,7 @@ Entitlements are checked before consent and before each resource-token mint. Tre
 
 ## Product resource-server configuration
 
-Every product MCP must configure its RFC 012 middleware with the exact environment issuer and one audience. Use `docs/deployment-examples/product-resource-server.env.example`. Required behavior:
+Every product MCP must configure its RFC 012 middleware with the exact rowboat-api connector issuer, the rowboat-api connector JWKS URL, and one audience. Use `docs/deployment-examples/product-resource-server.env.example`. Do not configure the Hydra issuer or Hydra JWKS here. Required behavior:
 
 - allow RS256 only and refresh JWKS once on unknown `kid`
 - validate issuer, audience, expiry, `nbf`, and `iat`
@@ -143,12 +167,18 @@ Every product MCP must configure its RFC 012 middleware with the exact environme
 
 ```bash
 helm lint charts/oauth-consent
+helm lint charts/rowboat-api -f charts/rowboat-api/values-production.yaml
 helm template oauth-consent charts/oauth-consent -f charts/oauth-consent/values-production.yaml >/dev/null
 helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-production.yaml >/dev/null
+helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-staging.yaml >/dev/null
 curl -fsS https://oauth.solomon-ai.co/.well-known/openid-configuration
 curl -fsS https://oauth.solomon-ai.co/.well-known/jwks.json
 curl -fsS https://consent.solomon-ai.co/healthz
 curl -fsS https://api.oppulence.io/healthz
+curl -fsS https://api.oppulence.io/.well-known/connector-jwks.json
+
+# Render-contract and product-verifier configuration probe.
+charts/rowboat-api/tests/deployment-contract.sh
 ```
 
-Run a staging consent flow for read and money-moving scopes, verify HMAC-authenticated context/audit delivery, entitlement denial copy, exact audience, and product 401/403/428 behavior before promotion. Rollback procedures are in `docs/runbooks/connectors.md#rollback`.
+Run a staging consent flow for read and money-moving scopes, verify HMAC-authenticated context/audit delivery and entitlement denial copy, then mint a rowboat-api resource token. Confirm its `iss` is the staging API origin, its `kid` exists in the staging connector JWKS, its `aud` is exact, and the product returns the expected 401/403/428 responses. Rollback procedures are in `docs/runbooks/connectors.md#rollback`.

@@ -7,6 +7,7 @@ These procedures implement RFC 012 operations. Preserve timestamps, connector/en
 ```bash
 # Render before changing a release.
 helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-production.yaml > /tmp/rowboat-api.yaml
+charts/rowboat-api/tests/deployment-contract.sh
 
 # Emergency-disable one or more connectors without deleting grants.
 helm upgrade rowboat-api charts/rowboat-api -n rowboat \
@@ -55,13 +56,14 @@ A disable must stop new consent starts and resource-token mints. Existing rows r
 
 **Symptoms:** product MCP returns 401 with `token_invalid_signature`, `audience_mismatch`, unknown `kid`, or clock errors.
 
-1. Decode only a redacted test token locally. Compare `iss`, `aud`, `kid`, `exp`, `nbf`, and `iat` with product configuration.
-2. Fetch `/.well-known/openid-configuration` and JWKS from the configured issuer. Confirm TLS and that the signing `kid` is published.
-3. Confirm the product uses the environment-specific audience from `docs/deployment-examples/product-resource-server.env.example` and RS256-only validation.
-4. Check node clock skew. Do not widen skew beyond policy to hide clock problems.
-5. On unknown `kid`, force one JWKS refresh. Do not disable signature verification or accept arbitrary algorithms.
-6. If a key rotation caused rejection, restore the previous verification key/JWKS publication, then repeat rotation with overlap.
-7. If production receives a staging audience or issuer, disable the connector and investigate environment crossover before re-enabling.
+1. Identify the token class before changing any verifier. Hydra access/refresh tokens belong only to the consent-plane flow. Product MCPs accept only short-lived connector resource tokens minted by rowboat-api.
+2. Decode only a redacted test connector resource token locally. Compare `iss`, `aud`, `kid`, `exp`, `nbf`, and `iat` with product configuration. The canonical `iss` is the environment's externally reachable rowboat-api origin.
+3. Fetch `/.well-known/connector-jwks.json` from the rowboat-api origin. Confirm TLS and that the signing `kid` is published. Do not substitute Hydra discovery or Hydra `/.well-known/jwks.json`.
+4. Confirm the product uses the environment-specific issuer, connector JWKS URL, and audience from `docs/deployment-examples/product-resource-server.env.example`, with RS256-only validation.
+5. Check node clock skew. Do not widen skew beyond policy to hide clock problems.
+6. On unknown `kid`, force one JWKS refresh. Do not disable signature verification or accept arbitrary algorithms.
+7. If a key rotation caused rejection, restore the previous verification key/JWKS publication, then repeat rotation with overlap.
+8. If production receives a staging audience or issuer, or a Hydra-issued token reaches a product MCP, disable the connector and investigate environment crossover or token-routing failure before re-enabling.
 
 ## Entitlement outage
 
@@ -99,6 +101,7 @@ Bulk invalidation is destructive to active grants and requires incident commande
 
 - **Hydra system/cookie keys:** deploy `new,previous`, verify old and new sessions, wait through the applicable TTL, then remove previous.
 - **Hydra signing keys/JWKS:** publish the new public key before signing with it. Keep the old public key through maximum token TTL plus skew.
+- **rowboat-api connector signing keys/JWKS:** publish the new key from `/.well-known/connector-jwks.json` before switching `BROKER_TOKEN_KEY_ID`; keep the old key through `BROKER_TOKEN_TTL` plus verifier skew/cache TTL.
 - **Consent hook HMAC:** deploy dual verification first when supported, switch signer, wait through consent TTL, remove old verifier. Otherwise disable consent during a coordinated rotation.
 - **DB encryption key:** re-encrypt before retirement. If compromise prevents safe re-encryption, invalidate/revoke all affected grants and require reauthorization.
 

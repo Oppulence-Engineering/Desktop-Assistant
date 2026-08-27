@@ -33,6 +33,9 @@ config:
   CONNECTOR_EMERGENCY_DISABLED: ""
   CONNECTOR_ENTITLEMENT_URLS_JSON: '{"canvas":"https://api.canvas.staging.solomon-ai.co/v1/internal/entitlements","corinthian":"https://mcp.corinthian.staging.solomon-ai.co/v1/internal/entitlements","cadence":"https://mcp.cadence.staging.solomon-ai.co/v1/internal/entitlements","conduit":"https://mcp.conduit.staging.solomon-ai.co/v1/internal/entitlements","eigen":"https://mcp.eigen.staging.solomon-ai.co/v1/internal/entitlements","wispr":"https://mcp.wispr.staging.solomon-ai.co/v1/internal/entitlements"}'
   PUBLIC_BASE_URL: https://api.x.staging.solomon-ai.co
+  # Staging product verifiers use this issuer and the connector JWKS endpoint on
+  # the same rowboat-api origin, never the Hydra JWKS used by the consent flow.
+  BROKER_TOKEN_ISSUER: https://api.x.staging.solomon-ai.co
   # Google OAuth broker callback. MUST be the API host (where /oauth/google/callback
   # is served), not APP_URL — the default falls back to APP_URL, which is the app
   # host in staging/prod. Register this exact URI in the Google Cloud OAuth client.

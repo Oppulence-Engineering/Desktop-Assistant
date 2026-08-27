@@ -183,6 +183,14 @@ serviceMesh:
       enabled: false
       mtlsMode: STRICT
 
+# Connector resource tokens are minted and signed by rowboat-api. In production,
+# their issuer must be the externally reachable API origin in config.PUBLIC_BASE_URL.
+# Set allowSeparateIssuer only for a reviewed topology where BROKER_TOKEN_ISSUER is
+# intentionally different and every product verifier is configured with that exact
+# issuer while still fetching rowboat-api's connector JWKS endpoint.
+connectorBroker:
+  allowSeparateIssuer: false
+
 # Non-secret configuration, surfaced as env via a ConfigMap.
 config:
   ENVIRONMENT: production
@@ -206,6 +214,8 @@ config:
   WORKOS_CLIENT_ID: ""
   ORY_PUBLIC_URL: https://oauth.solomon-ai.co
   PUBLIC_BASE_URL: https://api.x.solomon-ai.co
+  # Exact iss for rowboat-api-minted connector resource tokens. This is not the
+  # Hydra issuer used by the authorization-code and consent flow.
   BROKER_TOKEN_ISSUER: https://api.x.solomon-ai.co
   # Active signing kid. It must exist in BROKER_TOKEN_KEYRING_JSON and match
   # BROKER_TOKEN_PRIVATE_KEY_PEM or every replica fails startup.

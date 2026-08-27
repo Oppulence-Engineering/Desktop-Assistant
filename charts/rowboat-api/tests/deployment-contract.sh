@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+chart="$repo_root/charts/rowboat-api"
+verifier_example="$repo_root/docs/deployment-examples/product-resource-server.env.example"
+tmp_dir="$(mktemp -d)"
+trap 'rm -rf "$tmp_dir"' EXIT
+
+fail() {
+  printf 'deployment contract test failed: %s\n' "$*" >&2
+  exit 1
+}
+
+config_value() {
+  local manifest="$1"
+  local key="$2"
+  awk -v key="$key" '$1 == key ":" { value=$2; gsub(/^"|"$/, "", value); print value; exit }' "$manifest"
+}
+
+assert_equal() {
+  local actual="$1"
+  local expected="$2"
+  local label="$3"
+  [[ "$actual" == "$expected" ]] || fail "$label: expected $expected, got $actual"
+}
+
+render_environment() {
+  local environment="$1"
+  local manifest="$tmp_dir/$environment.yaml"
+  helm template rowboat-api "$chart" -f "$chart/values-$environment.yaml" >"$manifest"
+
+  local public_origin broker_issuer
+  public_origin="$(config_value "$manifest" PUBLIC_BASE_URL)"
+  broker_issuer="$(config_value "$manifest" BROKER_TOKEN_ISSUER)"
+  [[ -n "$public_origin" ]] || fail "$environment PUBLIC_BASE_URL is absent from the rendered ConfigMap"
+  [[ -n "$broker_issuer" ]] || fail "$environment BROKER_TOKEN_ISSUER is absent from the rendered ConfigMap"
+  assert_equal "$broker_issuer" "$public_origin" "$environment broker issuer"
+}
+
+helm lint "$chart" -f "$chart/values-production.yaml" >/dev/null
+render_environment production
+render_environment staging
+
+if helm template rowboat-api "$chart" \
+  -f "$chart/values-production.yaml" \
+  --set-string config.BROKER_TOKEN_ISSUER=https://issuer.example.com \
+  >"$tmp_dir/mismatch.yaml" 2>"$tmp_dir/mismatch.err"; then
+  fail "production render accepted a broker issuer different from PUBLIC_BASE_URL"
+fi
+grep -q 'BROKER_TOKEN_ISSUER.*must equal config.PUBLIC_BASE_URL' "$tmp_dir/mismatch.err" ||
+  fail "production issuer mismatch did not report the deployment-contract error"
+
+helm template rowboat-api "$chart" \
+  -f "$chart/values-production.yaml" \
+  --set-string config.BROKER_TOKEN_ISSUER=https://issuer.example.com \
+  --set connectorBroker.allowSeparateIssuer=true \
+  >"$tmp_dir/separate-issuer.yaml"
+assert_equal \
+  "$(config_value "$tmp_dir/separate-issuer.yaml" BROKER_TOKEN_ISSUER)" \
+  "https://issuer.example.com" \
+  "explicit separate broker issuer"
+
+if helm template rowboat-api "$chart" \
+  -f "$chart/values-production.yaml" \
+  --set-string config.PUBLIC_BASE_URL=https://api-drift.oppulence.io \
+  --set-string config.BROKER_TOKEN_ISSUER=https://api-drift.oppulence.io \
+  >"$tmp_dir/ingress-mismatch.yaml" 2>"$tmp_dir/ingress-mismatch.err"; then
+  fail "production render accepted PUBLIC_BASE_URL different from the TLS ingress origin"
+fi
+grep -q 'PUBLIC_BASE_URL.*must equal the externally reachable ingress origin' "$tmp_dir/ingress-mismatch.err" ||
+  fail "production ingress mismatch did not report the deployment-contract error"
+
+# Probe the documented product verifier inputs without making a network request.
+# The issuer must match the rendered production broker issuer, and the direct JWKS
+# URL must be the connector key set on the externally reachable rowboat-api origin.
+# shellcheck disable=SC1090
+source "$verifier_example"
+production_manifest="$tmp_dir/production.yaml"
+production_origin="$(config_value "$production_manifest" PUBLIC_BASE_URL)"
+production_issuer="$(config_value "$production_manifest" BROKER_TOKEN_ISSUER)"
+assert_equal "$OAUTH_ISSUER" "$production_issuer" "product verifier issuer"
+assert_equal "$OAUTH_JWKS_URL" "$production_origin/.well-known/connector-jwks.json" "product verifier JWKS URL"
+assert_equal "$OAUTH_ALLOWED_ALGORITHMS" "RS256" "product verifier algorithm policy"
+
+staging_documented_issuer="$(sed -n 's/^# OAUTH_ISSUER=//p' "$verifier_example")"
+staging_documented_jwks="$(sed -n 's/^# OAUTH_JWKS_URL=//p' "$verifier_example")"
+staging_manifest="$tmp_dir/staging.yaml"
+staging_origin="$(config_value "$staging_manifest" PUBLIC_BASE_URL)"
+staging_issuer="$(config_value "$staging_manifest" BROKER_TOKEN_ISSUER)"
+assert_equal "$staging_documented_issuer" "$staging_issuer" "staging product verifier issuer"
+assert_equal "$staging_documented_jwks" "$staging_origin/.well-known/connector-jwks.json" "staging product verifier JWKS URL"
+
+PRODUCTION_ISSUER="$OAUTH_ISSUER" \
+PRODUCTION_JWKS_URL="$OAUTH_JWKS_URL" \
+STAGING_ISSUER="$staging_documented_issuer" \
+STAGING_JWKS_URL="$staging_documented_jwks" \
+python3 - <<'PY'
+import os
+from urllib.parse import urlparse
+
+for environment in ("PRODUCTION", "STAGING"):
+    issuer = urlparse(os.environ[f"{environment}_ISSUER"])
+    jwks = urlparse(os.environ[f"{environment}_JWKS_URL"])
+    assert issuer.scheme == "https" and issuer.netloc and issuer.path in ("", "/")
+    assert (jwks.scheme, jwks.netloc) == (issuer.scheme, issuer.netloc)
+    assert jwks.path == "/.well-known/connector-jwks.json"
+    assert not issuer.params and not issuer.query and not issuer.fragment
+    assert not jwks.params and not jwks.query and not jwks.fragment
+PY
+
+printf 'rowboat-api deployment contract and token verifier configuration probe passed\n'

@@ -50,6 +50,10 @@ config:
   JWKS_URL: ""
   OTEL_EXPORTER_OTLP_ENDPOINT: ""
   PUBLIC_BASE_URL: https://api.oppulence.io
+  # rowboat-api, not Hydra, mints the short-lived tokens accepted by product MCPs.
+  # Product verifiers use this issuer plus
+  # https://api.oppulence.io/.well-known/connector-jwks.json.
+  BROKER_TOKEN_ISSUER: https://api.oppulence.io
   # RFC 012 broker endpoints. Keep all URLs, clients, catalogs, and audiences
   # environment-local. Secret values remain in rowboat-api-secrets.
   ORY_PUBLIC_URL: https://oauth.solomon-ai.co
