@@ -908,6 +908,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			mcpconnection.FieldUpdatedAt:             {Type: field.TypeTime, Column: mcpconnection.FieldUpdatedAt},
 			mcpconnection.FieldConnector:             {Type: field.TypeString, Column: mcpconnection.FieldConnector},
 			mcpconnection.FieldAudience:              {Type: field.TypeString, Column: mcpconnection.FieldAudience},
+			mcpconnection.FieldOrganizationID:        {Type: field.TypeString, Column: mcpconnection.FieldOrganizationID},
 			mcpconnection.FieldScopes:                {Type: field.TypeJSON, Column: mcpconnection.FieldScopes},
 			mcpconnection.FieldRefreshTokenEncrypted: {Type: field.TypeBytes, Column: mcpconnection.FieldRefreshTokenEncrypted},
 			mcpconnection.FieldAPIKeyEncrypted:       {Type: field.TypeBytes, Column: mcpconnection.FieldAPIKeyEncrypted},
@@ -941,6 +942,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			mcpconnectionhistory.FieldRef:                   {Type: field.TypeUUID, Column: mcpconnectionhistory.FieldRef},
 			mcpconnectionhistory.FieldConnector:             {Type: field.TypeString, Column: mcpconnectionhistory.FieldConnector},
 			mcpconnectionhistory.FieldAudience:              {Type: field.TypeString, Column: mcpconnectionhistory.FieldAudience},
+			mcpconnectionhistory.FieldOrganizationID:        {Type: field.TypeString, Column: mcpconnectionhistory.FieldOrganizationID},
 			mcpconnectionhistory.FieldScopes:                {Type: field.TypeJSON, Column: mcpconnectionhistory.FieldScopes},
 			mcpconnectionhistory.FieldRefreshTokenEncrypted: {Type: field.TypeBytes, Column: mcpconnectionhistory.FieldRefreshTokenEncrypted},
 			mcpconnectionhistory.FieldAPIKeyEncrypted:       {Type: field.TypeBytes, Column: mcpconnectionhistory.FieldAPIKeyEncrypted},
@@ -1114,24 +1116,27 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		Type: "OAuthPending",
 		Fields: map[string]*sqlgraph.FieldSpec{
-			oauthpending.FieldCreatedAt:         {Type: field.TypeTime, Column: oauthpending.FieldCreatedAt},
-			oauthpending.FieldUpdatedAt:         {Type: field.TypeTime, Column: oauthpending.FieldUpdatedAt},
-			oauthpending.FieldState:             {Type: field.TypeString, Column: oauthpending.FieldState},
-			oauthpending.FieldStateHash:         {Type: field.TypeString, Column: oauthpending.FieldStateHash},
-			oauthpending.FieldProvider:          {Type: field.TypeString, Column: oauthpending.FieldProvider},
-			oauthpending.FieldPayloadEncrypted:  {Type: field.TypeBytes, Column: oauthpending.FieldPayloadEncrypted},
-			oauthpending.FieldExpiresAt:         {Type: field.TypeTime, Column: oauthpending.FieldExpiresAt},
-			oauthpending.FieldLifecycleStatus:   {Type: field.TypeString, Column: oauthpending.FieldLifecycleStatus},
-			oauthpending.FieldOwnerWorkosUserID: {Type: field.TypeString, Column: oauthpending.FieldOwnerWorkosUserID},
-			oauthpending.FieldOwnerOrgID:        {Type: field.TypeString, Column: oauthpending.FieldOwnerOrgID},
-			oauthpending.FieldRequestedScopes:   {Type: field.TypeJSON, Column: oauthpending.FieldRequestedScopes},
-			oauthpending.FieldRedirectTarget:    {Type: field.TypeString, Column: oauthpending.FieldRedirectTarget},
-			oauthpending.FieldConsentChallenge:  {Type: field.TypeString, Column: oauthpending.FieldConsentChallenge},
-			oauthpending.FieldContextRequestID:  {Type: field.TypeString, Column: oauthpending.FieldContextRequestID},
-			oauthpending.FieldHydraClientID:     {Type: field.TypeString, Column: oauthpending.FieldHydraClientID},
-			oauthpending.FieldCallbackAt:        {Type: field.TypeTime, Column: oauthpending.FieldCallbackAt},
-			oauthpending.FieldClaimedAt:         {Type: field.TypeTime, Column: oauthpending.FieldClaimedAt},
-			oauthpending.FieldFailureReason:     {Type: field.TypeString, Column: oauthpending.FieldFailureReason},
+			oauthpending.FieldCreatedAt:            {Type: field.TypeTime, Column: oauthpending.FieldCreatedAt},
+			oauthpending.FieldUpdatedAt:            {Type: field.TypeTime, Column: oauthpending.FieldUpdatedAt},
+			oauthpending.FieldState:                {Type: field.TypeString, Column: oauthpending.FieldState},
+			oauthpending.FieldStateHash:            {Type: field.TypeString, Column: oauthpending.FieldStateHash},
+			oauthpending.FieldProvider:             {Type: field.TypeString, Column: oauthpending.FieldProvider},
+			oauthpending.FieldPayloadEncrypted:     {Type: field.TypeBytes, Column: oauthpending.FieldPayloadEncrypted},
+			oauthpending.FieldExpiresAt:            {Type: field.TypeTime, Column: oauthpending.FieldExpiresAt},
+			oauthpending.FieldLifecycleStatus:      {Type: field.TypeString, Column: oauthpending.FieldLifecycleStatus},
+			oauthpending.FieldOwnerWorkosUserID:    {Type: field.TypeString, Column: oauthpending.FieldOwnerWorkosUserID},
+			oauthpending.FieldOwnerOrgID:           {Type: field.TypeString, Column: oauthpending.FieldOwnerOrgID},
+			oauthpending.FieldRequestedScopes:      {Type: field.TypeJSON, Column: oauthpending.FieldRequestedScopes},
+			oauthpending.FieldRedirectTarget:       {Type: field.TypeString, Column: oauthpending.FieldRedirectTarget},
+			oauthpending.FieldConsentChallenge:     {Type: field.TypeString, Column: oauthpending.FieldConsentChallenge},
+			oauthpending.FieldContextRequestID:     {Type: field.TypeString, Column: oauthpending.FieldContextRequestID},
+			oauthpending.FieldHydraClientID:        {Type: field.TypeString, Column: oauthpending.FieldHydraClientID},
+			oauthpending.FieldCallbackAt:           {Type: field.TypeTime, Column: oauthpending.FieldCallbackAt},
+			oauthpending.FieldCallbackClaimID:      {Type: field.TypeUUID, Column: oauthpending.FieldCallbackClaimID},
+			oauthpending.FieldCallbackClaimedUntil: {Type: field.TypeTime, Column: oauthpending.FieldCallbackClaimedUntil},
+			oauthpending.FieldCallbackAttempts:     {Type: field.TypeInt, Column: oauthpending.FieldCallbackAttempts},
+			oauthpending.FieldClaimedAt:            {Type: field.TypeTime, Column: oauthpending.FieldClaimedAt},
+			oauthpending.FieldFailureReason:        {Type: field.TypeString, Column: oauthpending.FieldFailureReason},
 		},
 	}
 	graph.Nodes[41] = &sqlgraph.Node{
@@ -10202,6 +10207,11 @@ func (f *MCPConnectionFilter) WhereAudience(p entql.StringP) {
 	f.Where(p.Field(mcpconnection.FieldAudience))
 }
 
+// WhereOrganizationID applies the entql string predicate on the organization_id field.
+func (f *MCPConnectionFilter) WhereOrganizationID(p entql.StringP) {
+	f.Where(p.Field(mcpconnection.FieldOrganizationID))
+}
+
 // WhereScopes applies the entql json.RawMessage predicate on the scopes field.
 func (f *MCPConnectionFilter) WhereScopes(p entql.BytesP) {
 	f.Where(p.Field(mcpconnection.FieldScopes))
@@ -10354,6 +10364,11 @@ func (f *MCPConnectionHistoryFilter) WhereConnector(p entql.StringP) {
 // WhereAudience applies the entql string predicate on the audience field.
 func (f *MCPConnectionHistoryFilter) WhereAudience(p entql.StringP) {
 	f.Where(p.Field(mcpconnectionhistory.FieldAudience))
+}
+
+// WhereOrganizationID applies the entql string predicate on the organization_id field.
+func (f *MCPConnectionHistoryFilter) WhereOrganizationID(p entql.StringP) {
+	f.Where(p.Field(mcpconnectionhistory.FieldOrganizationID))
 }
 
 // WhereScopes applies the entql json.RawMessage predicate on the scopes field.
@@ -11253,6 +11268,21 @@ func (f *OAuthPendingFilter) WhereHydraClientID(p entql.StringP) {
 // WhereCallbackAt applies the entql time.Time predicate on the callback_at field.
 func (f *OAuthPendingFilter) WhereCallbackAt(p entql.TimeP) {
 	f.Where(p.Field(oauthpending.FieldCallbackAt))
+}
+
+// WhereCallbackClaimID applies the entql [16]byte predicate on the callback_claim_id field.
+func (f *OAuthPendingFilter) WhereCallbackClaimID(p entql.ValueP) {
+	f.Where(p.Field(oauthpending.FieldCallbackClaimID))
+}
+
+// WhereCallbackClaimedUntil applies the entql time.Time predicate on the callback_claimed_until field.
+func (f *OAuthPendingFilter) WhereCallbackClaimedUntil(p entql.TimeP) {
+	f.Where(p.Field(oauthpending.FieldCallbackClaimedUntil))
+}
+
+// WhereCallbackAttempts applies the entql int predicate on the callback_attempts field.
+func (f *OAuthPendingFilter) WhereCallbackAttempts(p entql.IntP) {
+	f.Where(p.Field(oauthpending.FieldCallbackAttempts))
 }
 
 // WhereClaimedAt applies the entql time.Time predicate on the claimed_at field.

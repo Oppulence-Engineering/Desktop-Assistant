@@ -208,6 +208,48 @@ func (_c *OAuthPendingCreate) SetNillableCallbackAt(v *time.Time) *OAuthPendingC
 	return _c
 }
 
+// SetCallbackClaimID sets the "callback_claim_id" field.
+func (_c *OAuthPendingCreate) SetCallbackClaimID(v uuid.UUID) *OAuthPendingCreate {
+	_c.mutation.SetCallbackClaimID(v)
+	return _c
+}
+
+// SetNillableCallbackClaimID sets the "callback_claim_id" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableCallbackClaimID(v *uuid.UUID) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetCallbackClaimID(*v)
+	}
+	return _c
+}
+
+// SetCallbackClaimedUntil sets the "callback_claimed_until" field.
+func (_c *OAuthPendingCreate) SetCallbackClaimedUntil(v time.Time) *OAuthPendingCreate {
+	_c.mutation.SetCallbackClaimedUntil(v)
+	return _c
+}
+
+// SetNillableCallbackClaimedUntil sets the "callback_claimed_until" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableCallbackClaimedUntil(v *time.Time) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetCallbackClaimedUntil(*v)
+	}
+	return _c
+}
+
+// SetCallbackAttempts sets the "callback_attempts" field.
+func (_c *OAuthPendingCreate) SetCallbackAttempts(v int) *OAuthPendingCreate {
+	_c.mutation.SetCallbackAttempts(v)
+	return _c
+}
+
+// SetNillableCallbackAttempts sets the "callback_attempts" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableCallbackAttempts(v *int) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetCallbackAttempts(*v)
+	}
+	return _c
+}
+
 // SetClaimedAt sets the "claimed_at" field.
 func (_c *OAuthPendingCreate) SetClaimedAt(v time.Time) *OAuthPendingCreate {
 	_c.mutation.SetClaimedAt(v)
@@ -293,6 +335,10 @@ func (_c *OAuthPendingCreate) defaults() {
 		v := oauthpending.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.CallbackAttempts(); !ok {
+		v := oauthpending.DefaultCallbackAttempts
+		_c.mutation.SetCallbackAttempts(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := oauthpending.DefaultID()
 		_c.mutation.SetID(v)
@@ -323,6 +369,14 @@ func (_c *OAuthPendingCreate) check() error {
 	}
 	if _, ok := _c.mutation.ExpiresAt(); !ok {
 		return &ValidationError{Name: "expires_at", err: errors.New(`ent: missing required field "OAuthPending.expires_at"`)}
+	}
+	if _, ok := _c.mutation.CallbackAttempts(); !ok {
+		return &ValidationError{Name: "callback_attempts", err: errors.New(`ent: missing required field "OAuthPending.callback_attempts"`)}
+	}
+	if v, ok := _c.mutation.CallbackAttempts(); ok {
+		if err := oauthpending.CallbackAttemptsValidator(v); err != nil {
+			return &ValidationError{Name: "callback_attempts", err: fmt.Errorf(`ent: validator failed for field "OAuthPending.callback_attempts": %w`, err)}
+		}
 	}
 	return nil
 }
@@ -423,6 +477,18 @@ func (_c *OAuthPendingCreate) createSpec() (*OAuthPending, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.CallbackAt(); ok {
 		_spec.SetField(oauthpending.FieldCallbackAt, field.TypeTime, value)
 		_node.CallbackAt = value
+	}
+	if value, ok := _c.mutation.CallbackClaimID(); ok {
+		_spec.SetField(oauthpending.FieldCallbackClaimID, field.TypeUUID, value)
+		_node.CallbackClaimID = value
+	}
+	if value, ok := _c.mutation.CallbackClaimedUntil(); ok {
+		_spec.SetField(oauthpending.FieldCallbackClaimedUntil, field.TypeTime, value)
+		_node.CallbackClaimedUntil = value
+	}
+	if value, ok := _c.mutation.CallbackAttempts(); ok {
+		_spec.SetField(oauthpending.FieldCallbackAttempts, field.TypeInt, value)
+		_node.CallbackAttempts = value
 	}
 	if value, ok := _c.mutation.ClaimedAt(); ok {
 		_spec.SetField(oauthpending.FieldClaimedAt, field.TypeTime, value)
@@ -721,6 +787,60 @@ func (u *OAuthPendingUpsert) UpdateCallbackAt() *OAuthPendingUpsert {
 // ClearCallbackAt clears the value of the "callback_at" field.
 func (u *OAuthPendingUpsert) ClearCallbackAt() *OAuthPendingUpsert {
 	u.SetNull(oauthpending.FieldCallbackAt)
+	return u
+}
+
+// SetCallbackClaimID sets the "callback_claim_id" field.
+func (u *OAuthPendingUpsert) SetCallbackClaimID(v uuid.UUID) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldCallbackClaimID, v)
+	return u
+}
+
+// UpdateCallbackClaimID sets the "callback_claim_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateCallbackClaimID() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldCallbackClaimID)
+	return u
+}
+
+// ClearCallbackClaimID clears the value of the "callback_claim_id" field.
+func (u *OAuthPendingUpsert) ClearCallbackClaimID() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldCallbackClaimID)
+	return u
+}
+
+// SetCallbackClaimedUntil sets the "callback_claimed_until" field.
+func (u *OAuthPendingUpsert) SetCallbackClaimedUntil(v time.Time) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldCallbackClaimedUntil, v)
+	return u
+}
+
+// UpdateCallbackClaimedUntil sets the "callback_claimed_until" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateCallbackClaimedUntil() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldCallbackClaimedUntil)
+	return u
+}
+
+// ClearCallbackClaimedUntil clears the value of the "callback_claimed_until" field.
+func (u *OAuthPendingUpsert) ClearCallbackClaimedUntil() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldCallbackClaimedUntil)
+	return u
+}
+
+// SetCallbackAttempts sets the "callback_attempts" field.
+func (u *OAuthPendingUpsert) SetCallbackAttempts(v int) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldCallbackAttempts, v)
+	return u
+}
+
+// UpdateCallbackAttempts sets the "callback_attempts" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateCallbackAttempts() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldCallbackAttempts)
+	return u
+}
+
+// AddCallbackAttempts adds v to the "callback_attempts" field.
+func (u *OAuthPendingUpsert) AddCallbackAttempts(v int) *OAuthPendingUpsert {
+	u.Add(oauthpending.FieldCallbackAttempts, v)
 	return u
 }
 
@@ -1088,6 +1208,69 @@ func (u *OAuthPendingUpsertOne) UpdateCallbackAt() *OAuthPendingUpsertOne {
 func (u *OAuthPendingUpsertOne) ClearCallbackAt() *OAuthPendingUpsertOne {
 	return u.Update(func(s *OAuthPendingUpsert) {
 		s.ClearCallbackAt()
+	})
+}
+
+// SetCallbackClaimID sets the "callback_claim_id" field.
+func (u *OAuthPendingUpsertOne) SetCallbackClaimID(v uuid.UUID) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackClaimID(v)
+	})
+}
+
+// UpdateCallbackClaimID sets the "callback_claim_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateCallbackClaimID() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackClaimID()
+	})
+}
+
+// ClearCallbackClaimID clears the value of the "callback_claim_id" field.
+func (u *OAuthPendingUpsertOne) ClearCallbackClaimID() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearCallbackClaimID()
+	})
+}
+
+// SetCallbackClaimedUntil sets the "callback_claimed_until" field.
+func (u *OAuthPendingUpsertOne) SetCallbackClaimedUntil(v time.Time) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackClaimedUntil(v)
+	})
+}
+
+// UpdateCallbackClaimedUntil sets the "callback_claimed_until" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateCallbackClaimedUntil() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackClaimedUntil()
+	})
+}
+
+// ClearCallbackClaimedUntil clears the value of the "callback_claimed_until" field.
+func (u *OAuthPendingUpsertOne) ClearCallbackClaimedUntil() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearCallbackClaimedUntil()
+	})
+}
+
+// SetCallbackAttempts sets the "callback_attempts" field.
+func (u *OAuthPendingUpsertOne) SetCallbackAttempts(v int) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackAttempts(v)
+	})
+}
+
+// AddCallbackAttempts adds v to the "callback_attempts" field.
+func (u *OAuthPendingUpsertOne) AddCallbackAttempts(v int) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.AddCallbackAttempts(v)
+	})
+}
+
+// UpdateCallbackAttempts sets the "callback_attempts" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateCallbackAttempts() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackAttempts()
 	})
 }
 
@@ -1628,6 +1811,69 @@ func (u *OAuthPendingUpsertBulk) UpdateCallbackAt() *OAuthPendingUpsertBulk {
 func (u *OAuthPendingUpsertBulk) ClearCallbackAt() *OAuthPendingUpsertBulk {
 	return u.Update(func(s *OAuthPendingUpsert) {
 		s.ClearCallbackAt()
+	})
+}
+
+// SetCallbackClaimID sets the "callback_claim_id" field.
+func (u *OAuthPendingUpsertBulk) SetCallbackClaimID(v uuid.UUID) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackClaimID(v)
+	})
+}
+
+// UpdateCallbackClaimID sets the "callback_claim_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateCallbackClaimID() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackClaimID()
+	})
+}
+
+// ClearCallbackClaimID clears the value of the "callback_claim_id" field.
+func (u *OAuthPendingUpsertBulk) ClearCallbackClaimID() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearCallbackClaimID()
+	})
+}
+
+// SetCallbackClaimedUntil sets the "callback_claimed_until" field.
+func (u *OAuthPendingUpsertBulk) SetCallbackClaimedUntil(v time.Time) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackClaimedUntil(v)
+	})
+}
+
+// UpdateCallbackClaimedUntil sets the "callback_claimed_until" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateCallbackClaimedUntil() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackClaimedUntil()
+	})
+}
+
+// ClearCallbackClaimedUntil clears the value of the "callback_claimed_until" field.
+func (u *OAuthPendingUpsertBulk) ClearCallbackClaimedUntil() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearCallbackClaimedUntil()
+	})
+}
+
+// SetCallbackAttempts sets the "callback_attempts" field.
+func (u *OAuthPendingUpsertBulk) SetCallbackAttempts(v int) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackAttempts(v)
+	})
+}
+
+// AddCallbackAttempts adds v to the "callback_attempts" field.
+func (u *OAuthPendingUpsertBulk) AddCallbackAttempts(v int) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.AddCallbackAttempts(v)
+	})
+}
+
+// UpdateCallbackAttempts sets the "callback_attempts" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateCallbackAttempts() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackAttempts()
 	})
 }
 

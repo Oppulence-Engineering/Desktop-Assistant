@@ -34,6 +34,11 @@ func (MCPConnection) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("connector"), // canvas | corinthian | billflow | wispr
 		field.String("audience"),  // canvas-api | corinthian-api | ...
+		// organization_id is captured when the credential is connected and never
+		// follows the mutable organization mirror on User. Legacy rows without a
+		// trustworthy organization are invalidated by the rollout migration and
+		// remain unresolvable until the user explicitly reconnects.
+		field.String("organization_id").Optional().Immutable(),
 		field.Strings("scopes").Optional(),
 		field.Bytes("refresh_token_encrypted").Optional().Sensitive(), // Ory-issued, rotated on use
 		field.Bytes("api_key_encrypted").Optional().Sensitive(),       // vendor-issued (api_key connectors)
@@ -71,8 +76,8 @@ func (MCPConnection) Edges() []ent.Edge {
 // Indexes of the MCPConnection.
 func (MCPConnection) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields("connector").Edges("user").Unique(),
+		index.Fields("connector", "organization_id").Edges("user").Unique(),
 		index.Fields("status"),
-		index.Fields("connector", "status"),
+		index.Fields("organization_id", "connector", "status"),
 	}
 }

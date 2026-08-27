@@ -144,7 +144,16 @@
             }
           }
         },
-        "description": "Too many requests. A per-user rate limit bucket rejected the request."
+        "description": "Too many requests. A named per-user or pre-auth IP bucket rejected the request.",
+        "headers": {
+          "Retry-After": {
+            "description": "Seconds until the client should retry.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       },
       "500": {
         "content": {
@@ -6260,6 +6269,9 @@
             "format": "date-time",
             "type": "string"
           },
+          "organization_id": {
+            "type": "string"
+          },
           "refresh_token_encrypted": {
             "description": "Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.",
             "format": "byte",
@@ -6382,6 +6394,9 @@
             "description": "Mutation operation that produced this history row.",
             "enum": ["INSERT", "UPDATE", "DELETE"],
             "example": "UPDATE",
+            "type": "string"
+          },
+          "organization_id": {
             "type": "string"
           },
           "ref": {
@@ -7324,6 +7339,17 @@
             "format": "date-time",
             "type": "string"
           },
+          "callback_attempts": {
+            "type": "integer"
+          },
+          "callback_claim_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "callback_claimed_until": {
+            "format": "date-time",
+            "type": "string"
+          },
           "claimed_at": {
             "format": "date-time",
             "type": "string"
@@ -7409,7 +7435,8 @@
           "state",
           "provider",
           "payload_encrypted",
-          "expires_at"
+          "expires_at",
+          "callback_attempts"
         ],
         "type": "object"
       },
@@ -16558,6 +16585,9 @@
           "401": {
             "$ref": "#/components/responses/401"
           },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
           "500": {
             "$ref": "#/components/responses/500"
           },
@@ -16625,8 +16655,17 @@
           "401": {
             "$ref": "#/components/responses/401"
           },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
           "404": {
             "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
           },
           "500": {
             "$ref": "#/components/responses/500"
@@ -16710,6 +16749,12 @@
           "400": {
             "$ref": "#/components/responses/400"
           },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
           "500": {
             "$ref": "#/components/responses/500"
           }
@@ -16785,6 +16830,9 @@
           "410": {
             "$ref": "#/components/responses/410"
           },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
           "500": {
             "$ref": "#/components/responses/500"
           },
@@ -16830,8 +16878,8 @@
               }
             }
           },
-          "description": "Token audience and scope request.",
-          "required": true
+          "description": "Optional token audience and scope request; omitted values default to the connector audience and granted scopes.",
+          "required": false
         },
         "responses": {
           "200": {
@@ -16862,8 +16910,20 @@
           "401": {
             "$ref": "#/components/responses/401"
           },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
           "404": {
             "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "410": {
+            "$ref": "#/components/responses/410"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
           },
           "500": {
             "$ref": "#/components/responses/500"
@@ -16938,8 +16998,17 @@
           "401": {
             "$ref": "#/components/responses/401"
           },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
           "404": {
             "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
           },
           "500": {
             "$ref": "#/components/responses/500"
@@ -17005,6 +17074,9 @@
           },
           "401": {
             "$ref": "#/components/responses/401"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
           },
           "500": {
             "$ref": "#/components/responses/500"
@@ -17088,6 +17160,12 @@
           "400": {
             "$ref": "#/components/responses/400"
           },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
           "500": {
             "$ref": "#/components/responses/500"
           }
@@ -17130,6 +17208,9 @@
           },
           "401": {
             "$ref": "#/components/responses/401"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
           },
           "500": {
             "$ref": "#/components/responses/500"
@@ -17176,8 +17257,8 @@
               }
             }
           },
-          "description": "Token audience and scope request.",
-          "required": true
+          "description": "Optional token audience and scope request; omitted values default to the connector audience and granted scopes.",
+          "required": false
         },
         "responses": {
           "200": {
@@ -17208,8 +17289,20 @@
           "401": {
             "$ref": "#/components/responses/401"
           },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
           "404": {
             "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "410": {
+            "$ref": "#/components/responses/410"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
           },
           "500": {
             "$ref": "#/components/responses/500"
@@ -17284,8 +17377,17 @@
           "401": {
             "$ref": "#/components/responses/401"
           },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
           "404": {
             "$ref": "#/components/responses/404"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
           },
           "500": {
             "$ref": "#/components/responses/500"

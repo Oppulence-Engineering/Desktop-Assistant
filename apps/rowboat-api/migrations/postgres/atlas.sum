@@ -1,4 +1,4 @@
-h1:tbH5n7q8ktdi0JO/z8qWCHYgrHZadxdML45OnCP6bWo=
+h1:Z8XR7ZfMU09N/9JIkQpusoPvxQo41ic2MaL0HFCHTZw=
 20260821000000_baseline.sql h1:ZTvCxMIes/Jroxm9juxg6wPrT5n6uaFh7AqXnStxjAo=
 20260821010000_ent_hardening.sql h1:ovo6NSYCx4KpCbDWpMw4L/k7TPjiOm6CbVgvQJaFX2w=
 20260821020000_identifier_normalization.sql h1:1xx4DAQ5Bzb/PjveAqpp7YKM3Zq5Ihs49nQCrbC+NaM=
@@ -9,3 +9,4 @@ h1:tbH5n7q8ktdi0JO/z8qWCHYgrHZadxdML45OnCP6bWo=
 20260827210000_hook_nonce_reservations.sql h1:ASvUsS82ldJRH3E/KH/PVk6FkQjzbPtAIFd7n+c+vjQ=
 20260827211000_connector_revocation_outbox.sql h1:rJcH0dg3fTlcjFaeLuAg5CkoU5pUlTFlZh8JD2hhzz0=
 20260827212000_connector_lifecycle_fencing.sql h1:9gm+WOVuKACYSzUK4lLILAVoVL5k+/kU1fHzcMchDwE=
+20260827221500_connector_final_review_b.sql h1:6uuYFgqUvHnXsV5baoT7HQ5irCF1FefQxOAWvkJARvc=

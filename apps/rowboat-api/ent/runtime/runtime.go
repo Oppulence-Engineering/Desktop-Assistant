@@ -1812,13 +1812,13 @@ func init() {
 	// mcpconnection.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	mcpconnection.UpdateDefaultUpdatedAt = mcpconnectionDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// mcpconnectionDescCredentialGeneration is the schema descriptor for credential_generation field.
-	mcpconnectionDescCredentialGeneration := mcpconnectionFields[5].Descriptor()
+	mcpconnectionDescCredentialGeneration := mcpconnectionFields[6].Descriptor()
 	// mcpconnection.DefaultCredentialGeneration holds the default value on creation for the credential_generation field.
 	mcpconnection.DefaultCredentialGeneration = mcpconnectionDescCredentialGeneration.Default.(int64)
 	// mcpconnection.CredentialGenerationValidator is a validator for the "credential_generation" field. It is called by the builders before save.
 	mcpconnection.CredentialGenerationValidator = mcpconnectionDescCredentialGeneration.Validators[0].(func(int64) error)
 	// mcpconnectionDescStatus is the schema descriptor for status field.
-	mcpconnectionDescStatus := mcpconnectionFields[6].Descriptor()
+	mcpconnectionDescStatus := mcpconnectionFields[7].Descriptor()
 	// mcpconnection.DefaultStatus holds the default value on creation for the status field.
 	mcpconnection.DefaultStatus = mcpconnectionDescStatus.Default.(string)
 	// mcpconnection.StatusValidator is a validator for the "status" field. It is called by the builders before save.
@@ -1856,11 +1856,11 @@ func init() {
 	// mcpconnectionhistory.DefaultHistoryTime holds the default value on creation for the history_time field.
 	mcpconnectionhistory.DefaultHistoryTime = mcpconnectionhistoryDescHistoryTime.Default.(func() time.Time)
 	// mcpconnectionhistoryDescCredentialGeneration is the schema descriptor for credential_generation field.
-	mcpconnectionhistoryDescCredentialGeneration := mcpconnectionhistoryFields[9].Descriptor()
+	mcpconnectionhistoryDescCredentialGeneration := mcpconnectionhistoryFields[10].Descriptor()
 	// mcpconnectionhistory.DefaultCredentialGeneration holds the default value on creation for the credential_generation field.
 	mcpconnectionhistory.DefaultCredentialGeneration = mcpconnectionhistoryDescCredentialGeneration.Default.(int64)
 	// mcpconnectionhistoryDescStatus is the schema descriptor for status field.
-	mcpconnectionhistoryDescStatus := mcpconnectionhistoryFields[10].Descriptor()
+	mcpconnectionhistoryDescStatus := mcpconnectionhistoryFields[11].Descriptor()
 	// mcpconnectionhistory.DefaultStatus holds the default value on creation for the status field.
 	mcpconnectionhistory.DefaultStatus = mcpconnectionhistoryDescStatus.Default.(string)
 	// mcpconnectionhistoryDescID is the schema descriptor for id field.
@@ -2168,6 +2168,12 @@ func init() {
 	oauthpendingDescState := oauthpendingFields[0].Descriptor()
 	// oauthpending.StateValidator is a validator for the "state" field. It is called by the builders before save.
 	oauthpending.StateValidator = oauthpendingDescState.Validators[0].(func(string) error)
+	// oauthpendingDescCallbackAttempts is the schema descriptor for callback_attempts field.
+	oauthpendingDescCallbackAttempts := oauthpendingFields[16].Descriptor()
+	// oauthpending.DefaultCallbackAttempts holds the default value on creation for the callback_attempts field.
+	oauthpending.DefaultCallbackAttempts = oauthpendingDescCallbackAttempts.Default.(int)
+	// oauthpending.CallbackAttemptsValidator is a validator for the "callback_attempts" field. It is called by the builders before save.
+	oauthpending.CallbackAttemptsValidator = oauthpendingDescCallbackAttempts.Validators[0].(func(int) error)
 	// oauthpendingDescID is the schema descriptor for id field.
 	oauthpendingDescID := oauthpendingMixinFields0[0].Descriptor()
 	// oauthpending.DefaultID holds the default value on creation for the id field.

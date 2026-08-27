@@ -6964,6 +6964,7 @@ export interface components {
        * @example 2026-06-04T20:45:00Z
        */
       last_used_at?: string;
+      organization_id?: string;
       /**
        * Format: byte
        * @description Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.
@@ -7059,6 +7060,7 @@ export interface components {
        * @enum {string}
        */
       operation: "INSERT" | "UPDATE" | "DELETE";
+      organization_id?: string;
       /**
        * Format: uuid
        * @description UUID of the source row represented by a history row.
@@ -7679,6 +7681,11 @@ export interface components {
     OAuthPending: {
       /** Format: date-time */
       callback_at?: string;
+      callback_attempts: number;
+      /** Format: uuid */
+      callback_claim_id?: string;
+      /** Format: date-time */
+      callback_claimed_until?: string;
       /** Format: date-time */
       claimed_at?: string;
       consent_challenge?: string;
@@ -11557,9 +11564,11 @@ export interface components {
         "application/problem+json": components["schemas"]["ErrorEnvelope"];
       };
     };
-    /** @description Too many requests. A per-user rate limit bucket rejected the request. */
+    /** @description Too many requests. A named per-user or pre-auth IP bucket rejected the request. */
     429: {
       headers: {
+        /** @description Seconds until the client should retry. */
+        "Retry-After"?: number;
         [name: string]: unknown;
       };
       content: {
@@ -13903,6 +13912,7 @@ export interface operations {
         content?: never;
       };
       401: components["responses"]["401"];
+      429: components["responses"]["429"];
       500: components["responses"]["500"];
       503: components["responses"]["503"];
     };
@@ -13945,7 +13955,10 @@ export interface operations {
       };
       400: components["responses"]["400"];
       401: components["responses"]["401"];
+      403: components["responses"]["403"];
       404: components["responses"]["404"];
+      409: components["responses"]["409"];
+      429: components["responses"]["429"];
       500: components["responses"]["500"];
       503: components["responses"]["503"];
     };
@@ -13979,6 +13992,8 @@ export interface operations {
         content?: never;
       };
       400: components["responses"]["400"];
+      409: components["responses"]["409"];
+      429: components["responses"]["429"];
       500: components["responses"]["500"];
     };
   };
@@ -14030,6 +14045,7 @@ export interface operations {
       404: components["responses"]["404"];
       409: components["responses"]["409"];
       410: components["responses"]["410"];
+      429: components["responses"]["429"];
       500: components["responses"]["500"];
       503: components["responses"]["503"];
     };
@@ -14044,8 +14060,8 @@ export interface operations {
       };
       cookie?: never;
     };
-    /** @description Token audience and scope request. */
-    requestBody: {
+    /** @description Optional token audience and scope request; omitted values default to the connector audience and granted scopes. */
+    requestBody?: {
       content: {
         /**
          * @example {
@@ -14086,7 +14102,11 @@ export interface operations {
       };
       400: components["responses"]["400"];
       401: components["responses"]["401"];
+      403: components["responses"]["403"];
       404: components["responses"]["404"];
+      409: components["responses"]["409"];
+      410: components["responses"]["410"];
+      429: components["responses"]["429"];
       500: components["responses"]["500"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
@@ -14136,7 +14156,10 @@ export interface operations {
       };
       400: components["responses"]["400"];
       401: components["responses"]["401"];
+      403: components["responses"]["403"];
       404: components["responses"]["404"];
+      409: components["responses"]["409"];
+      429: components["responses"]["429"];
       500: components["responses"]["500"];
       503: components["responses"]["503"];
     };
@@ -14199,6 +14222,7 @@ export interface operations {
         };
       };
       401: components["responses"]["401"];
+      429: components["responses"]["429"];
       500: components["responses"]["500"];
       503: components["responses"]["503"];
     };
@@ -14232,6 +14256,8 @@ export interface operations {
         content?: never;
       };
       400: components["responses"]["400"];
+      409: components["responses"]["409"];
+      429: components["responses"]["429"];
       500: components["responses"]["500"];
     };
   };
@@ -14257,6 +14283,7 @@ export interface operations {
         content?: never;
       };
       401: components["responses"]["401"];
+      429: components["responses"]["429"];
       500: components["responses"]["500"];
       503: components["responses"]["503"];
     };
@@ -14271,8 +14298,8 @@ export interface operations {
       };
       cookie?: never;
     };
-    /** @description Token audience and scope request. */
-    requestBody: {
+    /** @description Optional token audience and scope request; omitted values default to the connector audience and granted scopes. */
+    requestBody?: {
       content: {
         /**
          * @example {
@@ -14313,7 +14340,11 @@ export interface operations {
       };
       400: components["responses"]["400"];
       401: components["responses"]["401"];
+      403: components["responses"]["403"];
       404: components["responses"]["404"];
+      409: components["responses"]["409"];
+      410: components["responses"]["410"];
+      429: components["responses"]["429"];
       500: components["responses"]["500"];
       502: components["responses"]["502"];
       503: components["responses"]["503"];
@@ -14363,7 +14394,10 @@ export interface operations {
       };
       400: components["responses"]["400"];
       401: components["responses"]["401"];
+      403: components["responses"]["403"];
       404: components["responses"]["404"];
+      409: components["responses"]["409"];
+      429: components["responses"]["429"];
       500: components["responses"]["500"];
       503: components["responses"]["503"];
     };

@@ -32,6 +32,8 @@ const (
 	FieldConnector = "connector"
 	// FieldAudience holds the string denoting the audience field in the database.
 	FieldAudience = "audience"
+	// FieldOrganizationID holds the string denoting the organization_id field in the database.
+	FieldOrganizationID = "organization_id"
 	// FieldScopes holds the string denoting the scopes field in the database.
 	FieldScopes = "scopes"
 	// FieldRefreshTokenEncrypted holds the string denoting the refresh_token_encrypted field in the database.
@@ -72,6 +74,7 @@ var Columns = []string{
 	FieldRef,
 	FieldConnector,
 	FieldAudience,
+	FieldOrganizationID,
 	FieldScopes,
 	FieldRefreshTokenEncrypted,
 	FieldAPIKeyEncrypted,
@@ -172,6 +175,11 @@ func ByConnector(opts ...sql.OrderTermOption) OrderOption {
 // ByAudience orders the results by the audience field.
 func ByAudience(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAudience, opts...).ToFunc()
+}
+
+// ByOrganizationID orders the results by the organization_id field.
+func ByOrganizationID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrganizationID, opts...).ToFunc()
 }
 
 // ByCredentialGeneration orders the results by the credential_generation field.

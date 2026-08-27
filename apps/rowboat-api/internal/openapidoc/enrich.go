@@ -878,7 +878,9 @@ func addCommonResponses(responses obj) {
 	responses["404"] = problemResponse("Not found. The requested resource, connector, or OAuth handoff ticket does not exist.", ref("ErrorEnvelope"), problemExample(404, "Not Found", "connector not connected", "not_connected"))
 	responses["409"] = problemResponse("Conflict. Usually means an upstream refresh token is invalid and the user must reconnect.", ref("ReconnectErrorEnvelope"), reconnectProblemExample())
 	responses["410"] = problemResponse("Gone. A one-time handoff ticket existed but expired before redemption.", ref("ErrorEnvelope"), problemExample(410, "Gone", "ticket expired", "ticket_expired"))
-	responses["429"] = problemResponse("Too many requests. A per-user rate limit bucket rejected the request.", ref("ErrorEnvelope"), problemExample(429, "Too Many Requests", "rate limit exceeded", "rate_limited"))
+	rateLimited := problemResponse("Too many requests. A named per-user or pre-auth IP bucket rejected the request.", ref("ErrorEnvelope"), problemExample(429, "Too Many Requests", "rate limit exceeded", "rate_limited"))
+	rateLimited["headers"] = obj{"Retry-After": obj{"description": "Seconds until the client should retry.", "schema": obj{"type": "integer", "minimum": 1}}}
+	responses["429"] = rateLimited
 	responses["500"] = problemResponse("Internal server error.", ref("ErrorEnvelope"), problemExample(500, "Internal Server Error", "could not load billing", "internal_error"))
 	responses["502"] = problemResponse("Bad gateway. A configured upstream provider failed or the provider is not configured.", ref("ErrorEnvelope"), problemExample(502, "Bad Gateway", "provider not configured", "provider_unconfigured"))
 	responses["503"] = problemResponse("Service unavailable. Authentication or readiness dependencies are temporarily unavailable.", ref("ErrorEnvelope"), problemExample(503, "Service Unavailable", "authentication unavailable", "auth_unavailable"))
@@ -1494,6 +1496,7 @@ func addConnectorPaths(paths obj) {
 	paths["/v1/connectors"] = obj{"get": operation("Connectors", "List connectors", "Returns the configured connector registry plus the authenticated user's connection state for each connector.", "listConnectors", bearer(), nil, nil, obj{
 		"200": jsonResponse("Connector registry with connection state.", ref("ConnectorsResponse"), obj{"connectors": []any{obj{"name": "canvas", "displayName": "Canvas", "description": "Banking, invoicing, dunning, transactions", "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp", "authType": "oauth", "scopes": []any{"invoices:read"}, "mcpTools": []any{obj{"name": "customer.lookup", "trustTier": "read"}}, "templateBlocks": []any{obj{"id": "invoice-context", "title": "Invoice context", "description": "Look up invoices and customers.", "category": "finance", "requiredScopes": []any{"invoices:read"}, "mcpTools": []any{"invoice.lookup"}, "trustTier": "read"}}, "connected": true, "connectedAt": "2026-06-04T20:38:00Z"}}}),
 		"401": responseRef("401"),
+		"429": responseRef("429"),
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
@@ -1509,7 +1512,10 @@ func addConnectorPaths(paths obj) {
 		"200": jsonResponse("Connector authorize URL.", ref("ConnectionStartResponse"), obj{"authorization_url": "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api&state=...", "authorize_url": "https://oauth.solomon-ai.co/oauth2/auth?client_id=rowboat-api&state=...", "expires_at": "2026-08-27T20:20:00Z"}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
+		"403": responseRef("403"),
 		"404": responseRef("404"),
+		"409": responseRef("409"),
+		"429": responseRef("429"),
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
@@ -1520,6 +1526,8 @@ func addConnectorPaths(paths obj) {
 	), nil, obj{
 		"302": redirectResponse("Redirect to solomon-ai://connection-complete with connector and status."),
 		"400": responseRef("400"),
+		"409": responseRef("409"),
+		"429": responseRef("429"),
 		"500": responseRef("500"),
 	})}
 	paths["/v1/connections/{name}/claim"] = obj{"post": operation("Connectors", "Claim connector OAuth flow", "Redeems the connector grant parked by the browser callback. Persistence is bound to the authenticated user that started the flow.", "claimConnection", bearer(), connectorNameParam(), jsonRequest("Connector claim ticket.", ref("ConnectionClaimRequest"), obj{"state": "state_abc123"}), obj{
@@ -1530,6 +1538,7 @@ func addConnectorPaths(paths obj) {
 		"404": responseRef("404"),
 		"409": responseRef("409"),
 		"410": responseRef("410"),
+		"429": responseRef("429"),
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
@@ -1537,15 +1546,22 @@ func addConnectorPaths(paths obj) {
 		"200": jsonResponse("Connector connected.", ref("ConnectionConnectedResponse"), obj{"connected": true}),
 		"400": responseRef("400"),
 		"401": responseRef("401"),
+		"403": responseRef("403"),
 		"404": responseRef("404"),
+		"409": responseRef("409"),
+		"429": responseRef("429"),
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
-	paths["/v1/connections/{name}/mcp-token"] = obj{"post": operation("Connectors", "Mint connector MCP token", "Validates an active non-revoked connection, exact audience, granted scope subset, current catalog availability, and current entitlement. OAuth credentials are refreshed and rotated server-side, then rowboat-api returns an RS256 product token carrying bounded actor claims. Provider tokens and API keys are never returned.", "createMCPToken", bearer(), connectorNameParam(), jsonRequest("Token audience and scope request.", ref("MCPTokenRequest"), obj{"audience": "mcp:canvas", "requestedScopes": []any{"canvas:invoices.read"}}), obj{
+	paths["/v1/connections/{name}/mcp-token"] = obj{"post": operation("Connectors", "Mint connector MCP token", "Validates an active non-revoked connection, exact audience, granted scope subset, current catalog availability, and current entitlement. OAuth credentials are refreshed and rotated server-side, then rowboat-api returns an RS256 product token carrying bounded actor claims. Provider tokens and API keys are never returned.", "createMCPToken", bearer(), connectorNameParam(), jsonRequestOptional("Optional token audience and scope request; omitted values default to the connector audience and granted scopes.", ref("MCPTokenRequest"), obj{"audience": "mcp:canvas", "requestedScopes": []any{"canvas:invoices.read"}}), obj{
 		"200": jsonResponse("MCP token and endpoint.", ref("MCPTokenResponse"), obj{"access_token": "eyJ...", "token": "eyJ...", "token_type": "Bearer", "expires_in": 300, "expires_at": 1790784000, "scope": "canvas:invoices.read", "scopes": []any{"canvas:invoices.read"}, "audience": "mcp:canvas", "connectionId": "123e4567-e89b-12d3-a456-426614174000", "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp"}),
 		"401": responseRef("401"),
 		"400": responseRef("400"),
+		"403": responseRef("403"),
 		"404": responseRef("404"),
+		"409": responseRef("409"),
+		"410": responseRef("410"),
+		"429": responseRef("429"),
 		"500": responseRef("500"),
 		"502": responseRef("502"),
 		"503": responseRef("503"),
@@ -1557,6 +1573,7 @@ func addConnectorPaths(paths obj) {
 	paths["/v1/connections/{name}"] = obj{"delete": operation("Connectors", "Disconnect connector", "Idempotently revokes upstream where possible, clears local credentials, and retains a revoked audit tombstone.", "deleteConnection", bearer(), connectorNameParam(), nil, obj{
 		"204": obj{"description": "Connector disconnected or was already absent."},
 		"401": responseRef("401"),
+		"429": responseRef("429"),
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
@@ -1566,6 +1583,7 @@ func addConnectorPaths(paths obj) {
 	paths["/v1/connectors/{name}/connections/{connectionID}"] = obj{"delete": operation("Connectors", "Disconnect connector connection", "Canonical RFC 012 disconnect path. It transitions the matching user-owned connection through revoking, clears credentials, and retains an audit tombstone.", "deleteConnectorConnection", bearer(), append(connectorNameParam(), pathParam("connectionID", "User-owned connector connection UUID.", stringSchema("Connection UUID.", "123e4567-e89b-12d3-a456-426614174000"))), nil, obj{
 		"204": obj{"description": "Connector disconnected or was already absent."},
 		"401": responseRef("401"),
+		"429": responseRef("429"),
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}

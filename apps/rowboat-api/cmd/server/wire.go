@@ -610,8 +610,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	})
 	// OAuth callback is a browser redirect from Ory (no bearer); the user is
 	// resolved from the sealed pending ticket inside the handler.
-	r.Get("/v1/connections/{name}/callback", connectorsH.Callback)
-	r.Get("/v1/connectors/{name}/callback", connectorsH.Callback)
+	r.With(rl.PerUserWindow(ratelimit.GroupConnectorCallbacks, 30, time.Minute), rl.PerUserWindow(ratelimit.GroupConnectorCallbacks+":burst", 8, 10*time.Second)).
+		Get("/v1/connections/{name}/callback", connectorsH.Callback)
+	r.With(rl.PerUserWindow(ratelimit.GroupConnectorCallbacks, 30, time.Minute), rl.PerUserWindow(ratelimit.GroupConnectorCallbacks+":burst", 8, 10*time.Second)).
+		Get("/v1/connectors/{name}/callback", connectorsH.Callback)
 	// Product resource servers verify short-lived, audience-bound connector
 	// tokens against this public key set. It contains public key material only.
 	r.Get("/.well-known/connector-jwks.json", connectorsH.BrokerJWKS)
@@ -870,12 +872,16 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			})
 		}
 
-		r.Get("/v1/connectors", connectorsH.List)
+		r.With(rl.PerUser(ratelimit.GroupConnections, 30), rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second)).
+			Get("/v1/connectors", connectorsH.List)
 		// Canonical RFC 012 paths. The /v1/connections aliases below remain for
 		// shipped desktop clients and RFC 020 compatibility.
-		r.Post("/v1/connectors/{name}/start", connectorsH.Start)
-		r.Post("/v1/connectors/{name}/resource-token", connectorsH.MCPToken)
-		r.Delete("/v1/connectors/{name}/connections/{connectionID}", connectorsH.Delete)
+		r.With(rl.PerUser(ratelimit.GroupConnections, 30), rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second)).
+			Post("/v1/connectors/{name}/start", connectorsH.Start)
+		r.With(rl.PerUser(ratelimit.GroupConnections, 30), rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second)).
+			Post("/v1/connectors/{name}/resource-token", connectorsH.MCPToken)
+		r.With(rl.PerUser(ratelimit.GroupConnections, 30), rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second)).
+			Delete("/v1/connectors/{name}/connections/{connectionID}", connectorsH.Delete)
 		r.With(rl.PerUserWindow(ratelimit.GroupConnections, 60, time.Minute)).
 			Post("/v1/hubspot/search", hubspotH.Search)
 		r.Route("/v1/connections", func(r chi.Router) {

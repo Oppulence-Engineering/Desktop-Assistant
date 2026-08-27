@@ -55,6 +55,21 @@ export const DeleteConnection401Response = zod
     "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
+export const DeleteConnection429Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
 export const DeleteConnection500Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
@@ -149,7 +164,54 @@ export const SetConnectionAPIKey401Response = zod
     "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
+export const SetConnectionAPIKey403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
 export const SetConnectionAPIKey404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const SetConnectionAPIKey409Response = zod
+  .strictObject({
+    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    reconnectRequired: zod
+      .boolean()
+      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
+  );
+
+export const SetConnectionAPIKey429Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),
@@ -211,6 +273,38 @@ export const HandleConnectionCallbackQueryParams = zod.object({
 export const HandleConnectionCallback302Response = zod.unknown();
 
 export const HandleConnectionCallback400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const HandleConnectionCallback409Response = zod
+  .strictObject({
+    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    reconnectRequired: zod
+      .boolean()
+      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
+  );
+
+export const HandleConnectionCallback429Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),
@@ -364,6 +458,21 @@ export const ClaimConnection410Response = zod
     "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
+export const ClaimConnection429Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
 export const ClaimConnection500Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
@@ -463,7 +572,69 @@ export const CreateMCPToken401Response = zod
     "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
+export const CreateMCPToken403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
 export const CreateMCPToken404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateMCPToken409Response = zod
+  .strictObject({
+    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    reconnectRequired: zod
+      .boolean()
+      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
+  );
+
+export const CreateMCPToken410Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateMCPToken429Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),
@@ -589,7 +760,54 @@ export const StartConnection401Response = zod
     "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
+export const StartConnection403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
 export const StartConnection404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const StartConnection409Response = zod
+  .strictObject({
+    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    reconnectRequired: zod
+      .boolean()
+      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
+  );
+
+export const StartConnection429Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),
@@ -864,6 +1082,21 @@ export const ListConnectors401Response = zod
     "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
+export const ListConnectors429Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
 export const ListConnectors500Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
@@ -925,6 +1158,38 @@ export const HandleConnectorCallback400Response = zod
     "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
+export const HandleConnectorCallback409Response = zod
+  .strictObject({
+    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    reconnectRequired: zod
+      .boolean()
+      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
+  );
+
+export const HandleConnectorCallback429Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
 export const HandleConnectorCallback500Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
@@ -952,6 +1217,21 @@ export const DeleteConnectorConnectionParams = zod.object({
 export const DeleteConnectorConnection204Response = zod.void();
 
 export const DeleteConnectorConnection401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const DeleteConnectorConnection429Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),
@@ -1065,7 +1345,69 @@ export const CreateConnectorResourceToken401Response = zod
     "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
+export const CreateConnectorResourceToken403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
 export const CreateConnectorResourceToken404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateConnectorResourceToken409Response = zod
+  .strictObject({
+    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    reconnectRequired: zod
+      .boolean()
+      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
+  );
+
+export const CreateConnectorResourceToken410Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const CreateConnectorResourceToken429Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),
@@ -1191,7 +1533,54 @@ export const StartConnector401Response = zod
     "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
   );
 
+export const StartConnector403Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
 export const StartConnector404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const StartConnector409Response = zod
+  .strictObject({
+    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    reconnectRequired: zod
+      .boolean()
+      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
+  );
+
+export const StartConnector429Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),

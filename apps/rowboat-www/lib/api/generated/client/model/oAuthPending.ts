@@ -11,6 +11,9 @@
  */
 export interface OAuthPending {
   callback_at?: string;
+  callback_attempts: number;
+  callback_claim_id?: string;
+  callback_claimed_until?: string;
   claimed_at?: string;
   consent_challenge?: string;
   context_request_id?: string;

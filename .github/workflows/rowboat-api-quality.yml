@@ -7,6 +7,7 @@ on:
       - "apps/oauth-consent/**"
       - "charts/rowboat-api/**"
       - "packages/rowboat-api-client-ts/**"
+      - "apps/rowboat-www/lib/api/generated/**"
       - "docs/trustworthy-first-account-beta/**"
       - "scripts/rowboat-api-kind.sh"
       - ".gitleaks.toml"
@@ -21,6 +22,7 @@ on:
       - "apps/oauth-consent/**"
       - "charts/rowboat-api/**"
       - "packages/rowboat-api-client-ts/**"
+      - "apps/rowboat-www/lib/api/generated/**"
       - "docs/trustworthy-first-account-beta/**"
       - "scripts/rowboat-api-kind.sh"
       - ".gitleaks.toml"
@@ -142,7 +144,9 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: packages/rowboat-api-client-ts/package-lock.json
+          cache-dependency-path: |
+            packages/rowboat-api-client-ts/package-lock.json
+            apps/rowboat-www/package-lock.json
       - name: Install protoc
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
       - name: Install generation tools
@@ -151,8 +155,11 @@ jobs:
       - name: Generate API and SDK artifacts
         run: make generate
         working-directory: apps/rowboat-api
+      - name: Install and verify rowboat-www generated contract
+        run: npm ci --ignore-scripts && npm run contracts:check
+        working-directory: apps/rowboat-www
       - name: Check generated drift
-        run: git diff --exit-code -- apps/rowboat-api packages/rowboat-api-client-ts
+        run: git diff --exit-code -- apps/rowboat-api packages/rowboat-api-client-ts apps/rowboat-www/lib/api/generated
 
   helm:
     runs-on: ubuntu-latest

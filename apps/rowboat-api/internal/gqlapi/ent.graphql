@@ -6665,6 +6665,7 @@ type MCPConnection implements Node {
   updatedAt: Time!
   connector: String!
   audience: String!
+  organizationID: String
   scopes: [String!]
   credentialGeneration: Int!
   status: String!
@@ -6781,6 +6782,24 @@ input MCPConnectionWhereInput {
   audienceHasSuffix: String
   audienceEqualFold: String
   audienceContainsFold: String
+  """
+  organization_id field predicates
+  """
+  organizationID: String
+  organizationIDNEQ: String
+  organizationIDIn: [String!]
+  organizationIDNotIn: [String!]
+  organizationIDGT: String
+  organizationIDGTE: String
+  organizationIDLT: String
+  organizationIDLTE: String
+  organizationIDContains: String
+  organizationIDHasPrefix: String
+  organizationIDHasSuffix: String
+  organizationIDIsNil: Boolean
+  organizationIDNotNil: Boolean
+  organizationIDEqualFold: String
+  organizationIDContainsFold: String
   """
   credential_generation field predicates
   """
@@ -7694,6 +7713,9 @@ type OAuthPending implements Node {
   contextRequestID: String
   hydraClientID: String
   callbackAt: Time
+  callbackClaimID: UUID
+  callbackClaimedUntil: Time
+  callbackAttempts: Int!
   claimedAt: Time
   failureReason: String
 }
@@ -7938,6 +7960,43 @@ input OAuthPendingWhereInput {
   callbackAtLTE: Time
   callbackAtIsNil: Boolean
   callbackAtNotNil: Boolean
+  """
+  callback_claim_id field predicates
+  """
+  callbackClaimID: UUID
+  callbackClaimIDNEQ: UUID
+  callbackClaimIDIn: [UUID!]
+  callbackClaimIDNotIn: [UUID!]
+  callbackClaimIDGT: UUID
+  callbackClaimIDGTE: UUID
+  callbackClaimIDLT: UUID
+  callbackClaimIDLTE: UUID
+  callbackClaimIDIsNil: Boolean
+  callbackClaimIDNotNil: Boolean
+  """
+  callback_claimed_until field predicates
+  """
+  callbackClaimedUntil: Time
+  callbackClaimedUntilNEQ: Time
+  callbackClaimedUntilIn: [Time!]
+  callbackClaimedUntilNotIn: [Time!]
+  callbackClaimedUntilGT: Time
+  callbackClaimedUntilGTE: Time
+  callbackClaimedUntilLT: Time
+  callbackClaimedUntilLTE: Time
+  callbackClaimedUntilIsNil: Boolean
+  callbackClaimedUntilNotNil: Boolean
+  """
+  callback_attempts field predicates
+  """
+  callbackAttempts: Int
+  callbackAttemptsNEQ: Int
+  callbackAttemptsIn: [Int!]
+  callbackAttemptsNotIn: [Int!]
+  callbackAttemptsGT: Int
+  callbackAttemptsGTE: Int
+  callbackAttemptsLT: Int
+  callbackAttemptsLTE: Int
   """
   claimed_at field predicates
   """

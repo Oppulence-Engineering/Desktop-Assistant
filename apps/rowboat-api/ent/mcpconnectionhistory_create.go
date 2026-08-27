@@ -99,6 +99,20 @@ func (_c *MCPConnectionHistoryCreate) SetAudience(v string) *MCPConnectionHistor
 	return _c
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (_c *MCPConnectionHistoryCreate) SetOrganizationID(v string) *MCPConnectionHistoryCreate {
+	_c.mutation.SetOrganizationID(v)
+	return _c
+}
+
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (_c *MCPConnectionHistoryCreate) SetNillableOrganizationID(v *string) *MCPConnectionHistoryCreate {
+	if v != nil {
+		_c.SetOrganizationID(*v)
+	}
+	return _c
+}
+
 // SetScopes sets the "scopes" field.
 func (_c *MCPConnectionHistoryCreate) SetScopes(v []string) *MCPConnectionHistoryCreate {
 	_c.mutation.SetScopes(v)
@@ -442,6 +456,10 @@ func (_c *MCPConnectionHistoryCreate) createSpec() (*MCPConnectionHistory, *sqlg
 		_spec.SetField(mcpconnectionhistory.FieldAudience, field.TypeString, value)
 		_node.Audience = value
 	}
+	if value, ok := _c.mutation.OrganizationID(); ok {
+		_spec.SetField(mcpconnectionhistory.FieldOrganizationID, field.TypeString, value)
+		_node.OrganizationID = value
+	}
 	if value, ok := _c.mutation.Scopes(); ok {
 		_spec.SetField(mcpconnectionhistory.FieldScopes, field.TypeJSON, value)
 		_node.Scopes = value
@@ -592,6 +610,9 @@ func (u *MCPConnectionHistoryUpsertOne) UpdateNewValues() *MCPConnectionHistoryU
 		}
 		if _, exists := u.create.mutation.Audience(); exists {
 			s.SetIgnore(mcpconnectionhistory.FieldAudience)
+		}
+		if _, exists := u.create.mutation.OrganizationID(); exists {
+			s.SetIgnore(mcpconnectionhistory.FieldOrganizationID)
 		}
 		if _, exists := u.create.mutation.Scopes(); exists {
 			s.SetIgnore(mcpconnectionhistory.FieldScopes)
@@ -877,6 +898,9 @@ func (u *MCPConnectionHistoryUpsertBulk) UpdateNewValues() *MCPConnectionHistory
 			}
 			if _, exists := b.mutation.Audience(); exists {
 				s.SetIgnore(mcpconnectionhistory.FieldAudience)
+			}
+			if _, exists := b.mutation.OrganizationID(); exists {
+				s.SetIgnore(mcpconnectionhistory.FieldOrganizationID)
 			}
 			if _, exists := b.mutation.Scopes(); exists {
 				s.SetIgnore(mcpconnectionhistory.FieldScopes)

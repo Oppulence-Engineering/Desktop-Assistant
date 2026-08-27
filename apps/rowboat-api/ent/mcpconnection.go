@@ -28,6 +28,8 @@ type MCPConnection struct {
 	Connector string `json:"connector,omitempty"`
 	// Audience holds the value of the "audience" field.
 	Audience string `json:"audience,omitempty"`
+	// OrganizationID holds the value of the "organization_id" field.
+	OrganizationID string `json:"organization_id,omitempty"`
 	// Scopes holds the value of the "scopes" field.
 	Scopes []string `json:"scopes,omitempty"`
 	// RefreshTokenEncrypted holds the value of the "refresh_token_encrypted" field.
@@ -94,7 +96,7 @@ func (*MCPConnection) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case mcpconnection.FieldCredentialGeneration:
 			values[i] = new(sql.NullInt64)
-		case mcpconnection.FieldConnector, mcpconnection.FieldAudience, mcpconnection.FieldStatus, mcpconnection.FieldRevokedReason, mcpconnection.FieldRevokedBy:
+		case mcpconnection.FieldConnector, mcpconnection.FieldAudience, mcpconnection.FieldOrganizationID, mcpconnection.FieldStatus, mcpconnection.FieldRevokedReason, mcpconnection.FieldRevokedBy:
 			values[i] = new(sql.NullString)
 		case mcpconnection.FieldCreatedAt, mcpconnection.FieldUpdatedAt, mcpconnection.FieldConnectedAt, mcpconnection.FieldLastUsedAt, mcpconnection.FieldExpiresAt, mcpconnection.FieldRevokedAt, mcpconnection.FieldRevocationAttemptedAt:
 			values[i] = new(sql.NullTime)
@@ -146,6 +148,12 @@ func (_m *MCPConnection) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field audience", values[i])
 			} else if value.Valid {
 				_m.Audience = value.String
+			}
+		case mcpconnection.FieldOrganizationID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
+			} else if value.Valid {
+				_m.OrganizationID = value.String
 			}
 		case mcpconnection.FieldScopes:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -286,6 +294,9 @@ func (_m *MCPConnection) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("audience=")
 	builder.WriteString(_m.Audience)
+	builder.WriteString(", ")
+	builder.WriteString("organization_id=")
+	builder.WriteString(_m.OrganizationID)
 	builder.WriteString(", ")
 	builder.WriteString("scopes=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Scopes))

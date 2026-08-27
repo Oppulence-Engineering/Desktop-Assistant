@@ -88,11 +88,11 @@ func TestCallbackRejectsScopeEscalationAndReplay(t *testing.T) {
 		return rec
 	}
 	first := callback()
-	if first.Code != http.StatusFound || !strings.Contains(first.Header().Get("Location"), "status=error") {
+	if first.Code != http.StatusFound || !strings.Contains(first.Header().Get("Location"), "status=restart_required") {
 		t.Fatalf("escalated callback = %d %s", first.Code, first.Header().Get("Location"))
 	}
 	pending := client.OAuthPending.Query().OnlyX(context.Background())
-	if pending.LifecycleStatus != "failed" || pending.FailureReason != "scope_escalation" {
+	if pending.LifecycleStatus != "restart_required" || pending.FailureReason != "scope_escalation" {
 		t.Fatalf("pending transition = %q/%q", pending.LifecycleStatus, pending.FailureReason)
 	}
 	second := callback()
@@ -106,7 +106,7 @@ func TestTokenMintValidatesAudienceScopeEntitlementAndRevocation(t *testing.T) {
 	sealer, _ := crypto.NewSealer("test-key")
 	sealed, _ := sealer.SealString("ghp_test")
 	ctx := auth.WithUser(context.Background(), u)
-	connection := client.MCPConnection.Create().SetUser(u).SetConnector("github").SetAudience("github-api").SetAPIKeyEncrypted(sealed).SaveX(ctx)
+	connection := client.MCPConnection.Create().SetUser(u).SetConnector("github").SetAudience("github-api").SetOrganizationID("org_1").SetAPIKeyEncrypted(sealed).SaveX(ctx)
 
 	request := func(body string) *httptest.ResponseRecorder {
 		rec := httptest.NewRecorder()

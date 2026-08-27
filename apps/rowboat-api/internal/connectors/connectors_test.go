@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
@@ -24,6 +25,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/workosauth"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -53,7 +55,7 @@ func setup(t *testing.T, registry *connectors.Registry) (*ent.Client, *ent.User,
 		t.Fatalf("db: %v", err)
 	}
 	t.Cleanup(func() { _ = d.Close() })
-	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(context.Background())
+	u := d.Client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SetWorkosOrgID("org_1").SaveX(context.Background())
 	d.Client.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(auth.WithUser(context.Background(), u))
 	sealer, _ := crypto.NewSealer("test-key")
 	h := connectors.New(d.Client, sealer, registry, connectors.Config{
@@ -114,13 +116,13 @@ func TestOAuthConnectorFlow(t *testing.T) {
 		}
 	}
 
-	// The raw state is present only in the authorize URL. At rest, the pending
-	// row stores SHA-256(state), never the bearer-equivalent raw state.
+	// During the expand/contract rollout the legacy column retains raw state so
+	// old callbacks can serve new starts, while new readers use state_hash.
 	pending := client.OAuthPending.Query().FirstX(context.Background())
 	authorizeURL, _ := url.Parse(startBody.AuthorizeURL)
 	state := authorizeURL.Query().Get("state")
-	if state == "" || pending.State == state || pending.StateHash == "" || !strings.HasPrefix(pending.State, "sha256:") {
-		t.Fatalf("pending state was not hashed at rest: raw=%q stored=%q hash=%q", state, pending.State, pending.StateHash)
+	if state == "" || pending.State != state || pending.StateHash == "" {
+		t.Fatalf("pending state was not dual-written for rollout: raw=%q stored=%q hash=%q", state, pending.State, pending.StateHash)
 	}
 
 	// 2. Callback (browser redirect — no user in context). It parks the grant and
@@ -465,6 +467,7 @@ func TestInvalidate(t *testing.T) {
 	_ = sealer
 	// Seed a connection directly.
 	client.MCPConnection.Create().SetUser(u).SetConnector("canvas").SetAudience("canvas-api").
+		SetOrganizationID("org_1").
 		SetRefreshTokenEncrypted([]byte("x")).SaveX(auth.WithUser(context.Background(), u))
 
 	body := `{"workos_user_id":"user_1","connector":"canvas"}`
@@ -496,12 +499,13 @@ func TestMCPRuntimeResolverResolvesAPIKeyForExplicitUser(t *testing.T) {
 	}
 	ctx := auth.WithInternal(context.Background())
 
-	other := client.User.Create().SetEmail("other@x.co").SetWorkosUserID("user_2").SaveX(ctx)
+	other := client.User.Create().SetEmail("other@x.co").SetWorkosUserID("user_2").SetWorkosOrgID("org_2").SaveX(ctx)
 	otherKey, _ := sealer.SealString("wrong-user-key")
 	client.MCPConnection.Create().
 		SetUser(other).
 		SetConnector("wispr").
 		SetAudience("wispr-api").
+		SetOrganizationID("org_2").
 		SetAPIKeyEncrypted(otherKey).
 		SaveX(ctx)
 
@@ -510,6 +514,7 @@ func TestMCPRuntimeResolverResolvesAPIKeyForExplicitUser(t *testing.T) {
 		SetUser(u).
 		SetConnector("wispr").
 		SetAudience("wispr-api").
+		SetOrganizationID("org_1").
 		SetAPIKeyEncrypted(userKey).
 		SaveX(ctx)
 
@@ -545,6 +550,7 @@ func TestMCPRuntimeResolverRefreshesOAuthConnector(t *testing.T) {
 		SetUser(u).
 		SetConnector("canvas").
 		SetAudience("canvas-api").
+		SetOrganizationID("org_1").
 		SetScopes([]string{"canvas:invoices.read"}).
 		SetRefreshTokenEncrypted(sealed).
 		SaveX(ctx)
@@ -596,6 +602,7 @@ func TestMCPTokenInvalidGrantTransitionsToReauthRequired(t *testing.T) {
 		SetUser(u).
 		SetConnector("canvas").
 		SetAudience("mcp:canvas").
+		SetOrganizationID("org_1").
 		SetScopes([]string{"canvas:invoices.read", "canvas:customers.read"}).
 		SetRefreshTokenEncrypted(sealed).
 		SaveX(ctx)
@@ -646,6 +653,7 @@ func TestMCPTokenCollapsesConcurrentRotatingRefreshes(t *testing.T) {
 		SetUser(u).
 		SetConnector("canvas").
 		SetAudience("mcp:canvas").
+		SetOrganizationID("org_1").
 		SetScopes([]string{"canvas:invoices.read", "canvas:customers.read"}).
 		SetRefreshTokenEncrypted(sealed).
 		SaveX(ctx)
@@ -672,5 +680,116 @@ func TestMCPTokenCollapsesConcurrentRotatingRefreshes(t *testing.T) {
 	}
 	if hits.Load() != 1 {
 		t.Fatalf("rotating token endpoint hits = %d, want 1", hits.Load())
+	}
+	if got := client.ConnectorAuditEvent.Query().Where(connectorauditevent.EventTypeEQ("token.refreshed")).CountX(auth.WithInternal(context.Background())); got != 1 {
+		t.Fatalf("token.refreshed audit count = %d, want 1", got)
+	}
+	if got := client.ConnectorAuditEvent.Query().Where(connectorauditevent.EventTypeEQ("token.minted")).CountX(auth.WithInternal(context.Background())); got != callers {
+		t.Fatalf("token.minted audit count = %d, want %d", got, callers)
+	}
+}
+
+func TestExpiredCallbackLeaseForcesBoundedRestart(t *testing.T) {
+	client, u, h := setup(t, connectors.DefaultRegistry())
+	ctx := auth.WithUser(context.Background(), u)
+	start := httptest.NewRecorder()
+	h.Start(start, httptest.NewRequest(http.MethodPost, "/v1/connections/canvas/start", nil).WithContext(withParam(ctx, "name", "canvas")))
+	var body struct {
+		AuthorizeURL string `json:"authorize_url"`
+	}
+	_ = json.Unmarshal(start.Body.Bytes(), &body)
+	parsed, _ := url.Parse(body.AuthorizeURL)
+	state := parsed.Query().Get("state")
+	pending := client.OAuthPending.Query().OnlyX(auth.WithInternal(context.Background()))
+	pending.Update().SetLifecycleStatus("callback_processing").SetCallbackClaimID(uuid.New()).SetCallbackClaimedUntil(time.Now().Add(-time.Minute)).SaveX(auth.WithInternal(context.Background()))
+	rec := httptest.NewRecorder()
+	h.Callback(rec, httptest.NewRequest(http.MethodGet, "/v1/connections/canvas/callback?code=one-use&state="+state, nil).WithContext(withParam(context.Background(), "name", "canvas")))
+	if rec.Code != http.StatusFound || !strings.Contains(rec.Header().Get("Location"), "status=restart_required") {
+		t.Fatalf("expired callback lease response = %d %q", rec.Code, rec.Header().Get("Location"))
+	}
+	if got := client.OAuthPending.GetX(auth.WithInternal(context.Background()), pending.ID).LifecycleStatus; got != "restart_required" {
+		t.Fatalf("pending lifecycle = %q, want restart_required", got)
+	}
+}
+
+func TestDeleteFencesInFlightRefreshAndRevokesRotatedCredential(t *testing.T) {
+	refreshStarted := make(chan struct{})
+	revoked := make(chan string, 4)
+	ory := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		if r.URL.Path == "/oauth2/revoke" {
+			revoked <- r.Form.Get("token")
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		close(refreshStarted)
+		time.Sleep(250 * time.Millisecond)
+		_, _ = w.Write([]byte(`{"access_token":"access-new","refresh_token":"refresh-new","expires_in":3600,"token_type":"Bearer"}`))
+	}))
+	t.Cleanup(ory.Close)
+	client, u, h := setup(t, connectors.DefaultRegistry())
+	h.SetOryBaseURL(ory.URL)
+	sealer, _ := crypto.NewSealer("test-key")
+	sealed, _ := sealer.SealString("refresh-old")
+	ctx := auth.WithUser(context.Background(), u)
+	connection := client.MCPConnection.Create().SetUser(u).SetConnector("canvas").SetOrganizationID("org_1").SetAudience("mcp:canvas").SetScopes([]string{"canvas:invoices.read", "canvas:customers.read"}).SetRefreshTokenEncrypted(sealed).SaveX(ctx)
+	tokenDone := make(chan int, 1)
+	go func() {
+		rec := httptest.NewRecorder()
+		h.MCPToken(rec, httptest.NewRequest(http.MethodPost, "/v1/connections/canvas/mcp-token", nil).WithContext(withParam(auth.WithUser(context.Background(), u), "name", "canvas")))
+		tokenDone <- rec.Code
+	}()
+	<-refreshStarted
+	deleteDone := make(chan int, 1)
+	go func() {
+		del := httptest.NewRecorder()
+		h.Delete(del, httptest.NewRequest(http.MethodDelete, "/v1/connections/canvas", nil).WithContext(withParam(auth.WithUser(context.Background(), u), "name", "canvas")))
+		deleteDone <- del.Code
+	}()
+	tokenCode := <-tokenDone
+	if code := <-deleteDone; code != http.StatusNoContent {
+		t.Fatalf("delete = %d", code)
+	}
+	row := client.MCPConnection.GetX(auth.WithInternal(context.Background()), connection.ID)
+	if row.Status != "revoked" || len(row.RefreshTokenEncrypted) != 0 {
+		t.Fatalf("unsafe tombstone: %+v", row)
+	}
+	seen := map[string]bool{}
+	for len(revoked) > 0 {
+		seen[<-revoked] = true
+	}
+	if tokenCode != http.StatusOK && !seen["refresh-new"] {
+		t.Fatalf("superseded rotated credential was not revoked: %#v", seen)
+	}
+	if !seen["refresh-old"] && !seen["refresh-new"] {
+		t.Fatalf("revoked credentials = %#v", seen)
+	}
+}
+
+func TestConnectorOwnershipAllowsSameSubjectAcrossOrganizations(t *testing.T) {
+	reg, _ := connectors.LoadRegistry([]byte(`[{"name":"github","displayName":"GitHub","authType":"api_key","audience":"github-api"}]`))
+	client, u, h := setup(t, reg)
+	ctxA := auth.WithUser(context.Background(), u)
+	connect := func(ctx context.Context, key string) int {
+		rec := httptest.NewRecorder()
+		h.SetAPIKey(rec, httptest.NewRequest(http.MethodPost, "/v1/connections/github/api-key", strings.NewReader(`{"apiKey":"`+key+`"}`)).WithContext(withParam(ctx, "name", "github")))
+		return rec.Code
+	}
+	if code := connect(ctxA, "key-a"); code != http.StatusOK {
+		t.Fatalf("org A connect = %d", code)
+	}
+	u = u.Update().SetWorkosOrgID("org_2").SaveX(auth.WithInternal(context.Background()))
+	ctxB := auth.WithUser(context.Background(), u)
+	list := httptest.NewRecorder()
+	h.List(list, httptest.NewRequest(http.MethodGet, "/v1/connectors", nil).WithContext(ctxB))
+	if strings.Contains(list.Body.String(), `"connected":true`) {
+		t.Fatal("org B observed org A connection")
+	}
+	if code := connect(ctxB, "key-b"); code != http.StatusOK {
+		t.Fatalf("org B connect = %d", code)
+	}
+	rows := client.MCPConnection.Query().AllX(auth.WithInternal(context.Background()))
+	if len(rows) != 2 || rows[0].OrganizationID == rows[1].OrganizationID {
+		t.Fatalf("org-scoped rows = %+v", rows)
 	}
 }

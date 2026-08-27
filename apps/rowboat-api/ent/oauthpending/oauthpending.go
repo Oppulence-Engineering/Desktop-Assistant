@@ -46,6 +46,12 @@ const (
 	FieldHydraClientID = "hydra_client_id"
 	// FieldCallbackAt holds the string denoting the callback_at field in the database.
 	FieldCallbackAt = "callback_at"
+	// FieldCallbackClaimID holds the string denoting the callback_claim_id field in the database.
+	FieldCallbackClaimID = "callback_claim_id"
+	// FieldCallbackClaimedUntil holds the string denoting the callback_claimed_until field in the database.
+	FieldCallbackClaimedUntil = "callback_claimed_until"
+	// FieldCallbackAttempts holds the string denoting the callback_attempts field in the database.
+	FieldCallbackAttempts = "callback_attempts"
 	// FieldClaimedAt holds the string denoting the claimed_at field in the database.
 	FieldClaimedAt = "claimed_at"
 	// FieldFailureReason holds the string denoting the failure_reason field in the database.
@@ -73,6 +79,9 @@ var Columns = []string{
 	FieldContextRequestID,
 	FieldHydraClientID,
 	FieldCallbackAt,
+	FieldCallbackClaimID,
+	FieldCallbackClaimedUntil,
+	FieldCallbackAttempts,
 	FieldClaimedAt,
 	FieldFailureReason,
 }
@@ -96,6 +105,10 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// StateValidator is a validator for the "state" field. It is called by the builders before save.
 	StateValidator func(string) error
+	// DefaultCallbackAttempts holds the default value on creation for the "callback_attempts" field.
+	DefaultCallbackAttempts int
+	// CallbackAttemptsValidator is a validator for the "callback_attempts" field. It is called by the builders before save.
+	CallbackAttemptsValidator func(int) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -176,6 +189,21 @@ func ByHydraClientID(opts ...sql.OrderTermOption) OrderOption {
 // ByCallbackAt orders the results by the callback_at field.
 func ByCallbackAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCallbackAt, opts...).ToFunc()
+}
+
+// ByCallbackClaimID orders the results by the callback_claim_id field.
+func ByCallbackClaimID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCallbackClaimID, opts...).ToFunc()
+}
+
+// ByCallbackClaimedUntil orders the results by the callback_claimed_until field.
+func ByCallbackClaimedUntil(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCallbackClaimedUntil, opts...).ToFunc()
+}
+
+// ByCallbackAttempts orders the results by the callback_attempts field.
+func ByCallbackAttempts(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCallbackAttempts, opts...).ToFunc()
 }
 
 // ByClaimedAt orders the results by the claimed_at field.

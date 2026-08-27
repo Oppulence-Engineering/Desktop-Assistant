@@ -21485,6 +21485,23 @@ type MCPConnectionWhereInput struct {
 	AudienceEqualFold    *string  `json:"audienceEqualFold,omitempty"`
 	AudienceContainsFold *string  `json:"audienceContainsFold,omitempty"`
 
+	// "organization_id" field predicates.
+	OrganizationID             *string  `json:"organizationID,omitempty"`
+	OrganizationIDNEQ          *string  `json:"organizationIDNEQ,omitempty"`
+	OrganizationIDIn           []string `json:"organizationIDIn,omitempty"`
+	OrganizationIDNotIn        []string `json:"organizationIDNotIn,omitempty"`
+	OrganizationIDGT           *string  `json:"organizationIDGT,omitempty"`
+	OrganizationIDGTE          *string  `json:"organizationIDGTE,omitempty"`
+	OrganizationIDLT           *string  `json:"organizationIDLT,omitempty"`
+	OrganizationIDLTE          *string  `json:"organizationIDLTE,omitempty"`
+	OrganizationIDContains     *string  `json:"organizationIDContains,omitempty"`
+	OrganizationIDHasPrefix    *string  `json:"organizationIDHasPrefix,omitempty"`
+	OrganizationIDHasSuffix    *string  `json:"organizationIDHasSuffix,omitempty"`
+	OrganizationIDIsNil        bool     `json:"organizationIDIsNil,omitempty"`
+	OrganizationIDNotNil       bool     `json:"organizationIDNotNil,omitempty"`
+	OrganizationIDEqualFold    *string  `json:"organizationIDEqualFold,omitempty"`
+	OrganizationIDContainsFold *string  `json:"organizationIDContainsFold,omitempty"`
+
 	// "credential_generation" field predicates.
 	CredentialGeneration      *int64  `json:"credentialGeneration,omitempty"`
 	CredentialGenerationNEQ   *int64  `json:"credentialGenerationNEQ,omitempty"`
@@ -21835,6 +21852,51 @@ func (i *MCPConnectionWhereInput) P() (predicate.MCPConnection, error) {
 	}
 	if i.AudienceContainsFold != nil {
 		predicates = append(predicates, mcpconnection.AudienceContainsFold(*i.AudienceContainsFold))
+	}
+	if i.OrganizationID != nil {
+		predicates = append(predicates, mcpconnection.OrganizationIDEQ(*i.OrganizationID))
+	}
+	if i.OrganizationIDNEQ != nil {
+		predicates = append(predicates, mcpconnection.OrganizationIDNEQ(*i.OrganizationIDNEQ))
+	}
+	if len(i.OrganizationIDIn) > 0 {
+		predicates = append(predicates, mcpconnection.OrganizationIDIn(i.OrganizationIDIn...))
+	}
+	if len(i.OrganizationIDNotIn) > 0 {
+		predicates = append(predicates, mcpconnection.OrganizationIDNotIn(i.OrganizationIDNotIn...))
+	}
+	if i.OrganizationIDGT != nil {
+		predicates = append(predicates, mcpconnection.OrganizationIDGT(*i.OrganizationIDGT))
+	}
+	if i.OrganizationIDGTE != nil {
+		predicates = append(predicates, mcpconnection.OrganizationIDGTE(*i.OrganizationIDGTE))
+	}
+	if i.OrganizationIDLT != nil {
+		predicates = append(predicates, mcpconnection.OrganizationIDLT(*i.OrganizationIDLT))
+	}
+	if i.OrganizationIDLTE != nil {
+		predicates = append(predicates, mcpconnection.OrganizationIDLTE(*i.OrganizationIDLTE))
+	}
+	if i.OrganizationIDContains != nil {
+		predicates = append(predicates, mcpconnection.OrganizationIDContains(*i.OrganizationIDContains))
+	}
+	if i.OrganizationIDHasPrefix != nil {
+		predicates = append(predicates, mcpconnection.OrganizationIDHasPrefix(*i.OrganizationIDHasPrefix))
+	}
+	if i.OrganizationIDHasSuffix != nil {
+		predicates = append(predicates, mcpconnection.OrganizationIDHasSuffix(*i.OrganizationIDHasSuffix))
+	}
+	if i.OrganizationIDIsNil {
+		predicates = append(predicates, mcpconnection.OrganizationIDIsNil())
+	}
+	if i.OrganizationIDNotNil {
+		predicates = append(predicates, mcpconnection.OrganizationIDNotNil())
+	}
+	if i.OrganizationIDEqualFold != nil {
+		predicates = append(predicates, mcpconnection.OrganizationIDEqualFold(*i.OrganizationIDEqualFold))
+	}
+	if i.OrganizationIDContainsFold != nil {
+		predicates = append(predicates, mcpconnection.OrganizationIDContainsFold(*i.OrganizationIDContainsFold))
 	}
 	if i.CredentialGeneration != nil {
 		predicates = append(predicates, mcpconnection.CredentialGenerationEQ(*i.CredentialGeneration))
@@ -25273,6 +25335,40 @@ type OAuthPendingWhereInput struct {
 	CallbackAtIsNil  bool        `json:"callbackAtIsNil,omitempty"`
 	CallbackAtNotNil bool        `json:"callbackAtNotNil,omitempty"`
 
+	// "callback_claim_id" field predicates.
+	CallbackClaimID       *uuid.UUID  `json:"callbackClaimID,omitempty"`
+	CallbackClaimIDNEQ    *uuid.UUID  `json:"callbackClaimIDNEQ,omitempty"`
+	CallbackClaimIDIn     []uuid.UUID `json:"callbackClaimIDIn,omitempty"`
+	CallbackClaimIDNotIn  []uuid.UUID `json:"callbackClaimIDNotIn,omitempty"`
+	CallbackClaimIDGT     *uuid.UUID  `json:"callbackClaimIDGT,omitempty"`
+	CallbackClaimIDGTE    *uuid.UUID  `json:"callbackClaimIDGTE,omitempty"`
+	CallbackClaimIDLT     *uuid.UUID  `json:"callbackClaimIDLT,omitempty"`
+	CallbackClaimIDLTE    *uuid.UUID  `json:"callbackClaimIDLTE,omitempty"`
+	CallbackClaimIDIsNil  bool        `json:"callbackClaimIDIsNil,omitempty"`
+	CallbackClaimIDNotNil bool        `json:"callbackClaimIDNotNil,omitempty"`
+
+	// "callback_claimed_until" field predicates.
+	CallbackClaimedUntil       *time.Time  `json:"callbackClaimedUntil,omitempty"`
+	CallbackClaimedUntilNEQ    *time.Time  `json:"callbackClaimedUntilNEQ,omitempty"`
+	CallbackClaimedUntilIn     []time.Time `json:"callbackClaimedUntilIn,omitempty"`
+	CallbackClaimedUntilNotIn  []time.Time `json:"callbackClaimedUntilNotIn,omitempty"`
+	CallbackClaimedUntilGT     *time.Time  `json:"callbackClaimedUntilGT,omitempty"`
+	CallbackClaimedUntilGTE    *time.Time  `json:"callbackClaimedUntilGTE,omitempty"`
+	CallbackClaimedUntilLT     *time.Time  `json:"callbackClaimedUntilLT,omitempty"`
+	CallbackClaimedUntilLTE    *time.Time  `json:"callbackClaimedUntilLTE,omitempty"`
+	CallbackClaimedUntilIsNil  bool        `json:"callbackClaimedUntilIsNil,omitempty"`
+	CallbackClaimedUntilNotNil bool        `json:"callbackClaimedUntilNotNil,omitempty"`
+
+	// "callback_attempts" field predicates.
+	CallbackAttempts      *int  `json:"callbackAttempts,omitempty"`
+	CallbackAttemptsNEQ   *int  `json:"callbackAttemptsNEQ,omitempty"`
+	CallbackAttemptsIn    []int `json:"callbackAttemptsIn,omitempty"`
+	CallbackAttemptsNotIn []int `json:"callbackAttemptsNotIn,omitempty"`
+	CallbackAttemptsGT    *int  `json:"callbackAttemptsGT,omitempty"`
+	CallbackAttemptsGTE   *int  `json:"callbackAttemptsGTE,omitempty"`
+	CallbackAttemptsLT    *int  `json:"callbackAttemptsLT,omitempty"`
+	CallbackAttemptsLTE   *int  `json:"callbackAttemptsLTE,omitempty"`
+
 	// "claimed_at" field predicates.
 	ClaimedAt       *time.Time  `json:"claimedAt,omitempty"`
 	ClaimedAtNEQ    *time.Time  `json:"claimedAtNEQ,omitempty"`
@@ -25937,6 +26033,90 @@ func (i *OAuthPendingWhereInput) P() (predicate.OAuthPending, error) {
 	}
 	if i.CallbackAtNotNil {
 		predicates = append(predicates, oauthpending.CallbackAtNotNil())
+	}
+	if i.CallbackClaimID != nil {
+		predicates = append(predicates, oauthpending.CallbackClaimIDEQ(*i.CallbackClaimID))
+	}
+	if i.CallbackClaimIDNEQ != nil {
+		predicates = append(predicates, oauthpending.CallbackClaimIDNEQ(*i.CallbackClaimIDNEQ))
+	}
+	if len(i.CallbackClaimIDIn) > 0 {
+		predicates = append(predicates, oauthpending.CallbackClaimIDIn(i.CallbackClaimIDIn...))
+	}
+	if len(i.CallbackClaimIDNotIn) > 0 {
+		predicates = append(predicates, oauthpending.CallbackClaimIDNotIn(i.CallbackClaimIDNotIn...))
+	}
+	if i.CallbackClaimIDGT != nil {
+		predicates = append(predicates, oauthpending.CallbackClaimIDGT(*i.CallbackClaimIDGT))
+	}
+	if i.CallbackClaimIDGTE != nil {
+		predicates = append(predicates, oauthpending.CallbackClaimIDGTE(*i.CallbackClaimIDGTE))
+	}
+	if i.CallbackClaimIDLT != nil {
+		predicates = append(predicates, oauthpending.CallbackClaimIDLT(*i.CallbackClaimIDLT))
+	}
+	if i.CallbackClaimIDLTE != nil {
+		predicates = append(predicates, oauthpending.CallbackClaimIDLTE(*i.CallbackClaimIDLTE))
+	}
+	if i.CallbackClaimIDIsNil {
+		predicates = append(predicates, oauthpending.CallbackClaimIDIsNil())
+	}
+	if i.CallbackClaimIDNotNil {
+		predicates = append(predicates, oauthpending.CallbackClaimIDNotNil())
+	}
+	if i.CallbackClaimedUntil != nil {
+		predicates = append(predicates, oauthpending.CallbackClaimedUntilEQ(*i.CallbackClaimedUntil))
+	}
+	if i.CallbackClaimedUntilNEQ != nil {
+		predicates = append(predicates, oauthpending.CallbackClaimedUntilNEQ(*i.CallbackClaimedUntilNEQ))
+	}
+	if len(i.CallbackClaimedUntilIn) > 0 {
+		predicates = append(predicates, oauthpending.CallbackClaimedUntilIn(i.CallbackClaimedUntilIn...))
+	}
+	if len(i.CallbackClaimedUntilNotIn) > 0 {
+		predicates = append(predicates, oauthpending.CallbackClaimedUntilNotIn(i.CallbackClaimedUntilNotIn...))
+	}
+	if i.CallbackClaimedUntilGT != nil {
+		predicates = append(predicates, oauthpending.CallbackClaimedUntilGT(*i.CallbackClaimedUntilGT))
+	}
+	if i.CallbackClaimedUntilGTE != nil {
+		predicates = append(predicates, oauthpending.CallbackClaimedUntilGTE(*i.CallbackClaimedUntilGTE))
+	}
+	if i.CallbackClaimedUntilLT != nil {
+		predicates = append(predicates, oauthpending.CallbackClaimedUntilLT(*i.CallbackClaimedUntilLT))
+	}
+	if i.CallbackClaimedUntilLTE != nil {
+		predicates = append(predicates, oauthpending.CallbackClaimedUntilLTE(*i.CallbackClaimedUntilLTE))
+	}
+	if i.CallbackClaimedUntilIsNil {
+		predicates = append(predicates, oauthpending.CallbackClaimedUntilIsNil())
+	}
+	if i.CallbackClaimedUntilNotNil {
+		predicates = append(predicates, oauthpending.CallbackClaimedUntilNotNil())
+	}
+	if i.CallbackAttempts != nil {
+		predicates = append(predicates, oauthpending.CallbackAttemptsEQ(*i.CallbackAttempts))
+	}
+	if i.CallbackAttemptsNEQ != nil {
+		predicates = append(predicates, oauthpending.CallbackAttemptsNEQ(*i.CallbackAttemptsNEQ))
+	}
+	if len(i.CallbackAttemptsIn) > 0 {
+		predicates = append(predicates, oauthpending.CallbackAttemptsIn(i.CallbackAttemptsIn...))
+	}
+	if len(i.CallbackAttemptsNotIn) > 0 {
+		predicates = append(predicates, oauthpending.CallbackAttemptsNotIn(i.CallbackAttemptsNotIn...))
+	}
+	if i.CallbackAttemptsGT != nil {
+		predicates = append(predicates, oauthpending.CallbackAttemptsGT(*i.CallbackAttemptsGT))
+	}
+	if i.CallbackAttemptsGTE != nil {
+		predicates = append(predicates, oauthpending.CallbackAttemptsGTE(*i.CallbackAttemptsGTE))
+	}
+	if i.CallbackAttemptsLT != nil {
+		predicates = append(predicates, oauthpending.CallbackAttemptsLT(*i.CallbackAttemptsLT))
+	}
+	if i.CallbackAttemptsLTE != nil {
+		predicates = append(predicates, oauthpending.CallbackAttemptsLTE(*i.CallbackAttemptsLTE))
 	}
 	if i.ClaimedAt != nil {
 		predicates = append(predicates, oauthpending.ClaimedAtEQ(*i.ClaimedAt))

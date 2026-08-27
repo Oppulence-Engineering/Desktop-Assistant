@@ -34,6 +34,8 @@ type MCPConnectionHistory struct {
 	Connector string `json:"connector,omitempty"`
 	// Audience holds the value of the "audience" field.
 	Audience string `json:"audience,omitempty"`
+	// OrganizationID holds the value of the "organization_id" field.
+	OrganizationID string `json:"organization_id,omitempty"`
 	// Scopes holds the value of the "scopes" field.
 	Scopes []string `json:"scopes,omitempty"`
 	// RefreshTokenEncrypted holds the value of the "refresh_token_encrypted" field.
@@ -74,7 +76,7 @@ func (*MCPConnectionHistory) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case mcpconnectionhistory.FieldCredentialGeneration:
 			values[i] = new(sql.NullInt64)
-		case mcpconnectionhistory.FieldOperation, mcpconnectionhistory.FieldConnector, mcpconnectionhistory.FieldAudience, mcpconnectionhistory.FieldStatus, mcpconnectionhistory.FieldRevokedReason, mcpconnectionhistory.FieldRevokedBy:
+		case mcpconnectionhistory.FieldOperation, mcpconnectionhistory.FieldConnector, mcpconnectionhistory.FieldAudience, mcpconnectionhistory.FieldOrganizationID, mcpconnectionhistory.FieldStatus, mcpconnectionhistory.FieldRevokedReason, mcpconnectionhistory.FieldRevokedBy:
 			values[i] = new(sql.NullString)
 		case mcpconnectionhistory.FieldCreatedAt, mcpconnectionhistory.FieldUpdatedAt, mcpconnectionhistory.FieldHistoryTime, mcpconnectionhistory.FieldConnectedAt, mcpconnectionhistory.FieldLastUsedAt, mcpconnectionhistory.FieldExpiresAt, mcpconnectionhistory.FieldRevokedAt, mcpconnectionhistory.FieldRevocationAttemptedAt:
 			values[i] = new(sql.NullTime)
@@ -142,6 +144,12 @@ func (_m *MCPConnectionHistory) assignValues(columns []string, values []any) err
 				return fmt.Errorf("unexpected type %T for field audience", values[i])
 			} else if value.Valid {
 				_m.Audience = value.String
+			}
+		case mcpconnectionhistory.FieldOrganizationID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
+			} else if value.Valid {
+				_m.OrganizationID = value.String
 			}
 		case mcpconnectionhistory.FieldScopes:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -279,6 +287,9 @@ func (_m *MCPConnectionHistory) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("audience=")
 	builder.WriteString(_m.Audience)
+	builder.WriteString(", ")
+	builder.WriteString("organization_id=")
+	builder.WriteString(_m.OrganizationID)
 	builder.WriteString(", ")
 	builder.WriteString("scopes=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Scopes))

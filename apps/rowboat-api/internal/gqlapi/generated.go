@@ -690,6 +690,7 @@ type ComplexityRoot struct {
 		ExpiresAt             func(childComplexity int) int
 		ID                    func(childComplexity int) int
 		LastUsedAt            func(childComplexity int) int
+		OrganizationID        func(childComplexity int) int
 		RevocationAttemptedAt func(childComplexity int) int
 		RevocationSucceeded   func(childComplexity int) int
 		RevokedAt             func(childComplexity int) int
@@ -788,24 +789,27 @@ type ComplexityRoot struct {
 	}
 
 	OAuthPending struct {
-		CallbackAt        func(childComplexity int) int
-		ClaimedAt         func(childComplexity int) int
-		ConsentChallenge  func(childComplexity int) int
-		ContextRequestID  func(childComplexity int) int
-		CreatedAt         func(childComplexity int) int
-		ExpiresAt         func(childComplexity int) int
-		FailureReason     func(childComplexity int) int
-		HydraClientID     func(childComplexity int) int
-		ID                func(childComplexity int) int
-		LifecycleStatus   func(childComplexity int) int
-		OwnerOrgID        func(childComplexity int) int
-		OwnerWorkosUserID func(childComplexity int) int
-		Provider          func(childComplexity int) int
-		RedirectTarget    func(childComplexity int) int
-		RequestedScopes   func(childComplexity int) int
-		State             func(childComplexity int) int
-		StateHash         func(childComplexity int) int
-		UpdatedAt         func(childComplexity int) int
+		CallbackAt           func(childComplexity int) int
+		CallbackAttempts     func(childComplexity int) int
+		CallbackClaimID      func(childComplexity int) int
+		CallbackClaimedUntil func(childComplexity int) int
+		ClaimedAt            func(childComplexity int) int
+		ConsentChallenge     func(childComplexity int) int
+		ContextRequestID     func(childComplexity int) int
+		CreatedAt            func(childComplexity int) int
+		ExpiresAt            func(childComplexity int) int
+		FailureReason        func(childComplexity int) int
+		HydraClientID        func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		LifecycleStatus      func(childComplexity int) int
+		OwnerOrgID           func(childComplexity int) int
+		OwnerWorkosUserID    func(childComplexity int) int
+		Provider             func(childComplexity int) int
+		RedirectTarget       func(childComplexity int) int
+		RequestedScopes      func(childComplexity int) int
+		State                func(childComplexity int) int
+		StateHash            func(childComplexity int) int
+		UpdatedAt            func(childComplexity int) int
 	}
 
 	PageInfo struct {
@@ -4725,6 +4729,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.MCPConnection.LastUsedAt(childComplexity), true
+	case "MCPConnection.organizationID":
+		if e.ComplexityRoot.MCPConnection.OrganizationID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MCPConnection.OrganizationID(childComplexity), true
 	case "MCPConnection.revocationAttemptedAt":
 		if e.ComplexityRoot.MCPConnection.RevocationAttemptedAt == nil {
 			break
@@ -5166,6 +5176,24 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.OAuthPending.CallbackAt(childComplexity), true
+	case "OAuthPending.callbackAttempts":
+		if e.ComplexityRoot.OAuthPending.CallbackAttempts == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.CallbackAttempts(childComplexity), true
+	case "OAuthPending.callbackClaimID":
+		if e.ComplexityRoot.OAuthPending.CallbackClaimID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.CallbackClaimID(childComplexity), true
+	case "OAuthPending.callbackClaimedUntil":
+		if e.ComplexityRoot.OAuthPending.CallbackClaimedUntil == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthPending.CallbackClaimedUntil(childComplexity), true
 	case "OAuthPending.claimedAt":
 		if e.ComplexityRoot.OAuthPending.ClaimedAt == nil {
 			break
@@ -10872,6 +10900,8 @@ func (ec *executionContext) childFields_MCPConnection(ctx context.Context, field
 		return ec.fieldContext_MCPConnection_connector(ctx, field)
 	case "audience":
 		return ec.fieldContext_MCPConnection_audience(ctx, field)
+	case "organizationID":
+		return ec.fieldContext_MCPConnection_organizationID(ctx, field)
 	case "scopes":
 		return ec.fieldContext_MCPConnection_scopes(ctx, field)
 	case "credentialGeneration":
@@ -25854,6 +25884,29 @@ func (ec *executionContext) fieldContext_MCPConnection_audience(_ context.Contex
 	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _MCPConnection_organizationID(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MCPConnection_organizationID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.OrganizationID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_MCPConnection_organizationID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
 func (ec *executionContext) _MCPConnection_scopes(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -28057,6 +28110,75 @@ func (ec *executionContext) _OAuthPending_callbackAt(ctx context.Context, field 
 }
 func (ec *executionContext) fieldContext_OAuthPending_callbackAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_callbackClaimID(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_callbackClaimID(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CallbackClaimID, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v uuid.UUID) graphql.Marshaler {
+			return ec.marshalOUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_callbackClaimID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type UUID does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_callbackClaimedUntil(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_callbackClaimedUntil(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CallbackClaimedUntil, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v time.Time) graphql.Marshaler {
+			return ec.marshalOTime2timeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_callbackClaimedUntil(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type Time does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthPending_callbackAttempts(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthPending_callbackAttempts(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CallbackAttempts, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthPending_callbackAttempts(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthPending", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
 func (ec *executionContext) _OAuthPending_claimedAt(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthPending) (ret graphql.Marshaler) {
@@ -78584,7 +78706,7 @@ func (ec *executionContext) unmarshalInputMCPConnectionWhereInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "connector", "connectorNEQ", "connectorIn", "connectorNotIn", "connectorGT", "connectorGTE", "connectorLT", "connectorLTE", "connectorContains", "connectorHasPrefix", "connectorHasSuffix", "connectorEqualFold", "connectorContainsFold", "audience", "audienceNEQ", "audienceIn", "audienceNotIn", "audienceGT", "audienceGTE", "audienceLT", "audienceLTE", "audienceContains", "audienceHasPrefix", "audienceHasSuffix", "audienceEqualFold", "audienceContainsFold", "credentialGeneration", "credentialGenerationNEQ", "credentialGenerationIn", "credentialGenerationNotIn", "credentialGenerationGT", "credentialGenerationGTE", "credentialGenerationLT", "credentialGenerationLTE", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "connectedAt", "connectedAtNEQ", "connectedAtIn", "connectedAtNotIn", "connectedAtGT", "connectedAtGTE", "connectedAtLT", "connectedAtLTE", "connectedAtIsNil", "connectedAtNotNil", "lastUsedAt", "lastUsedAtNEQ", "lastUsedAtIn", "lastUsedAtNotIn", "lastUsedAtGT", "lastUsedAtGTE", "lastUsedAtLT", "lastUsedAtLTE", "lastUsedAtIsNil", "lastUsedAtNotNil", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "expiresAtIsNil", "expiresAtNotNil", "revokedAt", "revokedAtNEQ", "revokedAtIn", "revokedAtNotIn", "revokedAtGT", "revokedAtGTE", "revokedAtLT", "revokedAtLTE", "revokedAtIsNil", "revokedAtNotNil", "revokedReason", "revokedReasonNEQ", "revokedReasonIn", "revokedReasonNotIn", "revokedReasonGT", "revokedReasonGTE", "revokedReasonLT", "revokedReasonLTE", "revokedReasonContains", "revokedReasonHasPrefix", "revokedReasonHasSuffix", "revokedReasonIsNil", "revokedReasonNotNil", "revokedReasonEqualFold", "revokedReasonContainsFold", "revokedBy", "revokedByNEQ", "revokedByIn", "revokedByNotIn", "revokedByGT", "revokedByGTE", "revokedByLT", "revokedByLTE", "revokedByContains", "revokedByHasPrefix", "revokedByHasSuffix", "revokedByIsNil", "revokedByNotNil", "revokedByEqualFold", "revokedByContainsFold", "revocationAttemptedAt", "revocationAttemptedAtNEQ", "revocationAttemptedAtIn", "revocationAttemptedAtNotIn", "revocationAttemptedAtGT", "revocationAttemptedAtGTE", "revocationAttemptedAtLT", "revocationAttemptedAtLTE", "revocationAttemptedAtIsNil", "revocationAttemptedAtNotNil", "revocationSucceeded", "revocationSucceededNEQ", "revocationSucceededIsNil", "revocationSucceededNotNil", "hasUser", "hasUserWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "connector", "connectorNEQ", "connectorIn", "connectorNotIn", "connectorGT", "connectorGTE", "connectorLT", "connectorLTE", "connectorContains", "connectorHasPrefix", "connectorHasSuffix", "connectorEqualFold", "connectorContainsFold", "audience", "audienceNEQ", "audienceIn", "audienceNotIn", "audienceGT", "audienceGTE", "audienceLT", "audienceLTE", "audienceContains", "audienceHasPrefix", "audienceHasSuffix", "audienceEqualFold", "audienceContainsFold", "organizationID", "organizationIDNEQ", "organizationIDIn", "organizationIDNotIn", "organizationIDGT", "organizationIDGTE", "organizationIDLT", "organizationIDLTE", "organizationIDContains", "organizationIDHasPrefix", "organizationIDHasSuffix", "organizationIDIsNil", "organizationIDNotNil", "organizationIDEqualFold", "organizationIDContainsFold", "credentialGeneration", "credentialGenerationNEQ", "credentialGenerationIn", "credentialGenerationNotIn", "credentialGenerationGT", "credentialGenerationGTE", "credentialGenerationLT", "credentialGenerationLTE", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "connectedAt", "connectedAtNEQ", "connectedAtIn", "connectedAtNotIn", "connectedAtGT", "connectedAtGTE", "connectedAtLT", "connectedAtLTE", "connectedAtIsNil", "connectedAtNotNil", "lastUsedAt", "lastUsedAtNEQ", "lastUsedAtIn", "lastUsedAtNotIn", "lastUsedAtGT", "lastUsedAtGTE", "lastUsedAtLT", "lastUsedAtLTE", "lastUsedAtIsNil", "lastUsedAtNotNil", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "expiresAtIsNil", "expiresAtNotNil", "revokedAt", "revokedAtNEQ", "revokedAtIn", "revokedAtNotIn", "revokedAtGT", "revokedAtGTE", "revokedAtLT", "revokedAtLTE", "revokedAtIsNil", "revokedAtNotNil", "revokedReason", "revokedReasonNEQ", "revokedReasonIn", "revokedReasonNotIn", "revokedReasonGT", "revokedReasonGTE", "revokedReasonLT", "revokedReasonLTE", "revokedReasonContains", "revokedReasonHasPrefix", "revokedReasonHasSuffix", "revokedReasonIsNil", "revokedReasonNotNil", "revokedReasonEqualFold", "revokedReasonContainsFold", "revokedBy", "revokedByNEQ", "revokedByIn", "revokedByNotIn", "revokedByGT", "revokedByGTE", "revokedByLT", "revokedByLTE", "revokedByContains", "revokedByHasPrefix", "revokedByHasSuffix", "revokedByIsNil", "revokedByNotNil", "revokedByEqualFold", "revokedByContainsFold", "revocationAttemptedAt", "revocationAttemptedAtNEQ", "revocationAttemptedAtIn", "revocationAttemptedAtNotIn", "revocationAttemptedAtGT", "revocationAttemptedAtGTE", "revocationAttemptedAtLT", "revocationAttemptedAtLTE", "revocationAttemptedAtIsNil", "revocationAttemptedAtNotNil", "revocationSucceeded", "revocationSucceededNEQ", "revocationSucceededIsNil", "revocationSucceededNotNil", "hasUser", "hasUserWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -78962,6 +79084,111 @@ func (ec *executionContext) unmarshalInputMCPConnectionWhereInput(ctx context.Co
 				return it, err
 			}
 			it.AudienceContainsFold = data
+		case "organizationID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationID"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationID = data
+		case "organizationIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDNEQ = data
+		case "organizationIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDIn = data
+		case "organizationIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDNotIn = data
+		case "organizationIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDGT = data
+		case "organizationIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDGTE = data
+		case "organizationIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDLT = data
+		case "organizationIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDLTE = data
+		case "organizationIDContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDContains = data
+		case "organizationIDHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDHasPrefix = data
+		case "organizationIDHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDHasSuffix = data
+		case "organizationIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDIsNil = data
+		case "organizationIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDNotNil = data
+		case "organizationIDEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDEqualFold = data
+		case "organizationIDContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("organizationIDContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.OrganizationIDContainsFold = data
 		case "credentialGeneration":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGeneration"))
 			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
@@ -83211,7 +83438,7 @@ func (ec *executionContext) unmarshalInputOAuthPendingWhereInput(ctx context.Con
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "state", "stateNEQ", "stateIn", "stateNotIn", "stateGT", "stateGTE", "stateLT", "stateLTE", "stateContains", "stateHasPrefix", "stateHasSuffix", "stateEqualFold", "stateContainsFold", "stateHash", "stateHashNEQ", "stateHashIn", "stateHashNotIn", "stateHashGT", "stateHashGTE", "stateHashLT", "stateHashLTE", "stateHashContains", "stateHashHasPrefix", "stateHashHasSuffix", "stateHashIsNil", "stateHashNotNil", "stateHashEqualFold", "stateHashContainsFold", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerEqualFold", "providerContainsFold", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "lifecycleStatus", "lifecycleStatusNEQ", "lifecycleStatusIn", "lifecycleStatusNotIn", "lifecycleStatusGT", "lifecycleStatusGTE", "lifecycleStatusLT", "lifecycleStatusLTE", "lifecycleStatusContains", "lifecycleStatusHasPrefix", "lifecycleStatusHasSuffix", "lifecycleStatusIsNil", "lifecycleStatusNotNil", "lifecycleStatusEqualFold", "lifecycleStatusContainsFold", "ownerWorkosUserID", "ownerWorkosUserIDNEQ", "ownerWorkosUserIDIn", "ownerWorkosUserIDNotIn", "ownerWorkosUserIDGT", "ownerWorkosUserIDGTE", "ownerWorkosUserIDLT", "ownerWorkosUserIDLTE", "ownerWorkosUserIDContains", "ownerWorkosUserIDHasPrefix", "ownerWorkosUserIDHasSuffix", "ownerWorkosUserIDIsNil", "ownerWorkosUserIDNotNil", "ownerWorkosUserIDEqualFold", "ownerWorkosUserIDContainsFold", "ownerOrgID", "ownerOrgIDNEQ", "ownerOrgIDIn", "ownerOrgIDNotIn", "ownerOrgIDGT", "ownerOrgIDGTE", "ownerOrgIDLT", "ownerOrgIDLTE", "ownerOrgIDContains", "ownerOrgIDHasPrefix", "ownerOrgIDHasSuffix", "ownerOrgIDIsNil", "ownerOrgIDNotNil", "ownerOrgIDEqualFold", "ownerOrgIDContainsFold", "redirectTarget", "redirectTargetNEQ", "redirectTargetIn", "redirectTargetNotIn", "redirectTargetGT", "redirectTargetGTE", "redirectTargetLT", "redirectTargetLTE", "redirectTargetContains", "redirectTargetHasPrefix", "redirectTargetHasSuffix", "redirectTargetIsNil", "redirectTargetNotNil", "redirectTargetEqualFold", "redirectTargetContainsFold", "consentChallenge", "consentChallengeNEQ", "consentChallengeIn", "consentChallengeNotIn", "consentChallengeGT", "consentChallengeGTE", "consentChallengeLT", "consentChallengeLTE", "consentChallengeContains", "consentChallengeHasPrefix", "consentChallengeHasSuffix", "consentChallengeIsNil", "consentChallengeNotNil", "consentChallengeEqualFold", "consentChallengeContainsFold", "contextRequestID", "contextRequestIDNEQ", "contextRequestIDIn", "contextRequestIDNotIn", "contextRequestIDGT", "contextRequestIDGTE", "contextRequestIDLT", "contextRequestIDLTE", "contextRequestIDContains", "contextRequestIDHasPrefix", "contextRequestIDHasSuffix", "contextRequestIDIsNil", "contextRequestIDNotNil", "contextRequestIDEqualFold", "contextRequestIDContainsFold", "hydraClientID", "hydraClientIDNEQ", "hydraClientIDIn", "hydraClientIDNotIn", "hydraClientIDGT", "hydraClientIDGTE", "hydraClientIDLT", "hydraClientIDLTE", "hydraClientIDContains", "hydraClientIDHasPrefix", "hydraClientIDHasSuffix", "hydraClientIDIsNil", "hydraClientIDNotNil", "hydraClientIDEqualFold", "hydraClientIDContainsFold", "callbackAt", "callbackAtNEQ", "callbackAtIn", "callbackAtNotIn", "callbackAtGT", "callbackAtGTE", "callbackAtLT", "callbackAtLTE", "callbackAtIsNil", "callbackAtNotNil", "claimedAt", "claimedAtNEQ", "claimedAtIn", "claimedAtNotIn", "claimedAtGT", "claimedAtGTE", "claimedAtLT", "claimedAtLTE", "claimedAtIsNil", "claimedAtNotNil", "failureReason", "failureReasonNEQ", "failureReasonIn", "failureReasonNotIn", "failureReasonGT", "failureReasonGTE", "failureReasonLT", "failureReasonLTE", "failureReasonContains", "failureReasonHasPrefix", "failureReasonHasSuffix", "failureReasonIsNil", "failureReasonNotNil", "failureReasonEqualFold", "failureReasonContainsFold"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "state", "stateNEQ", "stateIn", "stateNotIn", "stateGT", "stateGTE", "stateLT", "stateLTE", "stateContains", "stateHasPrefix", "stateHasSuffix", "stateEqualFold", "stateContainsFold", "stateHash", "stateHashNEQ", "stateHashIn", "stateHashNotIn", "stateHashGT", "stateHashGTE", "stateHashLT", "stateHashLTE", "stateHashContains", "stateHashHasPrefix", "stateHashHasSuffix", "stateHashIsNil", "stateHashNotNil", "stateHashEqualFold", "stateHashContainsFold", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerEqualFold", "providerContainsFold", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "lifecycleStatus", "lifecycleStatusNEQ", "lifecycleStatusIn", "lifecycleStatusNotIn", "lifecycleStatusGT", "lifecycleStatusGTE", "lifecycleStatusLT", "lifecycleStatusLTE", "lifecycleStatusContains", "lifecycleStatusHasPrefix", "lifecycleStatusHasSuffix", "lifecycleStatusIsNil", "lifecycleStatusNotNil", "lifecycleStatusEqualFold", "lifecycleStatusContainsFold", "ownerWorkosUserID", "ownerWorkosUserIDNEQ", "ownerWorkosUserIDIn", "ownerWorkosUserIDNotIn", "ownerWorkosUserIDGT", "ownerWorkosUserIDGTE", "ownerWorkosUserIDLT", "ownerWorkosUserIDLTE", "ownerWorkosUserIDContains", "ownerWorkosUserIDHasPrefix", "ownerWorkosUserIDHasSuffix", "ownerWorkosUserIDIsNil", "ownerWorkosUserIDNotNil", "ownerWorkosUserIDEqualFold", "ownerWorkosUserIDContainsFold", "ownerOrgID", "ownerOrgIDNEQ", "ownerOrgIDIn", "ownerOrgIDNotIn", "ownerOrgIDGT", "ownerOrgIDGTE", "ownerOrgIDLT", "ownerOrgIDLTE", "ownerOrgIDContains", "ownerOrgIDHasPrefix", "ownerOrgIDHasSuffix", "ownerOrgIDIsNil", "ownerOrgIDNotNil", "ownerOrgIDEqualFold", "ownerOrgIDContainsFold", "redirectTarget", "redirectTargetNEQ", "redirectTargetIn", "redirectTargetNotIn", "redirectTargetGT", "redirectTargetGTE", "redirectTargetLT", "redirectTargetLTE", "redirectTargetContains", "redirectTargetHasPrefix", "redirectTargetHasSuffix", "redirectTargetIsNil", "redirectTargetNotNil", "redirectTargetEqualFold", "redirectTargetContainsFold", "consentChallenge", "consentChallengeNEQ", "consentChallengeIn", "consentChallengeNotIn", "consentChallengeGT", "consentChallengeGTE", "consentChallengeLT", "consentChallengeLTE", "consentChallengeContains", "consentChallengeHasPrefix", "consentChallengeHasSuffix", "consentChallengeIsNil", "consentChallengeNotNil", "consentChallengeEqualFold", "consentChallengeContainsFold", "contextRequestID", "contextRequestIDNEQ", "contextRequestIDIn", "contextRequestIDNotIn", "contextRequestIDGT", "contextRequestIDGTE", "contextRequestIDLT", "contextRequestIDLTE", "contextRequestIDContains", "contextRequestIDHasPrefix", "contextRequestIDHasSuffix", "contextRequestIDIsNil", "contextRequestIDNotNil", "contextRequestIDEqualFold", "contextRequestIDContainsFold", "hydraClientID", "hydraClientIDNEQ", "hydraClientIDIn", "hydraClientIDNotIn", "hydraClientIDGT", "hydraClientIDGTE", "hydraClientIDLT", "hydraClientIDLTE", "hydraClientIDContains", "hydraClientIDHasPrefix", "hydraClientIDHasSuffix", "hydraClientIDIsNil", "hydraClientIDNotNil", "hydraClientIDEqualFold", "hydraClientIDContainsFold", "callbackAt", "callbackAtNEQ", "callbackAtIn", "callbackAtNotIn", "callbackAtGT", "callbackAtGTE", "callbackAtLT", "callbackAtLTE", "callbackAtIsNil", "callbackAtNotNil", "callbackClaimID", "callbackClaimIDNEQ", "callbackClaimIDIn", "callbackClaimIDNotIn", "callbackClaimIDGT", "callbackClaimIDGTE", "callbackClaimIDLT", "callbackClaimIDLTE", "callbackClaimIDIsNil", "callbackClaimIDNotNil", "callbackClaimedUntil", "callbackClaimedUntilNEQ", "callbackClaimedUntilIn", "callbackClaimedUntilNotIn", "callbackClaimedUntilGT", "callbackClaimedUntilGTE", "callbackClaimedUntilLT", "callbackClaimedUntilLTE", "callbackClaimedUntilIsNil", "callbackClaimedUntilNotNil", "callbackAttempts", "callbackAttemptsNEQ", "callbackAttemptsIn", "callbackAttemptsNotIn", "callbackAttemptsGT", "callbackAttemptsGTE", "callbackAttemptsLT", "callbackAttemptsLTE", "claimedAt", "claimedAtNEQ", "claimedAtIn", "claimedAtNotIn", "claimedAtGT", "claimedAtGTE", "claimedAtLT", "claimedAtLTE", "claimedAtIsNil", "claimedAtNotNil", "failureReason", "failureReasonNEQ", "failureReasonIn", "failureReasonNotIn", "failureReasonGT", "failureReasonGTE", "failureReasonLT", "failureReasonLTE", "failureReasonContains", "failureReasonHasPrefix", "failureReasonHasSuffix", "failureReasonIsNil", "failureReasonNotNil", "failureReasonEqualFold", "failureReasonContainsFold"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -84555,6 +84782,202 @@ func (ec *executionContext) unmarshalInputOAuthPendingWhereInput(ctx context.Con
 				return it, err
 			}
 			it.CallbackAtNotNil = data
+		case "callbackClaimID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimID"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimID = data
+		case "callbackClaimIDNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimIDNEQ"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimIDNEQ = data
+		case "callbackClaimIDIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimIDIn"))
+			data, err := ec.unmarshalOUUID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimIDIn = data
+		case "callbackClaimIDNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimIDNotIn"))
+			data, err := ec.unmarshalOUUID2ᚕgithubᚗcomᚋgoogleᚋuuidᚐUUIDᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimIDNotIn = data
+		case "callbackClaimIDGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimIDGT"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimIDGT = data
+		case "callbackClaimIDGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimIDGTE"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimIDGTE = data
+		case "callbackClaimIDLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimIDLT"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimIDLT = data
+		case "callbackClaimIDLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimIDLTE"))
+			data, err := ec.unmarshalOUUID2ᚖgithubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimIDLTE = data
+		case "callbackClaimIDIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimIDIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimIDIsNil = data
+		case "callbackClaimIDNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimIDNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimIDNotNil = data
+		case "callbackClaimedUntil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimedUntil"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimedUntil = data
+		case "callbackClaimedUntilNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimedUntilNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimedUntilNEQ = data
+		case "callbackClaimedUntilIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimedUntilIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimedUntilIn = data
+		case "callbackClaimedUntilNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimedUntilNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimedUntilNotIn = data
+		case "callbackClaimedUntilGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimedUntilGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimedUntilGT = data
+		case "callbackClaimedUntilGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimedUntilGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimedUntilGTE = data
+		case "callbackClaimedUntilLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimedUntilLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimedUntilLT = data
+		case "callbackClaimedUntilLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimedUntilLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimedUntilLTE = data
+		case "callbackClaimedUntilIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimedUntilIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimedUntilIsNil = data
+		case "callbackClaimedUntilNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackClaimedUntilNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackClaimedUntilNotNil = data
+		case "callbackAttempts":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAttempts"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAttempts = data
+		case "callbackAttemptsNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAttemptsNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAttemptsNEQ = data
+		case "callbackAttemptsIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAttemptsIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAttemptsIn = data
+		case "callbackAttemptsNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAttemptsNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAttemptsNotIn = data
+		case "callbackAttemptsGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAttemptsGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAttemptsGT = data
+		case "callbackAttemptsGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAttemptsGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAttemptsGTE = data
+		case "callbackAttemptsLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAttemptsLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAttemptsLT = data
+		case "callbackAttemptsLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("callbackAttemptsLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CallbackAttemptsLTE = data
 		case "claimedAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("claimedAt"))
 			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
@@ -127347,6 +127770,8 @@ func (ec *executionContext) _MCPConnection(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "organizationID":
+			out.Values[i] = ec._MCPConnection_organizationID(ctx, field, obj)
 		case "scopes":
 			out.Values[i] = ec._MCPConnection_scopes(ctx, field, obj)
 		case "credentialGeneration":
@@ -128379,6 +128804,15 @@ func (ec *executionContext) _OAuthPending(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._OAuthPending_hydraClientID(ctx, field, obj)
 		case "callbackAt":
 			out.Values[i] = ec._OAuthPending_callbackAt(ctx, field, obj)
+		case "callbackClaimID":
+			out.Values[i] = ec._OAuthPending_callbackClaimID(ctx, field, obj)
+		case "callbackClaimedUntil":
+			out.Values[i] = ec._OAuthPending_callbackClaimedUntil(ctx, field, obj)
+		case "callbackAttempts":
+			out.Values[i] = ec._OAuthPending_callbackAttempts(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "claimedAt":
 			out.Values[i] = ec._OAuthPending_claimedAt(ctx, field, obj)
 		case "failureReason":

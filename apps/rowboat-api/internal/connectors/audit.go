@@ -2,11 +2,15 @@ package connectors
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -17,6 +21,7 @@ type auditRecord struct {
 	EventID        string
 	Connector      string
 	ConnectionID   uuid.UUID
+	OrganizationID string
 	Audience       string
 	Requested      []string
 	Granted        []string
@@ -63,7 +68,9 @@ func semanticAuditRecords(record auditRecord) []auditRecord {
 	semantic := func(eventType, result string) auditRecord {
 		derived := record
 		derived.EventType = eventType
-		derived.EventID = ""
+		if record.EventID != "" {
+			derived.EventID = deterministicAuditEventID(record.EventID, eventType)
+		}
 		derived.Result = result
 		return derived
 	}
@@ -71,7 +78,9 @@ func semanticAuditRecords(record auditRecord) []auditRecord {
 	case "oauth_started":
 		return []auditRecord{semantic("entitlement.check", "allowed")}
 	case "token_minted":
-		return []auditRecord{semantic("entitlement.check", "allowed"), semantic("token.refreshed", "success")}
+		return []auditRecord{semantic("entitlement.check", "allowed"), semantic("token.minted", "success")}
+	case "token_refresh_committed":
+		return []auditRecord{semantic("token.refreshed", "success")}
 	case "oauth_start_rejected", "token_mint_rejected":
 		if isEntitlementAuditReason(record.Reason) {
 			return []auditRecord{semantic("entitlement.check", "denied")}
@@ -85,6 +94,28 @@ func semanticAuditRecords(record auditRecord) []auditRecord {
 		return []auditRecord{semantic("token.revoked", "revoked")}
 	case "connection_revocation_completed":
 		return []auditRecord{semantic("token.revoked", "retry_success")}
+	}
+	return nil
+}
+
+func deterministicAuditEventID(parts ...string) string {
+	joined := strings.Join(parts, "\x00")
+	sum := sha256.Sum256([]byte(joined))
+	return "connector_evt_" + hex.EncodeToString(sum[:])
+}
+
+// persistAuditTransitionWithClient stores the concrete lifecycle event and all
+// semantic projections in the caller's transaction. Every transition must pass
+// a stable operation identity so ambiguous retries converge on the unique
+// event_id index instead of creating duplicates.
+func (h *Handler) persistAuditTransitionWithClient(ctx context.Context, client *ent.Client, owner *ent.User, record auditRecord) error {
+	if record.EventID == "" {
+		return errors.New("connector security transition requires a deterministic audit event id")
+	}
+	for _, item := range append([]auditRecord{record}, semanticAuditRecords(record)...) {
+		if err := h.persistAuditWithClient(ctx, client, owner, item); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -125,8 +156,12 @@ func (h *Handler) persistAuditWithClient(ctx context.Context, client *ent.Client
 	if record.EventID != "" {
 		create.SetEventID(record.EventID)
 	}
-	if owner.WorkosOrgID != "" {
-		create.SetOrgID(owner.WorkosOrgID)
+	orgID := record.OrganizationID
+	if orgID == "" {
+		orgID = owner.WorkosOrgID
+	}
+	if orgID != "" {
+		create.SetOrgID(orgID)
 	}
 	if record.ConnectionID != uuid.Nil {
 		create.SetConnectionID(record.ConnectionID)
@@ -165,6 +200,9 @@ func (h *Handler) persistAuditWithClient(ctx context.Context, client *ent.Client
 	}
 	if !record.OccurredAt.IsZero() {
 		create.SetOccurredAt(record.OccurredAt)
+	}
+	if record.EventID != "" {
+		return create.OnConflictColumns(connectorauditevent.FieldEventID).DoNothing().Exec(auth.WithUser(ctx, owner))
 	}
 	return create.Exec(auth.WithUser(ctx, owner))
 }

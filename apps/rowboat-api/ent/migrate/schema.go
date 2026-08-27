@@ -1593,6 +1593,7 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "connector", Type: field.TypeString},
 		{Name: "audience", Type: field.TypeString},
+		{Name: "organization_id", Type: field.TypeString, Nullable: true},
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "refresh_token_encrypted", Type: field.TypeBytes, Nullable: true},
 		{Name: "api_key_encrypted", Type: field.TypeBytes, Nullable: true},
@@ -1616,26 +1617,26 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "mcp_connections_users_mcp_connections",
-				Columns:    []*schema.Column{McpConnectionsColumns[18]},
+				Columns:    []*schema.Column{McpConnectionsColumns[19]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "mcpconnection_connector_user_mcp_connections",
+				Name:    "mcpconnection_connector_organization_id_user_mcp_connections",
 				Unique:  true,
-				Columns: []*schema.Column{McpConnectionsColumns[3], McpConnectionsColumns[18]},
+				Columns: []*schema.Column{McpConnectionsColumns[3], McpConnectionsColumns[5], McpConnectionsColumns[19]},
 			},
 			{
 				Name:    "mcpconnection_status",
 				Unique:  false,
-				Columns: []*schema.Column{McpConnectionsColumns[9]},
+				Columns: []*schema.Column{McpConnectionsColumns[10]},
 			},
 			{
-				Name:    "mcpconnection_connector_status",
+				Name:    "mcpconnection_organization_id_connector_status",
 				Unique:  false,
-				Columns: []*schema.Column{McpConnectionsColumns[3], McpConnectionsColumns[9]},
+				Columns: []*schema.Column{McpConnectionsColumns[5], McpConnectionsColumns[3], McpConnectionsColumns[10]},
 			},
 		},
 	}
@@ -1649,6 +1650,7 @@ var (
 		{Name: "ref", Type: field.TypeUUID, Nullable: true},
 		{Name: "connector", Type: field.TypeString},
 		{Name: "audience", Type: field.TypeString},
+		{Name: "organization_id", Type: field.TypeString, Nullable: true},
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "refresh_token_encrypted", Type: field.TypeBytes, Nullable: true},
 		{Name: "api_key_encrypted", Type: field.TypeBytes, Nullable: true},
@@ -1960,6 +1962,9 @@ var (
 		{Name: "context_request_id", Type: field.TypeString, Nullable: true},
 		{Name: "hydra_client_id", Type: field.TypeString, Nullable: true},
 		{Name: "callback_at", Type: field.TypeTime, Nullable: true},
+		{Name: "callback_claim_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "callback_claimed_until", Type: field.TypeTime, Nullable: true},
+		{Name: "callback_attempts", Type: field.TypeInt, Default: 0},
 		{Name: "claimed_at", Type: field.TypeTime, Nullable: true},
 		{Name: "failure_reason", Type: field.TypeString, Nullable: true},
 	}
@@ -1993,6 +1998,11 @@ var (
 				Name:    "oauthpending_consent_challenge",
 				Unique:  false,
 				Columns: []*schema.Column{OauthPendingsColumns[13]},
+			},
+			{
+				Name:    "oauthpending_callback_claimed_until",
+				Unique:  false,
+				Columns: []*schema.Column{OauthPendingsColumns[18]},
 			},
 		},
 	}

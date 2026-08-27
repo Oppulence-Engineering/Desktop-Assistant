@@ -96,6 +96,9 @@ func (_u *MCPConnectionHistoryUpdate) sqlSave(ctx context.Context) (_node int, e
 	if _u.mutation.RefCleared() {
 		_spec.ClearField(mcpconnectionhistory.FieldRef, field.TypeUUID)
 	}
+	if _u.mutation.OrganizationIDCleared() {
+		_spec.ClearField(mcpconnectionhistory.FieldOrganizationID, field.TypeString)
+	}
 	if _u.mutation.ScopesCleared() {
 		_spec.ClearField(mcpconnectionhistory.FieldScopes, field.TypeJSON)
 	}
@@ -246,6 +249,9 @@ func (_u *MCPConnectionHistoryUpdateOne) sqlSave(ctx context.Context) (_node *MC
 	}
 	if _u.mutation.RefCleared() {
 		_spec.ClearField(mcpconnectionhistory.FieldRef, field.TypeUUID)
+	}
+	if _u.mutation.OrganizationIDCleared() {
+		_spec.ClearField(mcpconnectionhistory.FieldOrganizationID, field.TypeString)
 	}
 	if _u.mutation.ScopesCleared() {
 		_spec.ClearField(mcpconnectionhistory.FieldScopes, field.TypeJSON)

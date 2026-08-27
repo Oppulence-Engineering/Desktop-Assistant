@@ -4412,6 +4412,11 @@ func (_q *MCPConnectionQuery) collectField(ctx context.Context, oneNode bool, op
 				selectedFields = append(selectedFields, mcpconnection.FieldAudience)
 				fieldSeen[mcpconnection.FieldAudience] = struct{}{}
 			}
+		case "organizationID":
+			if _, ok := fieldSeen[mcpconnection.FieldOrganizationID]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldOrganizationID)
+				fieldSeen[mcpconnection.FieldOrganizationID] = struct{}{}
+			}
 		case "scopes":
 			if _, ok := fieldSeen[mcpconnection.FieldScopes]; !ok {
 				selectedFields = append(selectedFields, mcpconnection.FieldScopes)
@@ -5298,6 +5303,21 @@ func (_q *OAuthPendingQuery) collectField(ctx context.Context, oneNode bool, opC
 			if _, ok := fieldSeen[oauthpending.FieldCallbackAt]; !ok {
 				selectedFields = append(selectedFields, oauthpending.FieldCallbackAt)
 				fieldSeen[oauthpending.FieldCallbackAt] = struct{}{}
+			}
+		case "callbackClaimID":
+			if _, ok := fieldSeen[oauthpending.FieldCallbackClaimID]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldCallbackClaimID)
+				fieldSeen[oauthpending.FieldCallbackClaimID] = struct{}{}
+			}
+		case "callbackClaimedUntil":
+			if _, ok := fieldSeen[oauthpending.FieldCallbackClaimedUntil]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldCallbackClaimedUntil)
+				fieldSeen[oauthpending.FieldCallbackClaimedUntil] = struct{}{}
+			}
+		case "callbackAttempts":
+			if _, ok := fieldSeen[oauthpending.FieldCallbackAttempts]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldCallbackAttempts)
+				fieldSeen[oauthpending.FieldCallbackAttempts] = struct{}{}
 			}
 		case "claimedAt":
 			if _, ok := fieldSeen[oauthpending.FieldClaimedAt]; !ok {

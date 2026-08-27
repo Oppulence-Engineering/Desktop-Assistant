@@ -65,6 +65,20 @@ func (_c *MCPConnectionCreate) SetAudience(v string) *MCPConnectionCreate {
 	return _c
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (_c *MCPConnectionCreate) SetOrganizationID(v string) *MCPConnectionCreate {
+	_c.mutation.SetOrganizationID(v)
+	return _c
+}
+
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableOrganizationID(v *string) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetOrganizationID(*v)
+	}
+	return _c
+}
+
 // SetScopes sets the "scopes" field.
 func (_c *MCPConnectionCreate) SetScopes(v []string) *MCPConnectionCreate {
 	_c.mutation.SetScopes(v)
@@ -401,6 +415,10 @@ func (_c *MCPConnectionCreate) createSpec() (*MCPConnection, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.Audience(); ok {
 		_spec.SetField(mcpconnection.FieldAudience, field.TypeString, value)
 		_node.Audience = value
+	}
+	if value, ok := _c.mutation.OrganizationID(); ok {
+		_spec.SetField(mcpconnection.FieldOrganizationID, field.TypeString, value)
+		_node.OrganizationID = value
 	}
 	if value, ok := _c.mutation.Scopes(); ok {
 		_spec.SetField(mcpconnection.FieldScopes, field.TypeJSON, value)
@@ -806,6 +824,9 @@ func (u *MCPConnectionUpsertOne) UpdateNewValues() *MCPConnectionUpsertOne {
 		}
 		if _, exists := u.create.mutation.CreatedAt(); exists {
 			s.SetIgnore(mcpconnection.FieldCreatedAt)
+		}
+		if _, exists := u.create.mutation.OrganizationID(); exists {
+			s.SetIgnore(mcpconnection.FieldOrganizationID)
 		}
 	}))
 	return u
@@ -1331,6 +1352,9 @@ func (u *MCPConnectionUpsertBulk) UpdateNewValues() *MCPConnectionUpsertBulk {
 			}
 			if _, exists := b.mutation.CreatedAt(); exists {
 				s.SetIgnore(mcpconnection.FieldCreatedAt)
+			}
+			if _, exists := b.mutation.OrganizationID(); exists {
+				s.SetIgnore(mcpconnection.FieldOrganizationID)
 			}
 		}
 	}))

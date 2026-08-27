@@ -21,6 +21,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 )
@@ -97,9 +98,14 @@ func (c *Client) Token(ctx context.Context, userID uuid.UUID) (string, error) {
 	if c == nil || c.client == nil || c.sealer == nil {
 		return "", errors.New("hubspot: client is not configured")
 	}
+	owner, err := c.client.User.Get(auth.WithInternal(ctx), userID)
+	if err != nil {
+		return "", fmt.Errorf("hubspot: load owner: %w", err)
+	}
 	conn, err := c.client.MCPConnection.Query().Where(
 		mcpconnection.ConnectorEQ("hubspot"),
 		mcpconnection.StatusEQ("active"),
+		mcpconnection.OrganizationIDEQ(connectors.OrganizationIDForUser(owner)),
 		mcpconnection.HasUserWith(user.IDEQ(userID)),
 	).Only(auth.WithInternal(ctx))
 	if err != nil {

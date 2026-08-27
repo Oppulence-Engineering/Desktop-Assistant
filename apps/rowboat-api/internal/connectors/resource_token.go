@@ -24,6 +24,7 @@ const (
 // ResourceTokenClaims binds a short-lived product token to its actor, tenant,
 // connection, connector, audience, scopes, and trust tier.
 type ResourceTokenClaims struct {
+	TokenID        string
 	UserID         string
 	OrganizationID string
 	ConnectionID   string
@@ -161,7 +162,10 @@ func (i *RSAResourceTokenIssuer) Mint(c ResourceTokenClaims) (string, time.Time,
 	}
 	now := time.Now().UTC()
 	expiresAt := now.Add(i.ttl)
-	jti := uuid.NewString()
+	jti := strings.TrimSpace(c.TokenID)
+	if jti == "" {
+		jti = uuid.NewString()
+	}
 	ext := map[string]any{
 		"user_id": c.UserID, "workos_user_id": c.UserID, "connection_id": c.ConnectionID,
 		"connector_id": c.ConnectorID, "token_id": jti, "trust_tier": c.TrustTier,

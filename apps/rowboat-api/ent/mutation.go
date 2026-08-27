@@ -40360,6 +40360,7 @@ type MCPConnectionMutation struct {
 	updated_at               *time.Time
 	connector                *string
 	audience                 *string
+	organization_id          *string
 	scopes                   *[]string
 	appendscopes             []string
 	refresh_token_encrypted  *[]byte
@@ -40629,6 +40630,55 @@ func (m *MCPConnectionMutation) OldAudience(ctx context.Context) (v string, err 
 // ResetAudience resets all changes to the "audience" field.
 func (m *MCPConnectionMutation) ResetAudience() {
 	m.audience = nil
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (m *MCPConnectionMutation) SetOrganizationID(s string) {
+	m.organization_id = &s
+}
+
+// OrganizationID returns the value of the "organization_id" field in the mutation.
+func (m *MCPConnectionMutation) OrganizationID() (r string, exists bool) {
+	v := m.organization_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrganizationID returns the old "organization_id" field's value of the MCPConnection entity.
+// If the MCPConnection object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPConnectionMutation) OldOrganizationID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrganizationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrganizationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrganizationID: %w", err)
+	}
+	return oldValue.OrganizationID, nil
+}
+
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (m *MCPConnectionMutation) ClearOrganizationID() {
+	m.organization_id = nil
+	m.clearedFields[mcpconnection.FieldOrganizationID] = struct{}{}
+}
+
+// OrganizationIDCleared returns if the "organization_id" field was cleared in this mutation.
+func (m *MCPConnectionMutation) OrganizationIDCleared() bool {
+	_, ok := m.clearedFields[mcpconnection.FieldOrganizationID]
+	return ok
+}
+
+// ResetOrganizationID resets all changes to the "organization_id" field.
+func (m *MCPConnectionMutation) ResetOrganizationID() {
+	m.organization_id = nil
+	delete(m.clearedFields, mcpconnection.FieldOrganizationID)
 }
 
 // SetScopes sets the "scopes" field.
@@ -41351,7 +41401,7 @@ func (m *MCPConnectionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MCPConnectionMutation) Fields() []string {
-	fields := make([]string, 0, 17)
+	fields := make([]string, 0, 18)
 	if m.created_at != nil {
 		fields = append(fields, mcpconnection.FieldCreatedAt)
 	}
@@ -41363,6 +41413,9 @@ func (m *MCPConnectionMutation) Fields() []string {
 	}
 	if m.audience != nil {
 		fields = append(fields, mcpconnection.FieldAudience)
+	}
+	if m.organization_id != nil {
+		fields = append(fields, mcpconnection.FieldOrganizationID)
 	}
 	if m.scopes != nil {
 		fields = append(fields, mcpconnection.FieldScopes)
@@ -41419,6 +41472,8 @@ func (m *MCPConnectionMutation) Field(name string) (ent.Value, bool) {
 		return m.Connector()
 	case mcpconnection.FieldAudience:
 		return m.Audience()
+	case mcpconnection.FieldOrganizationID:
+		return m.OrganizationID()
 	case mcpconnection.FieldScopes:
 		return m.Scopes()
 	case mcpconnection.FieldRefreshTokenEncrypted:
@@ -41462,6 +41517,8 @@ func (m *MCPConnectionMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldConnector(ctx)
 	case mcpconnection.FieldAudience:
 		return m.OldAudience(ctx)
+	case mcpconnection.FieldOrganizationID:
+		return m.OldOrganizationID(ctx)
 	case mcpconnection.FieldScopes:
 		return m.OldScopes(ctx)
 	case mcpconnection.FieldRefreshTokenEncrypted:
@@ -41524,6 +41581,13 @@ func (m *MCPConnectionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAudience(v)
+		return nil
+	case mcpconnection.FieldOrganizationID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrganizationID(v)
 		return nil
 	case mcpconnection.FieldScopes:
 		v, ok := value.([]string)
@@ -41661,6 +41725,9 @@ func (m *MCPConnectionMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *MCPConnectionMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(mcpconnection.FieldOrganizationID) {
+		fields = append(fields, mcpconnection.FieldOrganizationID)
+	}
 	if m.FieldCleared(mcpconnection.FieldScopes) {
 		fields = append(fields, mcpconnection.FieldScopes)
 	}
@@ -41708,6 +41775,9 @@ func (m *MCPConnectionMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *MCPConnectionMutation) ClearField(name string) error {
 	switch name {
+	case mcpconnection.FieldOrganizationID:
+		m.ClearOrganizationID()
+		return nil
 	case mcpconnection.FieldScopes:
 		m.ClearScopes()
 		return nil
@@ -41760,6 +41830,9 @@ func (m *MCPConnectionMutation) ResetField(name string) error {
 		return nil
 	case mcpconnection.FieldAudience:
 		m.ResetAudience()
+		return nil
+	case mcpconnection.FieldOrganizationID:
+		m.ResetOrganizationID()
 		return nil
 	case mcpconnection.FieldScopes:
 		m.ResetScopes()
@@ -41891,6 +41964,7 @@ type MCPConnectionHistoryMutation struct {
 	ref                      *uuid.UUID
 	connector                *string
 	audience                 *string
+	organization_id          *string
 	scopes                   *[]string
 	appendscopes             []string
 	refresh_token_encrypted  *[]byte
@@ -42279,6 +42353,55 @@ func (m *MCPConnectionHistoryMutation) OldAudience(ctx context.Context) (v strin
 // ResetAudience resets all changes to the "audience" field.
 func (m *MCPConnectionHistoryMutation) ResetAudience() {
 	m.audience = nil
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (m *MCPConnectionHistoryMutation) SetOrganizationID(s string) {
+	m.organization_id = &s
+}
+
+// OrganizationID returns the value of the "organization_id" field in the mutation.
+func (m *MCPConnectionHistoryMutation) OrganizationID() (r string, exists bool) {
+	v := m.organization_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOrganizationID returns the old "organization_id" field's value of the MCPConnectionHistory entity.
+// If the MCPConnectionHistory object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPConnectionHistoryMutation) OldOrganizationID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOrganizationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOrganizationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOrganizationID: %w", err)
+	}
+	return oldValue.OrganizationID, nil
+}
+
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (m *MCPConnectionHistoryMutation) ClearOrganizationID() {
+	m.organization_id = nil
+	m.clearedFields[mcpconnectionhistory.FieldOrganizationID] = struct{}{}
+}
+
+// OrganizationIDCleared returns if the "organization_id" field was cleared in this mutation.
+func (m *MCPConnectionHistoryMutation) OrganizationIDCleared() bool {
+	_, ok := m.clearedFields[mcpconnectionhistory.FieldOrganizationID]
+	return ok
+}
+
+// ResetOrganizationID resets all changes to the "organization_id" field.
+func (m *MCPConnectionHistoryMutation) ResetOrganizationID() {
+	m.organization_id = nil
+	delete(m.clearedFields, mcpconnectionhistory.FieldOrganizationID)
 }
 
 // SetScopes sets the "scopes" field.
@@ -42962,7 +43085,7 @@ func (m *MCPConnectionHistoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MCPConnectionHistoryMutation) Fields() []string {
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 21)
 	if m.created_at != nil {
 		fields = append(fields, mcpconnectionhistory.FieldCreatedAt)
 	}
@@ -42983,6 +43106,9 @@ func (m *MCPConnectionHistoryMutation) Fields() []string {
 	}
 	if m.audience != nil {
 		fields = append(fields, mcpconnectionhistory.FieldAudience)
+	}
+	if m.organization_id != nil {
+		fields = append(fields, mcpconnectionhistory.FieldOrganizationID)
 	}
 	if m.scopes != nil {
 		fields = append(fields, mcpconnectionhistory.FieldScopes)
@@ -43045,6 +43171,8 @@ func (m *MCPConnectionHistoryMutation) Field(name string) (ent.Value, bool) {
 		return m.Connector()
 	case mcpconnectionhistory.FieldAudience:
 		return m.Audience()
+	case mcpconnectionhistory.FieldOrganizationID:
+		return m.OrganizationID()
 	case mcpconnectionhistory.FieldScopes:
 		return m.Scopes()
 	case mcpconnectionhistory.FieldRefreshTokenEncrypted:
@@ -43094,6 +43222,8 @@ func (m *MCPConnectionHistoryMutation) OldField(ctx context.Context, name string
 		return m.OldConnector(ctx)
 	case mcpconnectionhistory.FieldAudience:
 		return m.OldAudience(ctx)
+	case mcpconnectionhistory.FieldOrganizationID:
+		return m.OldOrganizationID(ctx)
 	case mcpconnectionhistory.FieldScopes:
 		return m.OldScopes(ctx)
 	case mcpconnectionhistory.FieldRefreshTokenEncrypted:
@@ -43177,6 +43307,13 @@ func (m *MCPConnectionHistoryMutation) SetField(name string, value ent.Value) er
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAudience(v)
+		return nil
+	case mcpconnectionhistory.FieldOrganizationID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrganizationID(v)
 		return nil
 	case mcpconnectionhistory.FieldScopes:
 		v, ok := value.([]string)
@@ -43317,6 +43454,9 @@ func (m *MCPConnectionHistoryMutation) ClearedFields() []string {
 	if m.FieldCleared(mcpconnectionhistory.FieldRef) {
 		fields = append(fields, mcpconnectionhistory.FieldRef)
 	}
+	if m.FieldCleared(mcpconnectionhistory.FieldOrganizationID) {
+		fields = append(fields, mcpconnectionhistory.FieldOrganizationID)
+	}
 	if m.FieldCleared(mcpconnectionhistory.FieldScopes) {
 		fields = append(fields, mcpconnectionhistory.FieldScopes)
 	}
@@ -43366,6 +43506,9 @@ func (m *MCPConnectionHistoryMutation) ClearField(name string) error {
 	switch name {
 	case mcpconnectionhistory.FieldRef:
 		m.ClearRef()
+		return nil
+	case mcpconnectionhistory.FieldOrganizationID:
+		m.ClearOrganizationID()
 		return nil
 	case mcpconnectionhistory.FieldScopes:
 		m.ClearScopes()
@@ -43428,6 +43571,9 @@ func (m *MCPConnectionHistoryMutation) ResetField(name string) error {
 		return nil
 	case mcpconnectionhistory.FieldAudience:
 		m.ResetAudience()
+		return nil
+	case mcpconnectionhistory.FieldOrganizationID:
+		m.ResetOrganizationID()
 		return nil
 	case mcpconnectionhistory.FieldScopes:
 		m.ResetScopes()
@@ -49792,6 +49938,10 @@ type OAuthPendingMutation struct {
 	context_request_id     *string
 	hydra_client_id        *string
 	callback_at            *time.Time
+	callback_claim_id      *uuid.UUID
+	callback_claimed_until *time.Time
+	callback_attempts      *int
+	addcallback_attempts   *int
 	claimed_at             *time.Time
 	failure_reason         *string
 	clearedFields          map[string]struct{}
@@ -50626,6 +50776,160 @@ func (m *OAuthPendingMutation) ResetCallbackAt() {
 	delete(m.clearedFields, oauthpending.FieldCallbackAt)
 }
 
+// SetCallbackClaimID sets the "callback_claim_id" field.
+func (m *OAuthPendingMutation) SetCallbackClaimID(u uuid.UUID) {
+	m.callback_claim_id = &u
+}
+
+// CallbackClaimID returns the value of the "callback_claim_id" field in the mutation.
+func (m *OAuthPendingMutation) CallbackClaimID() (r uuid.UUID, exists bool) {
+	v := m.callback_claim_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCallbackClaimID returns the old "callback_claim_id" field's value of the OAuthPending entity.
+// If the OAuthPending object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OAuthPendingMutation) OldCallbackClaimID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCallbackClaimID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCallbackClaimID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCallbackClaimID: %w", err)
+	}
+	return oldValue.CallbackClaimID, nil
+}
+
+// ClearCallbackClaimID clears the value of the "callback_claim_id" field.
+func (m *OAuthPendingMutation) ClearCallbackClaimID() {
+	m.callback_claim_id = nil
+	m.clearedFields[oauthpending.FieldCallbackClaimID] = struct{}{}
+}
+
+// CallbackClaimIDCleared returns if the "callback_claim_id" field was cleared in this mutation.
+func (m *OAuthPendingMutation) CallbackClaimIDCleared() bool {
+	_, ok := m.clearedFields[oauthpending.FieldCallbackClaimID]
+	return ok
+}
+
+// ResetCallbackClaimID resets all changes to the "callback_claim_id" field.
+func (m *OAuthPendingMutation) ResetCallbackClaimID() {
+	m.callback_claim_id = nil
+	delete(m.clearedFields, oauthpending.FieldCallbackClaimID)
+}
+
+// SetCallbackClaimedUntil sets the "callback_claimed_until" field.
+func (m *OAuthPendingMutation) SetCallbackClaimedUntil(t time.Time) {
+	m.callback_claimed_until = &t
+}
+
+// CallbackClaimedUntil returns the value of the "callback_claimed_until" field in the mutation.
+func (m *OAuthPendingMutation) CallbackClaimedUntil() (r time.Time, exists bool) {
+	v := m.callback_claimed_until
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCallbackClaimedUntil returns the old "callback_claimed_until" field's value of the OAuthPending entity.
+// If the OAuthPending object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OAuthPendingMutation) OldCallbackClaimedUntil(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCallbackClaimedUntil is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCallbackClaimedUntil requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCallbackClaimedUntil: %w", err)
+	}
+	return oldValue.CallbackClaimedUntil, nil
+}
+
+// ClearCallbackClaimedUntil clears the value of the "callback_claimed_until" field.
+func (m *OAuthPendingMutation) ClearCallbackClaimedUntil() {
+	m.callback_claimed_until = nil
+	m.clearedFields[oauthpending.FieldCallbackClaimedUntil] = struct{}{}
+}
+
+// CallbackClaimedUntilCleared returns if the "callback_claimed_until" field was cleared in this mutation.
+func (m *OAuthPendingMutation) CallbackClaimedUntilCleared() bool {
+	_, ok := m.clearedFields[oauthpending.FieldCallbackClaimedUntil]
+	return ok
+}
+
+// ResetCallbackClaimedUntil resets all changes to the "callback_claimed_until" field.
+func (m *OAuthPendingMutation) ResetCallbackClaimedUntil() {
+	m.callback_claimed_until = nil
+	delete(m.clearedFields, oauthpending.FieldCallbackClaimedUntil)
+}
+
+// SetCallbackAttempts sets the "callback_attempts" field.
+func (m *OAuthPendingMutation) SetCallbackAttempts(i int) {
+	m.callback_attempts = &i
+	m.addcallback_attempts = nil
+}
+
+// CallbackAttempts returns the value of the "callback_attempts" field in the mutation.
+func (m *OAuthPendingMutation) CallbackAttempts() (r int, exists bool) {
+	v := m.callback_attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCallbackAttempts returns the old "callback_attempts" field's value of the OAuthPending entity.
+// If the OAuthPending object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OAuthPendingMutation) OldCallbackAttempts(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCallbackAttempts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCallbackAttempts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCallbackAttempts: %w", err)
+	}
+	return oldValue.CallbackAttempts, nil
+}
+
+// AddCallbackAttempts adds i to the "callback_attempts" field.
+func (m *OAuthPendingMutation) AddCallbackAttempts(i int) {
+	if m.addcallback_attempts != nil {
+		*m.addcallback_attempts += i
+	} else {
+		m.addcallback_attempts = &i
+	}
+}
+
+// AddedCallbackAttempts returns the value that was added to the "callback_attempts" field in this mutation.
+func (m *OAuthPendingMutation) AddedCallbackAttempts() (r int, exists bool) {
+	v := m.addcallback_attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCallbackAttempts resets all changes to the "callback_attempts" field.
+func (m *OAuthPendingMutation) ResetCallbackAttempts() {
+	m.callback_attempts = nil
+	m.addcallback_attempts = nil
+}
+
 // SetClaimedAt sets the "claimed_at" field.
 func (m *OAuthPendingMutation) SetClaimedAt(t time.Time) {
 	m.claimed_at = &t
@@ -50758,7 +51062,7 @@ func (m *OAuthPendingMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OAuthPendingMutation) Fields() []string {
-	fields := make([]string, 0, 18)
+	fields := make([]string, 0, 21)
 	if m.created_at != nil {
 		fields = append(fields, oauthpending.FieldCreatedAt)
 	}
@@ -50807,6 +51111,15 @@ func (m *OAuthPendingMutation) Fields() []string {
 	if m.callback_at != nil {
 		fields = append(fields, oauthpending.FieldCallbackAt)
 	}
+	if m.callback_claim_id != nil {
+		fields = append(fields, oauthpending.FieldCallbackClaimID)
+	}
+	if m.callback_claimed_until != nil {
+		fields = append(fields, oauthpending.FieldCallbackClaimedUntil)
+	}
+	if m.callback_attempts != nil {
+		fields = append(fields, oauthpending.FieldCallbackAttempts)
+	}
 	if m.claimed_at != nil {
 		fields = append(fields, oauthpending.FieldClaimedAt)
 	}
@@ -50853,6 +51166,12 @@ func (m *OAuthPendingMutation) Field(name string) (ent.Value, bool) {
 		return m.HydraClientID()
 	case oauthpending.FieldCallbackAt:
 		return m.CallbackAt()
+	case oauthpending.FieldCallbackClaimID:
+		return m.CallbackClaimID()
+	case oauthpending.FieldCallbackClaimedUntil:
+		return m.CallbackClaimedUntil()
+	case oauthpending.FieldCallbackAttempts:
+		return m.CallbackAttempts()
 	case oauthpending.FieldClaimedAt:
 		return m.ClaimedAt()
 	case oauthpending.FieldFailureReason:
@@ -50898,6 +51217,12 @@ func (m *OAuthPendingMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldHydraClientID(ctx)
 	case oauthpending.FieldCallbackAt:
 		return m.OldCallbackAt(ctx)
+	case oauthpending.FieldCallbackClaimID:
+		return m.OldCallbackClaimID(ctx)
+	case oauthpending.FieldCallbackClaimedUntil:
+		return m.OldCallbackClaimedUntil(ctx)
+	case oauthpending.FieldCallbackAttempts:
+		return m.OldCallbackAttempts(ctx)
 	case oauthpending.FieldClaimedAt:
 		return m.OldClaimedAt(ctx)
 	case oauthpending.FieldFailureReason:
@@ -51023,6 +51348,27 @@ func (m *OAuthPendingMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCallbackAt(v)
 		return nil
+	case oauthpending.FieldCallbackClaimID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCallbackClaimID(v)
+		return nil
+	case oauthpending.FieldCallbackClaimedUntil:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCallbackClaimedUntil(v)
+		return nil
+	case oauthpending.FieldCallbackAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCallbackAttempts(v)
+		return nil
 	case oauthpending.FieldClaimedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -51044,13 +51390,21 @@ func (m *OAuthPendingMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *OAuthPendingMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addcallback_attempts != nil {
+		fields = append(fields, oauthpending.FieldCallbackAttempts)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *OAuthPendingMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case oauthpending.FieldCallbackAttempts:
+		return m.AddedCallbackAttempts()
+	}
 	return nil, false
 }
 
@@ -51059,6 +51413,13 @@ func (m *OAuthPendingMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *OAuthPendingMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case oauthpending.FieldCallbackAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCallbackAttempts(v)
+		return nil
 	}
 	return fmt.Errorf("unknown OAuthPending numeric field %s", name)
 }
@@ -51096,6 +51457,12 @@ func (m *OAuthPendingMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(oauthpending.FieldCallbackAt) {
 		fields = append(fields, oauthpending.FieldCallbackAt)
+	}
+	if m.FieldCleared(oauthpending.FieldCallbackClaimID) {
+		fields = append(fields, oauthpending.FieldCallbackClaimID)
+	}
+	if m.FieldCleared(oauthpending.FieldCallbackClaimedUntil) {
+		fields = append(fields, oauthpending.FieldCallbackClaimedUntil)
 	}
 	if m.FieldCleared(oauthpending.FieldClaimedAt) {
 		fields = append(fields, oauthpending.FieldClaimedAt)
@@ -51146,6 +51513,12 @@ func (m *OAuthPendingMutation) ClearField(name string) error {
 		return nil
 	case oauthpending.FieldCallbackAt:
 		m.ClearCallbackAt()
+		return nil
+	case oauthpending.FieldCallbackClaimID:
+		m.ClearCallbackClaimID()
+		return nil
+	case oauthpending.FieldCallbackClaimedUntil:
+		m.ClearCallbackClaimedUntil()
 		return nil
 	case oauthpending.FieldClaimedAt:
 		m.ClearClaimedAt()
@@ -51208,6 +51581,15 @@ func (m *OAuthPendingMutation) ResetField(name string) error {
 		return nil
 	case oauthpending.FieldCallbackAt:
 		m.ResetCallbackAt()
+		return nil
+	case oauthpending.FieldCallbackClaimID:
+		m.ResetCallbackClaimID()
+		return nil
+	case oauthpending.FieldCallbackClaimedUntil:
+		m.ResetCallbackClaimedUntil()
+		return nil
+	case oauthpending.FieldCallbackAttempts:
+		m.ResetCallbackAttempts()
 		return nil
 	case oauthpending.FieldClaimedAt:
 		m.ResetClaimedAt()

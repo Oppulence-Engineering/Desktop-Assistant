@@ -173,7 +173,7 @@ func (h *Handler) PreConsent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	allowed, reason := h.isEntitled(r.Context(), owner, conn, scopes)
-	if pending.OwnerOrgID != "" && owner.WorkosOrgID != pending.OwnerOrgID {
+	if pending.OwnerOrgID != "" && connectorOrganizationID(owner) != pending.OwnerOrgID {
 		allowed, reason = false, "org_mismatch"
 	}
 	entitlement := consentEntitlement{Allowed: allowed, Reason: reason}
@@ -308,7 +308,7 @@ func (h *Handler) ConsentContext(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "state is required", "bad_request")
 		return
 	}
-	pending, err := h.client.OAuthPending.Query().Where(oauthpending.StateHashEQ(hashState(req.State))).Only(r.Context())
+	pending, err := h.client.OAuthPending.Query().Where(pendingStatePredicate(req.State)).Only(r.Context())
 	if err != nil || time.Now().After(pending.ExpiresAt) {
 		httpx.Error(w, http.StatusNotFound, "consent context not found", "not_found")
 		return
@@ -601,73 +601,115 @@ func (h *Handler) Invalidate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connection *ent.MCPConnection, reason, actor, finalStatus string) error {
-	if connection.Status == "revoked" || connection.Status == "invalidated" {
-		return nil
-	}
 	if finalStatus != "revoked" && finalStatus != "invalidated" {
 		return fmt.Errorf("unsupported connector terminal status %q", finalStatus)
 	}
-	now := time.Now().UTC()
-	providerRevoked := true
+	var fenced *ent.MCPConnection
 	var revocationCredential []byte
-	if len(connection.RefreshTokenEncrypted) > 0 {
-		revocationCredential = append([]byte(nil), connection.RefreshTokenEncrypted...)
-		refresh, err := h.sealer.Open(connection.RefreshTokenEncrypted)
-		if err != nil || h.ory.revoke(ctx, string(refresh)) != nil {
-			providerRevoked = false
+	for attempt := 0; attempt < 5; attempt++ {
+		tx, err := h.client.Tx(auth.WithUser(ctx, owner))
+		if err != nil {
+			return fmt.Errorf("begin connector revocation transaction: %w", err)
 		}
-	}
-	tx, err := h.client.Tx(ctx)
-	if err != nil {
-		return fmt.Errorf("begin connector revocation transaction: %w", err)
-	}
-	txc := tx.Client()
-	if !providerRevoked && len(revocationCredential) > 0 {
-		_, err = txc.ConnectorRevocationJob.Create().
-			SetConnectionID(connection.ID).
-			SetOwnerID(owner.ID).
-			SetConnector(connection.Connector).
-			SetRefreshTokenEncrypted(revocationCredential).
-			SetCredentialGeneration(connection.CredentialGeneration).
-			SetTerminalStatus(finalStatus).
-			SetTerminalReason(reason).
-			SetTerminalActor(actor).
-			SetStatus("pending").
-			SetNextAttemptAt(now).
-			OnConflictColumns(connectorrevocationjob.FieldConnectionID).
-			UpdateNewValues().
-			ID(auth.WithInternal(ctx))
+		fresh, err := tx.MCPConnection.Query().Where(
+			mcpconnection.IDEQ(connection.ID),
+			mcpconnection.OrganizationIDEQ(connection.OrganizationID),
+		).Only(auth.WithUser(ctx, owner))
 		if err != nil {
 			_ = tx.Rollback()
-			return fmt.Errorf("enqueue connector revocation: %w", err)
+			if ent.IsNotFound(err) {
+				return nil
+			}
+			return fmt.Errorf("reload connector before revocation: %w", err)
 		}
-	}
-	update := txc.MCPConnection.UpdateOneID(connection.ID).
-		Where(mcpconnection.CredentialGenerationEQ(connection.CredentialGeneration)).
-		SetStatus(finalStatus).
-		SetRevokedAt(now).
-		SetRevokedReason(reason).
-		SetRevokedBy(actor).
-		SetRevocationAttemptedAt(now).
-		SetRevocationSucceeded(providerRevoked).
-		ClearRefreshTokenEncrypted().
-		ClearAPIKeyEncrypted()
-	if err := update.Exec(auth.WithUser(ctx, owner)); err != nil {
-		_ = tx.Rollback()
-		if ent.IsNotFound(err) {
-			return nil // A reconnect replaced this generation while revoke was in flight.
+		if fresh.Status == "revoked" || fresh.Status == "invalidated" {
+			_ = tx.Rollback()
+			return nil
 		}
-		return fmt.Errorf("persist connector tombstone: %w", err)
+		now := time.Now().UTC()
+		revocationCredential = append(revocationCredential[:0], fresh.RefreshTokenEncrypted...)
+		if len(revocationCredential) > 0 {
+			_, err = tx.ConnectorRevocationJob.Create().
+				SetConnectionID(fresh.ID).
+				SetOwnerID(owner.ID).
+				SetConnector(fresh.Connector).
+				SetRefreshTokenEncrypted(revocationCredential).
+				SetCredentialGeneration(fresh.CredentialGeneration).
+				SetTerminalStatus(finalStatus).
+				SetTerminalReason(reason).
+				SetTerminalActor(actor).
+				SetStatus("pending").
+				SetNextAttemptAt(now).
+				OnConflictColumns(connectorrevocationjob.FieldConnectionID).
+				UpdateNewValues().
+				ID(auth.WithInternal(ctx))
+			if err != nil {
+				_ = tx.Rollback()
+				return fmt.Errorf("enqueue connector revocation: %w", err)
+			}
+		}
+		fenced, err = tx.MCPConnection.UpdateOneID(fresh.ID).
+			Where(
+				mcpconnection.CredentialGenerationEQ(fresh.CredentialGeneration),
+				mcpconnection.OrganizationIDEQ(fresh.OrganizationID),
+			).
+			SetStatus(finalStatus).
+			AddCredentialGeneration(1).
+			SetRevokedAt(now).
+			SetRevokedReason(reason).
+			SetRevokedBy(actor).
+			SetRevocationAttemptedAt(now).
+			SetRevocationSucceeded(len(revocationCredential) == 0).
+			ClearRefreshTokenEncrypted().
+			ClearAPIKeyEncrypted().
+			Save(auth.WithUser(ctx, owner))
+		if err != nil {
+			_ = tx.Rollback()
+			if ent.IsNotFound(err) {
+				fenced = nil
+				continue
+			}
+			return fmt.Errorf("persist connector tombstone: %w", err)
+		}
+		if err := h.persistAuditTransitionWithClient(ctx, tx.Client(), owner, auditRecord{
+			EventType: "connection_" + finalStatus,
+			EventID:   deterministicAuditEventID("connection_"+finalStatus, fresh.ID.String(), fmt.Sprint(fenced.CredentialGeneration), reason, actor),
+			Connector: fresh.Connector, ConnectionID: fresh.ID, OrganizationID: fresh.OrganizationID,
+			Audience: fresh.Audience, Granted: fresh.Scopes, Reason: reason,
+			Metadata: map[string]any{"providerRevocationPending": len(revocationCredential) > 0, "actor": actor},
+		}); err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("persist connector revocation audit: %w", err)
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("commit connector revocation: %w", err)
+		}
+		break
 	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit connector revocation: %w", err)
+	if fenced == nil {
+		return errConnectorCredentialSuperseded
+	}
+
+	providerRevoked := len(revocationCredential) == 0
+	if len(revocationCredential) > 0 {
+		refresh, openErr := h.sealer.Open(revocationCredential)
+		providerRevoked = openErr == nil && h.ory.revoke(context.WithoutCancel(ctx), string(refresh)) == nil
+		if providerRevoked {
+			now := time.Now().UTC()
+			_ = h.client.ConnectorRevocationJob.Update().Where(
+				connectorrevocationjob.ConnectionIDEQ(fenced.ID), connectorrevocationjob.StatusEQ("pending"),
+			).SetStatus("completed").SetCompletedAt(now).ClearRefreshTokenEncrypted().ClearLastError().Exec(auth.WithInternal(ctx))
+			_ = h.client.MCPConnection.UpdateOneID(fenced.ID).Where(
+				mcpconnection.CredentialGenerationEQ(fenced.CredentialGeneration),
+				mcpconnection.StatusEQ(finalStatus),
+			).SetRevocationSucceeded(true).Exec(auth.WithUser(ctx, owner))
+		}
 	}
 	outcome := "success"
 	if !providerRevoked {
-		outcome = "provider_failed"
+		outcome = "provider_pending"
 	}
 	connectormetrics.Revocation.WithLabelValues(connection.Connector, outcome).Inc()
-	h.appendAudit(ctx, owner, auditRecord{EventType: "connection_" + finalStatus, Connector: connection.Connector, ConnectionID: connection.ID, Audience: connection.Audience, Granted: connection.Scopes, Reason: reason, Metadata: map[string]any{"providerRevoked": providerRevoked, "actor": actor}})
 	return nil
 }
 

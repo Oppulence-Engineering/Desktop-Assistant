@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
+	"github.com/google/uuid"
 )
 
 // OAuthPendingUpdate is the builder for updating OAuthPending entities.
@@ -281,6 +282,67 @@ func (_u *OAuthPendingUpdate) ClearCallbackAt() *OAuthPendingUpdate {
 	return _u
 }
 
+// SetCallbackClaimID sets the "callback_claim_id" field.
+func (_u *OAuthPendingUpdate) SetCallbackClaimID(v uuid.UUID) *OAuthPendingUpdate {
+	_u.mutation.SetCallbackClaimID(v)
+	return _u
+}
+
+// SetNillableCallbackClaimID sets the "callback_claim_id" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableCallbackClaimID(v *uuid.UUID) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetCallbackClaimID(*v)
+	}
+	return _u
+}
+
+// ClearCallbackClaimID clears the value of the "callback_claim_id" field.
+func (_u *OAuthPendingUpdate) ClearCallbackClaimID() *OAuthPendingUpdate {
+	_u.mutation.ClearCallbackClaimID()
+	return _u
+}
+
+// SetCallbackClaimedUntil sets the "callback_claimed_until" field.
+func (_u *OAuthPendingUpdate) SetCallbackClaimedUntil(v time.Time) *OAuthPendingUpdate {
+	_u.mutation.SetCallbackClaimedUntil(v)
+	return _u
+}
+
+// SetNillableCallbackClaimedUntil sets the "callback_claimed_until" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableCallbackClaimedUntil(v *time.Time) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetCallbackClaimedUntil(*v)
+	}
+	return _u
+}
+
+// ClearCallbackClaimedUntil clears the value of the "callback_claimed_until" field.
+func (_u *OAuthPendingUpdate) ClearCallbackClaimedUntil() *OAuthPendingUpdate {
+	_u.mutation.ClearCallbackClaimedUntil()
+	return _u
+}
+
+// SetCallbackAttempts sets the "callback_attempts" field.
+func (_u *OAuthPendingUpdate) SetCallbackAttempts(v int) *OAuthPendingUpdate {
+	_u.mutation.ResetCallbackAttempts()
+	_u.mutation.SetCallbackAttempts(v)
+	return _u
+}
+
+// SetNillableCallbackAttempts sets the "callback_attempts" field if the given value is not nil.
+func (_u *OAuthPendingUpdate) SetNillableCallbackAttempts(v *int) *OAuthPendingUpdate {
+	if v != nil {
+		_u.SetCallbackAttempts(*v)
+	}
+	return _u
+}
+
+// AddCallbackAttempts adds value to the "callback_attempts" field.
+func (_u *OAuthPendingUpdate) AddCallbackAttempts(v int) *OAuthPendingUpdate {
+	_u.mutation.AddCallbackAttempts(v)
+	return _u
+}
+
 // SetClaimedAt sets the "claimed_at" field.
 func (_u *OAuthPendingUpdate) SetClaimedAt(v time.Time) *OAuthPendingUpdate {
 	_u.mutation.SetClaimedAt(v)
@@ -367,6 +429,11 @@ func (_u *OAuthPendingUpdate) check() error {
 	if v, ok := _u.mutation.State(); ok {
 		if err := oauthpending.StateValidator(v); err != nil {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "OAuthPending.state": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.CallbackAttempts(); ok {
+		if err := oauthpending.CallbackAttemptsValidator(v); err != nil {
+			return &ValidationError{Name: "callback_attempts", err: fmt.Errorf(`ent: validator failed for field "OAuthPending.callback_attempts": %w`, err)}
 		}
 	}
 	return nil
@@ -463,6 +530,24 @@ func (_u *OAuthPendingUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if _u.mutation.CallbackAtCleared() {
 		_spec.ClearField(oauthpending.FieldCallbackAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.CallbackClaimID(); ok {
+		_spec.SetField(oauthpending.FieldCallbackClaimID, field.TypeUUID, value)
+	}
+	if _u.mutation.CallbackClaimIDCleared() {
+		_spec.ClearField(oauthpending.FieldCallbackClaimID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.CallbackClaimedUntil(); ok {
+		_spec.SetField(oauthpending.FieldCallbackClaimedUntil, field.TypeTime, value)
+	}
+	if _u.mutation.CallbackClaimedUntilCleared() {
+		_spec.ClearField(oauthpending.FieldCallbackClaimedUntil, field.TypeTime)
+	}
+	if value, ok := _u.mutation.CallbackAttempts(); ok {
+		_spec.SetField(oauthpending.FieldCallbackAttempts, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCallbackAttempts(); ok {
+		_spec.AddField(oauthpending.FieldCallbackAttempts, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.ClaimedAt(); ok {
 		_spec.SetField(oauthpending.FieldClaimedAt, field.TypeTime, value)
@@ -748,6 +833,67 @@ func (_u *OAuthPendingUpdateOne) ClearCallbackAt() *OAuthPendingUpdateOne {
 	return _u
 }
 
+// SetCallbackClaimID sets the "callback_claim_id" field.
+func (_u *OAuthPendingUpdateOne) SetCallbackClaimID(v uuid.UUID) *OAuthPendingUpdateOne {
+	_u.mutation.SetCallbackClaimID(v)
+	return _u
+}
+
+// SetNillableCallbackClaimID sets the "callback_claim_id" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableCallbackClaimID(v *uuid.UUID) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetCallbackClaimID(*v)
+	}
+	return _u
+}
+
+// ClearCallbackClaimID clears the value of the "callback_claim_id" field.
+func (_u *OAuthPendingUpdateOne) ClearCallbackClaimID() *OAuthPendingUpdateOne {
+	_u.mutation.ClearCallbackClaimID()
+	return _u
+}
+
+// SetCallbackClaimedUntil sets the "callback_claimed_until" field.
+func (_u *OAuthPendingUpdateOne) SetCallbackClaimedUntil(v time.Time) *OAuthPendingUpdateOne {
+	_u.mutation.SetCallbackClaimedUntil(v)
+	return _u
+}
+
+// SetNillableCallbackClaimedUntil sets the "callback_claimed_until" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableCallbackClaimedUntil(v *time.Time) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetCallbackClaimedUntil(*v)
+	}
+	return _u
+}
+
+// ClearCallbackClaimedUntil clears the value of the "callback_claimed_until" field.
+func (_u *OAuthPendingUpdateOne) ClearCallbackClaimedUntil() *OAuthPendingUpdateOne {
+	_u.mutation.ClearCallbackClaimedUntil()
+	return _u
+}
+
+// SetCallbackAttempts sets the "callback_attempts" field.
+func (_u *OAuthPendingUpdateOne) SetCallbackAttempts(v int) *OAuthPendingUpdateOne {
+	_u.mutation.ResetCallbackAttempts()
+	_u.mutation.SetCallbackAttempts(v)
+	return _u
+}
+
+// SetNillableCallbackAttempts sets the "callback_attempts" field if the given value is not nil.
+func (_u *OAuthPendingUpdateOne) SetNillableCallbackAttempts(v *int) *OAuthPendingUpdateOne {
+	if v != nil {
+		_u.SetCallbackAttempts(*v)
+	}
+	return _u
+}
+
+// AddCallbackAttempts adds value to the "callback_attempts" field.
+func (_u *OAuthPendingUpdateOne) AddCallbackAttempts(v int) *OAuthPendingUpdateOne {
+	_u.mutation.AddCallbackAttempts(v)
+	return _u
+}
+
 // SetClaimedAt sets the "claimed_at" field.
 func (_u *OAuthPendingUpdateOne) SetClaimedAt(v time.Time) *OAuthPendingUpdateOne {
 	_u.mutation.SetClaimedAt(v)
@@ -847,6 +993,11 @@ func (_u *OAuthPendingUpdateOne) check() error {
 	if v, ok := _u.mutation.State(); ok {
 		if err := oauthpending.StateValidator(v); err != nil {
 			return &ValidationError{Name: "state", err: fmt.Errorf(`ent: validator failed for field "OAuthPending.state": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.CallbackAttempts(); ok {
+		if err := oauthpending.CallbackAttemptsValidator(v); err != nil {
+			return &ValidationError{Name: "callback_attempts", err: fmt.Errorf(`ent: validator failed for field "OAuthPending.callback_attempts": %w`, err)}
 		}
 	}
 	return nil
@@ -960,6 +1111,24 @@ func (_u *OAuthPendingUpdateOne) sqlSave(ctx context.Context) (_node *OAuthPendi
 	}
 	if _u.mutation.CallbackAtCleared() {
 		_spec.ClearField(oauthpending.FieldCallbackAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.CallbackClaimID(); ok {
+		_spec.SetField(oauthpending.FieldCallbackClaimID, field.TypeUUID, value)
+	}
+	if _u.mutation.CallbackClaimIDCleared() {
+		_spec.ClearField(oauthpending.FieldCallbackClaimID, field.TypeUUID)
+	}
+	if value, ok := _u.mutation.CallbackClaimedUntil(); ok {
+		_spec.SetField(oauthpending.FieldCallbackClaimedUntil, field.TypeTime, value)
+	}
+	if _u.mutation.CallbackClaimedUntilCleared() {
+		_spec.ClearField(oauthpending.FieldCallbackClaimedUntil, field.TypeTime)
+	}
+	if value, ok := _u.mutation.CallbackAttempts(); ok {
+		_spec.SetField(oauthpending.FieldCallbackAttempts, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCallbackAttempts(); ok {
+		_spec.AddField(oauthpending.FieldCallbackAttempts, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.ClaimedAt(); ok {
 		_spec.SetField(oauthpending.FieldClaimedAt, field.TypeTime, value)

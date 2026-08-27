@@ -28,6 +28,7 @@ export interface MCPConnection {
   id: string;
   /** Timestamp when the connector credential was last minted or used. */
   last_used_at?: string;
+  organization_id?: string;
   /** Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints. */
   refresh_token_encrypted?: string;
   revocation_attempted_at?: string;

@@ -233,3 +233,32 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 }
+
+func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	paths := asObj(spec["paths"])
+	for _, path := range []string{"/v1/connections/{name}/start", "/v1/connectors/{name}/start", "/v1/connections/{name}/callback", "/v1/connectors/{name}/callback", "/v1/connections/{name}/mcp-token", "/v1/connectors/{name}/resource-token", "/v1/connections/{name}", "/v1/connectors/{name}/connections/{connectionID}"} {
+		item := asObj(paths[path])
+		var operation obj
+		for _, method := range []string{"get", "post", "delete"} {
+			if candidate := asObj(item[method]); candidate != nil {
+				operation = candidate
+				break
+			}
+		}
+		responses := asObj(operation["responses"])
+		if responses["429"] == nil {
+			t.Fatalf("%s does not document 429", path)
+		}
+	}
+	token := asObj(asObj(paths["/v1/connections/{name}/mcp-token"])["post"])
+	if required, ok := asObj(token["requestBody"])["required"].(bool); !ok || required {
+		t.Fatalf("MCP token body must be optional: %#v", token["requestBody"])
+	}
+	for _, status := range []string{"403", "409", "410", "429"} {
+		if asObj(token["responses"])[status] == nil {
+			t.Fatalf("MCP token missing %s", status)
+		}
+	}
+}

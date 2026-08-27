@@ -386,6 +386,9 @@ func (_u *MCPConnectionUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	if value, ok := _u.mutation.Audience(); ok {
 		_spec.SetField(mcpconnection.FieldAudience, field.TypeString, value)
 	}
+	if _u.mutation.OrganizationIDCleared() {
+		_spec.ClearField(mcpconnection.FieldOrganizationID, field.TypeString)
+	}
 	if value, ok := _u.mutation.Scopes(); ok {
 		_spec.SetField(mcpconnection.FieldScopes, field.TypeJSON, value)
 	}
@@ -872,6 +875,9 @@ func (_u *MCPConnectionUpdateOne) sqlSave(ctx context.Context) (_node *MCPConnec
 	}
 	if value, ok := _u.mutation.Audience(); ok {
 		_spec.SetField(mcpconnection.FieldAudience, field.TypeString, value)
+	}
+	if _u.mutation.OrganizationIDCleared() {
+		_spec.ClearField(mcpconnection.FieldOrganizationID, field.TypeString)
 	}
 	if value, ok := _u.mutation.Scopes(); ok {
 		_spec.SetField(mcpconnection.FieldScopes, field.TypeJSON, value)

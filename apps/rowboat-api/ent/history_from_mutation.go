@@ -623,6 +623,10 @@ func (m *MCPConnectionMutation) CreateHistoryFromCreate(ctx context.Context) err
 		create = create.SetAudience(audience)
 	}
 
+	if organizationID, exists := m.OrganizationID(); exists {
+		create = create.SetOrganizationID(organizationID)
+	}
+
 	if scopes, exists := m.Scopes(); exists {
 		create = create.SetScopes(scopes)
 	}
@@ -732,6 +736,12 @@ func (m *MCPConnectionMutation) CreateHistoryFromUpdate(ctx context.Context) err
 			create = create.SetAudience(audience)
 		} else {
 			create = create.SetAudience(mcpconnection.Audience)
+		}
+
+		if organizationID, exists := m.OrganizationID(); exists {
+			create = create.SetOrganizationID(organizationID)
+		} else {
+			create = create.SetOrganizationID(mcpconnection.OrganizationID)
 		}
 
 		if scopes, exists := m.Scopes(); exists {
@@ -852,6 +862,7 @@ func (m *MCPConnectionMutation) CreateHistoryFromDelete(ctx context.Context) err
 			SetUpdatedAt(mcpconnection.UpdatedAt).
 			SetConnector(mcpconnection.Connector).
 			SetAudience(mcpconnection.Audience).
+			SetOrganizationID(mcpconnection.OrganizationID).
 			SetScopes(mcpconnection.Scopes).
 			SetRefreshTokenEncrypted(mcpconnection.RefreshTokenEncrypted).
 			SetAPIKeyEncrypted(mcpconnection.APIKeyEncrypted).

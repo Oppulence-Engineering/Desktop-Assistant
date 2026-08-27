@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectormetrics"
@@ -23,6 +24,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -108,6 +110,22 @@ type connectPending struct {
 	GrantedScopes   []string `json:"granted_scopes,omitempty"`
 }
 
+func connectorOrganizationID(u *ent.User) string {
+	return OrganizationIDForUser(u)
+}
+
+// OrganizationIDForUser returns the immutable tenant key used by connector
+// credentials, including a stable personal tenant for users without a WorkOS org.
+func OrganizationIDForUser(u *ent.User) string {
+	if u == nil {
+		return ""
+	}
+	if orgID := strings.TrimSpace(u.WorkosOrgID); orgID != "" {
+		return orgID
+	}
+	return "personal:" + u.WorkosUserID
+}
+
 type connectorView struct {
 	Name             string                     `json:"name"`
 	DisplayName      string                     `json:"displayName"`
@@ -134,11 +152,12 @@ type connectorView struct {
 
 // List handles GET /v1/connectors.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	if _, ok := auth.UserFromCtx(r.Context()); !ok {
+	u, ok := auth.UserFromCtx(r.Context())
+	if !ok {
 		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
 		return
 	}
-	conns, err := h.client.MCPConnection.Query().All(r.Context())
+	conns, err := h.client.MCPConnection.Query().Where(mcpconnection.OrganizationIDEQ(connectorOrganizationID(u))).All(r.Context())
 	if err != nil {
 		h.log.Error("list connections", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not load connections", "internal_error")
@@ -267,15 +286,24 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "could not generate state", "internal_error")
 		return
 	}
-	payload, _ := json.Marshal(connectPending{Connector: name, Verifier: verifier, WorkOSUserID: u.WorkosUserID, OrgID: u.WorkosOrgID, RedirectTarget: redirectTarget, RequestedScopes: requestedScopes})
+	organizationID := connectorOrganizationID(u)
+	payload, _ := json.Marshal(connectPending{Connector: name, Verifier: verifier, WorkOSUserID: u.WorkosUserID, OrgID: organizationID, RedirectTarget: redirectTarget, RequestedScopes: requestedScopes})
 	sealed, err := h.sealer.Seal(payload)
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "could not seal state", "internal_error")
 		return
 	}
 	stateHash := hashState(state)
-	create := h.client.OAuthPending.Create().
-		SetState("sha256:" + stateHash).
+	// Expand/contract compatibility: during the mixed-version window the legacy
+	// column retains raw state for old readers while all new readers prefer the
+	// digest. A later contract migration removes raw state after the maximum TTL.
+	tx, err := h.client.Tx(r.Context())
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "could not start connection", "internal_error")
+		return
+	}
+	create := tx.OAuthPending.Create().
+		SetState(state).
 		SetStateHash(stateHash).
 		SetProvider(name).
 		SetPayloadEncrypted(sealed).
@@ -284,11 +312,24 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 		SetOwnerWorkosUserID(u.WorkosUserID).
 		SetRequestedScopes(requestedScopes).
 		SetRedirectTarget(redirectTarget)
-	if u.WorkosOrgID != "" {
-		create.SetOwnerOrgID(u.WorkosOrgID)
-	}
-	if err := create.Exec(r.Context()); err != nil {
+	create.SetOwnerOrgID(organizationID)
+	pending, err := create.Save(r.Context())
+	if err != nil {
+		_ = tx.Rollback()
 		h.log.Error("persist pending", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not start connection", "internal_error")
+		return
+	}
+	if err := h.persistAuditTransitionWithClient(r.Context(), tx.Client(), u, auditRecord{
+		EventType: "oauth_started", EventID: deterministicAuditEventID("oauth_started", pending.ID.String()),
+		Connector: name, OrganizationID: organizationID, Audience: c.Audience, Requested: requestedScopes,
+	}); err != nil {
+		_ = tx.Rollback()
+		h.log.Error("persist oauth start audit", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not start connection", "internal_error")
+		return
+	}
+	if err := tx.Commit(); err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "could not start connection", "internal_error")
 		return
 	}
@@ -297,7 +338,6 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 	scope := strings.Join(append([]string{"offline_access"}, requestedScopes...), " ")
 	authURL := h.ory.authorizeURL(redirectURI, scope, state, codeChallengeS256(verifier), c.Audience)
 	connectormetrics.Lifecycle.WithLabelValues(name, "start", "success").Inc()
-	h.appendAudit(r.Context(), u, auditRecord{EventType: "oauth_started", Connector: name, Audience: c.Audience, Requested: requestedScopes})
 	httpx.WriteJSON(w, http.StatusOK, map[string]string{
 		"authorization_url": authURL,
 		"authorize_url":     authURL,
@@ -308,6 +348,135 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 func hashState(state string) string {
 	sum := sha256.Sum256([]byte(state))
 	return hex.EncodeToString(sum[:])
+}
+
+func pendingStatePredicate(state string) predicate.OAuthPending {
+	return oauthpending.Or(
+		oauthpending.StateHashEQ(hashState(state)),
+		oauthpending.StateEQ(state),
+	)
+}
+
+const connectorCallbackLease = 30 * time.Second
+
+func (h *Handler) claimCallbackLease(ctx context.Context, pending *ent.OAuthPending, owner *ent.User, cp connectPending) (uuid.UUID, bool, error) {
+	now := time.Now().UTC()
+	if pending.LifecycleStatus == "callback_processing" {
+		if !pending.CallbackClaimedUntil.IsZero() && pending.CallbackClaimedUntil.After(now) {
+			return uuid.Nil, false, nil
+		}
+		// The provider authorization code may have been consumed before the prior
+		// process died. Never replay it. Expire the lease into an explicit bounded
+		// restart state so a fresh authorization can be started immediately.
+		tx, err := h.client.Tx(auth.WithInternal(ctx))
+		if err != nil {
+			return uuid.Nil, false, err
+		}
+		updated, err := tx.OAuthPending.Update().Where(
+			oauthpending.IDEQ(pending.ID),
+			oauthpending.LifecycleStatusEQ("callback_processing"),
+			oauthpending.CallbackClaimedUntilLTE(now),
+		).SetLifecycleStatus("restart_required").
+			SetFailureReason("callback_lease_expired").
+			ClearCallbackClaimID().ClearCallbackClaimedUntil().
+			Save(auth.WithInternal(ctx))
+		if err != nil || updated != 1 {
+			_ = tx.Rollback()
+			if err == nil {
+				return uuid.Nil, false, nil
+			}
+			return uuid.Nil, false, err
+		}
+		claimID := pending.CallbackClaimID
+		if err := h.persistAuditTransitionWithClient(ctx, tx.Client(), owner, auditRecord{
+			EventType: "oauth_callback_restart_required",
+			EventID:   deterministicAuditEventID("oauth_callback_restart_required", pending.ID.String(), claimID.String()),
+			Connector: cp.Connector, OrganizationID: cp.OrgID, Requested: cp.RequestedScopes, Reason: "callback_lease_expired",
+		}); err != nil {
+			_ = tx.Rollback()
+			return uuid.Nil, false, err
+		}
+		if err := tx.Commit(); err != nil {
+			return uuid.Nil, false, err
+		}
+		return uuid.Nil, true, nil
+	}
+	if pending.LifecycleStatus != "started" {
+		return uuid.Nil, false, nil
+	}
+
+	claimID := uuid.New()
+	tx, err := h.client.Tx(auth.WithInternal(ctx))
+	if err != nil {
+		return uuid.Nil, false, err
+	}
+	updated, err := tx.OAuthPending.Update().Where(
+		oauthpending.IDEQ(pending.ID), oauthpending.LifecycleStatusEQ("started"),
+	).SetLifecycleStatus("callback_processing").
+		SetCallbackClaimID(claimID).
+		SetCallbackClaimedUntil(now.Add(connectorCallbackLease)).
+		AddCallbackAttempts(1).
+		Save(auth.WithInternal(ctx))
+	if err != nil || updated != 1 {
+		_ = tx.Rollback()
+		if err == nil {
+			return uuid.Nil, false, nil
+		}
+		return uuid.Nil, false, err
+	}
+	if err := h.persistAuditTransitionWithClient(ctx, tx.Client(), owner, auditRecord{
+		EventType: "oauth_callback_processing",
+		EventID:   deterministicAuditEventID("oauth_callback_processing", pending.ID.String(), claimID.String()),
+		Connector: cp.Connector, OrganizationID: cp.OrgID, Requested: cp.RequestedScopes,
+	}); err != nil {
+		_ = tx.Rollback()
+		return uuid.Nil, false, err
+	}
+	if err := tx.Commit(); err != nil {
+		return uuid.Nil, false, err
+	}
+	return claimID, false, nil
+}
+
+func (h *Handler) finishCallback(ctx context.Context, pending *ent.OAuthPending, owner *ent.User, cp connectPending, claimID uuid.UUID, status, reason string, payload []byte, granted []string) error {
+	tx, err := h.client.Tx(auth.WithInternal(ctx))
+	if err != nil {
+		return err
+	}
+	update := tx.OAuthPending.Update().Where(
+		oauthpending.IDEQ(pending.ID),
+		oauthpending.LifecycleStatusEQ("callback_processing"),
+		oauthpending.CallbackClaimIDEQ(claimID),
+	).SetLifecycleStatus(status).
+		ClearCallbackClaimID().ClearCallbackClaimedUntil()
+	if reason != "" {
+		update.SetFailureReason(reason)
+	} else {
+		update.ClearFailureReason()
+	}
+	if len(payload) > 0 {
+		update.SetPayloadEncrypted(payload).SetCallbackAt(time.Now().UTC())
+	}
+	updated, err := update.Save(auth.WithInternal(ctx))
+	if err != nil || updated != 1 {
+		_ = tx.Rollback()
+		if err == nil {
+			return errConnectorCredentialSuperseded
+		}
+		return err
+	}
+	eventType := "oauth_callback_completed"
+	if status != "callback_completed" {
+		eventType = "oauth_callback_restart_required"
+	}
+	if err := h.persistAuditTransitionWithClient(ctx, tx.Client(), owner, auditRecord{
+		EventType: eventType, EventID: deterministicAuditEventID(eventType, pending.ID.String(), claimID.String()),
+		Connector: cp.Connector, OrganizationID: cp.OrgID, Requested: cp.RequestedScopes, Granted: granted, Reason: reason,
+	}); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	return tx.Commit()
 }
 
 func (h *Handler) validateRedirectTarget(raw string) (string, error) {
@@ -350,7 +519,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	pending, err := h.client.OAuthPending.Query().Where(oauthpending.StateHashEQ(hashState(state))).Only(auth.WithInternal(ctx))
+	pending, err := h.client.OAuthPending.Query().Where(pendingStatePredicate(state)).Only(auth.WithInternal(ctx))
 	if err != nil {
 		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "replay_or_invalid").Inc()
 		httpx.Error(w, http.StatusBadRequest, "invalid or expired state", "bad_request")
@@ -367,7 +536,11 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	owner, _ := h.client.User.Query().Where(user.WorkosUserIDEQ(cp.WorkOSUserID)).Only(auth.WithInternal(ctx))
-	if pending.LifecycleStatus != "started" {
+	if owner == nil {
+		httpx.Error(w, http.StatusInternalServerError, "oauth owner no longer exists", "internal_error")
+		return
+	}
+	if pending.LifecycleStatus != "started" && pending.LifecycleStatus != "callback_processing" {
 		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "replay").Inc()
 		h.appendAudit(ctx, owner, auditRecord{EventType: "oauth_callback_rejected", Connector: name, Requested: cp.RequestedScopes, Reason: "replay"})
 		httpx.Error(w, http.StatusConflict, "oauth callback already consumed", "replay")
@@ -393,9 +566,21 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
 		return
 	}
-	if err := pending.Update().Where(oauthpending.LifecycleStatusEQ("started")).SetLifecycleStatus("callback_processing").Exec(ctx); err != nil {
-		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "replay").Inc()
-		httpx.Error(w, http.StatusConflict, "oauth callback already in progress", "replay")
+	claimID, restartRequired, err := h.claimCallbackLease(ctx, pending, owner, cp)
+	if err != nil {
+		h.log.Error("claim connector callback lease", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not process oauth callback", "internal_error")
+		return
+	}
+	if restartRequired {
+		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "restart_required").Inc()
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "restart_required", "")
+		return
+	}
+	if claimID == uuid.Nil {
+		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "in_progress").Inc()
+		w.Header().Set("Retry-After", "2")
+		httpx.Error(w, http.StatusConflict, "oauth callback already in progress", "callback_in_progress")
 		return
 	}
 
@@ -403,10 +588,9 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	tok, err := h.ory.exchange(ctx, code, redirectURI, cp.Verifier)
 	if err != nil {
 		h.log.Warn("token exchange failed", zap.String("connector", name), zap.Error(err))
-		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("token_exchange_failed").Exec(ctx)
+		_ = h.finishCallback(ctx, pending, owner, cp, claimID, "restart_required", "token_exchange_failed", nil, nil)
 		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "exchange_failed").Inc()
-		h.appendAudit(ctx, owner, auditRecord{EventType: "oauth_callback_failed", Connector: name, Requested: cp.RequestedScopes, Reason: "token_exchange_failed"})
-		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "restart_required", "")
 		return
 	}
 	granted, err := h.grantedScopes(name, cp.RequestedScopes, tok.Scope)
@@ -414,10 +598,9 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		if tok.RefreshToken != "" {
 			_ = h.ory.revoke(ctx, tok.RefreshToken)
 		}
-		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("scope_escalation").Exec(ctx)
+		_ = h.finishCallback(ctx, pending, owner, cp, claimID, "restart_required", "scope_escalation", nil, nil)
 		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "scope_escalation").Inc()
-		h.appendAudit(ctx, owner, auditRecord{EventType: "oauth_callback_failed", Connector: name, Requested: cp.RequestedScopes, Reason: "scope_escalation"})
-		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "restart_required", "")
 		return
 	}
 
@@ -434,13 +617,15 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
 		return
 	}
-	if uErr := pending.Update().Where(oauthpending.LifecycleStatusEQ("callback_processing")).SetPayloadEncrypted(sealed).SetLifecycleStatus("callback_completed").SetCallbackAt(time.Now().UTC()).Exec(ctx); uErr != nil {
+	if uErr := h.finishCallback(ctx, pending, owner, cp, claimID, "callback_completed", "", sealed, granted); uErr != nil {
 		h.log.Error("park connector grant", zap.Error(uErr))
+		if tok.RefreshToken != "" {
+			_ = h.ory.revoke(context.WithoutCancel(ctx), tok.RefreshToken)
+		}
 		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
 		return
 	}
 	connectormetrics.Lifecycle.WithLabelValues(name, "callback", "success").Inc()
-	h.appendAudit(ctx, owner, auditRecord{EventType: "oauth_callback_completed", Connector: name, Requested: cp.RequestedScopes, Granted: granted})
 	h.deepLinkTo(w, r, cp.RedirectTarget, name, "success", state)
 }
 
@@ -473,7 +658,7 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	pending, err := h.client.OAuthPending.Query().Where(oauthpending.StateHashEQ(hashState(req.State))).Only(ctx)
+	pending, err := h.client.OAuthPending.Query().Where(pendingStatePredicate(req.State)).Only(ctx)
 	if err != nil {
 		connectormetrics.Lifecycle.WithLabelValues(name, "claim", "replay_or_expired").Inc()
 		httpx.Error(w, http.StatusNotFound, "ticket not found or already used", "ticket_expired")
@@ -510,6 +695,14 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		// Do NOT consume the ticket on a wrong-user rejection, so a probe can't
 		// burn the legitimate owner's pending ticket.
 		httpx.Error(w, http.StatusForbidden, "ticket does not belong to this user", "forbidden")
+		return
+	}
+	if cp.OrgID == "" || cp.OrgID != connectorOrganizationID(u) || pending.OwnerOrgID != cp.OrgID {
+		if cp.RefreshToken != "" {
+			_ = h.ory.revoke(context.WithoutCancel(ctx), cp.RefreshToken)
+		}
+		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("organization_mismatch").Exec(auth.WithInternal(ctx))
+		httpx.Error(w, http.StatusForbidden, "ticket does not belong to this organization", "organization_mismatch")
 		return
 	}
 	if cp.RefreshToken == "" {
@@ -564,11 +757,24 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connection, replacedGrant, err := h.upsertConnectionWithClient(auth.WithUser(ctx, u), tx.Client(), u, c, cp.RefreshToken, cp.GrantedScopes)
+	connection, replacedGrant, err := h.upsertConnectionWithClient(auth.WithUser(ctx, u), tx.Client(), u, c, cp.RefreshToken, cp.GrantedScopes, pending.CreatedAt)
 	if err != nil {
 		h.log.Error("persist connection", zap.Error(err))
 		_ = h.ory.revoke(context.WithoutCancel(ctx), cp.RefreshToken)
+		if errors.Is(err, errConnectorCredentialSuperseded) {
+			httpx.Error(w, http.StatusConflict, "connection was disconnected while authorization was in progress; restart authorization", "authorization_restart_required")
+			return
+		}
 		httpx.Error(w, http.StatusInternalServerError, "could not persist connection", "internal_error")
+		return
+	}
+	if err := h.persistAuditTransitionWithClient(ctx, tx.Client(), u, auditRecord{
+		EventType: "oauth_claimed", EventID: deterministicAuditEventID("oauth_claimed", pending.ID.String(), connection.ID.String(), fmt.Sprint(connection.CredentialGeneration)),
+		Connector: name, ConnectionID: connection.ID, OrganizationID: connection.OrganizationID,
+		Audience: c.Audience, Requested: cp.RequestedScopes, Granted: cp.GrantedScopes,
+	}); err != nil {
+		_ = h.ory.revoke(context.WithoutCancel(ctx), cp.RefreshToken)
+		httpx.Error(w, http.StatusInternalServerError, "could not persist connection audit", "internal_error")
 		return
 	}
 	if err := tx.Commit(); err != nil {
@@ -582,7 +788,6 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 			_ = h.ory.revoke(context.WithoutCancel(ctx), string(old))
 		}
 	}
-	h.appendAudit(ctx, u, auditRecord{EventType: "oauth_claimed", Connector: name, ConnectionID: connection.ID, Audience: c.Audience, Requested: cp.RequestedScopes, Granted: cp.GrantedScopes})
 	connectormetrics.Lifecycle.WithLabelValues(name, "claim", "success").Inc()
 	h.deleteTicket(ctx, pending)
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{
@@ -630,13 +835,34 @@ func (h *Handler) SetAPIKey(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusForbidden, "connector entitlement denied", reason)
 		return
 	}
-	connection, err := h.upsertAPIKeyConnection(auth.WithUser(r.Context(), u), u, c, strings.TrimSpace(req.APIKey))
+	operationStartedAt := time.Now().UTC()
+	tx, err := h.client.Tx(auth.WithUser(r.Context(), u))
 	if err != nil {
-		h.log.Error("persist api key connector", zap.Error(err))
 		httpx.Error(w, http.StatusInternalServerError, "could not persist connection", "internal_error")
 		return
 	}
-	h.appendAudit(r.Context(), u, auditRecord{EventType: "api_key_connected", Connector: name, ConnectionID: connection.ID, Audience: c.Audience, Granted: c.Scopes})
+	defer func() { _ = tx.Rollback() }()
+	connection, err := h.upsertAPIKeyConnection(auth.WithUser(r.Context(), u), tx.Client(), u, c, strings.TrimSpace(req.APIKey), operationStartedAt)
+	if err != nil {
+		h.log.Error("persist api key connector", zap.Error(err))
+		if errors.Is(err, errConnectorCredentialSuperseded) {
+			httpx.Error(w, http.StatusConflict, "connection was disconnected while the credential update was in progress; retry", "connection_update_conflict")
+			return
+		}
+		httpx.Error(w, http.StatusInternalServerError, "could not persist connection", "internal_error")
+		return
+	}
+	if err := h.persistAuditTransitionWithClient(r.Context(), tx.Client(), u, auditRecord{
+		EventType: "api_key_connected", EventID: deterministicAuditEventID("api_key_connected", connection.ID.String(), fmt.Sprint(connection.CredentialGeneration)),
+		Connector: name, ConnectionID: connection.ID, OrganizationID: connection.OrganizationID, Audience: c.Audience, Granted: c.Scopes,
+	}); err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "could not persist connection audit", "internal_error")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "could not persist connection", "internal_error")
+		return
+	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"connected": true})
 }
 
@@ -651,17 +877,22 @@ func (h *Handler) deleteTicket(ctx context.Context, pending *ent.OAuthPending) {
 	}
 }
 
-func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Client, u *ent.User, c Connector, refreshToken string, scopes []string) (*ent.MCPConnection, []byte, error) {
+func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Client, u *ent.User, c Connector, refreshToken string, scopes []string, operationStartedAt time.Time) (*ent.MCPConnection, []byte, error) {
 	sealed, err := h.sealer.SealString(refreshToken)
 	if err != nil {
 		return nil, nil, err
 	}
-	existing, err := client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ(c.Name)).Only(ctx)
+	existing, err := client.MCPConnection.Query().Where(
+		mcpconnection.ConnectorEQ(c.Name), mcpconnection.OrganizationIDEQ(connectorOrganizationID(u)),
+	).Only(ctx)
 	switch {
 	case err == nil:
+		if (existing.Status == "revoked" || existing.Status == "invalidated") && !existing.RevokedAt.IsZero() && existing.RevokedAt.After(operationStartedAt) {
+			return nil, nil, errConnectorCredentialSuperseded
+		}
 		old := append([]byte(nil), existing.RefreshTokenEncrypted...)
 		updated, updateErr := existing.Update().
-			Where(mcpconnection.CredentialGenerationEQ(existing.CredentialGeneration)).
+			Where(mcpconnection.CredentialGenerationEQ(existing.CredentialGeneration), mcpconnection.OrganizationIDEQ(connectorOrganizationID(u))).
 			SetRefreshTokenEncrypted(sealed).
 			AddCredentialGeneration(1).
 			ClearAPIKeyEncrypted().
@@ -672,7 +903,7 @@ func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Cl
 			ClearRevokedAt().ClearRevokedReason().ClearRevokedBy().ClearRevocationAttemptedAt().ClearRevocationSucceeded().
 			Save(ctx)
 		if ent.IsNotFound(updateErr) {
-			return h.upsertConnectionWithClient(ctx, client, u, c, refreshToken, scopes)
+			return h.upsertConnectionWithClient(ctx, client, u, c, refreshToken, scopes, operationStartedAt)
 		}
 		return updated, old, updateErr
 	case ent.IsNotFound(err):
@@ -680,6 +911,7 @@ func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Cl
 			SetUser(u).
 			SetConnector(c.Name).
 			SetAudience(c.Audience).
+			SetOrganizationID(connectorOrganizationID(u)).
 			SetScopes(scopes).
 			SetRefreshTokenEncrypted(sealed).
 			SetStatus("active").
@@ -691,16 +923,21 @@ func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Cl
 	}
 }
 
-func (h *Handler) upsertAPIKeyConnection(ctx context.Context, u *ent.User, c Connector, apiKey string) (*ent.MCPConnection, error) {
+func (h *Handler) upsertAPIKeyConnection(ctx context.Context, client *ent.Client, u *ent.User, c Connector, apiKey string, operationStartedAt time.Time) (*ent.MCPConnection, error) {
 	sealed, err := h.sealer.SealString(apiKey)
 	if err != nil {
 		return nil, err
 	}
-	existing, err := h.client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ(c.Name)).Only(ctx)
+	existing, err := client.MCPConnection.Query().Where(
+		mcpconnection.ConnectorEQ(c.Name), mcpconnection.OrganizationIDEQ(connectorOrganizationID(u)),
+	).Only(ctx)
 	switch {
 	case err == nil:
+		if (existing.Status == "revoked" || existing.Status == "invalidated") && !existing.RevokedAt.IsZero() && existing.RevokedAt.After(operationStartedAt) {
+			return nil, errConnectorCredentialSuperseded
+		}
 		updated, updateErr := existing.Update().
-			Where(mcpconnection.CredentialGenerationEQ(existing.CredentialGeneration)).
+			Where(mcpconnection.CredentialGenerationEQ(existing.CredentialGeneration), mcpconnection.OrganizationIDEQ(connectorOrganizationID(u))).
 			SetAPIKeyEncrypted(sealed).
 			AddCredentialGeneration(1).
 			ClearRefreshTokenEncrypted().
@@ -711,14 +948,15 @@ func (h *Handler) upsertAPIKeyConnection(ctx context.Context, u *ent.User, c Con
 			ClearRevokedAt().ClearRevokedReason().ClearRevokedBy().ClearRevocationAttemptedAt().ClearRevocationSucceeded().
 			Save(ctx)
 		if ent.IsNotFound(updateErr) {
-			return h.upsertAPIKeyConnection(ctx, u, c, apiKey)
+			return h.upsertAPIKeyConnection(ctx, client, u, c, apiKey, operationStartedAt)
 		}
 		return updated, updateErr
 	case ent.IsNotFound(err):
-		return h.client.MCPConnection.Create().
+		return client.MCPConnection.Create().
 			SetUser(u).
 			SetConnector(c.Name).
 			SetAudience(c.Audience).
+			SetOrganizationID(connectorOrganizationID(u)).
 			SetScopes(c.Scopes).
 			SetAPIKeyEncrypted(sealed).
 			SetStatus("active").
@@ -761,7 +999,9 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	ctx := r.Context()
-	mc, err := h.client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ(name)).Only(ctx)
+	mc, err := h.client.MCPConnection.Query().Where(
+		mcpconnection.ConnectorEQ(name), mcpconnection.OrganizationIDEQ(connectorOrganizationID(u)),
+	).Only(ctx)
 	if err != nil {
 		httpx.Error(w, http.StatusNotFound, "connector not connected", "not_connected")
 		return
@@ -819,7 +1059,56 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "could not read refresh token", "internal_error")
 		return
 	}
-	tok, err := h.refresh.refresh(ctx, name, mc, h.ory, string(refresh))
+	persistRefresh := func(pctx context.Context, tok *oryToken) error {
+		tx, txErr := h.client.Tx(auth.WithUser(pctx, u))
+		if txErr != nil {
+			return fmt.Errorf("begin connector refresh transaction: %w", txErr)
+		}
+		rollback := true
+		defer func() {
+			if rollback {
+				_ = tx.Rollback()
+			}
+		}()
+		update := tx.MCPConnection.UpdateOneID(mc.ID).
+			Where(
+				mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration),
+				mcpconnection.StatusEQ("active"),
+				mcpconnection.OrganizationIDEQ(mc.OrganizationID),
+			).
+			SetLastUsedAt(time.Now().UTC())
+		newGeneration := mc.CredentialGeneration
+		if tok.RefreshToken != "" {
+			sealedRefresh, sealErr := h.sealer.SealString(tok.RefreshToken)
+			if sealErr != nil {
+				return fmt.Errorf("seal rotated connector refresh token: %w", sealErr)
+			}
+			update.SetRefreshTokenEncrypted(sealedRefresh).AddCredentialGeneration(1)
+			newGeneration++
+		}
+		updated, saveErr := update.Save(auth.WithUser(pctx, u))
+		if saveErr != nil {
+			if ent.IsNotFound(saveErr) {
+				return errConnectorCredentialSuperseded
+			}
+			return fmt.Errorf("persist rotated connector refresh token: %w", saveErr)
+		}
+		if auditErr := h.persistAuditTransitionWithClient(pctx, tx.Client(), u, auditRecord{
+			EventType: "token_refresh_committed",
+			EventID:   deterministicAuditEventID("token_refresh_committed", mc.ID.String(), fmt.Sprint(mc.CredentialGeneration), fmt.Sprint(newGeneration), hashState(tok.AccessToken)),
+			Connector: name, ConnectionID: mc.ID, OrganizationID: mc.OrganizationID,
+			Audience: mc.Audience, Granted: mc.Scopes,
+		}); auditErr != nil {
+			return auditErr
+		}
+		if commitErr := tx.Commit(); commitErr != nil {
+			return fmt.Errorf("commit connector refresh: %w", commitErr)
+		}
+		rollback = false
+		mc = updated
+		return nil
+	}
+	tok, err := h.refresh.refresh(ctx, name, mc, h.ory, string(refresh), persistRefresh)
 	if err != nil {
 		if errors.Is(err, errConnectorRefreshInProgress) {
 			w.Header().Set("Retry-After", "2")
@@ -844,6 +1133,19 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadGateway, "token refresh failed", code)
 		return
 	}
+	// Cached refresh results can arrive after another replica fenced this
+	// connection. Re-read the immutable org-owned row before minting any token.
+	current, currentErr := h.client.MCPConnection.Query().Where(
+		mcpconnection.IDEQ(mc.ID), mcpconnection.OrganizationIDEQ(connectorOrganizationID(u)), mcpconnection.StatusEQ("active"),
+	).Only(ctx)
+	if currentErr != nil {
+		if tok.RefreshToken != "" {
+			_ = h.ory.revoke(context.WithoutCancel(ctx), tok.RefreshToken)
+		}
+		httpx.Error(w, http.StatusGone, "connector connection is revoked", "connection_revoked")
+		return
+	}
+	mc = current
 	if _, err := h.grantedScopes(name, validatedScopes, tok.Scope); err != nil {
 		connectormetrics.TokenMint.WithLabelValues(name, "scope_escalation").Inc()
 		h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Requested: validatedScopes, Reason: "scope_escalation"})
@@ -878,8 +1180,9 @@ func (h *Handler) writeResourceToken(ctx context.Context, w http.ResponseWriter,
 		httpx.Error(w, http.StatusServiceUnavailable, "connector resource token issuer is not configured", "broker_unconfigured")
 		return
 	}
+	tokenID := uuid.NewString()
 	token, expiresAt, err := h.resourceTokens.Mint(ResourceTokenClaims{
-		UserID: u.WorkosUserID, OrganizationID: u.WorkosOrgID,
+		TokenID: tokenID, UserID: u.WorkosUserID, OrganizationID: mc.OrganizationID,
 		ConnectionID: mc.ID.String(), ConnectorID: c.Name, Audience: audience,
 		Scopes: scopes, TrustTier: trustTierForScopes(h.registry, c.Name, scopes),
 	})
@@ -889,9 +1192,17 @@ func (h *Handler) writeResourceToken(ctx context.Context, w http.ResponseWriter,
 		httpx.Error(w, http.StatusInternalServerError, "could not mint connector resource token", "internal_error")
 		return
 	}
+	if err := h.persistAuditTransitionWithClient(ctx, h.client, u, auditRecord{
+		EventType: "token_minted", EventID: deterministicAuditEventID("token_minted", tokenID),
+		Connector: c.Name, ConnectionID: mc.ID, OrganizationID: mc.OrganizationID,
+		Audience: audience, Requested: scopes, Granted: mc.Scopes,
+	}); err != nil {
+		h.log.Error("persist connector token audit", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not persist token audit", "internal_error")
+		return
+	}
 	expiresIn := max(int64(time.Until(expiresAt).Seconds()), 1)
 	connectormetrics.TokenMint.WithLabelValues(c.Name, "success").Inc()
-	h.appendAudit(ctx, u, auditRecord{EventType: "token_minted", Connector: c.Name, ConnectionID: mc.ID, Audience: audience, Requested: scopes, Granted: mc.Scopes})
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{
 		"access_token": token,
 		"token":        token,
@@ -915,7 +1226,9 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 	name := chi.URLParam(r, "name")
 	ctx := r.Context()
-	mc, err := h.client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ(name)).Only(ctx)
+	mc, err := h.client.MCPConnection.Query().Where(
+		mcpconnection.ConnectorEQ(name), mcpconnection.OrganizationIDEQ(connectorOrganizationID(u)),
+	).Only(ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusNoContent) // idempotent
 		return

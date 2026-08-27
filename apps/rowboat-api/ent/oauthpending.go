@@ -51,6 +51,12 @@ type OAuthPending struct {
 	HydraClientID string `json:"hydra_client_id,omitempty"`
 	// CallbackAt holds the value of the "callback_at" field.
 	CallbackAt time.Time `json:"callback_at,omitempty"`
+	// CallbackClaimID holds the value of the "callback_claim_id" field.
+	CallbackClaimID uuid.UUID `json:"callback_claim_id,omitempty"`
+	// CallbackClaimedUntil holds the value of the "callback_claimed_until" field.
+	CallbackClaimedUntil time.Time `json:"callback_claimed_until,omitempty"`
+	// CallbackAttempts holds the value of the "callback_attempts" field.
+	CallbackAttempts int `json:"callback_attempts,omitempty"`
 	// ClaimedAt holds the value of the "claimed_at" field.
 	ClaimedAt time.Time `json:"claimed_at,omitempty"`
 	// FailureReason holds the value of the "failure_reason" field.
@@ -65,11 +71,13 @@ func (*OAuthPending) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case oauthpending.FieldPayloadEncrypted, oauthpending.FieldRequestedScopes:
 			values[i] = new([]byte)
+		case oauthpending.FieldCallbackAttempts:
+			values[i] = new(sql.NullInt64)
 		case oauthpending.FieldState, oauthpending.FieldStateHash, oauthpending.FieldProvider, oauthpending.FieldLifecycleStatus, oauthpending.FieldOwnerWorkosUserID, oauthpending.FieldOwnerOrgID, oauthpending.FieldRedirectTarget, oauthpending.FieldConsentChallenge, oauthpending.FieldContextRequestID, oauthpending.FieldHydraClientID, oauthpending.FieldFailureReason:
 			values[i] = new(sql.NullString)
-		case oauthpending.FieldCreatedAt, oauthpending.FieldUpdatedAt, oauthpending.FieldExpiresAt, oauthpending.FieldCallbackAt, oauthpending.FieldClaimedAt:
+		case oauthpending.FieldCreatedAt, oauthpending.FieldUpdatedAt, oauthpending.FieldExpiresAt, oauthpending.FieldCallbackAt, oauthpending.FieldCallbackClaimedUntil, oauthpending.FieldClaimedAt:
 			values[i] = new(sql.NullTime)
-		case oauthpending.FieldID:
+		case oauthpending.FieldID, oauthpending.FieldCallbackClaimID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -190,6 +198,24 @@ func (_m *OAuthPending) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.CallbackAt = value.Time
 			}
+		case oauthpending.FieldCallbackClaimID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field callback_claim_id", values[i])
+			} else if value != nil {
+				_m.CallbackClaimID = *value
+			}
+		case oauthpending.FieldCallbackClaimedUntil:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field callback_claimed_until", values[i])
+			} else if value.Valid {
+				_m.CallbackClaimedUntil = value.Time
+			}
+		case oauthpending.FieldCallbackAttempts:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field callback_attempts", values[i])
+			} else if value.Valid {
+				_m.CallbackAttempts = int(value.Int64)
+			}
 		case oauthpending.FieldClaimedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field claimed_at", values[i])
@@ -284,6 +310,15 @@ func (_m *OAuthPending) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("callback_at=")
 	builder.WriteString(_m.CallbackAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("callback_claim_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CallbackClaimID))
+	builder.WriteString(", ")
+	builder.WriteString("callback_claimed_until=")
+	builder.WriteString(_m.CallbackClaimedUntil.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("callback_attempts=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CallbackAttempts))
 	builder.WriteString(", ")
 	builder.WriteString("claimed_at=")
 	builder.WriteString(_m.ClaimedAt.Format(time.ANSIC))

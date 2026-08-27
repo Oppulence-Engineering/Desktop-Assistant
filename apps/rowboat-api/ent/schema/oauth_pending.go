@@ -4,6 +4,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
 )
@@ -36,6 +37,9 @@ func (OAuthPending) Fields() []ent.Field {
 		field.String("context_request_id").Optional(),
 		field.String("hydra_client_id").Optional(),
 		field.Time("callback_at").Optional(),
+		field.UUID("callback_claim_id", uuid.UUID{}).Optional(),
+		field.Time("callback_claimed_until").Optional(),
+		field.Int("callback_attempts").Default(0).NonNegative(),
 		field.Time("claimed_at").Optional(),
 		field.String("failure_reason").Optional(),
 	}
@@ -49,5 +53,6 @@ func (OAuthPending) Indexes() []ent.Index {
 		index.Fields("owner_workos_user_id"),
 		index.Fields("context_request_id"),
 		index.Fields("consent_challenge"),
+		index.Fields("callback_claimed_until"),
 	}
 }

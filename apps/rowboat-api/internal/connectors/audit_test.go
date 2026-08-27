@@ -9,7 +9,8 @@ func TestSemanticAuditRecords(t *testing.T) {
 		want []string
 	}{
 		{name: "entitlement allowed at start", in: auditRecord{EventType: "oauth_started"}, want: []string{"entitlement.check"}},
-		{name: "refresh and entitlement allowed", in: auditRecord{EventType: "token_minted"}, want: []string{"entitlement.check", "token.refreshed"}},
+		{name: "mint and entitlement allowed", in: auditRecord{EventType: "token_minted"}, want: []string{"entitlement.check", "token.minted"}},
+		{name: "provider refresh committed", in: auditRecord{EventType: "token_refresh_committed"}, want: []string{"token.refreshed"}},
 		{name: "entitlement denied", in: auditRecord{EventType: "oauth_start_rejected", Reason: "connector_disabled"}, want: []string{"entitlement.check"}},
 		{name: "reuse invalidates family", in: auditRecord{EventType: "connection_invalidated", Reason: "refresh_token_reuse"}, want: []string{"token.reuse_detected", "token.revoked"}},
 		{name: "disconnect revokes", in: auditRecord{EventType: "connection_revoked"}, want: []string{"token.revoked"}},

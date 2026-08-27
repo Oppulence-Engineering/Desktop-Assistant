@@ -74,10 +74,15 @@ func (r *MCPRuntimeResolver) ResolveMCP(ctx context.Context, userID, connectorNa
 	if !ok {
 		return "", "", "", fmt.Errorf("unknown connector %q", connectorName)
 	}
+	owner, err := r.client.User.Get(auth.WithInternal(ctx), uid)
+	if err != nil {
+		return "", "", "", fmt.Errorf("load connector owner: %w", err)
+	}
 	mc, err := r.client.MCPConnection.Query().
 		Where(
 			mcpconnection.ConnectorEQ(connectorName),
 			mcpconnection.StatusEQ("active"),
+			mcpconnection.OrganizationIDEQ(connectorOrganizationID(owner)),
 			mcpconnection.HasUserWith(user.IDEQ(uid)),
 		).
 		WithUser().
@@ -87,10 +92,6 @@ func (r *MCPRuntimeResolver) ResolveMCP(ctx context.Context, userID, connectorNa
 			return "", "", "", fmt.Errorf("connector %q is not connected", connectorName)
 		}
 		return "", "", "", fmt.Errorf("load connector %q: %w", connectorName, err)
-	}
-	owner, err := mc.Edges.UserOrErr()
-	if err != nil {
-		return "", "", "", fmt.Errorf("load connector %q owner: %w", connectorName, err)
 	}
 	if allowed, reason := r.isEntitled(ctx, owner, c, mc.Scopes); !allowed {
 		return "", "", "", fmt.Errorf("connector %q entitlement denied: %s", connectorName, reason)
@@ -107,7 +108,28 @@ func (r *MCPRuntimeResolver) ResolveMCP(ctx context.Context, userID, connectorNa
 		if err != nil {
 			return "", "", "", fmt.Errorf("open connector %q refresh token: %w", connectorName, err)
 		}
-		if _, err := r.refresh.refresh(auth.WithInternal(ctx), connectorName, mc, r.ory, refresh); err != nil {
+		persist := func(pctx context.Context, tok *oryToken) error {
+			update := mc.Update().Where(
+				mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration),
+				mcpconnection.StatusEQ("active"),
+				mcpconnection.OrganizationIDEQ(mc.OrganizationID),
+			).SetLastUsedAt(time.Now().UTC())
+			if tok.RefreshToken != "" {
+				sealed, sealErr := r.sealer.SealString(tok.RefreshToken)
+				if sealErr != nil {
+					return sealErr
+				}
+				update.SetRefreshTokenEncrypted(sealed).AddCredentialGeneration(1)
+			}
+			if _, saveErr := update.Save(auth.WithInternal(pctx)); saveErr != nil {
+				if ent.IsNotFound(saveErr) {
+					return errConnectorCredentialSuperseded
+				}
+				return saveErr
+			}
+			return nil
+		}
+		if _, err := r.refresh.refresh(auth.WithInternal(ctx), connectorName, mc, r.ory, refresh, persist); err != nil {
 			status := "error"
 			if isOAuthErrorCode(err, "invalid_grant") {
 				status = "reauth_required"
@@ -117,7 +139,7 @@ func (r *MCPRuntimeResolver) ResolveMCP(ctx context.Context, userID, connectorNa
 		}
 	}
 	token, _, err := r.issuer.Mint(ResourceTokenClaims{
-		UserID: owner.WorkosUserID, OrganizationID: owner.WorkosOrgID,
+		UserID: owner.WorkosUserID, OrganizationID: mc.OrganizationID,
 		ConnectionID: mc.ID.String(), ConnectorID: c.Name, Audience: c.Audience,
 		Scopes: mc.Scopes, TrustTier: trustTierForScopes(r.registry, c.Name, mc.Scopes),
 	})

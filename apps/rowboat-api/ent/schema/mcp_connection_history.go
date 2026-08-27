@@ -38,6 +38,9 @@ func (MCPConnectionHistory) Fields() []ent.Field {
 			Immutable(),
 		field.String("audience").
 			Immutable(),
+		field.String("organization_id").
+			Optional().
+			Immutable(),
 		field.JSON("scopes", []string{}).
 			Optional().
 			Immutable(),

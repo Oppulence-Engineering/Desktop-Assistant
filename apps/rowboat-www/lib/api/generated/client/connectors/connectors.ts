@@ -25,6 +25,7 @@ import type {
   N404Response,
   N409Response,
   N410Response,
+  N429Response,
   N500Response,
   N502Response,
   N503Response,
@@ -82,6 +83,11 @@ export type deleteConnectionResponse401 = {
   status: 401;
 };
 
+export type deleteConnectionResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
 export type deleteConnectionResponse500 = {
   data: N500Response;
   status: 500;
@@ -96,7 +102,10 @@ export type deleteConnectionResponseSuccess = deleteConnectionResponse204 & {
   headers: Headers;
 };
 export type deleteConnectionResponseError = (
-  deleteConnectionResponse401 | deleteConnectionResponse500 | deleteConnectionResponse503
+  | deleteConnectionResponse401
+  | deleteConnectionResponse429
+  | deleteConnectionResponse500
+  | deleteConnectionResponse503
 ) & {
   headers: Headers;
 };
@@ -142,9 +151,24 @@ export type setConnectionAPIKeyResponse401 = {
   status: 401;
 };
 
+export type setConnectionAPIKeyResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
 export type setConnectionAPIKeyResponse404 = {
   data: N404Response;
   status: 404;
+};
+
+export type setConnectionAPIKeyResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type setConnectionAPIKeyResponse429 = {
+  data: N429Response;
+  status: 429;
 };
 
 export type setConnectionAPIKeyResponse500 = {
@@ -163,7 +187,10 @@ export type setConnectionAPIKeyResponseSuccess = setConnectionAPIKeyResponse200 
 export type setConnectionAPIKeyResponseError = (
   | setConnectionAPIKeyResponse400
   | setConnectionAPIKeyResponse401
+  | setConnectionAPIKeyResponse403
   | setConnectionAPIKeyResponse404
+  | setConnectionAPIKeyResponse409
+  | setConnectionAPIKeyResponse429
   | setConnectionAPIKeyResponse500
   | setConnectionAPIKeyResponse503
 ) & {
@@ -209,6 +236,16 @@ export type handleConnectionCallbackResponse400 = {
   status: 400;
 };
 
+export type handleConnectionCallbackResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type handleConnectionCallbackResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
 export type handleConnectionCallbackResponse500 = {
   data: N500Response;
   status: 500;
@@ -217,6 +254,8 @@ export type handleConnectionCallbackResponse500 = {
 export type handleConnectionCallbackResponseError = (
   | handleConnectionCallbackResponse302
   | handleConnectionCallbackResponse400
+  | handleConnectionCallbackResponse409
+  | handleConnectionCallbackResponse429
   | handleConnectionCallbackResponse500
 ) & {
   headers: Headers;
@@ -298,6 +337,11 @@ export type claimConnectionResponse410 = {
   status: 410;
 };
 
+export type claimConnectionResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
 export type claimConnectionResponse500 = {
   data: N500Response;
   status: 500;
@@ -318,6 +362,7 @@ export type claimConnectionResponseError = (
   | claimConnectionResponse404
   | claimConnectionResponse409
   | claimConnectionResponse410
+  | claimConnectionResponse429
   | claimConnectionResponse500
   | claimConnectionResponse503
 ) & {
@@ -367,9 +412,29 @@ export type createMCPTokenResponse401 = {
   status: 401;
 };
 
+export type createMCPTokenResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
 export type createMCPTokenResponse404 = {
   data: N404Response;
   status: 404;
+};
+
+export type createMCPTokenResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type createMCPTokenResponse410 = {
+  data: N410Response;
+  status: 410;
+};
+
+export type createMCPTokenResponse429 = {
+  data: N429Response;
+  status: 429;
 };
 
 export type createMCPTokenResponse500 = {
@@ -393,7 +458,11 @@ export type createMCPTokenResponseSuccess = createMCPTokenResponse200 & {
 export type createMCPTokenResponseError = (
   | createMCPTokenResponse400
   | createMCPTokenResponse401
+  | createMCPTokenResponse403
   | createMCPTokenResponse404
+  | createMCPTokenResponse409
+  | createMCPTokenResponse410
+  | createMCPTokenResponse429
   | createMCPTokenResponse500
   | createMCPTokenResponse502
   | createMCPTokenResponse503
@@ -413,7 +482,7 @@ export const getCreateMCPTokenUrl = (name: string) => {
  */
 export const createMCPToken = async (
   name: string,
-  mCPTokenRequest: MCPTokenRequest,
+  mCPTokenRequest?: MCPTokenRequest,
   options?: RequestInit,
 ): Promise<createMCPTokenResponse> => {
   const res = await fetch(getCreateMCPTokenUrl(name), {
@@ -444,9 +513,24 @@ export type startConnectionResponse401 = {
   status: 401;
 };
 
+export type startConnectionResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
 export type startConnectionResponse404 = {
   data: N404Response;
   status: 404;
+};
+
+export type startConnectionResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type startConnectionResponse429 = {
+  data: N429Response;
+  status: 429;
 };
 
 export type startConnectionResponse500 = {
@@ -465,7 +549,10 @@ export type startConnectionResponseSuccess = startConnectionResponse200 & {
 export type startConnectionResponseError = (
   | startConnectionResponse400
   | startConnectionResponse401
+  | startConnectionResponse403
   | startConnectionResponse404
+  | startConnectionResponse409
+  | startConnectionResponse429
   | startConnectionResponse500
   | startConnectionResponse503
 ) & {
@@ -510,6 +597,11 @@ export type listConnectorsResponse401 = {
   status: 401;
 };
 
+export type listConnectorsResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
 export type listConnectorsResponse500 = {
   data: N500Response;
   status: 500;
@@ -524,7 +616,10 @@ export type listConnectorsResponseSuccess = listConnectorsResponse200 & {
   headers: Headers;
 };
 export type listConnectorsResponseError = (
-  listConnectorsResponse401 | listConnectorsResponse500 | listConnectorsResponse503
+  | listConnectorsResponse401
+  | listConnectorsResponse429
+  | listConnectorsResponse500
+  | listConnectorsResponse503
 ) & {
   headers: Headers;
 };
@@ -561,6 +656,16 @@ export type handleConnectorCallbackResponse400 = {
   status: 400;
 };
 
+export type handleConnectorCallbackResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type handleConnectorCallbackResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
 export type handleConnectorCallbackResponse500 = {
   data: N500Response;
   status: 500;
@@ -569,6 +674,8 @@ export type handleConnectorCallbackResponse500 = {
 export type handleConnectorCallbackResponseError = (
   | handleConnectorCallbackResponse302
   | handleConnectorCallbackResponse400
+  | handleConnectorCallbackResponse409
+  | handleConnectorCallbackResponse429
   | handleConnectorCallbackResponse500
 ) & {
   headers: Headers;
@@ -625,6 +732,11 @@ export type deleteConnectorConnectionResponse401 = {
   status: 401;
 };
 
+export type deleteConnectorConnectionResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
 export type deleteConnectorConnectionResponse500 = {
   data: N500Response;
   status: 500;
@@ -640,6 +752,7 @@ export type deleteConnectorConnectionResponseSuccess = deleteConnectorConnection
 };
 export type deleteConnectorConnectionResponseError = (
   | deleteConnectorConnectionResponse401
+  | deleteConnectorConnectionResponse429
   | deleteConnectorConnectionResponse500
   | deleteConnectorConnectionResponse503
 ) & {
@@ -688,9 +801,29 @@ export type createConnectorResourceTokenResponse401 = {
   status: 401;
 };
 
+export type createConnectorResourceTokenResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
 export type createConnectorResourceTokenResponse404 = {
   data: N404Response;
   status: 404;
+};
+
+export type createConnectorResourceTokenResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type createConnectorResourceTokenResponse410 = {
+  data: N410Response;
+  status: 410;
+};
+
+export type createConnectorResourceTokenResponse429 = {
+  data: N429Response;
+  status: 429;
 };
 
 export type createConnectorResourceTokenResponse500 = {
@@ -715,7 +848,11 @@ export type createConnectorResourceTokenResponseSuccess =
 export type createConnectorResourceTokenResponseError = (
   | createConnectorResourceTokenResponse400
   | createConnectorResourceTokenResponse401
+  | createConnectorResourceTokenResponse403
   | createConnectorResourceTokenResponse404
+  | createConnectorResourceTokenResponse409
+  | createConnectorResourceTokenResponse410
+  | createConnectorResourceTokenResponse429
   | createConnectorResourceTokenResponse500
   | createConnectorResourceTokenResponse502
   | createConnectorResourceTokenResponse503
@@ -736,7 +873,7 @@ export const getCreateConnectorResourceTokenUrl = (name: string) => {
  */
 export const createConnectorResourceToken = async (
   name: string,
-  mCPTokenRequest: MCPTokenRequest,
+  mCPTokenRequest?: MCPTokenRequest,
   options?: RequestInit,
 ): Promise<createConnectorResourceTokenResponse> => {
   const res = await fetch(getCreateConnectorResourceTokenUrl(name), {
@@ -767,9 +904,24 @@ export type startConnectorResponse401 = {
   status: 401;
 };
 
+export type startConnectorResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
 export type startConnectorResponse404 = {
   data: N404Response;
   status: 404;
+};
+
+export type startConnectorResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type startConnectorResponse429 = {
+  data: N429Response;
+  status: 429;
 };
 
 export type startConnectorResponse500 = {
@@ -788,7 +940,10 @@ export type startConnectorResponseSuccess = startConnectorResponse200 & {
 export type startConnectorResponseError = (
   | startConnectorResponse400
   | startConnectorResponse401
+  | startConnectorResponse403
   | startConnectorResponse404
+  | startConnectorResponse409
+  | startConnectorResponse429
   | startConnectorResponse500
   | startConnectorResponse503
 ) & {

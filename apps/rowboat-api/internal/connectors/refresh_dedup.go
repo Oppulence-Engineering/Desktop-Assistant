@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
@@ -51,7 +50,7 @@ func (d *refreshDeduper) configure(cache RefreshCache, sealer *crypto.Sealer, lo
 	d.log = log
 }
 
-func (d *refreshDeduper) refresh(ctx context.Context, connector string, mc *ent.MCPConnection, ory *oryClient, oldRefresh string) (*oryToken, error) {
+func (d *refreshDeduper) refresh(ctx context.Context, connector string, mc *ent.MCPConnection, ory *oryClient, oldRefresh string, persist func(context.Context, *oryToken) error) (*oryToken, error) {
 	if d.cache == nil || d.sealer == nil {
 		return nil, errors.New("connector refresh dedup is not configured")
 	}
@@ -106,24 +105,20 @@ func (d *refreshDeduper) refresh(ctx context.Context, connector string, mc *ent.
 			return nil, err
 		}
 
-		update := mc.Update().
-			Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active")).
-			SetLastUsedAt(time.Now().UTC())
-		if tok.RefreshToken != "" {
-			sealed, err := d.sealer.SealString(tok.RefreshToken)
-			if err != nil {
-				return nil, fmt.Errorf("seal rotated connector refresh token: %w", err)
-			}
-			update = update.SetRefreshTokenEncrypted(sealed).AddCredentialGeneration(1)
+		if persist == nil {
+			return nil, errors.New("connector refresh persistence is not configured")
 		}
-		if _, err := update.Save(detached); err != nil {
+		if err := persist(detached, tok); err != nil {
 			// The one-use upstream token may already be consumed. Keep the lock
 			// until its TTL rather than immediately allowing a second rotation.
 			unlock = false
-			if ent.IsNotFound(err) {
-				return nil, errConnectorCredentialSuperseded
+			if errors.Is(err, errConnectorCredentialSuperseded) && tok.RefreshToken != "" {
+				// A disconnect/reconnect fence won after the provider rotated the
+				// one-use credential. Revoke the newly issued generation so an
+				// orphan grant cannot outlive a successful disconnect.
+				_ = ory.revoke(context.WithoutCancel(detached), tok.RefreshToken)
 			}
-			return nil, fmt.Errorf("persist rotated connector refresh token: %w", err)
+			return nil, err
 		}
 		if err := d.store(detached, resultKey, tok); err != nil {
 			// Persistence already succeeded, so do not fail the request. A cache

@@ -32,6 +32,7 @@ export interface MCPConnectionHistory {
   last_used_at?: string;
   /** Mutation operation that produced this history row. */
   operation: MCPConnectionHistoryOperation;
+  organization_id?: string;
   /** UUID of the source row represented by a history row. */
   ref?: string;
   /** Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints. */

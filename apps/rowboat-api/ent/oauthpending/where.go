@@ -130,6 +130,21 @@ func CallbackAt(v time.Time) predicate.OAuthPending {
 	return predicate.OAuthPending(sql.FieldEQ(FieldCallbackAt, v))
 }
 
+// CallbackClaimID applies equality check predicate on the "callback_claim_id" field. It's identical to CallbackClaimIDEQ.
+func CallbackClaimID(v uuid.UUID) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldCallbackClaimID, v))
+}
+
+// CallbackClaimedUntil applies equality check predicate on the "callback_claimed_until" field. It's identical to CallbackClaimedUntilEQ.
+func CallbackClaimedUntil(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldCallbackClaimedUntil, v))
+}
+
+// CallbackAttempts applies equality check predicate on the "callback_attempts" field. It's identical to CallbackAttemptsEQ.
+func CallbackAttempts(v int) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldCallbackAttempts, v))
+}
+
 // ClaimedAt applies equality check predicate on the "claimed_at" field. It's identical to ClaimedAtEQ.
 func ClaimedAt(v time.Time) predicate.OAuthPending {
 	return predicate.OAuthPending(sql.FieldEQ(FieldClaimedAt, v))
@@ -1088,6 +1103,146 @@ func CallbackAtIsNil() predicate.OAuthPending {
 // CallbackAtNotNil applies the NotNil predicate on the "callback_at" field.
 func CallbackAtNotNil() predicate.OAuthPending {
 	return predicate.OAuthPending(sql.FieldNotNull(FieldCallbackAt))
+}
+
+// CallbackClaimIDEQ applies the EQ predicate on the "callback_claim_id" field.
+func CallbackClaimIDEQ(v uuid.UUID) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldCallbackClaimID, v))
+}
+
+// CallbackClaimIDNEQ applies the NEQ predicate on the "callback_claim_id" field.
+func CallbackClaimIDNEQ(v uuid.UUID) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldCallbackClaimID, v))
+}
+
+// CallbackClaimIDIn applies the In predicate on the "callback_claim_id" field.
+func CallbackClaimIDIn(vs ...uuid.UUID) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldCallbackClaimID, vs...))
+}
+
+// CallbackClaimIDNotIn applies the NotIn predicate on the "callback_claim_id" field.
+func CallbackClaimIDNotIn(vs ...uuid.UUID) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldCallbackClaimID, vs...))
+}
+
+// CallbackClaimIDGT applies the GT predicate on the "callback_claim_id" field.
+func CallbackClaimIDGT(v uuid.UUID) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldCallbackClaimID, v))
+}
+
+// CallbackClaimIDGTE applies the GTE predicate on the "callback_claim_id" field.
+func CallbackClaimIDGTE(v uuid.UUID) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldCallbackClaimID, v))
+}
+
+// CallbackClaimIDLT applies the LT predicate on the "callback_claim_id" field.
+func CallbackClaimIDLT(v uuid.UUID) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldCallbackClaimID, v))
+}
+
+// CallbackClaimIDLTE applies the LTE predicate on the "callback_claim_id" field.
+func CallbackClaimIDLTE(v uuid.UUID) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldCallbackClaimID, v))
+}
+
+// CallbackClaimIDIsNil applies the IsNil predicate on the "callback_claim_id" field.
+func CallbackClaimIDIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldCallbackClaimID))
+}
+
+// CallbackClaimIDNotNil applies the NotNil predicate on the "callback_claim_id" field.
+func CallbackClaimIDNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldCallbackClaimID))
+}
+
+// CallbackClaimedUntilEQ applies the EQ predicate on the "callback_claimed_until" field.
+func CallbackClaimedUntilEQ(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldCallbackClaimedUntil, v))
+}
+
+// CallbackClaimedUntilNEQ applies the NEQ predicate on the "callback_claimed_until" field.
+func CallbackClaimedUntilNEQ(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldCallbackClaimedUntil, v))
+}
+
+// CallbackClaimedUntilIn applies the In predicate on the "callback_claimed_until" field.
+func CallbackClaimedUntilIn(vs ...time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldCallbackClaimedUntil, vs...))
+}
+
+// CallbackClaimedUntilNotIn applies the NotIn predicate on the "callback_claimed_until" field.
+func CallbackClaimedUntilNotIn(vs ...time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldCallbackClaimedUntil, vs...))
+}
+
+// CallbackClaimedUntilGT applies the GT predicate on the "callback_claimed_until" field.
+func CallbackClaimedUntilGT(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldCallbackClaimedUntil, v))
+}
+
+// CallbackClaimedUntilGTE applies the GTE predicate on the "callback_claimed_until" field.
+func CallbackClaimedUntilGTE(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldCallbackClaimedUntil, v))
+}
+
+// CallbackClaimedUntilLT applies the LT predicate on the "callback_claimed_until" field.
+func CallbackClaimedUntilLT(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldCallbackClaimedUntil, v))
+}
+
+// CallbackClaimedUntilLTE applies the LTE predicate on the "callback_claimed_until" field.
+func CallbackClaimedUntilLTE(v time.Time) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldCallbackClaimedUntil, v))
+}
+
+// CallbackClaimedUntilIsNil applies the IsNil predicate on the "callback_claimed_until" field.
+func CallbackClaimedUntilIsNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIsNull(FieldCallbackClaimedUntil))
+}
+
+// CallbackClaimedUntilNotNil applies the NotNil predicate on the "callback_claimed_until" field.
+func CallbackClaimedUntilNotNil() predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotNull(FieldCallbackClaimedUntil))
+}
+
+// CallbackAttemptsEQ applies the EQ predicate on the "callback_attempts" field.
+func CallbackAttemptsEQ(v int) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldEQ(FieldCallbackAttempts, v))
+}
+
+// CallbackAttemptsNEQ applies the NEQ predicate on the "callback_attempts" field.
+func CallbackAttemptsNEQ(v int) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNEQ(FieldCallbackAttempts, v))
+}
+
+// CallbackAttemptsIn applies the In predicate on the "callback_attempts" field.
+func CallbackAttemptsIn(vs ...int) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldIn(FieldCallbackAttempts, vs...))
+}
+
+// CallbackAttemptsNotIn applies the NotIn predicate on the "callback_attempts" field.
+func CallbackAttemptsNotIn(vs ...int) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldNotIn(FieldCallbackAttempts, vs...))
+}
+
+// CallbackAttemptsGT applies the GT predicate on the "callback_attempts" field.
+func CallbackAttemptsGT(v int) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGT(FieldCallbackAttempts, v))
+}
+
+// CallbackAttemptsGTE applies the GTE predicate on the "callback_attempts" field.
+func CallbackAttemptsGTE(v int) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldGTE(FieldCallbackAttempts, v))
+}
+
+// CallbackAttemptsLT applies the LT predicate on the "callback_attempts" field.
+func CallbackAttemptsLT(v int) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLT(FieldCallbackAttempts, v))
+}
+
+// CallbackAttemptsLTE applies the LTE predicate on the "callback_attempts" field.
+func CallbackAttemptsLTE(v int) predicate.OAuthPending {
+	return predicate.OAuthPending(sql.FieldLTE(FieldCallbackAttempts, v))
 }
 
 // ClaimedAtEQ applies the EQ predicate on the "claimed_at" field.

@@ -76,6 +76,11 @@ func Audience(v string) predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldEQ(FieldAudience, v))
 }
 
+// OrganizationID applies equality check predicate on the "organization_id" field. It's identical to OrganizationIDEQ.
+func OrganizationID(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldOrganizationID, v))
+}
+
 // RefreshTokenEncrypted applies equality check predicate on the "refresh_token_encrypted" field. It's identical to RefreshTokenEncryptedEQ.
 func RefreshTokenEncrypted(v []byte) predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldEQ(FieldRefreshTokenEncrypted, v))
@@ -344,6 +349,81 @@ func AudienceEqualFold(v string) predicate.MCPConnection {
 // AudienceContainsFold applies the ContainsFold predicate on the "audience" field.
 func AudienceContainsFold(v string) predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldContainsFold(FieldAudience, v))
+}
+
+// OrganizationIDEQ applies the EQ predicate on the "organization_id" field.
+func OrganizationIDEQ(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDNEQ applies the NEQ predicate on the "organization_id" field.
+func OrganizationIDNEQ(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDIn applies the In predicate on the "organization_id" field.
+func OrganizationIDIn(vs ...string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIn(FieldOrganizationID, vs...))
+}
+
+// OrganizationIDNotIn applies the NotIn predicate on the "organization_id" field.
+func OrganizationIDNotIn(vs ...string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotIn(FieldOrganizationID, vs...))
+}
+
+// OrganizationIDGT applies the GT predicate on the "organization_id" field.
+func OrganizationIDGT(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGT(FieldOrganizationID, v))
+}
+
+// OrganizationIDGTE applies the GTE predicate on the "organization_id" field.
+func OrganizationIDGTE(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGTE(FieldOrganizationID, v))
+}
+
+// OrganizationIDLT applies the LT predicate on the "organization_id" field.
+func OrganizationIDLT(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLT(FieldOrganizationID, v))
+}
+
+// OrganizationIDLTE applies the LTE predicate on the "organization_id" field.
+func OrganizationIDLTE(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLTE(FieldOrganizationID, v))
+}
+
+// OrganizationIDContains applies the Contains predicate on the "organization_id" field.
+func OrganizationIDContains(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldContains(FieldOrganizationID, v))
+}
+
+// OrganizationIDHasPrefix applies the HasPrefix predicate on the "organization_id" field.
+func OrganizationIDHasPrefix(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldHasPrefix(FieldOrganizationID, v))
+}
+
+// OrganizationIDHasSuffix applies the HasSuffix predicate on the "organization_id" field.
+func OrganizationIDHasSuffix(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldHasSuffix(FieldOrganizationID, v))
+}
+
+// OrganizationIDIsNil applies the IsNil predicate on the "organization_id" field.
+func OrganizationIDIsNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIsNull(FieldOrganizationID))
+}
+
+// OrganizationIDNotNil applies the NotNil predicate on the "organization_id" field.
+func OrganizationIDNotNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotNull(FieldOrganizationID))
+}
+
+// OrganizationIDEqualFold applies the EqualFold predicate on the "organization_id" field.
+func OrganizationIDEqualFold(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEqualFold(FieldOrganizationID, v))
+}
+
+// OrganizationIDContainsFold applies the ContainsFold predicate on the "organization_id" field.
+func OrganizationIDContainsFold(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldContainsFold(FieldOrganizationID, v))
 }
 
 // ScopesIsNil applies the IsNil predicate on the "scopes" field.
