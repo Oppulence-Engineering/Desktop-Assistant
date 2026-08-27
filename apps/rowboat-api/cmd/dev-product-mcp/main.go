@@ -56,15 +56,15 @@ func main() {
 	}()
 	replayStore := oauthrs.PostgresEntitlementReplayStore{DB: db}
 	if err := replayStore.EnsureSchema(ctx); err != nil {
-		_ = db.Close()
-		log.Fatalf("entitlement replay schema: %v", err)
+		log.Printf("entitlement replay schema: %v", err)
+		return
 	}
 	entitlementVerifier, err := oauthrs.NewEntitlementRequestVerifier(oauthrs.EntitlementRequestVerifierConfig{
 		SigningKey: []byte(required("PRODUCT_ENTITLEMENT_HMAC_KEY")), Connector: "dev", ReplayStore: replayStore,
 	})
 	if err != nil {
-		_ = db.Close()
-		log.Fatal(err)
+		log.Printf("entitlement verifier: %v", err)
+		return
 	}
 	s := &server{db: db, entitlementVerifier: entitlementVerifier}
 	mux := http.NewServeMux()

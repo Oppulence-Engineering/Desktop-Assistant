@@ -81,7 +81,9 @@ func TestProductionEntitlementTransportBlocksPrivateLinkLocalIPv6AndMixedDNS(t *
 					return nil, fmt.Errorf("must not dial")
 				},
 			})
-			if _, err := client.Get("https://entitlement.example/v1/entitlements"); err == nil {
+			resp, err := client.Get("https://entitlement.example/v1/entitlements")
+			if err == nil {
+				_ = resp.Body.Close()
 				t.Fatal("blocked DNS answer was accepted")
 			}
 			if dials.Load() != 0 {
@@ -104,7 +106,9 @@ func TestProductionEntitlementTransportRejectsDNSAnswerChangeToPrivate(t *testin
 	}
 	_ = resp.Body.Close()
 	client.CloseIdleConnections()
-	if _, err := client.Get(endpoint); err == nil {
+	resp, err = client.Get(endpoint)
+	if err == nil {
+		_ = resp.Body.Close()
 		t.Fatal("private DNS rebound answer was accepted")
 	}
 	if requests.Load() != 1 {
@@ -164,7 +168,9 @@ func TestProductionEntitlementTransportEnforcesTLSCertificateAndSNI(t *testing.T
 	_ = resp.Body.Close()
 	wrongEndpoint := strings.Replace(endpoint, "example.com", "wrong.example", 1)
 	client.CloseIdleConnections()
-	if _, err := client.Get(wrongEndpoint); err == nil {
+	resp, err = client.Get(wrongEndpoint)
+	if err == nil {
+		_ = resp.Body.Close()
 		t.Fatal("TLS certificate/SNI hostname mismatch was accepted")
 	}
 }
@@ -199,8 +205,11 @@ func TestProductionEntitlementTransportBoundsSlowAndOversizedBodies(t *testing.T
 		if err != nil {
 			return // The transport may reject a declared oversized body before exposing it.
 		}
-		defer resp.Body.Close()
-		if _, err := outbound.ReadAll(resp.Body, entitlementMaxResponseBytes); err == nil {
+		_, readErr := outbound.ReadAll(resp.Body, entitlementMaxResponseBytes)
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			t.Fatalf("close oversized response: %v", closeErr)
+		}
+		if readErr == nil {
 			t.Fatal("oversized entitlement response was accepted")
 		}
 	})

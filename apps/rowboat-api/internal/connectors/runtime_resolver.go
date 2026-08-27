@@ -129,7 +129,7 @@ func (r *MCPRuntimeResolver) ResolveMCP(ctx context.Context, userID, connectorNa
 			}
 			return nil
 		}
-		if _, err := r.refresh.refresh(auth.WithInternal(ctx), connectorName, mc, r.ory, refresh, persist); err != nil {
+		if _, err := r.refresh.refresh(auth.WithInternal(ctx), connectorName, r.ory, refresh, persist); err != nil {
 			status := "error"
 			if isOAuthErrorCode(err, "invalid_grant") {
 				status = "reauth_required"

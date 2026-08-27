@@ -35,6 +35,8 @@ var ConnectorSources = []Source{
 	{Name: "oauth_connection_history.refresh_token", Table: "oauth_connection_histories", Column: "refresh_token_encrypted"},
 }
 
+// RefreshCachePrefix identifies encrypted cross-replica refresh results that
+// must be included in key inventory and resealing.
 const RefreshCachePrefix = "connectors:refresh:result:v1:"
 
 // Record is one encrypted database value.
@@ -143,14 +145,11 @@ func (r Runner) Reseal(ctx context.Context, state *Checkpoint, checkpoint func(C
 				break
 			}
 			for _, record := range records {
-				changed, err := r.resealValue(ctx, &report, source.Name, record.Ciphertext, func(next []byte) (bool, error) {
+				_, err := r.resealValue(ctx, &report, source.Name, record.Ciphertext, func(next []byte) (bool, error) {
 					return r.Store.CompareAndSwap(ctx, source, record, next)
 				})
 				if err != nil {
 					return report, fmt.Errorf("reseal %s row %s: %w", source.Name, record.ID, err)
-				}
-				if !changed {
-					// The row either already used the primary key or changed concurrently.
 				}
 				cursor = record.ID
 			}
@@ -342,16 +341,18 @@ type SQLStore struct {
 	Dialect string
 }
 
+// Scan returns one stable ID-ordered page from a known encrypted source.
 func (s SQLStore) Scan(ctx context.Context, source Source, cursor string, limit int) ([]Record, error) {
 	if !knownSource(source) {
 		return nil, fmt.Errorf("unknown encrypted source %q", source.Name)
 	}
-	query := fmt.Sprintf(`SELECT CAST("id" AS TEXT), "%s" FROM "%s" WHERE "%s" IS NOT NULL AND CAST("id" AS TEXT) > %s ORDER BY CAST("id" AS TEXT) LIMIT %s`, source.Column, source.Table, source.Column, s.bind(1), s.bind(2))
+	// Source table and column names are selected only from ConnectorSources.
+	query := fmt.Sprintf(`SELECT CAST("id" AS TEXT), "%s" FROM "%s" WHERE "%s" IS NOT NULL AND CAST("id" AS TEXT) > %s ORDER BY CAST("id" AS TEXT) LIMIT %s`, source.Column, source.Table, source.Column, s.bind(1), s.bind(2)) // #nosec G201
 	rows, err := s.DB.QueryContext(ctx, query, cursor, limit)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var records []Record
 	for rows.Next() {
 		var record Record
@@ -364,11 +365,13 @@ func (s SQLStore) Scan(ctx context.Context, source Source, cursor string, limit 
 	return records, rows.Err()
 }
 
+// CompareAndSwap replaces a ciphertext only if the scanned value is unchanged.
 func (s SQLStore) CompareAndSwap(ctx context.Context, source Source, record Record, replacement []byte) (bool, error) {
 	if !knownSource(source) {
 		return false, fmt.Errorf("unknown encrypted source %q", source.Name)
 	}
-	query := fmt.Sprintf(`UPDATE "%s" SET "%s" = %s WHERE "id" = %s AND "%s" = %s`, source.Table, source.Column, s.bind(1), s.bind(2), source.Column, s.bind(3))
+	// Source table and column names are selected only from ConnectorSources.
+	query := fmt.Sprintf(`UPDATE "%s" SET "%s" = %s WHERE "id" = %s AND "%s" = %s`, source.Table, source.Column, s.bind(1), s.bind(2), source.Column, s.bind(3)) // #nosec G201
 	result, err := s.DB.ExecContext(ctx, query, replacement, record.ID, record.Ciphertext)
 	if err != nil {
 		return false, err

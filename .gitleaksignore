@@ -51,3 +51,5 @@ ad4ea23d79a1a5788233ae8eb3e84e60632bd3b1:apps/copilot/README.md:curl-auth-header
 9a14af9872f72093f685a65c2e4363818fc0d031:apps/rowboat-api/integration/rfc012/postgres16.sh:generic-api-key:112
 9a14af9872f72093f685a65c2e4363818fc0d031:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:632
 9a14af9872f72093f685a65c2e4363818fc0d031:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:641
+# RFC 012 deterministic product-entitlement HMAC fixture.
+8be2fcd75a265ec5ab09c29787beb0799ba8581d:packages/oauth-resource-server-ts/test/entitlements.test.ts:generic-api-key:9

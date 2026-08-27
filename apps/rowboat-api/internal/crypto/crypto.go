@@ -271,11 +271,6 @@ func (s *Sealer) OpenWithAADAndKeyID(sealed, additionalData []byte) ([]byte, str
 	return out, "", err
 }
 
-func (s *Sealer) openLegacyWithKeyring(sealed, additionalData []byte) ([]byte, error) {
-	out, _, err := s.openLegacyWithKeyringAndKeyID(sealed, additionalData)
-	return out, err
-}
-
 func (s *Sealer) openLegacyWithKeyringAndKeyID(sealed, additionalData []byte) ([]byte, string, error) {
 	if len(sealed) < s.aead.NonceSize() {
 		return nil, "", ErrCiphertextTooShort

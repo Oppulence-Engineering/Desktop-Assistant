@@ -29,12 +29,17 @@ import (
 )
 
 func main() {
+	os.Exit(mainExit())
+}
+
+func mainExit() int {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	if err := run(ctx, os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, "connector-reencrypt error:", err)
-		os.Exit(1)
+		return 1
 	}
+	return 0
 }
 
 func run(ctx context.Context, args []string) error {
@@ -74,7 +79,11 @@ func run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	defer database.Close()
+	defer func() {
+		if err := database.Close(); err != nil {
+			fmt.Fprintln(os.Stderr, "close database:", err)
+		}
+	}()
 
 	var cache reseal.Cache
 	var redisClient *redis.Client
@@ -87,7 +96,11 @@ func run(ctx context.Context, args []string) error {
 		if err := redisClient.Ping(ctx).Err(); err != nil {
 			return fmt.Errorf("connect Redis: %w", err)
 		}
-		defer redisClient.Close()
+		defer func() {
+			if err := redisClient.Close(); err != nil {
+				fmt.Fprintln(os.Stderr, "close Redis:", err)
+			}
+		}()
 		cache = redisResealCache{client: redisClient}
 	}
 
@@ -147,7 +160,8 @@ func printReport(report reseal.Report) error {
 }
 
 func loadCheckpoint(path string) (reseal.Checkpoint, error) {
-	data, err := os.ReadFile(path)
+	// The checkpoint is an explicit operator-selected CLI path, not request data.
+	data, err := os.ReadFile(path) // #nosec G304,G703 -- operator-selected local checkpoint path.
 	if errors.Is(err, os.ErrNotExist) {
 		return reseal.Checkpoint{}, nil
 	}
@@ -168,7 +182,8 @@ func writeCheckpoint(path string, state reseal.Checkpoint) error {
 	}
 	data = append(data, '\n')
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	// The state path is selected by the administrator running this local command.
+	if err := os.MkdirAll(dir, 0o750); err != nil { // #nosec G703
 		return err
 	}
 	temporary, err := os.CreateTemp(dir, ".connector-reseal-*")
@@ -176,7 +191,7 @@ func writeCheckpoint(path string, state reseal.Checkpoint) error {
 		return err
 	}
 	temporaryPath := temporary.Name()
-	defer os.Remove(temporaryPath)
+	defer func() { _ = os.Remove(temporaryPath) }() // #nosec G703 -- path returned by os.CreateTemp above.
 	if err := temporary.Chmod(0o600); err != nil {
 		_ = temporary.Close()
 		return err
@@ -192,7 +207,7 @@ func writeCheckpoint(path string, state reseal.Checkpoint) error {
 	if err := temporary.Close(); err != nil {
 		return err
 	}
-	return os.Rename(temporaryPath, path)
+	return os.Rename(temporaryPath, path) // #nosec G703 -- operator-selected checkpoint destination.
 }
 
 type redisResealCache struct{ client *redis.Client }

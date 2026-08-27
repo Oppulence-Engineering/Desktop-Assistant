@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
@@ -50,7 +49,7 @@ func (d *refreshDeduper) configure(cache RefreshCache, sealer *crypto.Sealer, lo
 	d.log = log
 }
 
-func (d *refreshDeduper) refresh(ctx context.Context, connector string, mc *ent.MCPConnection, ory *oryClient, oldRefresh string, persist func(context.Context, *oryToken) error) (*oryToken, error) {
+func (d *refreshDeduper) refresh(ctx context.Context, connector string, ory *oryClient, oldRefresh string, persist func(context.Context, *oryToken) error) (*oryToken, error) {
 	if d.cache == nil || d.sealer == nil {
 		return nil, errors.New("connector refresh dedup is not configured")
 	}

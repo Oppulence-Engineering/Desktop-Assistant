@@ -15,8 +15,12 @@ import (
 )
 
 const (
+	// JWKSRotationActivate verifies every replica publishes the candidate key
+	// before a signer starts using it.
 	JWKSRotationActivate = "activate"
-	JWKSRotationRetire   = "retire"
+	// JWKSRotationRetire verifies overlap and replica convergence before an old
+	// verification key is removed.
+	JWKSRotationRetire = "retire"
 
 	defaultJWKSRotationTimeout  = 5 * time.Second
 	defaultJWKSRotationMaxBytes = int64(1 << 20)

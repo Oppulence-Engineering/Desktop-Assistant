@@ -1117,7 +1117,7 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		mc = updated
 		return nil
 	}
-	tok, err := h.refresh.refresh(ctx, name, mc, h.ory, string(refresh), persistRefresh)
+	tok, err := h.refresh.refresh(ctx, name, h.ory, string(refresh), persistRefresh)
 	if err != nil {
 		if errors.Is(err, errConnectorRefreshInProgress) {
 			w.Header().Set("Retry-After", "2")
