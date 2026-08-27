@@ -11,7 +11,7 @@ describe("entity projection generated contract", () => {
       PutEntityBody.safeParse({
         ...base,
         identifiers: Object.fromEntries(
-          Array.from({ length: 33 }, (_, index) => [`key${index}`, [fingerprint]]),
+          Array.from({ length: 33 }, (_, index) => [`key${String(index)}`, [fingerprint]]),
         ),
       }).success,
     ).toBe(false);
@@ -37,8 +37,10 @@ describe("entity projection generated contract", () => {
     "accepts the real authenticated entity response",
     () => {
       const responsePath = process.env.ENTITY_CONTRACT_RESPONSE_PATH;
-      expect(responsePath).toBeTruthy();
-      const response = JSON.parse(fs.readFileSync(responsePath!, "utf8"));
+      if (!responsePath) {
+        throw new Error("ENTITY_CONTRACT_RESPONSE_PATH is required");
+      }
+      const response = JSON.parse(fs.readFileSync(responsePath, "utf8")) as unknown;
       const parsed = PutEntity200Response.parse(response);
       expect(parsed.id).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/);
       expect(parsed.status).toBe("active");
