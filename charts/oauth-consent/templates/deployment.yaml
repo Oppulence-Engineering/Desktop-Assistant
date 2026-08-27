@@ -6,6 +6,11 @@ metadata:
     {{- include "oauth-consent.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       {{- include "oauth-consent.selectorLabels" . | nindent 6 }}
@@ -25,6 +30,7 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      automountServiceAccountToken: false
       containers:
         - name: oauth-consent
           image: {{ include "oauth-consent.image" . }}

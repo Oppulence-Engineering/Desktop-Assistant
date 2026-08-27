@@ -50,6 +50,14 @@ config:
   JWKS_URL: ""
   OTEL_EXPORTER_OTLP_ENDPOINT: ""
   PUBLIC_BASE_URL: https://api.oppulence.io
+  # RFC 012 broker endpoints. Keep all URLs, clients, catalogs, and audiences
+  # environment-local. Secret values remain in rowboat-api-secrets.
+  ORY_PUBLIC_URL: https://oauth.solomon-ai.co
+  ORY_ADMIN_URL: http://hydra-admin.ory.svc.cluster.local:4445
+  ORY_BROKER_CLIENT_ID: solomon-connector-broker
+  CONNECTOR_REDIRECT_ALLOWLIST: solomon-ai://settings/connectors,https://oppulence.io/settings/connectors
+  # Comma-separated incident kill switch. See docs/runbooks/connectors.md.
+  CONNECTOR_EMERGENCY_DISABLED: ""
   WEBSOCKET_API_URL: wss://api.oppulence.io
   # Google OAuth broker callback — the API host serving /oauth/google/callback (NOT
   # APP_URL, which the default would use). Register this exact URI in Google Cloud.

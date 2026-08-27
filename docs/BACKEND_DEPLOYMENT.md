@@ -1,123 +1,130 @@
-# Rowboat Backend — Deployment & Operations
+# Rowboat Backend Deployment and Operations
 
-Companion to the architecture RFCs in [`apps/rfc/`](../apps/rfc/README.md),
-especially [RFC 010](../apps/rfc/complete-010-rowboat-api-service-plane.md) and
-[RFC 011](../apps/rfc/complete-011-identity-and-authorization-plane.md). This documents how the
-implemented artifacts are deployed and the **external prerequisites that must be
-provisioned by an operator** (they cannot be created from the codebase).
+This guide covers the deployed RFC 012 connector authorization plane alongside the WorkOS-direct service-plane login defined by RFC 011. WorkOS remains the human identity provider. Ory Hydra issues audience-bound connector resource tokens, `oauth-consent` performs login/consent and MFA step-up, and rowboat-api brokers connections without proxying product MCP traffic.
 
-> **Auth posture: WorkOS-direct.** The desktop signs into **WorkOS AuthKit**
-> directly; **Ory Hydra + the consent app are deferred** (kept for the
-> cross-portfolio brokering / self-hosted-tier futures). The live deploy path
-> below is WorkOS-direct; Hydra-fronts-WorkOS is an appendix. Full rationale and
-> the env matrix live in [`apps/rowboat-api/AUTH.md`](../apps/rowboat-api/AUTH.md).
+## Repository artifacts
 
-## What's in the repo
+| Artifact | Path |
+|---|---|
+| rowboat-api chart | `charts/rowboat-api/` |
+| Hydra environment values and client Jobs | `charts/hydra/` |
+| consent chart and environment values | `charts/oauth-consent/` |
+| connector incident runbooks | `docs/runbooks/connectors.md` |
+| product resource-server example | `docs/deployment-examples/product-resource-server.env.example` |
 
-| Artifact                               | Path                                 |
-| -------------------------------------- | ------------------------------------ |
-| Go backend                             | `apps/rowboat-api/`                  |
-| OAuth resource-server (Go)             | `packages/oauth-resource-server-go/` |
-| OAuth resource-server (TS)             | `packages/oauth-resource-server-ts/` |
-| rowboat-api Helm chart                 | `charts/rowboat-api/`                |
-| Consent UI _(deferred — Hydra mode)_   | `apps/oauth-consent/`                |
-| oauth-consent Helm chart _(deferred)_  | `charts/oauth-consent/`              |
-| Hydra values + client Job _(deferred)_ | `charts/hydra/`                      |
+## External prerequisites
 
-## External prerequisites (operator-provisioned)
+Provision separate resources and credentials for staging and production:
 
-These are infrastructure/SaaS resources. Create them, then wire their
-identifiers into the cluster Secrets below.
+1. Managed Postgres databases for rowboat-api and Hydra. Never share Hydra DSNs across environments.
+2. Redis for rowboat-api.
+3. WorkOS projects or explicitly isolated environments with AuthKit, MFA enabled, and callback URIs for `/callback` and `/step-up/callback` on the matching consent host.
+4. DNS/TLS for the API, Hydra public endpoint, and consent app.
+5. An external secret manager that writes `rowboat-api-secrets`, `hydra-secrets`, and `oauth-consent-secrets`.
+6. Product MCP deployments with environment-specific issuer, audience, JWKS, and entitlement configuration.
 
-1. **DigitalOcean Managed Postgres** — database `rowboat` (rowboat-api). Capture
-   the DSN. (A second `hydra` database is needed only in the deferred Hydra mode.)
-2. **Redis** — for rate-limit token buckets (+ optional ent cache). Capture URL.
-3. **WorkOS** — create a project; enable **AuthKit**; record `WORKOS_CLIENT_ID` +
-   `WORKOS_API_KEY`; set the custom domain (`auth.solomon-ai.co`); register the
-   desktop as a **public PKCE client** with redirect URI
-   `http://localhost:8080/oauth/callback`. (In Hydra mode the redirect URI is the
-   consent app's `/callback` instead.)
-4. **Infisical** — workspace/project holding the vendor key pool
-   (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `GOOGLE_API_KEY`,
-   `ELEVENLABS_API_KEY`, `EXA_API_KEY`,
-   `GOOGLE_OAUTH_CLIENT_ID/SECRET`). Record a machine token + project id.
+## Required secrets
 
-   **`PARALLEL_API_KEY` is optional** (RFC 039, cloud research). Leave it out and
-   the research surface reports itself unconfigured rather than failing at the
-   point of use: no enrichment, no nightly account sweep, and the desktop hides
-   the control. A key on its own grants nothing: every research call also
-   requires the `cloud_research` capability, an active `intelligence`
-   subscription (`STRIPE_INTELLIGENCE_PRICE_ID`), and per-workspace consent that
-   only the user can give.
-5. **DNS** — `api.x.solomon-ai.co` (rowboat-api). The issuer `auth.solomon-ai.co`
-   is WorkOS's custom domain (they serve it). cert-manager issues TLS for the api.
-   (`oauth.solomon-ai.co` + `consent.solomon-ai.co` are needed only in Hydra mode.)
-6. **Google push infrastructure** (RFC 003 cloud events) — Pub/Sub topic +
-   push subscription for Gmail, domain verification for Calendar channels.
-   Provisioning playbook:
-   [RFC 019](../apps/rfc/019-google-push-infrastructure.md).
-7. **Kubernetes Secrets** (namespace `rowboat`):
-   - `rowboat-api-secrets`: `DATABASE_URL`, `REDIS_URL`, `DB_ENCRYPTION_KEY`,
-     `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `HOOK_HMAC_SECRET`,
-     `INTERNAL_API_SECRET`, `INFISICAL_TOKEN`, `INFISICAL_PROJECT_ID`, and —
-     for cloud events — `GOOGLE_WEBHOOK_TOKEN`, `SLACK_SIGNING_SECRET`,
-     `SLACK_CLIENT_ID`, `SLACK_CLIENT_SECRET`.
-     (`ORY_BROKER_CLIENT_ID/SECRET` are used only by the connector broker once
-     Hydra is reintroduced.)
+Generate independent values with `openssl rand -hex 32`. Never place live values in Helm values files.
 
-`DB_ENCRYPTION_KEY`, `HOOK_HMAC_SECRET`, `INTERNAL_API_SECRET`, and
-`GOOGLE_WEBHOOK_TOKEN` are generated secrets (e.g. `openssl rand -hex 32`).
+- `rowboat-api-secrets`: existing backend keys plus `ORY_BROKER_CLIENT_SECRET`, `HOOK_HMAC_SECRET`, and `DB_ENCRYPTION_KEY`.
+- `oauth-consent-secrets`: `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `HOOK_HMAC_SECRET`, and `COOKIE_SECRET`. `HOOK_HMAC_SECRET` must equal rowboat-api's value so consent context and append-audit hooks authenticate.
+- `hydra-secrets`: `dsn`, `secretsSystem`, and `secretsCookie`. See `charts/hydra/secrets.example.yaml`.
 
-## Deploy order (WorkOS-direct)
+The HMAC secret authenticates only consent context/audit bodies. Do not reuse it for cookies, database encryption, provider OAuth clients, or approval tokens. Rotate it by accepting old and new verification keys in the application release when supported, deploying verifiers first, switching the signer, waiting at least the 10-minute consent TTL, then removing the old key. If dual verification is unavailable, disable new consent during the coordinated restart.
 
-```bash
-# 0. Build + push image (CI): ghcr.io/oppulence-engineering/rowboat-api:<tag>
+## Environment isolation
 
-# 1. Run rowboat-api migrations against the managed Postgres (one-off):
-DATABASE_URL=postgres://... go run ./apps/rowboat-api/cmd/migrate apply
-# (or apply apps/rowboat-api/migrations/0001_init.sql)
+Each environment must have unique:
 
-# 2. rowboat-api (issuer envs default to WorkOS AuthKit; see AUTH.md):
-helm upgrade --install rowboat-api charts/rowboat-api -n rowboat \
-  -f charts/rowboat-api/values-production.yaml --set image.tag=<tag>
-```
+- Hydra database, issuer, public hostname, client IDs, and client secrets
+- consent hostname, cookie secret, WorkOS callbacks, and HMAC secret
+- connector definitions, provider credentials, callback URLs, MCP URLs, and audiences
+- product resource-server issuer/audience configuration
 
-No Hydra, no consent app, no second database. WorkOS hosts the login UI.
+Production audiences use `mcp:<product>`. Staging uses a distinct audience such as `mcp:<product>-staging`. Promotion is rejected if any staging hostname, client id, callback, or audience appears in production rendered manifests.
 
-## Verify
+`CONNECTOR_EMERGENCY_DISABLED` is a comma-separated kill switch in the rowboat-api environment overlays. Disabling a connector blocks new starts/mints. Existing grants are preserved as degraded until the incident decision calls for invalidation.
 
-```bash
-curl https://api.x.solomon-ai.co/healthz          # {"status":"ok"}
-curl https://api.x.solomon-ai.co/v1/config        # {appUrl, oidcIssuerUrl: auth.solomon-ai.co, ...}
-curl https://auth.solomon-ai.co/.well-known/openid-configuration   # WorkOS AuthKit
-```
-
-Then sign in from the desktop (see the Milestone-1 patch in
-`apps/x/packages/core/src/auth/providers.ts`) and confirm `/v1/me` returns the
-free-tier subscription and an LLM call streams through `/v1/llm/chat/completions`.
-
-## Deferred: Hydra-fronts-WorkOS
-
-Reintroduce **only** when Canvas/Corinthian/Billflow need a self-controlled
-OAuth2 AS with custom audiences, or for a self-hosted sovereignty tier. The
-artifacts (`apps/oauth-consent/`, `charts/hydra/`, `charts/oauth-consent/`)
-remain in the tree. To switch back: provision the `hydra` DB +
-`oauth.solomon-ai.co`/`consent.solomon-ai.co` DNS + the `hydra-secrets` /
-`oauth-consent-secrets`, then:
+## Deploy order
 
 ```bash
 helm repo add ory https://k8s.ory.sh/helm/charts
-helm upgrade --install hydra ory/hydra -n ory -f charts/hydra/values-production.yaml
+helm repo update
+
+# 1. Sync external secrets and confirm keys exist without printing values.
+kubectl -n ory get secret hydra-secrets
+kubectl -n rowboat get secret rowboat-api-secrets oauth-consent-secrets
+
+# 2. Apply rowboat-api migrations with the direct migration DSN.
+DATABASE_URL="$MIGRATION_DATABASE_URL" go run ./apps/rowboat-api/cmd/migrate apply
+
+# 3. Hydra and clients.
+helm upgrade --install hydra ory/hydra -n ory --create-namespace \
+  -f charts/hydra/values-production.yaml --wait
 kubectl apply -n ory -f charts/hydra/clients/rowboat-desktop.yaml
-helm upgrade --install oauth-consent charts/oauth-consent -n rowboat --set image.tag=<tag>
-# point rowboat-api at Hydra (env matrix in AUTH.md) and redeploy.
+kubectl -n ory wait --for=condition=complete job/rowboat-oauth-clients --timeout=180s
+
+# 4. Consent app.
+helm upgrade --install oauth-consent charts/oauth-consent -n rowboat --create-namespace \
+  -f charts/oauth-consent/values-production.yaml --set image.tag=<git-sha> --wait
+
+# 5. Broker API.
+helm upgrade --install rowboat-api charts/rowboat-api -n rowboat \
+  -f charts/rowboat-api/values-production.yaml --set image.tag=<git-sha> --wait
 ```
 
-## Product MCP servers (Canvas / Corinthian / Billflow)
+Use `ory-staging`, `rowboat-staging`, the staging values, and the staging client Job for staging. Client creation Jobs are intentionally fail-closed if a client already exists. Delete and recreate a client only during a planned change after assessing refresh-token impact.
 
-Each product embeds `@oppulence/oauth-resource-server` (TS) and verifies tokens
-against Hydra's JWKS with its own audience (`canvas-api`, `corinthian-api`,
-`billflow-api`). They expose `/v1/internal/entitlements` and call rowboat-api's
-`/v1/internal/connections/invalidate` for force-disconnect. See
-[RFC 012](../apps/rfc/012-connector-suite-and-consent-broker.md) for the
-connector broker and resource-server contract.
+## WorkOS MFA settings
+
+In WorkOS, require MFA for the step-up policy referenced by:
+
+- `WORKOS_STEP_UP_ACR=urn:rowboat:loa:money-moving`
+- `WORKOS_STEP_UP_AMR=mfa`
+- `WORKOS_STEP_UP_REDIRECT_URI=https://<consent-host>/step-up/callback`
+
+Register exact callback URIs. Test that ordinary read consent does not require step-up and that money-moving scope consent does. A missing or unrecognized MFA assertion must fail closed.
+
+## Entitlement failure behavior
+
+Entitlements are checked before consent and before each resource-token mint. Treat timeout, malformed response, non-2xx, or unknown result as unavailable and fail closed for new consent and token mint. Return a distinct entitlement/service-unavailable error rather than an OAuth error. Existing connections remain recorded, but no new resource token is issued until the check recovers. Use `docs/runbooks/connectors.md#entitlement-outage`.
+
+## Token key rotation
+
+### Hydra signing/system/cookie keys
+
+1. Add the new key before the previous key in the externally managed Hydra secret where the chart supports comma-separated rotation values.
+2. Roll Hydra with zero unavailable replicas.
+3. Confirm old and new sessions/tokens validate and JWKS is reachable.
+4. Wait at least the longest applicable refresh/session TTL, or bulk-invalidate grants if an emergency requires immediate retirement.
+5. Remove the old key and verify again.
+
+### rowboat-api database encryption key
+
+`DB_ENCRYPTION_KEY` protects stored refresh tokens. Do not replace it in place unless application-level re-encryption has completed. For compromise, disable affected connectors, revoke/invalidate grants, erase encrypted token material, rotate the key, and require reauthorization.
+
+## Product resource-server configuration
+
+Every product MCP must configure its RFC 012 middleware with the exact environment issuer and one audience. Use `docs/deployment-examples/product-resource-server.env.example`. Required behavior:
+
+- allow RS256 only and refresh JWKS once on unknown `kid`
+- validate issuer, audience, expiry, `nbf`, and `iat`
+- return 401 for invalid/expired/wrong-audience tokens
+- return 403 for missing scopes
+- return 428 for money-moving calls lacking a valid action-bound approval
+- check connection revocation and introspect money-moving calls when configured
+
+## Verification and rollback
+
+```bash
+helm lint charts/oauth-consent
+helm template oauth-consent charts/oauth-consent -f charts/oauth-consent/values-production.yaml >/dev/null
+helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-production.yaml >/dev/null
+curl -fsS https://oauth.solomon-ai.co/.well-known/openid-configuration
+curl -fsS https://oauth.solomon-ai.co/.well-known/jwks.json
+curl -fsS https://consent.solomon-ai.co/healthz
+curl -fsS https://api.oppulence.io/healthz
+```
+
+Run a staging consent flow for read and money-moving scopes, verify HMAC-authenticated context/audit delivery, entitlement denial copy, exact audience, and product 401/403/428 behavior before promotion. Rollback procedures are in `docs/runbooks/connectors.md#rollback`.

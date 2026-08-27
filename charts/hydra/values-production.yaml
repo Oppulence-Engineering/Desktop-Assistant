@@ -8,7 +8,9 @@
 #
 # The `hydra` Postgres database lives in the managed Postgres instance; the DSN
 # and secrets are supplied via the existing Secret `hydra-secrets` with keys:
-#   dsn, secretsSystem, secretsCookie
+#   dsn, secretsSystem, secretsCookie. During rotation, secretsSystem and
+# secretsCookie are comma-separated current,previous values. Remove the previous
+# value only after the maximum refresh/session TTL and a successful canary.
 
 hydra:
   existingSecret: hydra-secrets
@@ -31,7 +33,8 @@ hydra:
         supported_types:
           - public
     ttl:
-      access_token: 1h
+      # RFC 012 product resource tokens are deliberately short lived.
+      access_token: 5m
       refresh_token: 720h
       id_token: 1h
       auth_code: 10m
@@ -46,6 +49,10 @@ hydra:
 
 deployment:
   replicaCount: 2
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   resources:
     requests:
       cpu: 100m
@@ -72,3 +79,6 @@ ingress:
   # Admin API stays cluster-internal (never exposed publicly).
   admin:
     enabled: false
+
+serviceMonitor:
+  enabled: true

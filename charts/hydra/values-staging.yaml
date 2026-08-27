@@ -20,8 +20,12 @@ hydra:
         supported_types:
           - public
     ttl:
-      access_token: 1h
+      access_token: 5m
       refresh_token: 720h
+      id_token: 1h
+      auth_code: 10m
+    oauth2:
+      expose_internal_errors: false
 
   automigration:
     enabled: true
@@ -49,3 +53,6 @@ ingress:
           - oauth.staging.solomon-ai.co
   admin:
     enabled: false
+
+serviceMonitor:
+  enabled: true
