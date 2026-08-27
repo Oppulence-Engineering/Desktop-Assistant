@@ -49,6 +49,14 @@ func (h *Handler) productEntitlement(ctx context.Context, owner *ent.User, conn 
 	if conn.EntitlementURL == "" {
 		return h.localEntitlement(ctx, owner, conn, scopes)
 	}
+	return authoritativeProductEntitlement(ctx, owner, conn, scopes)
+}
+
+// authoritativeProductEntitlement is the single signed transport used by both
+// the HTTP broker and worker-side token minting. Keeping signing, SSRF policy,
+// response bounds, and denial normalization here prevents worker execution from
+// drifting into a weaker entitlement protocol.
+func authoritativeProductEntitlement(ctx context.Context, owner *ent.User, conn Connector, scopes []string) (bool, string) {
 	if owner == nil {
 		return false, "no_subscription"
 	}

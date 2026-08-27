@@ -476,9 +476,9 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 	if err != nil {
 		return nil, err
 	}
-	connectorRegistry, err := connectors.LoadRegistry([]byte(cfg.ConnectorsJSON))
+	connectorRegistry, err := loadWorkerConnectorRegistry(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("load connector registry: %w", err)
+		return nil, err
 	}
 	mcpResolver := connectors.NewMCPRuntimeResolver(client, sealer, connectorRegistry, connectors.Config{
 		OryPublicURL:          cfg.OryPublicURL,
@@ -561,6 +561,21 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 		MCPConnectors: connectorNames(connectorRegistry),
 		MCPPolicies:   mcpPolicies(connectorRegistry),
 	}, nil
+}
+
+func loadWorkerConnectorRegistry(cfg appconfig.Config) (*connectors.Registry, error) {
+	registry, err := connectors.LoadRegistryForEnvironment(
+		[]byte(cfg.ConnectorsJSON), cfg.Environment, cfg.ConnectorEmergencyDisabled,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("load connector registry: %w", err)
+	}
+	if err := registry.ConfigureProductEntitlementsJSON(
+		cfg.ConnectorEntitlementURLsJSON, cfg.ConnectorEntitlementHMACKeysJSON,
+	); err != nil {
+		return nil, fmt.Errorf("configure connector product entitlements: %w", err)
+	}
+	return registry, nil
 }
 
 func workerColumnSealer(cfg appconfig.Config) (*crypto.Sealer, error) {

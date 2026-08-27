@@ -109,11 +109,15 @@ func deterministicAuditEventID(parts ...string) string {
 // a stable operation identity so ambiguous retries converge on the unique
 // event_id index instead of creating duplicates.
 func (h *Handler) persistAuditTransitionWithClient(ctx context.Context, client *ent.Client, owner *ent.User, record auditRecord) error {
+	return persistAuditTransitionWithClient(ctx, client, owner, record)
+}
+
+func persistAuditTransitionWithClient(ctx context.Context, client *ent.Client, owner *ent.User, record auditRecord) error {
 	if record.EventID == "" {
 		return errors.New("connector security transition requires a deterministic audit event id")
 	}
 	for _, item := range append([]auditRecord{record}, semanticAuditRecords(record)...) {
-		if err := h.persistAuditWithClient(ctx, client, owner, item); err != nil {
+		if err := persistAuditWithClient(ctx, client, owner, item); err != nil {
 			return err
 		}
 	}
@@ -140,6 +144,10 @@ func (h *Handler) persistAudit(ctx context.Context, owner *ent.User, record audi
 }
 
 func (h *Handler) persistAuditWithClient(ctx context.Context, client *ent.Client, owner *ent.User, record auditRecord) error {
+	return persistAuditWithClient(ctx, client, owner, record)
+}
+
+func persistAuditWithClient(ctx context.Context, client *ent.Client, owner *ent.User, record auditRecord) error {
 	if client == nil || owner == nil || record.EventType == "" || record.Connector == "" {
 		return errors.New("invalid connector audit record")
 	}
