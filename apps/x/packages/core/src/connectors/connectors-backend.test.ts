@@ -82,6 +82,53 @@ describe("connector broker response parsing", () => {
 
 describe("connector lifecycle UI decisions", () => {
   it.each([
+    ["healthy", undefined, true, "disconnect"],
+    ["degraded", "reauth_required", false, "reconnect"],
+    ["degraded", "upstream_error", false, "retry"],
+    ["disabled", "revocation_pending", false, "wait"],
+    ["disabled", "revoked", false, "connect"],
+    ["disabled", "security_policy", false, "unavailable"],
+    ["disconnected", undefined, false, "connect"],
+  ] as const)(
+    "maps API connectionHealth=%s reason=%s to renderer action %s",
+    (connectionHealth, connectionReason, connected, expectedAction) => {
+      const parsed = parseConnectorsListResponse({
+        connectors: [
+          {
+            name: "canvas",
+            displayName: "Canvas",
+            description: "Banking",
+            mcpUrl: "https://canvas.example/mcp",
+            authType: "oauth",
+            status: "enabled",
+            health: "healthy",
+            connected,
+            connectionHealth,
+            connectionReason,
+            availableScopes: [
+              {
+                name: "canvas:payments.write",
+                displayName: "Write payments",
+                grantTier: "required",
+                risk: "money-moving",
+                stepUpRequired: true,
+                perInvocationApproval: true,
+              },
+            ],
+          },
+        ],
+      }).connectors[0];
+
+      expect(connectorLifecycleAction(parsed)).toBe(expectedAction);
+      expect(parsed.availableScopes?.[0]).toMatchObject({
+        required: true,
+        requiresStepUp: true,
+        requiresPerInvocationApproval: true,
+      });
+    },
+  );
+
+  it.each([
     ["active", "disconnect"],
     ["reauth_required", "reconnect"],
     ["revoking", "wait"],

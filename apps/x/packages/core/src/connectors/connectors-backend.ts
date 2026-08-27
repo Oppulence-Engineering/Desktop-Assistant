@@ -83,6 +83,9 @@ const scopeInputSchema = z.union([
       requires_step_up: z.boolean().optional(),
       requiresPerInvocationApproval: z.boolean().optional(),
       requires_per_invocation_approval: z.boolean().optional(),
+      grantTier: z.enum(["required", "optional"]).optional(),
+      stepUpRequired: z.boolean().optional(),
+      perInvocationApproval: z.boolean().optional(),
     })
     .passthrough(),
 ]);
@@ -109,6 +112,8 @@ const connectorInputSchema = z
     connection_health: z.string().optional(),
     connectionHealthMessage: z.string().optional(),
     connection_health_message: z.string().optional(),
+    connectionReason: z.string().optional(),
+    connection_reason: z.string().optional(),
     health: z.string().optional(),
     reason: z.string().optional(),
     connection: z
@@ -161,10 +166,12 @@ function normalizeScope(value: z.infer<typeof scopeInputSchema>): ConnectorScope
     description: value.description,
     tier,
     risk: value.risk,
-    required: value.required,
-    requiresStepUp: value.requiresStepUp ?? value.requires_step_up,
+    required: value.required ?? value.grantTier === "required",
+    requiresStepUp: value.requiresStepUp ?? value.requires_step_up ?? value.stepUpRequired,
     requiresPerInvocationApproval:
-      value.requiresPerInvocationApproval ?? value.requires_per_invocation_approval,
+      value.requiresPerInvocationApproval ??
+      value.requires_per_invocation_approval ??
+      value.perInvocationApproval,
   };
 }
 function normalizeEntitlement(
@@ -205,10 +212,28 @@ export function parseConnectorsListResponse(value: unknown): ConnectorsListRespo
         raw.connection?.health ??
         raw.connection?.state ??
         raw.health;
-      const connectionHealth =
-        healthValue && lifecycleStates.has(healthValue as ConnectorLifecycleState)
-          ? (healthValue as ConnectorLifecycleState)
-          : undefined;
+      const reason =
+        raw.connectionReason ??
+        raw.connection_reason ??
+        raw.connectionHealthMessage ??
+        raw.connection_health_message ??
+        raw.connection?.reason ??
+        raw.reason;
+      let connectionHealth: ConnectorLifecycleState | undefined;
+      if (healthValue && lifecycleStates.has(healthValue as ConnectorLifecycleState)) {
+        connectionHealth = healthValue as ConnectorLifecycleState;
+      } else if (healthValue === "healthy") {
+        connectionHealth = "active";
+      } else if (healthValue === "degraded") {
+        connectionHealth = reason === "reauth_required" ? "reauth_required" : "error";
+      } else if (healthValue === "disabled") {
+        connectionHealth =
+          reason === "revocation_pending"
+            ? "revoking"
+            : reason === "revoked"
+              ? "revoked"
+              : "invalidated";
+      }
       const legacyScopes = (raw.scopes ?? []).map(normalizeScope);
       const grantedScopes = (
         raw.grantedScopes ??
@@ -230,11 +255,7 @@ export function parseConnectorsListResponse(value: unknown): ConnectorsListRespo
         grantedScopes,
         availableScopes,
         connectionHealth,
-        connectionHealthMessage:
-          raw.connectionHealthMessage ??
-          raw.connection_health_message ??
-          raw.connection?.reason ??
-          raw.reason,
+        connectionHealthMessage: reason,
         entitlement: normalizeEntitlement(raw.entitlement, raw.requires_entitlement),
         status: raw.status,
         iconUrl: raw.iconUrl ?? raw.icon_url,

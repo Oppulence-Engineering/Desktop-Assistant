@@ -7,7 +7,11 @@ import { IMcpConfigRepo } from "./repo.js";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { connectionState, ListToolsResponse, McpServerList } from "@x/shared/mcp";
-import { awaitApprovalAndRetry, cancelPendingMcpApprovals } from "./product-approval.js";
+import {
+  awaitApprovalAndRetry,
+  cancelPendingMcpApprovals,
+  snapshotMcpArguments,
+} from "./product-approval.js";
 
 type mcpState = {
   state: z.infer<typeof connectionState>;
@@ -16,25 +20,17 @@ type mcpState = {
 };
 const clients: Record<string, mcpState> = {};
 
-async function getClient(serverName: string, approvalToken?: string): Promise<Client> {
-  if (!approvalToken && clients[serverName] && clients[serverName].state === "connected") {
-    return clients[serverName].client!;
-  }
+async function createClient(serverName: string, approvalToken?: string): Promise<Client> {
   const repo = container.resolve<IMcpConfigRepo>("mcpConfigRepo");
   const { mcpServers } = await repo.getConfig();
   const config = mcpServers[serverName];
-  if (!config) {
-    throw new Error(`MCP server ${serverName} not found`);
-  }
-  let transport: Transport | undefined = undefined;
+  if (!config) throw new Error(`MCP server ${serverName} not found`);
+  let transport: Transport | undefined;
   try {
-    // create client
-    const client = new Client({
-      name: "rowboatx",
-      version: "1.0.0",
-    });
-
+    const client = new Client({ name: "rowboatx", version: "1.0.0" });
     if ("command" in config) {
+      if (approvalToken)
+        throw new Error("Approval tokens are only supported by remote MCP servers.");
       transport = new StdioClientTransport({
         command: config.command,
         args: config.args,
@@ -47,10 +43,6 @@ async function getClient(serverName: string, approvalToken?: string): Promise<Cl
         ...(approvalToken ? { "X-Approval-Token": approvalToken } : {}),
       };
       const requestInit = Object.keys(headers).length ? { headers } : undefined;
-      // Try Streamable HTTP first; if the *connection* fails (e.g. the
-      // server only speaks the older SSE transport), fall back to SSE.
-      // The fallback must wrap client.connect, not just the transport
-      // constructor (which only throws on a malformed URL). See ERRORS.md E41.
       try {
         transport = new StreamableHTTPClientTransport(
           new URL(config.url),
@@ -61,7 +53,7 @@ async function getClient(serverName: string, approvalToken?: string): Promise<Cl
         try {
           await transport?.close();
         } catch {
-          // ignore close errors on the failed HTTP transport
+          // Ignore close errors from the failed HTTP transport.
         }
         transport = new SSEClientTransport(
           new URL(config.url),
@@ -70,8 +62,19 @@ async function getClient(serverName: string, approvalToken?: string): Promise<Cl
         await client.connect(transport);
       }
     }
+    return client;
+  } catch (error) {
+    await transport?.close().catch(() => undefined);
+    throw error;
+  }
+}
 
-    // store
+async function getClient(serverName: string): Promise<Client> {
+  if (clients[serverName] && clients[serverName].state === "connected") {
+    return clients[serverName].client!;
+  }
+  try {
+    const client = await createClient(serverName);
     clients[serverName] = {
       state: "connected",
       client,
@@ -84,7 +87,6 @@ async function getClient(serverName: string, approvalToken?: string): Promise<Cl
       client: null,
       error: error instanceof Error ? error.message : "Unknown error",
     };
-    transport?.close();
     throw error;
   }
 }
@@ -161,17 +163,18 @@ export async function executeTool(
   toolName: string,
   input: Record<string, unknown>,
 ): Promise<unknown> {
-  return executeToolAttempt(serverName, toolName, input);
+  return executeToolAttempt(serverName, toolName, snapshotMcpArguments(input));
 }
 
 async function executeToolAttempt(
   serverName: string,
   toolName: string,
-  input: Record<string, unknown>,
+  input: Readonly<Record<string, unknown>>,
   approvalToken?: string,
 ): Promise<unknown> {
-  if (approvalToken) await closeMcpClient(serverName);
-  const client = await getClient(serverName, approvalToken);
+  const client = approvalToken
+    ? await createClient(serverName, approvalToken)
+    : await getClient(serverName);
   try {
     return await client.callTool({ name: toolName, arguments: input });
   } catch (error) {
@@ -181,6 +184,6 @@ async function executeToolAttempt(
     );
   } finally {
     // One-time approval credentials must never remain on a pooled transport.
-    if (approvalToken) await closeMcpClient(serverName);
+    if (approvalToken) await client.close();
   }
 }

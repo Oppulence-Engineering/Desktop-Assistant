@@ -7,6 +7,7 @@ import {
   configureMcpApprovalUrlOpener,
   pendingMcpApprovalCount,
   registerMcpApprovalResult,
+  snapshotMcpArguments,
 } from "./product-approval.js";
 
 const challengeError = {
@@ -70,6 +71,21 @@ describe("direct product MCP authorization behavior", () => {
     expect(registerMcpApprovalResult(completion)).toBe(false);
     expect(retry).toHaveBeenCalledOnce();
     expect(pendingMcpApprovalCount()).toBe(0);
+  });
+
+  it("canonicalizes and freezes the approved retry arguments against caller mutation", async () => {
+    const original = { z: 1, nested: { amount: 1200 }, items: [{ id: "acct_7" }] };
+    const snapshot = snapshotMcpArguments(original);
+    original.nested.amount = 9999;
+    original.items[0].id = "attacker";
+
+    expect(snapshot).toEqual({ items: [{ id: "acct_7" }], nested: { amount: 1200 }, z: 1 });
+    expect(Object.isFrozen(snapshot)).toBe(true);
+    expect(Object.isFrozen(snapshot.nested)).toBe(true);
+    expect(Object.isFrozen(snapshot.items)).toBe(true);
+    expect(canonicalArgumentsDigest(snapshot)).toBe(
+      canonicalArgumentsDigest({ z: 1, nested: { amount: 1200 }, items: [{ id: "acct_7" }] }),
+    );
   });
 
   it.each([
