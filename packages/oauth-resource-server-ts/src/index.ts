@@ -12,7 +12,7 @@
  * servers) enforces auth the same way regardless of language.
  */
 export { ClaimsSchema, type Claims, hasScope, hasAllScopes, hasAnyScope, claimsFromPayload } from './claims.js';
-export { Verifier, VerifierConfigSchema, type VerifierConfig, TokenError, bearerToken } from './verifier.js';
+export { Verifier, GenericVerifier, VerifierConfigSchema, GenericVerifierConfigSchema, type VerifierConfig, type GenericVerifierConfig, TokenError, bearerToken } from './verifier.js';
 export { AuthorizationError, errorCodes, type ErrorCode } from './errors.js';
 export {
   requireAuth,

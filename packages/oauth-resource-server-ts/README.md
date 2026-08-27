@@ -1,19 +1,11 @@
 # @oppulence/oauth-resource-server
 
-TypeScript resource-server toolkit implementing the RFC 012 connector token
-contract. It verifies audience-bound JWTs against a cached JWKS, immediately
-refetches on an unknown `kid`, defaults to **RS256 only**, validates `iss`, `aud`,
-`exp`, `nbf`, and `iat` with 60 seconds of clock skew, and normalizes connector
-actor claims. It is the API-equivalent sibling of
-`packages/oauth-resource-server-go`.
+TypeScript resource-server toolkit for RFC 012 connector tokens. `Verifier` is
+fail closed: exact `issuerUrl` and `audience` are mandatory, RS256 is the default,
+`exp` is required, and verified tokens must contain subject/user,
+`connection_id`, `connector_id`, and `jti` actor claims.
 
-## Install
-
-```bash
-npm install @oppulence/oauth-resource-server
-```
-
-## Verify tokens
+## RFC 012 verifier
 
 ```ts
 import { Verifier } from "@oppulence/oauth-resource-server";
@@ -22,80 +14,62 @@ const verifier = new Verifier({
   issuerUrl: "https://oauth.example.com",
   audience: "mcp:canvas",
   jwksUrl: "https://oauth.example.com/.well-known/jwks.json",
+  requiredOrganizationId: "org_123", // optional tenant pin
 });
 
 const actor = await verifier.verify(rawToken);
-// actor.userId, organizationId, connectionId, connectorId,
-// tokenId, trustTier, scopes
 ```
 
-The default clock tolerance is 60 seconds. `algorithms` can explicitly override
-the RS256-only default when an issuer contract requires another algorithm.
+Issuer and audience are compared exactly. For non-connector JWTs without RFC 012
+actor claims, use the explicitly named `GenericVerifier`. It still requires and
+validates exact issuer and audience values.
 
-## Express/connect middleware
+## Remote JWKS security
+
+Production URLs must use HTTPS and may not contain userinfo or fragments. The
+issuer origin is allowlisted automatically. A cross-origin JWKS endpoint must be
+listed as an exact origin in `allowedJwksOrigins`.
+
+The client validates every DNS answer, rejects private, loopback, link-local,
+multicast, and unspecified addresses, and pins the validated address into the
+actual HTTP/TLS request to prevent DNS rebinding. Redirects are blocked. Requests
+and responses are bounded. Defaults are:
+
+- `requestTimeoutMs`: 10 seconds
+- `maxJwksResponseBytes`: 1 MiB
+- `unknownKidCacheTtlMs`: 30 seconds
+
+Concurrent unknown-`kid` misses share one refresh. A still-unknown key is
+negative-cached for the configured TTL, preventing attacker-controlled key IDs
+from creating an unbounded fetch loop.
+
+Local HTTP is available only with `allowLocalhostDevelopment: true`, and only for
+localhost/loopback. The option does not permit arbitrary private-network hosts.
+
+## Middleware
 
 ```ts
-import { requireMCPToken } from "@oppulence/oauth-resource-server";
-
 app.post("/payments", requireMCPToken(verifier, {
   audience: "mcp:cadence",
-  requiredScopes: ["cadence.payment_run.execute"], // all-of
-  anyScopes: ["cadence.admin", "cadence.operator"], // any-of
+  requiredScopes: ["cadence.payment_run.execute"],
+  anyScopes: ["cadence.admin", "cadence.operator"],
   connectionValidator: async (actor) => connections.isActive(actor.connectionId),
-  approvalValidator: async (token, actor, req) => {
-    // Introspect token and match it to request action/resource details.
-    return approvals.validate(token, actor.connectionId, req.url);
-  },
+  approvalValidator: async (token, actor, req) =>
+    approvals.validate(token, actor.connectionId, req.url),
 }), paymentHandler);
 ```
 
-When `approvalValidator` is configured, `X-Approval-Token` is mandatory. Missing
-or invalid approval returns HTTP 428 with `approval_required`.
-
-Standalone middleware is also exported:
-
-- `requireAuth(verifier)`
-- `requireAllScopes(...)`, with `requireScopes(...)` retained as an alias
-- `requireAnyScope(...)`
-- `verifyAuthorizationHeader(verifier, header)` for framework-neutral use
-
-## Claims
-
-`Claims` contains:
-
-- `userId`, `organizationId`
-- `connectionId`, `connectorId`
-- `scopes`
-- `tokenId` from `jti` or `token_id`
-- `trustTier`
-- standard `subject`, `issuer`, `audience`, `expiresAt`, `notBefore`, `issuedAt`
-- compatibility fields `workosUserId`, `workosOrgId`, `email`, and `raw`
-
-Runtime schemas and helpers are exported as `ClaimsSchema`, `hasScope`,
-`hasAllScopes`, and `hasAnyScope`.
+Exports include `requireAuth`, `requireAllScopes`, `requireAnyScope`,
+`requireMCPToken`, and `verifyAuthorizationHeader`.
 
 ## Errors
 
-Middleware denies by default and responds with:
-
-```json
-{"error":"required scope missing","code":"scope_missing"}
-```
-
-Stable RFC 012 codes are:
-
-- `token_missing`
-- `token_expired`
-- `token_invalid_signature`
-- `audience_mismatch`
-- `scope_missing`
-- `connection_revoked`
-- `approval_required`
-
-`Verifier.verify` throws `AuthorizationError` with `code`, `status`, and a
-server-side `cause`. `TokenError` remains a compatibility subclass. Issuer,
-malformed-claim, `nbf`, `iat`, algorithm, unknown key, and other invalid-token
-failures intentionally collapse to `token_invalid_signature`.
+`verify` throws `AuthorizationError` (`TokenError` remains a compatibility
+subclass). Detailed issuer, malformed-claim, algorithm, key, and network failures
+collapse to `token_invalid_signature` to avoid an authorization oracle. Stable
+middleware codes also include `token_missing`, `token_expired`,
+`audience_mismatch`, `scope_missing`, `connection_revoked`, and
+`approval_required`.
 
 ## Develop
 

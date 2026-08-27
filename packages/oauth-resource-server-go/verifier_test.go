@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -84,10 +85,12 @@ func errorCode(t *testing.T, err error) oauthrs.ErrorCode {
 
 func newVerifier(t *testing.T, jwksURL string) *oauthrs.Verifier {
 	t.Helper()
-	v, err := oauthrs.New(context.Background(), oauthrs.Config{
-		IssuerURL: "https://oauth.solomon-ai.co",
-		Audience:  "rowboat-api",
-		JWKSURL:   jwksURL,
+	v, err := oauthrs.NewGeneric(context.Background(), oauthrs.GenericConfig{
+		IssuerURL:                 "https://oauth.solomon-ai.co",
+		Audience:                  "rowboat-api",
+		JWKSURL:                   jwksURL,
+		AllowedJWKSOrigins:        []string{jwksURL},
+		AllowLocalhostDevelopment: true,
 	})
 	if err != nil {
 		t.Fatalf("new verifier: %v", err)
@@ -298,9 +301,11 @@ func TestNewDiscoversJWKSFromIssuer(t *testing.T) {
 	}))
 	t.Cleanup(disco.Close)
 
-	v, err := oauthrs.New(context.Background(), oauthrs.Config{
-		IssuerURL: disco.URL, // token `iss` must match; JWKSURL omitted → discovered
-		Audience:  "rowboat-api",
+	v, err := oauthrs.NewGeneric(context.Background(), oauthrs.GenericConfig{
+		IssuerURL:                 disco.URL, // token `iss` must match; JWKSURL omitted → discovered
+		Audience:                  "rowboat-api",
+		AllowedJWKSOrigins:        []string{jwks.URL},
+		AllowLocalhostDevelopment: true,
 	})
 	if err != nil {
 		t.Fatalf("new with discovery: %v", err)
@@ -321,6 +326,118 @@ func TestNewDiscoversJWKSFromIssuer(t *testing.T) {
 func TestNewRequiresJWKSOrIssuer(t *testing.T) {
 	if _, err := oauthrs.New(context.Background(), oauthrs.Config{Audience: "rowboat-api"}); err == nil {
 		t.Fatal("expected error when both JWKSURL and IssuerURL are empty")
+	}
+}
+
+func TestRFCVerifierFailsClosedAndGenericIsExplicit(t *testing.T) {
+	srv, key := jwksServer(t)
+	base := oauthrs.Config{
+		IssuerURL:                 "https://oauth.solomon-ai.co",
+		Audience:                  "rowboat-api",
+		JWKSURL:                   srv.URL,
+		AllowedJWKSOrigins:        []string{srv.URL},
+		AllowLocalhostDevelopment: true,
+	}
+	for _, mutate := range []func(*oauthrs.Config){
+		func(c *oauthrs.Config) { c.IssuerURL = "" },
+		func(c *oauthrs.Config) { c.Audience = "" },
+	} {
+		cfg := base
+		mutate(&cfg)
+		if _, err := oauthrs.New(context.Background(), cfg); err == nil {
+			t.Fatal("primary constructor must require exact issuer and audience")
+		}
+	}
+	v, err := oauthrs.New(context.Background(), base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	missingActor := sign(t, key, jwt.MapClaims{
+		"iss": base.IssuerURL, "aud": base.Audience,
+		"sub": "usr_123", "exp": time.Now().Add(time.Hour).Unix(),
+	})
+	if _, err := v.Verify(missingActor); err == nil {
+		t.Fatal("primary verifier accepted missing RFC 012 actor claims")
+	}
+	generic, err := oauthrs.NewGeneric(context.Background(), oauthrs.GenericConfig(base))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := generic.Verify(missingActor); err != nil {
+		t.Fatalf("explicit generic verifier rejected generic token: %v", err)
+	}
+}
+
+func TestRFCVerifierRequiredOrganization(t *testing.T) {
+	srv, key := jwksServer(t)
+	v, err := oauthrs.New(context.Background(), oauthrs.Config{
+		IssuerURL: "https://oauth.solomon-ai.co", Audience: "rowboat-api", JWKSURL: srv.URL,
+		AllowedJWKSOrigins: []string{srv.URL}, AllowLocalhostDevelopment: true,
+		RequiredOrganizationID: "org_required",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	claims := validClaims()
+	claims["organization_id"] = "org_other"
+	if _, err := v.Verify(sign(t, key, claims)); err == nil {
+		t.Fatal("accepted token for the wrong required organization")
+	}
+}
+
+func TestRemoteURLPolicyRejectsUnsafeURLs(t *testing.T) {
+	base := oauthrs.Config{IssuerURL: "https://issuer.example", Audience: "api"}
+	for _, raw := range []string{
+		"http://keys.example/jwks", "https://user@keys.example/jwks",
+		"https://keys.example/jwks#fragment", "https://127.0.0.1/jwks",
+	} {
+		cfg := base
+		cfg.JWKSURL = raw
+		cfg.AllowedJWKSOrigins = []string{"https://keys.example"}
+		if _, err := oauthrs.New(context.Background(), cfg); err == nil {
+			t.Fatalf("unsafe JWKS URL accepted: %s", raw)
+		}
+	}
+}
+
+func TestUnknownKIDRefreshIsCoalescedAndNegativeCached(t *testing.T) {
+	var requests atomic.Int64
+	srv, key := jwksServer(t)
+	counting := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		resp, err := http.Get(srv.URL)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer resp.Body.Close()
+		_, _ = io.Copy(w, resp.Body)
+	}))
+	t.Cleanup(counting.Close)
+	v, err := oauthrs.NewGeneric(context.Background(), oauthrs.GenericConfig{
+		IssuerURL: "https://oauth.solomon-ai.co", Audience: "rowboat-api", JWKSURL: counting.URL,
+		AllowedJWKSOrigins: []string{counting.URL}, AllowLocalhostDevelopment: true,
+		UnknownKIDCacheTTL: time.Minute,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	unknown := signWithMethod(t, jwt.SigningMethodRS256, key, "never-present", validClaims())
+	start := make(chan struct{})
+	var done atomic.Int64
+	for range 12 {
+		go func() { <-start; _, _ = v.Verify(unknown); done.Add(1) }()
+	}
+	close(start)
+	deadline := time.Now().Add(2 * time.Second)
+	for done.Load() != 12 && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	if got := requests.Load(); got != 2 {
+		t.Fatalf("requests = %d, want eager load + one coalesced miss refresh", got)
+	}
+	_, _ = v.Verify(unknown)
+	if got := requests.Load(); got != 2 {
+		t.Fatalf("negative-cached miss refetched JWKS: %d", got)
 	}
 }
 

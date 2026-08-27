@@ -1,82 +1,82 @@
 # oauth-resource-server-go
 
-Go `net/http` resource-server toolkit implementing the RFC 012 connector token
-contract. It verifies audience-bound JWTs against a cached JWKS, refetches on an
-unknown `kid`, defaults to **RS256 only**, validates `iss`, `aud`, `exp`, `nbf`,
-and `iat` with 60 seconds of clock skew, and normalizes connector actor claims.
+Go `net/http` resource-server toolkit for the RFC 012 connector-token contract.
+The primary constructor is intentionally fail closed. It requires exact issuer and
+audience values, RS256 by default, expiration, and the connector actor claims
+`sub`/user, `connection_id`, `connector_id`, and `jti`.
 
-## Verify tokens
+## RFC 012 verifier
 
 ```go
 verifier, err := oauthrs.New(ctx, oauthrs.Config{
     IssuerURL: "https://oauth.example.com",
     Audience:  "mcp:canvas",
     JWKSURL:   "https://oauth.example.com/.well-known/jwks.json",
+    // Optional tenant pin. When set, the token must carry this organization.
+    RequiredOrganizationID: "org_123",
 })
-if err != nil {
-    return err
-}
-
-claims, err := verifier.Verify(rawToken)
-// claims.UserID, OrganizationID, ConnectionID, ConnectorID,
-// TokenID, TrustTier, Scopes
 ```
 
-`JWKSURL` may be omitted when `IssuerURL` exposes OIDC discovery. The default
-clock skew is 60 seconds. `ValidMethods` can explicitly override the RS256-only
-default when an issuer contract requires another algorithm.
+`IssuerURL` and `Audience` are mandatory and compared exactly. `JWKSURL` may be
+omitted for same-origin OIDC discovery. Every accepted connector token must
+normalize to a non-empty subject/user, connection ID, connector ID, and token ID.
+Use `NewGeneric(ctx, GenericConfig{...})` explicitly for non-connector JWTs that
+do not carry those actor claims. The generic verifier still requires and checks
+an exact issuer and audience.
+
+## Remote JWKS security
+
+Production remote URLs must use HTTPS and contain no userinfo or fragment. The
+issuer origin is allowlisted automatically. Cross-origin discovery or a direct
+cross-origin `JWKSURL` requires an exact origin in `AllowedJWKSOrigins`.
+
+The built-in client:
+
+- rejects private, loopback, link-local, multicast, and unspecified addresses
+- validates every DNS answer and pins the selected address for the connection,
+  preventing DNS rebinding between policy evaluation and dialing
+- disables proxy-side resolution and blocks redirects outside the allowlist
+- limits redirects, request duration, and response bytes
+- coalesces concurrent unknown-`kid` refreshes and negative-caches misses
+
+Defaults are a 10-second request timeout, 1 MiB response limit, and 30-second
+unknown-`kid` negative-cache TTL. Configure them with `HTTPTimeout`,
+`MaxJWKSResponseBytes`, and `UnknownKIDCacheTTL`.
+
+Plain HTTP and loopback/private access are never enabled by URL alone. Local test
+servers require `AllowLocalhostDevelopment: true`; this option permits only HTTP
+localhost/loopback, not arbitrary private networks.
 
 ## Protect an MCP route
 
 ```go
 mux.Handle("POST /payments", verifier.RequireMCPToken(oauthrs.MCPTokenOptions{
     Audience:       "mcp:cadence",
-    RequiredScopes: []string{"cadence.payment_run.execute"}, // all-of
-    AnyScopes:      []string{"cadence.admin", "cadence.operator"}, // any-of
+    RequiredScopes: []string{"cadence.payment_run.execute"},
+    AnyScopes:      []string{"cadence.admin", "cadence.operator"},
     ConnectionValidator: func(ctx context.Context, actor *oauthrs.Claims) (bool, error) {
         return connections.IsActive(ctx, actor.ConnectionID)
     },
     ApprovalValidator: func(r *http.Request, token string, actor *oauthrs.Claims) (bool, error) {
-        // Introspect token and match it to request action/resource details.
         return approvals.Validate(r.Context(), token, actor.ConnectionID, r.URL.Path)
     },
 })(paymentHandler))
 ```
 
-When `ApprovalValidator` is configured, `X-Approval-Token` is mandatory. Missing
-or invalid approval returns HTTP 428 with `approval_required`.
-
-Standalone scope middleware is also available:
-
-- `RequireAllScopes(...)`, with `RequireScopes(...)` retained as an alias.
-- `RequireAnyScope(...)`.
+`RequireAllScopes` and `RequireAnyScope` are also available.
 
 ## Errors
 
-HTTP middleware denies by default and responds with:
-
-```json
-{"error":"required scope missing","code":"scope_missing"}
-```
-
-Stable RFC 012 codes are:
-
-- `token_missing`
-- `token_expired`
-- `token_invalid_signature`
-- `audience_mismatch`
-- `scope_missing`
-- `connection_revoked`
-- `approval_required`
-
-`Verify` returns `*AuthorizationError`, exposing `Code`, `Status`, and a
-server-side `Cause`. Issuer, malformed-claim, `nbf`, `iat`, algorithm, unknown
-key, and other invalid-token failures intentionally collapse to
-`token_invalid_signature` rather than exposing an authorization oracle.
+Validation failures are returned as `*AuthorizationError`. Detailed issuer,
+claim, algorithm, key, and network failures intentionally collapse to
+`token_invalid_signature` to avoid exposing an authorization oracle. Stable
+middleware codes also include `token_missing`, `token_expired`,
+`audience_mismatch`, `scope_missing`, `connection_revoked`, and
+`approval_required`.
 
 ## Develop
 
 ```bash
 gofmt -w *.go
-go test ./...
+go test -race ./...
 ```

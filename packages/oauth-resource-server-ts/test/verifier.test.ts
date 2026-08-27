@@ -4,6 +4,7 @@ import type { AddressInfo } from 'node:net';
 import { type KeyLike, SignJWT, exportJWK, generateKeyPair } from 'jose';
 import {
   AuthorizationError,
+  GenericVerifier,
   Verifier,
   hasAllScopes,
   requireMCPToken,
@@ -82,7 +83,13 @@ async function sign(
 }
 
 function newVerifier(): Verifier {
-  return new Verifier({ issuerUrl: ISSUER, audience: AUDIENCE, jwksUrl: baseURL });
+  return new Verifier({
+    issuerUrl: ISSUER,
+    audience: AUDIENCE,
+    jwksUrl: baseURL,
+    allowedJwksOrigins: [new URL(baseURL).origin],
+    allowLocalhostDevelopment: true,
+  });
 }
 
 function expectCode(error: unknown, code: AuthorizationError['code']): void {
@@ -136,6 +143,45 @@ async function runMiddleware(options: MCPTokenOptions, approvalToken?: string): 
 }
 
 describe('RFC 012 verifier contract', () => {
+  it('fails closed on config and exposes generic verification explicitly', async () => {
+    expect(() => new Verifier({ issuerUrl: '', audience: AUDIENCE, jwksUrl: baseURL })).toThrow();
+    expect(() => new Verifier({ issuerUrl: ISSUER, audience: '', jwksUrl: baseURL })).toThrow();
+    const config = {
+      issuerUrl: ISSUER, audience: AUDIENCE, jwksUrl: baseURL,
+      allowedJwksOrigins: [new URL(baseURL).origin], allowLocalhostDevelopment: true,
+    };
+    const token = await sign({ connection_id: undefined, connector_id: undefined, jti: undefined });
+    await expectRejectCode(new Verifier(config).verify(token), 'token_invalid_signature');
+    await expect(new GenericVerifier(config).verify(token)).resolves.toMatchObject({ subject: 'usr_123' });
+  });
+
+  it('enforces a configured required organization', async () => {
+    const verifier = new Verifier({
+      issuerUrl: ISSUER, audience: AUDIENCE, jwksUrl: baseURL,
+      allowedJwksOrigins: [new URL(baseURL).origin], allowLocalhostDevelopment: true,
+      requiredOrganizationId: 'org_required',
+    });
+    await expectRejectCode(verifier.verify(await sign({ organization_id: 'org_other' })), 'token_invalid_signature');
+  });
+
+  it('rejects unsafe JWKS URLs and requires explicit localhost development mode', () => {
+    const base = { issuerUrl: ISSUER, audience: AUDIENCE };
+    for (const jwksUrl of ['http://keys.example/jwks', 'https://user@keys.example/jwks', 'https://keys.example/jwks#fragment']) {
+      expect(() => new Verifier({ ...base, jwksUrl, allowedJwksOrigins: ['https://keys.example'] })).toThrow();
+    }
+    expect(() => new Verifier({ ...base, jwksUrl: baseURL, allowedJwksOrigins: [new URL(baseURL).origin] })).toThrow();
+  });
+
+  it('coalesces concurrent unknown-kid refresh and negative-caches misses', async () => {
+    const before = jwksRequests;
+    const unknown = await sign({}, { kid: 'never-present' });
+    const verifier = newVerifier();
+    await Promise.all(Array.from({ length: 12 }, () => verifier.verify(unknown).catch(() => undefined)));
+    expect(jwksRequests - before).toBe(2); // initial load + one coalesced miss refresh
+    await verifier.verify(unknown).catch(() => undefined);
+    expect(jwksRequests - before).toBe(2);
+  });
+
   it('verifies a valid token and normalizes connector actor claims', async () => {
     const token = await sign({ ext: { workos_user_id: 'user_abc', email: 'u@example.com' } });
     const claims = await newVerifier().verify(token);
