@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -20,9 +21,6 @@ const (
 	maxResourceTokenTTL     = 15 * time.Minute
 )
 
-// ResourceTokenClaims is the bounded actor and authorization context carried by
-// an RFC 012 product token. Provider access and refresh credentials are never
-// included in this envelope.
 type ResourceTokenClaims struct {
 	UserID         string
 	OrganizationID string
@@ -33,49 +31,38 @@ type ResourceTokenClaims struct {
 	TrustTier      string
 }
 
-// ResourceTokenIssuer mints short-lived, audience-bound product tokens and
-// publishes the matching public key set for product resource servers.
 type ResourceTokenIssuer interface {
 	Mint(ResourceTokenClaims) (token string, expiresAt time.Time, err error)
 	JWKS() map[string]any
 }
 
-// RSAResourceTokenIssuer signs RFC 012 resource tokens with RS256.
+// RSAResourceTokenIssuer signs with one active private key while publishing a
+// verification keyring that can overlap old and new keys during staged rotation.
 type RSAResourceTokenIssuer struct {
-	privateKey *rsa.PrivateKey
-	keyID      string
-	issuer     string
-	ttl        time.Duration
+	privateKey       *rsa.PrivateKey
+	keyID            string
+	issuer           string
+	ttl              time.Duration
+	verificationKeys map[string]*rsa.PublicKey
 }
 
-// NewRSAResourceTokenIssuer parses an RSA private key in PKCS#1 or PKCS#8 PEM
-// form. The TTL is capped at 15 minutes by the RFC 012 resource-token contract.
-func NewRSAResourceTokenIssuer(privateKeyPEM []byte, keyID, issuer string, ttl time.Duration) (*RSAResourceTokenIssuer, error) {
-	keyID = strings.TrimSpace(keyID)
+// NewRSAResourceTokenIssuer validates that activeKeyID exists in the configured
+// verification keyring and that its public key matches activePrivateKeyPEM.
+// verificationKeyringJSON is a JSON object mapping kid to RSA public/private PEM.
+func NewRSAResourceTokenIssuer(activePrivateKeyPEM []byte, activeKeyID, issuer string, ttl time.Duration, verificationKeyringJSON ...[]byte) (*RSAResourceTokenIssuer, error) {
+	activeKeyID = strings.TrimSpace(activeKeyID)
 	issuer = strings.TrimRight(strings.TrimSpace(issuer), "/")
-	if keyID == "" {
-		return nil, errors.New("connector resource token key ID is required")
+	if activeKeyID == "" {
+		return nil, errors.New("connector resource token active key ID is required")
 	}
 	if issuer == "" {
 		return nil, errors.New("connector resource token issuer is required")
 	}
-	block, _ := pem.Decode(privateKeyPEM)
-	if block == nil {
-		return nil, errors.New("connector resource token private key is not valid PEM")
+	privateKey, err := parseRSAPrivateKey(activePrivateKeyPEM)
+	if err != nil {
+		return nil, err
 	}
-	var key *rsa.PrivateKey
-	if parsed, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
-		key = parsed
-	} else if parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes); err == nil {
-		var ok bool
-		key, ok = parsed.(*rsa.PrivateKey)
-		if !ok {
-			return nil, errors.New("connector resource token private key must be RSA")
-		}
-	} else {
-		return nil, errors.New("connector resource token private key must be PKCS#1 or PKCS#8 RSA")
-	}
-	if key.N.BitLen() < 2048 {
+	if privateKey.N.BitLen() < 2048 {
 		return nil, errors.New("connector resource token RSA key must be at least 2048 bits")
 	}
 	if ttl == 0 {
@@ -84,11 +71,83 @@ func NewRSAResourceTokenIssuer(privateKeyPEM []byte, keyID, issuer string, ttl t
 	if ttl <= 0 || ttl > maxResourceTokenTTL {
 		return nil, fmt.Errorf("connector resource token TTL must be between 1ns and %s", maxResourceTokenTTL)
 	}
-	return &RSAResourceTokenIssuer{privateKey: key, keyID: keyID, issuer: issuer, ttl: ttl}, nil
+
+	var configured map[string]string
+	if len(verificationKeyringJSON) == 0 {
+		configured = map[string]string{activeKeyID: string(activePrivateKeyPEM)}
+	} else if err := json.Unmarshal(verificationKeyringJSON[0], &configured); err != nil {
+		return nil, fmt.Errorf("parse connector resource token verification keyring: %w", err)
+	}
+	if len(configured) == 0 {
+		return nil, errors.New("connector resource token verification keyring is required")
+	}
+	keys := make(map[string]*rsa.PublicKey, len(configured))
+	for kid, keyPEM := range configured {
+		kid = strings.TrimSpace(kid)
+		if kid == "" {
+			return nil, errors.New("connector resource token verification key ID must not be empty")
+		}
+		publicKey, parseErr := parseRSAPublicKey([]byte(keyPEM))
+		if parseErr != nil {
+			return nil, fmt.Errorf("parse connector resource token verification key %q: %w", kid, parseErr)
+		}
+		if publicKey.N.BitLen() < 2048 {
+			return nil, fmt.Errorf("connector resource token verification key %q must be at least 2048 bits", kid)
+		}
+		keys[kid] = publicKey
+	}
+	primary, ok := keys[activeKeyID]
+	if !ok {
+		return nil, fmt.Errorf("connector resource token active key %q is not present in verification keyring", activeKeyID)
+	}
+	if primary.E != privateKey.PublicKey.E || primary.N.Cmp(privateKey.PublicKey.N) != 0 {
+		return nil, fmt.Errorf("connector resource token active key %q does not match signing private key", activeKeyID)
+	}
+	return &RSAResourceTokenIssuer{privateKey: privateKey, keyID: activeKeyID, issuer: issuer, ttl: ttl, verificationKeys: keys}, nil
 }
 
-// Mint creates one short-lived RS256 token with standard OAuth scope plus the
-// normalized connector actor fields consumed by both resource-server libraries.
+func parseRSAPrivateKey(privateKeyPEM []byte) (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode(privateKeyPEM)
+	if block == nil {
+		return nil, errors.New("connector resource token private key is not valid PEM")
+	}
+	if parsed, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
+		return parsed, nil
+	}
+	if parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes); err == nil {
+		key, ok := parsed.(*rsa.PrivateKey)
+		if !ok {
+			return nil, errors.New("connector resource token private key must be RSA")
+		}
+		return key, nil
+	}
+	return nil, errors.New("connector resource token private key must be PKCS#1 or PKCS#8 RSA")
+}
+
+func parseRSAPublicKey(keyPEM []byte) (*rsa.PublicKey, error) {
+	block, _ := pem.Decode(keyPEM)
+	if block == nil {
+		return nil, errors.New("key is not valid PEM")
+	}
+	if privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes); err == nil {
+		return &privateKey.PublicKey, nil
+	}
+	if parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes); err == nil {
+		if privateKey, ok := parsed.(*rsa.PrivateKey); ok {
+			return &privateKey.PublicKey, nil
+		}
+	}
+	if publicKey, err := x509.ParsePKCS1PublicKey(block.Bytes); err == nil {
+		return publicKey, nil
+	}
+	if parsed, err := x509.ParsePKIXPublicKey(block.Bytes); err == nil {
+		if publicKey, ok := parsed.(*rsa.PublicKey); ok {
+			return publicKey, nil
+		}
+	}
+	return nil, errors.New("key must contain an RSA public or private key")
+}
+
 func (i *RSAResourceTokenIssuer) Mint(c ResourceTokenClaims) (string, time.Time, error) {
 	if i == nil || i.privateKey == nil {
 		return "", time.Time{}, errors.New("connector resource token issuer is not configured")
@@ -100,27 +159,17 @@ func (i *RSAResourceTokenIssuer) Mint(c ResourceTokenClaims) (string, time.Time,
 	expiresAt := now.Add(i.ttl)
 	jti := uuid.NewString()
 	ext := map[string]any{
-		"user_id":        c.UserID,
-		"workos_user_id": c.UserID,
-		"connection_id":  c.ConnectionID,
-		"connector_id":   c.ConnectorID,
-		"token_id":       jti,
-		"trust_tier":     c.TrustTier,
+		"user_id": c.UserID, "workos_user_id": c.UserID, "connection_id": c.ConnectionID,
+		"connector_id": c.ConnectorID, "token_id": jti, "trust_tier": c.TrustTier,
 	}
 	if c.OrganizationID != "" {
 		ext["organization_id"] = c.OrganizationID
 		ext["workos_org_id"] = c.OrganizationID
 	}
 	claims := jwt.MapClaims{
-		"iss":   i.issuer,
-		"aud":   []string{c.Audience},
-		"sub":   c.UserID,
-		"iat":   now.Unix(),
-		"nbf":   now.Unix(),
-		"exp":   expiresAt.Unix(),
-		"jti":   jti,
-		"scope": strings.Join(c.Scopes, " "),
-		"ext":   ext,
+		"iss": i.issuer, "aud": []string{c.Audience}, "sub": c.UserID,
+		"iat": now.Unix(), "nbf": now.Unix(), "exp": expiresAt.Unix(), "jti": jti,
+		"scope": strings.Join(c.Scopes, " "), "ext": ext,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	token.Header["kid"] = i.keyID
@@ -131,20 +180,35 @@ func (i *RSAResourceTokenIssuer) Mint(c ResourceTokenClaims) (string, time.Time,
 	return signed, expiresAt, nil
 }
 
-// JWKS returns the public RS256 key only. Private key material is never exposed.
+// JWKS publishes the full overlapping verification keyring in stable kid order.
 func (i *RSAResourceTokenIssuer) JWKS() map[string]any {
-	if i == nil || i.privateKey == nil {
+	if i == nil || len(i.verificationKeys) == 0 {
 		return map[string]any{"keys": []any{}}
 	}
-	e := big.NewInt(int64(i.privateKey.PublicKey.E)).Bytes()
-	return map[string]any{"keys": []map[string]string{{
-		"kty": "RSA",
-		"use": "sig",
-		"alg": "RS256",
-		"kid": i.keyID,
-		"n":   base64.RawURLEncoding.EncodeToString(i.privateKey.N.Bytes()),
-		"e":   base64.RawURLEncoding.EncodeToString(e),
-	}}}
+	kids := make([]string, 0, len(i.verificationKeys))
+	for kid := range i.verificationKeys {
+		kids = append(kids, kid)
+	}
+	slicesSort(kids)
+	keys := make([]map[string]string, 0, len(kids))
+	for _, kid := range kids {
+		key := i.verificationKeys[kid]
+		e := big.NewInt(int64(key.E)).Bytes()
+		keys = append(keys, map[string]string{
+			"kty": "RSA", "use": "sig", "alg": "RS256", "kid": kid,
+			"n": base64.RawURLEncoding.EncodeToString(key.N.Bytes()),
+			"e": base64.RawURLEncoding.EncodeToString(e),
+		})
+	}
+	return map[string]any{"keys": keys}
+}
+
+func slicesSort(values []string) {
+	for i := 1; i < len(values); i++ {
+		for j := i; j > 0 && values[j] < values[j-1]; j-- {
+			values[j], values[j-1] = values[j-1], values[j]
+		}
+	}
 }
 
 func trustTierForScopes(registry *Registry, connector string, scopes []string) string {

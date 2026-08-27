@@ -40,6 +40,10 @@ type DB struct {
 	log         *zap.Logger
 }
 
+// SQLDB exposes the shared database/sql pool for small, security-critical
+// primitives that rely on PostgreSQL atomicity rather than tenant Ent models.
+func (d *DB) SQLDB() *sql.DB { return d.sqlDB }
+
 // Open connects, installs hooks + interceptors, and (optionally) runs
 // auto-migration. An empty DATABASE_URL falls back to a local sqlite file so
 // the service is fully functional in local development with no external DB.

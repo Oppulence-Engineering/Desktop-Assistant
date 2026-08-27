@@ -27,11 +27,35 @@ Provision separate resources and credentials for staging and production:
 
 Generate independent values with `openssl rand -hex 32`. Never place live values in Helm values files.
 
-- `rowboat-api-secrets`: existing backend keys plus `ORY_BROKER_CLIENT_SECRET`, `HOOK_HMAC_SECRET`, and `DB_ENCRYPTION_KEY`.
+- `rowboat-api-secrets`: existing backend keys plus `ORY_BROKER_CLIENT_SECRET`, `HOOK_HMAC_SECRET`, `DB_ENCRYPTION_KEY`, `BROKER_TOKEN_PRIVATE_KEY_PEM`, and `BROKER_TOKEN_KEYRING_JSON`.
 - `oauth-consent-secrets`: `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `HOOK_HMAC_SECRET`, and `COOKIE_SECRET`. `HOOK_HMAC_SECRET` must equal rowboat-api's value so consent context and append-audit hooks authenticate.
 - `hydra-secrets`: `dsn`, `secretsSystem`, and `secretsCookie`. See `charts/hydra/secrets.example.yaml`.
 
 The HMAC secret authenticates only consent context/audit bodies. Do not reuse it for cookies, database encryption, provider OAuth clients, or approval tokens. Rotate it by accepting old and new verification keys in the application release when supported, deploying verifiers first, switching the signer, waiting at least the 10-minute consent TTL, then removing the old key. If dual verification is unavailable, disable new consent during the coordinated restart.
+
+Internal hook signatures use canonical version `v1` and bind the HTTP method,
+escaped path, millisecond timestamp, base64url nonce, and SHA-256 body digest.
+The API rejects timestamps outside a five-minute window and atomically reserves
+each nonce in PostgreSQL. Run migrations before deploying this release. Every
+API replica must use the same database so replay rejection is cluster-wide.
+
+## Broker resource-token signing-key rotation
+
+`BROKER_TOKEN_KEY_ID` selects the active signing key in
+`BROKER_TOKEN_PRIVATE_KEY_PEM`. `BROKER_TOKEN_KEYRING_JSON` is a JSON object of
+all public RSA verification keys to publish, keyed by stable `kid`. Startup
+fails if the active `kid` is absent or its public key does not match the private
+key. Keep the keyring identical across replicas during each rollout.
+
+Rotate without invalidating in-flight tokens:
+
+1. Add the new public key to `BROKER_TOKEN_KEYRING_JSON`, retaining the old key.
+2. Deploy all API replicas and verify the broker JWKS contains both `kid` values.
+3. Set `BROKER_TOKEN_KEY_ID` and `BROKER_TOKEN_PRIVATE_KEY_PEM` to the new key,
+   while continuing to publish both public keys. Deploy all replicas again.
+4. Wait longer than `BROKER_TOKEN_TTL` plus verifier clock skew and cache TTL.
+5. Remove the old public key and deploy. Resource servers refetch JWKS once on
+   an unknown `kid`, so publishing the overlap before switching signers is required.
 
 ## Environment isolation
 

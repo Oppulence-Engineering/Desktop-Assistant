@@ -488,6 +488,7 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 	if strings.TrimSpace(cfg.BrokerTokenPrivateKey) != "" {
 		resourceTokenIssuer, issuerErr := connectors.NewRSAResourceTokenIssuer(
 			[]byte(cfg.BrokerTokenPrivateKey), cfg.BrokerTokenKeyID, cfg.BrokerTokenIssuer, cfg.BrokerTokenTTL,
+			[]byte(cfg.BrokerTokenKeyringJSON),
 		)
 		if issuerErr != nil {
 			return nil, fmt.Errorf("configure connector resource-token issuer: %w", issuerErr)

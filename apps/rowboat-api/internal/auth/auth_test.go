@@ -2,8 +2,6 @@ package auth_test
 
 import (
 	"context"
-	"crypto/hmac"
-	"crypto/sha256"
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
@@ -103,7 +101,8 @@ func TestResolveUserRejectsMissingWorkOSID(t *testing.T) {
 func TestRequireHookHMAC(t *testing.T) {
 	secret := "hook-secret"
 	var internalSeen bool
-	h := auth.RequireHookHMAC(secret)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	nonces := auth.NewMemoryHookNonceStore()
+	h := auth.RequireHookHMAC(secret, nonces)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		internalSeen = auth.IsInternalCaller(r.Context())
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"accepted":true}`))
@@ -111,8 +110,8 @@ func TestRequireHookHMAC(t *testing.T) {
 
 	body := `{"version":1}`
 	timestamp := strconv.FormatInt(time.Now().UnixMilli(), 10)
-	nonce := base64.RawURLEncoding.EncodeToString([]byte("request-nonce"))
-	sig := hookHMAC(t, secret, timestamp, nonce, body)
+	nonce := base64.RawURLEncoding.EncodeToString([]byte("request-nonce-16"))
+	sig := hookHMAC(t, secret, http.MethodPost, "/oauth-hooks/pre-consent", timestamp, nonce, body)
 
 	// Valid signature produces an internal request and an exact-body signed
 	// response that echoes the nonce.
@@ -132,7 +131,7 @@ func TestRequireHookHMAC(t *testing.T) {
 		t.Fatalf("response nonce = %q, want request nonce", rec.Header().Get("X-Hook-Nonce"))
 	}
 	responseTimestamp := rec.Header().Get("X-Hook-Timestamp")
-	wantResponseSignature := "sha256=" + hookHMAC(t, secret, responseTimestamp, nonce, rec.Body.String())
+	wantResponseSignature := "sha256=" + hookHMAC(t, secret, http.MethodPost, "/oauth-hooks/pre-consent", responseTimestamp, nonce, rec.Body.String())
 	if rec.Header().Get("X-Hook-Signature") != wantResponseSignature {
 		t.Fatalf("response signature = %q, want %q", rec.Header().Get("X-Hook-Signature"), wantResponseSignature)
 	}
@@ -154,6 +153,42 @@ func TestRequireHookHMAC(t *testing.T) {
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("bad sig: want 401, got %d", rec.Code)
+	}
+
+	// A valid request cannot be replayed, even against another handler path.
+	replay := httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(body))
+	replay.Header.Set("X-Hook-Timestamp", timestamp)
+	replay.Header.Set("X-Hook-Nonce", nonce)
+	replay.Header.Set("X-Hook-Signature", "sha256="+sig)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, replay)
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("replayed nonce: want 409, got %d", rec.Code)
+	}
+
+	// Canonical signatures bind method and path.
+	boundNonce := base64.RawURLEncoding.EncodeToString([]byte("bound-request-16"))
+	boundSig := hookHMAC(t, secret, http.MethodPost, "/oauth-hooks/pre-consent", timestamp, boundNonce, body)
+	bound := httptest.NewRequest(http.MethodPut, "/oauth-hooks/pre-consent", strings.NewReader(body))
+	bound.Header.Set("X-Hook-Timestamp", timestamp)
+	bound.Header.Set("X-Hook-Nonce", boundNonce)
+	bound.Header.Set("X-Hook-Signature", "sha256="+boundSig)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, bound)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("method substitution: want 401, got %d", rec.Code)
+	}
+
+	staleTimestamp := strconv.FormatInt(time.Now().Add(-6*time.Minute).UnixMilli(), 10)
+	staleNonce := base64.RawURLEncoding.EncodeToString([]byte("stale-request-16"))
+	stale := httptest.NewRequest(http.MethodPost, "/oauth-hooks/pre-consent", strings.NewReader(body))
+	stale.Header.Set("X-Hook-Timestamp", staleTimestamp)
+	stale.Header.Set("X-Hook-Nonce", staleNonce)
+	stale.Header.Set("X-Hook-Signature", "sha256="+hookHMAC(t, secret, http.MethodPost, stale.URL.EscapedPath(), staleTimestamp, staleNonce, body))
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, stale)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("stale signature: want 401, got %d", rec.Code)
 	}
 }
 
@@ -179,9 +214,7 @@ func TestRequireInternalSecret(t *testing.T) {
 	}
 }
 
-func hookHMAC(t *testing.T, secret, timestamp, nonce, body string) string {
+func hookHMAC(t *testing.T, secret, method, path, timestamp, nonce, body string) string {
 	t.Helper()
-	mac := hmac.New(sha256.New, []byte(secret))
-	_, _ = mac.Write([]byte(timestamp + "." + nonce + "." + body))
-	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	return auth.HookSignatureV1(secret, method, path, timestamp, nonce, []byte(body))
 }

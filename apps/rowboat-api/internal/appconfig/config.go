@@ -97,6 +97,7 @@ type Config struct {
 	BrokerTokenIssuer      string        // iss of broker-minted connector resource tokens
 	BrokerTokenPrivateKey  string        // RSA private key PEM used only to mint connector resource tokens
 	BrokerTokenKeyID       string        // stable JWKS kid for the active broker signing key
+	BrokerTokenKeyringJSON string        // JSON kid->RSA public PEM verification/JWKS keyring
 	BrokerTokenTTL         time.Duration // short product-token lifetime; RFC 012 caps this at 15m
 	StepUpRecentAuthWindow time.Duration // recent-auth window for RequireStepUp
 
@@ -683,6 +684,7 @@ func Load() Config {
 		BrokerTokenIssuer:      getenv("BROKER_TOKEN_ISSUER", "rowboat-broker"),
 		BrokerTokenPrivateKey:  getenvAllowEmpty("BROKER_TOKEN_PRIVATE_KEY_PEM", ""),
 		BrokerTokenKeyID:       getenv("BROKER_TOKEN_KEY_ID", "rowboat-broker-1"),
+		BrokerTokenKeyringJSON: getenvAllowEmpty("BROKER_TOKEN_KEYRING_JSON", ""),
 		BrokerTokenTTL:         getdur("BROKER_TOKEN_TTL", 5*time.Minute),
 		StepUpRecentAuthWindow: getdur("STEPUP_RECENT_AUTH_WINDOW", 15*time.Minute),
 

@@ -2,14 +2,19 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/subtle"
+	"database/sql"
 	"encoding/base64"
+	"encoding/hex"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
@@ -18,16 +23,79 @@ import (
 const (
 	maxHookBody       = 1 << 20
 	hookSignatureSkew = 5 * time.Minute
+	hookSignatureV1   = "v1"
 )
 
-// RequireHookHMAC enforces the oauth-consent signed hook contract. Requests
-// authenticate timestamp.nonce.body with base64url HMAC-SHA256. Responses are
-// buffered, signed over their exact body, and echo the request nonce.
-func RequireHookHMAC(secret string) func(http.Handler) http.Handler {
+var ErrHookNonceReplayed = errors.New("hook nonce already reserved")
+
+// HookNonceStore atomically reserves authenticated request nonces until expiry.
+// Implementations must be shared by every API replica in production.
+type HookNonceStore interface {
+	Reserve(context.Context, string, time.Time) error
+}
+
+// PostgresHookNonceStore uses the unique nonce primary key as the cross-replica
+// replay barrier. The migration creates hook_nonce_reservations.
+type PostgresHookNonceStore struct{ db *sql.DB }
+
+func NewPostgresHookNonceStore(db *sql.DB) *PostgresHookNonceStore {
+	return &PostgresHookNonceStore{db: db}
+}
+
+func (s *PostgresHookNonceStore) Reserve(ctx context.Context, nonce string, expiresAt time.Time) error {
+	if s == nil || s.db == nil {
+		return errors.New("hook nonce store is not configured")
+	}
+	var inserted bool
+	err := s.db.QueryRowContext(ctx, `
+WITH purged AS (
+  DELETE FROM hook_nonce_reservations WHERE expires_at < NOW()
+)
+INSERT INTO hook_nonce_reservations (nonce, expires_at)
+VALUES ($1, $2)
+ON CONFLICT (nonce) DO NOTHING
+RETURNING true`, nonce, expiresAt.UTC()).Scan(&inserted)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrHookNonceReplayed
+	}
+	return err
+}
+
+// MemoryHookNonceStore is intended for hermetic tests and single-process local
+// development. Production wiring always uses PostgresHookNonceStore.
+type MemoryHookNonceStore struct {
+	mu     sync.Mutex
+	nonces map[string]time.Time
+}
+
+func NewMemoryHookNonceStore() *MemoryHookNonceStore {
+	return &MemoryHookNonceStore{nonces: make(map[string]time.Time)}
+}
+
+func (s *MemoryHookNonceStore) Reserve(_ context.Context, nonce string, expiresAt time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := time.Now()
+	for value, expiry := range s.nonces {
+		if expiry.Before(now) {
+			delete(s.nonces, value)
+		}
+	}
+	if expiry, exists := s.nonces[nonce]; exists && !expiry.Before(now) {
+		return ErrHookNonceReplayed
+	}
+	s.nonces[nonce] = expiresAt
+	return nil
+}
+
+// RequireHookHMAC enforces the oauth-consent signed hook contract. Version 1
+// binds method, escaped path, timestamp, nonce, and the SHA-256 body digest.
+// Authenticated nonces are atomically reserved before the handler is invoked.
+func RequireHookHMAC(secret string, nonceStore HookNonceStore) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if secret == "" {
-				httpx.Error(w, http.StatusInternalServerError, "hook secret not configured", "internal_error")
+			if secret == "" || nonceStore == nil {
+				httpx.Error(w, http.StatusInternalServerError, "hook authentication not configured", "internal_error")
 				return
 			}
 			body, ok := httpx.ReadBody(w, r, maxHookBody)
@@ -43,15 +111,23 @@ func RequireHookHMAC(secret string) func(http.Handler) http.Handler {
 			decodedNonce, nonceErr := base64.RawURLEncoding.DecodeString(nonce)
 			if len(r.Header.Values("X-Hook-Timestamp")) != 1 || len(r.Header.Values("X-Hook-Nonce")) != 1 ||
 				len(r.Header.Values("X-Hook-Signature")) != 1 || err != nil || timestamp == "" || timestamp != strings.TrimSpace(timestamp) ||
-				nonce == "" || nonce != strings.TrimSpace(nonce) || nonceErr != nil || len(decodedNonce) == 0 || len(decodedNonce) > 64 ||
+				nonce == "" || nonce != strings.TrimSpace(nonce) || nonceErr != nil || len(decodedNonce) < 16 || len(decodedNonce) > 64 ||
 				time.Since(time.UnixMilli(millis)).Abs() > hookSignatureSkew || !strings.HasPrefix(supplied, "sha256=") {
 				httpx.Error(w, http.StatusUnauthorized, "invalid hook signature headers", "unauthorized")
 				return
 			}
 			got := strings.TrimPrefix(supplied, "sha256=")
-			expected := hookSignature(secret, timestamp, nonce, body)
+			expected := HookSignatureV1(secret, r.Method, r.URL.EscapedPath(), timestamp, nonce, body)
 			if got == "" || !hmac.Equal([]byte(got), []byte(expected)) {
 				httpx.Error(w, http.StatusUnauthorized, "invalid hook signature", "unauthorized")
+				return
+			}
+			if err := nonceStore.Reserve(r.Context(), nonce, time.UnixMilli(millis).Add(hookSignatureSkew)); err != nil {
+				if errors.Is(err, ErrHookNonceReplayed) {
+					httpx.Error(w, http.StatusConflict, "hook nonce already used", "replay_detected")
+				} else {
+					httpx.Error(w, http.StatusServiceUnavailable, "hook replay protection unavailable", "unavailable")
+				}
 				return
 			}
 
@@ -68,20 +144,27 @@ func RequireHookHMAC(secret string) func(http.Handler) http.Handler {
 			responseTimestamp := strconv.FormatInt(time.Now().UnixMilli(), 10)
 			w.Header().Set("X-Hook-Timestamp", responseTimestamp)
 			w.Header().Set("X-Hook-Nonce", nonce)
-			w.Header().Set("X-Hook-Signature", "sha256="+hookSignature(secret, responseTimestamp, nonce, buffered.body.Bytes()))
+			w.Header().Set("X-Hook-Signature", "sha256="+HookSignatureV1(secret, r.Method, r.URL.EscapedPath(), responseTimestamp, nonce, buffered.body.Bytes()))
 			w.WriteHeader(buffered.status)
 			_, _ = w.Write(buffered.body.Bytes())
 		})
 	}
 }
 
-func hookSignature(secret, timestamp, nonce string, body []byte) string {
+// HookSignatureV1 returns the base64url HMAC for the canonical, versioned hook
+// message. Newline delimiters and a fixed-width body digest avoid ambiguity.
+func HookSignatureV1(secret, method, path, timestamp, nonce string, body []byte) string {
+	digest := sha256.Sum256(body)
+	canonical := strings.Join([]string{
+		hookSignatureV1,
+		strings.ToUpper(method),
+		path,
+		timestamp,
+		nonce,
+		hex.EncodeToString(digest[:]),
+	}, "\n")
 	mac := hmac.New(sha256.New, []byte(secret))
-	_, _ = mac.Write([]byte(timestamp))
-	_, _ = mac.Write([]byte("."))
-	_, _ = mac.Write([]byte(nonce))
-	_, _ = mac.Write([]byte("."))
-	_, _ = mac.Write(body)
+	_, _ = mac.Write([]byte(canonical))
 	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 }
 
@@ -108,8 +191,7 @@ func (w *hookResponseWriter) Write(body []byte) (int, error) {
 }
 
 // RequireInternalSecret guards server-to-server endpoints (/v1/internal/*) with
-// a static shared secret in X-Internal-Secret, compared in constant time. Marks
-// the request as an internal caller. Fails closed if the secret is unset.
+// a static shared secret in X-Internal-Secret, compared in constant time.
 func RequireInternalSecret(secret string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -123,7 +205,7 @@ func RequireInternalSecret(secret string) func(http.Handler) http.Handler {
 				return
 			}
 			ctx := WithInternal(r.Context())
-			ctx = WithActor(ctx, &Actor{Kind: KindInternal, ServiceName: "internal"})
+			ctx = WithActor(ctx, &Actor{Kind: KindInternal, ServiceName: "internal-api"})
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

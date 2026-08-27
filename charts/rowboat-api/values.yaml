@@ -207,6 +207,8 @@ config:
   ORY_PUBLIC_URL: https://oauth.solomon-ai.co
   PUBLIC_BASE_URL: https://api.x.solomon-ai.co
   BROKER_TOKEN_ISSUER: https://api.x.solomon-ai.co
+  # Active signing kid. It must exist in BROKER_TOKEN_KEYRING_JSON and match
+  # BROKER_TOKEN_PRIVATE_KEY_PEM or every replica fails startup.
   BROKER_TOKEN_KEY_ID: rowboat-broker-1
   BROKER_TOKEN_TTL: 5m
   GOOGLE_REDIRECT_URI: https://api.x.solomon-ai.co/oauth/google/callback
@@ -361,6 +363,7 @@ secretValues: {}
   # DB_ENCRYPTION_PRIMARY_KEY_ID: "legacy-db-encryption-key"
   # DB_ENCRYPTION_KEYRING_JSON: '{"legacy-db-encryption-key":"...","2026-08":"..."}'
   # BROKER_TOKEN_PRIVATE_KEY_PEM: "-----BEGIN RSA PRIVATE KEY-----\n..."
+  # BROKER_TOKEN_KEYRING_JSON: '{"rowboat-broker-1":"-----BEGIN PUBLIC KEY-----\n..."}'
   # WORKOS_API_KEY: ""
   # HOOK_HMAC_SECRET: ""
   # INTERNAL_API_SECRET: ""

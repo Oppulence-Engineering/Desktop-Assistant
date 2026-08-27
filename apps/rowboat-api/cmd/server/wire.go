@@ -336,6 +336,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			cfg.BrokerTokenKeyID,
 			cfg.BrokerTokenIssuer,
 			cfg.BrokerTokenTTL,
+			[]byte(cfg.BrokerTokenKeyringJSON),
 		)
 		if issuerErr != nil {
 			return fmt.Errorf("configure connector resource-token issuer: %w", issuerErr)
@@ -346,6 +347,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}
 	connectorsH.SetOutboundPolicy(vendorPolicy)
 	connectorsH.SetRefreshDedup(refreshCache, sealer)
+	go connectorsH.RunRevocationWorker(ctx)
 	hubspotClient := hubspotapi.New(client, sealer, vendorPolicy)
 	hubspotH := hubspotapi.NewHandler(hubspotClient)
 
@@ -643,12 +645,17 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			Post("/v1/agent-channels/slack/interactivity", agentChannelsH.SlackInteractivity)
 	}
 
-	// Ory pre-consent webhook (shared-secret HMAC, not a user bearer).
-	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret)).
+	// Ory pre-consent webhook (shared-secret HMAC, not a user bearer). PostgreSQL
+	// provides one replay reservation namespace shared by every API replica.
+	var hookNonces auth.HookNonceStore = auth.NewMemoryHookNonceStore()
+	if database.Dialect == "postgres" {
+		hookNonces = auth.NewPostgresHookNonceStore(database.SQLDB())
+	}
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret, hookNonces)).
 		Post("/oauth-hooks/pre-consent", connectorsH.PreConsent)
-	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret)).
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret, hookNonces)).
 		Post("/oauth-hooks/consent-context", connectorsH.ConsentContext)
-	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret)).
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret, hookNonces)).
 		Post("/oauth-hooks/consent-audit", connectorsH.AppendConsentAudit)
 
 	// Server-to-server internal API (static shared secret).

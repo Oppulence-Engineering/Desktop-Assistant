@@ -1,4 +1,4 @@
-h1:+iKrCqE99qcYWMH0weXrdKpOcp32qLtOQqjFfI9P+y0=
+h1:2avh971SYQfnT+3o7yWQiG/FRVvNA71Wl7NxnNgqkoU=
 20260821000000_baseline.sql h1:ZTvCxMIes/Jroxm9juxg6wPrT5n6uaFh7AqXnStxjAo=
 20260821010000_ent_hardening.sql h1:ovo6NSYCx4KpCbDWpMw4L/k7TPjiOm6CbVgvQJaFX2w=
 20260821020000_identifier_normalization.sql h1:1xx4DAQ5Bzb/PjveAqpp7YKM3Zq5Ihs49nQCrbC+NaM=
@@ -6,3 +6,4 @@ h1:+iKrCqE99qcYWMH0weXrdKpOcp32qLtOQqjFfI9P+y0=
 20260826090000_relationship_assertion_authority.sql h1:WWC1fz3GZJnqUAoLGHnqCRwj3pY/dYi3VVrBGDhnTuU=
 20260827130000_entity_spine.sql h1:kJ6iP4hiKDkaN8f67APdLzdkbzahbKr5akpa11ceDws=
 20260827160000_connector_broker_hardening.sql h1:1vjEH5s3TKWIxH0YjuRYL8zsqAcWpEIQao1QgExvs1E=
+20260827210000_hook_nonce_reservations.sql h1:ASvUsS82ldJRH3E/KH/PVk6FkQjzbPtAIFd7n+c+vjQ=
