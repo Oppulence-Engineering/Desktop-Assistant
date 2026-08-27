@@ -567,12 +567,14 @@ func addConnectorSchemas(schemas obj) {
 			"Onboarding capability blocks shown when a user browses or connects this integration.",
 			ref("IntegrationTemplateBlock"),
 		),
-		"iconUrl":     stringSchema("Optional icon URL for UI display.", "https://example.com/icon.png", nullable()),
-		"connected":   boolSchema("Whether the authenticated user has an active connection.", true),
-		"connectedAt": stringSchema("RFC3339 connection timestamp when connected.", "2026-06-04T20:38:00Z", nullable()),
-		"lastUsedAt":  stringSchema("RFC3339 timestamp of the last credential use.", "2026-06-04T20:45:00Z", nullable()),
-		"revokedAt":   stringSchema("RFC3339 revocation tombstone timestamp.", "2026-06-04T20:50:00Z", nullable()),
-	}, "name", "displayName", "description", "mcpUrl", "authType", "audience", "status", "health", "connected")
+		"iconUrl":          stringSchema("Optional icon URL for UI display.", "https://example.com/icon.png", nullable()),
+		"connected":        boolSchema("Whether the authenticated user has an active connection.", true),
+		"connectedAt":      stringSchema("RFC3339 connection timestamp when connected.", "2026-06-04T20:38:00Z", nullable()),
+		"lastUsedAt":       stringSchema("RFC3339 timestamp of the last credential use.", "2026-06-04T20:45:00Z", nullable()),
+		"revokedAt":        stringSchema("RFC3339 revocation tombstone timestamp.", "2026-06-04T20:50:00Z", nullable()),
+		"connectionHealth": stringEnum("Effective per-user connection health.", "healthy", "healthy", "degraded", "disabled", "disconnected"),
+		"connectionReason": stringSchema("Machine-readable reason for degraded, disabled, or disconnected health.", "reauth_required", nullable()),
+	}, "name", "displayName", "description", "mcpUrl", "authType", "audience", "status", "health", "connected", "connectionHealth")
 	schemas["ConnectorScope"] = objectSchema("Canonical connector scope consent and risk policy.", obj{
 		"name":                  stringSchema("Namespaced scope name.", "canvas:invoices.read"),
 		"displayName":           stringSchema("Consent UI title.", "Read invoices"),

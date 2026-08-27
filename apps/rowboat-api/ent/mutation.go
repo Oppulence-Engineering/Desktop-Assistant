@@ -33,6 +33,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -123,6 +124,7 @@ const (
 	TypeCommitmentDependency              = "CommitmentDependency"
 	TypeCommitmentEvent                   = "CommitmentEvent"
 	TypeConnectorAuditEvent               = "ConnectorAuditEvent"
+	TypeConnectorRevocationJob            = "ConnectorRevocationJob"
 	TypeConversationIntelligenceArtifact  = "ConversationIntelligenceArtifact"
 	TypeCreditLedger                      = "CreditLedger"
 	TypeEntity                            = "Entity"
@@ -31590,6 +31592,955 @@ func (m *ConnectorAuditEventMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown ConnectorAuditEvent edge %s", name)
+}
+
+// ConnectorRevocationJobMutation represents an operation that mutates the ConnectorRevocationJob nodes in the graph.
+type ConnectorRevocationJobMutation struct {
+	config
+	op                      Op
+	typ                     string
+	id                      *uuid.UUID
+	created_at              *time.Time
+	updated_at              *time.Time
+	connection_id           *uuid.UUID
+	owner_id                *uuid.UUID
+	connector               *string
+	refresh_token_encrypted *[]byte
+	status                  *string
+	attempts                *int
+	addattempts             *int
+	next_attempt_at         *time.Time
+	last_error              *string
+	completed_at            *time.Time
+	clearedFields           map[string]struct{}
+	done                    bool
+	oldValue                func(context.Context) (*ConnectorRevocationJob, error)
+	predicates              []predicate.ConnectorRevocationJob
+}
+
+var _ ent.Mutation = (*ConnectorRevocationJobMutation)(nil)
+
+// connectorrevocationjobOption allows management of the mutation configuration using functional options.
+type connectorrevocationjobOption func(*ConnectorRevocationJobMutation)
+
+// newConnectorRevocationJobMutation creates new mutation for the ConnectorRevocationJob entity.
+func newConnectorRevocationJobMutation(c config, op Op, opts ...connectorrevocationjobOption) *ConnectorRevocationJobMutation {
+	m := &ConnectorRevocationJobMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeConnectorRevocationJob,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withConnectorRevocationJobID sets the ID field of the mutation.
+func withConnectorRevocationJobID(id uuid.UUID) connectorrevocationjobOption {
+	return func(m *ConnectorRevocationJobMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ConnectorRevocationJob
+		)
+		m.oldValue = func(ctx context.Context) (*ConnectorRevocationJob, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ConnectorRevocationJob.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withConnectorRevocationJob sets the old ConnectorRevocationJob of the mutation.
+func withConnectorRevocationJob(node *ConnectorRevocationJob) connectorrevocationjobOption {
+	return func(m *ConnectorRevocationJobMutation) {
+		m.oldValue = func(context.Context) (*ConnectorRevocationJob, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ConnectorRevocationJobMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ConnectorRevocationJobMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ConnectorRevocationJob entities.
+func (m *ConnectorRevocationJobMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ConnectorRevocationJobMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ConnectorRevocationJobMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ConnectorRevocationJob.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ConnectorRevocationJobMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ConnectorRevocationJobMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ConnectorRevocationJob entity.
+// If the ConnectorRevocationJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorRevocationJobMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ConnectorRevocationJobMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ConnectorRevocationJobMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ConnectorRevocationJobMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ConnectorRevocationJob entity.
+// If the ConnectorRevocationJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorRevocationJobMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ConnectorRevocationJobMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetConnectionID sets the "connection_id" field.
+func (m *ConnectorRevocationJobMutation) SetConnectionID(u uuid.UUID) {
+	m.connection_id = &u
+}
+
+// ConnectionID returns the value of the "connection_id" field in the mutation.
+func (m *ConnectorRevocationJobMutation) ConnectionID() (r uuid.UUID, exists bool) {
+	v := m.connection_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConnectionID returns the old "connection_id" field's value of the ConnectorRevocationJob entity.
+// If the ConnectorRevocationJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorRevocationJobMutation) OldConnectionID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConnectionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConnectionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConnectionID: %w", err)
+	}
+	return oldValue.ConnectionID, nil
+}
+
+// ResetConnectionID resets all changes to the "connection_id" field.
+func (m *ConnectorRevocationJobMutation) ResetConnectionID() {
+	m.connection_id = nil
+}
+
+// SetOwnerID sets the "owner_id" field.
+func (m *ConnectorRevocationJobMutation) SetOwnerID(u uuid.UUID) {
+	m.owner_id = &u
+}
+
+// OwnerID returns the value of the "owner_id" field in the mutation.
+func (m *ConnectorRevocationJobMutation) OwnerID() (r uuid.UUID, exists bool) {
+	v := m.owner_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOwnerID returns the old "owner_id" field's value of the ConnectorRevocationJob entity.
+// If the ConnectorRevocationJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorRevocationJobMutation) OldOwnerID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOwnerID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOwnerID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOwnerID: %w", err)
+	}
+	return oldValue.OwnerID, nil
+}
+
+// ResetOwnerID resets all changes to the "owner_id" field.
+func (m *ConnectorRevocationJobMutation) ResetOwnerID() {
+	m.owner_id = nil
+}
+
+// SetConnector sets the "connector" field.
+func (m *ConnectorRevocationJobMutation) SetConnector(s string) {
+	m.connector = &s
+}
+
+// Connector returns the value of the "connector" field in the mutation.
+func (m *ConnectorRevocationJobMutation) Connector() (r string, exists bool) {
+	v := m.connector
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConnector returns the old "connector" field's value of the ConnectorRevocationJob entity.
+// If the ConnectorRevocationJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorRevocationJobMutation) OldConnector(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConnector is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConnector requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConnector: %w", err)
+	}
+	return oldValue.Connector, nil
+}
+
+// ResetConnector resets all changes to the "connector" field.
+func (m *ConnectorRevocationJobMutation) ResetConnector() {
+	m.connector = nil
+}
+
+// SetRefreshTokenEncrypted sets the "refresh_token_encrypted" field.
+func (m *ConnectorRevocationJobMutation) SetRefreshTokenEncrypted(b []byte) {
+	m.refresh_token_encrypted = &b
+}
+
+// RefreshTokenEncrypted returns the value of the "refresh_token_encrypted" field in the mutation.
+func (m *ConnectorRevocationJobMutation) RefreshTokenEncrypted() (r []byte, exists bool) {
+	v := m.refresh_token_encrypted
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRefreshTokenEncrypted returns the old "refresh_token_encrypted" field's value of the ConnectorRevocationJob entity.
+// If the ConnectorRevocationJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorRevocationJobMutation) OldRefreshTokenEncrypted(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRefreshTokenEncrypted is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRefreshTokenEncrypted requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRefreshTokenEncrypted: %w", err)
+	}
+	return oldValue.RefreshTokenEncrypted, nil
+}
+
+// ResetRefreshTokenEncrypted resets all changes to the "refresh_token_encrypted" field.
+func (m *ConnectorRevocationJobMutation) ResetRefreshTokenEncrypted() {
+	m.refresh_token_encrypted = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *ConnectorRevocationJobMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *ConnectorRevocationJobMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the ConnectorRevocationJob entity.
+// If the ConnectorRevocationJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorRevocationJobMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *ConnectorRevocationJobMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetAttempts sets the "attempts" field.
+func (m *ConnectorRevocationJobMutation) SetAttempts(i int) {
+	m.attempts = &i
+	m.addattempts = nil
+}
+
+// Attempts returns the value of the "attempts" field in the mutation.
+func (m *ConnectorRevocationJobMutation) Attempts() (r int, exists bool) {
+	v := m.attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAttempts returns the old "attempts" field's value of the ConnectorRevocationJob entity.
+// If the ConnectorRevocationJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorRevocationJobMutation) OldAttempts(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAttempts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAttempts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAttempts: %w", err)
+	}
+	return oldValue.Attempts, nil
+}
+
+// AddAttempts adds i to the "attempts" field.
+func (m *ConnectorRevocationJobMutation) AddAttempts(i int) {
+	if m.addattempts != nil {
+		*m.addattempts += i
+	} else {
+		m.addattempts = &i
+	}
+}
+
+// AddedAttempts returns the value that was added to the "attempts" field in this mutation.
+func (m *ConnectorRevocationJobMutation) AddedAttempts() (r int, exists bool) {
+	v := m.addattempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAttempts resets all changes to the "attempts" field.
+func (m *ConnectorRevocationJobMutation) ResetAttempts() {
+	m.attempts = nil
+	m.addattempts = nil
+}
+
+// SetNextAttemptAt sets the "next_attempt_at" field.
+func (m *ConnectorRevocationJobMutation) SetNextAttemptAt(t time.Time) {
+	m.next_attempt_at = &t
+}
+
+// NextAttemptAt returns the value of the "next_attempt_at" field in the mutation.
+func (m *ConnectorRevocationJobMutation) NextAttemptAt() (r time.Time, exists bool) {
+	v := m.next_attempt_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNextAttemptAt returns the old "next_attempt_at" field's value of the ConnectorRevocationJob entity.
+// If the ConnectorRevocationJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorRevocationJobMutation) OldNextAttemptAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNextAttemptAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNextAttemptAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNextAttemptAt: %w", err)
+	}
+	return oldValue.NextAttemptAt, nil
+}
+
+// ResetNextAttemptAt resets all changes to the "next_attempt_at" field.
+func (m *ConnectorRevocationJobMutation) ResetNextAttemptAt() {
+	m.next_attempt_at = nil
+}
+
+// SetLastError sets the "last_error" field.
+func (m *ConnectorRevocationJobMutation) SetLastError(s string) {
+	m.last_error = &s
+}
+
+// LastError returns the value of the "last_error" field in the mutation.
+func (m *ConnectorRevocationJobMutation) LastError() (r string, exists bool) {
+	v := m.last_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastError returns the old "last_error" field's value of the ConnectorRevocationJob entity.
+// If the ConnectorRevocationJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorRevocationJobMutation) OldLastError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastError: %w", err)
+	}
+	return oldValue.LastError, nil
+}
+
+// ClearLastError clears the value of the "last_error" field.
+func (m *ConnectorRevocationJobMutation) ClearLastError() {
+	m.last_error = nil
+	m.clearedFields[connectorrevocationjob.FieldLastError] = struct{}{}
+}
+
+// LastErrorCleared returns if the "last_error" field was cleared in this mutation.
+func (m *ConnectorRevocationJobMutation) LastErrorCleared() bool {
+	_, ok := m.clearedFields[connectorrevocationjob.FieldLastError]
+	return ok
+}
+
+// ResetLastError resets all changes to the "last_error" field.
+func (m *ConnectorRevocationJobMutation) ResetLastError() {
+	m.last_error = nil
+	delete(m.clearedFields, connectorrevocationjob.FieldLastError)
+}
+
+// SetCompletedAt sets the "completed_at" field.
+func (m *ConnectorRevocationJobMutation) SetCompletedAt(t time.Time) {
+	m.completed_at = &t
+}
+
+// CompletedAt returns the value of the "completed_at" field in the mutation.
+func (m *ConnectorRevocationJobMutation) CompletedAt() (r time.Time, exists bool) {
+	v := m.completed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompletedAt returns the old "completed_at" field's value of the ConnectorRevocationJob entity.
+// If the ConnectorRevocationJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorRevocationJobMutation) OldCompletedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompletedAt: %w", err)
+	}
+	return oldValue.CompletedAt, nil
+}
+
+// ClearCompletedAt clears the value of the "completed_at" field.
+func (m *ConnectorRevocationJobMutation) ClearCompletedAt() {
+	m.completed_at = nil
+	m.clearedFields[connectorrevocationjob.FieldCompletedAt] = struct{}{}
+}
+
+// CompletedAtCleared returns if the "completed_at" field was cleared in this mutation.
+func (m *ConnectorRevocationJobMutation) CompletedAtCleared() bool {
+	_, ok := m.clearedFields[connectorrevocationjob.FieldCompletedAt]
+	return ok
+}
+
+// ResetCompletedAt resets all changes to the "completed_at" field.
+func (m *ConnectorRevocationJobMutation) ResetCompletedAt() {
+	m.completed_at = nil
+	delete(m.clearedFields, connectorrevocationjob.FieldCompletedAt)
+}
+
+// Where appends a list predicates to the ConnectorRevocationJobMutation builder.
+func (m *ConnectorRevocationJobMutation) Where(ps ...predicate.ConnectorRevocationJob) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ConnectorRevocationJobMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ConnectorRevocationJobMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ConnectorRevocationJob, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ConnectorRevocationJobMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ConnectorRevocationJobMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ConnectorRevocationJob).
+func (m *ConnectorRevocationJobMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ConnectorRevocationJobMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.created_at != nil {
+		fields = append(fields, connectorrevocationjob.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, connectorrevocationjob.FieldUpdatedAt)
+	}
+	if m.connection_id != nil {
+		fields = append(fields, connectorrevocationjob.FieldConnectionID)
+	}
+	if m.owner_id != nil {
+		fields = append(fields, connectorrevocationjob.FieldOwnerID)
+	}
+	if m.connector != nil {
+		fields = append(fields, connectorrevocationjob.FieldConnector)
+	}
+	if m.refresh_token_encrypted != nil {
+		fields = append(fields, connectorrevocationjob.FieldRefreshTokenEncrypted)
+	}
+	if m.status != nil {
+		fields = append(fields, connectorrevocationjob.FieldStatus)
+	}
+	if m.attempts != nil {
+		fields = append(fields, connectorrevocationjob.FieldAttempts)
+	}
+	if m.next_attempt_at != nil {
+		fields = append(fields, connectorrevocationjob.FieldNextAttemptAt)
+	}
+	if m.last_error != nil {
+		fields = append(fields, connectorrevocationjob.FieldLastError)
+	}
+	if m.completed_at != nil {
+		fields = append(fields, connectorrevocationjob.FieldCompletedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ConnectorRevocationJobMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case connectorrevocationjob.FieldCreatedAt:
+		return m.CreatedAt()
+	case connectorrevocationjob.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case connectorrevocationjob.FieldConnectionID:
+		return m.ConnectionID()
+	case connectorrevocationjob.FieldOwnerID:
+		return m.OwnerID()
+	case connectorrevocationjob.FieldConnector:
+		return m.Connector()
+	case connectorrevocationjob.FieldRefreshTokenEncrypted:
+		return m.RefreshTokenEncrypted()
+	case connectorrevocationjob.FieldStatus:
+		return m.Status()
+	case connectorrevocationjob.FieldAttempts:
+		return m.Attempts()
+	case connectorrevocationjob.FieldNextAttemptAt:
+		return m.NextAttemptAt()
+	case connectorrevocationjob.FieldLastError:
+		return m.LastError()
+	case connectorrevocationjob.FieldCompletedAt:
+		return m.CompletedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ConnectorRevocationJobMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case connectorrevocationjob.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case connectorrevocationjob.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case connectorrevocationjob.FieldConnectionID:
+		return m.OldConnectionID(ctx)
+	case connectorrevocationjob.FieldOwnerID:
+		return m.OldOwnerID(ctx)
+	case connectorrevocationjob.FieldConnector:
+		return m.OldConnector(ctx)
+	case connectorrevocationjob.FieldRefreshTokenEncrypted:
+		return m.OldRefreshTokenEncrypted(ctx)
+	case connectorrevocationjob.FieldStatus:
+		return m.OldStatus(ctx)
+	case connectorrevocationjob.FieldAttempts:
+		return m.OldAttempts(ctx)
+	case connectorrevocationjob.FieldNextAttemptAt:
+		return m.OldNextAttemptAt(ctx)
+	case connectorrevocationjob.FieldLastError:
+		return m.OldLastError(ctx)
+	case connectorrevocationjob.FieldCompletedAt:
+		return m.OldCompletedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown ConnectorRevocationJob field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConnectorRevocationJobMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case connectorrevocationjob.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case connectorrevocationjob.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case connectorrevocationjob.FieldConnectionID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConnectionID(v)
+		return nil
+	case connectorrevocationjob.FieldOwnerID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOwnerID(v)
+		return nil
+	case connectorrevocationjob.FieldConnector:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConnector(v)
+		return nil
+	case connectorrevocationjob.FieldRefreshTokenEncrypted:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRefreshTokenEncrypted(v)
+		return nil
+	case connectorrevocationjob.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case connectorrevocationjob.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAttempts(v)
+		return nil
+	case connectorrevocationjob.FieldNextAttemptAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNextAttemptAt(v)
+		return nil
+	case connectorrevocationjob.FieldLastError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastError(v)
+		return nil
+	case connectorrevocationjob.FieldCompletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompletedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ConnectorRevocationJob field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ConnectorRevocationJobMutation) AddedFields() []string {
+	var fields []string
+	if m.addattempts != nil {
+		fields = append(fields, connectorrevocationjob.FieldAttempts)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ConnectorRevocationJobMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case connectorrevocationjob.FieldAttempts:
+		return m.AddedAttempts()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConnectorRevocationJobMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case connectorrevocationjob.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAttempts(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ConnectorRevocationJob numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ConnectorRevocationJobMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(connectorrevocationjob.FieldLastError) {
+		fields = append(fields, connectorrevocationjob.FieldLastError)
+	}
+	if m.FieldCleared(connectorrevocationjob.FieldCompletedAt) {
+		fields = append(fields, connectorrevocationjob.FieldCompletedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ConnectorRevocationJobMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ConnectorRevocationJobMutation) ClearField(name string) error {
+	switch name {
+	case connectorrevocationjob.FieldLastError:
+		m.ClearLastError()
+		return nil
+	case connectorrevocationjob.FieldCompletedAt:
+		m.ClearCompletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ConnectorRevocationJob nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ConnectorRevocationJobMutation) ResetField(name string) error {
+	switch name {
+	case connectorrevocationjob.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case connectorrevocationjob.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case connectorrevocationjob.FieldConnectionID:
+		m.ResetConnectionID()
+		return nil
+	case connectorrevocationjob.FieldOwnerID:
+		m.ResetOwnerID()
+		return nil
+	case connectorrevocationjob.FieldConnector:
+		m.ResetConnector()
+		return nil
+	case connectorrevocationjob.FieldRefreshTokenEncrypted:
+		m.ResetRefreshTokenEncrypted()
+		return nil
+	case connectorrevocationjob.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case connectorrevocationjob.FieldAttempts:
+		m.ResetAttempts()
+		return nil
+	case connectorrevocationjob.FieldNextAttemptAt:
+		m.ResetNextAttemptAt()
+		return nil
+	case connectorrevocationjob.FieldLastError:
+		m.ResetLastError()
+		return nil
+	case connectorrevocationjob.FieldCompletedAt:
+		m.ResetCompletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ConnectorRevocationJob field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ConnectorRevocationJobMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ConnectorRevocationJobMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ConnectorRevocationJobMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ConnectorRevocationJobMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ConnectorRevocationJobMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ConnectorRevocationJobMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ConnectorRevocationJobMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown ConnectorRevocationJob unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ConnectorRevocationJobMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown ConnectorRevocationJob edge %s", name)
 }
 
 // ConversationIntelligenceArtifactMutation represents an operation that mutates the ConversationIntelligenceArtifact nodes in the graph.

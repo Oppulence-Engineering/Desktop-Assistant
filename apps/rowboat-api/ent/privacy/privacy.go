@@ -639,6 +639,30 @@ func (f ConnectorAuditEventMutationRuleFunc) EvalMutation(ctx context.Context, m
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ConnectorAuditEventMutation", m)
 }
 
+// The ConnectorRevocationJobQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ConnectorRevocationJobQueryRuleFunc func(context.Context, *ent.ConnectorRevocationJobQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ConnectorRevocationJobQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConnectorRevocationJobQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ConnectorRevocationJobQuery", q)
+}
+
+// The ConnectorRevocationJobMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ConnectorRevocationJobMutationRuleFunc func(context.Context, *ent.ConnectorRevocationJobMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ConnectorRevocationJobMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ConnectorRevocationJobMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ConnectorRevocationJobMutation", m)
+}
+
 // The ConversationIntelligenceArtifactQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type ConversationIntelligenceArtifactQueryRuleFunc func(context.Context, *ent.ConversationIntelligenceArtifactQuery) error
@@ -2014,6 +2038,8 @@ func queryFilter(q ent.Query) (Filter, error) {
 		return q.Filter(), nil
 	case *ent.ConnectorAuditEventQuery:
 		return q.Filter(), nil
+	case *ent.ConnectorRevocationJobQuery:
+		return q.Filter(), nil
 	case *ent.ConversationIntelligenceArtifactQuery:
 		return q.Filter(), nil
 	case *ent.CreditLedgerQuery:
@@ -2172,6 +2198,8 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 	case *ent.CommitmentEventMutation:
 		return m.Filter(), nil
 	case *ent.ConnectorAuditEventMutation:
+		return m.Filter(), nil
+	case *ent.ConnectorRevocationJobMutation:
 		return m.Filter(), nil
 	case *ent.ConversationIntelligenceArtifactMutation:
 		return m.Filter(), nil

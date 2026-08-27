@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -108,25 +109,27 @@ type connectPending struct {
 }
 
 type connectorView struct {
-	Name            string                     `json:"name"`
-	DisplayName     string                     `json:"displayName"`
-	Description     string                     `json:"description"`
-	MCPURL          string                     `json:"mcpUrl"`
-	Transport       string                     `json:"transport,omitempty"`
-	AuthType        string                     `json:"authType"`
-	Audience        string                     `json:"audience"`
-	Status          string                     `json:"status"`
-	Health          string                     `json:"health"`
-	AvailableScopes []ScopeDefinition          `json:"availableScopes,omitempty"`
-	GrantedScopes   []ScopeDefinition          `json:"grantedScopes,omitempty"`
-	IconURL         string                     `json:"iconUrl,omitempty"`
-	MCPTools        []MCPToolPolicy            `json:"mcpTools,omitempty"`
-	NativeTools     []MCPToolPolicy            `json:"nativeTools,omitempty"`
-	TemplateBlocks  []IntegrationTemplateBlock `json:"templateBlocks,omitempty"`
-	Connected       bool                       `json:"connected"`
-	ConnectedAt     string                     `json:"connectedAt,omitempty"`
-	LastUsedAt      string                     `json:"lastUsedAt,omitempty"`
-	RevokedAt       string                     `json:"revokedAt,omitempty"`
+	Name             string                     `json:"name"`
+	DisplayName      string                     `json:"displayName"`
+	Description      string                     `json:"description"`
+	MCPURL           string                     `json:"mcpUrl"`
+	Transport        string                     `json:"transport,omitempty"`
+	AuthType         string                     `json:"authType"`
+	Audience         string                     `json:"audience"`
+	Status           string                     `json:"status"`
+	Health           string                     `json:"health"`
+	AvailableScopes  []ScopeDefinition          `json:"availableScopes,omitempty"`
+	GrantedScopes    []ScopeDefinition          `json:"grantedScopes,omitempty"`
+	IconURL          string                     `json:"iconUrl,omitempty"`
+	MCPTools         []MCPToolPolicy            `json:"mcpTools,omitempty"`
+	NativeTools      []MCPToolPolicy            `json:"nativeTools,omitempty"`
+	TemplateBlocks   []IntegrationTemplateBlock `json:"templateBlocks,omitempty"`
+	Connected        bool                       `json:"connected"`
+	ConnectedAt      string                     `json:"connectedAt,omitempty"`
+	LastUsedAt       string                     `json:"lastUsedAt,omitempty"`
+	RevokedAt        string                     `json:"revokedAt,omitempty"`
+	ConnectionHealth string                     `json:"connectionHealth"`
+	ConnectionReason string                     `json:"connectionReason,omitempty"`
 }
 
 // List handles GET /v1/connectors.
@@ -166,10 +169,36 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			if !mc.RevokedAt.IsZero() {
 				v.RevokedAt = mc.RevokedAt.UTC().Format(time.RFC3339)
 			}
+			v.ConnectionHealth, v.ConnectionReason = connectionHealth(mc)
+		} else {
+			v.ConnectionHealth = "disconnected"
 		}
 		views = append(views, v)
 	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"connectors": views})
+}
+
+func connectionHealth(mc *ent.MCPConnection) (string, string) {
+	if mc == nil {
+		return "disconnected", "not_connected"
+	}
+	switch mc.Status {
+	case "active":
+		return "healthy", ""
+	case "reauth_required":
+		return "degraded", "reauth_required"
+	case "error":
+		return "degraded", "upstream_error"
+	case "revoking":
+		return "disabled", "revocation_pending"
+	case "revoked", "invalidated":
+		if mc.RevokedReason != "" {
+			return "disabled", mc.RevokedReason
+		}
+		return "disabled", mc.Status
+	default:
+		return "degraded", mc.Status
+	}
 }
 
 // Start handles POST /v1/connections/{name}/start.
@@ -380,7 +409,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
 		return
 	}
-	granted, err := validateGrantedScopes(cp.RequestedScopes, strings.Fields(tok.Scope))
+	granted, err := h.grantedScopes(name, cp.RequestedScopes, tok.Scope)
 	if err != nil {
 		if tok.RefreshToken != "" {
 			_ = h.ory.revoke(ctx, tok.RefreshToken)
@@ -490,7 +519,15 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !h.registry.Enabled(name) {
+		_ = h.ory.revoke(ctx, cp.RefreshToken)
 		httpx.Error(w, http.StatusServiceUnavailable, "connector is disabled", "connector_disabled")
+		return
+	}
+	if allowed, reason := h.isEntitled(ctx, u, c, cp.GrantedScopes); !allowed {
+		_ = h.ory.revoke(ctx, cp.RefreshToken)
+		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason(reason).Exec(ctx)
+		h.appendAudit(ctx, u, auditRecord{EventType: "oauth_claim_rejected", Connector: name, Requested: cp.RequestedScopes, Granted: cp.GrantedScopes, Reason: reason})
+		httpx.Error(w, http.StatusForbidden, "connector entitlement denied", reason)
 		return
 	}
 	if !isSubset(cp.GrantedScopes, cp.RequestedScopes) {
@@ -499,18 +536,48 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "granted scopes exceed requested scopes", "scope_escalation")
 		return
 	}
-	if err := pending.Update().Where(oauthpending.LifecycleStatusEQ("callback_completed")).SetLifecycleStatus("claimed").SetClaimedAt(time.Now().UTC()).Exec(ctx); err != nil {
+	tx, err := h.client.Tx(ctx)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "could not claim connection", "internal_error")
+		return
+	}
+	rollback := true
+	defer func() {
+		if rollback {
+			_ = tx.Rollback()
+		}
+	}()
+	txp, err := tx.OAuthPending.Query().Where(oauthpending.IDEQ(pending.ID), oauthpending.LifecycleStatusEQ("callback_completed")).Only(auth.WithInternal(ctx))
+	if err != nil {
+		_ = h.ory.revoke(context.WithoutCancel(ctx), cp.RefreshToken)
+		connectormetrics.Lifecycle.WithLabelValues(name, "claim", "replay").Inc()
+		httpx.Error(w, http.StatusConflict, "ticket already consumed", "replay")
+		return
+	}
+	if err := txp.Update().Where(oauthpending.LifecycleStatusEQ("callback_completed")).SetLifecycleStatus("claimed").SetClaimedAt(time.Now().UTC()).Exec(auth.WithInternal(ctx)); err != nil {
+		_ = h.ory.revoke(context.WithoutCancel(ctx), cp.RefreshToken)
 		connectormetrics.Lifecycle.WithLabelValues(name, "claim", "replay").Inc()
 		httpx.Error(w, http.StatusConflict, "ticket already consumed", "replay")
 		return
 	}
 
-	connection, err := h.upsertConnection(auth.WithUser(ctx, u), u, c, cp.RefreshToken, cp.GrantedScopes)
+	connection, replacedGrant, err := h.upsertConnectionWithClient(auth.WithUser(ctx, u), tx.Client(), u, c, cp.RefreshToken, cp.GrantedScopes)
 	if err != nil {
 		h.log.Error("persist connection", zap.Error(err))
-		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("connection_persist_failed").Exec(ctx)
+		_ = h.ory.revoke(context.WithoutCancel(ctx), cp.RefreshToken)
 		httpx.Error(w, http.StatusInternalServerError, "could not persist connection", "internal_error")
 		return
+	}
+	if err := tx.Commit(); err != nil {
+		_ = h.ory.revoke(context.WithoutCancel(ctx), cp.RefreshToken)
+		httpx.Error(w, http.StatusInternalServerError, "could not persist connection", "internal_error")
+		return
+	}
+	rollback = false
+	if len(replacedGrant) > 0 {
+		if old, openErr := h.sealer.Open(replacedGrant); openErr == nil && string(old) != cp.RefreshToken {
+			_ = h.ory.revoke(context.WithoutCancel(ctx), string(old))
+		}
 	}
 	h.appendAudit(ctx, u, auditRecord{EventType: "oauth_claimed", Connector: name, ConnectionID: connection.ID, Audience: c.Audience, Requested: cp.RequestedScopes, Granted: cp.GrantedScopes})
 	connectormetrics.Lifecycle.WithLabelValues(name, "claim", "success").Inc()
@@ -582,14 +649,20 @@ func (h *Handler) deleteTicket(ctx context.Context, pending *ent.OAuthPending) {
 }
 
 func (h *Handler) upsertConnection(ctx context.Context, u *ent.User, c Connector, refreshToken string, scopes []string) (*ent.MCPConnection, error) {
+	connection, _, err := h.upsertConnectionWithClient(ctx, h.client, u, c, refreshToken, scopes)
+	return connection, err
+}
+
+func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Client, u *ent.User, c Connector, refreshToken string, scopes []string) (*ent.MCPConnection, []byte, error) {
 	sealed, err := h.sealer.SealString(refreshToken)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	existing, err := h.client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ(c.Name)).Only(ctx)
+	existing, err := client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ(c.Name)).Only(ctx)
 	switch {
 	case err == nil:
-		return existing.Update().
+		old := append([]byte(nil), existing.RefreshTokenEncrypted...)
+		updated, updateErr := existing.Update().
 			SetRefreshTokenEncrypted(sealed).
 			ClearAPIKeyEncrypted().
 			SetScopes(scopes).
@@ -598,8 +671,9 @@ func (h *Handler) upsertConnection(ctx context.Context, u *ent.User, c Connector
 			SetConnectedAt(time.Now()).
 			ClearRevokedAt().ClearRevokedReason().ClearRevokedBy().ClearRevocationAttemptedAt().ClearRevocationSucceeded().
 			Save(ctx)
+		return updated, old, updateErr
 	case ent.IsNotFound(err):
-		return h.client.MCPConnection.Create().
+		created, createErr := client.MCPConnection.Create().
 			SetUser(u).
 			SetConnector(c.Name).
 			SetAudience(c.Audience).
@@ -608,8 +682,9 @@ func (h *Handler) upsertConnection(ctx context.Context, u *ent.User, c Connector
 			SetStatus("active").
 			SetConnectedAt(time.Now()).
 			Save(ctx)
+		return created, nil, createErr
 	default:
-		return nil, err
+		return nil, nil, err
 	}
 }
 
@@ -711,6 +786,9 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 	if allowed, reason := h.isEntitled(ctx, u, c, validatedScopes); !allowed {
 		connectormetrics.TokenMint.WithLabelValues(name, "entitlement_denied").Inc()
 		h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Requested: validatedScopes, Reason: reason})
+		if reason != "entitlement_unavailable" {
+			_ = h.revokeConnection(context.WithoutCancel(ctx), u, mc, reason, "entitlement", "invalidated")
+		}
 		httpx.Error(w, http.StatusForbidden, "connector entitlement denied", reason)
 		return
 	}
@@ -741,24 +819,50 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		}
 		status := "error"
 		code := "upstream_error"
-		if isOAuthErrorCode(err, "invalid_grant") {
+		if isRefreshFamilyInvalidation(err) {
+			_ = mc.Update().SetStatus("invalidated").SetRevokedAt(time.Now().UTC()).SetRevokedReason("refresh_token_reuse").SetRevokedBy("provider").SetRevocationSucceeded(true).ClearRefreshTokenEncrypted().ClearAPIKeyEncrypted().Exec(ctx)
+			h.appendAudit(ctx, u, auditRecord{EventType: "connection_invalidated", Connector: name, ConnectionID: mc.ID, Audience: mc.Audience, Granted: mc.Scopes, Reason: "refresh_token_reuse", Result: "credential_family_invalidated"})
+			connectormetrics.Revocation.WithLabelValues(name, "refresh_family_invalidated").Inc()
+			status = "invalidated"
+			code = "connection_revoked"
+		} else if isOAuthErrorCode(err, "invalid_grant") {
 			status = "reauth_required"
 			code = "reauth_required"
+			_ = mc.Update().SetStatus(status).ClearRefreshTokenEncrypted().Exec(ctx)
+			h.appendAudit(ctx, u, auditRecord{EventType: "connection_reauth_required", Connector: name, ConnectionID: mc.ID, Audience: mc.Audience, Granted: mc.Scopes, Reason: "invalid_grant"})
+		} else {
+			_ = mc.Update().SetStatus(status).Exec(ctx)
 		}
-		_ = mc.Update().SetStatus(status).Exec(ctx)
 		h.log.Warn("mcp-token refresh failed", zap.String("connector", name), zap.Error(err))
 		httpx.Error(w, http.StatusBadGateway, "token refresh failed", code)
 		return
 	}
-	if tok.Scope != "" {
-		if _, err := validateGrantedScopes(validatedScopes, strings.Fields(tok.Scope)); err != nil {
-			connectormetrics.TokenMint.WithLabelValues(name, "scope_escalation").Inc()
-			h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Requested: validatedScopes, Reason: "scope_escalation"})
-			httpx.Error(w, http.StatusBadGateway, "upstream token scope mismatch", "scope_escalation")
-			return
-		}
+	if _, err := h.grantedScopes(name, validatedScopes, tok.Scope); err != nil {
+		connectormetrics.TokenMint.WithLabelValues(name, "scope_escalation").Inc()
+		h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Requested: validatedScopes, Reason: "scope_escalation"})
+		httpx.Error(w, http.StatusBadGateway, "upstream token scope mismatch", "scope_escalation")
+		return
 	}
 	h.writeResourceToken(ctx, w, u, c, mc, audience, validatedScopes)
+}
+
+func (h *Handler) grantedScopes(connector string, requested []string, raw string) ([]string, error) {
+	granted := strings.Fields(raw)
+	// RFC 6749 permits omission when the granted scope is identical to the
+	// request. Treat omission as equality, never as an empty grant.
+	if len(granted) == 0 {
+		granted = append([]string(nil), requested...)
+	}
+	validated, err := validateGrantedScopes(requested, granted)
+	if err != nil {
+		return nil, err
+	}
+	for _, def := range h.registry.definitionsForScopes(connector, requested) {
+		if def.GrantTier == "required" && !slices.Contains(validated, def.Name) {
+			return nil, fmt.Errorf("required scope %q was not granted", def.Name)
+		}
+	}
+	return validated, nil
 }
 
 func (h *Handler) writeResourceToken(ctx context.Context, w http.ResponseWriter, u *ent.User, c Connector, mc *ent.MCPConnection, audience string, scopes []string) {

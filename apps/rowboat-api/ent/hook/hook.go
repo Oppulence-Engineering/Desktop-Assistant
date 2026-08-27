@@ -273,6 +273,18 @@ func (f ConnectorAuditEventFunc) Mutate(ctx context.Context, m ent.Mutation) (en
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConnectorAuditEventMutation", m)
 }
 
+// The ConnectorRevocationJobFunc type is an adapter to allow the use of ordinary
+// function as ConnectorRevocationJob mutator.
+type ConnectorRevocationJobFunc func(context.Context, *ent.ConnectorRevocationJobMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConnectorRevocationJobFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConnectorRevocationJobMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConnectorRevocationJobMutation", m)
+}
+
 // The ConversationIntelligenceArtifactFunc type is an adapter to allow the use of ordinary
 // function as ConversationIntelligenceArtifact mutator.
 type ConversationIntelligenceArtifactFunc func(context.Context, *ent.ConversationIntelligenceArtifactMutation) (ent.Value, error)

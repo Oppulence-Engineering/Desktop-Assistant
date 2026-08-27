@@ -31,6 +31,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -5137,6 +5138,255 @@ func (_m *CommitmentEvent) ToEdge(order *CommitmentEventOrder) *CommitmentEventE
 		order = DefaultCommitmentEventOrder
 	}
 	return &CommitmentEventEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// ConnectorRevocationJobEdge is the edge representation of ConnectorRevocationJob.
+type ConnectorRevocationJobEdge struct {
+	Node   *ConnectorRevocationJob `json:"node"`
+	Cursor Cursor                  `json:"cursor"`
+}
+
+// ConnectorRevocationJobConnection is the connection containing edges to ConnectorRevocationJob.
+type ConnectorRevocationJobConnection struct {
+	Edges      []*ConnectorRevocationJobEdge `json:"edges"`
+	PageInfo   PageInfo                      `json:"pageInfo"`
+	TotalCount int                           `json:"totalCount"`
+}
+
+func (c *ConnectorRevocationJobConnection) build(nodes []*ConnectorRevocationJob, pager *connectorrevocationjobPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *ConnectorRevocationJob
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *ConnectorRevocationJob {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *ConnectorRevocationJob {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*ConnectorRevocationJobEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &ConnectorRevocationJobEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// ConnectorRevocationJobPaginateOption enables pagination customization.
+type ConnectorRevocationJobPaginateOption func(*connectorrevocationjobPager) error
+
+// WithConnectorRevocationJobOrder configures pagination ordering.
+func WithConnectorRevocationJobOrder(order *ConnectorRevocationJobOrder) ConnectorRevocationJobPaginateOption {
+	if order == nil {
+		order = DefaultConnectorRevocationJobOrder
+	}
+	o := *order
+	return func(pager *connectorrevocationjobPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultConnectorRevocationJobOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithConnectorRevocationJobFilter configures pagination filter.
+func WithConnectorRevocationJobFilter(filter func(*ConnectorRevocationJobQuery) (*ConnectorRevocationJobQuery, error)) ConnectorRevocationJobPaginateOption {
+	return func(pager *connectorrevocationjobPager) error {
+		if filter == nil {
+			return errors.New("ConnectorRevocationJobQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type connectorrevocationjobPager struct {
+	reverse bool
+	order   *ConnectorRevocationJobOrder
+	filter  func(*ConnectorRevocationJobQuery) (*ConnectorRevocationJobQuery, error)
+}
+
+func newConnectorRevocationJobPager(opts []ConnectorRevocationJobPaginateOption, reverse bool) (*connectorrevocationjobPager, error) {
+	pager := &connectorrevocationjobPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultConnectorRevocationJobOrder
+	}
+	return pager, nil
+}
+
+func (p *connectorrevocationjobPager) applyFilter(query *ConnectorRevocationJobQuery) (*ConnectorRevocationJobQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *connectorrevocationjobPager) toCursor(_m *ConnectorRevocationJob) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *connectorrevocationjobPager) applyCursors(query *ConnectorRevocationJobQuery, after, before *Cursor) (*ConnectorRevocationJobQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultConnectorRevocationJobOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *connectorrevocationjobPager) applyOrder(query *ConnectorRevocationJobQuery) *ConnectorRevocationJobQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultConnectorRevocationJobOrder.Field {
+		query = query.Order(DefaultConnectorRevocationJobOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *connectorrevocationjobPager) orderExpr(query *ConnectorRevocationJobQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultConnectorRevocationJobOrder.Field {
+			b.Comma().Ident(DefaultConnectorRevocationJobOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to ConnectorRevocationJob.
+func (_m *ConnectorRevocationJobQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...ConnectorRevocationJobPaginateOption,
+) (*ConnectorRevocationJobConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newConnectorRevocationJobPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &ConnectorRevocationJobConnection{Edges: []*ConnectorRevocationJobEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// ConnectorRevocationJobOrderField defines the ordering field of ConnectorRevocationJob.
+type ConnectorRevocationJobOrderField struct {
+	// Value extracts the ordering value from the given ConnectorRevocationJob.
+	Value    func(*ConnectorRevocationJob) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) connectorrevocationjob.OrderOption
+	toCursor func(*ConnectorRevocationJob) Cursor
+}
+
+// ConnectorRevocationJobOrder defines the ordering of ConnectorRevocationJob.
+type ConnectorRevocationJobOrder struct {
+	Direction OrderDirection                    `json:"direction"`
+	Field     *ConnectorRevocationJobOrderField `json:"field"`
+}
+
+// DefaultConnectorRevocationJobOrder is the default ordering of ConnectorRevocationJob.
+var DefaultConnectorRevocationJobOrder = &ConnectorRevocationJobOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &ConnectorRevocationJobOrderField{
+		Value: func(_m *ConnectorRevocationJob) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: connectorrevocationjob.FieldID,
+		toTerm: connectorrevocationjob.ByID,
+		toCursor: func(_m *ConnectorRevocationJob) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts ConnectorRevocationJob into ConnectorRevocationJobEdge.
+func (_m *ConnectorRevocationJob) ToEdge(order *ConnectorRevocationJobOrder) *ConnectorRevocationJobEdge {
+	if order == nil {
+		order = DefaultConnectorRevocationJobOrder
+	}
+	return &ConnectorRevocationJobEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

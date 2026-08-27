@@ -28,6 +28,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -1365,6 +1366,33 @@ func init() {
 	connectorauditeventDescID := connectorauditeventMixinFields0[0].Descriptor()
 	// connectorauditevent.DefaultID holds the default value on creation for the id field.
 	connectorauditevent.DefaultID = connectorauditeventDescID.Default.(func() uuid.UUID)
+	connectorrevocationjobMixin := schema.ConnectorRevocationJob{}.Mixin()
+	connectorrevocationjobMixinFields0 := connectorrevocationjobMixin[0].Fields()
+	_ = connectorrevocationjobMixinFields0
+	connectorrevocationjobFields := schema.ConnectorRevocationJob{}.Fields()
+	_ = connectorrevocationjobFields
+	// connectorrevocationjobDescCreatedAt is the schema descriptor for created_at field.
+	connectorrevocationjobDescCreatedAt := connectorrevocationjobMixinFields0[1].Descriptor()
+	// connectorrevocationjob.DefaultCreatedAt holds the default value on creation for the created_at field.
+	connectorrevocationjob.DefaultCreatedAt = connectorrevocationjobDescCreatedAt.Default.(func() time.Time)
+	// connectorrevocationjobDescUpdatedAt is the schema descriptor for updated_at field.
+	connectorrevocationjobDescUpdatedAt := connectorrevocationjobMixinFields0[2].Descriptor()
+	// connectorrevocationjob.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	connectorrevocationjob.DefaultUpdatedAt = connectorrevocationjobDescUpdatedAt.Default.(func() time.Time)
+	// connectorrevocationjob.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	connectorrevocationjob.UpdateDefaultUpdatedAt = connectorrevocationjobDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// connectorrevocationjobDescStatus is the schema descriptor for status field.
+	connectorrevocationjobDescStatus := connectorrevocationjobFields[4].Descriptor()
+	// connectorrevocationjob.DefaultStatus holds the default value on creation for the status field.
+	connectorrevocationjob.DefaultStatus = connectorrevocationjobDescStatus.Default.(string)
+	// connectorrevocationjobDescAttempts is the schema descriptor for attempts field.
+	connectorrevocationjobDescAttempts := connectorrevocationjobFields[5].Descriptor()
+	// connectorrevocationjob.DefaultAttempts holds the default value on creation for the attempts field.
+	connectorrevocationjob.DefaultAttempts = connectorrevocationjobDescAttempts.Default.(int)
+	// connectorrevocationjobDescID is the schema descriptor for id field.
+	connectorrevocationjobDescID := connectorrevocationjobMixinFields0[0].Descriptor()
+	// connectorrevocationjob.DefaultID holds the default value on creation for the id field.
+	connectorrevocationjob.DefaultID = connectorrevocationjobDescID.Default.(func() uuid.UUID)
 	conversationintelligenceartifactMixin := schema.ConversationIntelligenceArtifact{}.Mixin()
 	conversationintelligenceartifact.Policy = privacy.NewPolicies(conversationintelligenceartifactMixin[0], schema.ConversationIntelligenceArtifact{})
 	conversationintelligenceartifact.Hooks[0] = func(next ent.Mutator) ent.Mutator {

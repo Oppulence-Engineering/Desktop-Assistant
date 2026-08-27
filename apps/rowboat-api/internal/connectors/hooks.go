@@ -13,6 +13,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
@@ -73,7 +74,7 @@ type preConsentResponse struct {
 	Entitlement consentEntitlement       `json:"entitlement"`
 }
 
-func (h *Handler) isEntitled(ctx context.Context, owner *ent.User, conn Connector, scopes []string) (bool, string) {
+func (h *Handler) localEntitlement(ctx context.Context, owner *ent.User, conn Connector, scopes []string) (bool, string) {
 	if owner == nil {
 		return false, "no_subscription"
 	}
@@ -100,6 +101,10 @@ func (h *Handler) isEntitled(ctx context.Context, owner *ent.User, conn Connecto
 		return false, "scope_not_in_plan"
 	}
 	return true, ""
+}
+
+func (h *Handler) isEntitled(ctx context.Context, owner *ent.User, conn Connector, scopes []string) (bool, string) {
+	return h.productEntitlement(ctx, owner, conn, scopes)
 }
 
 func (h *Handler) requiredPlan(conn Connector, scopes []string) string {
@@ -601,10 +606,27 @@ func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connect
 		return fmt.Errorf("mark connector revoking: %w", err)
 	}
 	providerRevoked := true
+	var revocationCredential []byte
 	if len(connection.RefreshTokenEncrypted) > 0 {
+		revocationCredential = append([]byte(nil), connection.RefreshTokenEncrypted...)
 		refresh, err := h.sealer.Open(connection.RefreshTokenEncrypted)
 		if err != nil || h.ory.revoke(ctx, string(refresh)) != nil {
 			providerRevoked = false
+		}
+	}
+	if !providerRevoked && len(revocationCredential) > 0 {
+		_, err := h.client.ConnectorRevocationJob.Create().
+			SetConnectionID(connection.ID).
+			SetOwnerID(owner.ID).
+			SetConnector(connection.Connector).
+			SetRefreshTokenEncrypted(revocationCredential).
+			SetStatus("pending").
+			SetNextAttemptAt(now).
+			OnConflictColumns(connectorrevocationjob.FieldConnectionID).
+			UpdateNewValues().
+			ID(auth.WithInternal(ctx))
+		if err != nil {
+			return fmt.Errorf("enqueue connector revocation: %w", err)
 		}
 	}
 	update := connection.Update().
@@ -626,6 +648,61 @@ func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connect
 	connectormetrics.Revocation.WithLabelValues(connection.Connector, outcome).Inc()
 	h.appendAudit(ctx, owner, auditRecord{EventType: "connection_" + finalStatus, Connector: connection.Connector, ConnectionID: connection.ID, Audience: connection.Audience, Granted: connection.Scopes, Reason: reason, Metadata: map[string]any{"providerRevoked": providerRevoked, "actor": actor}})
 	return nil
+}
+
+// ProcessRevocationJobs retries the MCPConnection-backed durable revocation
+// outbox. Failed upstream attempts retain only the sealed credential while the
+// connection remains locally disabled. Success erases it permanently.
+func (h *Handler) ProcessRevocationJobs(ctx context.Context, limit int) (int, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 25
+	}
+	jobs, err := h.client.ConnectorRevocationJob.Query().Where(
+		connectorrevocationjob.StatusEQ("pending"),
+		connectorrevocationjob.NextAttemptAtLTE(time.Now().UTC()),
+	).Order(ent.Asc(connectorrevocationjob.FieldNextAttemptAt)).Limit(limit).All(auth.WithInternal(ctx))
+	if err != nil {
+		return 0, err
+	}
+	completed := 0
+	for _, job := range jobs {
+		owner, ownerErr := h.client.User.Get(auth.WithInternal(ctx), job.OwnerID)
+		if ownerErr != nil {
+			continue
+		}
+		plain, openErr := h.sealer.Open(job.RefreshTokenEncrypted)
+		if openErr != nil {
+			continue
+		}
+		now := time.Now().UTC()
+		if revokeErr := h.ory.revoke(ctx, string(plain)); revokeErr != nil {
+			delay := time.Duration(min(job.Attempts+1, 8)) * time.Minute
+			_ = job.Update().AddAttempts(1).SetLastError("provider_revoke_failed").SetNextAttemptAt(now.Add(delay)).Exec(auth.WithInternal(ctx))
+			continue
+		}
+		if updateErr := h.client.ConnectorRevocationJob.DeleteOne(job).Exec(auth.WithInternal(ctx)); updateErr == nil {
+			completed++
+			_ = h.client.MCPConnection.UpdateOneID(job.ConnectionID).SetRevocationSucceeded(true).SetRevocationAttemptedAt(now).Exec(auth.WithUser(ctx, owner))
+			h.appendAudit(ctx, owner, auditRecord{EventType: "connection_revocation_completed", Connector: job.Connector, ConnectionID: job.ConnectionID, Result: "retry_success"})
+		}
+	}
+	return completed, nil
+}
+
+// RunRevocationWorker continuously drains the durable connection-backed outbox.
+func (h *Handler) RunRevocationWorker(ctx context.Context) {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+	for {
+		if _, err := h.ProcessRevocationJobs(ctx, 25); err != nil && ctx.Err() == nil {
+			h.log.Warn("process connector revocation jobs", zap.Error(err))
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
 }
 
 func (h *Handler) resolveConnector(name, audience string) (Connector, bool) {

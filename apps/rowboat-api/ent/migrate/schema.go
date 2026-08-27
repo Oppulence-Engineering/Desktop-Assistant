@@ -1190,6 +1190,39 @@ var (
 			},
 		},
 	}
+	// ConnectorRevocationJobsColumns holds the columns for the "connector_revocation_jobs" table.
+	ConnectorRevocationJobsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "connection_id", Type: field.TypeUUID},
+		{Name: "owner_id", Type: field.TypeUUID},
+		{Name: "connector", Type: field.TypeString},
+		{Name: "refresh_token_encrypted", Type: field.TypeBytes},
+		{Name: "status", Type: field.TypeString, Default: "pending"},
+		{Name: "attempts", Type: field.TypeInt, Default: 0},
+		{Name: "next_attempt_at", Type: field.TypeTime},
+		{Name: "last_error", Type: field.TypeString, Nullable: true},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true},
+	}
+	// ConnectorRevocationJobsTable holds the schema information for the "connector_revocation_jobs" table.
+	ConnectorRevocationJobsTable = &schema.Table{
+		Name:       "connector_revocation_jobs",
+		Columns:    ConnectorRevocationJobsColumns,
+		PrimaryKey: []*schema.Column{ConnectorRevocationJobsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "connectorrevocationjob_connection_id",
+				Unique:  true,
+				Columns: []*schema.Column{ConnectorRevocationJobsColumns[3]},
+			},
+			{
+				Name:    "connectorrevocationjob_status_next_attempt_at",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectorRevocationJobsColumns[7], ConnectorRevocationJobsColumns[9]},
+			},
+		},
+	}
 	// ConversationIntelligenceArtifactsColumns holds the columns for the "conversation_intelligence_artifacts" table.
 	ConversationIntelligenceArtifactsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -3976,6 +4009,7 @@ var (
 		CommitmentDependenciesTable,
 		CommitmentEventsTable,
 		ConnectorAuditEventsTable,
+		ConnectorRevocationJobsTable,
 		ConversationIntelligenceArtifactsTable,
 		CreditLedgersTable,
 		EntitiesTable,

@@ -32,6 +32,7 @@ type Connector struct {
 	ScopeCatalog   []ScopeDefinition          `json:"scopes,omitempty"`
 	IconURL        string                     `json:"iconUrl,omitempty"`
 	PolicyURL      string                     `json:"policyUrl,omitempty"`
+	EntitlementURL string                     `json:"entitlementUrl,omitempty"` // product-authoritative entitlement decision endpoint
 	RequiredPlan   string                     `json:"requiredPlan,omitempty"`   // "" = available on all plans
 	Status         string                     `json:"status,omitempty"`         // enabled | maintenance | disabled
 	Health         string                     `json:"health,omitempty"`         // healthy | degraded | unavailable
@@ -153,6 +154,13 @@ func parseRegistry(data []byte, environment string) ([]Connector, error) {
 		}
 		if strings.TrimSpace(list[i].Health) == "" {
 			list[i].Health = "healthy"
+		}
+		if raw := strings.TrimSpace(list[i].EntitlementURL); raw != "" {
+			u, err := url.Parse(raw)
+			if err != nil || u.Scheme == "" || u.Host == "" || u.User != nil || u.Fragment != "" || (u.Scheme != "https" && !(environment == "development" && u.Scheme == "http")) {
+				return nil, fmt.Errorf("connector %q entitlementUrl must be an absolute HTTPS URL (HTTP is development-only)", list[i].Name)
+			}
+			list[i].EntitlementURL = u.String()
 		}
 		if len(list[i].Environments) == 0 {
 			list[i].Environments = []string{"development", "staging", "production"}

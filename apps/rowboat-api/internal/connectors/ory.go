@@ -14,8 +14,18 @@ import (
 )
 
 type oauthEndpointError struct {
-	StatusCode int
-	Code       string
+	StatusCode  int
+	Code        string
+	Description string
+}
+
+func isRefreshFamilyInvalidation(err error) bool {
+	var endpointErr *oauthEndpointError
+	if !errors.As(err, &endpointErr) || endpointErr.Code != "invalid_grant" {
+		return false
+	}
+	d := strings.ToLower(endpointErr.Description)
+	return strings.Contains(d, "reuse") || strings.Contains(d, "replayed") || strings.Contains(d, "token family") || strings.Contains(d, "family invalid")
 }
 
 func (e *oauthEndpointError) Error() string {
@@ -125,7 +135,7 @@ func (c *oryClient) tokenRequest(ctx context.Context, form url.Values) (*oryToke
 			Description string `json:"error_description"`
 		}
 		_ = json.Unmarshal(body, &oerr)
-		return nil, &oauthEndpointError{StatusCode: resp.StatusCode, Code: oerr.Error}
+		return nil, &oauthEndpointError{StatusCode: resp.StatusCode, Code: oerr.Error, Description: oerr.Description}
 	}
 	var tok oryToken
 	if err := json.Unmarshal(body, &tok); err != nil {
