@@ -56,6 +56,17 @@ func TestRFC012PublicContract(t *testing.T) {
 	fixtureSecret := mustEnv(t, "RFC012_FIXTURE_SECRET")
 	require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/entitlements", "", map[string]any{"user_id": "user_rfc012_a", "allowed": true}, "X-Fixture-Secret", fixtureSecret).status)
 
+	t.Run("product deny overrides local allow", func(t *testing.T) {
+		var plan, status string
+		require.NoError(t, db.QueryRow(`SELECT plan,status FROM subscriptions WHERE user_subscription=(SELECT id FROM users WHERE workos_user_id='user_rfc012_a')`).Scan(&plan, &status))
+		require.Equal(t, "intelligence", plan)
+		require.Equal(t, "active", status)
+		require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/entitlements", "", map[string]any{"user_id": "user_rfc012_a", "allowed": false, "reason": "connector_disabled"}, "X-Fixture-Secret", fixtureSecret).status)
+		denied := c.json("POST", api+"/v1/connections/"+connector+"/start", tokenA, map[string]any{"requestedScopes": []string{"dev:records.read"}})
+		require.Equal(t, http.StatusForbidden, denied.status, denied.body)
+		require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/entitlements", "", map[string]any{"user_id": "user_rfc012_a", "allowed": true}, "X-Fixture-Secret", fixtureSecret).status)
+	})
+
 	t.Run("entitlement denies before start", func(t *testing.T) {
 		deny := mustEnv(t, "RFC012_UNENTITLED_JWT")
 		r := c.json("POST", api+"/v1/connections/"+connector+"/start", deny, map[string]any{"requestedScopes": []string{"dev:records.read"}})
@@ -131,8 +142,21 @@ func TestRFC012PublicContract(t *testing.T) {
 		other := c.json("GET", api+"/v1/connectors", tokenB, nil)
 		require.Equal(t, 200, other.status, other.body)
 		require.NotContains(t, other.body, `"connected":true`, "tenant B observed tenant A connection")
-		mint := c.json("POST", api+"/v1/connections/"+connector+"/mcp-token", tokenA, nil)
-		require.Equal(t, 200, mint.status, mint.body)
+		// Two replicas refresh the same grant concurrently. Shared Redis must
+		// serialize the provider refresh while both public requests succeed.
+		mints := make([]response, 2)
+		var mintWG sync.WaitGroup
+		for i, base := range []string{api, mustEnv(t, "RFC012_API2_URL")} {
+			mintWG.Add(1)
+			go func(i int, base string) {
+				defer mintWG.Done()
+				mints[i] = c.json("POST", base+"/v1/connections/"+connector+"/mcp-token", tokenA, nil)
+			}(i, base)
+		}
+		mintWG.Wait()
+		require.Equal(t, 200, mints[0].status, mints[0].body)
+		require.Equal(t, 200, mints[1].status, mints[1].body)
+		mint := mints[0]
 		var mt struct {
 			AccessToken string `json:"access_token"`
 			ExpiresIn   int64  `json:"expires_in"`
@@ -144,6 +168,14 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.LessOrEqual(t, mt.ExpiresIn, int64(900), "resource token is not short-lived")
 		require.Contains(t, mt.Scope, "dev:records.read")
 		resourceToken = mt.AccessToken
+		var mt2 struct {
+			AccessToken string `json:"access_token"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(mints[1].body), &mt2))
+		require.Equal(t, "rfc012-broker-key", jwtKeyID(t, mt.AccessToken))
+		require.Equal(t, "rfc012-broker-next", jwtKeyID(t, mt2.AccessToken))
+		require.Equal(t, 200, c.json("POST", product+"/v1/mcp/read", mt.AccessToken, nil).status, "old signer token rejected during overlap")
+		require.Equal(t, 200, c.json("POST", product+"/v1/mcp/read", mt2.AccessToken, nil).status, "new signer token rejected during overlap")
 	})
 
 	t.Run("product MCP authorization approval retry and one-time use", func(t *testing.T) {
@@ -208,8 +240,8 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.True(t, revokedAt.Valid)
 		require.True(t, revokeOK.Valid && revokeOK.Bool, "upstream revoke was not recorded successful")
 		var audits int
-		require.NoError(t, db.QueryRow(`SELECT count(*) FROM connector_audit_events WHERE connection_id=$1 AND event_type LIKE '%revok%'`, connectionID).Scan(&audits))
-		require.Positive(t, audits)
+		require.NoError(t, db.QueryRow(`SELECT count(*) FROM connector_audit_events WHERE connection_id=$1 AND event_type='token.revoked'`, connectionID).Scan(&audits))
+		require.Positive(t, audits, "semantic token.revoked audit event missing")
 		_, err := db.Exec(`UPDATE dev_product_connections SET active=false,revoked_at=now() WHERE connection_id=$1`, connectionID)
 		require.NoError(t, err)
 		denied := c.json("POST", product+"/v1/mcp/read", resourceToken, nil)
@@ -219,6 +251,23 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.NoError(t, db.QueryRow(`SELECT count(*) FROM connector_audit_events WHERE metadata_json ILIKE '%api_key%' OR metadata_json ILIKE '%access_token%' OR metadata_json ILIKE '%refresh_token%'`).Scan(&leaked))
 		require.Zero(t, leaked, "connector audit disclosed credential-shaped fields")
 	})
+
+	t.Run("semantic durable audit contract", func(t *testing.T) {
+		for _, eventType := range []string{"entitlement.check", "token.refreshed", "token.revoked"} {
+			var count int
+			require.NoError(t, db.QueryRow(`SELECT count(*) FROM connector_audit_events WHERE event_type=$1`, eventType).Scan(&count))
+			require.Positive(t, count, "missing durable semantic event %s", eventType)
+		}
+	})
+}
+
+func jwtKeyID(t *testing.T, raw string) string {
+	t.Helper()
+	tok, _, err := new(jwt.Parser).ParseUnverified(raw, jwt.MapClaims{})
+	require.NoError(t, err)
+	kid, _ := tok.Header["kid"].(string)
+	require.NotEmpty(t, kid)
+	return kid
 }
 
 var csrfPattern = regexp.MustCompile(`name="csrf" value="([^"]+)"`)

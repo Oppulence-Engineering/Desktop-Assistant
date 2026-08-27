@@ -3,10 +3,15 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -17,7 +22,10 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-type server struct{ db *sql.DB }
+type server struct {
+	db             *sql.DB
+	entitlementKey []byte
+}
 
 func main() {
 	ctx := context.Background()
@@ -49,10 +57,10 @@ func main() {
 			log.Printf("close postgres: %v", err)
 		}
 	}()
-	s := &server{db: db}
+	s := &server{db: db, entitlementKey: []byte(required("PRODUCT_ENTITLEMENT_HMAC_KEY"))}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, 200, map[string]any{"ok": true}) })
-	mux.HandleFunc("GET /v1/entitlements", s.entitlement)
+	mux.HandleFunc("POST /v1/entitlements", s.entitlement)
 	mux.HandleFunc("POST /fixture/entitlements", s.setEntitlement)
 	mux.HandleFunc("POST /v1/approvals", s.issueApproval)
 	mux.Handle("POST /v1/mcp/read", verifier.RequireMCPToken(oauthrs.MCPTokenOptions{
@@ -98,14 +106,26 @@ CREATE TABLE IF NOT EXISTS dev_product_entitlements (
 }
 
 func (s *server) entitlement(w http.ResponseWriter, r *http.Request) {
-	userID := strings.TrimSpace(r.URL.Query().Get("user_id"))
-	if userID == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"code": "user_id_required"})
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 16<<10))
+	if err != nil || !s.validEntitlementSignature(r, body) {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"code": "entitlement_unauthorized"})
+		return
+	}
+	var request struct {
+		Connector string   `json:"connector"`
+		UserID    string   `json:"user_id"`
+		OrgID     string   `json:"org_id,omitempty"`
+		Scopes    []string `json:"scopes"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(body))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&request); err != nil || request.Connector != "dev" || strings.TrimSpace(request.UserID) == "" || len(request.Scopes) == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"code": "invalid_entitlement_request"})
 		return
 	}
 	var allowed bool
 	var reason string
-	err := s.db.QueryRowContext(r.Context(), `SELECT allowed,reason FROM dev_product_entitlements WHERE user_id=$1`, userID).Scan(&allowed, &reason)
+	err = s.db.QueryRowContext(r.Context(), `SELECT allowed,reason FROM dev_product_entitlements WHERE user_id=$1`, request.UserID).Scan(&allowed, &reason)
 	if errors.Is(err, sql.ErrNoRows) {
 		writeJSON(w, http.StatusOK, map[string]any{"allowed": false, "reason": "no_subscription"})
 		return
@@ -119,6 +139,24 @@ func (s *server) entitlement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"allowed": false, "reason": reason})
+}
+
+func (s *server) validEntitlementSignature(r *http.Request, body []byte) bool {
+	rawTimestamp := r.Header.Get("X-Rowboat-Timestamp")
+	timestamp, err := time.Parse(time.RFC3339, rawTimestamp)
+	if err != nil || time.Since(timestamp) > 5*time.Minute || time.Until(timestamp) > time.Minute {
+		return false
+	}
+	rawSignature := strings.TrimPrefix(r.Header.Get("X-Rowboat-Signature"), "sha256=")
+	signature, err := hex.DecodeString(rawSignature)
+	if err != nil || r.Header.Get("X-Rowboat-Connector") != "dev" {
+		return false
+	}
+	mac := hmac.New(sha256.New, s.entitlementKey)
+	_, _ = mac.Write([]byte(rawTimestamp))
+	_, _ = mac.Write([]byte("\n"))
+	_, _ = mac.Write(body)
+	return hmac.Equal(signature, mac.Sum(nil))
 }
 
 func (s *server) setEntitlement(w http.ResponseWriter, r *http.Request) {

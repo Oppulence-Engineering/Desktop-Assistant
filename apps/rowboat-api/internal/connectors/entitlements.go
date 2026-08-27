@@ -1,11 +1,18 @@
 package connectors
 
 import (
+	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
+	"net"
 	"net/http"
-	"net/url"
+	"net/netip"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -13,6 +20,10 @@ import (
 )
 
 const entitlementTimeout = 3 * time.Second
+
+const entitlementMaxResponseBytes = 64 << 10
+
+var entitlementClients sync.Map
 
 var authoritativeDenialReasons = map[string]struct{}{
 	"no_subscription": {}, "scope_not_in_plan": {}, "user_banned": {},
@@ -22,6 +33,13 @@ var authoritativeDenialReasons = map[string]struct{}{
 type entitlementDecision struct {
 	Allowed bool   `json:"allowed"`
 	Reason  string `json:"reason"`
+}
+
+type entitlementRequest struct {
+	Connector string   `json:"connector"`
+	UserID    string   `json:"user_id"`
+	OrgID     string   `json:"org_id,omitempty"`
+	Scopes    []string `json:"scopes"`
 }
 
 // productEntitlement calls the product-owned source of truth. A configured
@@ -34,26 +52,31 @@ func (h *Handler) productEntitlement(ctx context.Context, owner *ent.User, conn 
 	if owner == nil {
 		return false, "no_subscription"
 	}
-	u, err := url.Parse(conn.EntitlementURL)
+	if len(conn.entitlementKey) < 32 {
+		return false, "entitlement_unavailable"
+	}
+	canonicalScopes := append([]string(nil), scopes...)
+	sort.Strings(canonicalScopes)
+	body, err := json.Marshal(entitlementRequest{Connector: conn.Name, UserID: owner.WorkosUserID, OrgID: owner.WorkosOrgID, Scopes: canonicalScopes})
 	if err != nil {
 		return false, "entitlement_unavailable"
 	}
-	q := u.Query()
-	q.Set("user_id", owner.WorkosUserID)
-	if owner.WorkosOrgID != "" {
-		q.Set("org_id", owner.WorkosOrgID)
-	}
-	for _, scope := range scopes {
-		q.Add("scope", scope)
-	}
-	u.RawQuery = q.Encode()
 	cctx, cancel := context.WithTimeout(ctx, entitlementTimeout)
 	defer cancel()
-	req, err := http.NewRequestWithContext(cctx, http.MethodGet, u.String(), nil)
+	req, err := http.NewRequestWithContext(cctx, http.MethodPost, conn.EntitlementURL, bytes.NewReader(body))
 	if err != nil {
 		return false, "entitlement_unavailable"
 	}
-	client := outbound.NewClient(outbound.Policy{Name: "connector-entitlement", Timeout: entitlementTimeout, ResponseHeaderTimeout: 2 * time.Second, MaxConcurrent: 32, MaxResponseBytes: 64 << 10})
+	timestamp := time.Now().UTC().Format(time.RFC3339)
+	mac := hmac.New(sha256.New, conn.entitlementKey)
+	_, _ = mac.Write([]byte(timestamp))
+	_, _ = mac.Write([]byte("\n"))
+	_, _ = mac.Write(body)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Rowboat-Connector", conn.Name)
+	req.Header.Set("X-Rowboat-Timestamp", timestamp)
+	req.Header.Set("X-Rowboat-Signature", fmt.Sprintf("sha256=%x", mac.Sum(nil)))
+	client := productEntitlementClient(conn.allowPrivateEntitlement)
 	resp, err := client.Do(req)
 	if err != nil {
 		return false, "entitlement_unavailable"
@@ -62,7 +85,7 @@ func (h *Handler) productEntitlement(ctx context.Context, owner *ent.User, conn 
 	if resp.StatusCode != http.StatusOK {
 		return false, "entitlement_unavailable"
 	}
-	body, err := outbound.ReadAll(resp.Body, client.MaxResponseBytes())
+	body, err = outbound.ReadAll(resp.Body, entitlementMaxResponseBytes)
 	if err != nil {
 		return false, "entitlement_unavailable"
 	}
@@ -82,4 +105,41 @@ func (h *Handler) productEntitlement(ctx context.Context, owner *ent.User, conn 
 		return false, "entitlement_unavailable"
 	}
 	return false, decision.Reason
+}
+
+func productEntitlementClient(allowPrivate bool) *http.Client {
+	if cached, ok := entitlementClients.Load(allowPrivate); ok {
+		return cached.(*http.Client)
+	}
+	dialer := &net.Dialer{Timeout: 2 * time.Second, KeepAlive: 30 * time.Second}
+	base := http.DefaultTransport.(*http.Transport).Clone()
+	base.Proxy = nil
+	base.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
+		host, port, err := net.SplitHostPort(address)
+		if err != nil {
+			return nil, err
+		}
+		ips, err := net.DefaultResolver.LookupNetIP(ctx, "ip", host)
+		if err != nil || len(ips) == 0 {
+			return nil, fmt.Errorf("resolve entitlement host: %w", err)
+		}
+		for _, ip := range ips {
+			if !allowPrivate && !publicEntitlementIP(ip) {
+				continue
+			}
+			return dialer.DialContext(ctx, network, net.JoinHostPort(ip.String(), port))
+		}
+		return nil, fmt.Errorf("entitlement host resolved only to disallowed addresses")
+	}
+	client := &http.Client{
+		Timeout:       entitlementTimeout,
+		Transport:     outbound.NewTransport(base, outbound.Policy{Name: "connector-entitlement", Timeout: entitlementTimeout, ResponseHeaderTimeout: 2 * time.Second, MaxConcurrent: 32, MaxResponseBytes: entitlementMaxResponseBytes}),
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse },
+	}
+	actual, _ := entitlementClients.LoadOrStore(allowPrivate, client)
+	return actual.(*http.Client)
+}
+
+func publicEntitlementIP(ip netip.Addr) bool {
+	return ip.IsGlobalUnicast() && !ip.IsPrivate() && !ip.IsLoopback() && !ip.IsLinkLocalUnicast() && !ip.IsLinkLocalMulticast()
 }

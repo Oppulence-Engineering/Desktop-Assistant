@@ -323,6 +323,9 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	if err != nil {
 		return err
 	}
+	if err := registry.ConfigureProductEntitlementsJSON(cfg.ConnectorEntitlementURLsJSON, cfg.ConnectorEntitlementHMACKeysJSON); err != nil {
+		return fmt.Errorf("configure connector product entitlements: %w", err)
+	}
 	connectorsH := connectors.New(client, sealer, registry, connectors.Config{
 		OryPublicURL:          cfg.OryPublicURL,
 		OryBrokerClientID:     cfg.OryBrokerClientID,

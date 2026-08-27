@@ -31,6 +31,7 @@ config:
   ORY_BROKER_CLIENT_ID: solomon-connector-broker-staging
   CONNECTOR_REDIRECT_ALLOWLIST: solomon-ai-staging://settings/connectors,https://app.staging.solomon-ai.co/settings/connectors
   CONNECTOR_EMERGENCY_DISABLED: ""
+  CONNECTOR_ENTITLEMENT_URLS_JSON: '{"canvas":"https://api.canvas.staging.solomon-ai.co/v1/internal/entitlements","corinthian":"https://mcp.corinthian.staging.solomon-ai.co/v1/internal/entitlements","cadence":"https://mcp.cadence.staging.solomon-ai.co/v1/internal/entitlements","conduit":"https://mcp.conduit.staging.solomon-ai.co/v1/internal/entitlements","eigen":"https://mcp.eigen.staging.solomon-ai.co/v1/internal/entitlements","wispr":"https://mcp.wispr.staging.solomon-ai.co/v1/internal/entitlements"}'
   PUBLIC_BASE_URL: https://api.x.staging.solomon-ai.co
   # Google OAuth broker callback. MUST be the API host (where /oauth/google/callback
   # is served), not APP_URL — the default falls back to APP_URL, which is the app

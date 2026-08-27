@@ -131,9 +131,11 @@ type Config struct {
 	PublicBaseURL string
 
 	// ConnectorsJSON optionally overrides the built-in connector registry.
-	ConnectorsJSON             string
-	ConnectorEmergencyDisabled []string
-	ConnectorRedirectAllowlist []string
+	ConnectorsJSON                   string
+	ConnectorEntitlementURLsJSON     string
+	ConnectorEntitlementHMACKeysJSON string
+	ConnectorEmergencyDisabled       []string
+	ConnectorRedirectAllowlist       []string
 
 	// Shared-secret HMAC for /oauth-hooks/* (called by Ory, not users).
 	HookHMACSecret string
@@ -695,14 +697,16 @@ func Load() Config {
 		// Default to the WorkOS client id so WorkOS-direct needs only WORKOS_CLIENT_ID.
 		OAuthClientID: getenv("OAUTH_CLIENT_ID", getenv("WORKOS_CLIENT_ID", "")),
 
-		OryPublicURL:               getenv("ORY_PUBLIC_URL", "https://oauth.solomon-ai.co"),
-		OryAdminURL:                getenv("ORY_ADMIN_URL", ""),
-		OryBrokerClientID:          getenv("ORY_BROKER_CLIENT_ID", ""),
-		OryBrokerClientSecret:      getenv("ORY_BROKER_CLIENT_SECRET", ""),
-		PublicBaseURL:              getenv("PUBLIC_BASE_URL", "https://api.x.solomon-ai.co"),
-		ConnectorsJSON:             getenv("CONNECTORS_JSON", ""),
-		ConnectorEmergencyDisabled: getcsv("CONNECTOR_EMERGENCY_DISABLED", ""),
-		ConnectorRedirectAllowlist: getcsv("CONNECTOR_REDIRECT_ALLOWLIST", ""),
+		OryPublicURL:                     getenv("ORY_PUBLIC_URL", "https://oauth.solomon-ai.co"),
+		OryAdminURL:                      getenv("ORY_ADMIN_URL", ""),
+		OryBrokerClientID:                getenv("ORY_BROKER_CLIENT_ID", ""),
+		OryBrokerClientSecret:            getenv("ORY_BROKER_CLIENT_SECRET", ""),
+		PublicBaseURL:                    getenv("PUBLIC_BASE_URL", "https://api.x.solomon-ai.co"),
+		ConnectorsJSON:                   getenv("CONNECTORS_JSON", ""),
+		ConnectorEntitlementURLsJSON:     getenv("CONNECTOR_ENTITLEMENT_URLS_JSON", ""),
+		ConnectorEntitlementHMACKeysJSON: getenv("CONNECTOR_ENTITLEMENT_HMAC_KEYS_JSON", ""),
+		ConnectorEmergencyDisabled:       getcsv("CONNECTOR_EMERGENCY_DISABLED", ""),
+		ConnectorRedirectAllowlist:       getcsv("CONNECTOR_REDIRECT_ALLOWLIST", ""),
 
 		HookHMACSecret:    getenv("HOOK_HMAC_SECRET", ""),
 		InternalAPISecret: getenv("INTERNAL_API_SECRET", ""),

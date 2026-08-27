@@ -14,6 +14,7 @@ s=socket.socket(); s.bind(('127.0.0.1',0)); print(s.getsockname()[1]); s.close()
 PY
 }
 PG_PORT=$(free_port)
+REDIS_PORT=$(free_port)
 OIDC_PORT=$(free_port)
 API_PORT=$(free_port)
 API2_PORT=$(free_port)
@@ -23,6 +24,7 @@ PRODUCT_PORT=$(free_port)
 CONSENT_PORT=$(free_port)
 CONSENT2_PORT=$(free_port)
 PG_NAME="rowboat-rfc012-${$}"
+REDIS_NAME="rowboat-rfc012-redis-${$}"
 PIDS=()
 
 cleanup() {
@@ -30,6 +32,7 @@ cleanup() {
   for pid in "${PIDS[@]:-}"; do kill "$pid" >/dev/null 2>&1 || true; done
   for pid in "${PIDS[@]:-}"; do wait "$pid" >/dev/null 2>&1 || true; done
   docker rm -f "$PG_NAME" >/dev/null 2>&1 || true
+  docker rm -f "$REDIS_NAME" >/dev/null 2>&1 || true
 }
 show_failure() {
   code=$?
@@ -59,6 +62,7 @@ go build -o "$SCRATCH/bin/rowboat-api" ./cmd/server
 go build -o "$SCRATCH/bin/dev-product-mcp" ./cmd/dev-product-mcp
 (cd ../oauth-consent && npm ci --no-audit --no-fund && npm run build) >"$SCRATCH/consent-build.log" 2>&1
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$SCRATCH/broker.pem" >/dev/null 2>&1
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$SCRATCH/broker-next.pem" >/dev/null 2>&1
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj '/CN=localhost' \
   -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1' -keyout "$SCRATCH/fixture-tls.key" -out "$SCRATCH/fixture-tls.crt" >/dev/null 2>&1
 export CURL_CA_BUNDLE="$SCRATCH/fixture-tls.crt"
@@ -89,6 +93,7 @@ cat > "$SCRATCH/connectors.json" <<JSON
 ]
 JSON
 CONNECTORS_JSON=$(tr -d '\n' < "$SCRATCH/connectors.json")
+ENTITLEMENT_HMAC_KEY=rfc012-product-entitlement-key-at-least-32-bytes
 
 echo 'JCODE_CHECKPOINT {"message":"Starting disposable PostgreSQL 16"}'
 docker run -d --rm --name "$PG_NAME" -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=rowboat_rfc012 -p "127.0.0.1:${PG_PORT}:5432" postgres:16-alpine >/dev/null
@@ -101,6 +106,12 @@ docker exec -i "$PG_NAME" psql -U postgres -d rowboat_rfc012 \
   < ../oauth-consent/migrations/20260827210000_shared_state_and_audit_outbox.sql \
   >>"$SCRATCH/migrate.log" 2>&1
 
+echo 'JCODE_CHECKPOINT {"message":"Starting shared Redis for cross-replica refresh serialization"}'
+docker run -d --rm --name "$REDIS_NAME" -p "127.0.0.1:${REDIS_PORT}:6379" redis:7-alpine >/dev/null
+for _ in $(seq 1 60); do docker exec "$REDIS_NAME" redis-cli ping 2>/dev/null | grep -q PONG && break; sleep 1; done
+docker exec "$REDIS_NAME" redis-cli ping | grep -q PONG
+REDIS_URL="redis://127.0.0.1:${REDIS_PORT}/0"
+
 OIDC_URL="http://127.0.0.1:${OIDC_PORT}"
 API_URL="http://127.0.0.1:${API_PORT}"
 API2_URL="http://127.0.0.1:${API2_PORT}"
@@ -108,9 +119,10 @@ PRODUCT_URL="http://127.0.0.1:${PRODUCT_PORT}"
 CONSENT_URL="http://127.0.0.1:${CONSENT_PORT}"
 CONSENT2_URL="http://127.0.0.1:${CONSENT2_PORT}"
 BROKER_KEY=$(cat "$SCRATCH/broker.pem")
-BROKER_KEYRING=$(python3 - "$SCRATCH/broker.pem" <<'PY'
+BROKER_NEXT_KEY=$(cat "$SCRATCH/broker-next.pem")
+BROKER_KEYRING=$(python3 - "$SCRATCH/broker.pem" "$SCRATCH/broker-next.pem" <<'PY'
 import json,sys
-print(json.dumps({"rfc012-broker-key": open(sys.argv[1]).read()}, separators=(",", ":")))
+print(json.dumps({"rfc012-broker-key": open(sys.argv[1]).read(), "rfc012-broker-next": open(sys.argv[2]).read()}, separators=(",", ":")))
 PY
 )
 
@@ -120,24 +132,27 @@ ADDR="127.0.0.1:${OIDC_PORT}" ISSUER="$OIDC_URL" AUDIENCE=rowboat-api HYDRA_CONS
 wait_http "$OIDC_URL/.well-known/openid-configuration"
 
 start_api() {
-  local port=$1 metrics=$2 log=$3
+  local port=$1 metrics=$2 log=$3 signing_key=$4 key_id=$5
   env \
   ENVIRONMENT=development \
   HTTP_ADDR="127.0.0.1:${port}" METRICS_ADDR="127.0.0.1:${metrics}" GRPC_ADDR= \
   DATABASE_URL="$DATABASE_URL" AUTO_MIGRATE=false \
+  REDIS_URL="$REDIS_URL" \
   DB_ENCRYPTION_KEY='rfc012-local-column-encryption-key' \
   OIDC_ISSUER_URL="$OIDC_URL" TOKEN_ISSUER="$OIDC_URL" TOKEN_AUDIENCE=rowboat-api JWKS_URL="$OIDC_URL/.well-known/jwks.json" \
   ORY_PUBLIC_URL="$OIDC_URL" ORY_BROKER_CLIENT_ID=rowboat-rfc012 ORY_BROKER_CLIENT_SECRET=rfc012-secret \
   PUBLIC_BASE_URL="$API2_URL" APP_URL="$API2_URL" \
   CONNECTORS_JSON="$CONNECTORS_JSON" \
-  BROKER_TOKEN_ISSUER="$API_URL" BROKER_TOKEN_PRIVATE_KEY_PEM="$BROKER_KEY" BROKER_TOKEN_KEY_ID=rfc012-broker-key BROKER_TOKEN_TTL=5m \
+  CONNECTOR_ENTITLEMENT_URLS_JSON="{\"dev\":\"${PRODUCT_URL}/v1/entitlements\"}" \
+  CONNECTOR_ENTITLEMENT_HMAC_KEYS_JSON="{\"dev\":\"${ENTITLEMENT_HMAC_KEY}\"}" \
+  BROKER_TOKEN_ISSUER="$API_URL" BROKER_TOKEN_PRIVATE_KEY_PEM="$signing_key" BROKER_TOKEN_KEY_ID="$key_id" BROKER_TOKEN_TTL=5m \
   BROKER_TOKEN_KEYRING_JSON="$BROKER_KEYRING" \
   HOOK_HMAC_SECRET=rfc012-hook-secret-at-least-32-bytes INTERNAL_API_SECRET=rfc012-internal-secret \
   "$SCRATCH/bin/rowboat-api" >"$log" 2>&1 & PIDS+=("$!")
 }
 echo 'JCODE_CHECKPOINT {"message":"Starting two real rowboat-api instances with migrated shared PostgreSQL"}'
-start_api "$API_PORT" "$METRICS_PORT" "$SCRATCH/api-1.log"
-start_api "$API2_PORT" "$METRICS2_PORT" "$SCRATCH/api-2.log"
+start_api "$API_PORT" "$METRICS_PORT" "$SCRATCH/api-1.log" "$BROKER_KEY" rfc012-broker-key
+start_api "$API2_PORT" "$METRICS2_PORT" "$SCRATCH/api-2.log" "$BROKER_NEXT_KEY" rfc012-broker-next
 wait_http "$API_URL/healthz"
 wait_http "$API2_URL/healthz"
 
@@ -145,6 +160,7 @@ DATABASE_URL="$DATABASE_URL" PRODUCT_MCP_ADDR="127.0.0.1:${PRODUCT_PORT}" \
   SSL_CERT_FILE="$SCRATCH/fixture-tls.crt" \
   PRODUCT_MCP_AUDIENCE=dev-product-api PRODUCT_MCP_ISSUER="$API_URL" PRODUCT_MCP_JWKS_URL="$API_URL/.well-known/connector-jwks.json" \
   PRODUCT_MCP_FIXTURE_SECRET=rfc012-fixture-secret \
+  PRODUCT_ENTITLEMENT_HMAC_KEY="$ENTITLEMENT_HMAC_KEY" \
   "$SCRATCH/bin/dev-product-mcp" >"$SCRATCH/product.log" 2>&1 & PIDS+=("$!")
 wait_http "$PRODUCT_URL/healthz"
 

@@ -58,6 +58,10 @@ config:
   CONNECTOR_REDIRECT_ALLOWLIST: solomon-ai://settings/connectors,https://oppulence.io/settings/connectors
   # Comma-separated incident kill switch. See docs/runbooks/connectors.md.
   CONNECTOR_EMERGENCY_DISABLED: ""
+  # Product-owned entitlement endpoints are non-secret. Each request is signed
+  # with the matching product-scoped key from CONNECTOR_ENTITLEMENT_HMAC_KEYS_JSON
+  # in rowboat-api-secrets. Never reuse a key across products.
+  CONNECTOR_ENTITLEMENT_URLS_JSON: '{"canvas":"https://api.canvas.solomon-ai.co/v1/internal/entitlements","corinthian":"https://mcp.corinthian.solomon-ai.co/v1/internal/entitlements","cadence":"https://mcp.cadence.solomon-ai.co/v1/internal/entitlements","conduit":"https://mcp.conduit.solomon-ai.co/v1/internal/entitlements","eigen":"https://mcp.eigen.solomon-ai.co/v1/internal/entitlements","wispr":"https://mcp.wispr.solomon-ai.co/v1/internal/entitlements"}'
   WEBSOCKET_API_URL: wss://api.oppulence.io
   # Google OAuth broker callback — the API host serving /oauth/google/callback (NOT
   # APP_URL, which the default would use). Register this exact URI in Google Cloud.
