@@ -32,6 +32,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/docs"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/embeddings"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/entities"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/feedback"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/google"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
@@ -483,6 +484,33 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		_ = revenue.NewResearchTriggerRunner(revenueSvc, 24*time.Hour, 200, log).Run(ctx)
 	}()
 	revenueH := revenue.NewHandler(revenueSvc, log)
+	entitySvc := entities.New(client, func(ctx context.Context) (entities.Scope, error) {
+		u, ok := auth.UserFromCtx(ctx)
+		if !ok {
+			return entities.Scope{}, entities.ErrForbidden
+		}
+		actor, ok := auth.ActorFromCtx(ctx)
+		if !ok || actor.Kind != auth.KindUser || actor.UserID != u.ID || strings.TrimSpace(actor.WorkOSOrgID) == "" {
+			return entities.Scope{}, entities.ErrForbidden
+		}
+		ws, err := revenueSvc.CurrentWorkspaceForOrg(ctx, u, actor.WorkOSOrgID)
+		if err != nil {
+			return entities.Scope{}, entities.ErrForbidden
+		}
+		return entities.Scope{Workspace: ws, User: u}, nil
+	}, func(ctx context.Context, scope entities.Scope, operation entities.Operation) error {
+		actor, ok := auth.ActorFromCtx(ctx)
+		if !ok || actor.Kind != auth.KindUser || actor.UserID != scope.User.ID || actor.WorkOSOrgID == "" || actor.WorkOSOrgID != scope.Workspace.WorkosOrgID {
+			return entities.ErrForbidden
+		}
+		capability := revenue.WorkspaceView
+		if operation == entities.OperationWrite {
+			capability = revenue.WorkspaceContribute
+		}
+		_, err := revenueSvc.RequireWorkspaceCapability(ctx, scope.User, scope.Workspace, capability)
+		return err
+	})
+	entitiesH := entities.NewHandler(entitySvc)
 	// RFC 031 Layer-1 push sync: keep the mail index live from Gmail pushes.
 	// Ships dark behind REVENUE_MAIL_PUSH_SYNC_ENABLED.
 	if cfg.RevenueMailPushSyncEnabled {
@@ -634,6 +662,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.RequireJWT)
 		r.Use(rl.PerUser(ratelimit.GroupDefault, 600)) // sanity bucket
+		entitiesH.Mount(r)
 
 		r.Get("/v1/me", billingH.Me)
 		// Shape adapter for the upstream renderer's Better Auth useSession hook.

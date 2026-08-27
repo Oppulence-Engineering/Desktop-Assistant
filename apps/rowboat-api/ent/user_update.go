@@ -33,6 +33,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
@@ -1069,6 +1072,51 @@ func (_u *UserUpdate) AddRelationshipSourceStatuses(v ...*RelationshipSourceStat
 		ids[i] = v[i].ID
 	}
 	return _u.AddRelationshipSourceStatusIDs(ids...)
+}
+
+// AddEntityIDs adds the "entities" edge to the Entity entity by IDs.
+func (_u *UserUpdate) AddEntityIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddEntityIDs(ids...)
+	return _u
+}
+
+// AddEntities adds the "entities" edges to the Entity entity.
+func (_u *UserUpdate) AddEntities(v ...*Entity) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityIDs(ids...)
+}
+
+// AddEntityResourceRefIDs adds the "entity_resource_refs" edge to the EntityResourceRef entity by IDs.
+func (_u *UserUpdate) AddEntityResourceRefIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddEntityResourceRefIDs(ids...)
+	return _u
+}
+
+// AddEntityResourceRefs adds the "entity_resource_refs" edges to the EntityResourceRef entity.
+func (_u *UserUpdate) AddEntityResourceRefs(v ...*EntityResourceRef) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityResourceRefIDs(ids...)
+}
+
+// AddEntityIdentifierIDs adds the "entity_identifiers" edge to the EntityIdentifier entity by IDs.
+func (_u *UserUpdate) AddEntityIdentifierIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddEntityIdentifierIDs(ids...)
+	return _u
+}
+
+// AddEntityIdentifiers adds the "entity_identifiers" edges to the EntityIdentifier entity.
+func (_u *UserUpdate) AddEntityIdentifiers(v ...*EntityIdentifier) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityIdentifierIDs(ids...)
 }
 
 // AddActionProposalIDs adds the "action_proposals" edge to the ActionProposal entity by IDs.
@@ -2370,6 +2418,69 @@ func (_u *UserUpdate) RemoveRelationshipSourceStatuses(v ...*RelationshipSourceS
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRelationshipSourceStatusIDs(ids...)
+}
+
+// ClearEntities clears all "entities" edges to the Entity entity.
+func (_u *UserUpdate) ClearEntities() *UserUpdate {
+	_u.mutation.ClearEntities()
+	return _u
+}
+
+// RemoveEntityIDs removes the "entities" edge to Entity entities by IDs.
+func (_u *UserUpdate) RemoveEntityIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveEntityIDs(ids...)
+	return _u
+}
+
+// RemoveEntities removes "entities" edges to Entity entities.
+func (_u *UserUpdate) RemoveEntities(v ...*Entity) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityIDs(ids...)
+}
+
+// ClearEntityResourceRefs clears all "entity_resource_refs" edges to the EntityResourceRef entity.
+func (_u *UserUpdate) ClearEntityResourceRefs() *UserUpdate {
+	_u.mutation.ClearEntityResourceRefs()
+	return _u
+}
+
+// RemoveEntityResourceRefIDs removes the "entity_resource_refs" edge to EntityResourceRef entities by IDs.
+func (_u *UserUpdate) RemoveEntityResourceRefIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveEntityResourceRefIDs(ids...)
+	return _u
+}
+
+// RemoveEntityResourceRefs removes "entity_resource_refs" edges to EntityResourceRef entities.
+func (_u *UserUpdate) RemoveEntityResourceRefs(v ...*EntityResourceRef) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityResourceRefIDs(ids...)
+}
+
+// ClearEntityIdentifiers clears all "entity_identifiers" edges to the EntityIdentifier entity.
+func (_u *UserUpdate) ClearEntityIdentifiers() *UserUpdate {
+	_u.mutation.ClearEntityIdentifiers()
+	return _u
+}
+
+// RemoveEntityIdentifierIDs removes the "entity_identifiers" edge to EntityIdentifier entities by IDs.
+func (_u *UserUpdate) RemoveEntityIdentifierIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveEntityIdentifierIDs(ids...)
+	return _u
+}
+
+// RemoveEntityIdentifiers removes "entity_identifiers" edges to EntityIdentifier entities.
+func (_u *UserUpdate) RemoveEntityIdentifiers(v ...*EntityIdentifier) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityIdentifierIDs(ids...)
 }
 
 // ClearActionProposals clears all "action_proposals" edges to the ActionProposal entity.
@@ -5219,6 +5330,141 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.EntitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntitiesTable,
+			Columns: []string{user.EntitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntitiesIDs(); len(nodes) > 0 && !_u.mutation.EntitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntitiesTable,
+			Columns: []string{user.EntitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntitiesTable,
+			Columns: []string{user.EntitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EntityResourceRefsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityResourceRefsTable,
+			Columns: []string{user.EntityResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntityResourceRefsIDs(); len(nodes) > 0 && !_u.mutation.EntityResourceRefsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityResourceRefsTable,
+			Columns: []string{user.EntityResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntityResourceRefsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityResourceRefsTable,
+			Columns: []string{user.EntityResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EntityIdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityIdentifiersTable,
+			Columns: []string{user.EntityIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntityIdentifiersIDs(); len(nodes) > 0 && !_u.mutation.EntityIdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityIdentifiersTable,
+			Columns: []string{user.EntityIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntityIdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityIdentifiersTable,
+			Columns: []string{user.EntityIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.ActionProposalsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -6306,6 +6552,51 @@ func (_u *UserUpdateOne) AddRelationshipSourceStatuses(v ...*RelationshipSourceS
 		ids[i] = v[i].ID
 	}
 	return _u.AddRelationshipSourceStatusIDs(ids...)
+}
+
+// AddEntityIDs adds the "entities" edge to the Entity entity by IDs.
+func (_u *UserUpdateOne) AddEntityIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddEntityIDs(ids...)
+	return _u
+}
+
+// AddEntities adds the "entities" edges to the Entity entity.
+func (_u *UserUpdateOne) AddEntities(v ...*Entity) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityIDs(ids...)
+}
+
+// AddEntityResourceRefIDs adds the "entity_resource_refs" edge to the EntityResourceRef entity by IDs.
+func (_u *UserUpdateOne) AddEntityResourceRefIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddEntityResourceRefIDs(ids...)
+	return _u
+}
+
+// AddEntityResourceRefs adds the "entity_resource_refs" edges to the EntityResourceRef entity.
+func (_u *UserUpdateOne) AddEntityResourceRefs(v ...*EntityResourceRef) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityResourceRefIDs(ids...)
+}
+
+// AddEntityIdentifierIDs adds the "entity_identifiers" edge to the EntityIdentifier entity by IDs.
+func (_u *UserUpdateOne) AddEntityIdentifierIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddEntityIdentifierIDs(ids...)
+	return _u
+}
+
+// AddEntityIdentifiers adds the "entity_identifiers" edges to the EntityIdentifier entity.
+func (_u *UserUpdateOne) AddEntityIdentifiers(v ...*EntityIdentifier) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityIdentifierIDs(ids...)
 }
 
 // AddActionProposalIDs adds the "action_proposals" edge to the ActionProposal entity by IDs.
@@ -7607,6 +7898,69 @@ func (_u *UserUpdateOne) RemoveRelationshipSourceStatuses(v ...*RelationshipSour
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRelationshipSourceStatusIDs(ids...)
+}
+
+// ClearEntities clears all "entities" edges to the Entity entity.
+func (_u *UserUpdateOne) ClearEntities() *UserUpdateOne {
+	_u.mutation.ClearEntities()
+	return _u
+}
+
+// RemoveEntityIDs removes the "entities" edge to Entity entities by IDs.
+func (_u *UserUpdateOne) RemoveEntityIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveEntityIDs(ids...)
+	return _u
+}
+
+// RemoveEntities removes "entities" edges to Entity entities.
+func (_u *UserUpdateOne) RemoveEntities(v ...*Entity) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityIDs(ids...)
+}
+
+// ClearEntityResourceRefs clears all "entity_resource_refs" edges to the EntityResourceRef entity.
+func (_u *UserUpdateOne) ClearEntityResourceRefs() *UserUpdateOne {
+	_u.mutation.ClearEntityResourceRefs()
+	return _u
+}
+
+// RemoveEntityResourceRefIDs removes the "entity_resource_refs" edge to EntityResourceRef entities by IDs.
+func (_u *UserUpdateOne) RemoveEntityResourceRefIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveEntityResourceRefIDs(ids...)
+	return _u
+}
+
+// RemoveEntityResourceRefs removes "entity_resource_refs" edges to EntityResourceRef entities.
+func (_u *UserUpdateOne) RemoveEntityResourceRefs(v ...*EntityResourceRef) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityResourceRefIDs(ids...)
+}
+
+// ClearEntityIdentifiers clears all "entity_identifiers" edges to the EntityIdentifier entity.
+func (_u *UserUpdateOne) ClearEntityIdentifiers() *UserUpdateOne {
+	_u.mutation.ClearEntityIdentifiers()
+	return _u
+}
+
+// RemoveEntityIdentifierIDs removes the "entity_identifiers" edge to EntityIdentifier entities by IDs.
+func (_u *UserUpdateOne) RemoveEntityIdentifierIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveEntityIdentifierIDs(ids...)
+	return _u
+}
+
+// RemoveEntityIdentifiers removes "entity_identifiers" edges to EntityIdentifier entities.
+func (_u *UserUpdateOne) RemoveEntityIdentifiers(v ...*EntityIdentifier) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityIdentifierIDs(ids...)
 }
 
 // ClearActionProposals clears all "action_proposals" edges to the ActionProposal entity.
@@ -10479,6 +10833,141 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipsourcestatus.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EntitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntitiesTable,
+			Columns: []string{user.EntitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntitiesIDs(); len(nodes) > 0 && !_u.mutation.EntitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntitiesTable,
+			Columns: []string{user.EntitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntitiesTable,
+			Columns: []string{user.EntitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EntityResourceRefsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityResourceRefsTable,
+			Columns: []string{user.EntityResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntityResourceRefsIDs(); len(nodes) > 0 && !_u.mutation.EntityResourceRefsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityResourceRefsTable,
+			Columns: []string{user.EntityResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntityResourceRefsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityResourceRefsTable,
+			Columns: []string{user.EntityResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EntityIdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityIdentifiersTable,
+			Columns: []string{user.EntityIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntityIdentifiersIDs(); len(nodes) > 0 && !_u.mutation.EntityIdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityIdentifiersTable,
+			Columns: []string{user.EntityIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntityIdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityIdentifiersTable,
+			Columns: []string{user.EntityIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

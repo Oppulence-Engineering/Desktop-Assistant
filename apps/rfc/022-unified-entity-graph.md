@@ -3,11 +3,11 @@
 |                       |                                                                                                                                                                                                                                                                                                                                                                                                              |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **RFC**               | 022                                                                                                                                                                                                                                                                                                                                                                                                          |
-| **Status**            | Draft — not started. Only the `resourceRef` grammar shipped, inside RFC 036's relationship model; WP1/WP2/WP3 all unimplemented (see Implementation status)                                                                                                                                                                                                                                                  |
+| **Status**            | Implemented — WP1/WP2/WP3 shipped on 2026-08-27; final repository and adversarial validation recorded below                                                                                                                                                                                                                                                                                               |
 | **Track**             | Memory & identity · the "one graph, many surfaces" spine                                                                                                                                                                                                                                                                                                                                                     |
 | **Owners**            | `apps/x` (knowledge graph) · `apps/rowboat-api` (shared entity spine, FGA)                                                                                                                                                                                                                                                                                                                                   |
 | **Created**           | 2026-06-10                                                                                                                                                                                                                                                                                                                                                                                                   |
-| **Last updated**      | 2026-08-12                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Last updated**      | 2026-08-27                                                                                                                                                                                                                                                                                                                                                                                                   |
 | **Depends on**        | [RFC 011 — Identity & Authorization](./complete-011-identity-and-authorization-plane.md), [RFC 015 — WorkOS FGA](./015-rowboat-platform-workos-fga-and-widget-auth.md) (org scoping)                                                                                                                                                                                                                         |
 | **Enables / related** | [RFC 008 — Conduit & Eigen Faculties](./008-conduit-eigen-faculties.md) & [RFC 013 — Product Connector Fabric](./013-oppulence-product-connector-fabric.md) (the Mirror seam writes `resourceRefs`); [RFC 021 — Semantic Index](./complete-021-semantic-memory-index.md); [RFC 023 — Closed-Loop Actions](./023-closed-loop-actions.md); [RFC 026 — Finance Command Center](./026-finance-command-center.md) |
 | **Supersedes**        | none                                                                                                                                                                                                                                                                                                                                                                                                         |
@@ -29,33 +29,25 @@ Solomon's knowledge entities (`People/Alice.md`, `Companies/Acme.md`, `Invoices/
 
 **Problem.** Without stable ids and cross-product refs, the vertical products cannot be unified into one context. And without a shared spine, the memory dies with one laptop and one user — useless for a finance team.
 
-### Implementation status (checked 2026-08-12)
+### Implementation status (checked 2026-08-27)
 
 Checked against this RFC's own [Acceptance criteria](#acceptance-criteria) and
 [work packages](#code-level-implementation-playbook):
 
 | Deliverable                                                 | State                | Evidence                                                                                                                                                                     |
 | ----------------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| WP1 — stable ULID minted by `build_graph.ts`, rename-stable | ❌ not started       | No `ulid` reference anywhere in `apps/x/packages/core/src/knowledge/`; `graph_state.ts` still keys `processedFiles` by file path                                             |
-| WP2 — reconciliation resolver                               | ❌ not started       | No resolver module                                                                                                                                                           |
-| WP3 — org-scoped shared spine + FGA                         | ❌ not started       | No `Entity` schema in `apps/rowboat-api/ent/schema/`; no `/v1/entities` route                                                                                                |
-| `resourceRef` grammar (`product:type:externalId`)           | ✅ adopted, narrowly | `apps/rowboat-api/ent/schema/relationship.go` — `field.JSON("resource_refs", []string{})` with the comment "resource_refs follows RFC 022's product:type:externalId grammar" |
-| Product sources reachable as events                         | ✅ shipped           | `cloud_event.go` source enum (see table above)                                                                                                                               |
+| WP1 — stable ULID minted by `build_graph.ts`, rename-stable | ✅ shipped | `apps/x/packages/core/src/knowledge/entity-identity.ts`; awaited startup backfill, deterministic duplicate repair, common write and external-watcher protection, rename regression tests |
+| WP2 — reconciliation resolver                               | ✅ shipped | `entity-resolver.ts`; extensible product Read-adapter registry, deterministic two-product linking, durable ambiguous-link review queue, Copilot review tool and citation lookup |
+| WP3 — org-scoped shared spine + FGA                         | ✅ shipped | Ent `Entity`, normalized `EntityResourceRef`/`EntityIdentifier`, `/v1/entities` routes, workspace capability checks, durable aliases, offline outbox and canonical-id adoption |
+| `resourceRef` grammar (`product:type:externalId`)           | ✅ shipped | Shared bounded parser/formatter on desktop, strict server validation, normalized workspace-unique reverse index, generated OpenAPI contract |
+| Product sources reachable as events                         | ✅ shipped | `cloud_event.go` source enum (see table above) |
 
-So the **grammar** from this RFC is in production use, but the **universal
-entity spine it exists to serve is not built**. [RFC 036](./036-relationship-state-engine.md)
-implemented canonical identity for the narrower customer-relationship case
-(`Relationship`, `PersonIdentity`, `RelationshipIdentity*`) and borrowed this
-RFC's ref grammar to do it.
-
-That leaves a real tension worth deciding deliberately rather than by drift:
-[`README.md`](./README.md) ranks this RFC **Tier 1, rank 2** — "the shared spine
-every source must resolve against" — while none of its three work packages have
-started, and RFC 036 has already solved the highest-value slice a different way.
-Either this RFC should be rescoped to what remains genuinely unserved by RFC 036
-(non-customer entities: invoices, companies as finance objects, cross-product
-reconciliation) or its Tier 1 ranking should move. It should not sit at rank 2
-indefinitely with zero implementation.
+RFC 022 now owns stable identity and projection-only sharing for general and
+non-customer knowledge entities. [RFC 036](./036-relationship-state-engine.md)
+remains authoritative for customer relationship state, observations,
+assertions, and encrypted evidence. Copilot's `entity-lookup` exposes identity
+citations and explicitly routes customer-state questions to
+`relationship-lookup`, preventing two competing sources of truth.
 
 ## Goals
 
@@ -107,12 +99,12 @@ identifiers: # deterministic match keys (for reconciliation)
 
 ```
 <product>:<type>:<externalId>
-product  ∈ conduit | cadence | canvas | corinthian | eigen
-type     ∈ customer | invoice | vendor | bill | entity | dispute | …   (product-defined)
+product  = lowercase connector id (`[a-z][a-z0-9_-]{0,63}`)
+type     = lowercase product-defined record type (`[a-z][a-z0-9_-]{0,63}`)
 externalId = the product's own stable id (opaque to Rowboat)
 ```
 
-This mirrors the `resourceId` concept already named in [RFC 008](./008-conduit-eigen-faculties.md)/[013](./013-oppulence-product-connector-fabric.md) (e.g. `knowledge/Invoices/INV-456.md` → `resourceId: conduit:invoice:inv_456`) and generalises it to a **set** so one entity spans products.
+This mirrors the `resourceId` concept already named in [RFC 008](./008-conduit-eigen-faculties.md)/[013](./013-oppulence-product-connector-fabric.md) (e.g. `knowledge/Invoices/INV-456.md` → `resourceId: conduit:invoice:inv_456`) and generalises it to a **set** so one entity spans products. The grammar is connector-extensible rather than hard-coded to five products; product and type remain bounded while `externalId` is opaque and may contain additional colons.
 
 ### Reconciliation resolver
 
@@ -148,7 +140,7 @@ flowchart LR
 ```
 
 - **Projection = `{id, kind, displayName, resourceRefs, identifiers, oneLineSummary}`** only. The note **body, frontmatter secrets, and raw mirrored content never leave the device.**
-- FGA ([RFC 015](./015-rowboat-platform-workos-fga-and-widget-auth.md)) scopes the spine to the org; cross-org reads are denied at the resolver.
+- The current authorization plane uses the verified WorkOS org claim plus durable workspace membership/capability checks (`WorkspaceView` for reads, `WorkspaceContribute` for writes). This is the repository's concrete RFC 015-compatible boundary; cross-org reads are denied before entity access.
 - Conflict policy: ids are globally unique (ULID), so two devices minting "Acme" independently reconcile by `identifiers` → the spine merges them into one canonical id and both devices adopt it.
 
 ## Data model
@@ -165,13 +157,18 @@ field.String("entity_id").Unique().NotEmpty()      // the ULID
 field.String("org_id").NotEmpty()                  // FGA scope (workos_org_id)
 field.String("kind").NotEmpty()
 field.String("display_name")
-field.JSON("resource_refs", []string{})            // ["conduit:customer:…", …]
-field.JSON("identifiers", map[string]any{})        // deterministic keys
+field.JSON("resource_refs", []string{})            // API projection; normalized child rows own reverse lookup
+field.JSON("identifiers", map[string]any{})        // versioned sha256:v1 fingerprints only
 field.String("one_line_summary").Optional()        // bounded, no PII dumps
 // edges: belongs to org; many runs/events reference it (audit)
 ```
 
-Indexes on `(org_id, entity_id)` and on each `resource_ref` for reverse lookup ("which entity is `conduit:customer:cus_8fA2`?").
+`EntityResourceRef` provides a normalized, workspace-unique `(workspace, ref)`
+index for concurrency-safe reverse lookup. `EntityIdentifier` provides a
+normalized `(workspace, key, fingerprint)` index without uniqueness, because a
+shared domain can be genuinely ambiguous and must remain reviewable. A merged
+`Entity` row is retained as a durable tombstone/alias carrying
+`canonical_entity_id`, so a lost-response replay still converges.
 
 ## API surface
 
@@ -229,7 +226,7 @@ Indexes on `(org_id, entity_id)` and on each `resource_ref` for reverse lookup (
 - **Privacy boundary is the core control**: only the projection allowlist (`id, kind, displayName, refs, identifiers, summary`) may sync up. Bodies, mirrored financial content, and secrets stay local. Enforced on **both** ends.
 - **FGA org scoping** ([RFC 015](./015-rowboat-platform-workos-fga-and-widget-auth.md)): every spine read/write checks org membership; cross-org access denied. Resolver never links across orgs.
 - **No automatic identity merges** across deterministic-key collisions that imply different orgs; such cases require user confirmation.
-- `identifiers` (tax ids, email domains) are sensitive — stored in the org-scoped spine only, never in shared logs/metrics.
+- Raw identifiers (tax ids, email domains, addresses) never leave the device. The desktop canonicalizes and sends only `sha256:v1:<64 lowercase hex>` fingerprints; the server rejects raw values. Fingerprints remain sensitive, org-scoped, omitted from generated Ent CRUD, and absent from logs/metric labels.
 
 ## Failure modes & edge cases
 
@@ -254,6 +251,55 @@ Indexes on `(org_id, entity_id)` and on each `resource_ref` for reverse lookup (
 - Resolver links a desktop entity to ≥ 2 product records deterministically and idempotently.
 - Shared spine syncs only the projection (verified) and is FGA-org-scoped.
 - The Copilot can answer a cross-product question about one entity citing refs from ≥ 2 products.
+
+## Completion record (2026-08-27)
+
+RFC 022 shipped after two independent adversarial reviews, one centered on the
+desktop/local-first boundary and one centered on the backend/tenant boundary.
+Every actionable finding was addressed before completion:
+
+- **Desktop authority and recovery:** ordinary graph writes cannot author
+  resolver-owned identity fields; startup always validates identities and
+  repairs duplicates; canonical adoption is collision-aware and refreshes the
+  watcher snapshot; ambiguous links can only be accepted through the
+  user-controlled renderer/IPC path.
+- **Durable synchronization:** the projection outbox classifies permanent and
+  transient failures, dead-letters non-retryable items without head-of-line
+  blocking, uses bounded backoff and lifecycle-owned replay, and exposes durable
+  degraded health and remediation when capacity is exhausted.
+- **Privacy and contracts:** only the fixed projection crosses the device
+  boundary; identifier values are one-way fingerprints and keys use the bounded
+  protocol taxonomy. OpenAPI, generated TypeScript, and generated Zod enforce
+  the same resource-ref, identifier-key, uniqueness, and collection limits.
+- **Tenant authority and convergence:** the current verified WorkOS org claim
+  selects the exact workspace; Ent read and mutation guards scope `Entity`,
+  `EntityResourceRef`, and `EntityIdentifier`; transaction retries and
+  compare-and-swap updates preserve concurrent evidence; stale aliases forward
+  new evidence to the canonical entity.
+
+Acceptance was exercised through the real integration boundaries, not only
+unit fixtures:
+
+- a disposable PostgreSQL instance passed the same-entity distinct-evidence
+  race test ten consecutive times, including equality between the public JSON
+  projection and normalized resource-ref/identifier rows;
+- the real OIDC dev identity service and API accepted same-org writes and reads,
+  hid both direct and reverse lookups from a different org, rejected raw
+  identifiers, unknown JSON fields, and unsupported media types, and preserved
+  both Conduitt and Cadence refs;
+- the built desktop `createEntitySpineClient` performed PUT, GET, and reverse
+  resolution against that API, and the generated web Zod response schema parsed
+  the resulting authenticated response;
+- focused desktop acceptance covers stable rename/backfill, deterministic
+  Conduitt + Cadence sandbox Read-seam reconciliation, human-gated ambiguous
+  links, offline replay/dead letters/capacity health, privacy-safe projection,
+  and Copilot source facts with independent product citations.
+
+The product-specific Conduitt, Cadence, Canvas, and Eigen connector
+implementations remain owned by RFC 008/RFC 013, as stated in this RFC's
+non-goals. RFC 022 provides and validates the production registration,
+reconciliation, projection, and citation contracts those connectors invoke; it
+does not duplicate their provider-specific transport work.
 
 ## Alternatives considered
 

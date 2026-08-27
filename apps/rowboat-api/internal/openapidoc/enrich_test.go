@@ -85,6 +85,9 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/relationship-sources/status",
 		"/v1/relationship-recommendations/{actionId}/approve",
 		"/v1/relationship-recommendations/{actionId}/reject",
+		"/v1/entities",
+		"/v1/entities/{id}",
+		"/v1/entities/merge",
 		"/oauth-hooks/pre-consent",
 		"/v1/internal/connections/invalidate",
 		"/graphql",
@@ -178,6 +181,24 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if confidence["minimum"] != 0 || confidence["maximum"] != 1 {
 		t.Fatalf("observation assertion confidence bounds are invalid: %#v", confidence)
 	}
+	entityProjection := asObj(schemas["EntityProjection"])
+	entityProperties := asObj(entityProjection["properties"])
+	identifierItems := asObj(asObj(asObj(entityProperties["identifiers"])["additionalProperties"])["items"])
+	if identifierItems["pattern"] != "^sha256:v1:[0-9a-f]{64}$" {
+		t.Fatalf("entity identifier contract must reject raw PII: %#v", identifierItems)
+	}
+	resourceRefItems := asObj(asObj(entityProperties["resourceRefs"])["items"])
+	if resourceRefItems["pattern"] == nil || asObj(entityProperties["resourceRefs"])["maxItems"] != 100 {
+		t.Fatalf("entity resourceRef contract is unbounded: %#v", entityProperties["resourceRefs"])
+	}
+	entityID := asObj(entityProperties["id"])
+	if entityID["description"] != "Optional body copy of the path ULID." || entityID["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
+		t.Fatalf("entity projection ULID metadata was overwritten: %#v", entityID)
+	}
+	entityStatus := asObj(asObj(asObj(schemas["EntitySpine"])["properties"])["status"])
+	if entityStatus["description"] != "Lifecycle status." {
+		t.Fatalf("entity lifecycle metadata was overwritten: %#v", entityStatus)
+	}
 }
 
 func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
@@ -190,14 +211,14 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("parse checked-in openapi json: %v", err)
 	}
 	paths := asObj(spec["paths"])
-	if paths["/v1/me"] == nil || paths["/v1/background-task-templates"] == nil || paths["/v1/background-tasks"] == nil || paths["/v1/background-tasks/first-party/ensure"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events/stream"] == nil || paths["/v1/llm/chat/completions"] == nil || paths["/v1/connectors"] == nil || paths["/v1/connections/{name}/api-key"] == nil || paths["/v1/slack-oauth/workspaces"] == nil || paths["/v1/slack-oauth/thread/read"] == nil {
+	if paths["/v1/me"] == nil || paths["/v1/background-task-templates"] == nil || paths["/v1/background-tasks"] == nil || paths["/v1/background-tasks/first-party/ensure"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events/stream"] == nil || paths["/v1/llm/chat/completions"] == nil || paths["/v1/connectors"] == nil || paths["/v1/connections/{name}/api-key"] == nil || paths["/v1/slack-oauth/workspaces"] == nil || paths["/v1/slack-oauth/thread/read"] == nil || paths["/v1/entities"] == nil || paths["/v1/entities/{id}"] == nil || paths["/v1/entities/merge"] == nil {
 		t.Fatal("checked-in openapi json is missing mounted runtime API paths")
 	}
 	if paths["/credit-ledgers"] != nil {
 		t.Fatal("checked-in openapi json still contains unmounted ent CRUD paths")
 	}
 	schemas := asObj(asObj(spec["components"])["schemas"])
-	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil || schemas["IntegrationTemplateBlock"] == nil || schemas["SlackWorkspacesResponse"] == nil || schemas["SlackThreadReadResponse"] == nil {
+	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil || schemas["IntegrationTemplateBlock"] == nil || schemas["SlackWorkspacesResponse"] == nil || schemas["SlackThreadReadResponse"] == nil || schemas["EntityProjection"] == nil || schemas["EntitySpine"] == nil {
 		t.Fatal("checked-in openapi json is missing enriched runtime schemas")
 	}
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
@@ -206,5 +227,9 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 	if value := asObj(evidenceProperties["value"]); value["oneOf"] == nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)
+	}
+	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
+	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
+		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
 	}
 }

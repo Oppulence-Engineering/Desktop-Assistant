@@ -2717,6 +2717,50 @@ const ipcSchemas = {
     req: z.object({ actionId: z.string(), reason: z.string().min(1) }),
     res: RelationshipActionSchema,
   },
+  "entities:listLinkSuggestions": {
+    req: z.object({}),
+    res: z.array(
+      z.object({
+        id: z.string(),
+        entityId: z.string(),
+        notePath: z.string(),
+        product: z.string(),
+        recordType: z.string(),
+        candidateRefs: z.array(z.string()),
+        matchedIdentifiers: z.array(z.string()),
+        status: z.enum(["pending", "accepted", "rejected"]),
+        createdAt: z.string(),
+      }),
+    ),
+  },
+  "entities:getSpineHealth": {
+    req: z.object({}),
+    res: z.object({
+      status: z.enum(["healthy", "degraded"]),
+      remaining: z.number().int().nonnegative(),
+      deadLetters: z.number().int().nonnegative(),
+      lastAttemptAt: z.string(),
+      lastError: z.string().optional(),
+    }),
+  },
+  "entities:reviewLinkSuggestion": {
+    req: z.object({
+      suggestionId: z.string(),
+      decision: z.enum(["accept", "reject"]),
+      chosenRef: z.string().optional(),
+    }),
+    res: z.object({
+      id: z.string(),
+      entityId: z.string(),
+      notePath: z.string(),
+      product: z.string(),
+      recordType: z.string(),
+      candidateRefs: z.array(z.string()),
+      matchedIdentifiers: z.array(z.string()),
+      status: z.enum(["pending", "accepted", "rejected"]),
+      createdAt: z.string(),
+    }),
+  },
   // Feedback (relayed to Plain via the backend; signed-in only)
   "feedback:submit": {
     req: z.object({

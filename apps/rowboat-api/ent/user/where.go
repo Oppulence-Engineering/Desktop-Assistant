@@ -1779,6 +1779,75 @@ func HasRelationshipSourceStatusesWith(preds ...predicate.RelationshipSourceStat
 	})
 }
 
+// HasEntities applies the HasEdge predicate on the "entities" edge.
+func HasEntities() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EntitiesTable, EntitiesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEntitiesWith applies the HasEdge predicate on the "entities" edge with a given conditions (other predicates).
+func HasEntitiesWith(preds ...predicate.Entity) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newEntitiesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEntityResourceRefs applies the HasEdge predicate on the "entity_resource_refs" edge.
+func HasEntityResourceRefs() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EntityResourceRefsTable, EntityResourceRefsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEntityResourceRefsWith applies the HasEdge predicate on the "entity_resource_refs" edge with a given conditions (other predicates).
+func HasEntityResourceRefsWith(preds ...predicate.EntityResourceRef) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newEntityResourceRefsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasEntityIdentifiers applies the HasEdge predicate on the "entity_identifiers" edge.
+func HasEntityIdentifiers() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EntityIdentifiersTable, EntityIdentifiersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEntityIdentifiersWith applies the HasEdge predicate on the "entity_identifiers" edge with a given conditions (other predicates).
+func HasEntityIdentifiersWith(preds ...predicate.EntityIdentifier) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newEntityIdentifiersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasActionProposals applies the HasEdge predicate on the "action_proposals" edge.
 func HasActionProposals() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

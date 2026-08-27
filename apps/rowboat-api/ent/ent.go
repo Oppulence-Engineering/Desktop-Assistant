@@ -35,6 +35,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -167,6 +170,9 @@ func checkColumn(t, c string) error {
 			commitmentevent.Table:                   commitmentevent.ValidColumn,
 			conversationintelligenceartifact.Table:  conversationintelligenceartifact.ValidColumn,
 			creditledger.Table:                      creditledger.ValidColumn,
+			entity.Table:                            entity.ValidColumn,
+			entityidentifier.Table:                  entityidentifier.ValidColumn,
+			entityresourceref.Table:                 entityresourceref.ValidColumn,
 			googlewatch.Table:                       googlewatch.ValidColumn,
 			llmusage.Table:                          llmusage.ValidColumn,
 			llmusagehistory.Table:                   llmusagehistory.ValidColumn,

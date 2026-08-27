@@ -34,6 +34,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -120,6 +123,9 @@ const (
 	TypeCommitmentEvent                   = "CommitmentEvent"
 	TypeConversationIntelligenceArtifact  = "ConversationIntelligenceArtifact"
 	TypeCreditLedger                      = "CreditLedger"
+	TypeEntity                            = "Entity"
+	TypeEntityIdentifier                  = "EntityIdentifier"
+	TypeEntityResourceRef                 = "EntityResourceRef"
 	TypeGoogleWatch                       = "GoogleWatch"
 	TypeLLMUsage                          = "LLMUsage"
 	TypeLLMUsageHistory                   = "LLMUsageHistory"
@@ -31582,6 +31588,2569 @@ func (m *CreditLedgerMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown CreditLedger edge %s", name)
+}
+
+// EntityMutation represents an operation that mutates the Entity nodes in the graph.
+type EntityMutation struct {
+	config
+	op                              Op
+	typ                             string
+	id                              *uuid.UUID
+	created_at                      *time.Time
+	updated_at                      *time.Time
+	entity_id                       *string
+	kind                            *string
+	display_name                    *string
+	resource_refs                   *[]string
+	appendresource_refs             []string
+	identifiers                     *map[string][]string
+	one_line_summary                *string
+	status                          *string
+	canonical_entity_id             *string
+	version                         *int
+	addversion                      *int
+	clearedFields                   map[string]struct{}
+	workspace                       *uuid.UUID
+	clearedworkspace                bool
+	user                            *uuid.UUID
+	cleareduser                     bool
+	normalized_resource_refs        map[uuid.UUID]struct{}
+	removednormalized_resource_refs map[uuid.UUID]struct{}
+	clearednormalized_resource_refs bool
+	normalized_identifiers          map[uuid.UUID]struct{}
+	removednormalized_identifiers   map[uuid.UUID]struct{}
+	clearednormalized_identifiers   bool
+	done                            bool
+	oldValue                        func(context.Context) (*Entity, error)
+	predicates                      []predicate.Entity
+}
+
+var _ ent.Mutation = (*EntityMutation)(nil)
+
+// entityOption allows management of the mutation configuration using functional options.
+type entityOption func(*EntityMutation)
+
+// newEntityMutation creates new mutation for the Entity entity.
+func newEntityMutation(c config, op Op, opts ...entityOption) *EntityMutation {
+	m := &EntityMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeEntity,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withEntityID sets the ID field of the mutation.
+func withEntityID(id uuid.UUID) entityOption {
+	return func(m *EntityMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Entity
+		)
+		m.oldValue = func(ctx context.Context) (*Entity, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Entity.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withEntity sets the old Entity of the mutation.
+func withEntity(node *Entity) entityOption {
+	return func(m *EntityMutation) {
+		m.oldValue = func(context.Context) (*Entity, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m EntityMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m EntityMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Entity entities.
+func (m *EntityMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *EntityMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *EntityMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Entity.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *EntityMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *EntityMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *EntityMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *EntityMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *EntityMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *EntityMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetEntityID sets the "entity_id" field.
+func (m *EntityMutation) SetEntityID(s string) {
+	m.entity_id = &s
+}
+
+// EntityID returns the value of the "entity_id" field in the mutation.
+func (m *EntityMutation) EntityID() (r string, exists bool) {
+	v := m.entity_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEntityID returns the old "entity_id" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldEntityID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEntityID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEntityID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEntityID: %w", err)
+	}
+	return oldValue.EntityID, nil
+}
+
+// ResetEntityID resets all changes to the "entity_id" field.
+func (m *EntityMutation) ResetEntityID() {
+	m.entity_id = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *EntityMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *EntityMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *EntityMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetDisplayName sets the "display_name" field.
+func (m *EntityMutation) SetDisplayName(s string) {
+	m.display_name = &s
+}
+
+// DisplayName returns the value of the "display_name" field in the mutation.
+func (m *EntityMutation) DisplayName() (r string, exists bool) {
+	v := m.display_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDisplayName returns the old "display_name" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldDisplayName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDisplayName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDisplayName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDisplayName: %w", err)
+	}
+	return oldValue.DisplayName, nil
+}
+
+// ResetDisplayName resets all changes to the "display_name" field.
+func (m *EntityMutation) ResetDisplayName() {
+	m.display_name = nil
+}
+
+// SetResourceRefs sets the "resource_refs" field.
+func (m *EntityMutation) SetResourceRefs(s []string) {
+	m.resource_refs = &s
+	m.appendresource_refs = nil
+}
+
+// ResourceRefs returns the value of the "resource_refs" field in the mutation.
+func (m *EntityMutation) ResourceRefs() (r []string, exists bool) {
+	v := m.resource_refs
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResourceRefs returns the old "resource_refs" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldResourceRefs(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResourceRefs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResourceRefs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResourceRefs: %w", err)
+	}
+	return oldValue.ResourceRefs, nil
+}
+
+// AppendResourceRefs adds s to the "resource_refs" field.
+func (m *EntityMutation) AppendResourceRefs(s []string) {
+	m.appendresource_refs = append(m.appendresource_refs, s...)
+}
+
+// AppendedResourceRefs returns the list of values that were appended to the "resource_refs" field in this mutation.
+func (m *EntityMutation) AppendedResourceRefs() ([]string, bool) {
+	if len(m.appendresource_refs) == 0 {
+		return nil, false
+	}
+	return m.appendresource_refs, true
+}
+
+// ResetResourceRefs resets all changes to the "resource_refs" field.
+func (m *EntityMutation) ResetResourceRefs() {
+	m.resource_refs = nil
+	m.appendresource_refs = nil
+}
+
+// SetIdentifiers sets the "identifiers" field.
+func (m *EntityMutation) SetIdentifiers(value map[string][]string) {
+	m.identifiers = &value
+}
+
+// Identifiers returns the value of the "identifiers" field in the mutation.
+func (m *EntityMutation) Identifiers() (r map[string][]string, exists bool) {
+	v := m.identifiers
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIdentifiers returns the old "identifiers" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldIdentifiers(ctx context.Context) (v map[string][]string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIdentifiers is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIdentifiers requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIdentifiers: %w", err)
+	}
+	return oldValue.Identifiers, nil
+}
+
+// ResetIdentifiers resets all changes to the "identifiers" field.
+func (m *EntityMutation) ResetIdentifiers() {
+	m.identifiers = nil
+}
+
+// SetOneLineSummary sets the "one_line_summary" field.
+func (m *EntityMutation) SetOneLineSummary(s string) {
+	m.one_line_summary = &s
+}
+
+// OneLineSummary returns the value of the "one_line_summary" field in the mutation.
+func (m *EntityMutation) OneLineSummary() (r string, exists bool) {
+	v := m.one_line_summary
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOneLineSummary returns the old "one_line_summary" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldOneLineSummary(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOneLineSummary is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOneLineSummary requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOneLineSummary: %w", err)
+	}
+	return oldValue.OneLineSummary, nil
+}
+
+// ClearOneLineSummary clears the value of the "one_line_summary" field.
+func (m *EntityMutation) ClearOneLineSummary() {
+	m.one_line_summary = nil
+	m.clearedFields[entity.FieldOneLineSummary] = struct{}{}
+}
+
+// OneLineSummaryCleared returns if the "one_line_summary" field was cleared in this mutation.
+func (m *EntityMutation) OneLineSummaryCleared() bool {
+	_, ok := m.clearedFields[entity.FieldOneLineSummary]
+	return ok
+}
+
+// ResetOneLineSummary resets all changes to the "one_line_summary" field.
+func (m *EntityMutation) ResetOneLineSummary() {
+	m.one_line_summary = nil
+	delete(m.clearedFields, entity.FieldOneLineSummary)
+}
+
+// SetStatus sets the "status" field.
+func (m *EntityMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *EntityMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *EntityMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetCanonicalEntityID sets the "canonical_entity_id" field.
+func (m *EntityMutation) SetCanonicalEntityID(s string) {
+	m.canonical_entity_id = &s
+}
+
+// CanonicalEntityID returns the value of the "canonical_entity_id" field in the mutation.
+func (m *EntityMutation) CanonicalEntityID() (r string, exists bool) {
+	v := m.canonical_entity_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCanonicalEntityID returns the old "canonical_entity_id" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldCanonicalEntityID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCanonicalEntityID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCanonicalEntityID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCanonicalEntityID: %w", err)
+	}
+	return oldValue.CanonicalEntityID, nil
+}
+
+// ClearCanonicalEntityID clears the value of the "canonical_entity_id" field.
+func (m *EntityMutation) ClearCanonicalEntityID() {
+	m.canonical_entity_id = nil
+	m.clearedFields[entity.FieldCanonicalEntityID] = struct{}{}
+}
+
+// CanonicalEntityIDCleared returns if the "canonical_entity_id" field was cleared in this mutation.
+func (m *EntityMutation) CanonicalEntityIDCleared() bool {
+	_, ok := m.clearedFields[entity.FieldCanonicalEntityID]
+	return ok
+}
+
+// ResetCanonicalEntityID resets all changes to the "canonical_entity_id" field.
+func (m *EntityMutation) ResetCanonicalEntityID() {
+	m.canonical_entity_id = nil
+	delete(m.clearedFields, entity.FieldCanonicalEntityID)
+}
+
+// SetVersion sets the "version" field.
+func (m *EntityMutation) SetVersion(i int) {
+	m.version = &i
+	m.addversion = nil
+}
+
+// Version returns the value of the "version" field in the mutation.
+func (m *EntityMutation) Version() (r int, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersion returns the old "version" field's value of the Entity entity.
+// If the Entity object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityMutation) OldVersion(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// AddVersion adds i to the "version" field.
+func (m *EntityMutation) AddVersion(i int) {
+	if m.addversion != nil {
+		*m.addversion += i
+	} else {
+		m.addversion = &i
+	}
+}
+
+// AddedVersion returns the value that was added to the "version" field in this mutation.
+func (m *EntityMutation) AddedVersion() (r int, exists bool) {
+	v := m.addversion
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetVersion resets all changes to the "version" field.
+func (m *EntityMutation) ResetVersion() {
+	m.version = nil
+	m.addversion = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *EntityMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *EntityMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *EntityMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *EntityMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *EntityMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *EntityMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *EntityMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *EntityMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *EntityMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *EntityMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *EntityMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *EntityMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// AddNormalizedResourceRefIDs adds the "normalized_resource_refs" edge to the EntityResourceRef entity by ids.
+func (m *EntityMutation) AddNormalizedResourceRefIDs(ids ...uuid.UUID) {
+	if m.normalized_resource_refs == nil {
+		m.normalized_resource_refs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.normalized_resource_refs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearNormalizedResourceRefs clears the "normalized_resource_refs" edge to the EntityResourceRef entity.
+func (m *EntityMutation) ClearNormalizedResourceRefs() {
+	m.clearednormalized_resource_refs = true
+}
+
+// NormalizedResourceRefsCleared reports if the "normalized_resource_refs" edge to the EntityResourceRef entity was cleared.
+func (m *EntityMutation) NormalizedResourceRefsCleared() bool {
+	return m.clearednormalized_resource_refs
+}
+
+// RemoveNormalizedResourceRefIDs removes the "normalized_resource_refs" edge to the EntityResourceRef entity by IDs.
+func (m *EntityMutation) RemoveNormalizedResourceRefIDs(ids ...uuid.UUID) {
+	if m.removednormalized_resource_refs == nil {
+		m.removednormalized_resource_refs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.normalized_resource_refs, ids[i])
+		m.removednormalized_resource_refs[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedNormalizedResourceRefs returns the removed IDs of the "normalized_resource_refs" edge to the EntityResourceRef entity.
+func (m *EntityMutation) RemovedNormalizedResourceRefsIDs() (ids []uuid.UUID) {
+	for id := range m.removednormalized_resource_refs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// NormalizedResourceRefsIDs returns the "normalized_resource_refs" edge IDs in the mutation.
+func (m *EntityMutation) NormalizedResourceRefsIDs() (ids []uuid.UUID) {
+	for id := range m.normalized_resource_refs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetNormalizedResourceRefs resets all changes to the "normalized_resource_refs" edge.
+func (m *EntityMutation) ResetNormalizedResourceRefs() {
+	m.normalized_resource_refs = nil
+	m.clearednormalized_resource_refs = false
+	m.removednormalized_resource_refs = nil
+}
+
+// AddNormalizedIdentifierIDs adds the "normalized_identifiers" edge to the EntityIdentifier entity by ids.
+func (m *EntityMutation) AddNormalizedIdentifierIDs(ids ...uuid.UUID) {
+	if m.normalized_identifiers == nil {
+		m.normalized_identifiers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.normalized_identifiers[ids[i]] = struct{}{}
+	}
+}
+
+// ClearNormalizedIdentifiers clears the "normalized_identifiers" edge to the EntityIdentifier entity.
+func (m *EntityMutation) ClearNormalizedIdentifiers() {
+	m.clearednormalized_identifiers = true
+}
+
+// NormalizedIdentifiersCleared reports if the "normalized_identifiers" edge to the EntityIdentifier entity was cleared.
+func (m *EntityMutation) NormalizedIdentifiersCleared() bool {
+	return m.clearednormalized_identifiers
+}
+
+// RemoveNormalizedIdentifierIDs removes the "normalized_identifiers" edge to the EntityIdentifier entity by IDs.
+func (m *EntityMutation) RemoveNormalizedIdentifierIDs(ids ...uuid.UUID) {
+	if m.removednormalized_identifiers == nil {
+		m.removednormalized_identifiers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.normalized_identifiers, ids[i])
+		m.removednormalized_identifiers[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedNormalizedIdentifiers returns the removed IDs of the "normalized_identifiers" edge to the EntityIdentifier entity.
+func (m *EntityMutation) RemovedNormalizedIdentifiersIDs() (ids []uuid.UUID) {
+	for id := range m.removednormalized_identifiers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// NormalizedIdentifiersIDs returns the "normalized_identifiers" edge IDs in the mutation.
+func (m *EntityMutation) NormalizedIdentifiersIDs() (ids []uuid.UUID) {
+	for id := range m.normalized_identifiers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetNormalizedIdentifiers resets all changes to the "normalized_identifiers" edge.
+func (m *EntityMutation) ResetNormalizedIdentifiers() {
+	m.normalized_identifiers = nil
+	m.clearednormalized_identifiers = false
+	m.removednormalized_identifiers = nil
+}
+
+// Where appends a list predicates to the EntityMutation builder.
+func (m *EntityMutation) Where(ps ...predicate.Entity) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the EntityMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *EntityMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Entity, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *EntityMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *EntityMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Entity).
+func (m *EntityMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *EntityMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.created_at != nil {
+		fields = append(fields, entity.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, entity.FieldUpdatedAt)
+	}
+	if m.entity_id != nil {
+		fields = append(fields, entity.FieldEntityID)
+	}
+	if m.kind != nil {
+		fields = append(fields, entity.FieldKind)
+	}
+	if m.display_name != nil {
+		fields = append(fields, entity.FieldDisplayName)
+	}
+	if m.resource_refs != nil {
+		fields = append(fields, entity.FieldResourceRefs)
+	}
+	if m.identifiers != nil {
+		fields = append(fields, entity.FieldIdentifiers)
+	}
+	if m.one_line_summary != nil {
+		fields = append(fields, entity.FieldOneLineSummary)
+	}
+	if m.status != nil {
+		fields = append(fields, entity.FieldStatus)
+	}
+	if m.canonical_entity_id != nil {
+		fields = append(fields, entity.FieldCanonicalEntityID)
+	}
+	if m.version != nil {
+		fields = append(fields, entity.FieldVersion)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *EntityMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case entity.FieldCreatedAt:
+		return m.CreatedAt()
+	case entity.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case entity.FieldEntityID:
+		return m.EntityID()
+	case entity.FieldKind:
+		return m.Kind()
+	case entity.FieldDisplayName:
+		return m.DisplayName()
+	case entity.FieldResourceRefs:
+		return m.ResourceRefs()
+	case entity.FieldIdentifiers:
+		return m.Identifiers()
+	case entity.FieldOneLineSummary:
+		return m.OneLineSummary()
+	case entity.FieldStatus:
+		return m.Status()
+	case entity.FieldCanonicalEntityID:
+		return m.CanonicalEntityID()
+	case entity.FieldVersion:
+		return m.Version()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *EntityMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case entity.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case entity.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case entity.FieldEntityID:
+		return m.OldEntityID(ctx)
+	case entity.FieldKind:
+		return m.OldKind(ctx)
+	case entity.FieldDisplayName:
+		return m.OldDisplayName(ctx)
+	case entity.FieldResourceRefs:
+		return m.OldResourceRefs(ctx)
+	case entity.FieldIdentifiers:
+		return m.OldIdentifiers(ctx)
+	case entity.FieldOneLineSummary:
+		return m.OldOneLineSummary(ctx)
+	case entity.FieldStatus:
+		return m.OldStatus(ctx)
+	case entity.FieldCanonicalEntityID:
+		return m.OldCanonicalEntityID(ctx)
+	case entity.FieldVersion:
+		return m.OldVersion(ctx)
+	}
+	return nil, fmt.Errorf("unknown Entity field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EntityMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case entity.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case entity.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case entity.FieldEntityID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEntityID(v)
+		return nil
+	case entity.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case entity.FieldDisplayName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDisplayName(v)
+		return nil
+	case entity.FieldResourceRefs:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResourceRefs(v)
+		return nil
+	case entity.FieldIdentifiers:
+		v, ok := value.(map[string][]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIdentifiers(v)
+		return nil
+	case entity.FieldOneLineSummary:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOneLineSummary(v)
+		return nil
+	case entity.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case entity.FieldCanonicalEntityID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCanonicalEntityID(v)
+		return nil
+	case entity.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersion(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Entity field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *EntityMutation) AddedFields() []string {
+	var fields []string
+	if m.addversion != nil {
+		fields = append(fields, entity.FieldVersion)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *EntityMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case entity.FieldVersion:
+		return m.AddedVersion()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EntityMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case entity.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddVersion(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Entity numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *EntityMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(entity.FieldOneLineSummary) {
+		fields = append(fields, entity.FieldOneLineSummary)
+	}
+	if m.FieldCleared(entity.FieldCanonicalEntityID) {
+		fields = append(fields, entity.FieldCanonicalEntityID)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *EntityMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *EntityMutation) ClearField(name string) error {
+	switch name {
+	case entity.FieldOneLineSummary:
+		m.ClearOneLineSummary()
+		return nil
+	case entity.FieldCanonicalEntityID:
+		m.ClearCanonicalEntityID()
+		return nil
+	}
+	return fmt.Errorf("unknown Entity nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *EntityMutation) ResetField(name string) error {
+	switch name {
+	case entity.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case entity.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case entity.FieldEntityID:
+		m.ResetEntityID()
+		return nil
+	case entity.FieldKind:
+		m.ResetKind()
+		return nil
+	case entity.FieldDisplayName:
+		m.ResetDisplayName()
+		return nil
+	case entity.FieldResourceRefs:
+		m.ResetResourceRefs()
+		return nil
+	case entity.FieldIdentifiers:
+		m.ResetIdentifiers()
+		return nil
+	case entity.FieldOneLineSummary:
+		m.ResetOneLineSummary()
+		return nil
+	case entity.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case entity.FieldCanonicalEntityID:
+		m.ResetCanonicalEntityID()
+		return nil
+	case entity.FieldVersion:
+		m.ResetVersion()
+		return nil
+	}
+	return fmt.Errorf("unknown Entity field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *EntityMutation) AddedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.workspace != nil {
+		edges = append(edges, entity.EdgeWorkspace)
+	}
+	if m.user != nil {
+		edges = append(edges, entity.EdgeUser)
+	}
+	if m.normalized_resource_refs != nil {
+		edges = append(edges, entity.EdgeNormalizedResourceRefs)
+	}
+	if m.normalized_identifiers != nil {
+		edges = append(edges, entity.EdgeNormalizedIdentifiers)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *EntityMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case entity.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case entity.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case entity.EdgeNormalizedResourceRefs:
+		ids := make([]ent.Value, 0, len(m.normalized_resource_refs))
+		for id := range m.normalized_resource_refs {
+			ids = append(ids, id)
+		}
+		return ids
+	case entity.EdgeNormalizedIdentifiers:
+		ids := make([]ent.Value, 0, len(m.normalized_identifiers))
+		for id := range m.normalized_identifiers {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *EntityMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.removednormalized_resource_refs != nil {
+		edges = append(edges, entity.EdgeNormalizedResourceRefs)
+	}
+	if m.removednormalized_identifiers != nil {
+		edges = append(edges, entity.EdgeNormalizedIdentifiers)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *EntityMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case entity.EdgeNormalizedResourceRefs:
+		ids := make([]ent.Value, 0, len(m.removednormalized_resource_refs))
+		for id := range m.removednormalized_resource_refs {
+			ids = append(ids, id)
+		}
+		return ids
+	case entity.EdgeNormalizedIdentifiers:
+		ids := make([]ent.Value, 0, len(m.removednormalized_identifiers))
+		for id := range m.removednormalized_identifiers {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *EntityMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 4)
+	if m.clearedworkspace {
+		edges = append(edges, entity.EdgeWorkspace)
+	}
+	if m.cleareduser {
+		edges = append(edges, entity.EdgeUser)
+	}
+	if m.clearednormalized_resource_refs {
+		edges = append(edges, entity.EdgeNormalizedResourceRefs)
+	}
+	if m.clearednormalized_identifiers {
+		edges = append(edges, entity.EdgeNormalizedIdentifiers)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *EntityMutation) EdgeCleared(name string) bool {
+	switch name {
+	case entity.EdgeWorkspace:
+		return m.clearedworkspace
+	case entity.EdgeUser:
+		return m.cleareduser
+	case entity.EdgeNormalizedResourceRefs:
+		return m.clearednormalized_resource_refs
+	case entity.EdgeNormalizedIdentifiers:
+		return m.clearednormalized_identifiers
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *EntityMutation) ClearEdge(name string) error {
+	switch name {
+	case entity.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case entity.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown Entity unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *EntityMutation) ResetEdge(name string) error {
+	switch name {
+	case entity.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case entity.EdgeUser:
+		m.ResetUser()
+		return nil
+	case entity.EdgeNormalizedResourceRefs:
+		m.ResetNormalizedResourceRefs()
+		return nil
+	case entity.EdgeNormalizedIdentifiers:
+		m.ResetNormalizedIdentifiers()
+		return nil
+	}
+	return fmt.Errorf("unknown Entity edge %s", name)
+}
+
+// EntityIdentifierMutation represents an operation that mutates the EntityIdentifier nodes in the graph.
+type EntityIdentifierMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	key              *string
+	fingerprint      *string
+	clearedFields    map[string]struct{}
+	workspace        *uuid.UUID
+	clearedworkspace bool
+	user             *uuid.UUID
+	cleareduser      bool
+	entity           *uuid.UUID
+	clearedentity    bool
+	done             bool
+	oldValue         func(context.Context) (*EntityIdentifier, error)
+	predicates       []predicate.EntityIdentifier
+}
+
+var _ ent.Mutation = (*EntityIdentifierMutation)(nil)
+
+// entityidentifierOption allows management of the mutation configuration using functional options.
+type entityidentifierOption func(*EntityIdentifierMutation)
+
+// newEntityIdentifierMutation creates new mutation for the EntityIdentifier entity.
+func newEntityIdentifierMutation(c config, op Op, opts ...entityidentifierOption) *EntityIdentifierMutation {
+	m := &EntityIdentifierMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeEntityIdentifier,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withEntityIdentifierID sets the ID field of the mutation.
+func withEntityIdentifierID(id uuid.UUID) entityidentifierOption {
+	return func(m *EntityIdentifierMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *EntityIdentifier
+		)
+		m.oldValue = func(ctx context.Context) (*EntityIdentifier, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().EntityIdentifier.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withEntityIdentifier sets the old EntityIdentifier of the mutation.
+func withEntityIdentifier(node *EntityIdentifier) entityidentifierOption {
+	return func(m *EntityIdentifierMutation) {
+		m.oldValue = func(context.Context) (*EntityIdentifier, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m EntityIdentifierMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m EntityIdentifierMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of EntityIdentifier entities.
+func (m *EntityIdentifierMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *EntityIdentifierMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *EntityIdentifierMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().EntityIdentifier.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *EntityIdentifierMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *EntityIdentifierMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the EntityIdentifier entity.
+// If the EntityIdentifier object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityIdentifierMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *EntityIdentifierMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *EntityIdentifierMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *EntityIdentifierMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the EntityIdentifier entity.
+// If the EntityIdentifier object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityIdentifierMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *EntityIdentifierMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetKey sets the "key" field.
+func (m *EntityIdentifierMutation) SetKey(s string) {
+	m.key = &s
+}
+
+// Key returns the value of the "key" field in the mutation.
+func (m *EntityIdentifierMutation) Key() (r string, exists bool) {
+	v := m.key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKey returns the old "key" field's value of the EntityIdentifier entity.
+// If the EntityIdentifier object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityIdentifierMutation) OldKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKey: %w", err)
+	}
+	return oldValue.Key, nil
+}
+
+// ResetKey resets all changes to the "key" field.
+func (m *EntityIdentifierMutation) ResetKey() {
+	m.key = nil
+}
+
+// SetFingerprint sets the "fingerprint" field.
+func (m *EntityIdentifierMutation) SetFingerprint(s string) {
+	m.fingerprint = &s
+}
+
+// Fingerprint returns the value of the "fingerprint" field in the mutation.
+func (m *EntityIdentifierMutation) Fingerprint() (r string, exists bool) {
+	v := m.fingerprint
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFingerprint returns the old "fingerprint" field's value of the EntityIdentifier entity.
+// If the EntityIdentifier object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityIdentifierMutation) OldFingerprint(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFingerprint is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFingerprint requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFingerprint: %w", err)
+	}
+	return oldValue.Fingerprint, nil
+}
+
+// ResetFingerprint resets all changes to the "fingerprint" field.
+func (m *EntityIdentifierMutation) ResetFingerprint() {
+	m.fingerprint = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *EntityIdentifierMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *EntityIdentifierMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *EntityIdentifierMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *EntityIdentifierMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *EntityIdentifierMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *EntityIdentifierMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *EntityIdentifierMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *EntityIdentifierMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *EntityIdentifierMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *EntityIdentifierMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *EntityIdentifierMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *EntityIdentifierMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetEntityID sets the "entity" edge to the Entity entity by id.
+func (m *EntityIdentifierMutation) SetEntityID(id uuid.UUID) {
+	m.entity = &id
+}
+
+// ClearEntity clears the "entity" edge to the Entity entity.
+func (m *EntityIdentifierMutation) ClearEntity() {
+	m.clearedentity = true
+}
+
+// EntityCleared reports if the "entity" edge to the Entity entity was cleared.
+func (m *EntityIdentifierMutation) EntityCleared() bool {
+	return m.clearedentity
+}
+
+// EntityID returns the "entity" edge ID in the mutation.
+func (m *EntityIdentifierMutation) EntityID() (id uuid.UUID, exists bool) {
+	if m.entity != nil {
+		return *m.entity, true
+	}
+	return
+}
+
+// EntityIDs returns the "entity" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// EntityID instead. It exists only for internal usage by the builders.
+func (m *EntityIdentifierMutation) EntityIDs() (ids []uuid.UUID) {
+	if id := m.entity; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetEntity resets all changes to the "entity" edge.
+func (m *EntityIdentifierMutation) ResetEntity() {
+	m.entity = nil
+	m.clearedentity = false
+}
+
+// Where appends a list predicates to the EntityIdentifierMutation builder.
+func (m *EntityIdentifierMutation) Where(ps ...predicate.EntityIdentifier) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the EntityIdentifierMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *EntityIdentifierMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.EntityIdentifier, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *EntityIdentifierMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *EntityIdentifierMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (EntityIdentifier).
+func (m *EntityIdentifierMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *EntityIdentifierMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.created_at != nil {
+		fields = append(fields, entityidentifier.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, entityidentifier.FieldUpdatedAt)
+	}
+	if m.key != nil {
+		fields = append(fields, entityidentifier.FieldKey)
+	}
+	if m.fingerprint != nil {
+		fields = append(fields, entityidentifier.FieldFingerprint)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *EntityIdentifierMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case entityidentifier.FieldCreatedAt:
+		return m.CreatedAt()
+	case entityidentifier.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case entityidentifier.FieldKey:
+		return m.Key()
+	case entityidentifier.FieldFingerprint:
+		return m.Fingerprint()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *EntityIdentifierMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case entityidentifier.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case entityidentifier.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case entityidentifier.FieldKey:
+		return m.OldKey(ctx)
+	case entityidentifier.FieldFingerprint:
+		return m.OldFingerprint(ctx)
+	}
+	return nil, fmt.Errorf("unknown EntityIdentifier field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EntityIdentifierMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case entityidentifier.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case entityidentifier.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case entityidentifier.FieldKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKey(v)
+		return nil
+	case entityidentifier.FieldFingerprint:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFingerprint(v)
+		return nil
+	}
+	return fmt.Errorf("unknown EntityIdentifier field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *EntityIdentifierMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *EntityIdentifierMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EntityIdentifierMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown EntityIdentifier numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *EntityIdentifierMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *EntityIdentifierMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *EntityIdentifierMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown EntityIdentifier nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *EntityIdentifierMutation) ResetField(name string) error {
+	switch name {
+	case entityidentifier.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case entityidentifier.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case entityidentifier.FieldKey:
+		m.ResetKey()
+		return nil
+	case entityidentifier.FieldFingerprint:
+		m.ResetFingerprint()
+		return nil
+	}
+	return fmt.Errorf("unknown EntityIdentifier field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *EntityIdentifierMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.workspace != nil {
+		edges = append(edges, entityidentifier.EdgeWorkspace)
+	}
+	if m.user != nil {
+		edges = append(edges, entityidentifier.EdgeUser)
+	}
+	if m.entity != nil {
+		edges = append(edges, entityidentifier.EdgeEntity)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *EntityIdentifierMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case entityidentifier.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case entityidentifier.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case entityidentifier.EdgeEntity:
+		if id := m.entity; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *EntityIdentifierMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *EntityIdentifierMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *EntityIdentifierMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedworkspace {
+		edges = append(edges, entityidentifier.EdgeWorkspace)
+	}
+	if m.cleareduser {
+		edges = append(edges, entityidentifier.EdgeUser)
+	}
+	if m.clearedentity {
+		edges = append(edges, entityidentifier.EdgeEntity)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *EntityIdentifierMutation) EdgeCleared(name string) bool {
+	switch name {
+	case entityidentifier.EdgeWorkspace:
+		return m.clearedworkspace
+	case entityidentifier.EdgeUser:
+		return m.cleareduser
+	case entityidentifier.EdgeEntity:
+		return m.clearedentity
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *EntityIdentifierMutation) ClearEdge(name string) error {
+	switch name {
+	case entityidentifier.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case entityidentifier.EdgeUser:
+		m.ClearUser()
+		return nil
+	case entityidentifier.EdgeEntity:
+		m.ClearEntity()
+		return nil
+	}
+	return fmt.Errorf("unknown EntityIdentifier unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *EntityIdentifierMutation) ResetEdge(name string) error {
+	switch name {
+	case entityidentifier.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case entityidentifier.EdgeUser:
+		m.ResetUser()
+		return nil
+	case entityidentifier.EdgeEntity:
+		m.ResetEntity()
+		return nil
+	}
+	return fmt.Errorf("unknown EntityIdentifier edge %s", name)
+}
+
+// EntityResourceRefMutation represents an operation that mutates the EntityResourceRef nodes in the graph.
+type EntityResourceRefMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	ref              *string
+	clearedFields    map[string]struct{}
+	workspace        *uuid.UUID
+	clearedworkspace bool
+	user             *uuid.UUID
+	cleareduser      bool
+	entity           *uuid.UUID
+	clearedentity    bool
+	done             bool
+	oldValue         func(context.Context) (*EntityResourceRef, error)
+	predicates       []predicate.EntityResourceRef
+}
+
+var _ ent.Mutation = (*EntityResourceRefMutation)(nil)
+
+// entityresourcerefOption allows management of the mutation configuration using functional options.
+type entityresourcerefOption func(*EntityResourceRefMutation)
+
+// newEntityResourceRefMutation creates new mutation for the EntityResourceRef entity.
+func newEntityResourceRefMutation(c config, op Op, opts ...entityresourcerefOption) *EntityResourceRefMutation {
+	m := &EntityResourceRefMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeEntityResourceRef,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withEntityResourceRefID sets the ID field of the mutation.
+func withEntityResourceRefID(id uuid.UUID) entityresourcerefOption {
+	return func(m *EntityResourceRefMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *EntityResourceRef
+		)
+		m.oldValue = func(ctx context.Context) (*EntityResourceRef, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().EntityResourceRef.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withEntityResourceRef sets the old EntityResourceRef of the mutation.
+func withEntityResourceRef(node *EntityResourceRef) entityresourcerefOption {
+	return func(m *EntityResourceRefMutation) {
+		m.oldValue = func(context.Context) (*EntityResourceRef, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m EntityResourceRefMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m EntityResourceRefMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of EntityResourceRef entities.
+func (m *EntityResourceRefMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *EntityResourceRefMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *EntityResourceRefMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().EntityResourceRef.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *EntityResourceRefMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *EntityResourceRefMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the EntityResourceRef entity.
+// If the EntityResourceRef object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityResourceRefMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *EntityResourceRefMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *EntityResourceRefMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *EntityResourceRefMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the EntityResourceRef entity.
+// If the EntityResourceRef object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityResourceRefMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *EntityResourceRefMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetRef sets the "ref" field.
+func (m *EntityResourceRefMutation) SetRef(s string) {
+	m.ref = &s
+}
+
+// Ref returns the value of the "ref" field in the mutation.
+func (m *EntityResourceRefMutation) Ref() (r string, exists bool) {
+	v := m.ref
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRef returns the old "ref" field's value of the EntityResourceRef entity.
+// If the EntityResourceRef object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *EntityResourceRefMutation) OldRef(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRef is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRef requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRef: %w", err)
+	}
+	return oldValue.Ref, nil
+}
+
+// ResetRef resets all changes to the "ref" field.
+func (m *EntityResourceRefMutation) ResetRef() {
+	m.ref = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *EntityResourceRefMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *EntityResourceRefMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *EntityResourceRefMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *EntityResourceRefMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *EntityResourceRefMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *EntityResourceRefMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *EntityResourceRefMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *EntityResourceRefMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *EntityResourceRefMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *EntityResourceRefMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *EntityResourceRefMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *EntityResourceRefMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetEntityID sets the "entity" edge to the Entity entity by id.
+func (m *EntityResourceRefMutation) SetEntityID(id uuid.UUID) {
+	m.entity = &id
+}
+
+// ClearEntity clears the "entity" edge to the Entity entity.
+func (m *EntityResourceRefMutation) ClearEntity() {
+	m.clearedentity = true
+}
+
+// EntityCleared reports if the "entity" edge to the Entity entity was cleared.
+func (m *EntityResourceRefMutation) EntityCleared() bool {
+	return m.clearedentity
+}
+
+// EntityID returns the "entity" edge ID in the mutation.
+func (m *EntityResourceRefMutation) EntityID() (id uuid.UUID, exists bool) {
+	if m.entity != nil {
+		return *m.entity, true
+	}
+	return
+}
+
+// EntityIDs returns the "entity" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// EntityID instead. It exists only for internal usage by the builders.
+func (m *EntityResourceRefMutation) EntityIDs() (ids []uuid.UUID) {
+	if id := m.entity; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetEntity resets all changes to the "entity" edge.
+func (m *EntityResourceRefMutation) ResetEntity() {
+	m.entity = nil
+	m.clearedentity = false
+}
+
+// Where appends a list predicates to the EntityResourceRefMutation builder.
+func (m *EntityResourceRefMutation) Where(ps ...predicate.EntityResourceRef) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the EntityResourceRefMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *EntityResourceRefMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.EntityResourceRef, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *EntityResourceRefMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *EntityResourceRefMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (EntityResourceRef).
+func (m *EntityResourceRefMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *EntityResourceRefMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.created_at != nil {
+		fields = append(fields, entityresourceref.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, entityresourceref.FieldUpdatedAt)
+	}
+	if m.ref != nil {
+		fields = append(fields, entityresourceref.FieldRef)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *EntityResourceRefMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case entityresourceref.FieldCreatedAt:
+		return m.CreatedAt()
+	case entityresourceref.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case entityresourceref.FieldRef:
+		return m.Ref()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *EntityResourceRefMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case entityresourceref.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case entityresourceref.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case entityresourceref.FieldRef:
+		return m.OldRef(ctx)
+	}
+	return nil, fmt.Errorf("unknown EntityResourceRef field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EntityResourceRefMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case entityresourceref.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case entityresourceref.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case entityresourceref.FieldRef:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRef(v)
+		return nil
+	}
+	return fmt.Errorf("unknown EntityResourceRef field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *EntityResourceRefMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *EntityResourceRefMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *EntityResourceRefMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown EntityResourceRef numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *EntityResourceRefMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *EntityResourceRefMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *EntityResourceRefMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown EntityResourceRef nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *EntityResourceRefMutation) ResetField(name string) error {
+	switch name {
+	case entityresourceref.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case entityresourceref.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case entityresourceref.FieldRef:
+		m.ResetRef()
+		return nil
+	}
+	return fmt.Errorf("unknown EntityResourceRef field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *EntityResourceRefMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.workspace != nil {
+		edges = append(edges, entityresourceref.EdgeWorkspace)
+	}
+	if m.user != nil {
+		edges = append(edges, entityresourceref.EdgeUser)
+	}
+	if m.entity != nil {
+		edges = append(edges, entityresourceref.EdgeEntity)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *EntityResourceRefMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case entityresourceref.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case entityresourceref.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case entityresourceref.EdgeEntity:
+		if id := m.entity; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *EntityResourceRefMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *EntityResourceRefMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *EntityResourceRefMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedworkspace {
+		edges = append(edges, entityresourceref.EdgeWorkspace)
+	}
+	if m.cleareduser {
+		edges = append(edges, entityresourceref.EdgeUser)
+	}
+	if m.clearedentity {
+		edges = append(edges, entityresourceref.EdgeEntity)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *EntityResourceRefMutation) EdgeCleared(name string) bool {
+	switch name {
+	case entityresourceref.EdgeWorkspace:
+		return m.clearedworkspace
+	case entityresourceref.EdgeUser:
+		return m.cleareduser
+	case entityresourceref.EdgeEntity:
+		return m.clearedentity
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *EntityResourceRefMutation) ClearEdge(name string) error {
+	switch name {
+	case entityresourceref.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case entityresourceref.EdgeUser:
+		m.ClearUser()
+		return nil
+	case entityresourceref.EdgeEntity:
+		m.ClearEntity()
+		return nil
+	}
+	return fmt.Errorf("unknown EntityResourceRef unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *EntityResourceRefMutation) ResetEdge(name string) error {
+	switch name {
+	case entityresourceref.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case entityresourceref.EdgeUser:
+		m.ResetUser()
+		return nil
+	case entityresourceref.EdgeEntity:
+		m.ResetEntity()
+		return nil
+	}
+	return fmt.Errorf("unknown EntityResourceRef edge %s", name)
 }
 
 // GoogleWatchMutation represents an operation that mutates the GoogleWatch nodes in the graph.
@@ -87503,6 +90072,15 @@ type RevenueWorkspaceMutation struct {
 	relationship_persons                        map[uuid.UUID]struct{}
 	removedrelationship_persons                 map[uuid.UUID]struct{}
 	clearedrelationship_persons                 bool
+	entities                                    map[uuid.UUID]struct{}
+	removedentities                             map[uuid.UUID]struct{}
+	clearedentities                             bool
+	entity_resource_refs                        map[uuid.UUID]struct{}
+	removedentity_resource_refs                 map[uuid.UUID]struct{}
+	clearedentity_resource_refs                 bool
+	entity_identifiers                          map[uuid.UUID]struct{}
+	removedentity_identifiers                   map[uuid.UUID]struct{}
+	clearedentity_identifiers                   bool
 	person_identities                           map[uuid.UUID]struct{}
 	removedperson_identities                    map[uuid.UUID]struct{}
 	clearedperson_identities                    bool
@@ -89701,6 +92279,168 @@ func (m *RevenueWorkspaceMutation) ResetRelationshipPersons() {
 	m.removedrelationship_persons = nil
 }
 
+// AddEntityIDs adds the "entities" edge to the Entity entity by ids.
+func (m *RevenueWorkspaceMutation) AddEntityIDs(ids ...uuid.UUID) {
+	if m.entities == nil {
+		m.entities = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.entities[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEntities clears the "entities" edge to the Entity entity.
+func (m *RevenueWorkspaceMutation) ClearEntities() {
+	m.clearedentities = true
+}
+
+// EntitiesCleared reports if the "entities" edge to the Entity entity was cleared.
+func (m *RevenueWorkspaceMutation) EntitiesCleared() bool {
+	return m.clearedentities
+}
+
+// RemoveEntityIDs removes the "entities" edge to the Entity entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveEntityIDs(ids ...uuid.UUID) {
+	if m.removedentities == nil {
+		m.removedentities = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.entities, ids[i])
+		m.removedentities[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEntities returns the removed IDs of the "entities" edge to the Entity entity.
+func (m *RevenueWorkspaceMutation) RemovedEntitiesIDs() (ids []uuid.UUID) {
+	for id := range m.removedentities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EntitiesIDs returns the "entities" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) EntitiesIDs() (ids []uuid.UUID) {
+	for id := range m.entities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEntities resets all changes to the "entities" edge.
+func (m *RevenueWorkspaceMutation) ResetEntities() {
+	m.entities = nil
+	m.clearedentities = false
+	m.removedentities = nil
+}
+
+// AddEntityResourceRefIDs adds the "entity_resource_refs" edge to the EntityResourceRef entity by ids.
+func (m *RevenueWorkspaceMutation) AddEntityResourceRefIDs(ids ...uuid.UUID) {
+	if m.entity_resource_refs == nil {
+		m.entity_resource_refs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.entity_resource_refs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEntityResourceRefs clears the "entity_resource_refs" edge to the EntityResourceRef entity.
+func (m *RevenueWorkspaceMutation) ClearEntityResourceRefs() {
+	m.clearedentity_resource_refs = true
+}
+
+// EntityResourceRefsCleared reports if the "entity_resource_refs" edge to the EntityResourceRef entity was cleared.
+func (m *RevenueWorkspaceMutation) EntityResourceRefsCleared() bool {
+	return m.clearedentity_resource_refs
+}
+
+// RemoveEntityResourceRefIDs removes the "entity_resource_refs" edge to the EntityResourceRef entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveEntityResourceRefIDs(ids ...uuid.UUID) {
+	if m.removedentity_resource_refs == nil {
+		m.removedentity_resource_refs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.entity_resource_refs, ids[i])
+		m.removedentity_resource_refs[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEntityResourceRefs returns the removed IDs of the "entity_resource_refs" edge to the EntityResourceRef entity.
+func (m *RevenueWorkspaceMutation) RemovedEntityResourceRefsIDs() (ids []uuid.UUID) {
+	for id := range m.removedentity_resource_refs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EntityResourceRefsIDs returns the "entity_resource_refs" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) EntityResourceRefsIDs() (ids []uuid.UUID) {
+	for id := range m.entity_resource_refs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEntityResourceRefs resets all changes to the "entity_resource_refs" edge.
+func (m *RevenueWorkspaceMutation) ResetEntityResourceRefs() {
+	m.entity_resource_refs = nil
+	m.clearedentity_resource_refs = false
+	m.removedentity_resource_refs = nil
+}
+
+// AddEntityIdentifierIDs adds the "entity_identifiers" edge to the EntityIdentifier entity by ids.
+func (m *RevenueWorkspaceMutation) AddEntityIdentifierIDs(ids ...uuid.UUID) {
+	if m.entity_identifiers == nil {
+		m.entity_identifiers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.entity_identifiers[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEntityIdentifiers clears the "entity_identifiers" edge to the EntityIdentifier entity.
+func (m *RevenueWorkspaceMutation) ClearEntityIdentifiers() {
+	m.clearedentity_identifiers = true
+}
+
+// EntityIdentifiersCleared reports if the "entity_identifiers" edge to the EntityIdentifier entity was cleared.
+func (m *RevenueWorkspaceMutation) EntityIdentifiersCleared() bool {
+	return m.clearedentity_identifiers
+}
+
+// RemoveEntityIdentifierIDs removes the "entity_identifiers" edge to the EntityIdentifier entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveEntityIdentifierIDs(ids ...uuid.UUID) {
+	if m.removedentity_identifiers == nil {
+		m.removedentity_identifiers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.entity_identifiers, ids[i])
+		m.removedentity_identifiers[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEntityIdentifiers returns the removed IDs of the "entity_identifiers" edge to the EntityIdentifier entity.
+func (m *RevenueWorkspaceMutation) RemovedEntityIdentifiersIDs() (ids []uuid.UUID) {
+	for id := range m.removedentity_identifiers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EntityIdentifiersIDs returns the "entity_identifiers" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) EntityIdentifiersIDs() (ids []uuid.UUID) {
+	for id := range m.entity_identifiers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEntityIdentifiers resets all changes to the "entity_identifiers" edge.
+func (m *RevenueWorkspaceMutation) ResetEntityIdentifiers() {
+	m.entity_identifiers = nil
+	m.clearedentity_identifiers = false
+	m.removedentity_identifiers = nil
+}
+
 // AddPersonIdentityIDs adds the "person_identities" edge to the PersonIdentity entity by ids.
 func (m *RevenueWorkspaceMutation) AddPersonIdentityIDs(ids ...uuid.UUID) {
 	if m.person_identities == nil {
@@ -90336,7 +93076,7 @@ func (m *RevenueWorkspaceMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RevenueWorkspaceMutation) AddedEdges() []string {
-	edges := make([]string, 0, 34)
+	edges := make([]string, 0, 37)
 	if m.user != nil {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -90423,6 +93163,15 @@ func (m *RevenueWorkspaceMutation) AddedEdges() []string {
 	}
 	if m.relationship_persons != nil {
 		edges = append(edges, revenueworkspace.EdgeRelationshipPersons)
+	}
+	if m.entities != nil {
+		edges = append(edges, revenueworkspace.EdgeEntities)
+	}
+	if m.entity_resource_refs != nil {
+		edges = append(edges, revenueworkspace.EdgeEntityResourceRefs)
+	}
+	if m.entity_identifiers != nil {
+		edges = append(edges, revenueworkspace.EdgeEntityIdentifiers)
 	}
 	if m.person_identities != nil {
 		edges = append(edges, revenueworkspace.EdgePersonIdentities)
@@ -90618,6 +93367,24 @@ func (m *RevenueWorkspaceMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeEntities:
+		ids := make([]ent.Value, 0, len(m.entities))
+		for id := range m.entities {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeEntityResourceRefs:
+		ids := make([]ent.Value, 0, len(m.entity_resource_refs))
+		for id := range m.entity_resource_refs {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeEntityIdentifiers:
+		ids := make([]ent.Value, 0, len(m.entity_identifiers))
+		for id := range m.entity_identifiers {
+			ids = append(ids, id)
+		}
+		return ids
 	case revenueworkspace.EdgePersonIdentities:
 		ids := make([]ent.Value, 0, len(m.person_identities))
 		for id := range m.person_identities {
@@ -90654,7 +93421,7 @@ func (m *RevenueWorkspaceMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 34)
+	edges := make([]string, 0, 37)
 	if m.removedmembers != nil {
 		edges = append(edges, revenueworkspace.EdgeMembers)
 	}
@@ -90738,6 +93505,15 @@ func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
 	}
 	if m.removedrelationship_persons != nil {
 		edges = append(edges, revenueworkspace.EdgeRelationshipPersons)
+	}
+	if m.removedentities != nil {
+		edges = append(edges, revenueworkspace.EdgeEntities)
+	}
+	if m.removedentity_resource_refs != nil {
+		edges = append(edges, revenueworkspace.EdgeEntityResourceRefs)
+	}
+	if m.removedentity_identifiers != nil {
+		edges = append(edges, revenueworkspace.EdgeEntityIdentifiers)
 	}
 	if m.removedperson_identities != nil {
 		edges = append(edges, revenueworkspace.EdgePersonIdentities)
@@ -90929,6 +93705,24 @@ func (m *RevenueWorkspaceMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeEntities:
+		ids := make([]ent.Value, 0, len(m.removedentities))
+		for id := range m.removedentities {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeEntityResourceRefs:
+		ids := make([]ent.Value, 0, len(m.removedentity_resource_refs))
+		for id := range m.removedentity_resource_refs {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeEntityIdentifiers:
+		ids := make([]ent.Value, 0, len(m.removedentity_identifiers))
+		for id := range m.removedentity_identifiers {
+			ids = append(ids, id)
+		}
+		return ids
 	case revenueworkspace.EdgePersonIdentities:
 		ids := make([]ent.Value, 0, len(m.removedperson_identities))
 		for id := range m.removedperson_identities {
@@ -90965,7 +93759,7 @@ func (m *RevenueWorkspaceMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 34)
+	edges := make([]string, 0, 37)
 	if m.cleareduser {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -91053,6 +93847,15 @@ func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
 	if m.clearedrelationship_persons {
 		edges = append(edges, revenueworkspace.EdgeRelationshipPersons)
 	}
+	if m.clearedentities {
+		edges = append(edges, revenueworkspace.EdgeEntities)
+	}
+	if m.clearedentity_resource_refs {
+		edges = append(edges, revenueworkspace.EdgeEntityResourceRefs)
+	}
+	if m.clearedentity_identifiers {
+		edges = append(edges, revenueworkspace.EdgeEntityIdentifiers)
+	}
 	if m.clearedperson_identities {
 		edges = append(edges, revenueworkspace.EdgePersonIdentities)
 	}
@@ -91133,6 +93936,12 @@ func (m *RevenueWorkspaceMutation) EdgeCleared(name string) bool {
 		return m.clearedrelationship_source_statuses
 	case revenueworkspace.EdgeRelationshipPersons:
 		return m.clearedrelationship_persons
+	case revenueworkspace.EdgeEntities:
+		return m.clearedentities
+	case revenueworkspace.EdgeEntityResourceRefs:
+		return m.clearedentity_resource_refs
+	case revenueworkspace.EdgeEntityIdentifiers:
+		return m.clearedentity_identifiers
 	case revenueworkspace.EdgePersonIdentities:
 		return m.clearedperson_identities
 	case revenueworkspace.EdgePersonSuppressions:
@@ -91248,6 +94057,15 @@ func (m *RevenueWorkspaceMutation) ResetEdge(name string) error {
 		return nil
 	case revenueworkspace.EdgeRelationshipPersons:
 		m.ResetRelationshipPersons()
+		return nil
+	case revenueworkspace.EdgeEntities:
+		m.ResetEntities()
+		return nil
+	case revenueworkspace.EdgeEntityResourceRefs:
+		m.ResetEntityResourceRefs()
+		return nil
+	case revenueworkspace.EdgeEntityIdentifiers:
+		m.ResetEntityIdentifiers()
 		return nil
 	case revenueworkspace.EdgePersonIdentities:
 		m.ResetPersonIdentities()
@@ -95023,6 +97841,15 @@ type UserMutation struct {
 	relationship_source_statuses                map[uuid.UUID]struct{}
 	removedrelationship_source_statuses         map[uuid.UUID]struct{}
 	clearedrelationship_source_statuses         bool
+	entities                                    map[uuid.UUID]struct{}
+	removedentities                             map[uuid.UUID]struct{}
+	clearedentities                             bool
+	entity_resource_refs                        map[uuid.UUID]struct{}
+	removedentity_resource_refs                 map[uuid.UUID]struct{}
+	clearedentity_resource_refs                 bool
+	entity_identifiers                          map[uuid.UUID]struct{}
+	removedentity_identifiers                   map[uuid.UUID]struct{}
+	clearedentity_identifiers                   bool
 	action_proposals                            map[uuid.UUID]struct{}
 	removedaction_proposals                     map[uuid.UUID]struct{}
 	clearedaction_proposals                     bool
@@ -98623,6 +101450,168 @@ func (m *UserMutation) ResetRelationshipSourceStatuses() {
 	m.removedrelationship_source_statuses = nil
 }
 
+// AddEntityIDs adds the "entities" edge to the Entity entity by ids.
+func (m *UserMutation) AddEntityIDs(ids ...uuid.UUID) {
+	if m.entities == nil {
+		m.entities = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.entities[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEntities clears the "entities" edge to the Entity entity.
+func (m *UserMutation) ClearEntities() {
+	m.clearedentities = true
+}
+
+// EntitiesCleared reports if the "entities" edge to the Entity entity was cleared.
+func (m *UserMutation) EntitiesCleared() bool {
+	return m.clearedentities
+}
+
+// RemoveEntityIDs removes the "entities" edge to the Entity entity by IDs.
+func (m *UserMutation) RemoveEntityIDs(ids ...uuid.UUID) {
+	if m.removedentities == nil {
+		m.removedentities = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.entities, ids[i])
+		m.removedentities[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEntities returns the removed IDs of the "entities" edge to the Entity entity.
+func (m *UserMutation) RemovedEntitiesIDs() (ids []uuid.UUID) {
+	for id := range m.removedentities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EntitiesIDs returns the "entities" edge IDs in the mutation.
+func (m *UserMutation) EntitiesIDs() (ids []uuid.UUID) {
+	for id := range m.entities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEntities resets all changes to the "entities" edge.
+func (m *UserMutation) ResetEntities() {
+	m.entities = nil
+	m.clearedentities = false
+	m.removedentities = nil
+}
+
+// AddEntityResourceRefIDs adds the "entity_resource_refs" edge to the EntityResourceRef entity by ids.
+func (m *UserMutation) AddEntityResourceRefIDs(ids ...uuid.UUID) {
+	if m.entity_resource_refs == nil {
+		m.entity_resource_refs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.entity_resource_refs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEntityResourceRefs clears the "entity_resource_refs" edge to the EntityResourceRef entity.
+func (m *UserMutation) ClearEntityResourceRefs() {
+	m.clearedentity_resource_refs = true
+}
+
+// EntityResourceRefsCleared reports if the "entity_resource_refs" edge to the EntityResourceRef entity was cleared.
+func (m *UserMutation) EntityResourceRefsCleared() bool {
+	return m.clearedentity_resource_refs
+}
+
+// RemoveEntityResourceRefIDs removes the "entity_resource_refs" edge to the EntityResourceRef entity by IDs.
+func (m *UserMutation) RemoveEntityResourceRefIDs(ids ...uuid.UUID) {
+	if m.removedentity_resource_refs == nil {
+		m.removedentity_resource_refs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.entity_resource_refs, ids[i])
+		m.removedentity_resource_refs[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEntityResourceRefs returns the removed IDs of the "entity_resource_refs" edge to the EntityResourceRef entity.
+func (m *UserMutation) RemovedEntityResourceRefsIDs() (ids []uuid.UUID) {
+	for id := range m.removedentity_resource_refs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EntityResourceRefsIDs returns the "entity_resource_refs" edge IDs in the mutation.
+func (m *UserMutation) EntityResourceRefsIDs() (ids []uuid.UUID) {
+	for id := range m.entity_resource_refs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEntityResourceRefs resets all changes to the "entity_resource_refs" edge.
+func (m *UserMutation) ResetEntityResourceRefs() {
+	m.entity_resource_refs = nil
+	m.clearedentity_resource_refs = false
+	m.removedentity_resource_refs = nil
+}
+
+// AddEntityIdentifierIDs adds the "entity_identifiers" edge to the EntityIdentifier entity by ids.
+func (m *UserMutation) AddEntityIdentifierIDs(ids ...uuid.UUID) {
+	if m.entity_identifiers == nil {
+		m.entity_identifiers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.entity_identifiers[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEntityIdentifiers clears the "entity_identifiers" edge to the EntityIdentifier entity.
+func (m *UserMutation) ClearEntityIdentifiers() {
+	m.clearedentity_identifiers = true
+}
+
+// EntityIdentifiersCleared reports if the "entity_identifiers" edge to the EntityIdentifier entity was cleared.
+func (m *UserMutation) EntityIdentifiersCleared() bool {
+	return m.clearedentity_identifiers
+}
+
+// RemoveEntityIdentifierIDs removes the "entity_identifiers" edge to the EntityIdentifier entity by IDs.
+func (m *UserMutation) RemoveEntityIdentifierIDs(ids ...uuid.UUID) {
+	if m.removedentity_identifiers == nil {
+		m.removedentity_identifiers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.entity_identifiers, ids[i])
+		m.removedentity_identifiers[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEntityIdentifiers returns the removed IDs of the "entity_identifiers" edge to the EntityIdentifier entity.
+func (m *UserMutation) RemovedEntityIdentifiersIDs() (ids []uuid.UUID) {
+	for id := range m.removedentity_identifiers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EntityIdentifiersIDs returns the "entity_identifiers" edge IDs in the mutation.
+func (m *UserMutation) EntityIdentifiersIDs() (ids []uuid.UUID) {
+	for id := range m.entity_identifiers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEntityIdentifiers resets all changes to the "entity_identifiers" edge.
+func (m *UserMutation) ResetEntityIdentifiers() {
+	m.entity_identifiers = nil
+	m.clearedentity_identifiers = false
+	m.removedentity_identifiers = nil
+}
+
 // AddActionProposalIDs adds the "action_proposals" edge to the ActionProposal entity by ids.
 func (m *UserMutation) AddActionProposalIDs(ids ...uuid.UUID) {
 	if m.action_proposals == nil {
@@ -98947,7 +101936,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 63)
+	edges := make([]string, 0, 66)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -99130,6 +102119,15 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.relationship_source_statuses != nil {
 		edges = append(edges, user.EdgeRelationshipSourceStatuses)
+	}
+	if m.entities != nil {
+		edges = append(edges, user.EdgeEntities)
+	}
+	if m.entity_resource_refs != nil {
+		edges = append(edges, user.EdgeEntityResourceRefs)
+	}
+	if m.entity_identifiers != nil {
+		edges = append(edges, user.EdgeEntityIdentifiers)
 	}
 	if m.action_proposals != nil {
 		edges = append(edges, user.EdgeActionProposals)
@@ -99508,6 +102506,24 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeEntities:
+		ids := make([]ent.Value, 0, len(m.entities))
+		for id := range m.entities {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeEntityResourceRefs:
+		ids := make([]ent.Value, 0, len(m.entity_resource_refs))
+		for id := range m.entity_resource_refs {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeEntityIdentifiers:
+		ids := make([]ent.Value, 0, len(m.entity_identifiers))
+		for id := range m.entity_identifiers {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeActionProposals:
 		ids := make([]ent.Value, 0, len(m.action_proposals))
 		for id := range m.action_proposals {
@@ -99526,7 +102542,7 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 63)
+	edges := make([]string, 0, 66)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -99706,6 +102722,15 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedrelationship_source_statuses != nil {
 		edges = append(edges, user.EdgeRelationshipSourceStatuses)
+	}
+	if m.removedentities != nil {
+		edges = append(edges, user.EdgeEntities)
+	}
+	if m.removedentity_resource_refs != nil {
+		edges = append(edges, user.EdgeEntityResourceRefs)
+	}
+	if m.removedentity_identifiers != nil {
+		edges = append(edges, user.EdgeEntityIdentifiers)
 	}
 	if m.removedaction_proposals != nil {
 		edges = append(edges, user.EdgeActionProposals)
@@ -100080,6 +103105,24 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeEntities:
+		ids := make([]ent.Value, 0, len(m.removedentities))
+		for id := range m.removedentities {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeEntityResourceRefs:
+		ids := make([]ent.Value, 0, len(m.removedentity_resource_refs))
+		for id := range m.removedentity_resource_refs {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeEntityIdentifiers:
+		ids := make([]ent.Value, 0, len(m.removedentity_identifiers))
+		for id := range m.removedentity_identifiers {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeActionProposals:
 		ids := make([]ent.Value, 0, len(m.removedaction_proposals))
 		for id := range m.removedaction_proposals {
@@ -100098,7 +103141,7 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 63)
+	edges := make([]string, 0, 66)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -100282,6 +103325,15 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedrelationship_source_statuses {
 		edges = append(edges, user.EdgeRelationshipSourceStatuses)
 	}
+	if m.clearedentities {
+		edges = append(edges, user.EdgeEntities)
+	}
+	if m.clearedentity_resource_refs {
+		edges = append(edges, user.EdgeEntityResourceRefs)
+	}
+	if m.clearedentity_identifiers {
+		edges = append(edges, user.EdgeEntityIdentifiers)
+	}
 	if m.clearedaction_proposals {
 		edges = append(edges, user.EdgeActionProposals)
 	}
@@ -100417,6 +103469,12 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedrelationship_state_snapshots
 	case user.EdgeRelationshipSourceStatuses:
 		return m.clearedrelationship_source_statuses
+	case user.EdgeEntities:
+		return m.clearedentities
+	case user.EdgeEntityResourceRefs:
+		return m.clearedentity_resource_refs
+	case user.EdgeEntityIdentifiers:
+		return m.clearedentity_identifiers
 	case user.EdgeActionProposals:
 		return m.clearedaction_proposals
 	case user.EdgeApprovalTokens:
@@ -100622,6 +103680,15 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeRelationshipSourceStatuses:
 		m.ResetRelationshipSourceStatuses()
+		return nil
+	case user.EdgeEntities:
+		m.ResetEntities()
+		return nil
+	case user.EdgeEntityResourceRefs:
+		m.ResetEntityResourceRefs()
+		return nil
+	case user.EdgeEntityIdentifiers:
+		m.ResetEntityIdentifiers()
 		return nil
 	case user.EdgeActionProposals:
 		m.ResetActionProposals()

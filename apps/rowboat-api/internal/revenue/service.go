@@ -264,6 +264,51 @@ func (s *Service) CurrentWorkspace(ctx context.Context, u *ent.User) (*ent.Reven
 	return ws, nil
 }
 
+// CurrentWorkspaceForOrg resolves an existing active workspace membership for
+// the exact organization asserted by the current verified token. Unlike
+// CurrentWorkspace, this authorization helper is read-only: it never creates a
+// workspace or backfills membership while deciding access.
+func (s *Service) CurrentWorkspaceForOrg(ctx context.Context, u *ent.User, workosOrgID string) (*ent.RevenueWorkspace, error) {
+	workosOrgID = strings.TrimSpace(workosOrgID)
+	if u == nil || workosOrgID == "" {
+		return s.client.RevenueWorkspace.Query().
+			Where(revenueworkspace.IDEQ(uuid.Nil)).
+			First(ctx)
+	}
+	member, err := s.client.RevenueWorkspaceMember.Query().
+		Where(
+			revenueworkspacemember.StatusEQ("active"),
+			revenueworkspacemember.HasUserWith(user.IDEQ(u.ID)),
+			revenueworkspacemember.HasWorkspaceWith(revenueworkspace.WorkosOrgIDEQ(workosOrgID)),
+		).
+		WithWorkspace().
+		Order(ent.Asc(revenueworkspacemember.FieldCreatedAt)).
+		First(ctx)
+	if err == nil {
+		workspace, workspaceErr := member.Edges.WorkspaceOrErr()
+		if workspaceErr != nil {
+			return nil, workspaceErr
+		}
+		auth.GrantRevenueWorkspace(ctx, workspace.ID, member.Role)
+		return workspace, nil
+	}
+	if !ent.IsNotFound(err) {
+		return nil, err
+	}
+
+	workspace, err := s.client.RevenueWorkspace.Query().
+		Where(
+			revenueworkspace.WorkosOrgIDEQ(workosOrgID),
+			revenueworkspace.HasUserWith(user.IDEQ(u.ID)),
+		).
+		First(ctx)
+	if err != nil {
+		return nil, err
+	}
+	auth.GrantRevenueWorkspace(ctx, workspace.ID, "owner")
+	return workspace, nil
+}
+
 // WorkspaceCapability names one server-enforced workspace permission.
 type WorkspaceCapability string
 

@@ -65,6 +65,7 @@ func Enrich(spec obj) {
 		obj{"name": "Webhooks", "description": "Shared-secret webhooks from OAuth infrastructure."},
 		obj{"name": "Relationship Intelligence", "description": "Living relationship state, append-only evidence, deterministic projections, corrections, source health, and governed recommendations (RFC 036)."},
 		obj{"name": "Revenue", "description": "Revenue Action Queue: relationships, evidence-backed actions, OutboundConsole policy preflight, approval, and governed execution (RFC 030)."},
+		obj{"name": "Entities", "description": "Org-scoped minimal entity identity spine (RFC 022)."},
 		obj{"name": "Internal", "description": "Server-to-server APIs guarded by X-Internal-Secret."},
 		obj{"name": "GraphQL", "description": "Internal admin GraphQL over the ent graph."},
 	}
@@ -75,6 +76,7 @@ func Enrich(spec obj) {
 	addSecuritySchemes(ensureObj(components, "securitySchemes"))
 	addCommonResponses(responses)
 	addRuntimeSchemas(schemas)
+	addEntitySchemas(schemas)
 	addVoiceCloudSchemas(schemas)
 	addRevenueSchemas(schemas)
 	enrichEntitySchemas(schemas)
@@ -82,6 +84,7 @@ func Enrich(spec obj) {
 
 	paths := obj{}
 	addRuntimePaths(paths)
+	addEntityPaths(paths)
 	spec["paths"] = paths
 }
 
@@ -1555,6 +1558,12 @@ func enrichEntitySchemas(schemas obj) {
 	}
 	for schemaName, schemaAny := range schemas {
 		if schemaName == "ErrorEnvelope" || schemaName == "ReconnectErrorEnvelope" || schemaName == "RevisionConflictEnvelope" {
+			continue
+		}
+		// RFC 022's public spine uses stable ULIDs and a purpose-specific
+		// lifecycle contract. Do not overwrite those explicit descriptions and
+		// examples with the generic Ent UUID/status metadata below.
+		if schemaName == "EntitySpine" || schemaName == "EntityProjection" {
 			continue
 		}
 		s := asObj(schemaAny)

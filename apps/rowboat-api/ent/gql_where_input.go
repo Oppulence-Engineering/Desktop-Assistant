@@ -29,6 +29,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
@@ -18057,6 +18060,1338 @@ func (i *CreditLedgerWhereInput) P() (predicate.CreditLedger, error) {
 		return predicates[0], nil
 	default:
 		return creditledger.And(predicates...), nil
+	}
+}
+
+// EntityWhereInput represents a where input for filtering Entity queries.
+type EntityWhereInput struct {
+	Predicates []predicate.Entity  `json:"-"`
+	Not        *EntityWhereInput   `json:"not,omitempty"`
+	Or         []*EntityWhereInput `json:"or,omitempty"`
+	And        []*EntityWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "entity_id" field predicates.
+	EntityID             *string  `json:"entityID,omitempty"`
+	EntityIDNEQ          *string  `json:"entityIDNEQ,omitempty"`
+	EntityIDIn           []string `json:"entityIDIn,omitempty"`
+	EntityIDNotIn        []string `json:"entityIDNotIn,omitempty"`
+	EntityIDGT           *string  `json:"entityIDGT,omitempty"`
+	EntityIDGTE          *string  `json:"entityIDGTE,omitempty"`
+	EntityIDLT           *string  `json:"entityIDLT,omitempty"`
+	EntityIDLTE          *string  `json:"entityIDLTE,omitempty"`
+	EntityIDContains     *string  `json:"entityIDContains,omitempty"`
+	EntityIDHasPrefix    *string  `json:"entityIDHasPrefix,omitempty"`
+	EntityIDHasSuffix    *string  `json:"entityIDHasSuffix,omitempty"`
+	EntityIDEqualFold    *string  `json:"entityIDEqualFold,omitempty"`
+	EntityIDContainsFold *string  `json:"entityIDContainsFold,omitempty"`
+
+	// "kind" field predicates.
+	Kind             *string  `json:"kind,omitempty"`
+	KindNEQ          *string  `json:"kindNEQ,omitempty"`
+	KindIn           []string `json:"kindIn,omitempty"`
+	KindNotIn        []string `json:"kindNotIn,omitempty"`
+	KindGT           *string  `json:"kindGT,omitempty"`
+	KindGTE          *string  `json:"kindGTE,omitempty"`
+	KindLT           *string  `json:"kindLT,omitempty"`
+	KindLTE          *string  `json:"kindLTE,omitempty"`
+	KindContains     *string  `json:"kindContains,omitempty"`
+	KindHasPrefix    *string  `json:"kindHasPrefix,omitempty"`
+	KindHasSuffix    *string  `json:"kindHasSuffix,omitempty"`
+	KindEqualFold    *string  `json:"kindEqualFold,omitempty"`
+	KindContainsFold *string  `json:"kindContainsFold,omitempty"`
+
+	// "display_name" field predicates.
+	DisplayName             *string  `json:"displayName,omitempty"`
+	DisplayNameNEQ          *string  `json:"displayNameNEQ,omitempty"`
+	DisplayNameIn           []string `json:"displayNameIn,omitempty"`
+	DisplayNameNotIn        []string `json:"displayNameNotIn,omitempty"`
+	DisplayNameGT           *string  `json:"displayNameGT,omitempty"`
+	DisplayNameGTE          *string  `json:"displayNameGTE,omitempty"`
+	DisplayNameLT           *string  `json:"displayNameLT,omitempty"`
+	DisplayNameLTE          *string  `json:"displayNameLTE,omitempty"`
+	DisplayNameContains     *string  `json:"displayNameContains,omitempty"`
+	DisplayNameHasPrefix    *string  `json:"displayNameHasPrefix,omitempty"`
+	DisplayNameHasSuffix    *string  `json:"displayNameHasSuffix,omitempty"`
+	DisplayNameEqualFold    *string  `json:"displayNameEqualFold,omitempty"`
+	DisplayNameContainsFold *string  `json:"displayNameContainsFold,omitempty"`
+
+	// "one_line_summary" field predicates.
+	OneLineSummary             *string  `json:"oneLineSummary,omitempty"`
+	OneLineSummaryNEQ          *string  `json:"oneLineSummaryNEQ,omitempty"`
+	OneLineSummaryIn           []string `json:"oneLineSummaryIn,omitempty"`
+	OneLineSummaryNotIn        []string `json:"oneLineSummaryNotIn,omitempty"`
+	OneLineSummaryGT           *string  `json:"oneLineSummaryGT,omitempty"`
+	OneLineSummaryGTE          *string  `json:"oneLineSummaryGTE,omitempty"`
+	OneLineSummaryLT           *string  `json:"oneLineSummaryLT,omitempty"`
+	OneLineSummaryLTE          *string  `json:"oneLineSummaryLTE,omitempty"`
+	OneLineSummaryContains     *string  `json:"oneLineSummaryContains,omitempty"`
+	OneLineSummaryHasPrefix    *string  `json:"oneLineSummaryHasPrefix,omitempty"`
+	OneLineSummaryHasSuffix    *string  `json:"oneLineSummaryHasSuffix,omitempty"`
+	OneLineSummaryIsNil        bool     `json:"oneLineSummaryIsNil,omitempty"`
+	OneLineSummaryNotNil       bool     `json:"oneLineSummaryNotNil,omitempty"`
+	OneLineSummaryEqualFold    *string  `json:"oneLineSummaryEqualFold,omitempty"`
+	OneLineSummaryContainsFold *string  `json:"oneLineSummaryContainsFold,omitempty"`
+
+	// "status" field predicates.
+	Status             *string  `json:"status,omitempty"`
+	StatusNEQ          *string  `json:"statusNEQ,omitempty"`
+	StatusIn           []string `json:"statusIn,omitempty"`
+	StatusNotIn        []string `json:"statusNotIn,omitempty"`
+	StatusGT           *string  `json:"statusGT,omitempty"`
+	StatusGTE          *string  `json:"statusGTE,omitempty"`
+	StatusLT           *string  `json:"statusLT,omitempty"`
+	StatusLTE          *string  `json:"statusLTE,omitempty"`
+	StatusContains     *string  `json:"statusContains,omitempty"`
+	StatusHasPrefix    *string  `json:"statusHasPrefix,omitempty"`
+	StatusHasSuffix    *string  `json:"statusHasSuffix,omitempty"`
+	StatusEqualFold    *string  `json:"statusEqualFold,omitempty"`
+	StatusContainsFold *string  `json:"statusContainsFold,omitempty"`
+
+	// "canonical_entity_id" field predicates.
+	CanonicalEntityID             *string  `json:"canonicalEntityID,omitempty"`
+	CanonicalEntityIDNEQ          *string  `json:"canonicalEntityIDNEQ,omitempty"`
+	CanonicalEntityIDIn           []string `json:"canonicalEntityIDIn,omitempty"`
+	CanonicalEntityIDNotIn        []string `json:"canonicalEntityIDNotIn,omitempty"`
+	CanonicalEntityIDGT           *string  `json:"canonicalEntityIDGT,omitempty"`
+	CanonicalEntityIDGTE          *string  `json:"canonicalEntityIDGTE,omitempty"`
+	CanonicalEntityIDLT           *string  `json:"canonicalEntityIDLT,omitempty"`
+	CanonicalEntityIDLTE          *string  `json:"canonicalEntityIDLTE,omitempty"`
+	CanonicalEntityIDContains     *string  `json:"canonicalEntityIDContains,omitempty"`
+	CanonicalEntityIDHasPrefix    *string  `json:"canonicalEntityIDHasPrefix,omitempty"`
+	CanonicalEntityIDHasSuffix    *string  `json:"canonicalEntityIDHasSuffix,omitempty"`
+	CanonicalEntityIDIsNil        bool     `json:"canonicalEntityIDIsNil,omitempty"`
+	CanonicalEntityIDNotNil       bool     `json:"canonicalEntityIDNotNil,omitempty"`
+	CanonicalEntityIDEqualFold    *string  `json:"canonicalEntityIDEqualFold,omitempty"`
+	CanonicalEntityIDContainsFold *string  `json:"canonicalEntityIDContainsFold,omitempty"`
+
+	// "version" field predicates.
+	Version      *int  `json:"version,omitempty"`
+	VersionNEQ   *int  `json:"versionNEQ,omitempty"`
+	VersionIn    []int `json:"versionIn,omitempty"`
+	VersionNotIn []int `json:"versionNotIn,omitempty"`
+	VersionGT    *int  `json:"versionGT,omitempty"`
+	VersionGTE   *int  `json:"versionGTE,omitempty"`
+	VersionLT    *int  `json:"versionLT,omitempty"`
+	VersionLTE   *int  `json:"versionLTE,omitempty"`
+
+	// "workspace" edge predicates.
+	HasWorkspace     *bool                         `json:"hasWorkspace,omitempty"`
+	HasWorkspaceWith []*RevenueWorkspaceWhereInput `json:"hasWorkspaceWith,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+
+	// "normalized_resource_refs" edge predicates.
+	HasNormalizedResourceRefs     *bool                          `json:"hasNormalizedResourceRefs,omitempty"`
+	HasNormalizedResourceRefsWith []*EntityResourceRefWhereInput `json:"hasNormalizedResourceRefsWith,omitempty"`
+
+	// "normalized_identifiers" edge predicates.
+	HasNormalizedIdentifiers     *bool                         `json:"hasNormalizedIdentifiers,omitempty"`
+	HasNormalizedIdentifiersWith []*EntityIdentifierWhereInput `json:"hasNormalizedIdentifiersWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *EntityWhereInput) AddPredicates(predicates ...predicate.Entity) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the EntityWhereInput filter on the EntityQuery builder.
+func (i *EntityWhereInput) Filter(q *EntityQuery) (*EntityQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyEntityWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyEntityWhereInput is returned in case the EntityWhereInput is empty.
+var ErrEmptyEntityWhereInput = errors.New("ent: empty predicate EntityWhereInput")
+
+// P returns a predicate for filtering entities.
+// An error is returned if the input is empty or invalid.
+func (i *EntityWhereInput) P() (predicate.Entity, error) {
+	var predicates []predicate.Entity
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, entity.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.Entity, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, entity.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.Entity, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, entity.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, entity.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, entity.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, entity.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, entity.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, entity.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, entity.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, entity.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, entity.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, entity.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, entity.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, entity.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, entity.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, entity.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, entity.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, entity.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, entity.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, entity.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, entity.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, entity.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, entity.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, entity.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, entity.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, entity.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, entity.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.EntityID != nil {
+		predicates = append(predicates, entity.EntityIDEQ(*i.EntityID))
+	}
+	if i.EntityIDNEQ != nil {
+		predicates = append(predicates, entity.EntityIDNEQ(*i.EntityIDNEQ))
+	}
+	if len(i.EntityIDIn) > 0 {
+		predicates = append(predicates, entity.EntityIDIn(i.EntityIDIn...))
+	}
+	if len(i.EntityIDNotIn) > 0 {
+		predicates = append(predicates, entity.EntityIDNotIn(i.EntityIDNotIn...))
+	}
+	if i.EntityIDGT != nil {
+		predicates = append(predicates, entity.EntityIDGT(*i.EntityIDGT))
+	}
+	if i.EntityIDGTE != nil {
+		predicates = append(predicates, entity.EntityIDGTE(*i.EntityIDGTE))
+	}
+	if i.EntityIDLT != nil {
+		predicates = append(predicates, entity.EntityIDLT(*i.EntityIDLT))
+	}
+	if i.EntityIDLTE != nil {
+		predicates = append(predicates, entity.EntityIDLTE(*i.EntityIDLTE))
+	}
+	if i.EntityIDContains != nil {
+		predicates = append(predicates, entity.EntityIDContains(*i.EntityIDContains))
+	}
+	if i.EntityIDHasPrefix != nil {
+		predicates = append(predicates, entity.EntityIDHasPrefix(*i.EntityIDHasPrefix))
+	}
+	if i.EntityIDHasSuffix != nil {
+		predicates = append(predicates, entity.EntityIDHasSuffix(*i.EntityIDHasSuffix))
+	}
+	if i.EntityIDEqualFold != nil {
+		predicates = append(predicates, entity.EntityIDEqualFold(*i.EntityIDEqualFold))
+	}
+	if i.EntityIDContainsFold != nil {
+		predicates = append(predicates, entity.EntityIDContainsFold(*i.EntityIDContainsFold))
+	}
+	if i.Kind != nil {
+		predicates = append(predicates, entity.KindEQ(*i.Kind))
+	}
+	if i.KindNEQ != nil {
+		predicates = append(predicates, entity.KindNEQ(*i.KindNEQ))
+	}
+	if len(i.KindIn) > 0 {
+		predicates = append(predicates, entity.KindIn(i.KindIn...))
+	}
+	if len(i.KindNotIn) > 0 {
+		predicates = append(predicates, entity.KindNotIn(i.KindNotIn...))
+	}
+	if i.KindGT != nil {
+		predicates = append(predicates, entity.KindGT(*i.KindGT))
+	}
+	if i.KindGTE != nil {
+		predicates = append(predicates, entity.KindGTE(*i.KindGTE))
+	}
+	if i.KindLT != nil {
+		predicates = append(predicates, entity.KindLT(*i.KindLT))
+	}
+	if i.KindLTE != nil {
+		predicates = append(predicates, entity.KindLTE(*i.KindLTE))
+	}
+	if i.KindContains != nil {
+		predicates = append(predicates, entity.KindContains(*i.KindContains))
+	}
+	if i.KindHasPrefix != nil {
+		predicates = append(predicates, entity.KindHasPrefix(*i.KindHasPrefix))
+	}
+	if i.KindHasSuffix != nil {
+		predicates = append(predicates, entity.KindHasSuffix(*i.KindHasSuffix))
+	}
+	if i.KindEqualFold != nil {
+		predicates = append(predicates, entity.KindEqualFold(*i.KindEqualFold))
+	}
+	if i.KindContainsFold != nil {
+		predicates = append(predicates, entity.KindContainsFold(*i.KindContainsFold))
+	}
+	if i.DisplayName != nil {
+		predicates = append(predicates, entity.DisplayNameEQ(*i.DisplayName))
+	}
+	if i.DisplayNameNEQ != nil {
+		predicates = append(predicates, entity.DisplayNameNEQ(*i.DisplayNameNEQ))
+	}
+	if len(i.DisplayNameIn) > 0 {
+		predicates = append(predicates, entity.DisplayNameIn(i.DisplayNameIn...))
+	}
+	if len(i.DisplayNameNotIn) > 0 {
+		predicates = append(predicates, entity.DisplayNameNotIn(i.DisplayNameNotIn...))
+	}
+	if i.DisplayNameGT != nil {
+		predicates = append(predicates, entity.DisplayNameGT(*i.DisplayNameGT))
+	}
+	if i.DisplayNameGTE != nil {
+		predicates = append(predicates, entity.DisplayNameGTE(*i.DisplayNameGTE))
+	}
+	if i.DisplayNameLT != nil {
+		predicates = append(predicates, entity.DisplayNameLT(*i.DisplayNameLT))
+	}
+	if i.DisplayNameLTE != nil {
+		predicates = append(predicates, entity.DisplayNameLTE(*i.DisplayNameLTE))
+	}
+	if i.DisplayNameContains != nil {
+		predicates = append(predicates, entity.DisplayNameContains(*i.DisplayNameContains))
+	}
+	if i.DisplayNameHasPrefix != nil {
+		predicates = append(predicates, entity.DisplayNameHasPrefix(*i.DisplayNameHasPrefix))
+	}
+	if i.DisplayNameHasSuffix != nil {
+		predicates = append(predicates, entity.DisplayNameHasSuffix(*i.DisplayNameHasSuffix))
+	}
+	if i.DisplayNameEqualFold != nil {
+		predicates = append(predicates, entity.DisplayNameEqualFold(*i.DisplayNameEqualFold))
+	}
+	if i.DisplayNameContainsFold != nil {
+		predicates = append(predicates, entity.DisplayNameContainsFold(*i.DisplayNameContainsFold))
+	}
+	if i.OneLineSummary != nil {
+		predicates = append(predicates, entity.OneLineSummaryEQ(*i.OneLineSummary))
+	}
+	if i.OneLineSummaryNEQ != nil {
+		predicates = append(predicates, entity.OneLineSummaryNEQ(*i.OneLineSummaryNEQ))
+	}
+	if len(i.OneLineSummaryIn) > 0 {
+		predicates = append(predicates, entity.OneLineSummaryIn(i.OneLineSummaryIn...))
+	}
+	if len(i.OneLineSummaryNotIn) > 0 {
+		predicates = append(predicates, entity.OneLineSummaryNotIn(i.OneLineSummaryNotIn...))
+	}
+	if i.OneLineSummaryGT != nil {
+		predicates = append(predicates, entity.OneLineSummaryGT(*i.OneLineSummaryGT))
+	}
+	if i.OneLineSummaryGTE != nil {
+		predicates = append(predicates, entity.OneLineSummaryGTE(*i.OneLineSummaryGTE))
+	}
+	if i.OneLineSummaryLT != nil {
+		predicates = append(predicates, entity.OneLineSummaryLT(*i.OneLineSummaryLT))
+	}
+	if i.OneLineSummaryLTE != nil {
+		predicates = append(predicates, entity.OneLineSummaryLTE(*i.OneLineSummaryLTE))
+	}
+	if i.OneLineSummaryContains != nil {
+		predicates = append(predicates, entity.OneLineSummaryContains(*i.OneLineSummaryContains))
+	}
+	if i.OneLineSummaryHasPrefix != nil {
+		predicates = append(predicates, entity.OneLineSummaryHasPrefix(*i.OneLineSummaryHasPrefix))
+	}
+	if i.OneLineSummaryHasSuffix != nil {
+		predicates = append(predicates, entity.OneLineSummaryHasSuffix(*i.OneLineSummaryHasSuffix))
+	}
+	if i.OneLineSummaryIsNil {
+		predicates = append(predicates, entity.OneLineSummaryIsNil())
+	}
+	if i.OneLineSummaryNotNil {
+		predicates = append(predicates, entity.OneLineSummaryNotNil())
+	}
+	if i.OneLineSummaryEqualFold != nil {
+		predicates = append(predicates, entity.OneLineSummaryEqualFold(*i.OneLineSummaryEqualFold))
+	}
+	if i.OneLineSummaryContainsFold != nil {
+		predicates = append(predicates, entity.OneLineSummaryContainsFold(*i.OneLineSummaryContainsFold))
+	}
+	if i.Status != nil {
+		predicates = append(predicates, entity.StatusEQ(*i.Status))
+	}
+	if i.StatusNEQ != nil {
+		predicates = append(predicates, entity.StatusNEQ(*i.StatusNEQ))
+	}
+	if len(i.StatusIn) > 0 {
+		predicates = append(predicates, entity.StatusIn(i.StatusIn...))
+	}
+	if len(i.StatusNotIn) > 0 {
+		predicates = append(predicates, entity.StatusNotIn(i.StatusNotIn...))
+	}
+	if i.StatusGT != nil {
+		predicates = append(predicates, entity.StatusGT(*i.StatusGT))
+	}
+	if i.StatusGTE != nil {
+		predicates = append(predicates, entity.StatusGTE(*i.StatusGTE))
+	}
+	if i.StatusLT != nil {
+		predicates = append(predicates, entity.StatusLT(*i.StatusLT))
+	}
+	if i.StatusLTE != nil {
+		predicates = append(predicates, entity.StatusLTE(*i.StatusLTE))
+	}
+	if i.StatusContains != nil {
+		predicates = append(predicates, entity.StatusContains(*i.StatusContains))
+	}
+	if i.StatusHasPrefix != nil {
+		predicates = append(predicates, entity.StatusHasPrefix(*i.StatusHasPrefix))
+	}
+	if i.StatusHasSuffix != nil {
+		predicates = append(predicates, entity.StatusHasSuffix(*i.StatusHasSuffix))
+	}
+	if i.StatusEqualFold != nil {
+		predicates = append(predicates, entity.StatusEqualFold(*i.StatusEqualFold))
+	}
+	if i.StatusContainsFold != nil {
+		predicates = append(predicates, entity.StatusContainsFold(*i.StatusContainsFold))
+	}
+	if i.CanonicalEntityID != nil {
+		predicates = append(predicates, entity.CanonicalEntityIDEQ(*i.CanonicalEntityID))
+	}
+	if i.CanonicalEntityIDNEQ != nil {
+		predicates = append(predicates, entity.CanonicalEntityIDNEQ(*i.CanonicalEntityIDNEQ))
+	}
+	if len(i.CanonicalEntityIDIn) > 0 {
+		predicates = append(predicates, entity.CanonicalEntityIDIn(i.CanonicalEntityIDIn...))
+	}
+	if len(i.CanonicalEntityIDNotIn) > 0 {
+		predicates = append(predicates, entity.CanonicalEntityIDNotIn(i.CanonicalEntityIDNotIn...))
+	}
+	if i.CanonicalEntityIDGT != nil {
+		predicates = append(predicates, entity.CanonicalEntityIDGT(*i.CanonicalEntityIDGT))
+	}
+	if i.CanonicalEntityIDGTE != nil {
+		predicates = append(predicates, entity.CanonicalEntityIDGTE(*i.CanonicalEntityIDGTE))
+	}
+	if i.CanonicalEntityIDLT != nil {
+		predicates = append(predicates, entity.CanonicalEntityIDLT(*i.CanonicalEntityIDLT))
+	}
+	if i.CanonicalEntityIDLTE != nil {
+		predicates = append(predicates, entity.CanonicalEntityIDLTE(*i.CanonicalEntityIDLTE))
+	}
+	if i.CanonicalEntityIDContains != nil {
+		predicates = append(predicates, entity.CanonicalEntityIDContains(*i.CanonicalEntityIDContains))
+	}
+	if i.CanonicalEntityIDHasPrefix != nil {
+		predicates = append(predicates, entity.CanonicalEntityIDHasPrefix(*i.CanonicalEntityIDHasPrefix))
+	}
+	if i.CanonicalEntityIDHasSuffix != nil {
+		predicates = append(predicates, entity.CanonicalEntityIDHasSuffix(*i.CanonicalEntityIDHasSuffix))
+	}
+	if i.CanonicalEntityIDIsNil {
+		predicates = append(predicates, entity.CanonicalEntityIDIsNil())
+	}
+	if i.CanonicalEntityIDNotNil {
+		predicates = append(predicates, entity.CanonicalEntityIDNotNil())
+	}
+	if i.CanonicalEntityIDEqualFold != nil {
+		predicates = append(predicates, entity.CanonicalEntityIDEqualFold(*i.CanonicalEntityIDEqualFold))
+	}
+	if i.CanonicalEntityIDContainsFold != nil {
+		predicates = append(predicates, entity.CanonicalEntityIDContainsFold(*i.CanonicalEntityIDContainsFold))
+	}
+	if i.Version != nil {
+		predicates = append(predicates, entity.VersionEQ(*i.Version))
+	}
+	if i.VersionNEQ != nil {
+		predicates = append(predicates, entity.VersionNEQ(*i.VersionNEQ))
+	}
+	if len(i.VersionIn) > 0 {
+		predicates = append(predicates, entity.VersionIn(i.VersionIn...))
+	}
+	if len(i.VersionNotIn) > 0 {
+		predicates = append(predicates, entity.VersionNotIn(i.VersionNotIn...))
+	}
+	if i.VersionGT != nil {
+		predicates = append(predicates, entity.VersionGT(*i.VersionGT))
+	}
+	if i.VersionGTE != nil {
+		predicates = append(predicates, entity.VersionGTE(*i.VersionGTE))
+	}
+	if i.VersionLT != nil {
+		predicates = append(predicates, entity.VersionLT(*i.VersionLT))
+	}
+	if i.VersionLTE != nil {
+		predicates = append(predicates, entity.VersionLTE(*i.VersionLTE))
+	}
+
+	if i.HasWorkspace != nil {
+		p := entity.HasWorkspace()
+		if !*i.HasWorkspace {
+			p = entity.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasWorkspaceWith) > 0 {
+		with := make([]predicate.RevenueWorkspace, 0, len(i.HasWorkspaceWith))
+		for _, w := range i.HasWorkspaceWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasWorkspaceWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, entity.HasWorkspaceWith(with...))
+	}
+	if i.HasUser != nil {
+		p := entity.HasUser()
+		if !*i.HasUser {
+			p = entity.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, entity.HasUserWith(with...))
+	}
+	if i.HasNormalizedResourceRefs != nil {
+		p := entity.HasNormalizedResourceRefs()
+		if !*i.HasNormalizedResourceRefs {
+			p = entity.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasNormalizedResourceRefsWith) > 0 {
+		with := make([]predicate.EntityResourceRef, 0, len(i.HasNormalizedResourceRefsWith))
+		for _, w := range i.HasNormalizedResourceRefsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasNormalizedResourceRefsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, entity.HasNormalizedResourceRefsWith(with...))
+	}
+	if i.HasNormalizedIdentifiers != nil {
+		p := entity.HasNormalizedIdentifiers()
+		if !*i.HasNormalizedIdentifiers {
+			p = entity.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasNormalizedIdentifiersWith) > 0 {
+		with := make([]predicate.EntityIdentifier, 0, len(i.HasNormalizedIdentifiersWith))
+		for _, w := range i.HasNormalizedIdentifiersWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasNormalizedIdentifiersWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, entity.HasNormalizedIdentifiersWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyEntityWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return entity.And(predicates...), nil
+	}
+}
+
+// EntityIdentifierWhereInput represents a where input for filtering EntityIdentifier queries.
+type EntityIdentifierWhereInput struct {
+	Predicates []predicate.EntityIdentifier  `json:"-"`
+	Not        *EntityIdentifierWhereInput   `json:"not,omitempty"`
+	Or         []*EntityIdentifierWhereInput `json:"or,omitempty"`
+	And        []*EntityIdentifierWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "key" field predicates.
+	Key             *string  `json:"key,omitempty"`
+	KeyNEQ          *string  `json:"keyNEQ,omitempty"`
+	KeyIn           []string `json:"keyIn,omitempty"`
+	KeyNotIn        []string `json:"keyNotIn,omitempty"`
+	KeyGT           *string  `json:"keyGT,omitempty"`
+	KeyGTE          *string  `json:"keyGTE,omitempty"`
+	KeyLT           *string  `json:"keyLT,omitempty"`
+	KeyLTE          *string  `json:"keyLTE,omitempty"`
+	KeyContains     *string  `json:"keyContains,omitempty"`
+	KeyHasPrefix    *string  `json:"keyHasPrefix,omitempty"`
+	KeyHasSuffix    *string  `json:"keyHasSuffix,omitempty"`
+	KeyEqualFold    *string  `json:"keyEqualFold,omitempty"`
+	KeyContainsFold *string  `json:"keyContainsFold,omitempty"`
+
+	// "fingerprint" field predicates.
+	Fingerprint             *string  `json:"fingerprint,omitempty"`
+	FingerprintNEQ          *string  `json:"fingerprintNEQ,omitempty"`
+	FingerprintIn           []string `json:"fingerprintIn,omitempty"`
+	FingerprintNotIn        []string `json:"fingerprintNotIn,omitempty"`
+	FingerprintGT           *string  `json:"fingerprintGT,omitempty"`
+	FingerprintGTE          *string  `json:"fingerprintGTE,omitempty"`
+	FingerprintLT           *string  `json:"fingerprintLT,omitempty"`
+	FingerprintLTE          *string  `json:"fingerprintLTE,omitempty"`
+	FingerprintContains     *string  `json:"fingerprintContains,omitempty"`
+	FingerprintHasPrefix    *string  `json:"fingerprintHasPrefix,omitempty"`
+	FingerprintHasSuffix    *string  `json:"fingerprintHasSuffix,omitempty"`
+	FingerprintEqualFold    *string  `json:"fingerprintEqualFold,omitempty"`
+	FingerprintContainsFold *string  `json:"fingerprintContainsFold,omitempty"`
+
+	// "workspace" edge predicates.
+	HasWorkspace     *bool                         `json:"hasWorkspace,omitempty"`
+	HasWorkspaceWith []*RevenueWorkspaceWhereInput `json:"hasWorkspaceWith,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+
+	// "entity" edge predicates.
+	HasEntity     *bool               `json:"hasEntity,omitempty"`
+	HasEntityWith []*EntityWhereInput `json:"hasEntityWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *EntityIdentifierWhereInput) AddPredicates(predicates ...predicate.EntityIdentifier) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the EntityIdentifierWhereInput filter on the EntityIdentifierQuery builder.
+func (i *EntityIdentifierWhereInput) Filter(q *EntityIdentifierQuery) (*EntityIdentifierQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyEntityIdentifierWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyEntityIdentifierWhereInput is returned in case the EntityIdentifierWhereInput is empty.
+var ErrEmptyEntityIdentifierWhereInput = errors.New("ent: empty predicate EntityIdentifierWhereInput")
+
+// P returns a predicate for filtering entityidentifiers.
+// An error is returned if the input is empty or invalid.
+func (i *EntityIdentifierWhereInput) P() (predicate.EntityIdentifier, error) {
+	var predicates []predicate.EntityIdentifier
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, entityidentifier.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.EntityIdentifier, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, entityidentifier.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.EntityIdentifier, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, entityidentifier.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, entityidentifier.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, entityidentifier.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, entityidentifier.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, entityidentifier.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, entityidentifier.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, entityidentifier.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, entityidentifier.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, entityidentifier.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, entityidentifier.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, entityidentifier.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, entityidentifier.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, entityidentifier.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, entityidentifier.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, entityidentifier.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, entityidentifier.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, entityidentifier.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, entityidentifier.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, entityidentifier.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, entityidentifier.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, entityidentifier.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, entityidentifier.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, entityidentifier.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, entityidentifier.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, entityidentifier.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.Key != nil {
+		predicates = append(predicates, entityidentifier.KeyEQ(*i.Key))
+	}
+	if i.KeyNEQ != nil {
+		predicates = append(predicates, entityidentifier.KeyNEQ(*i.KeyNEQ))
+	}
+	if len(i.KeyIn) > 0 {
+		predicates = append(predicates, entityidentifier.KeyIn(i.KeyIn...))
+	}
+	if len(i.KeyNotIn) > 0 {
+		predicates = append(predicates, entityidentifier.KeyNotIn(i.KeyNotIn...))
+	}
+	if i.KeyGT != nil {
+		predicates = append(predicates, entityidentifier.KeyGT(*i.KeyGT))
+	}
+	if i.KeyGTE != nil {
+		predicates = append(predicates, entityidentifier.KeyGTE(*i.KeyGTE))
+	}
+	if i.KeyLT != nil {
+		predicates = append(predicates, entityidentifier.KeyLT(*i.KeyLT))
+	}
+	if i.KeyLTE != nil {
+		predicates = append(predicates, entityidentifier.KeyLTE(*i.KeyLTE))
+	}
+	if i.KeyContains != nil {
+		predicates = append(predicates, entityidentifier.KeyContains(*i.KeyContains))
+	}
+	if i.KeyHasPrefix != nil {
+		predicates = append(predicates, entityidentifier.KeyHasPrefix(*i.KeyHasPrefix))
+	}
+	if i.KeyHasSuffix != nil {
+		predicates = append(predicates, entityidentifier.KeyHasSuffix(*i.KeyHasSuffix))
+	}
+	if i.KeyEqualFold != nil {
+		predicates = append(predicates, entityidentifier.KeyEqualFold(*i.KeyEqualFold))
+	}
+	if i.KeyContainsFold != nil {
+		predicates = append(predicates, entityidentifier.KeyContainsFold(*i.KeyContainsFold))
+	}
+	if i.Fingerprint != nil {
+		predicates = append(predicates, entityidentifier.FingerprintEQ(*i.Fingerprint))
+	}
+	if i.FingerprintNEQ != nil {
+		predicates = append(predicates, entityidentifier.FingerprintNEQ(*i.FingerprintNEQ))
+	}
+	if len(i.FingerprintIn) > 0 {
+		predicates = append(predicates, entityidentifier.FingerprintIn(i.FingerprintIn...))
+	}
+	if len(i.FingerprintNotIn) > 0 {
+		predicates = append(predicates, entityidentifier.FingerprintNotIn(i.FingerprintNotIn...))
+	}
+	if i.FingerprintGT != nil {
+		predicates = append(predicates, entityidentifier.FingerprintGT(*i.FingerprintGT))
+	}
+	if i.FingerprintGTE != nil {
+		predicates = append(predicates, entityidentifier.FingerprintGTE(*i.FingerprintGTE))
+	}
+	if i.FingerprintLT != nil {
+		predicates = append(predicates, entityidentifier.FingerprintLT(*i.FingerprintLT))
+	}
+	if i.FingerprintLTE != nil {
+		predicates = append(predicates, entityidentifier.FingerprintLTE(*i.FingerprintLTE))
+	}
+	if i.FingerprintContains != nil {
+		predicates = append(predicates, entityidentifier.FingerprintContains(*i.FingerprintContains))
+	}
+	if i.FingerprintHasPrefix != nil {
+		predicates = append(predicates, entityidentifier.FingerprintHasPrefix(*i.FingerprintHasPrefix))
+	}
+	if i.FingerprintHasSuffix != nil {
+		predicates = append(predicates, entityidentifier.FingerprintHasSuffix(*i.FingerprintHasSuffix))
+	}
+	if i.FingerprintEqualFold != nil {
+		predicates = append(predicates, entityidentifier.FingerprintEqualFold(*i.FingerprintEqualFold))
+	}
+	if i.FingerprintContainsFold != nil {
+		predicates = append(predicates, entityidentifier.FingerprintContainsFold(*i.FingerprintContainsFold))
+	}
+
+	if i.HasWorkspace != nil {
+		p := entityidentifier.HasWorkspace()
+		if !*i.HasWorkspace {
+			p = entityidentifier.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasWorkspaceWith) > 0 {
+		with := make([]predicate.RevenueWorkspace, 0, len(i.HasWorkspaceWith))
+		for _, w := range i.HasWorkspaceWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasWorkspaceWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, entityidentifier.HasWorkspaceWith(with...))
+	}
+	if i.HasUser != nil {
+		p := entityidentifier.HasUser()
+		if !*i.HasUser {
+			p = entityidentifier.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, entityidentifier.HasUserWith(with...))
+	}
+	if i.HasEntity != nil {
+		p := entityidentifier.HasEntity()
+		if !*i.HasEntity {
+			p = entityidentifier.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasEntityWith) > 0 {
+		with := make([]predicate.Entity, 0, len(i.HasEntityWith))
+		for _, w := range i.HasEntityWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasEntityWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, entityidentifier.HasEntityWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyEntityIdentifierWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return entityidentifier.And(predicates...), nil
+	}
+}
+
+// EntityResourceRefWhereInput represents a where input for filtering EntityResourceRef queries.
+type EntityResourceRefWhereInput struct {
+	Predicates []predicate.EntityResourceRef  `json:"-"`
+	Not        *EntityResourceRefWhereInput   `json:"not,omitempty"`
+	Or         []*EntityResourceRefWhereInput `json:"or,omitempty"`
+	And        []*EntityResourceRefWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "ref" field predicates.
+	Ref             *string  `json:"ref,omitempty"`
+	RefNEQ          *string  `json:"refNEQ,omitempty"`
+	RefIn           []string `json:"refIn,omitempty"`
+	RefNotIn        []string `json:"refNotIn,omitempty"`
+	RefGT           *string  `json:"refGT,omitempty"`
+	RefGTE          *string  `json:"refGTE,omitempty"`
+	RefLT           *string  `json:"refLT,omitempty"`
+	RefLTE          *string  `json:"refLTE,omitempty"`
+	RefContains     *string  `json:"refContains,omitempty"`
+	RefHasPrefix    *string  `json:"refHasPrefix,omitempty"`
+	RefHasSuffix    *string  `json:"refHasSuffix,omitempty"`
+	RefEqualFold    *string  `json:"refEqualFold,omitempty"`
+	RefContainsFold *string  `json:"refContainsFold,omitempty"`
+
+	// "workspace" edge predicates.
+	HasWorkspace     *bool                         `json:"hasWorkspace,omitempty"`
+	HasWorkspaceWith []*RevenueWorkspaceWhereInput `json:"hasWorkspaceWith,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+
+	// "entity" edge predicates.
+	HasEntity     *bool               `json:"hasEntity,omitempty"`
+	HasEntityWith []*EntityWhereInput `json:"hasEntityWith,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *EntityResourceRefWhereInput) AddPredicates(predicates ...predicate.EntityResourceRef) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the EntityResourceRefWhereInput filter on the EntityResourceRefQuery builder.
+func (i *EntityResourceRefWhereInput) Filter(q *EntityResourceRefQuery) (*EntityResourceRefQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyEntityResourceRefWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyEntityResourceRefWhereInput is returned in case the EntityResourceRefWhereInput is empty.
+var ErrEmptyEntityResourceRefWhereInput = errors.New("ent: empty predicate EntityResourceRefWhereInput")
+
+// P returns a predicate for filtering entityresourcerefs.
+// An error is returned if the input is empty or invalid.
+func (i *EntityResourceRefWhereInput) P() (predicate.EntityResourceRef, error) {
+	var predicates []predicate.EntityResourceRef
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, entityresourceref.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.EntityResourceRef, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, entityresourceref.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.EntityResourceRef, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, entityresourceref.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, entityresourceref.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, entityresourceref.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, entityresourceref.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, entityresourceref.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, entityresourceref.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, entityresourceref.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, entityresourceref.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, entityresourceref.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, entityresourceref.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, entityresourceref.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, entityresourceref.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, entityresourceref.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, entityresourceref.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, entityresourceref.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, entityresourceref.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, entityresourceref.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, entityresourceref.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, entityresourceref.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, entityresourceref.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, entityresourceref.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, entityresourceref.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, entityresourceref.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, entityresourceref.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, entityresourceref.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.Ref != nil {
+		predicates = append(predicates, entityresourceref.RefEQ(*i.Ref))
+	}
+	if i.RefNEQ != nil {
+		predicates = append(predicates, entityresourceref.RefNEQ(*i.RefNEQ))
+	}
+	if len(i.RefIn) > 0 {
+		predicates = append(predicates, entityresourceref.RefIn(i.RefIn...))
+	}
+	if len(i.RefNotIn) > 0 {
+		predicates = append(predicates, entityresourceref.RefNotIn(i.RefNotIn...))
+	}
+	if i.RefGT != nil {
+		predicates = append(predicates, entityresourceref.RefGT(*i.RefGT))
+	}
+	if i.RefGTE != nil {
+		predicates = append(predicates, entityresourceref.RefGTE(*i.RefGTE))
+	}
+	if i.RefLT != nil {
+		predicates = append(predicates, entityresourceref.RefLT(*i.RefLT))
+	}
+	if i.RefLTE != nil {
+		predicates = append(predicates, entityresourceref.RefLTE(*i.RefLTE))
+	}
+	if i.RefContains != nil {
+		predicates = append(predicates, entityresourceref.RefContains(*i.RefContains))
+	}
+	if i.RefHasPrefix != nil {
+		predicates = append(predicates, entityresourceref.RefHasPrefix(*i.RefHasPrefix))
+	}
+	if i.RefHasSuffix != nil {
+		predicates = append(predicates, entityresourceref.RefHasSuffix(*i.RefHasSuffix))
+	}
+	if i.RefEqualFold != nil {
+		predicates = append(predicates, entityresourceref.RefEqualFold(*i.RefEqualFold))
+	}
+	if i.RefContainsFold != nil {
+		predicates = append(predicates, entityresourceref.RefContainsFold(*i.RefContainsFold))
+	}
+
+	if i.HasWorkspace != nil {
+		p := entityresourceref.HasWorkspace()
+		if !*i.HasWorkspace {
+			p = entityresourceref.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasWorkspaceWith) > 0 {
+		with := make([]predicate.RevenueWorkspace, 0, len(i.HasWorkspaceWith))
+		for _, w := range i.HasWorkspaceWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasWorkspaceWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, entityresourceref.HasWorkspaceWith(with...))
+	}
+	if i.HasUser != nil {
+		p := entityresourceref.HasUser()
+		if !*i.HasUser {
+			p = entityresourceref.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, entityresourceref.HasUserWith(with...))
+	}
+	if i.HasEntity != nil {
+		p := entityresourceref.HasEntity()
+		if !*i.HasEntity {
+			p = entityresourceref.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasEntityWith) > 0 {
+		with := make([]predicate.Entity, 0, len(i.HasEntityWith))
+		for _, w := range i.HasEntityWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasEntityWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, entityresourceref.HasEntityWith(with...))
+	}
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyEntityResourceRefWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return entityresourceref.And(predicates...), nil
 	}
 }
 
@@ -47549,6 +48884,18 @@ type RevenueWorkspaceWhereInput struct {
 	HasRelationshipPersons     *bool               `json:"hasRelationshipPersons,omitempty"`
 	HasRelationshipPersonsWith []*PersonWhereInput `json:"hasRelationshipPersonsWith,omitempty"`
 
+	// "entities" edge predicates.
+	HasEntities     *bool               `json:"hasEntities,omitempty"`
+	HasEntitiesWith []*EntityWhereInput `json:"hasEntitiesWith,omitempty"`
+
+	// "entity_resource_refs" edge predicates.
+	HasEntityResourceRefs     *bool                          `json:"hasEntityResourceRefs,omitempty"`
+	HasEntityResourceRefsWith []*EntityResourceRefWhereInput `json:"hasEntityResourceRefsWith,omitempty"`
+
+	// "entity_identifiers" edge predicates.
+	HasEntityIdentifiers     *bool                         `json:"hasEntityIdentifiers,omitempty"`
+	HasEntityIdentifiersWith []*EntityIdentifierWhereInput `json:"hasEntityIdentifiersWith,omitempty"`
+
 	// "person_identities" edge predicates.
 	HasPersonIdentities     *bool                       `json:"hasPersonIdentities,omitempty"`
 	HasPersonIdentitiesWith []*PersonIdentityWhereInput `json:"hasPersonIdentitiesWith,omitempty"`
@@ -48589,6 +49936,60 @@ func (i *RevenueWorkspaceWhereInput) P() (predicate.RevenueWorkspace, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, revenueworkspace.HasRelationshipPersonsWith(with...))
+	}
+	if i.HasEntities != nil {
+		p := revenueworkspace.HasEntities()
+		if !*i.HasEntities {
+			p = revenueworkspace.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasEntitiesWith) > 0 {
+		with := make([]predicate.Entity, 0, len(i.HasEntitiesWith))
+		for _, w := range i.HasEntitiesWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasEntitiesWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, revenueworkspace.HasEntitiesWith(with...))
+	}
+	if i.HasEntityResourceRefs != nil {
+		p := revenueworkspace.HasEntityResourceRefs()
+		if !*i.HasEntityResourceRefs {
+			p = revenueworkspace.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasEntityResourceRefsWith) > 0 {
+		with := make([]predicate.EntityResourceRef, 0, len(i.HasEntityResourceRefsWith))
+		for _, w := range i.HasEntityResourceRefsWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasEntityResourceRefsWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, revenueworkspace.HasEntityResourceRefsWith(with...))
+	}
+	if i.HasEntityIdentifiers != nil {
+		p := revenueworkspace.HasEntityIdentifiers()
+		if !*i.HasEntityIdentifiers {
+			p = revenueworkspace.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasEntityIdentifiersWith) > 0 {
+		with := make([]predicate.EntityIdentifier, 0, len(i.HasEntityIdentifiersWith))
+		for _, w := range i.HasEntityIdentifiersWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasEntityIdentifiersWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, revenueworkspace.HasEntityIdentifiersWith(with...))
 	}
 	if i.HasPersonIdentities != nil {
 		p := revenueworkspace.HasPersonIdentities()

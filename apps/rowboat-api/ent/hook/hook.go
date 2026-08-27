@@ -285,6 +285,42 @@ func (f CreditLedgerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CreditLedgerMutation", m)
 }
 
+// The EntityFunc type is an adapter to allow the use of ordinary
+// function as Entity mutator.
+type EntityFunc func(context.Context, *ent.EntityMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EntityFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EntityMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EntityMutation", m)
+}
+
+// The EntityIdentifierFunc type is an adapter to allow the use of ordinary
+// function as EntityIdentifier mutator.
+type EntityIdentifierFunc func(context.Context, *ent.EntityIdentifierMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EntityIdentifierFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EntityIdentifierMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EntityIdentifierMutation", m)
+}
+
+// The EntityResourceRefFunc type is an adapter to allow the use of ordinary
+// function as EntityResourceRef mutator.
+type EntityResourceRefFunc func(context.Context, *ent.EntityResourceRefMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EntityResourceRefFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EntityResourceRefMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EntityResourceRefMutation", m)
+}
+
 // The GoogleWatchFunc type is an adapter to allow the use of ordinary
 // function as GoogleWatch mutator.
 type GoogleWatchFunc func(context.Context, *ent.GoogleWatchMutation) (ent.Value, error)

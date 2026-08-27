@@ -10,6 +10,9 @@ export { initConfigs } from "./config/initConfigs.js";
 // Knowledge version history
 export * as versionHistory from "./knowledge/version_history.js";
 
+// Stable local entity identity, reconciliation, and shared-spine synchronization.
+export * as entities from "./knowledge/entity.js";
+
 // Voice mode (config + TTS)
 export * as voice from "./voice/voice.js";
 

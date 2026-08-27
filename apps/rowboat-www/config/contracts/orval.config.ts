@@ -21,6 +21,12 @@ export default defineConfig({
   },
   schemas: {
     input,
+    hooks: {
+      afterAllFilesWrite: {
+        command: "node scripts/refine-generated-entity-zod.mjs",
+        injectGeneratedDirsAndFiles: false,
+      },
+    },
     output: {
       target: `${outputRoot}/zod/endpoints.ts`,
       client: "zod",

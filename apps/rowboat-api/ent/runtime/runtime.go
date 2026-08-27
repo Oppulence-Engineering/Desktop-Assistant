@@ -29,6 +29,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -1395,6 +1398,212 @@ func init() {
 	creditledgerDescID := creditledgerFields[0].Descriptor()
 	// creditledger.DefaultID holds the default value on creation for the id field.
 	creditledger.DefaultID = creditledgerDescID.Default.(func() uuid.UUID)
+	entityMixin := schema.Entity{}.Mixin()
+	entity.Policy = privacy.NewPolicies(entityMixin[0], schema.Entity{})
+	entity.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := entity.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	entityMixinFields0 := entityMixin[0].Fields()
+	_ = entityMixinFields0
+	entityFields := schema.Entity{}.Fields()
+	_ = entityFields
+	// entityDescCreatedAt is the schema descriptor for created_at field.
+	entityDescCreatedAt := entityMixinFields0[1].Descriptor()
+	// entity.DefaultCreatedAt holds the default value on creation for the created_at field.
+	entity.DefaultCreatedAt = entityDescCreatedAt.Default.(func() time.Time)
+	// entityDescUpdatedAt is the schema descriptor for updated_at field.
+	entityDescUpdatedAt := entityMixinFields0[2].Descriptor()
+	// entity.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	entity.DefaultUpdatedAt = entityDescUpdatedAt.Default.(func() time.Time)
+	// entity.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	entity.UpdateDefaultUpdatedAt = entityDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// entityDescEntityID is the schema descriptor for entity_id field.
+	entityDescEntityID := entityFields[0].Descriptor()
+	// entity.EntityIDValidator is a validator for the "entity_id" field. It is called by the builders before save.
+	entity.EntityIDValidator = func() func(string) error {
+		validators := entityDescEntityID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(entity_id string) error {
+			for _, fn := range fns {
+				if err := fn(entity_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// entityDescKind is the schema descriptor for kind field.
+	entityDescKind := entityFields[1].Descriptor()
+	// entity.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	entity.KindValidator = func() func(string) error {
+		validators := entityDescKind.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(kind string) error {
+			for _, fn := range fns {
+				if err := fn(kind); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// entityDescDisplayName is the schema descriptor for display_name field.
+	entityDescDisplayName := entityFields[2].Descriptor()
+	// entity.DisplayNameValidator is a validator for the "display_name" field. It is called by the builders before save.
+	entity.DisplayNameValidator = func() func(string) error {
+		validators := entityDescDisplayName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(display_name string) error {
+			for _, fn := range fns {
+				if err := fn(display_name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// entityDescResourceRefs is the schema descriptor for resource_refs field.
+	entityDescResourceRefs := entityFields[3].Descriptor()
+	// entity.DefaultResourceRefs holds the default value on creation for the resource_refs field.
+	entity.DefaultResourceRefs = entityDescResourceRefs.Default.([]string)
+	// entityDescIdentifiers is the schema descriptor for identifiers field.
+	entityDescIdentifiers := entityFields[4].Descriptor()
+	// entity.DefaultIdentifiers holds the default value on creation for the identifiers field.
+	entity.DefaultIdentifiers = entityDescIdentifiers.Default.(map[string][]string)
+	// entityDescOneLineSummary is the schema descriptor for one_line_summary field.
+	entityDescOneLineSummary := entityFields[5].Descriptor()
+	// entity.OneLineSummaryValidator is a validator for the "one_line_summary" field. It is called by the builders before save.
+	entity.OneLineSummaryValidator = entityDescOneLineSummary.Validators[0].(func(string) error)
+	// entityDescStatus is the schema descriptor for status field.
+	entityDescStatus := entityFields[6].Descriptor()
+	// entity.DefaultStatus holds the default value on creation for the status field.
+	entity.DefaultStatus = entityDescStatus.Default.(string)
+	// entity.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	entity.StatusValidator = entityDescStatus.Validators[0].(func(string) error)
+	// entityDescCanonicalEntityID is the schema descriptor for canonical_entity_id field.
+	entityDescCanonicalEntityID := entityFields[7].Descriptor()
+	// entity.CanonicalEntityIDValidator is a validator for the "canonical_entity_id" field. It is called by the builders before save.
+	entity.CanonicalEntityIDValidator = entityDescCanonicalEntityID.Validators[0].(func(string) error)
+	// entityDescVersion is the schema descriptor for version field.
+	entityDescVersion := entityFields[8].Descriptor()
+	// entity.DefaultVersion holds the default value on creation for the version field.
+	entity.DefaultVersion = entityDescVersion.Default.(int)
+	// entity.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	entity.VersionValidator = entityDescVersion.Validators[0].(func(int) error)
+	// entityDescID is the schema descriptor for id field.
+	entityDescID := entityMixinFields0[0].Descriptor()
+	// entity.DefaultID holds the default value on creation for the id field.
+	entity.DefaultID = entityDescID.Default.(func() uuid.UUID)
+	entityidentifierMixin := schema.EntityIdentifier{}.Mixin()
+	entityidentifier.Policy = privacy.NewPolicies(entityidentifierMixin[0], schema.EntityIdentifier{})
+	entityidentifier.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := entityidentifier.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	entityidentifierMixinFields0 := entityidentifierMixin[0].Fields()
+	_ = entityidentifierMixinFields0
+	entityidentifierFields := schema.EntityIdentifier{}.Fields()
+	_ = entityidentifierFields
+	// entityidentifierDescCreatedAt is the schema descriptor for created_at field.
+	entityidentifierDescCreatedAt := entityidentifierMixinFields0[1].Descriptor()
+	// entityidentifier.DefaultCreatedAt holds the default value on creation for the created_at field.
+	entityidentifier.DefaultCreatedAt = entityidentifierDescCreatedAt.Default.(func() time.Time)
+	// entityidentifierDescUpdatedAt is the schema descriptor for updated_at field.
+	entityidentifierDescUpdatedAt := entityidentifierMixinFields0[2].Descriptor()
+	// entityidentifier.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	entityidentifier.DefaultUpdatedAt = entityidentifierDescUpdatedAt.Default.(func() time.Time)
+	// entityidentifier.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	entityidentifier.UpdateDefaultUpdatedAt = entityidentifierDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// entityidentifierDescKey is the schema descriptor for key field.
+	entityidentifierDescKey := entityidentifierFields[0].Descriptor()
+	// entityidentifier.KeyValidator is a validator for the "key" field. It is called by the builders before save.
+	entityidentifier.KeyValidator = func() func(string) error {
+		validators := entityidentifierDescKey.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(key string) error {
+			for _, fn := range fns {
+				if err := fn(key); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// entityidentifierDescFingerprint is the schema descriptor for fingerprint field.
+	entityidentifierDescFingerprint := entityidentifierFields[1].Descriptor()
+	// entityidentifier.FingerprintValidator is a validator for the "fingerprint" field. It is called by the builders before save.
+	entityidentifier.FingerprintValidator = entityidentifierDescFingerprint.Validators[0].(func(string) error)
+	// entityidentifierDescID is the schema descriptor for id field.
+	entityidentifierDescID := entityidentifierMixinFields0[0].Descriptor()
+	// entityidentifier.DefaultID holds the default value on creation for the id field.
+	entityidentifier.DefaultID = entityidentifierDescID.Default.(func() uuid.UUID)
+	entityresourcerefMixin := schema.EntityResourceRef{}.Mixin()
+	entityresourceref.Policy = privacy.NewPolicies(entityresourcerefMixin[0], schema.EntityResourceRef{})
+	entityresourceref.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := entityresourceref.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	entityresourcerefMixinFields0 := entityresourcerefMixin[0].Fields()
+	_ = entityresourcerefMixinFields0
+	entityresourcerefFields := schema.EntityResourceRef{}.Fields()
+	_ = entityresourcerefFields
+	// entityresourcerefDescCreatedAt is the schema descriptor for created_at field.
+	entityresourcerefDescCreatedAt := entityresourcerefMixinFields0[1].Descriptor()
+	// entityresourceref.DefaultCreatedAt holds the default value on creation for the created_at field.
+	entityresourceref.DefaultCreatedAt = entityresourcerefDescCreatedAt.Default.(func() time.Time)
+	// entityresourcerefDescUpdatedAt is the schema descriptor for updated_at field.
+	entityresourcerefDescUpdatedAt := entityresourcerefMixinFields0[2].Descriptor()
+	// entityresourceref.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	entityresourceref.DefaultUpdatedAt = entityresourcerefDescUpdatedAt.Default.(func() time.Time)
+	// entityresourceref.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	entityresourceref.UpdateDefaultUpdatedAt = entityresourcerefDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// entityresourcerefDescRef is the schema descriptor for ref field.
+	entityresourcerefDescRef := entityresourcerefFields[0].Descriptor()
+	// entityresourceref.RefValidator is a validator for the "ref" field. It is called by the builders before save.
+	entityresourceref.RefValidator = func() func(string) error {
+		validators := entityresourcerefDescRef.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(ref string) error {
+			for _, fn := range fns {
+				if err := fn(ref); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// entityresourcerefDescID is the schema descriptor for id field.
+	entityresourcerefDescID := entityresourcerefMixinFields0[0].Descriptor()
+	// entityresourceref.DefaultID holds the default value on creation for the id field.
+	entityresourceref.DefaultID = entityresourcerefDescID.Default.(func() uuid.UUID)
 	googlewatchMixin := schema.GoogleWatch{}.Mixin()
 	googlewatch.Policy = privacy.NewPolicies(googlewatchMixin[0], schema.GoogleWatch{})
 	googlewatch.Hooks[0] = func(next ent.Mutator) ent.Mutator {

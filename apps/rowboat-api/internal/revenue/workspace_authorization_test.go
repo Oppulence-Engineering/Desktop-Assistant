@@ -1,6 +1,7 @@
 package revenue
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -8,6 +9,51 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 )
+
+func TestCurrentWorkspaceForOrgUsesExactClaimAndNeverCreates(t *testing.T) {
+	f := newFixture(t)
+	internal := auth.WithInternal(context.Background())
+	user, err := f.user.Update().SetWorkosOrgID("org_a").Save(internal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := auth.WithUser(context.Background(), user)
+	workspaceA, err := f.svc.CurrentWorkspace(ctx, user)
+	if err != nil {
+		t.Fatalf("create org A workspace: %v", err)
+	}
+	ownerB := f.client.User.Create().
+		SetEmail("owner-b@example.com").
+		SetWorkosUserID("user_owner_b").
+		SetWorkosOrgID("org_b").
+		SaveX(internal)
+	workspaceB := f.client.RevenueWorkspace.Create().SetUser(ownerB).SetWorkosOrgID("org_b").SaveX(internal)
+	f.client.RevenueWorkspaceMember.Create().SetWorkspace(workspaceB).SetUser(user).SetRole("member").SetStatus("active").SaveX(internal)
+
+	selected, err := f.svc.CurrentWorkspaceForOrg(ctx, user, "org_b")
+	if err != nil || selected.ID != workspaceB.ID {
+		t.Fatalf("exact org B workspace: got=%v err=%v", selected, err)
+	}
+	selected, err = f.svc.CurrentWorkspaceForOrg(ctx, user, "org_a")
+	if err != nil || selected.ID != workspaceA.ID {
+		t.Fatalf("exact org A workspace: got=%v err=%v", selected, err)
+	}
+
+	workspaceCount := f.client.RevenueWorkspace.Query().CountX(internal)
+	membershipCount := f.client.RevenueWorkspaceMember.Query().CountX(internal)
+	if _, err := f.svc.CurrentWorkspaceForOrg(ctx, user, ""); !ent.IsNotFound(err) {
+		t.Fatalf("org-less current claim must be denied, got %v", err)
+	}
+	if _, err := f.svc.CurrentWorkspaceForOrg(ctx, user, "org_missing"); !ent.IsNotFound(err) {
+		t.Fatalf("unknown current org must be denied, got %v", err)
+	}
+	if got := f.client.RevenueWorkspace.Query().CountX(internal); got != workspaceCount {
+		t.Fatalf("authorization lookup created workspace: %d -> %d", workspaceCount, got)
+	}
+	if got := f.client.RevenueWorkspaceMember.Query().CountX(internal); got != membershipCount {
+		t.Fatalf("authorization lookup created membership: %d -> %d", membershipCount, got)
+	}
+}
 
 func TestWorkspaceRoleAndResourceAuthorizationMatrix(t *testing.T) {
 	f := newFixture(t)

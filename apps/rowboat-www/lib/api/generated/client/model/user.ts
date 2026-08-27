@@ -27,6 +27,9 @@ import type { CommitmentDependency } from "./commitmentDependency";
 import type { CommitmentEvent } from "./commitmentEvent";
 import type { ConversationIntelligenceArtifact } from "./conversationIntelligenceArtifact";
 import type { CreditLedger } from "./creditLedger";
+import type { Entity } from "./entity";
+import type { EntityIdentifier } from "./entityIdentifier";
+import type { EntityResourceRef } from "./entityResourceRef";
 import type { GoogleWatch } from "./googleWatch";
 import type { LLMUsage } from "./lLMUsage";
 import type { MailBodyCache } from "./mailBodyCache";
@@ -102,6 +105,9 @@ export interface User {
   created_at: string;
   /** Best-known WorkOS primary email for the user. */
   email?: string;
+  entities?: Entity[];
+  entity_identifiers?: EntityIdentifier[];
+  entity_resource_refs?: EntityResourceRef[];
   google_watches?: GoogleWatch[];
   /** Stable UUID primary key. */
   id: string;

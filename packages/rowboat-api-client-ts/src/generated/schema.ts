@@ -852,6 +852,70 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/entities": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Resolve resource reference
+     * @description Exact reverse resolution within the caller organization.
+     */
+    get: operations["resolveEntityByRef"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/entities/merge": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Merge entity ids
+     * @description Idempotently tombstones source and unions projection sets into target.
+     */
+    post: operations["mergeEntities"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/entities/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get entity
+     * @description Returns an entity or merge tombstone within the caller organization.
+     */
+    get: operations["getEntity"];
+    /**
+     * Upsert entity projection
+     * @description Strict fixed allowlist. Unknown fields are rejected.
+     */
+    put: operations["putEntity"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/events": {
     parameters: {
       query?: never;
@@ -5410,6 +5474,196 @@ export interface components {
        * @example 25
        */
       usedCredits: number;
+    };
+    Entity: {
+      canonical_entity_id?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      display_name: string;
+      entity_id: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      kind: string;
+      normalized_identifiers?: components["schemas"]["EntityIdentifier"][];
+      normalized_resource_refs?: components["schemas"]["EntityResourceRef"][];
+      one_line_summary?: string;
+      resource_refs: string[];
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      version: number;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    EntityIdentifier: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      entity: components["schemas"]["Entity"];
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      key: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description Explicit idempotent merge with compare-and-swap versions. */
+    EntityMergeRequest: {
+      /**
+       * Format: int64
+       * @example 1
+       */
+      expectedSourceVersion: number;
+      /**
+       * Format: int64
+       * @example 1
+       */
+      expectedTargetVersion: number;
+      /**
+       * @description Tombstoned id.
+       * @example 01J9Z8Q5K3R7V2C4M6N8P0T1S4
+       */
+      sourceId: string;
+      /**
+       * @description Canonical id.
+       * @example 01J9Z8Q5K3R7V2C4M6N8P0T1S3
+       */
+      targetId: string;
+    };
+    /** @description Canonical entity and durable tombstone. */
+    EntityMergeResponse: {
+      canonical: components["schemas"]["EntitySpine"];
+      /**
+       * @description True for a replay.
+       * @example false
+       */
+      idempotent: boolean;
+      tombstone: components["schemas"]["EntitySpine"];
+    };
+    /** @description Strict projection allowlist accepted by PUT. Unknown fields, raw identifiers, and note bodies are rejected. */
+    EntityProjection: {
+      /** @example Acme */
+      displayName: string;
+      /**
+       * Format: int64
+       * @example 1
+       */
+      expectedVersion?: number;
+      /**
+       * @description Optional body copy of the path ULID.
+       * @example 01J9Z8Q5K3R7V2C4M6N8P0T1S3
+       */
+      id?: string;
+      identifiers?: {
+        [key: string]: string[];
+      };
+      /** @example company */
+      kind: string;
+      /** @example Key supplier. */
+      oneLineSummary?: string;
+      resourceRefs?: string[];
+    };
+    EntityResourceRef: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      entity: components["schemas"]["Entity"];
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      /**
+       * @description UUID of the source row represented by a history row.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      ref: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    /** @description Minimal org-scoped entity spine projection. Raw note bodies and mirrored payloads are forbidden. */
+    EntitySpine: {
+      /**
+       * @description Canonical id for a durable merge tombstone.
+       * @example 01J9Z8Q5K3R7V2C4M6N8P0T1S3
+       */
+      canonicalEntityId?: string;
+      /**
+       * @description Bounded display name.
+       * @example Acme
+       */
+      displayName: string;
+      /**
+       * @description Stable entity ULID.
+       * @example 01J9Z8Q5K3R7V2C4M6N8P0T1S3
+       */
+      id: string;
+      identifiers?: {
+        [key: string]: string[];
+      };
+      /**
+       * @description Non-customer entity kind.
+       * @example company
+       */
+      kind: string;
+      /**
+       * @description Bounded one-line summary.
+       * @example Key supplier.
+       */
+      oneLineSummary?: string;
+      resourceRefs: string[];
+      /**
+       * @description Lifecycle status.
+       * @example active
+       * @enum {string}
+       */
+      status: "active" | "merged" | "archived";
+      /**
+       * Format: int64
+       * @example 1
+       */
+      version: number;
     };
     /** @description RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members. */
     ErrorEnvelope: {
@@ -10026,6 +10280,9 @@ export interface components {
        * @example user@example.com
        */
       email?: string;
+      entities?: components["schemas"]["Entity"][];
+      entity_identifiers?: components["schemas"]["EntityIdentifier"][];
+      entity_resource_refs?: components["schemas"]["EntityResourceRef"][];
       google_watches?: components["schemas"]["GoogleWatch"][];
       /**
        * Format: uuid
@@ -13065,6 +13322,202 @@ export interface operations {
       401: components["responses"]["401"];
       500: components["responses"]["500"];
       503: components["responses"]["503"];
+    };
+  };
+  resolveEntityByRef: {
+    parameters: {
+      query: {
+        /** @description Exact resourceRef. */
+        ref: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Entity projection. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntitySpine"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
+  mergeEntities: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Merge request. */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EntityMergeRequest"];
+      };
+    };
+    responses: {
+      /** @description Merge result. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntityMergeResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      404: components["responses"]["404"];
+      409: components["responses"]["409"];
+      /** @description Projection exceeds the 256 KiB request cap. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "request_body_too_large",
+           *       "detail": "request body exceeds 262144 bytes",
+           *       "requestId": "req-abc123",
+           *       "status": 413,
+           *       "title": "Request Entity Too Large",
+           *       "type": "https://api.rowboat.dev/problems/request_body_too_large"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Content-Type must be application/json. */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "unsupported_media_type",
+           *       "detail": "Content-Type must be application/json",
+           *       "requestId": "req-abc123",
+           *       "status": 415,
+           *       "title": "Unsupported Media Type",
+           *       "type": "https://api.rowboat.dev/problems/unsupported_media_type"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
+    };
+  };
+  getEntity: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Stable entity ULID. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Entity projection. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntitySpine"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
+  putEntity: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Stable entity ULID. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    /** @description Projection. */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EntityProjection"];
+      };
+    };
+    responses: {
+      /** @description Upserted projection or canonical adoption tombstone. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EntitySpine"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      409: components["responses"]["409"];
+      /** @description Projection exceeds the 256 KiB request cap. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "request_body_too_large",
+           *       "detail": "request body exceeds 262144 bytes",
+           *       "requestId": "req-abc123",
+           *       "status": 413,
+           *       "title": "Request Entity Too Large",
+           *       "type": "https://api.rowboat.dev/problems/request_body_too_large"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Content-Type must be application/json. */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "unsupported_media_type",
+           *       "detail": "Content-Type must be application/json",
+           *       "requestId": "req-abc123",
+           *       "status": 415,
+           *       "title": "Unsupported Media Type",
+           *       "type": "https://api.rowboat.dev/problems/unsupported_media_type"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
     };
   };
   listCloudEvents: {

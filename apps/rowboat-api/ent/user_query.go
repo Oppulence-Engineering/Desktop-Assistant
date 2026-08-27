@@ -34,6 +34,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
@@ -148,6 +151,9 @@ type UserQuery struct {
 	withRelationshipAssertions                  *RelationshipAssertionQuery
 	withRelationshipStateSnapshots              *RelationshipStateSnapshotQuery
 	withRelationshipSourceStatuses              *RelationshipSourceStatusQuery
+	withEntities                                *EntityQuery
+	withEntityResourceRefs                      *EntityResourceRefQuery
+	withEntityIdentifiers                       *EntityIdentifierQuery
 	withActionProposals                         *ActionProposalQuery
 	withApprovalTokens                          *ApprovalTokenQuery
 	modifiers                                   []func(*sql.Selector)
@@ -212,6 +218,9 @@ type UserQuery struct {
 	withNamedRelationshipAssertions             map[string]*RelationshipAssertionQuery
 	withNamedRelationshipStateSnapshots         map[string]*RelationshipStateSnapshotQuery
 	withNamedRelationshipSourceStatuses         map[string]*RelationshipSourceStatusQuery
+	withNamedEntities                           map[string]*EntityQuery
+	withNamedEntityResourceRefs                 map[string]*EntityResourceRefQuery
+	withNamedEntityIdentifiers                  map[string]*EntityIdentifierQuery
 	withNamedActionProposals                    map[string]*ActionProposalQuery
 	withNamedApprovalTokens                     map[string]*ApprovalTokenQuery
 	// intermediate query (i.e. traversal path).
@@ -1592,6 +1601,72 @@ func (_q *UserQuery) QueryRelationshipSourceStatuses() *RelationshipSourceStatus
 	return query
 }
 
+// QueryEntities chains the current query on the "entities" edge.
+func (_q *UserQuery) QueryEntities() *EntityQuery {
+	query := (&EntityClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(entity.Table, entity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.EntitiesTable, user.EntitiesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEntityResourceRefs chains the current query on the "entity_resource_refs" edge.
+func (_q *UserQuery) QueryEntityResourceRefs() *EntityResourceRefQuery {
+	query := (&EntityResourceRefClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(entityresourceref.Table, entityresourceref.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.EntityResourceRefsTable, user.EntityResourceRefsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryEntityIdentifiers chains the current query on the "entity_identifiers" edge.
+func (_q *UserQuery) QueryEntityIdentifiers() *EntityIdentifierQuery {
+	query := (&EntityIdentifierClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(entityidentifier.Table, entityidentifier.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.EntityIdentifiersTable, user.EntityIdentifiersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryActionProposals chains the current query on the "action_proposals" edge.
 func (_q *UserQuery) QueryActionProposals() *ActionProposalQuery {
 	query := (&ActionProposalClient{config: _q.config}).Query()
@@ -1889,6 +1964,9 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withRelationshipAssertions:             _q.withRelationshipAssertions.Clone(),
 		withRelationshipStateSnapshots:         _q.withRelationshipStateSnapshots.Clone(),
 		withRelationshipSourceStatuses:         _q.withRelationshipSourceStatuses.Clone(),
+		withEntities:                           _q.withEntities.Clone(),
+		withEntityResourceRefs:                 _q.withEntityResourceRefs.Clone(),
+		withEntityIdentifiers:                  _q.withEntityIdentifiers.Clone(),
 		withActionProposals:                    _q.withActionProposals.Clone(),
 		withApprovalTokens:                     _q.withApprovalTokens.Clone(),
 		// clone intermediate query.
@@ -2568,6 +2646,39 @@ func (_q *UserQuery) WithRelationshipSourceStatuses(opts ...func(*RelationshipSo
 	return _q
 }
 
+// WithEntities tells the query-builder to eager-load the nodes that are connected to
+// the "entities" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithEntities(opts ...func(*EntityQuery)) *UserQuery {
+	query := (&EntityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEntities = query
+	return _q
+}
+
+// WithEntityResourceRefs tells the query-builder to eager-load the nodes that are connected to
+// the "entity_resource_refs" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithEntityResourceRefs(opts ...func(*EntityResourceRefQuery)) *UserQuery {
+	query := (&EntityResourceRefClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEntityResourceRefs = query
+	return _q
+}
+
+// WithEntityIdentifiers tells the query-builder to eager-load the nodes that are connected to
+// the "entity_identifiers" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithEntityIdentifiers(opts ...func(*EntityIdentifierQuery)) *UserQuery {
+	query := (&EntityIdentifierClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEntityIdentifiers = query
+	return _q
+}
+
 // WithActionProposals tells the query-builder to eager-load the nodes that are connected to
 // the "action_proposals" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithActionProposals(opts ...func(*ActionProposalQuery)) *UserQuery {
@@ -2668,7 +2779,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [63]bool{
+		loadedTypes = [66]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -2730,6 +2841,9 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withRelationshipAssertions != nil,
 			_q.withRelationshipStateSnapshots != nil,
 			_q.withRelationshipSourceStatuses != nil,
+			_q.withEntities != nil,
+			_q.withEntityResourceRefs != nil,
+			_q.withEntityIdentifiers != nil,
 			_q.withActionProposals != nil,
 			_q.withApprovalTokens != nil,
 		}
@@ -3241,6 +3355,29 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withEntities; query != nil {
+		if err := _q.loadEntities(ctx, query, nodes,
+			func(n *User) { n.Edges.Entities = []*Entity{} },
+			func(n *User, e *Entity) { n.Edges.Entities = append(n.Edges.Entities, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withEntityResourceRefs; query != nil {
+		if err := _q.loadEntityResourceRefs(ctx, query, nodes,
+			func(n *User) { n.Edges.EntityResourceRefs = []*EntityResourceRef{} },
+			func(n *User, e *EntityResourceRef) {
+				n.Edges.EntityResourceRefs = append(n.Edges.EntityResourceRefs, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withEntityIdentifiers; query != nil {
+		if err := _q.loadEntityIdentifiers(ctx, query, nodes,
+			func(n *User) { n.Edges.EntityIdentifiers = []*EntityIdentifier{} },
+			func(n *User, e *EntityIdentifier) { n.Edges.EntityIdentifiers = append(n.Edges.EntityIdentifiers, e) }); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withActionProposals; query != nil {
 		if err := _q.loadActionProposals(ctx, query, nodes,
 			func(n *User) { n.Edges.ActionProposals = []*ActionProposal{} },
@@ -3676,6 +3813,27 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadRelationshipSourceStatuses(ctx, query, nodes,
 			func(n *User) { n.appendNamedRelationshipSourceStatuses(name) },
 			func(n *User, e *RelationshipSourceStatus) { n.appendNamedRelationshipSourceStatuses(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedEntities {
+		if err := _q.loadEntities(ctx, query, nodes,
+			func(n *User) { n.appendNamedEntities(name) },
+			func(n *User, e *Entity) { n.appendNamedEntities(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedEntityResourceRefs {
+		if err := _q.loadEntityResourceRefs(ctx, query, nodes,
+			func(n *User) { n.appendNamedEntityResourceRefs(name) },
+			func(n *User, e *EntityResourceRef) { n.appendNamedEntityResourceRefs(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedEntityIdentifiers {
+		if err := _q.loadEntityIdentifiers(ctx, query, nodes,
+			func(n *User) { n.appendNamedEntityIdentifiers(name) },
+			func(n *User, e *EntityIdentifier) { n.appendNamedEntityIdentifiers(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -5589,6 +5747,99 @@ func (_q *UserQuery) loadRelationshipSourceStatuses(ctx context.Context, query *
 	}
 	return nil
 }
+func (_q *UserQuery) loadEntities(ctx context.Context, query *EntityQuery, nodes []*User, init func(*User), assign func(*User, *Entity)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Entity(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.EntitiesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_entities
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_entities" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_entities" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadEntityResourceRefs(ctx context.Context, query *EntityResourceRefQuery, nodes []*User, init func(*User), assign func(*User, *EntityResourceRef)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.EntityResourceRef(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.EntityResourceRefsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_entity_resource_refs
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_entity_resource_refs" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_entity_resource_refs" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadEntityIdentifiers(ctx context.Context, query *EntityIdentifierQuery, nodes []*User, init func(*User), assign func(*User, *EntityIdentifier)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.EntityIdentifier(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.EntityIdentifiersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_entity_identifiers
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_entity_identifiers" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_entity_identifiers" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *UserQuery) loadActionProposals(ctx context.Context, query *ActionProposalQuery, nodes []*User, init func(*User), assign func(*User, *ActionProposal)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*User)
@@ -6573,6 +6824,48 @@ func (_q *UserQuery) WithNamedRelationshipSourceStatuses(name string, opts ...fu
 		_q.withNamedRelationshipSourceStatuses = make(map[string]*RelationshipSourceStatusQuery)
 	}
 	_q.withNamedRelationshipSourceStatuses[name] = query
+	return _q
+}
+
+// WithNamedEntities tells the query-builder to eager-load the nodes that are connected to the "entities"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedEntities(name string, opts ...func(*EntityQuery)) *UserQuery {
+	query := (&EntityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedEntities == nil {
+		_q.withNamedEntities = make(map[string]*EntityQuery)
+	}
+	_q.withNamedEntities[name] = query
+	return _q
+}
+
+// WithNamedEntityResourceRefs tells the query-builder to eager-load the nodes that are connected to the "entity_resource_refs"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedEntityResourceRefs(name string, opts ...func(*EntityResourceRefQuery)) *UserQuery {
+	query := (&EntityResourceRefClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedEntityResourceRefs == nil {
+		_q.withNamedEntityResourceRefs = make(map[string]*EntityResourceRefQuery)
+	}
+	_q.withNamedEntityResourceRefs[name] = query
+	return _q
+}
+
+// WithNamedEntityIdentifiers tells the query-builder to eager-load the nodes that are connected to the "entity_identifiers"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedEntityIdentifiers(name string, opts ...func(*EntityIdentifierQuery)) *UserQuery {
+	query := (&EntityIdentifierClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedEntityIdentifiers == nil {
+		_q.withNamedEntityIdentifiers = make(map[string]*EntityIdentifierQuery)
+	}
+	_q.withNamedEntityIdentifiers[name] = query
 	return _q
 }
 

@@ -8,6 +8,13 @@ import { WorkDir } from "../config/config.js";
 import { withFileLock } from "../knowledge/file-lock.js";
 import { commitAll } from "../knowledge/version_history.js";
 import { rewriteWikiLinksForRenamedKnowledgeFile } from "../workspace/wiki-link-rewrite.js";
+import {
+  entityKindForPath,
+  readEntityIdentity,
+  stabilizeEntityNoteMutation,
+  type EntityIdentitySnapshot,
+} from "../knowledge/entity-identity.js";
+import { syncEntityNotes } from "../knowledge/entity-spine.js";
 
 export type FileOperation = "read" | "list" | "search" | "write" | "delete";
 
@@ -442,6 +449,21 @@ export async function writeText(inputPath: string, data: string, opts?: WriteTex
   }
 
   const result = await withFileLock(resolved.resolvedPath, async () => {
+    let previousIdentity: EntityIdentitySnapshot | undefined;
+    let entityFileExisted = false;
+    const entityNote = entityKindForPath(resolved.resolvedPath, path.join(WorkDir, "knowledge"));
+    if (entityNote) {
+      try {
+        await fs.access(resolved.resolvedPath);
+        entityFileExisted = true;
+        previousIdentity = await readEntityIdentity(
+          resolved.resolvedPath,
+          path.join(WorkDir, "knowledge"),
+        );
+      } catch (cause) {
+        if ((cause as NodeJS.ErrnoException).code !== "ENOENT") throw cause;
+      }
+    }
     if (opts?.expectedEtag) {
       const existingStats = await fs.lstat(resolved.resolvedPath);
       const existingEtag = computeEtag(existingStats.size, existingStats.mtimeMs);
@@ -459,11 +481,19 @@ export async function writeText(inputPath: string, data: string, opts?: WriteTex
       await fs.writeFile(resolved.resolvedPath, buffer);
     }
 
+    if (entityNote) {
+      await stabilizeEntityNoteMutation(resolved.resolvedPath, WorkDir, previousIdentity, {
+        mintIfUntracked: !entityFileExisted,
+      });
+    }
     const stats = await fs.lstat(resolved.resolvedPath);
     return { stat: statToSchema(stats), etag: computeEtag(stats.size, stats.mtimeMs) };
   });
 
   scheduleKnowledgeCommitIfNeeded(resolved);
+  if (entityKindForPath(resolved.resolvedPath, path.join(WorkDir, "knowledge"))) {
+    void syncEntityNotes([resolved.resolvedPath], WorkDir);
+  }
   return {
     path: resolved.originalPath,
     resolvedPath: resolved.resolvedPath,
@@ -546,6 +576,10 @@ export async function rename(
   await fs.mkdir(path.dirname(dest.resolvedPath), { recursive: true });
   await fs.rename(source.resolvedPath, dest.resolvedPath);
 
+  if (fromStats.isFile() && entityKindForPath(dest.resolvedPath, path.join(WorkDir, "knowledge"))) {
+    await stabilizeEntityNoteMutation(dest.resolvedPath, WorkDir);
+  }
+
   if (
     fromStats.isFile() &&
     isKnowledgeMarkdownPath(source) &&
@@ -594,6 +628,9 @@ export async function copy(
 
   await fs.mkdir(path.dirname(dest.resolvedPath), { recursive: true });
   await fs.copyFile(source.resolvedPath, dest.resolvedPath);
+  if (entityKindForPath(dest.resolvedPath, path.join(WorkDir, "knowledge"))) {
+    await stabilizeEntityNoteMutation(dest.resolvedPath, WorkDir);
+  }
   return { ok: true, from, to, resolvedFrom: source.resolvedPath, resolvedTo: dest.resolvedPath };
 }
 

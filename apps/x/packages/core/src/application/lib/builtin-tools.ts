@@ -53,6 +53,8 @@ import { getAccessToken } from "../../auth/tokens.js";
 import { API_URL } from "../../config/env.js";
 import { getConnectorMCPTokenViaBackend, listConnectorsViaBackend, searchHubSpotViaBackend } from "../../connectors/connectors-backend.js";
 import { getRelationship, getRelationshipTimeline, listRelationships } from "../../relationships/client.js";
+import { lookupEntities } from "../../knowledge/entity-lookup.js";
+import { listEntityLinkSuggestions } from "../../knowledge/entity-resolver.js";
 import {
     buildSlackReplyDraft,
     buildSlackThreadReadRequest,
@@ -1568,6 +1570,28 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
             }
         },
         isAvailable: async () => isSignedIn(),
+    },
+    'entity-lookup': {
+        description: 'Look up a local general entity and return bounded facts from registered product Read seams with each resourceRef as an explicit citation. For customer/account relationship questions use relationship-lookup, whose RFC 036 shared state is authoritative.',
+        inputSchema: z.object({
+            query: z.string().min(1),
+            limit: z.number().int().min(1).max(50).optional(),
+        }),
+        execute: async (input: { query: string; limit?: number }) => {
+            const entities = await lookupEntities(input.query, WorkDir, input.limit);
+            return {
+                success: true,
+                entities,
+                authority: entities.some((entity) => entity.resourceRefs.some((ref) => ref.startsWith('conduit:customer:')))
+                    ? 'Customer relationship state is authoritative in relationship-lookup; these refs are identity citations only.'
+                    : 'Local entity graph',
+            };
+        },
+    },
+    'entity-link-review': {
+        description: 'List ambiguous deterministic entity-link suggestions. This agent surface is read-only; only the user-controlled review card can accept or reject a link.',
+        inputSchema: z.object({}),
+        execute: async () => ({ success: true, suggestions: await listEntityLinkSuggestions(WorkDir) }),
     },
     'rowboat-list-slack-workspaces': {
         description: 'List managed Slack workspace connections for the signed-in user. Use this before reading a Slack thread.',
