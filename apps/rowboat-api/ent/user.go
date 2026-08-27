@@ -125,8 +125,6 @@ type UserEdges struct {
 	RelationshipIdentities []*RelationshipIdentity `json:"relationship_identities,omitempty"`
 	// RelationshipPersons holds the value of the relationship_persons edge.
 	RelationshipPersons []*Person `json:"relationship_persons,omitempty"`
-	// Entities holds the value of the entities edge.
-	Entities []*Entity `json:"entities,omitempty"`
 	// PersonIdentities holds the value of the person_identities edge.
 	PersonIdentities []*PersonIdentity `json:"person_identities,omitempty"`
 	// PersonSuppressions holds the value of the person_suppressions edge.
@@ -161,15 +159,21 @@ type UserEdges struct {
 	RelationshipStateSnapshots []*RelationshipStateSnapshot `json:"relationship_state_snapshots,omitempty"`
 	// RelationshipSourceStatuses holds the value of the relationship_source_statuses edge.
 	RelationshipSourceStatuses []*RelationshipSourceStatus `json:"relationship_source_statuses,omitempty"`
+	// Entities holds the value of the entities edge.
+	Entities []*Entity `json:"entities,omitempty"`
+	// EntityResourceRefs holds the value of the entity_resource_refs edge.
+	EntityResourceRefs []*EntityResourceRef `json:"entity_resource_refs,omitempty"`
+	// EntityIdentifiers holds the value of the entity_identifiers edge.
+	EntityIdentifiers []*EntityIdentifier `json:"entity_identifiers,omitempty"`
 	// ActionProposals holds the value of the action_proposals edge.
 	ActionProposals []*ActionProposal `json:"action_proposals,omitempty"`
 	// ApprovalTokens holds the value of the approval_tokens edge.
 	ApprovalTokens []*ApprovalToken `json:"approval_tokens,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [64]bool
+	loadedTypes [66]bool
 	// totalCount holds the count of the edges above.
-	totalCount [61]map[string]int
+	totalCount [60]map[string]int
 
 	namedLedgerEntries                      map[string][]*CreditLedger
 	namedMeetingMinuteUsages                map[string][]*MeetingMinuteUsage
@@ -214,7 +218,6 @@ type UserEdges struct {
 	namedRelationshipParticipants           map[string][]*RelationshipParticipant
 	namedRelationshipIdentities             map[string][]*RelationshipIdentity
 	namedRelationshipPersons                map[string][]*Person
-	namedEntities                           map[string][]*Entity
 	namedPersonIdentities                   map[string][]*PersonIdentity
 	namedPersonSuppressions                 map[string][]*PersonSuppression
 	namedPersonAttributes                   map[string][]*PersonAttribute
@@ -232,6 +235,9 @@ type UserEdges struct {
 	namedRelationshipAssertions             map[string][]*RelationshipAssertion
 	namedRelationshipStateSnapshots         map[string][]*RelationshipStateSnapshot
 	namedRelationshipSourceStatuses         map[string][]*RelationshipSourceStatus
+	namedEntities                           map[string][]*Entity
+	namedEntityResourceRefs                 map[string][]*EntityResourceRef
+	namedEntityIdentifiers                  map[string][]*EntityIdentifier
 	namedActionProposals                    map[string][]*ActionProposal
 	namedApprovalTokens                     map[string][]*ApprovalToken
 }
@@ -634,19 +640,10 @@ func (e UserEdges) RelationshipPersonsOrErr() ([]*Person, error) {
 	return nil, &NotLoadedError{edge: "relationship_persons"}
 }
 
-// EntitiesOrErr returns the Entities value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) EntitiesOrErr() ([]*Entity, error) {
-	if e.loadedTypes[44] {
-		return e.Entities, nil
-	}
-	return nil, &NotLoadedError{edge: "entities"}
-}
-
 // PersonIdentitiesOrErr returns the PersonIdentities value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) PersonIdentitiesOrErr() ([]*PersonIdentity, error) {
-	if e.loadedTypes[45] {
+	if e.loadedTypes[44] {
 		return e.PersonIdentities, nil
 	}
 	return nil, &NotLoadedError{edge: "person_identities"}
@@ -655,7 +652,7 @@ func (e UserEdges) PersonIdentitiesOrErr() ([]*PersonIdentity, error) {
 // PersonSuppressionsOrErr returns the PersonSuppressions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) PersonSuppressionsOrErr() ([]*PersonSuppression, error) {
-	if e.loadedTypes[46] {
+	if e.loadedTypes[45] {
 		return e.PersonSuppressions, nil
 	}
 	return nil, &NotLoadedError{edge: "person_suppressions"}
@@ -664,7 +661,7 @@ func (e UserEdges) PersonSuppressionsOrErr() ([]*PersonSuppression, error) {
 // PersonAttributesOrErr returns the PersonAttributes value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) PersonAttributesOrErr() ([]*PersonAttribute, error) {
-	if e.loadedTypes[47] {
+	if e.loadedTypes[46] {
 		return e.PersonAttributes, nil
 	}
 	return nil, &NotLoadedError{edge: "person_attributes"}
@@ -673,7 +670,7 @@ func (e UserEdges) PersonAttributesOrErr() ([]*PersonAttribute, error) {
 // PersonMergeCandidatesOrErr returns the PersonMergeCandidates value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) PersonMergeCandidatesOrErr() ([]*PersonMergeCandidate, error) {
-	if e.loadedTypes[48] {
+	if e.loadedTypes[47] {
 		return e.PersonMergeCandidates, nil
 	}
 	return nil, &NotLoadedError{edge: "person_merge_candidates"}
@@ -682,7 +679,7 @@ func (e UserEdges) PersonMergeCandidatesOrErr() ([]*PersonMergeCandidate, error)
 // RelationshipProjectionJobsOrErr returns the RelationshipProjectionJobs value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipProjectionJobsOrErr() ([]*RelationshipProjectionJob, error) {
-	if e.loadedTypes[49] {
+	if e.loadedTypes[48] {
 		return e.RelationshipProjectionJobs, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_projection_jobs"}
@@ -691,7 +688,7 @@ func (e UserEdges) RelationshipProjectionJobsOrErr() ([]*RelationshipProjectionJ
 // TenantEvidenceKeysOrErr returns the TenantEvidenceKeys value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) TenantEvidenceKeysOrErr() ([]*TenantEvidenceKey, error) {
-	if e.loadedTypes[50] {
+	if e.loadedTypes[49] {
 		return e.TenantEvidenceKeys, nil
 	}
 	return nil, &NotLoadedError{edge: "tenant_evidence_keys"}
@@ -700,7 +697,7 @@ func (e UserEdges) TenantEvidenceKeysOrErr() ([]*TenantEvidenceKey, error) {
 // WorkspaceFeatureControlsOrErr returns the WorkspaceFeatureControls value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) WorkspaceFeatureControlsOrErr() ([]*WorkspaceFeatureControl, error) {
-	if e.loadedTypes[51] {
+	if e.loadedTypes[50] {
 		return e.WorkspaceFeatureControls, nil
 	}
 	return nil, &NotLoadedError{edge: "workspace_feature_controls"}
@@ -709,7 +706,7 @@ func (e UserEdges) WorkspaceFeatureControlsOrErr() ([]*WorkspaceFeatureControl, 
 // RevenueTrustEventsOrErr returns the RevenueTrustEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RevenueTrustEventsOrErr() ([]*RevenueTrustEvent, error) {
-	if e.loadedTypes[52] {
+	if e.loadedTypes[51] {
 		return e.RevenueTrustEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "revenue_trust_events"}
@@ -718,7 +715,7 @@ func (e UserEdges) RevenueTrustEventsOrErr() ([]*RevenueTrustEvent, error) {
 // RelationshipIdentityCandidatesOrErr returns the RelationshipIdentityCandidates value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipIdentityCandidatesOrErr() ([]*RelationshipIdentityCandidate, error) {
-	if e.loadedTypes[53] {
+	if e.loadedTypes[52] {
 		return e.RelationshipIdentityCandidates, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_identity_candidates"}
@@ -727,7 +724,7 @@ func (e UserEdges) RelationshipIdentityCandidatesOrErr() ([]*RelationshipIdentit
 // RelationshipLineageEventsOrErr returns the RelationshipLineageEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipLineageEventsOrErr() ([]*RelationshipLineageEvent, error) {
-	if e.loadedTypes[54] {
+	if e.loadedTypes[53] {
 		return e.RelationshipLineageEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_lineage_events"}
@@ -736,7 +733,7 @@ func (e UserEdges) RelationshipLineageEventsOrErr() ([]*RelationshipLineageEvent
 // RelationshipIdentityDecisionsOrErr returns the RelationshipIdentityDecisions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipIdentityDecisionsOrErr() ([]*RelationshipIdentityDecision, error) {
-	if e.loadedTypes[55] {
+	if e.loadedTypes[54] {
 		return e.RelationshipIdentityDecisions, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_identity_decisions"}
@@ -745,7 +742,7 @@ func (e UserEdges) RelationshipIdentityDecisionsOrErr() ([]*RelationshipIdentity
 // RelationshipReviewAcknowledgementsOrErr returns the RelationshipReviewAcknowledgements value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipReviewAcknowledgementsOrErr() ([]*RelationshipReviewAcknowledgement, error) {
-	if e.loadedTypes[56] {
+	if e.loadedTypes[55] {
 		return e.RelationshipReviewAcknowledgements, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_review_acknowledgements"}
@@ -754,7 +751,7 @@ func (e UserEdges) RelationshipReviewAcknowledgementsOrErr() ([]*RelationshipRev
 // RelationshipAttentionItemsOrErr returns the RelationshipAttentionItems value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipAttentionItemsOrErr() ([]*RelationshipAttentionItem, error) {
-	if e.loadedTypes[57] {
+	if e.loadedTypes[56] {
 		return e.RelationshipAttentionItems, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_attention_items"}
@@ -763,7 +760,7 @@ func (e UserEdges) RelationshipAttentionItemsOrErr() ([]*RelationshipAttentionIt
 // RelationshipObservationsOrErr returns the RelationshipObservations value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipObservationsOrErr() ([]*RelationshipObservation, error) {
-	if e.loadedTypes[58] {
+	if e.loadedTypes[57] {
 		return e.RelationshipObservations, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_observations"}
@@ -772,7 +769,7 @@ func (e UserEdges) RelationshipObservationsOrErr() ([]*RelationshipObservation, 
 // RelationshipAssertionsOrErr returns the RelationshipAssertions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipAssertionsOrErr() ([]*RelationshipAssertion, error) {
-	if e.loadedTypes[59] {
+	if e.loadedTypes[58] {
 		return e.RelationshipAssertions, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_assertions"}
@@ -781,7 +778,7 @@ func (e UserEdges) RelationshipAssertionsOrErr() ([]*RelationshipAssertion, erro
 // RelationshipStateSnapshotsOrErr returns the RelationshipStateSnapshots value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipStateSnapshotsOrErr() ([]*RelationshipStateSnapshot, error) {
-	if e.loadedTypes[60] {
+	if e.loadedTypes[59] {
 		return e.RelationshipStateSnapshots, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_state_snapshots"}
@@ -790,16 +787,43 @@ func (e UserEdges) RelationshipStateSnapshotsOrErr() ([]*RelationshipStateSnapsh
 // RelationshipSourceStatusesOrErr returns the RelationshipSourceStatuses value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RelationshipSourceStatusesOrErr() ([]*RelationshipSourceStatus, error) {
-	if e.loadedTypes[61] {
+	if e.loadedTypes[60] {
 		return e.RelationshipSourceStatuses, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_source_statuses"}
 }
 
+// EntitiesOrErr returns the Entities value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) EntitiesOrErr() ([]*Entity, error) {
+	if e.loadedTypes[61] {
+		return e.Entities, nil
+	}
+	return nil, &NotLoadedError{edge: "entities"}
+}
+
+// EntityResourceRefsOrErr returns the EntityResourceRefs value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) EntityResourceRefsOrErr() ([]*EntityResourceRef, error) {
+	if e.loadedTypes[62] {
+		return e.EntityResourceRefs, nil
+	}
+	return nil, &NotLoadedError{edge: "entity_resource_refs"}
+}
+
+// EntityIdentifiersOrErr returns the EntityIdentifiers value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) EntityIdentifiersOrErr() ([]*EntityIdentifier, error) {
+	if e.loadedTypes[63] {
+		return e.EntityIdentifiers, nil
+	}
+	return nil, &NotLoadedError{edge: "entity_identifiers"}
+}
+
 // ActionProposalsOrErr returns the ActionProposals value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ActionProposalsOrErr() ([]*ActionProposal, error) {
-	if e.loadedTypes[62] {
+	if e.loadedTypes[64] {
 		return e.ActionProposals, nil
 	}
 	return nil, &NotLoadedError{edge: "action_proposals"}
@@ -808,7 +832,7 @@ func (e UserEdges) ActionProposalsOrErr() ([]*ActionProposal, error) {
 // ApprovalTokensOrErr returns the ApprovalTokens value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) ApprovalTokensOrErr() ([]*ApprovalToken, error) {
-	if e.loadedTypes[63] {
+	if e.loadedTypes[65] {
 		return e.ApprovalTokens, nil
 	}
 	return nil, &NotLoadedError{edge: "approval_tokens"}
@@ -1109,11 +1133,6 @@ func (_m *User) QueryRelationshipPersons() *PersonQuery {
 	return NewUserClient(_m.config).QueryRelationshipPersons(_m)
 }
 
-// QueryEntities queries the "entities" edge of the User entity.
-func (_m *User) QueryEntities() *EntityQuery {
-	return NewUserClient(_m.config).QueryEntities(_m)
-}
-
 // QueryPersonIdentities queries the "person_identities" edge of the User entity.
 func (_m *User) QueryPersonIdentities() *PersonIdentityQuery {
 	return NewUserClient(_m.config).QueryPersonIdentities(_m)
@@ -1197,6 +1216,21 @@ func (_m *User) QueryRelationshipStateSnapshots() *RelationshipStateSnapshotQuer
 // QueryRelationshipSourceStatuses queries the "relationship_source_statuses" edge of the User entity.
 func (_m *User) QueryRelationshipSourceStatuses() *RelationshipSourceStatusQuery {
 	return NewUserClient(_m.config).QueryRelationshipSourceStatuses(_m)
+}
+
+// QueryEntities queries the "entities" edge of the User entity.
+func (_m *User) QueryEntities() *EntityQuery {
+	return NewUserClient(_m.config).QueryEntities(_m)
+}
+
+// QueryEntityResourceRefs queries the "entity_resource_refs" edge of the User entity.
+func (_m *User) QueryEntityResourceRefs() *EntityResourceRefQuery {
+	return NewUserClient(_m.config).QueryEntityResourceRefs(_m)
+}
+
+// QueryEntityIdentifiers queries the "entity_identifiers" edge of the User entity.
+func (_m *User) QueryEntityIdentifiers() *EntityIdentifierQuery {
+	return NewUserClient(_m.config).QueryEntityIdentifiers(_m)
 }
 
 // QueryActionProposals queries the "action_proposals" edge of the User entity.
@@ -2282,30 +2316,6 @@ func (_m *User) appendNamedRelationshipPersons(name string, edges ...*Person) {
 	}
 }
 
-// NamedEntities returns the Entities named value or an error if the edge was not
-// loaded in eager-loading with this name.
-func (_m *User) NamedEntities(name string) ([]*Entity, error) {
-	if _m.Edges.namedEntities == nil {
-		return nil, &NotLoadedError{edge: name}
-	}
-	nodes, ok := _m.Edges.namedEntities[name]
-	if !ok {
-		return nil, &NotLoadedError{edge: name}
-	}
-	return nodes, nil
-}
-
-func (_m *User) appendNamedEntities(name string, edges ...*Entity) {
-	if _m.Edges.namedEntities == nil {
-		_m.Edges.namedEntities = make(map[string][]*Entity)
-	}
-	if len(edges) == 0 {
-		_m.Edges.namedEntities[name] = []*Entity{}
-	} else {
-		_m.Edges.namedEntities[name] = append(_m.Edges.namedEntities[name], edges...)
-	}
-}
-
 // NamedPersonIdentities returns the PersonIdentities named value or an error if the edge was not
 // loaded in eager-loading with this name.
 func (_m *User) NamedPersonIdentities(name string) ([]*PersonIdentity, error) {
@@ -2711,6 +2721,78 @@ func (_m *User) appendNamedRelationshipSourceStatuses(name string, edges ...*Rel
 		_m.Edges.namedRelationshipSourceStatuses[name] = []*RelationshipSourceStatus{}
 	} else {
 		_m.Edges.namedRelationshipSourceStatuses[name] = append(_m.Edges.namedRelationshipSourceStatuses[name], edges...)
+	}
+}
+
+// NamedEntities returns the Entities named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedEntities(name string) ([]*Entity, error) {
+	if _m.Edges.namedEntities == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedEntities[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedEntities(name string, edges ...*Entity) {
+	if _m.Edges.namedEntities == nil {
+		_m.Edges.namedEntities = make(map[string][]*Entity)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedEntities[name] = []*Entity{}
+	} else {
+		_m.Edges.namedEntities[name] = append(_m.Edges.namedEntities[name], edges...)
+	}
+}
+
+// NamedEntityResourceRefs returns the EntityResourceRefs named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedEntityResourceRefs(name string) ([]*EntityResourceRef, error) {
+	if _m.Edges.namedEntityResourceRefs == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedEntityResourceRefs[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedEntityResourceRefs(name string, edges ...*EntityResourceRef) {
+	if _m.Edges.namedEntityResourceRefs == nil {
+		_m.Edges.namedEntityResourceRefs = make(map[string][]*EntityResourceRef)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedEntityResourceRefs[name] = []*EntityResourceRef{}
+	} else {
+		_m.Edges.namedEntityResourceRefs[name] = append(_m.Edges.namedEntityResourceRefs[name], edges...)
+	}
+}
+
+// NamedEntityIdentifiers returns the EntityIdentifiers named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedEntityIdentifiers(name string) ([]*EntityIdentifier, error) {
+	if _m.Edges.namedEntityIdentifiers == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedEntityIdentifiers[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedEntityIdentifiers(name string, edges ...*EntityIdentifier) {
+	if _m.Edges.namedEntityIdentifiers == nil {
+		_m.Edges.namedEntityIdentifiers = make(map[string][]*EntityIdentifier)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedEntityIdentifiers[name] = []*EntityIdentifier{}
+	} else {
+		_m.Edges.namedEntityIdentifiers[name] = append(_m.Edges.namedEntityIdentifiers[name], edges...)
 	}
 }
 

@@ -9,7 +9,7 @@
 //	POST /oauth2/register                        — Dynamic Client Registration (RFC 7591)
 //	GET  /authorize                              — auto-approves, redirects with a code (PKCE)
 //	POST /oauth2/token                           — authorization_code + refresh_token grants
-//	GET  /mint?workos_user_id=...                — shortcut: mint a token directly (curl tests)
+//	GET  /mint?workos_user_id=...&workos_org_id=... — shortcut: mint a token directly (curl tests)
 //	POST /chat/completions, /v1/chat/completions — mock OpenAI-compatible chat LLM (SSE + usage)
 //	POST /completions, /v1/completions           — mock OpenAI-compatible legacy completions
 //	POST /embeddings, /v1/embeddings             — mock OpenAI-compatible embeddings
@@ -274,7 +274,7 @@ func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, scope, nonc
 		"iat":   time.Now().Unix(),
 		"exp":   time.Now().Add(time.Hour).Unix(),
 		"scope": scope,
-		"ext":   map[string]any{"workos_user_id": sub, "email": email},
+		"ext":   map[string]any{"workos_user_id": sub, "workos_org_id": "org_dev_1", "email": email},
 	})
 	idClaims := jwt.MapClaims{
 		"iss":   issuer,
@@ -363,7 +363,7 @@ func handleWorkOSAuthenticate(w http.ResponseWriter, r *http.Request) {
 		"iat":   time.Now().Unix(),
 		"exp":   time.Now().Add(time.Hour).Unix(),
 		"scope": "openid email profile",
-		"ext":   map[string]any{"workos_user_id": sub, "email": email},
+		"ext":   map[string]any{"workos_user_id": sub, "workos_org_id": "org_dev_1", "email": email},
 	})
 	writeJSON(w, map[string]any{
 		"user":          map[string]string{"id": sub, "email": email},
@@ -376,6 +376,7 @@ func handleWorkOSAuthenticate(w http.ResponseWriter, r *http.Request) {
 
 func handleMint(w http.ResponseWriter, r *http.Request) {
 	workosID := def(r.URL.Query().Get("workos_user_id"), "user_dev_1")
+	workosOrgID := def(r.URL.Query().Get("workos_org_id"), "org_dev_1")
 	email := def(r.URL.Query().Get("email"), "dev@solomon-ai.co")
 	token := signToken(jwt.MapClaims{
 		"iss":   issuer,
@@ -384,7 +385,7 @@ func handleMint(w http.ResponseWriter, r *http.Request) {
 		"iat":   time.Now().Unix(),
 		"exp":   time.Now().Add(time.Hour).Unix(),
 		"scope": "openid email profile offline_access",
-		"ext":   map[string]any{"workos_user_id": workosID, "email": email},
+		"ext":   map[string]any{"workos_user_id": workosID, "workos_org_id": workosOrgID, "email": email},
 	})
 	writeJSON(w, map[string]string{"token": token})
 }

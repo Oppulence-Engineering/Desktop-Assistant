@@ -19,7 +19,12 @@ import (
 type Entity struct{ ent.Schema }
 
 // Mixin enforces workspace tenant predicates at the Ent boundary.
-func (Entity) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
+func (Entity) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixin.WorkspaceTenantMixin{},
+		mixin.OptimisticLockMixin{Field: "version"},
+	}
+}
 
 // Fields defines only the projection allowlist plus merge bookkeeping.
 func (Entity) Fields() []ent.Field {
@@ -39,7 +44,7 @@ func (Entity) Fields() []ent.Field {
 	}
 }
 
-// Edges ties every entity to the exact workspace and actor that projected it.
+// Edges ties every entity and its normalized evidence to the exact workspace.
 func (Entity) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).

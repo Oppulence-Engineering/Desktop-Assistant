@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"go.uber.org/zap"
@@ -27,9 +29,12 @@ type fixture struct {
 	ctx     context.Context
 }
 
+var fixtureSequence atomic.Uint64
+
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
-	d, err := db.Open(context.Background(), appconfig.Config{DatabaseURL: "file:" + t.Name() + "?mode=memory&cache=shared&_pragma=foreign_keys(1)", AutoMigrate: true}, zap.NewNop())
+	databaseURL := fmt.Sprintf("file:%s-%d?mode=memory&cache=shared&_pragma=foreign_keys(1)", t.Name(), fixtureSequence.Add(1))
+	d, err := db.Open(context.Background(), appconfig.Config{DatabaseURL: databaseURL, AutoMigrate: true}, zap.NewNop())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,6 +85,7 @@ func scopedHandler(client *ent.Client, user *ent.User, workspace *ent.RevenueWor
 
 const id1 = "01J9Z8Q5K3R7V2C4M6N8P0T1S3"
 const id2 = "01J9Z8Q5K3R7V2C4M6N8P0T1S4"
+const id3 = "01J9Z8Q5K3R7V2C4M6N8P0T1S5"
 
 func projection(name, ref string) string {
 	fingerprint := fmt.Sprintf("sha256:v1:%x", sha256.Sum256([]byte(strings.ToLower(name)+".example")))
@@ -148,6 +154,25 @@ func TestHTTPStrictProjectionBoundary(t *testing.T) {
 	if w.Code != 400 {
 		t.Fatalf("invalid ref=%d %s", w.Code, w.Body.String())
 	}
+	invalidKey := `{"kind":"company","displayName":"Acme","resourceRefs":[],"identifiers":{"secret@example.com":["sha256:v1:54667cc7be6265f6a4cdfe25b9c89d52aea7817c4e570cb678feec57c23f4a6a"]}}`
+	w = request(t, f.handler, "PUT", "/v1/entities/"+id1, invalidKey)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("invalid identifier key=%d %s", w.Code, w.Body.String())
+	}
+	for _, tc := range []struct {
+		method string
+		path   string
+		body   string
+	}{
+		{http.MethodGet, "/v1/entities/not-a-ulid", ""},
+		{http.MethodGet, "/v1/entities?ref=not-a-ref", ""},
+		{http.MethodPost, "/v1/entities/merge", `{"sourceId":"bad","targetId":"also-bad","expectedSourceVersion":1,"expectedTargetVersion":1}`},
+	} {
+		w = request(t, f.handler, tc.method, tc.path, tc.body)
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("invalid public identifier %s %s = %d %s", tc.method, tc.path, w.Code, w.Body.String())
+		}
+	}
 }
 func TestHTTPMergeIsIdempotent(t *testing.T) {
 	f := newFixture(t)
@@ -171,6 +196,128 @@ func TestHTTPMergeIsIdempotent(t *testing.T) {
 	if w.Code != 200 || !bytes.Contains(w.Body.Bytes(), []byte(id1)) {
 		t.Fatalf("merged reverse ref=%d %s", w.Code, w.Body.String())
 	}
+	if w = request(t, f.handler, "PUT", "/v1/entities/"+id3, projection("Gamma", "desktop:company:3")); w.Code != http.StatusOK {
+		t.Fatalf("third entity=%d %s", w.Code, w.Body.String())
+	}
+	retarget := `{"sourceId":"` + id2 + `","targetId":"` + id3 + `","expectedSourceVersion":2,"expectedTargetVersion":1}`
+	w = request(t, f.handler, "POST", "/v1/entities/merge", retarget)
+	if w.Code != http.StatusConflict {
+		t.Fatalf("merged alias retarget=%d %s", w.Code, w.Body.String())
+	}
+}
+
+func TestHTTPConcurrentMergeRacesPreserveAllEvidence(t *testing.T) {
+	f := newFixture(t)
+	for _, tc := range []struct{ id, name, ref string }{
+		{id1, "Target", "desktop:company:target"},
+		{id2, "Source A", "desktop:company:source-a"},
+		{id3, "Source B", "desktop:company:source-b"},
+	} {
+		if w := request(t, f.handler, http.MethodPut, "/v1/entities/"+tc.id, projection(tc.name, tc.ref)); w.Code != http.StatusOK {
+			t.Fatalf("seed %s=%d %s", tc.id, w.Code, w.Body.String())
+		}
+	}
+
+	type result struct {
+		source string
+		code   int
+	}
+	start := make(chan struct{})
+	results := make(chan result, 2)
+	var wg sync.WaitGroup
+	for _, source := range []string{id2, id3} {
+		source := source
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			body := fmt.Sprintf(`{"sourceId":%q,"targetId":%q,"expectedSourceVersion":1,"expectedTargetVersion":1}`, source, id1)
+			results <- result{source: source, code: request(t, f.handler, http.MethodPost, "/v1/entities/merge", body).Code}
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(results)
+
+	var loser string
+	for got := range results {
+		switch got.code {
+		case http.StatusOK:
+		case http.StatusConflict:
+			loser = got.source
+		default:
+			t.Fatalf("concurrent merge %s status=%d", got.source, got.code)
+		}
+	}
+	if loser == "" {
+		t.Fatal("expected one optimistic-lock conflict")
+	}
+	targetResponse := request(t, f.handler, http.MethodGet, "/v1/entities/"+id1, "")
+	loserResponse := request(t, f.handler, http.MethodGet, "/v1/entities/"+loser, "")
+	if targetResponse.Code != http.StatusOK || loserResponse.Code != http.StatusOK {
+		t.Fatalf("read after race: target=%d loser=%d", targetResponse.Code, loserResponse.Code)
+	}
+	var target, remaining View
+	if err := json.Unmarshal(targetResponse.Body.Bytes(), &target); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(loserResponse.Body.Bytes(), &remaining); err != nil {
+		t.Fatal(err)
+	}
+	retry := fmt.Sprintf(`{"sourceId":%q,"targetId":%q,"expectedSourceVersion":%d,"expectedTargetVersion":%d}`, loser, id1, remaining.Version, target.Version)
+	if w := request(t, f.handler, http.MethodPost, "/v1/entities/merge", retry); w.Code != http.StatusOK {
+		t.Fatalf("retry losing merge=%d %s", w.Code, w.Body.String())
+	}
+	final := request(t, f.handler, http.MethodGet, "/v1/entities/"+id1, "")
+	for _, ref := range []string{"desktop:company:target", "desktop:company:source-a", "desktop:company:source-b"} {
+		if !bytes.Contains(final.Body.Bytes(), []byte(ref)) {
+			t.Fatalf("final canonical missing %s: %s", ref, final.Body.String())
+		}
+	}
+	if count := f.client.EntityResourceRef.Query().CountX(f.ctx); count != 3 {
+		t.Fatalf("normalized ref count=%d, want 3", count)
+	}
+
+	// An upsert racing a merge either converges immediately or returns a
+	// version conflict that is safely retryable. It must never drop either ref.
+	f2 := newFixture(t)
+	for _, tc := range []struct{ id, name, ref string }{
+		{id1, "Target", "desktop:company:target"},
+		{id2, "Source", "desktop:company:source"},
+	} {
+		if w := request(t, f2.handler, http.MethodPut, "/v1/entities/"+tc.id, projection(tc.name, tc.ref)); w.Code != http.StatusOK {
+			t.Fatalf("race seed %s=%d %s", tc.id, w.Code, w.Body.String())
+		}
+	}
+	start = make(chan struct{})
+	codes := make(chan int, 2)
+	wg = sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		<-start
+		body := fmt.Sprintf(`{"sourceId":%q,"targetId":%q,"expectedSourceVersion":1,"expectedTargetVersion":1}`, id2, id1)
+		codes <- request(t, f2.handler, http.MethodPost, "/v1/entities/merge", body).Code
+	}()
+	go func() {
+		defer wg.Done()
+		<-start
+		codes <- request(t, f2.handler, http.MethodPut, "/v1/entities/"+id1, projection("Target update", "eigen:company:update")).Code
+	}()
+	close(start)
+	wg.Wait()
+	close(codes)
+	for code := range codes {
+		if code != http.StatusOK && code != http.StatusConflict {
+			t.Fatalf("merge/upsert race status=%d", code)
+		}
+	}
+	for _, ref := range []string{"desktop:company:target", "desktop:company:source", "eigen:company:update"} {
+		resolved := request(t, f2.handler, http.MethodGet, "/v1/entities?ref="+ref, "")
+		if resolved.Code != http.StatusOK {
+			t.Fatalf("merge/upsert race lost %s: %d %s", ref, resolved.Code, resolved.Body.String())
+		}
+	}
 }
 
 func TestHTTPDuplicateRemintAdoptionReplayPreservesBothRefs(t *testing.T) {
@@ -184,20 +331,41 @@ func TestHTTPDuplicateRemintAdoptionReplayPreservesBothRefs(t *testing.T) {
 	if w.Code != 200 || !bytes.Contains(w.Body.Bytes(), []byte(`"canonicalEntityId":"`+id1+`"`)) {
 		t.Fatalf("adoption: %d %s", w.Code, w.Body.String())
 	}
-	// Lost-response replay must return the same adoption instruction.
-	w = request(t, f.handler, "PUT", "/v1/entities/"+id2, second)
+	// A stale alias can discover fresh evidence while offline. A successful
+	// replay must forward it to the canonical entity before acknowledging it.
+	staleWithNewEvidence := projection("Acme", "eigen:entity:3")
+	w = request(t, f.handler, "PUT", "/v1/entities/"+id2, staleWithNewEvidence)
 	if w.Code != 200 || !bytes.Contains(w.Body.Bytes(), []byte(`"canonicalEntityId":"`+id1+`"`)) {
 		t.Fatalf("adoption replay: %d %s", w.Code, w.Body.String())
 	}
 	w = request(t, f.handler, "GET", "/v1/entities/"+id1, "")
-	if w.Code != 200 || !bytes.Contains(w.Body.Bytes(), []byte("conduit:company:1")) || !bytes.Contains(w.Body.Bytes(), []byte("cadence:vendor:2")) {
+	if w.Code != 200 || !bytes.Contains(w.Body.Bytes(), []byte("conduit:company:1")) || !bytes.Contains(w.Body.Bytes(), []byte("cadence:vendor:2")) || !bytes.Contains(w.Body.Bytes(), []byte("eigen:entity:3")) {
 		t.Fatalf("canonical refs: %d %s", w.Code, w.Body.String())
 	}
-	if count := f.client.EntityResourceRef.Query().CountX(f.ctx); count != 2 {
-		t.Fatalf("normalized ref count=%d, want 2", count)
+	if count := f.client.EntityResourceRef.Query().CountX(f.ctx); count != 3 {
+		t.Fatalf("normalized ref count=%d, want 3", count)
 	}
 	if count := f.client.EntityIdentifier.Query().CountX(f.ctx); count != 1 {
 		t.Fatalf("normalized identifier count=%d, want 1", count)
+	}
+}
+
+func TestHTTPIdentifierAliasesCanonicalizeAcrossClients(t *testing.T) {
+	f := newFixture(t)
+	fingerprint := fmt.Sprintf("sha256:v1:%x", sha256.Sum256([]byte("acme.com")))
+	body := func(key, name string) string {
+		encoded, _ := json.Marshal(map[string]any{
+			"kind": "company", "displayName": name,
+			"resourceRefs": []string{}, "identifiers": map[string][]string{key: {fingerprint}},
+		})
+		return string(encoded)
+	}
+	if w := request(t, f.handler, http.MethodPut, "/v1/entities/"+id1, body("email_domain", "Acme")); w.Code != http.StatusOK {
+		t.Fatalf("first alias=%d %s", w.Code, w.Body.String())
+	}
+	w := request(t, f.handler, http.MethodPut, "/v1/entities/"+id2, body("emailDomains", "Acme remint"))
+	if w.Code != http.StatusOK || !bytes.Contains(w.Body.Bytes(), []byte(`"canonicalEntityId":"`+id1+`"`)) {
+		t.Fatalf("canonical alias match=%d %s", w.Code, w.Body.String())
 	}
 }
 
@@ -313,6 +481,38 @@ func TestHTTPConcurrentDeviceRemintsConvergeAfterReplay(t *testing.T) {
 	}
 }
 
+func TestHTTPConcurrentSameEntityUnionsDistinctEvidence(t *testing.T) {
+	f := newFixture(t)
+	start := make(chan struct{})
+	results := make(chan *httptest.ResponseRecorder, 2)
+	for _, tc := range []struct {
+		name string
+		ref  string
+	}{{"Acme Conduit", "conduit:company:concurrent"}, {"Acme Cadence", "cadence:vendor:concurrent"}} {
+		tc := tc
+		go func() {
+			<-start
+			results <- request(t, f.handler, http.MethodPut, "/v1/entities/"+id3, projection(tc.name, tc.ref))
+		}()
+	}
+	close(start)
+	for range 2 {
+		w := <-results
+		if w.Code != http.StatusOK {
+			t.Fatalf("concurrent same-id upsert: %d %s", w.Code, w.Body.String())
+		}
+	}
+	w := request(t, f.handler, http.MethodGet, "/v1/entities/"+id3, "")
+	if w.Code != http.StatusOK ||
+		!bytes.Contains(w.Body.Bytes(), []byte("conduit:company:concurrent")) ||
+		!bytes.Contains(w.Body.Bytes(), []byte("cadence:vendor:concurrent")) {
+		t.Fatalf("same-id evidence was lost: %d %s", w.Code, w.Body.String())
+	}
+	if count := f.client.EntityIdentifier.Query().CountX(f.ctx); count != 2 {
+		t.Fatalf("normalized identifier count=%d, want 2", count)
+	}
+}
+
 func TestHTTPOrgIsolationAndAuthorization(t *testing.T) {
 	f := newFixture(t)
 	if w := request(t, f.handler, "PUT", "/v1/entities/"+id1, projection("Acme", "conduit:company:org-one")); w.Code != http.StatusOK {
@@ -321,6 +521,7 @@ func TestHTTPOrgIsolationAndAuthorization(t *testing.T) {
 	internal := auth.WithInternal(context.Background())
 	workspace := f.client.RevenueWorkspace.Query().OnlyX(internal)
 	sameOrg := f.client.User.Create().SetEmail("member@example.com").SetWorkosUserID("user_member").SetWorkosOrgID("org_one").SaveX(internal)
+	f.client.RevenueWorkspaceMember.Create().SetWorkspace(workspace).SetUser(sameOrg).SetRole("member").SetStatus("active").SaveX(internal)
 	sameOrgHandler := scopedHandler(f.client, sameOrg, workspace, func(context.Context, Scope, Operation) error { return nil })
 	if w := request(t, sameOrgHandler, "GET", "/v1/entities/"+id1, ""); w.Code != http.StatusOK {
 		t.Fatalf("same-org read: %d %s", w.Code, w.Body.String())

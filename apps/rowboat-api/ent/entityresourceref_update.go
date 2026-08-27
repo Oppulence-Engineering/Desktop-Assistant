@@ -105,6 +105,9 @@ func (_u *EntityResourceRefUpdate) check() error {
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EntityResourceRef.workspace"`)
 	}
+	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "EntityResourceRef.user"`)
+	}
 	if _u.mutation.EntityCleared() && len(_u.mutation.EntityIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EntityResourceRef.entity"`)
 	}
@@ -262,6 +265,9 @@ func (_u *EntityResourceRefUpdateOne) defaults() error {
 func (_u *EntityResourceRefUpdateOne) check() error {
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EntityResourceRef.workspace"`)
+	}
+	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "EntityResourceRef.user"`)
 	}
 	if _u.mutation.EntityCleared() && len(_u.mutation.EntityIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EntityResourceRef.entity"`)

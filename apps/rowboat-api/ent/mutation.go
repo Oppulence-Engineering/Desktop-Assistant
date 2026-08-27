@@ -32862,6 +32862,8 @@ type EntityIdentifierMutation struct {
 	clearedFields    map[string]struct{}
 	workspace        *uuid.UUID
 	clearedworkspace bool
+	user             *uuid.UUID
+	cleareduser      bool
 	entity           *uuid.UUID
 	clearedentity    bool
 	done             bool
@@ -33156,6 +33158,45 @@ func (m *EntityIdentifierMutation) ResetWorkspace() {
 	m.clearedworkspace = false
 }
 
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *EntityIdentifierMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *EntityIdentifierMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *EntityIdentifierMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *EntityIdentifierMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *EntityIdentifierMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *EntityIdentifierMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
 // SetEntityID sets the "entity" edge to the Entity entity by id.
 func (m *EntityIdentifierMutation) SetEntityID(id uuid.UUID) {
 	m.entity = &id
@@ -33379,9 +33420,12 @@ func (m *EntityIdentifierMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *EntityIdentifierMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.workspace != nil {
 		edges = append(edges, entityidentifier.EdgeWorkspace)
+	}
+	if m.user != nil {
+		edges = append(edges, entityidentifier.EdgeUser)
 	}
 	if m.entity != nil {
 		edges = append(edges, entityidentifier.EdgeEntity)
@@ -33397,6 +33441,10 @@ func (m *EntityIdentifierMutation) AddedIDs(name string) []ent.Value {
 		if id := m.workspace; id != nil {
 			return []ent.Value{*id}
 		}
+	case entityidentifier.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
 	case entityidentifier.EdgeEntity:
 		if id := m.entity; id != nil {
 			return []ent.Value{*id}
@@ -33407,7 +33455,7 @@ func (m *EntityIdentifierMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *EntityIdentifierMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
@@ -33419,9 +33467,12 @@ func (m *EntityIdentifierMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *EntityIdentifierMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedworkspace {
 		edges = append(edges, entityidentifier.EdgeWorkspace)
+	}
+	if m.cleareduser {
+		edges = append(edges, entityidentifier.EdgeUser)
 	}
 	if m.clearedentity {
 		edges = append(edges, entityidentifier.EdgeEntity)
@@ -33435,6 +33486,8 @@ func (m *EntityIdentifierMutation) EdgeCleared(name string) bool {
 	switch name {
 	case entityidentifier.EdgeWorkspace:
 		return m.clearedworkspace
+	case entityidentifier.EdgeUser:
+		return m.cleareduser
 	case entityidentifier.EdgeEntity:
 		return m.clearedentity
 	}
@@ -33447,6 +33500,9 @@ func (m *EntityIdentifierMutation) ClearEdge(name string) error {
 	switch name {
 	case entityidentifier.EdgeWorkspace:
 		m.ClearWorkspace()
+		return nil
+	case entityidentifier.EdgeUser:
+		m.ClearUser()
 		return nil
 	case entityidentifier.EdgeEntity:
 		m.ClearEntity()
@@ -33461,6 +33517,9 @@ func (m *EntityIdentifierMutation) ResetEdge(name string) error {
 	switch name {
 	case entityidentifier.EdgeWorkspace:
 		m.ResetWorkspace()
+		return nil
+	case entityidentifier.EdgeUser:
+		m.ResetUser()
 		return nil
 	case entityidentifier.EdgeEntity:
 		m.ResetEntity()
@@ -33481,6 +33540,8 @@ type EntityResourceRefMutation struct {
 	clearedFields    map[string]struct{}
 	workspace        *uuid.UUID
 	clearedworkspace bool
+	user             *uuid.UUID
+	cleareduser      bool
 	entity           *uuid.UUID
 	clearedentity    bool
 	done             bool
@@ -33739,6 +33800,45 @@ func (m *EntityResourceRefMutation) ResetWorkspace() {
 	m.clearedworkspace = false
 }
 
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *EntityResourceRefMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *EntityResourceRefMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *EntityResourceRefMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *EntityResourceRefMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *EntityResourceRefMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *EntityResourceRefMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
 // SetEntityID sets the "entity" edge to the Entity entity by id.
 func (m *EntityResourceRefMutation) SetEntityID(id uuid.UUID) {
 	m.entity = &id
@@ -33945,9 +34045,12 @@ func (m *EntityResourceRefMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *EntityResourceRefMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.workspace != nil {
 		edges = append(edges, entityresourceref.EdgeWorkspace)
+	}
+	if m.user != nil {
+		edges = append(edges, entityresourceref.EdgeUser)
 	}
 	if m.entity != nil {
 		edges = append(edges, entityresourceref.EdgeEntity)
@@ -33963,6 +34066,10 @@ func (m *EntityResourceRefMutation) AddedIDs(name string) []ent.Value {
 		if id := m.workspace; id != nil {
 			return []ent.Value{*id}
 		}
+	case entityresourceref.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
 	case entityresourceref.EdgeEntity:
 		if id := m.entity; id != nil {
 			return []ent.Value{*id}
@@ -33973,7 +34080,7 @@ func (m *EntityResourceRefMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *EntityResourceRefMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
@@ -33985,9 +34092,12 @@ func (m *EntityResourceRefMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *EntityResourceRefMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedworkspace {
 		edges = append(edges, entityresourceref.EdgeWorkspace)
+	}
+	if m.cleareduser {
+		edges = append(edges, entityresourceref.EdgeUser)
 	}
 	if m.clearedentity {
 		edges = append(edges, entityresourceref.EdgeEntity)
@@ -34001,6 +34111,8 @@ func (m *EntityResourceRefMutation) EdgeCleared(name string) bool {
 	switch name {
 	case entityresourceref.EdgeWorkspace:
 		return m.clearedworkspace
+	case entityresourceref.EdgeUser:
+		return m.cleareduser
 	case entityresourceref.EdgeEntity:
 		return m.clearedentity
 	}
@@ -34013,6 +34125,9 @@ func (m *EntityResourceRefMutation) ClearEdge(name string) error {
 	switch name {
 	case entityresourceref.EdgeWorkspace:
 		m.ClearWorkspace()
+		return nil
+	case entityresourceref.EdgeUser:
+		m.ClearUser()
 		return nil
 	case entityresourceref.EdgeEntity:
 		m.ClearEntity()
@@ -34027,6 +34142,9 @@ func (m *EntityResourceRefMutation) ResetEdge(name string) error {
 	switch name {
 	case entityresourceref.EdgeWorkspace:
 		m.ResetWorkspace()
+		return nil
+	case entityresourceref.EdgeUser:
+		m.ResetUser()
 		return nil
 	case entityresourceref.EdgeEntity:
 		m.ResetEntity()
@@ -97672,9 +97790,6 @@ type UserMutation struct {
 	relationship_persons                        map[uuid.UUID]struct{}
 	removedrelationship_persons                 map[uuid.UUID]struct{}
 	clearedrelationship_persons                 bool
-	entities                                    map[uuid.UUID]struct{}
-	removedentities                             map[uuid.UUID]struct{}
-	clearedentities                             bool
 	person_identities                           map[uuid.UUID]struct{}
 	removedperson_identities                    map[uuid.UUID]struct{}
 	clearedperson_identities                    bool
@@ -97726,6 +97841,15 @@ type UserMutation struct {
 	relationship_source_statuses                map[uuid.UUID]struct{}
 	removedrelationship_source_statuses         map[uuid.UUID]struct{}
 	clearedrelationship_source_statuses         bool
+	entities                                    map[uuid.UUID]struct{}
+	removedentities                             map[uuid.UUID]struct{}
+	clearedentities                             bool
+	entity_resource_refs                        map[uuid.UUID]struct{}
+	removedentity_resource_refs                 map[uuid.UUID]struct{}
+	clearedentity_resource_refs                 bool
+	entity_identifiers                          map[uuid.UUID]struct{}
+	removedentity_identifiers                   map[uuid.UUID]struct{}
+	clearedentity_identifiers                   bool
 	action_proposals                            map[uuid.UUID]struct{}
 	removedaction_proposals                     map[uuid.UUID]struct{}
 	clearedaction_proposals                     bool
@@ -100408,60 +100532,6 @@ func (m *UserMutation) ResetRelationshipPersons() {
 	m.removedrelationship_persons = nil
 }
 
-// AddEntityIDs adds the "entities" edge to the Entity entity by ids.
-func (m *UserMutation) AddEntityIDs(ids ...uuid.UUID) {
-	if m.entities == nil {
-		m.entities = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		m.entities[ids[i]] = struct{}{}
-	}
-}
-
-// ClearEntities clears the "entities" edge to the Entity entity.
-func (m *UserMutation) ClearEntities() {
-	m.clearedentities = true
-}
-
-// EntitiesCleared reports if the "entities" edge to the Entity entity was cleared.
-func (m *UserMutation) EntitiesCleared() bool {
-	return m.clearedentities
-}
-
-// RemoveEntityIDs removes the "entities" edge to the Entity entity by IDs.
-func (m *UserMutation) RemoveEntityIDs(ids ...uuid.UUID) {
-	if m.removedentities == nil {
-		m.removedentities = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		delete(m.entities, ids[i])
-		m.removedentities[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedEntities returns the removed IDs of the "entities" edge to the Entity entity.
-func (m *UserMutation) RemovedEntitiesIDs() (ids []uuid.UUID) {
-	for id := range m.removedentities {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// EntitiesIDs returns the "entities" edge IDs in the mutation.
-func (m *UserMutation) EntitiesIDs() (ids []uuid.UUID) {
-	for id := range m.entities {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetEntities resets all changes to the "entities" edge.
-func (m *UserMutation) ResetEntities() {
-	m.entities = nil
-	m.clearedentities = false
-	m.removedentities = nil
-}
-
 // AddPersonIdentityIDs adds the "person_identities" edge to the PersonIdentity entity by ids.
 func (m *UserMutation) AddPersonIdentityIDs(ids ...uuid.UUID) {
 	if m.person_identities == nil {
@@ -101380,6 +101450,168 @@ func (m *UserMutation) ResetRelationshipSourceStatuses() {
 	m.removedrelationship_source_statuses = nil
 }
 
+// AddEntityIDs adds the "entities" edge to the Entity entity by ids.
+func (m *UserMutation) AddEntityIDs(ids ...uuid.UUID) {
+	if m.entities == nil {
+		m.entities = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.entities[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEntities clears the "entities" edge to the Entity entity.
+func (m *UserMutation) ClearEntities() {
+	m.clearedentities = true
+}
+
+// EntitiesCleared reports if the "entities" edge to the Entity entity was cleared.
+func (m *UserMutation) EntitiesCleared() bool {
+	return m.clearedentities
+}
+
+// RemoveEntityIDs removes the "entities" edge to the Entity entity by IDs.
+func (m *UserMutation) RemoveEntityIDs(ids ...uuid.UUID) {
+	if m.removedentities == nil {
+		m.removedentities = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.entities, ids[i])
+		m.removedentities[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEntities returns the removed IDs of the "entities" edge to the Entity entity.
+func (m *UserMutation) RemovedEntitiesIDs() (ids []uuid.UUID) {
+	for id := range m.removedentities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EntitiesIDs returns the "entities" edge IDs in the mutation.
+func (m *UserMutation) EntitiesIDs() (ids []uuid.UUID) {
+	for id := range m.entities {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEntities resets all changes to the "entities" edge.
+func (m *UserMutation) ResetEntities() {
+	m.entities = nil
+	m.clearedentities = false
+	m.removedentities = nil
+}
+
+// AddEntityResourceRefIDs adds the "entity_resource_refs" edge to the EntityResourceRef entity by ids.
+func (m *UserMutation) AddEntityResourceRefIDs(ids ...uuid.UUID) {
+	if m.entity_resource_refs == nil {
+		m.entity_resource_refs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.entity_resource_refs[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEntityResourceRefs clears the "entity_resource_refs" edge to the EntityResourceRef entity.
+func (m *UserMutation) ClearEntityResourceRefs() {
+	m.clearedentity_resource_refs = true
+}
+
+// EntityResourceRefsCleared reports if the "entity_resource_refs" edge to the EntityResourceRef entity was cleared.
+func (m *UserMutation) EntityResourceRefsCleared() bool {
+	return m.clearedentity_resource_refs
+}
+
+// RemoveEntityResourceRefIDs removes the "entity_resource_refs" edge to the EntityResourceRef entity by IDs.
+func (m *UserMutation) RemoveEntityResourceRefIDs(ids ...uuid.UUID) {
+	if m.removedentity_resource_refs == nil {
+		m.removedentity_resource_refs = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.entity_resource_refs, ids[i])
+		m.removedentity_resource_refs[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEntityResourceRefs returns the removed IDs of the "entity_resource_refs" edge to the EntityResourceRef entity.
+func (m *UserMutation) RemovedEntityResourceRefsIDs() (ids []uuid.UUID) {
+	for id := range m.removedentity_resource_refs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EntityResourceRefsIDs returns the "entity_resource_refs" edge IDs in the mutation.
+func (m *UserMutation) EntityResourceRefsIDs() (ids []uuid.UUID) {
+	for id := range m.entity_resource_refs {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEntityResourceRefs resets all changes to the "entity_resource_refs" edge.
+func (m *UserMutation) ResetEntityResourceRefs() {
+	m.entity_resource_refs = nil
+	m.clearedentity_resource_refs = false
+	m.removedentity_resource_refs = nil
+}
+
+// AddEntityIdentifierIDs adds the "entity_identifiers" edge to the EntityIdentifier entity by ids.
+func (m *UserMutation) AddEntityIdentifierIDs(ids ...uuid.UUID) {
+	if m.entity_identifiers == nil {
+		m.entity_identifiers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.entity_identifiers[ids[i]] = struct{}{}
+	}
+}
+
+// ClearEntityIdentifiers clears the "entity_identifiers" edge to the EntityIdentifier entity.
+func (m *UserMutation) ClearEntityIdentifiers() {
+	m.clearedentity_identifiers = true
+}
+
+// EntityIdentifiersCleared reports if the "entity_identifiers" edge to the EntityIdentifier entity was cleared.
+func (m *UserMutation) EntityIdentifiersCleared() bool {
+	return m.clearedentity_identifiers
+}
+
+// RemoveEntityIdentifierIDs removes the "entity_identifiers" edge to the EntityIdentifier entity by IDs.
+func (m *UserMutation) RemoveEntityIdentifierIDs(ids ...uuid.UUID) {
+	if m.removedentity_identifiers == nil {
+		m.removedentity_identifiers = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.entity_identifiers, ids[i])
+		m.removedentity_identifiers[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedEntityIdentifiers returns the removed IDs of the "entity_identifiers" edge to the EntityIdentifier entity.
+func (m *UserMutation) RemovedEntityIdentifiersIDs() (ids []uuid.UUID) {
+	for id := range m.removedentity_identifiers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// EntityIdentifiersIDs returns the "entity_identifiers" edge IDs in the mutation.
+func (m *UserMutation) EntityIdentifiersIDs() (ids []uuid.UUID) {
+	for id := range m.entity_identifiers {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetEntityIdentifiers resets all changes to the "entity_identifiers" edge.
+func (m *UserMutation) ResetEntityIdentifiers() {
+	m.entity_identifiers = nil
+	m.clearedentity_identifiers = false
+	m.removedentity_identifiers = nil
+}
+
 // AddActionProposalIDs adds the "action_proposals" edge to the ActionProposal entity by ids.
 func (m *UserMutation) AddActionProposalIDs(ids ...uuid.UUID) {
 	if m.action_proposals == nil {
@@ -101704,7 +101936,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 64)
+	edges := make([]string, 0, 66)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -101837,9 +102069,6 @@ func (m *UserMutation) AddedEdges() []string {
 	if m.relationship_persons != nil {
 		edges = append(edges, user.EdgeRelationshipPersons)
 	}
-	if m.entities != nil {
-		edges = append(edges, user.EdgeEntities)
-	}
 	if m.person_identities != nil {
 		edges = append(edges, user.EdgePersonIdentities)
 	}
@@ -101890,6 +102119,15 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.relationship_source_statuses != nil {
 		edges = append(edges, user.EdgeRelationshipSourceStatuses)
+	}
+	if m.entities != nil {
+		edges = append(edges, user.EdgeEntities)
+	}
+	if m.entity_resource_refs != nil {
+		edges = append(edges, user.EdgeEntityResourceRefs)
+	}
+	if m.entity_identifiers != nil {
+		edges = append(edges, user.EdgeEntityIdentifiers)
 	}
 	if m.action_proposals != nil {
 		edges = append(edges, user.EdgeActionProposals)
@@ -102166,12 +102404,6 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case user.EdgeEntities:
-		ids := make([]ent.Value, 0, len(m.entities))
-		for id := range m.entities {
-			ids = append(ids, id)
-		}
-		return ids
 	case user.EdgePersonIdentities:
 		ids := make([]ent.Value, 0, len(m.person_identities))
 		for id := range m.person_identities {
@@ -102274,6 +102506,24 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeEntities:
+		ids := make([]ent.Value, 0, len(m.entities))
+		for id := range m.entities {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeEntityResourceRefs:
+		ids := make([]ent.Value, 0, len(m.entity_resource_refs))
+		for id := range m.entity_resource_refs {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeEntityIdentifiers:
+		ids := make([]ent.Value, 0, len(m.entity_identifiers))
+		for id := range m.entity_identifiers {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeActionProposals:
 		ids := make([]ent.Value, 0, len(m.action_proposals))
 		for id := range m.action_proposals {
@@ -102292,7 +102542,7 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 64)
+	edges := make([]string, 0, 66)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -102422,9 +102672,6 @@ func (m *UserMutation) RemovedEdges() []string {
 	if m.removedrelationship_persons != nil {
 		edges = append(edges, user.EdgeRelationshipPersons)
 	}
-	if m.removedentities != nil {
-		edges = append(edges, user.EdgeEntities)
-	}
 	if m.removedperson_identities != nil {
 		edges = append(edges, user.EdgePersonIdentities)
 	}
@@ -102475,6 +102722,15 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedrelationship_source_statuses != nil {
 		edges = append(edges, user.EdgeRelationshipSourceStatuses)
+	}
+	if m.removedentities != nil {
+		edges = append(edges, user.EdgeEntities)
+	}
+	if m.removedentity_resource_refs != nil {
+		edges = append(edges, user.EdgeEntityResourceRefs)
+	}
+	if m.removedentity_identifiers != nil {
+		edges = append(edges, user.EdgeEntityIdentifiers)
 	}
 	if m.removedaction_proposals != nil {
 		edges = append(edges, user.EdgeActionProposals)
@@ -102747,12 +103003,6 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
-	case user.EdgeEntities:
-		ids := make([]ent.Value, 0, len(m.removedentities))
-		for id := range m.removedentities {
-			ids = append(ids, id)
-		}
-		return ids
 	case user.EdgePersonIdentities:
 		ids := make([]ent.Value, 0, len(m.removedperson_identities))
 		for id := range m.removedperson_identities {
@@ -102855,6 +103105,24 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeEntities:
+		ids := make([]ent.Value, 0, len(m.removedentities))
+		for id := range m.removedentities {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeEntityResourceRefs:
+		ids := make([]ent.Value, 0, len(m.removedentity_resource_refs))
+		for id := range m.removedentity_resource_refs {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeEntityIdentifiers:
+		ids := make([]ent.Value, 0, len(m.removedentity_identifiers))
+		for id := range m.removedentity_identifiers {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeActionProposals:
 		ids := make([]ent.Value, 0, len(m.removedaction_proposals))
 		for id := range m.removedaction_proposals {
@@ -102873,7 +103141,7 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 64)
+	edges := make([]string, 0, 66)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -103006,9 +103274,6 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedrelationship_persons {
 		edges = append(edges, user.EdgeRelationshipPersons)
 	}
-	if m.clearedentities {
-		edges = append(edges, user.EdgeEntities)
-	}
 	if m.clearedperson_identities {
 		edges = append(edges, user.EdgePersonIdentities)
 	}
@@ -103059,6 +103324,15 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedrelationship_source_statuses {
 		edges = append(edges, user.EdgeRelationshipSourceStatuses)
+	}
+	if m.clearedentities {
+		edges = append(edges, user.EdgeEntities)
+	}
+	if m.clearedentity_resource_refs {
+		edges = append(edges, user.EdgeEntityResourceRefs)
+	}
+	if m.clearedentity_identifiers {
+		edges = append(edges, user.EdgeEntityIdentifiers)
 	}
 	if m.clearedaction_proposals {
 		edges = append(edges, user.EdgeActionProposals)
@@ -103161,8 +103435,6 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedrelationship_identities
 	case user.EdgeRelationshipPersons:
 		return m.clearedrelationship_persons
-	case user.EdgeEntities:
-		return m.clearedentities
 	case user.EdgePersonIdentities:
 		return m.clearedperson_identities
 	case user.EdgePersonSuppressions:
@@ -103197,6 +103469,12 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedrelationship_state_snapshots
 	case user.EdgeRelationshipSourceStatuses:
 		return m.clearedrelationship_source_statuses
+	case user.EdgeEntities:
+		return m.clearedentities
+	case user.EdgeEntityResourceRefs:
+		return m.clearedentity_resource_refs
+	case user.EdgeEntityIdentifiers:
+		return m.clearedentity_identifiers
 	case user.EdgeActionProposals:
 		return m.clearedaction_proposals
 	case user.EdgeApprovalTokens:
@@ -103352,9 +103630,6 @@ func (m *UserMutation) ResetEdge(name string) error {
 	case user.EdgeRelationshipPersons:
 		m.ResetRelationshipPersons()
 		return nil
-	case user.EdgeEntities:
-		m.ResetEntities()
-		return nil
 	case user.EdgePersonIdentities:
 		m.ResetPersonIdentities()
 		return nil
@@ -103405,6 +103680,15 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeRelationshipSourceStatuses:
 		m.ResetRelationshipSourceStatuses()
+		return nil
+	case user.EdgeEntities:
+		m.ResetEntities()
+		return nil
+	case user.EdgeEntityResourceRefs:
+		m.ResetEntityResourceRefs()
+		return nil
+	case user.EdgeEntityIdentifiers:
+		m.ResetEntityIdentifiers()
 		return nil
 	case user.EdgeActionProposals:
 		m.ResetActionProposals()

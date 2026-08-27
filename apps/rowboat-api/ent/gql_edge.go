@@ -592,6 +592,14 @@ func (_m *EntityIdentifier) Workspace(ctx context.Context) (*RevenueWorkspace, e
 	return result, err
 }
 
+func (_m *EntityIdentifier) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *EntityIdentifier) Entity(ctx context.Context) (*Entity, error) {
 	result, err := _m.Edges.EntityOrErr()
 	if IsNotLoaded(err) {
@@ -604,6 +612,14 @@ func (_m *EntityResourceRef) Workspace(ctx context.Context) (*RevenueWorkspace, 
 	result, err := _m.Edges.WorkspaceOrErr()
 	if IsNotLoaded(err) {
 		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *EntityResourceRef) User(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.UserOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryUser().Only(ctx)
 	}
 	return result, err
 }
@@ -2748,18 +2764,6 @@ func (_m *User) RelationshipPersons(ctx context.Context) (result []*Person, err 
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryRelationshipPersons().All(ctx)
-	}
-	return result, err
-}
-
-func (_m *User) Entities(ctx context.Context) (result []*Entity, err error) {
-	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
-		result, err = _m.NamedEntities(graphql.GetFieldContext(ctx).Field.Alias)
-	} else {
-		result, err = _m.Edges.EntitiesOrErr()
-	}
-	if IsNotLoaded(err) {
-		result, err = _m.QueryEntities().All(ctx)
 	}
 	return result, err
 }

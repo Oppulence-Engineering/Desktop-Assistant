@@ -16,6 +16,7 @@ func addEntitySchemas(schemas obj) {
 	refs := obj{"type": "array", "maxItems": 100, "uniqueItems": true, "items": entityResourceRefSchema("Stable external product pointer.", "conduit:customer:cus_8fA2")}
 	identifiers := obj{
 		"type": "object", "maxProperties": 32,
+		"description":          "At most 32 identifier classes. Keys must match ^[A-Za-z][A-Za-z0-9_.-]{0,63}$; values are unique one-way fingerprints.",
 		"additionalProperties": obj{"type": "array", "maxItems": 100, "uniqueItems": true, "items": entityFingerprintSchema()},
 	}
 	entity := objectSchema("Minimal org-scoped entity spine projection. Raw note bodies and mirrored payloads are forbidden.", obj{
@@ -50,20 +51,21 @@ func addEntitySchemas(schemas obj) {
 
 func addEntityPaths(paths obj) {
 	sec := []any{obj{"BearerAuth": []any{}}}
-	common := obj{
+	writeErrors := obj{
 		"400": responseRef("400"), "401": responseRef("401"), "403": responseRef("403"), "409": responseRef("409"), "500": responseRef("500"),
 		"413": problemResponse("Projection exceeds the 256 KiB request cap.", ref("ErrorEnvelope"), problemExample(413, "Request Entity Too Large", "request body exceeds 262144 bytes", "request_body_too_large")),
 		"415": problemResponse("Content-Type must be application/json.", ref("ErrorEnvelope"), problemExample(415, "Unsupported Media Type", "Content-Type must be application/json", "unsupported_media_type")),
 	}
+	readErrors := obj{"400": responseRef("400"), "401": responseRef("401"), "403": responseRef("403"), "500": responseRef("500")}
 	idp := []any{pathParam("id", "Stable entity ULID.", entityULIDSchema("Entity id.", "01J9Z8Q5K3R7V2C4M6N8P0T1S3"))}
-	putResp := cloneObj(common)
+	putResp := cloneObj(writeErrors)
 	putResp["200"] = jsonResponse("Upserted projection or canonical adoption tombstone.", ref("EntitySpine"), nil)
-	getResp := cloneObj(common)
+	getResp := cloneObj(readErrors)
 	getResp["200"] = jsonResponse("Entity projection.", ref("EntitySpine"), nil)
 	getResp["404"] = responseRef("404")
 	paths["/v1/entities/{id}"] = obj{"put": operation("Entities", "Upsert entity projection", "Strict fixed allowlist. Unknown fields are rejected.", "putEntity", sec, idp, jsonRequest("Projection.", ref("EntityProjection"), nil), putResp), "get": operation("Entities", "Get entity", "Returns an entity or merge tombstone within the caller organization.", "getEntity", sec, idp, nil, getResp)}
 	paths["/v1/entities"] = obj{"get": operation("Entities", "Resolve resource reference", "Exact reverse resolution within the caller organization.", "resolveEntityByRef", sec, []any{queryParam("ref", "Exact resourceRef.", true, entityResourceRefSchema("Resource reference.", "conduit:customer:cus_8fA2"))}, nil, getResp)}
-	mergeResp := cloneObj(common)
+	mergeResp := cloneObj(writeErrors)
 	mergeResp["200"] = jsonResponse("Merge result.", ref("EntityMergeResponse"), nil)
 	mergeResp["404"] = responseRef("404")
 	paths["/v1/entities/merge"] = obj{"post": operation("Entities", "Merge entity ids", "Idempotently tombstones source and unions projection sets into target.", "mergeEntities", sec, nil, jsonRequest("Merge request.", ref("EntityMergeRequest"), nil), mergeResp)}

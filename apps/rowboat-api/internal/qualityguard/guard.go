@@ -50,8 +50,9 @@ func Check(root string) ([]Violation, error) {
 }
 
 // checkTenantRegistries treats every handwritten schema with a required user
-// edge as tenant-owned. Such an entity must be registered independently on the
-// Ent read and write paths; checking both prevents one-sided protection drift.
+// edge or workspace-tenant mixin as tenant-owned. Such an entity must be
+// registered independently on the Ent read and write paths; checking both
+// prevents one-sided protection drift.
 func checkTenantRegistries(root string) ([]Violation, error) {
 	interceptorsPath := filepath.Join(root, "internal", "db", "interceptors.go")
 	registry, err := os.ReadFile(interceptorsPath)
@@ -72,7 +73,8 @@ func checkTenantRegistries(root string) ([]Violation, error) {
 		if readErr != nil {
 			return nil, fmt.Errorf("read Ent schema %s: %w", path, readErr)
 		}
-		if !strings.Contains(string(source), `edge.From("user"`) {
+		schemaSource := string(source)
+		if !strings.Contains(schemaSource, `edge.From("user"`) && !strings.Contains(schemaSource, "mixin.WorkspaceTenantMixin") {
 			continue
 		}
 		entity, parseErr := schemaType(path, source)
@@ -86,13 +88,13 @@ func checkTenantRegistries(root string) ([]Violation, error) {
 		if !strings.Contains(string(registry), "client."+entity+".Intercept") {
 			violations = append(violations, Violation{
 				Rule: "tenant-read-scope", Path: rel,
-				Message: entity + " has a user edge but no Ent read interceptor",
+				Message: entity + " is tenant-owned but has no Ent read interceptor",
 			})
 		}
 		if !strings.Contains(string(registry), "ent.Type"+entity+":") {
 			violations = append(violations, Violation{
 				Rule: "tenant-write-scope", Path: rel,
-				Message: entity + " has a user edge but no tenant mutation registry entry",
+				Message: entity + " is tenant-owned but has no tenant mutation registry entry",
 			})
 		}
 	}

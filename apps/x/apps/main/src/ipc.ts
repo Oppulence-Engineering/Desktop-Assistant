@@ -21,10 +21,7 @@ import {
 } from "./oauth-handler.js";
 import { watcher as watcherCore, workspace } from "@x/core";
 import { WorkDir } from "@x/core/config/config";
-import {
-  getNotificationsConfig,
-  setNotificationsConfig,
-} from "@x/core/config/notifications";
+import { getNotificationsConfig, setNotificationsConfig } from "@x/core/config/notifications";
 import { workspace as workspaceShared } from "@x/shared";
 import * as mcpCore from "@x/core/mcp/mcp";
 import * as runsCore from "@x/core/runs/runs";
@@ -61,10 +58,7 @@ import { checkCodeModeAgentStatus } from "@x/core/code-mode/status";
 import { invalidateCopilotInstructionsCache } from "@x/core/application/assistant/instructions";
 import { triggerSync as triggerGranolaSync } from "@x/core/knowledge/granola/sync";
 import { ISlackConfigRepo } from "@x/core/slack/repo";
-import {
-  isOnboardingComplete,
-  markOnboardingComplete,
-} from "@x/core/config/note_creation_config";
+import { isOnboardingComplete, markOnboardingComplete } from "@x/core/config/note_creation_config";
 import { consumePendingDeepLink } from "./deeplink.js";
 import { checkForUpdates, getUpdateStatus, installUpdate } from "./update-manager.js";
 import { getPrivacyConfig, setPrivacyConfig } from "@x/core/config/privacy";
@@ -76,12 +70,7 @@ import {
 } from "@x/core/agent-schedule/runner";
 import { loadAgent } from "@x/core/agents/runtime";
 import { search } from "@x/core/search/search";
-import {
-  memorySearch,
-  relatedNotes,
-  memoryStatus,
-  rebuildMemoryIndex,
-} from "@x/core/memory/index";
+import { memorySearch, relatedNotes, memoryStatus, rebuildMemoryIndex } from "@x/core/memory/index";
 import { memoryBus } from "@x/core/memory/bus";
 import { versionHistory, voice } from "@x/core";
 import {
@@ -95,10 +84,7 @@ import {
 } from "@x/core/voice/whisper/index";
 import { parseVoiceCommand } from "@x/core/voice/commands/parser";
 import { transformDictationCommand } from "@x/core/voice/command-mode";
-import {
-  executeVoiceCommand,
-  type VoiceEmailActions,
-} from "@x/core/voice/commands/executor";
+import { executeVoiceCommand, type VoiceEmailActions } from "@x/core/voice/commands/executor";
 import { buildTranscriptionRouting, providerDataLocation } from "@x/core/voice/routing";
 import { WhisperUtilityRunner } from "./whisper-utility-client.js";
 import type {
@@ -107,10 +93,7 @@ import type {
   TranscriptionDataLocation,
   TranscriptionProvider,
 } from "@x/shared/transcription";
-import {
-  classifySchedule,
-  processSolomonInstruction,
-} from "@x/core/knowledge/inline_tasks";
+import { classifySchedule, processSolomonInstruction } from "@x/core/knowledge/inline_tasks";
 import {
   createBillingCheckoutSession,
   getBillingInfo,
@@ -130,6 +113,11 @@ import {
   postSlackThreadReplyViaBackend,
 } from "@x/core/auth/slack-backend-oauth";
 import { summarizeMeeting } from "@x/core/knowledge/summarize_meeting";
+import {
+  listEntityLinkSuggestions,
+  reviewEntityLinkSuggestion,
+} from "@x/core/knowledge/entity-resolver";
+import { getEntitySpineHealth } from "@x/core/knowledge/entity-spine";
 import { getAccessToken } from "@x/core/auth/tokens";
 import { getSolomonConfig } from "@x/core/config/solomon";
 import { runLiveNoteAgent } from "@x/core/knowledge/live-note/runner";
@@ -1180,6 +1168,15 @@ export function setupIpcHandlers() {
       approveRelationshipRecommendation(args.actionId, args.acceptRisk),
     "relationships:reject": async (_event, args) =>
       rejectRelationshipRecommendation(args.actionId, args.reason),
+    "entities:listLinkSuggestions": async () => listEntityLinkSuggestions(WorkDir),
+    "entities:getSpineHealth": async () => getEntitySpineHealth(WorkDir),
+    "entities:reviewLinkSuggestion": async (_event, args) =>
+      reviewEntityLinkSuggestion({
+        workDir: WorkDir,
+        suggestionId: args.suggestionId,
+        decision: args.decision,
+        chosenRef: args.chosenRef,
+      }),
     "workspace:getRoot": async () => {
       return workspace.getRoot();
     },
@@ -1834,8 +1831,7 @@ export function setupIpcHandlers() {
       updateDesktopDictationState(state, message);
       return { ok: true };
     },
-    "dictation:controlDock": async (_event, { action }) =>
-      controlDesktopDictationDock(action),
+    "dictation:controlDock": async (_event, { action }) => controlDesktopDictationDock(action),
     "dictation:transcribe": async (_event, req) => {
       const pcm16 = new Int16Array(req.pcm16);
       const cfg = await voice.getTranscriptionConfig();

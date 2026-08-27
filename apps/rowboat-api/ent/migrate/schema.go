@@ -1268,6 +1268,7 @@ var (
 		{Name: "fingerprint", Type: field.TypeString},
 		{Name: "entity_normalized_identifiers", Type: field.TypeUUID},
 		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_entity_identifiers", Type: field.TypeUUID},
 	}
 	// EntityIdentifiersTable holds the schema information for the "entity_identifiers" table.
 	EntityIdentifiersTable = &schema.Table{
@@ -1285,6 +1286,12 @@ var (
 				Symbol:     "entity_identifiers_revenue_workspaces_entity_identifiers",
 				Columns:    []*schema.Column{EntityIdentifiersColumns[6]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "entity_identifiers_users_entity_identifiers",
+				Columns:    []*schema.Column{EntityIdentifiersColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
@@ -1309,6 +1316,7 @@ var (
 		{Name: "ref", Type: field.TypeString},
 		{Name: "entity_normalized_resource_refs", Type: field.TypeUUID},
 		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_entity_resource_refs", Type: field.TypeUUID},
 	}
 	// EntityResourceRefsTable holds the schema information for the "entity_resource_refs" table.
 	EntityResourceRefsTable = &schema.Table{
@@ -1326,6 +1334,12 @@ var (
 				Symbol:     "entity_resource_refs_revenue_workspaces_entity_resource_refs",
 				Columns:    []*schema.Column{EntityResourceRefsColumns[5]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "entity_resource_refs_users_entity_resource_refs",
+				Columns:    []*schema.Column{EntityResourceRefsColumns[6]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
@@ -3945,8 +3959,10 @@ func init() {
 	EntitiesTable.ForeignKeys[1].RefTable = UsersTable
 	EntityIdentifiersTable.ForeignKeys[0].RefTable = EntitiesTable
 	EntityIdentifiersTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	EntityIdentifiersTable.ForeignKeys[2].RefTable = UsersTable
 	EntityResourceRefsTable.ForeignKeys[0].RefTable = EntitiesTable
 	EntityResourceRefsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	EntityResourceRefsTable.ForeignKeys[2].RefTable = UsersTable
 	GoogleWatchesTable.ForeignKeys[0].RefTable = UsersTable
 	LlmUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	McpConnectionsTable.ForeignKeys[0].RefTable = UsersTable

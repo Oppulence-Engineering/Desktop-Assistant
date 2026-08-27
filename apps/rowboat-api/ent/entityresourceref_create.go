@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -83,6 +84,17 @@ func (_c *EntityResourceRefCreate) SetWorkspaceID(id uuid.UUID) *EntityResourceR
 // SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
 func (_c *EntityResourceRefCreate) SetWorkspace(v *RevenueWorkspace) *EntityResourceRefCreate {
 	return _c.SetWorkspaceID(v.ID)
+}
+
+// SetUserID sets the "user" edge to the User entity by ID.
+func (_c *EntityResourceRefCreate) SetUserID(id uuid.UUID) *EntityResourceRefCreate {
+	_c.mutation.SetUserID(id)
+	return _c
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (_c *EntityResourceRefCreate) SetUser(v *User) *EntityResourceRefCreate {
+	return _c.SetUserID(v.ID)
 }
 
 // SetEntityID sets the "entity" edge to the Entity entity by ID.
@@ -176,6 +188,9 @@ func (_c *EntityResourceRefCreate) check() error {
 	if len(_c.mutation.WorkspaceIDs()) == 0 {
 		return &ValidationError{Name: "workspace", err: errors.New(`ent: missing required edge "EntityResourceRef.workspace"`)}
 	}
+	if len(_c.mutation.UserIDs()) == 0 {
+		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "EntityResourceRef.user"`)}
+	}
 	if len(_c.mutation.EntityIDs()) == 0 {
 		return &ValidationError{Name: "entity", err: errors.New(`ent: missing required edge "EntityResourceRef.entity"`)}
 	}
@@ -242,6 +257,23 @@ func (_c *EntityResourceRefCreate) createSpec() (*EntityResourceRef, *sqlgraph.C
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.revenue_workspace_id = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   entityresourceref.UserTable,
+			Columns: []string{entityresourceref.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.user_entity_resource_refs = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.EntityIDs(); len(nodes) > 0 {

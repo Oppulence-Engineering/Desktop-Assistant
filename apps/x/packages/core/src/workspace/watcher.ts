@@ -10,6 +10,7 @@ import { Stats } from "node:fs";
 import {
   captureEntityIdentities,
   entityKindForPath,
+  registerEntityIdentityObserver,
   stabilizeEntityNoteMutation,
 } from "../knowledge/entity-identity.js";
 import { syncEntityNotes } from "../knowledge/entity-spine.js";
@@ -42,6 +43,9 @@ export async function createWorkspaceWatcher(
     },
   });
   const identities = await captureEntityIdentities(path.join(WorkDir, "knowledge"));
+  const unregisterIdentityObserver = registerEntityIdentityObserver((filePath, identity) => {
+    identities.set(filePath, identity);
+  });
   const identityRewrites = new Set<string>();
   const stabilizeExternalEntity = async (absPath: string): Promise<void> => {
     if (
@@ -112,6 +116,7 @@ export async function createWorkspaceWatcher(
     .on("error", (error: unknown) => {
       console.error("Workspace watcher error:", error);
     });
+  watcher.on("close", unregisterIdentityObserver);
 
   return watcher;
 }

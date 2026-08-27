@@ -18788,6 +18788,10 @@ type EntityIdentifierWhereInput struct {
 	HasWorkspace     *bool                         `json:"hasWorkspace,omitempty"`
 	HasWorkspaceWith []*RevenueWorkspaceWhereInput `json:"hasWorkspaceWith,omitempty"`
 
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
+
 	// "entity" edge predicates.
 	HasEntity     *bool               `json:"hasEntity,omitempty"`
 	HasEntityWith []*EntityWhereInput `json:"hasEntityWith,omitempty"`
@@ -19033,6 +19037,24 @@ func (i *EntityIdentifierWhereInput) P() (predicate.EntityIdentifier, error) {
 		}
 		predicates = append(predicates, entityidentifier.HasWorkspaceWith(with...))
 	}
+	if i.HasUser != nil {
+		p := entityidentifier.HasUser()
+		if !*i.HasUser {
+			p = entityidentifier.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, entityidentifier.HasUserWith(with...))
+	}
 	if i.HasEntity != nil {
 		p := entityidentifier.HasEntity()
 		if !*i.HasEntity {
@@ -19116,6 +19138,10 @@ type EntityResourceRefWhereInput struct {
 	// "workspace" edge predicates.
 	HasWorkspace     *bool                         `json:"hasWorkspace,omitempty"`
 	HasWorkspaceWith []*RevenueWorkspaceWhereInput `json:"hasWorkspaceWith,omitempty"`
+
+	// "user" edge predicates.
+	HasUser     *bool             `json:"hasUser,omitempty"`
+	HasUserWith []*UserWhereInput `json:"hasUserWith,omitempty"`
 
 	// "entity" edge predicates.
 	HasEntity     *bool               `json:"hasEntity,omitempty"`
@@ -19322,6 +19348,24 @@ func (i *EntityResourceRefWhereInput) P() (predicate.EntityResourceRef, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, entityresourceref.HasWorkspaceWith(with...))
+	}
+	if i.HasUser != nil {
+		p := entityresourceref.HasUser()
+		if !*i.HasUser {
+			p = entityresourceref.Not(p)
+		}
+		predicates = append(predicates, p)
+	}
+	if len(i.HasUserWith) > 0 {
+		with := make([]predicate.User, 0, len(i.HasUserWith))
+		for _, w := range i.HasUserWith {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'HasUserWith'", err)
+			}
+			with = append(with, p)
+		}
+		predicates = append(predicates, entityresourceref.HasUserWith(with...))
 	}
 	if i.HasEntity != nil {
 		p := entityresourceref.HasEntity()
@@ -51749,10 +51793,6 @@ type UserWhereInput struct {
 	HasRelationshipPersons     *bool               `json:"hasRelationshipPersons,omitempty"`
 	HasRelationshipPersonsWith []*PersonWhereInput `json:"hasRelationshipPersonsWith,omitempty"`
 
-	// "entities" edge predicates.
-	HasEntities     *bool               `json:"hasEntities,omitempty"`
-	HasEntitiesWith []*EntityWhereInput `json:"hasEntitiesWith,omitempty"`
-
 	// "person_identities" edge predicates.
 	HasPersonIdentities     *bool                       `json:"hasPersonIdentities,omitempty"`
 	HasPersonIdentitiesWith []*PersonIdentityWhereInput `json:"hasPersonIdentitiesWith,omitempty"`
@@ -52840,24 +52880,6 @@ func (i *UserWhereInput) P() (predicate.User, error) {
 			with = append(with, p)
 		}
 		predicates = append(predicates, user.HasRelationshipPersonsWith(with...))
-	}
-	if i.HasEntities != nil {
-		p := user.HasEntities()
-		if !*i.HasEntities {
-			p = user.Not(p)
-		}
-		predicates = append(predicates, p)
-	}
-	if len(i.HasEntitiesWith) > 0 {
-		with := make([]predicate.Entity, 0, len(i.HasEntitiesWith))
-		for _, w := range i.HasEntitiesWith {
-			p, err := w.P()
-			if err != nil {
-				return nil, fmt.Errorf("%w: field 'HasEntitiesWith'", err)
-			}
-			with = append(with, p)
-		}
-		predicates = append(predicates, user.HasEntitiesWith(with...))
 	}
 	if i.HasPersonIdentities != nil {
 		p := user.HasPersonIdentities()

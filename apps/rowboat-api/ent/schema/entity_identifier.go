@@ -15,8 +15,10 @@ import (
 // therefore indexed, but not workspace-unique, so ambiguity remains reviewable.
 type EntityIdentifier struct{ ent.Schema }
 
+// Mixin applies workspace tenant policy and common row metadata.
 func (EntityIdentifier) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
 
+// Fields defines a bounded identifier key and sensitive one-way fingerprint.
 func (EntityIdentifier) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("key").NotEmpty().Immutable().Validate(maxRunes("key", 64)),
@@ -24,15 +26,19 @@ func (EntityIdentifier) Fields() []ent.Field {
 	}
 }
 
+// Edges ties every fingerprint to one workspace and entity.
 func (EntityIdentifier) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
+			Ref("entity_identifiers").Unique().Required().Immutable(),
+		edge.From("user", User.Type).
 			Ref("entity_identifiers").Unique().Required().Immutable(),
 		edge.From("entity", Entity.Type).
 			Ref("normalized_identifiers").Unique().Required(),
 	}
 }
 
+// Indexes supports workspace matching while preserving ambiguous identifiers.
 func (EntityIdentifier) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("workspace").Fields("key", "fingerprint"),

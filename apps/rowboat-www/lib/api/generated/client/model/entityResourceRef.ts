@@ -7,6 +7,7 @@
  */
 import type { Entity } from "./entity";
 import type { RevenueWorkspace } from "./revenueWorkspace";
+import type { User } from "./user";
 
 export interface EntityResourceRef {
   /** Row creation timestamp. */
@@ -18,5 +19,7 @@ export interface EntityResourceRef {
   ref: string;
   /** Last row update timestamp. */
   updated_at: string;
+  /** User that owns this row. */
+  user: User;
   workspace: RevenueWorkspace;
 }

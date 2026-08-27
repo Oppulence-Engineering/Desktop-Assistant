@@ -10,13 +10,24 @@ import { reapStalePartials } from "../voice/whisper/model-manager.js";
 import { WorkDir } from "./config.js";
 import { backfillEntityIds } from "../knowledge/entity-identity.js";
 import { ensureEntityConfig } from "../knowledge/entity-config.js";
-import { resumeEntitySpineSync } from "../knowledge/entity-spine.js";
+import {
+  configureEntitySpineClient,
+  createEntitySpineClient,
+  resumeEntitySpineSync,
+} from "../knowledge/entity-spine.js";
+import { getAccessToken } from "../auth/tokens.js";
+import { API_URL } from "./env.js";
 
 /**
  * Initialize all config files at app startup.
  * Ensures config files exist before the UI might access them.
  */
 export async function initConfigs(): Promise<void> {
+  const entitySpineClient = createEntitySpineClient({
+    accessToken: getAccessToken,
+    apiURL: API_URL,
+  });
+  configureEntitySpineClient(entitySpineClient);
   // Resolve repos and explicitly call their ensureConfig methods
   const modelConfigRepo = container.resolve<IModelConfigRepo>("modelConfigRepo");
   const mcpConfigRepo = container.resolve<IMcpConfigRepo>("mcpConfigRepo");

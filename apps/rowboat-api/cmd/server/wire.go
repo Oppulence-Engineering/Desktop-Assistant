@@ -489,13 +489,18 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		if !ok {
 			return entities.Scope{}, entities.ErrForbidden
 		}
-		ws, err := revenueSvc.CurrentWorkspace(ctx, u)
+		actor, ok := auth.ActorFromCtx(ctx)
+		if !ok || actor.Kind != auth.KindUser || actor.UserID != u.ID || strings.TrimSpace(actor.WorkOSOrgID) == "" {
+			return entities.Scope{}, entities.ErrForbidden
+		}
+		ws, err := revenueSvc.CurrentWorkspaceForOrg(ctx, u, actor.WorkOSOrgID)
 		if err != nil {
-			return entities.Scope{}, err
+			return entities.Scope{}, entities.ErrForbidden
 		}
 		return entities.Scope{Workspace: ws, User: u}, nil
 	}, func(ctx context.Context, scope entities.Scope, operation entities.Operation) error {
-		if scope.User.WorkosOrgID == "" || scope.User.WorkosOrgID != scope.Workspace.WorkosOrgID {
+		actor, ok := auth.ActorFromCtx(ctx)
+		if !ok || actor.Kind != auth.KindUser || actor.UserID != scope.User.ID || actor.WorkOSOrgID == "" || actor.WorkOSOrgID != scope.Workspace.WorkosOrgID {
 			return entities.ErrForbidden
 		}
 		capability := revenue.WorkspaceView

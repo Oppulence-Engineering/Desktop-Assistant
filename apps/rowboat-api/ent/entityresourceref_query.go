@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -27,6 +28,7 @@ type EntityResourceRefQuery struct {
 	inters        []Interceptor
 	predicates    []predicate.EntityResourceRef
 	withWorkspace *RevenueWorkspaceQuery
+	withUser      *UserQuery
 	withEntity    *EntityQuery
 	withFKs       bool
 	modifiers     []func(*sql.Selector)
@@ -82,6 +84,28 @@ func (_q *EntityResourceRefQuery) QueryWorkspace() *RevenueWorkspaceQuery {
 			sqlgraph.From(entityresourceref.Table, entityresourceref.FieldID, selector),
 			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, entityresourceref.WorkspaceTable, entityresourceref.WorkspaceColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryUser chains the current query on the "user" edge.
+func (_q *EntityResourceRefQuery) QueryUser() *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entityresourceref.Table, entityresourceref.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, entityresourceref.UserTable, entityresourceref.UserColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -304,6 +328,7 @@ func (_q *EntityResourceRefQuery) Clone() *EntityResourceRefQuery {
 		inters:        append([]Interceptor{}, _q.inters...),
 		predicates:    append([]predicate.EntityResourceRef{}, _q.predicates...),
 		withWorkspace: _q.withWorkspace.Clone(),
+		withUser:      _q.withUser.Clone(),
 		withEntity:    _q.withEntity.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -319,6 +344,17 @@ func (_q *EntityResourceRefQuery) WithWorkspace(opts ...func(*RevenueWorkspaceQu
 		opt(query)
 	}
 	_q.withWorkspace = query
+	return _q
+}
+
+// WithUser tells the query-builder to eager-load the nodes that are connected to
+// the "user" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *EntityResourceRefQuery) WithUser(opts ...func(*UserQuery)) *EntityResourceRefQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withUser = query
 	return _q
 }
 
@@ -418,12 +454,13 @@ func (_q *EntityResourceRefQuery) sqlAll(ctx context.Context, hooks ...queryHook
 		nodes       = []*EntityResourceRef{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			_q.withWorkspace != nil,
+			_q.withUser != nil,
 			_q.withEntity != nil,
 		}
 	)
-	if _q.withWorkspace != nil || _q.withEntity != nil {
+	if _q.withWorkspace != nil || _q.withUser != nil || _q.withEntity != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -453,6 +490,12 @@ func (_q *EntityResourceRefQuery) sqlAll(ctx context.Context, hooks ...queryHook
 	if query := _q.withWorkspace; query != nil {
 		if err := _q.loadWorkspace(ctx, query, nodes, nil,
 			func(n *EntityResourceRef, e *RevenueWorkspace) { n.Edges.Workspace = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withUser; query != nil {
+		if err := _q.loadUser(ctx, query, nodes, nil,
+			func(n *EntityResourceRef, e *User) { n.Edges.User = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -495,6 +538,38 @@ func (_q *EntityResourceRefQuery) loadWorkspace(ctx context.Context, query *Reve
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "revenue_workspace_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *EntityResourceRefQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*EntityResourceRef, init func(*EntityResourceRef), assign func(*EntityResourceRef, *User)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*EntityResourceRef)
+	for i := range nodes {
+		if nodes[i].user_entity_resource_refs == nil {
+			continue
+		}
+		fk := *nodes[i].user_entity_resource_refs
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(user.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "user_entity_resource_refs" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

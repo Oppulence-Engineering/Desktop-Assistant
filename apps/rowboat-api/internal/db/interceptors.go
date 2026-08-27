@@ -29,6 +29,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/intercept"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
@@ -147,6 +150,9 @@ var tenantUserColumns = map[string]string{
 	ent.TypePersonSuppression:                 personsuppression.UserColumn,
 	ent.TypePersonAttribute:                   personattribute.UserColumn,
 	ent.TypePersonMergeCandidate:              personmergecandidate.UserColumn,
+	ent.TypeEntity:                            entity.UserColumn,
+	ent.TypeEntityResourceRef:                 entityresourceref.UserColumn,
+	ent.TypeEntityIdentifier:                  entityidentifier.UserColumn,
 }
 
 // workspaceTenantColumns identifies revenue entities whose authorization is
@@ -188,6 +194,9 @@ var workspaceTenantColumns = map[string]string{
 	// No user edge: a rollup is derived, owned by the workspace, never authored.
 	ent.TypePersonInteractionStat: personinteractionstat.WorkspaceColumn,
 	ent.TypePersonMergeCandidate:  personmergecandidate.WorkspaceColumn,
+	ent.TypeEntity:                entity.WorkspaceColumn,
+	ent.TypeEntityResourceRef:     entityresourceref.WorkspaceColumn,
+	ent.TypeEntityIdentifier:      entityidentifier.WorkspaceColumn,
 }
 
 // ErrNoViewer is returned when a per-user entity is queried with neither an
@@ -450,6 +459,27 @@ func registerInterceptors(client *ent.Client, log *zap.Logger) {
 		func(ctx context.Context, q *ent.RelationshipQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(relationship.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.Entity.Intercept(intercept.TraverseEntity(
+		func(ctx context.Context, q *ent.EntityQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(entity.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.EntityResourceRef.Intercept(intercept.TraverseEntityResourceRef(
+		func(ctx context.Context, q *ent.EntityResourceRefQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(entityresourceref.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.EntityIdentifier.Intercept(intercept.TraverseEntityIdentifier(
+		func(ctx context.Context, q *ent.EntityIdentifierQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(entityidentifier.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 

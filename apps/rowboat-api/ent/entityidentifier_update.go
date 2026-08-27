@@ -105,6 +105,9 @@ func (_u *EntityIdentifierUpdate) check() error {
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EntityIdentifier.workspace"`)
 	}
+	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "EntityIdentifier.user"`)
+	}
 	if _u.mutation.EntityCleared() && len(_u.mutation.EntityIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EntityIdentifier.entity"`)
 	}
@@ -262,6 +265,9 @@ func (_u *EntityIdentifierUpdateOne) defaults() error {
 func (_u *EntityIdentifierUpdateOne) check() error {
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EntityIdentifier.workspace"`)
+	}
+	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "EntityIdentifier.user"`)
 	}
 	if _u.mutation.EntityCleared() && len(_u.mutation.EntityIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "EntityIdentifier.entity"`)

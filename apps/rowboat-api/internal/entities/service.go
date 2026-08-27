@@ -17,43 +17,60 @@ import (
 	workspacepred "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/entitymetrics"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var (
-	ErrNotFound  = errors.New("entity not found")
+	// ErrNotFound indicates that an entity is absent from the authorized workspace.
+	ErrNotFound = errors.New("entity not found")
+	// ErrAmbiguous indicates that deterministic evidence matched multiple entities.
 	ErrAmbiguous = errors.New("entity reconciliation ambiguous")
-	ErrConflict  = errors.New("entity version conflict")
+	// ErrConflict indicates an optimistic-lock or uniqueness conflict.
+	ErrConflict = errors.New("entity version conflict")
+	// ErrForbidden indicates that the caller cannot access the entity workspace.
 	ErrForbidden = errors.New("entity operation forbidden")
 )
 
 var ulidRE = regexp.MustCompile(`^[0-9A-HJKMNP-TV-Z]{26}$`)
 var identifierFingerprintRE = regexp.MustCompile(`^sha256:v1:[0-9a-f]{64}$`)
+var identifierKeyRE = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_.-]{0,63}$`)
 var resourceRefPartRE = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,63}$`)
 
+// Operation identifies the entity capability being authorized.
 type Operation string
 
 const (
-	OperationRead  Operation = "read"
+	// OperationRead authorizes entity projection reads and reverse resolution.
+	OperationRead Operation = "read"
+	// OperationWrite authorizes projection upserts and merges.
 	OperationWrite Operation = "write"
 )
 
+// Scope binds an entity operation to one workspace and authenticated user.
 type Scope struct {
 	Workspace *ent.RevenueWorkspace
 	User      *ent.User
 }
+
+// ResolveScope resolves the authorized entity workspace for a request.
 type ResolveScope func(context.Context) (Scope, error)
+
+// Authorize enforces the operation-specific workspace capability.
 type Authorize func(context.Context, Scope, Operation) error
 
+// Service owns entity projection validation, reconciliation, and persistence.
 type Service struct {
 	client    *ent.Client
 	resolve   ResolveScope
 	authorize Authorize
 }
 
+// New constructs an entity service with explicit scope and capability hooks.
 func New(client *ent.Client, resolve ResolveScope, authorize Authorize) *Service {
 	return &Service{client: client, resolve: resolve, authorize: authorize}
 }
 
+// Projection is the fixed privacy-safe payload accepted from a device.
 type Projection struct {
 	ID              string              `json:"id"`
 	Kind            string              `json:"kind"`
@@ -63,6 +80,8 @@ type Projection struct {
 	OneLineSummary  string              `json:"oneLineSummary,omitempty"`
 	ExpectedVersion *int                `json:"expectedVersion,omitempty"`
 }
+
+// View is the public entity projection or durable merge tombstone.
 type View struct {
 	ID                string              `json:"id"`
 	Kind              string              `json:"kind"`
@@ -74,12 +93,16 @@ type View struct {
 	CanonicalEntityID string              `json:"canonicalEntityId,omitempty"`
 	Version           int                 `json:"version"`
 }
+
+// MergeInput requests a compare-and-swap merge of two entity IDs.
 type MergeInput struct {
 	SourceID              string `json:"sourceId"`
 	TargetID              string `json:"targetId"`
 	ExpectedSourceVersion *int   `json:"expectedSourceVersion,omitempty"`
 	ExpectedTargetVersion *int   `json:"expectedTargetVersion,omitempty"`
 }
+
+// MergeResult returns the canonical entity and durable source tombstone.
 type MergeResult struct {
 	Canonical  View `json:"canonical"`
 	Tombstone  View `json:"tombstone"`
@@ -121,25 +144,18 @@ func normalizeProjection(p Projection) (Projection, error) {
 	}
 	refs := map[string]struct{}{}
 	for _, raw := range p.ResourceRefs {
-		r := strings.TrimSpace(raw)
-		parts := strings.SplitN(r, ":", 3)
-		if len(parts) != 3 || !resourceRefPartRE.MatchString(parts[0]) || !resourceRefPartRE.MatchString(parts[1]) || strings.TrimSpace(parts[2]) == "" || len(parts[2]) > 256 {
-			return p, fmt.Errorf("invalid resourceRef")
+		r, err := normalizeResourceRef(raw)
+		if err != nil {
+			return p, err
 		}
-		for _, character := range parts[2] {
-			if character < 32 || character == 127 {
-				return p, fmt.Errorf("invalid resourceRef")
-			}
-		}
-		r = parts[0] + ":" + parts[1] + ":" + strings.TrimSpace(parts[2])
 		refs[r] = struct{}{}
 	}
 	p.ResourceRefs = sortedKeys(refs)
 	out := map[string][]string{}
 	totalValues := 0
 	for k, vals := range p.Identifiers {
-		k = strings.TrimSpace(k)
-		if k == "" || len(k) > 64 || len(vals) > 100 {
+		k = canonicalIdentifierKey(k)
+		if !identifierKeyRE.MatchString(k) || len(vals) > 100 {
 			return p, fmt.Errorf("invalid identifier")
 		}
 		totalValues += len(vals)
@@ -159,6 +175,33 @@ func normalizeProjection(p Projection) (Projection, error) {
 	p.Identifiers = out
 	return p, nil
 }
+
+func normalizeResourceRef(raw string) (string, error) {
+	ref := strings.TrimSpace(raw)
+	parts := strings.SplitN(ref, ":", 3)
+	if len(parts) != 3 || !resourceRefPartRE.MatchString(parts[0]) || !resourceRefPartRE.MatchString(parts[1]) || strings.TrimSpace(parts[2]) == "" || len(parts[2]) > 256 {
+		return "", fmt.Errorf("invalid resourceRef")
+	}
+	for _, character := range parts[2] {
+		if character < 32 || character == 127 {
+			return "", fmt.Errorf("invalid resourceRef")
+		}
+	}
+	return parts[0] + ":" + parts[1] + ":" + strings.TrimSpace(parts[2]), nil
+}
+
+func canonicalIdentifierKey(raw string) string {
+	key := strings.TrimSpace(raw)
+	compact := strings.NewReplacer("_", "", "-", "", " ", "").Replace(strings.ToLower(key))
+	switch compact {
+	case "emaildomain", "emaildomains", "domain":
+		return "emailDomains"
+	case "taxid", "taxids":
+		return "taxIds"
+	default:
+		return key
+	}
+}
 func sortedKeys(m map[string]struct{}) []string {
 	out := make([]string, 0, len(m))
 	for k := range m {
@@ -171,12 +214,17 @@ func view(e *ent.Entity) View {
 	return View{ID: e.EntityID, Kind: e.Kind, DisplayName: e.DisplayName, ResourceRefs: e.ResourceRefs, Identifiers: e.Identifiers, OneLineSummary: e.OneLineSummary, Status: e.Status, CanonicalEntityID: e.CanonicalEntityID, Version: e.Version}
 }
 
+// Get returns one entity within the caller's authorized workspace.
 func (s *Service) Get(ctx context.Context, id string) (View, error) {
+	id = strings.TrimSpace(id)
+	if !ulidRE.MatchString(id) {
+		return View{}, fmt.Errorf("invalid entity ULID")
+	}
 	sc, err := s.scope(ctx, OperationRead)
 	if err != nil {
 		return View{}, err
 	}
-	e, err := s.client.Entity.Query().Where(entitypred.EntityIDEQ(strings.TrimSpace(id)), entitypred.HasWorkspaceWith(workspacepred.IDEQ(sc.Workspace.ID))).Only(ctx)
+	e, err := s.client.Entity.Query().Where(entitypred.EntityIDEQ(id), entitypred.HasWorkspaceWith(workspacepred.IDEQ(sc.Workspace.ID))).Only(ctx)
 	if ent.IsNotFound(err) {
 		return View{}, ErrNotFound
 	}
@@ -186,14 +234,16 @@ func (s *Service) Get(ctx context.Context, id string) (View, error) {
 	entitymetrics.SpineSync.WithLabelValues("down").Inc()
 	return view(e), nil
 }
+
+// ResolveRef reverse-resolves an exact external reference within one workspace.
 func (s *Service) ResolveRef(ctx context.Context, ref string) (View, error) {
-	sc, err := s.scope(ctx, OperationRead)
+	ref, err := normalizeResourceRef(ref)
 	if err != nil {
 		return View{}, err
 	}
-	ref = strings.TrimSpace(ref)
-	if ref == "" {
-		return View{}, fmt.Errorf("ref is required")
+	sc, err := s.scope(ctx, OperationRead)
+	if err != nil {
+		return View{}, err
 	}
 	row, err := s.client.EntityResourceRef.Query().
 		Where(refpred.RefEQ(ref), refpred.HasWorkspaceWith(workspacepred.IDEQ(sc.Workspace.ID)), refpred.HasEntityWith(entitypred.StatusEQ("active"))).
@@ -256,7 +306,7 @@ func findMatches(ctx context.Context, refs *ent.EntityResourceRefClient, identif
 	return out, nil
 }
 
-func syncNormalized(ctx context.Context, refs *ent.EntityResourceRefClient, identifiers *ent.EntityIdentifierClient, workspace *ent.RevenueWorkspace, entity *ent.Entity, resourceRefs []string, values map[string][]string) error {
+func syncNormalized(ctx context.Context, refs *ent.EntityResourceRefClient, identifiers *ent.EntityIdentifierClient, workspace *ent.RevenueWorkspace, actor *ent.User, entity *ent.Entity, resourceRefs []string, values map[string][]string) error {
 	existingRefs, err := refs.Query().Where(refpred.HasEntityWith(entitypred.IDEQ(entity.ID))).All(ctx)
 	if err != nil {
 		return err
@@ -269,7 +319,7 @@ func syncNormalized(ctx context.Context, refs *ent.EntityResourceRefClient, iden
 		if _, ok := seenRefs[ref]; ok {
 			continue
 		}
-		if _, err := refs.Create().SetRef(ref).SetWorkspace(workspace).SetEntity(entity).Save(ctx); err != nil {
+		if _, err := refs.Create().SetRef(ref).SetWorkspace(workspace).SetUser(actor).SetEntity(entity).Save(ctx); err != nil {
 			return err
 		}
 	}
@@ -287,7 +337,7 @@ func syncNormalized(ctx context.Context, refs *ent.EntityResourceRefClient, iden
 			if _, ok := seenIdentifiers[compound]; ok {
 				continue
 			}
-			if _, err := identifiers.Create().SetKey(key).SetFingerprint(fingerprint).SetWorkspace(workspace).SetEntity(entity).Save(ctx); err != nil {
+			if _, err := identifiers.Create().SetKey(key).SetFingerprint(fingerprint).SetWorkspace(workspace).SetUser(actor).SetEntity(entity).Save(ctx); err != nil {
 				return err
 			}
 		}
@@ -295,17 +345,64 @@ func syncNormalized(ctx context.Context, refs *ent.EntityResourceRefClient, iden
 	return nil
 }
 
+func updateEntityCAS(ctx context.Context, tx *ent.Tx, current *ent.Entity, apply func(*ent.EntityUpdate)) (*ent.Entity, bool, error) {
+	update := tx.Entity.Update().Where(entitypred.IDEQ(current.ID), entitypred.VersionEQ(current.Version))
+	apply(update)
+	count, err := update.SetVersion(current.Version + 1).Save(ctx)
+	if err != nil {
+		return nil, retryableEntityTxError(err), err
+	}
+	if count != 1 {
+		return nil, true, nil
+	}
+	updated, err := tx.Entity.Get(ctx, current.ID)
+	return updated, false, err
+}
+
+func retryableEntityTxError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if ent.IsConstraintError(err) {
+		return true
+	}
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		switch pgErr.Code {
+		case "40001", "40P01", "23505":
+			return true
+		}
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "database is locked") || strings.Contains(message, "database table is locked")
+}
+
+func setCreateSummary(create *ent.EntityCreate, summary string) {
+	if summary != "" {
+		create.SetOneLineSummary(summary)
+	}
+}
+
+func setUpdateSummary(update *ent.EntityUpdate, summary string) {
+	if summary == "" {
+		update.ClearOneLineSummary()
+		return
+	}
+	update.SetOneLineSummary(summary)
+}
+
+// Upsert validates, converges, and stores one device projection.
 func (s *Service) Upsert(ctx context.Context, pathID string, p Projection) (View, error) {
+	p.ID = strings.TrimSpace(pathID)
+	p, err := normalizeProjection(p)
+	if err != nil {
+		return View{}, err
+	}
 	sc, err := s.scope(ctx, OperationWrite)
 	if err != nil {
 		return View{}, err
 	}
-	p.ID = strings.TrimSpace(pathID)
-	p, err = normalizeProjection(p)
-	if err != nil {
-		return View{}, err
-	}
-	for attempt := 0; attempt < 2; attempt++ {
+	for attempt := 0; attempt < 5; attempt++ {
 		result, retry, upsertErr := s.upsertOnce(ctx, sc, p)
 		if !retry {
 			return result, upsertErr
@@ -326,6 +423,30 @@ func (s *Service) upsertOnce(ctx context.Context, sc Scope, p Projection) (View,
 		return View{}, false, err
 	}
 	if err == nil && existing.Status == "merged" {
+		canonical, canonicalErr := tx.Entity.Query().Where(
+			entitypred.EntityIDEQ(existing.CanonicalEntityID),
+			entitypred.StatusEQ("active"),
+			entitypred.HasWorkspaceWith(workspacepred.IDEQ(sc.Workspace.ID)),
+		).Only(ctx)
+		if canonicalErr != nil {
+			return View{}, false, canonicalErr
+		}
+		mergedRefs := union(canonical.ResourceRefs, union(existing.ResourceRefs, p.ResourceRefs))
+		mergedIdentifiers := unionIDs(canonical.Identifiers, unionIDs(existing.Identifiers, p.Identifiers))
+		canonical, retry, updateErr := updateEntityCAS(mutationCtx, tx, canonical, func(update *ent.EntityUpdate) {
+			update.SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers)
+		})
+		if retry || updateErr != nil {
+			return View{}, retry, updateErr
+		}
+		if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, sc.User, canonical, mergedRefs, mergedIdentifiers); err != nil {
+			return View{}, retryableEntityTxError(err), err
+		}
+		if err := tx.Commit(); err != nil {
+			return View{}, retryableEntityTxError(err), err
+		}
+		entitymetrics.Resolve.WithLabelValues("linked").Inc()
+		entitymetrics.SpineSync.WithLabelValues("up").Inc()
 		return view(existing), false, nil
 	}
 	if err == nil && p.ExpectedVersion != nil && *p.ExpectedVersion != existing.Version {
@@ -363,31 +484,36 @@ func (s *Service) upsertOnce(ctx context.Context, sc Scope, p Projection) (View,
 			}
 			var canonical *ent.Entity
 			if existing == nil {
-				canonical, err = tx.Entity.Create().
+				create := tx.Entity.Create().
 					SetEntityID(p.ID).SetKind(p.Kind).SetDisplayName(p.DisplayName).
 					SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers).
-					SetOneLineSummary(p.OneLineSummary).SetStatus("active").
-					SetWorkspace(sc.Workspace).SetUser(sc.User).Save(mutationCtx)
+					SetStatus("active").SetWorkspace(sc.Workspace).SetUser(sc.User)
+				setCreateSummary(create, p.OneLineSummary)
+				canonical, err = create.Save(mutationCtx)
 			} else {
-				canonical, err = tx.Entity.UpdateOne(existing).
-					SetKind(p.Kind).SetDisplayName(p.DisplayName).
-					SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers).
-					SetOneLineSummary(p.OneLineSummary).SetVersion(existing.Version + 1).
-					Save(mutationCtx)
+				var retry bool
+				canonical, retry, err = updateEntityCAS(mutationCtx, tx, existing, func(update *ent.EntityUpdate) {
+					update.SetKind(p.Kind).SetDisplayName(p.DisplayName).
+						SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers)
+					setUpdateSummary(update, p.OneLineSummary)
+				})
+				if retry {
+					return View{}, true, nil
+				}
 			}
 			if err != nil {
-				return View{}, ent.IsConstraintError(err), err
+				return View{}, retryableEntityTxError(err), err
 			}
-			if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, canonical, mergedRefs, mergedIdentifiers); err != nil {
-				return View{}, ent.IsConstraintError(err), err
+			if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, sc.User, canonical, mergedRefs, mergedIdentifiers); err != nil {
+				return View{}, retryableEntityTxError(err), err
 			}
-			if _, err := tx.Entity.UpdateOne(matched).
-				SetStatus("merged").SetCanonicalEntityID(canonical.EntityID).
-				SetVersion(matched.Version + 1).Save(mutationCtx); err != nil {
-				return View{}, false, err
+			if _, retry, err := updateEntityCAS(mutationCtx, tx, matched, func(update *ent.EntityUpdate) {
+				update.SetStatus("merged").SetCanonicalEntityID(canonical.EntityID)
+			}); retry || err != nil {
+				return View{}, retry, err
 			}
 			if err := tx.Commit(); err != nil {
-				return View{}, ent.IsConstraintError(err), err
+				return View{}, retryableEntityTxError(err), err
 			}
 			entitymetrics.Resolve.WithLabelValues("linked").Inc()
 			entitymetrics.SpineSync.WithLabelValues("up").Inc()
@@ -411,36 +537,42 @@ func (s *Service) upsertOnce(ctx context.Context, sc Scope, p Projection) (View,
 				return View{}, false, err
 			}
 		}
-		canonical, err = tx.Entity.UpdateOne(canonical).
-			SetResourceRefs(mergedRefs).
-			SetIdentifiers(mergedIdentifiers).
-			SetVersion(canonical.Version + 1).
-			Save(mutationCtx)
+		var retry bool
+		canonical, retry, err = updateEntityCAS(mutationCtx, tx, canonical, func(update *ent.EntityUpdate) {
+			update.SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers)
+		})
+		if retry {
+			return View{}, true, nil
+		}
 		if err != nil {
 			return View{}, false, err
 		}
-		if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, canonical, mergedRefs, mergedIdentifiers); err != nil {
-			return View{}, ent.IsConstraintError(err), err
+		if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, sc.User, canonical, mergedRefs, mergedIdentifiers); err != nil {
+			return View{}, retryableEntityTxError(err), err
 		}
 		if existing == nil {
-			existing, err = tx.Entity.Create().
+			create := tx.Entity.Create().
 				SetEntityID(p.ID).SetKind(p.Kind).SetDisplayName(p.DisplayName).
 				SetResourceRefs(p.ResourceRefs).SetIdentifiers(p.Identifiers).
-				SetOneLineSummary(p.OneLineSummary).SetStatus("merged").
-				SetCanonicalEntityID(canonical.EntityID).SetWorkspace(sc.Workspace).SetUser(sc.User).
-				Save(mutationCtx)
-		} else {
-			existing, err = tx.Entity.UpdateOne(existing).
 				SetStatus("merged").SetCanonicalEntityID(canonical.EntityID).
-				SetResourceRefs(union(existing.ResourceRefs, p.ResourceRefs)).
-				SetIdentifiers(unionIDs(existing.Identifiers, p.Identifiers)).
-				SetVersion(existing.Version + 1).Save(mutationCtx)
+				SetWorkspace(sc.Workspace).SetUser(sc.User)
+			setCreateSummary(create, p.OneLineSummary)
+			existing, err = create.Save(mutationCtx)
+		} else {
+			existing, retry, err = updateEntityCAS(mutationCtx, tx, existing, func(update *ent.EntityUpdate) {
+				update.SetStatus("merged").SetCanonicalEntityID(canonical.EntityID).
+					SetResourceRefs(union(existing.ResourceRefs, p.ResourceRefs)).
+					SetIdentifiers(unionIDs(existing.Identifiers, p.Identifiers))
+			})
+			if retry {
+				return View{}, true, nil
+			}
 		}
 		if err != nil {
 			return View{}, false, err
 		}
 		if err := tx.Commit(); err != nil {
-			return View{}, ent.IsConstraintError(err), err
+			return View{}, retryableEntityTxError(err), err
 		}
 		entitymetrics.Resolve.WithLabelValues("linked").Inc()
 		entitymetrics.SpineSync.WithLabelValues("up").Inc()
@@ -448,38 +580,43 @@ func (s *Service) upsertOnce(ctx context.Context, sc Scope, p Projection) (View,
 	}
 
 	if existing == nil {
-		existing, err = tx.Entity.Create().
+		create := tx.Entity.Create().
 			SetEntityID(p.ID).SetKind(p.Kind).SetDisplayName(p.DisplayName).
 			SetResourceRefs(p.ResourceRefs).SetIdentifiers(p.Identifiers).
-			SetOneLineSummary(p.OneLineSummary).SetStatus("active").
-			SetWorkspace(sc.Workspace).SetUser(sc.User).Save(mutationCtx)
+			SetStatus("active").SetWorkspace(sc.Workspace).SetUser(sc.User)
+		setCreateSummary(create, p.OneLineSummary)
+		existing, err = create.Save(mutationCtx)
 	} else {
 		mergedRefs := union(existing.ResourceRefs, p.ResourceRefs)
 		mergedIdentifiers := unionIDs(existing.Identifiers, p.Identifiers)
 		if existing.Kind == p.Kind && existing.DisplayName == p.DisplayName && reflect.DeepEqual(existing.ResourceRefs, mergedRefs) && reflect.DeepEqual(existing.Identifiers, mergedIdentifiers) && existing.OneLineSummary == p.OneLineSummary {
-			if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, existing, mergedRefs, mergedIdentifiers); err != nil {
-				return View{}, ent.IsConstraintError(err), err
+			if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, sc.User, existing, mergedRefs, mergedIdentifiers); err != nil {
+				return View{}, retryableEntityTxError(err), err
 			}
 			if err := tx.Commit(); err != nil {
-				return View{}, ent.IsConstraintError(err), err
+				return View{}, retryableEntityTxError(err), err
 			}
 			entitymetrics.SpineSync.WithLabelValues("up").Inc()
 			return view(existing), false, nil
 		}
-		existing, err = tx.Entity.UpdateOne(existing).
-			SetKind(p.Kind).SetDisplayName(p.DisplayName).
-			SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers).
-			SetOneLineSummary(p.OneLineSummary).SetVersion(existing.Version + 1).
-			Save(mutationCtx)
+		var retry bool
+		existing, retry, err = updateEntityCAS(mutationCtx, tx, existing, func(update *ent.EntityUpdate) {
+			update.SetKind(p.Kind).SetDisplayName(p.DisplayName).
+				SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers)
+			setUpdateSummary(update, p.OneLineSummary)
+		})
+		if retry {
+			return View{}, true, nil
+		}
 	}
 	if err != nil {
-		return View{}, ent.IsConstraintError(err), err
+		return View{}, retryableEntityTxError(err), err
 	}
-	if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, existing, existing.ResourceRefs, existing.Identifiers); err != nil {
-		return View{}, ent.IsConstraintError(err), err
+	if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, sc.User, existing, existing.ResourceRefs, existing.Identifiers); err != nil {
+		return View{}, retryableEntityTxError(err), err
 	}
 	if err := tx.Commit(); err != nil {
-		return View{}, ent.IsConstraintError(err), err
+		return View{}, retryableEntityTxError(err), err
 	}
 	entitymetrics.Resolve.WithLabelValues("unlinked").Inc()
 	entitymetrics.SpineSync.WithLabelValues("up").Inc()
@@ -503,15 +640,20 @@ func unionIDs(a, b map[string][]string) map[string][]string {
 	}
 	return out
 }
+
+// Merge moves source identity evidence to target and leaves a durable alias.
 func (s *Service) Merge(ctx context.Context, in MergeInput) (MergeResult, error) {
-	sc, err := s.scope(ctx, OperationWrite)
-	if err != nil {
-		return MergeResult{}, err
-	}
 	in.SourceID = strings.TrimSpace(in.SourceID)
 	in.TargetID = strings.TrimSpace(in.TargetID)
 	if in.SourceID == "" || in.TargetID == "" || in.SourceID == in.TargetID {
 		return MergeResult{}, fmt.Errorf("distinct sourceId and targetId are required")
+	}
+	if !ulidRE.MatchString(in.SourceID) || !ulidRE.MatchString(in.TargetID) {
+		return MergeResult{}, fmt.Errorf("invalid entity ULID")
+	}
+	sc, err := s.scope(ctx, OperationWrite)
+	if err != nil {
+		return MergeResult{}, err
 	}
 	mutationCtx := auth.WithInternalOnly(ctx)
 	tx, err := s.client.Tx(mutationCtx)
@@ -531,8 +673,13 @@ func (s *Service) Merge(ctx context.Context, in MergeInput) (MergeResult, error)
 		if er != nil {
 			return MergeResult{}, er
 		}
-		_ = tx.Commit()
+		if err := tx.Commit(); err != nil {
+			return MergeResult{}, err
+		}
 		return MergeResult{Canonical: view(target), Tombstone: view(src), Idempotent: true}, nil
+	}
+	if src.Status == "merged" {
+		return MergeResult{}, ErrConflict
 	}
 	target, err := tx.Entity.Query().Where(entitypred.EntityIDEQ(in.TargetID), entitypred.StatusEQ("active"), entitypred.HasWorkspaceWith(workspacepred.IDEQ(sc.Workspace.ID))).Only(ctx)
 	if ent.IsNotFound(err) {
@@ -554,24 +701,20 @@ func (s *Service) Merge(ctx context.Context, in MergeInput) (MergeResult, error)
 	if err != nil {
 		return MergeResult{}, ErrConflict
 	}
-	target, err = tx.Entity.UpdateOne(target).SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers).SetVersion(target.Version + 1).Save(mutationCtx)
-	if err != nil {
+	target, retry, err := updateEntityCAS(mutationCtx, tx, target, func(update *ent.EntityUpdate) {
+		update.SetResourceRefs(mergedRefs).SetIdentifiers(mergedIdentifiers)
+	})
+	if retry || err != nil {
 		return MergeResult{}, ErrConflict
 	}
-	if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, target, mergedRefs, mergedIdentifiers); err != nil {
+	if err := syncNormalized(mutationCtx, tx.EntityResourceRef, tx.EntityIdentifier, sc.Workspace, sc.User, target, mergedRefs, mergedIdentifiers); err != nil {
 		return MergeResult{}, ErrConflict
 	}
-	_, err = tx.Entity.UpdateOne(src).SetStatus("merged").SetCanonicalEntityID(target.EntityID).SetVersion(src.Version + 1).Save(mutationCtx)
-	if err != nil {
+	src, retry, err = updateEntityCAS(mutationCtx, tx, src, func(update *ent.EntityUpdate) {
+		update.SetStatus("merged").SetCanonicalEntityID(target.EntityID)
+	})
+	if retry || err != nil {
 		return MergeResult{}, ErrConflict
-	}
-	target, err = tx.Entity.Get(mutationCtx, target.ID)
-	if err != nil {
-		return MergeResult{}, err
-	}
-	src, err = tx.Entity.Get(mutationCtx, src.ID)
-	if err != nil {
-		return MergeResult{}, err
 	}
 	if err = tx.Commit(); err != nil {
 		return MergeResult{}, err

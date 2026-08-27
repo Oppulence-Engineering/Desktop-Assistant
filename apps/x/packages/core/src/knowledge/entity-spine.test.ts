@@ -7,12 +7,15 @@ import { writeJsonAtomic } from "../filesystem/atomic_write.js";
 import { DEFAULT_ENTITY_CONFIG, ensureEntityConfig } from "./entity-config.js";
 import { ensureEntityIdentity, mintEntityId, readEntityIdentity } from "./entity-identity.js";
 import { lookupEntities } from "./entity-lookup.js";
+import { registerEntityReadAdapter, registerEntityRefReadAdapter } from "./entity-resolver.js";
 import {
   buildEntityProjection,
   createEntitySpineClient,
   enqueueEntityProjection,
   flushEntityProjectionOutbox,
+  getEntitySpineHealth,
   resumeEntitySpineSync,
+  syncEntityNotes,
 } from "./entity-spine.js";
 
 const roots: string[] = [];
@@ -68,6 +71,13 @@ describe("entity spine desktop integration", () => {
       resolve: async () => undefined,
     });
     expect(offline).toEqual({ sent: 0, remaining: 1 });
+    const outboxFile = path.join(root, "config", "entity-projection-outbox.json");
+    const queued = JSON.parse(await fs.readFile(outboxFile, "utf8")) as {
+      schema: 1;
+      items: Array<Record<string, unknown>>;
+    };
+    queued.items[0].nextAttemptAt = new Date(0).toISOString();
+    await writeJsonAtomic(outboxFile, queued);
 
     const canonicalEntityId = mintEntityId(Date.now() + 1, Buffer.alloc(10, 9));
     let wire: Record<string, unknown> | undefined;
@@ -118,13 +128,40 @@ describe("entity spine desktop integration", () => {
       note,
       `---\nid: ${identity?.id}\nkind: company\nresourceRefs:\n  - conduit:customer:cus_1\n  - cadence:vendor:ven_2\nidentifiers: {}\n---\nPRIVATE BODY\n`,
     );
-    const results = await lookupEntities("Acme", root);
+    const unregisterConduit = registerEntityRefReadAdapter("conduit", async (ref) =>
+      ref === "conduit:customer:cus_1" ? { overdueDays: 22, balanceBand: "high" } : undefined,
+    );
+    const unregisterCadence = registerEntityRefReadAdapter("cadence", async (ref) =>
+      ref === "cadence:vendor:ven_2" ? { openPurchaseOrder: "PO-88" } : undefined,
+    );
+    const results = await (async () => {
+      try {
+        return await lookupEntities("Acme", root);
+      } finally {
+        unregisterConduit();
+        unregisterCadence();
+      }
+    })();
     expect(results[0].resourceRefs).toEqual(["cadence:vendor:ven_2", "conduit:customer:cus_1"]);
     expect(
       results[0].citations
         .filter((citation) => citation.type === "resource")
         .map((citation) => citation.product),
     ).toEqual(["cadence", "conduit"]);
+    expect(results[0].sourceFacts).toEqual([
+      {
+        ref: "cadence:vendor:ven_2",
+        product: "cadence",
+        recordType: "vendor",
+        facts: { openPurchaseOrder: "PO-88" },
+      },
+      {
+        ref: "conduit:customer:cus_1",
+        product: "conduit",
+        recordType: "customer",
+        facts: { overdueDays: 22, balanceBand: "high" },
+      },
+    ]);
     expect(JSON.stringify(results)).not.toContain("PRIVATE BODY");
   });
 
@@ -140,6 +177,37 @@ describe("entity spine desktop integration", () => {
       await fs.readFile(path.join(root, "config", "entity-projection-outbox.json"), "utf8"),
     ) as { items: unknown[] };
     expect(outbox.items).toHaveLength(1);
+  });
+
+  it("persists degraded health when outbox capacity rejects a new entity", async () => {
+    const { root, note } = await fixture();
+    const identity = await readEntityIdentity(note, path.join(root, "knowledge"));
+    await writeJsonAtomic(path.join(root, "config", "entity.json"), {
+      ...DEFAULT_ENTITY_CONFIG,
+      sharedSpine: true,
+    });
+    const projection = await buildEntityProjection(note, root);
+    if (!identity || !projection) throw new Error("missing fixture identity projection");
+    await writeJsonAtomic(path.join(root, "config", "entity-projection-outbox.json"), {
+      schema: 1,
+      items: Array.from({ length: 10_000 }, (_, index) => ({
+        id: `${identity.id}-${index}`,
+        notePath: `knowledge/Organizations/Queued-${index}.md`,
+        projection: { ...projection, id: `${identity.id}-${index}` },
+        queuedAt: new Date(0).toISOString(),
+        attempts: 0,
+      })),
+    });
+
+    await expect(enqueueEntityProjection(note, root)).rejects.toThrow(
+      "entity projection outbox is full",
+    );
+    expect(await getEntitySpineHealth(root)).toMatchObject({
+      status: "degraded",
+      remaining: 10_000,
+      deadLetters: 0,
+      lastError: "entity projection outbox is full",
+    });
   });
 
   it("honors the configured outbound allowlist while retaining protocol identity", async () => {
@@ -186,5 +254,139 @@ describe("entity spine desktop integration", () => {
     ) as { items: unknown[] };
     expect(outbox.items).toHaveLength(2);
     expect(await fs.readFile(note, "utf8")).toContain("PRIVATE NOTE BODY");
+  });
+
+  it("runs registered product read seams before projection sync", async () => {
+    const { root, note } = await fixture();
+    const content = await fs.readFile(note, "utf8");
+    await fs.writeFile(
+      note,
+      content.replace("identifiers: {}", "identifiers:\n  emailDomain: acme.com"),
+    );
+    const unregisterConduit = registerEntityReadAdapter("conduit", async () => [
+      {
+        product: "conduit",
+        type: "customer",
+        externalId: "cus_1",
+        identifiers: { emailDomain: "acme.com" },
+      },
+    ]);
+    const unregisterCadence = registerEntityReadAdapter("cadence", async () => [
+      {
+        product: "cadence",
+        type: "vendor",
+        externalId: "ven_2",
+        identifiers: { emailDomain: "acme.com" },
+      },
+    ]);
+    try {
+      await syncEntityNotes([note], root);
+    } finally {
+      unregisterConduit();
+      unregisterCadence();
+    }
+    expect((await readEntityIdentity(note, path.join(root, "knowledge")))?.resourceRefs).toEqual([
+      "cadence:vendor:ven_2",
+      "conduit:customer:cus_1",
+    ]);
+  });
+
+  it("quarantines a rejected projection without blocking later valid queue items", async () => {
+    const { root, note } = await fixture();
+    const second = path.join(root, "knowledge", "Organizations", "Beta.md");
+    await fs.writeFile(second, "# Beta\n");
+    await ensureEntityIdentity(second, path.join(root, "knowledge"));
+    await writeJsonAtomic(path.join(root, "config", "entity.json"), {
+      ...DEFAULT_ENTITY_CONFIG,
+      sharedSpine: true,
+    });
+    await enqueueEntityProjection(note, root);
+    await enqueueEntityProjection(second, root);
+
+    let calls = 0;
+    const server = http.createServer((_request, response) => {
+      calls += 1;
+      response.writeHead(calls === 1 ? 400 : 200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ status: "active", version: 1 }));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("missing server address");
+    try {
+      const client = createEntitySpineClient({
+        apiURL: `http://127.0.0.1:${address.port}`,
+        accessToken: async () => "token",
+      });
+      expect(await flushEntityProjectionOutbox(root, client)).toEqual({ sent: 1, remaining: 0 });
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+    expect(calls).toBe(2);
+    const deadLetters = JSON.parse(
+      await fs.readFile(path.join(root, "config", "entity-projection-dead-letter.json"), "utf8"),
+    ) as { items: Array<{ status?: number }> };
+    expect(deadLetters.items).toHaveLength(1);
+    expect(deadLetters.items[0].status).toBe(400);
+  });
+
+  it.each([409, 415])("quarantines HTTP %s and continues the queue", async (status) => {
+    const { root, note } = await fixture();
+    const second = path.join(root, "knowledge", "Organizations", `Beta-${status}.md`);
+    await fs.writeFile(second, "# Beta\n");
+    await ensureEntityIdentity(second, path.join(root, "knowledge"));
+    await writeJsonAtomic(path.join(root, "config", "entity.json"), {
+      ...DEFAULT_ENTITY_CONFIG,
+      sharedSpine: true,
+    });
+    await enqueueEntityProjection(note, root);
+    await enqueueEntityProjection(second, root);
+    let calls = 0;
+    const server = http.createServer((_request, response) => {
+      calls += 1;
+      response.writeHead(calls === 1 ? status : 200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ status: "active", version: 1 }));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("missing server address");
+    try {
+      const client = createEntitySpineClient({
+        apiURL: `http://127.0.0.1:${address.port}`,
+        accessToken: async () => "token",
+      });
+      expect(await flushEntityProjectionOutbox(root, client)).toEqual({ sent: 1, remaining: 0 });
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+    expect(calls).toBe(2);
+  });
+
+  it("records canonical collisions instead of duplicating a local entity id", async () => {
+    const { root, note } = await fixture();
+    const second = path.join(root, "knowledge", "Organizations", "Canonical.md");
+    await fs.writeFile(second, "# Canonical\n");
+    const canonical = await ensureEntityIdentity(second, path.join(root, "knowledge"));
+    const local = await readEntityIdentity(note, path.join(root, "knowledge"));
+    await writeJsonAtomic(path.join(root, "config", "entity.json"), {
+      ...DEFAULT_ENTITY_CONFIG,
+      sharedSpine: true,
+    });
+    await enqueueEntityProjection(note, root);
+    expect(
+      await flushEntityProjectionOutbox(root, {
+        put: async () => ({ canonicalId: canonical.identity?.id }),
+        get: async () => undefined,
+        resolve: async () => undefined,
+      }),
+    ).toEqual({ sent: 0, remaining: 0 });
+    expect((await readEntityIdentity(note, path.join(root, "knowledge")))?.id).toBe(local?.id);
+    const conflicts = JSON.parse(
+      await fs.readFile(path.join(root, "config", "entity-canonical-conflicts.json"), "utf8"),
+    ) as { conflicts: Array<{ canonicalEntityId: string }> };
+    expect(conflicts.conflicts[0].canonicalEntityId).toBe(canonical.identity?.id);
   });
 });

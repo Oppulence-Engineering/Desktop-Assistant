@@ -450,9 +450,12 @@ export async function writeText(inputPath: string, data: string, opts?: WriteTex
 
   const result = await withFileLock(resolved.resolvedPath, async () => {
     let previousIdentity: EntityIdentitySnapshot | undefined;
+    let entityFileExisted = false;
     const entityNote = entityKindForPath(resolved.resolvedPath, path.join(WorkDir, "knowledge"));
     if (entityNote) {
       try {
+        await fs.access(resolved.resolvedPath);
+        entityFileExisted = true;
         previousIdentity = await readEntityIdentity(
           resolved.resolvedPath,
           path.join(WorkDir, "knowledge"),
@@ -479,7 +482,9 @@ export async function writeText(inputPath: string, data: string, opts?: WriteTex
     }
 
     if (entityNote) {
-      await stabilizeEntityNoteMutation(resolved.resolvedPath, WorkDir, previousIdentity);
+      await stabilizeEntityNoteMutation(resolved.resolvedPath, WorkDir, previousIdentity, {
+        mintIfUntracked: !entityFileExisted,
+      });
     }
     const stats = await fs.lstat(resolved.resolvedPath);
     return { stat: statToSchema(stats), etag: computeEtag(stats.size, stats.mtimeMs) };

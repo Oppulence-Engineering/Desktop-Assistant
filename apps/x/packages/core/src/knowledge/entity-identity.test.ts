@@ -39,7 +39,7 @@ describe("entity identity", () => {
     expect(early < late).toBe(true);
   });
 
-  it("backfills entity notes once and preserves body bytes", async () => {
+  it("backfills entity notes restart-safely and preserves body bytes", async () => {
     const root = await workspace();
     const note = path.join(root, "knowledge", "Organizations", "Acme.md");
     const body = "# Acme\n\nPrivate body.\n";
@@ -54,7 +54,7 @@ describe("entity identity", () => {
     expect(content.endsWith(body)).toBe(true);
 
     const second = await backfillEntityIds(root);
-    expect(second).toMatchObject({ processed: 1, minted: 1 });
+    expect(second).toMatchObject({ processed: 1, minted: 0, duplicateReminted: 0 });
     expect(await fs.readFile(note, "utf8")).toBe(content);
   });
 
@@ -107,7 +107,28 @@ describe("entity identity", () => {
 
     const result = await backfillEntityIds(root);
     expect(result.duplicateReminted).toBe(1);
-    expect((await ensureEntityIdentity(first, path.join(root, "knowledge"))).identity?.id).toBe(duplicate);
-    expect((await ensureEntityIdentity(second, path.join(root, "knowledge"))).identity?.id).not.toBe(duplicate);
+    expect((await ensureEntityIdentity(first, path.join(root, "knowledge"))).identity?.id).toBe(
+      duplicate,
+    );
+    expect(
+      (await ensureEntityIdentity(second, path.join(root, "knowledge"))).identity?.id,
+    ).not.toBe(duplicate);
+  });
+
+  it("repairs duplicates introduced after the completion marker", async () => {
+    const root = await workspace();
+    const organizations = path.join(root, "knowledge", "Organizations");
+    const first = path.join(organizations, "A.md");
+    await fs.writeFile(first, "# A\n");
+    await backfillEntityIds(root);
+    const identity = await ensureEntityIdentity(first, path.join(root, "knowledge"));
+    const second = path.join(organizations, "B.md");
+    await fs.copyFile(first, second);
+
+    const result = await backfillEntityIds(root);
+    expect(result.duplicateReminted).toBe(1);
+    expect(
+      (await ensureEntityIdentity(second, path.join(root, "knowledge"))).identity?.id,
+    ).not.toBe(identity.identity?.id);
   });
 });

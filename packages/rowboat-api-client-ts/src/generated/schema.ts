@@ -5533,6 +5533,8 @@ export interface components {
        * @example 2026-06-04T20:39:00Z
        */
       updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
       workspace: components["schemas"]["RevenueWorkspace"];
     };
     /** @description Explicit idempotent merge with compare-and-swap versions. */
@@ -5616,6 +5618,8 @@ export interface components {
        * @example 2026-06-04T20:39:00Z
        */
       updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
       workspace: components["schemas"]["RevenueWorkspace"];
     };
     /** @description Minimal org-scoped entity spine projection. Raw note bodies and mirrored payloads are forbidden. */
@@ -10277,6 +10281,8 @@ export interface components {
        */
       email?: string;
       entities?: components["schemas"]["Entity"][];
+      entity_identifiers?: components["schemas"]["EntityIdentifier"][];
+      entity_resource_refs?: components["schemas"]["EntityResourceRef"][];
       google_watches?: components["schemas"]["GoogleWatch"][];
       /**
        * Format: uuid
@@ -13343,45 +13349,6 @@ export interface operations {
       401: components["responses"]["401"];
       403: components["responses"]["403"];
       404: components["responses"]["404"];
-      409: components["responses"]["409"];
-      /** @description Projection exceeds the 256 KiB request cap. */
-      413: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "code": "request_body_too_large",
-           *       "detail": "request body exceeds 262144 bytes",
-           *       "requestId": "req-abc123",
-           *       "status": 413,
-           *       "title": "Request Entity Too Large",
-           *       "type": "https://api.rowboat.dev/problems/request_body_too_large"
-           *     }
-           */
-          "application/problem+json": components["schemas"]["ErrorEnvelope"];
-        };
-      };
-      /** @description Content-Type must be application/json. */
-      415: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "code": "unsupported_media_type",
-           *       "detail": "Content-Type must be application/json",
-           *       "requestId": "req-abc123",
-           *       "status": 415,
-           *       "title": "Unsupported Media Type",
-           *       "type": "https://api.rowboat.dev/problems/unsupported_media_type"
-           *     }
-           */
-          "application/problem+json": components["schemas"]["ErrorEnvelope"];
-        };
-      };
       500: components["responses"]["500"];
     };
   };
@@ -13479,45 +13446,6 @@ export interface operations {
       401: components["responses"]["401"];
       403: components["responses"]["403"];
       404: components["responses"]["404"];
-      409: components["responses"]["409"];
-      /** @description Projection exceeds the 256 KiB request cap. */
-      413: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "code": "request_body_too_large",
-           *       "detail": "request body exceeds 262144 bytes",
-           *       "requestId": "req-abc123",
-           *       "status": 413,
-           *       "title": "Request Entity Too Large",
-           *       "type": "https://api.rowboat.dev/problems/request_body_too_large"
-           *     }
-           */
-          "application/problem+json": components["schemas"]["ErrorEnvelope"];
-        };
-      };
-      /** @description Content-Type must be application/json. */
-      415: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "code": "unsupported_media_type",
-           *       "detail": "Content-Type must be application/json",
-           *       "requestId": "req-abc123",
-           *       "status": 415,
-           *       "title": "Unsupported Media Type",
-           *       "type": "https://api.rowboat.dev/problems/unsupported_media_type"
-           *     }
-           */
-          "application/problem+json": components["schemas"]["ErrorEnvelope"];
-        };
-      };
       500: components["responses"]["500"];
     };
   };

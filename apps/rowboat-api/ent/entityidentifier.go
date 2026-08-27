@@ -12,6 +12,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -33,6 +34,7 @@ type EntityIdentifier struct {
 	Edges                         EntityIdentifierEdges `json:"edges"`
 	entity_normalized_identifiers *uuid.UUID
 	revenue_workspace_id          *uuid.UUID
+	user_entity_identifiers       *uuid.UUID
 	selectValues                  sql.SelectValues
 }
 
@@ -40,13 +42,15 @@ type EntityIdentifier struct {
 type EntityIdentifierEdges struct {
 	// Workspace holds the value of the workspace edge.
 	Workspace *RevenueWorkspace `json:"workspace,omitempty"`
+	// User holds the value of the user edge.
+	User *User `json:"user,omitempty"`
 	// Entity holds the value of the entity edge.
 	Entity *Entity `json:"entity,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 	// totalCount holds the count of the edges above.
-	totalCount [2]map[string]int
+	totalCount [3]map[string]int
 }
 
 // WorkspaceOrErr returns the Workspace value or an error if the edge
@@ -60,12 +64,23 @@ func (e EntityIdentifierEdges) WorkspaceOrErr() (*RevenueWorkspace, error) {
 	return nil, &NotLoadedError{edge: "workspace"}
 }
 
+// UserOrErr returns the User value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e EntityIdentifierEdges) UserOrErr() (*User, error) {
+	if e.User != nil {
+		return e.User, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: user.Label}
+	}
+	return nil, &NotLoadedError{edge: "user"}
+}
+
 // EntityOrErr returns the Entity value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
 func (e EntityIdentifierEdges) EntityOrErr() (*Entity, error) {
 	if e.Entity != nil {
 		return e.Entity, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: entity.Label}
 	}
 	return nil, &NotLoadedError{edge: "entity"}
@@ -85,6 +100,8 @@ func (*EntityIdentifier) scanValues(columns []string) ([]any, error) {
 		case entityidentifier.ForeignKeys[0]: // entity_normalized_identifiers
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case entityidentifier.ForeignKeys[1]: // revenue_workspace_id
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case entityidentifier.ForeignKeys[2]: // user_entity_identifiers
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -145,6 +162,13 @@ func (_m *EntityIdentifier) assignValues(columns []string, values []any) error {
 				_m.revenue_workspace_id = new(uuid.UUID)
 				*_m.revenue_workspace_id = *value.S.(*uuid.UUID)
 			}
+		case entityidentifier.ForeignKeys[2]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field user_entity_identifiers", values[i])
+			} else if value.Valid {
+				_m.user_entity_identifiers = new(uuid.UUID)
+				*_m.user_entity_identifiers = *value.S.(*uuid.UUID)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -161,6 +185,11 @@ func (_m *EntityIdentifier) Value(name string) (ent.Value, error) {
 // QueryWorkspace queries the "workspace" edge of the EntityIdentifier entity.
 func (_m *EntityIdentifier) QueryWorkspace() *RevenueWorkspaceQuery {
 	return NewEntityIdentifierClient(_m.config).QueryWorkspace(_m)
+}
+
+// QueryUser queries the "user" edge of the EntityIdentifier entity.
+func (_m *EntityIdentifier) QueryUser() *UserQuery {
+	return NewEntityIdentifierClient(_m.config).QueryUser(_m)
 }
 
 // QueryEntity queries the "entity" edge of the EntityIdentifier entity.

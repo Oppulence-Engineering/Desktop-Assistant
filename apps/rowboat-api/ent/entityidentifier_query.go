@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -27,6 +28,7 @@ type EntityIdentifierQuery struct {
 	inters        []Interceptor
 	predicates    []predicate.EntityIdentifier
 	withWorkspace *RevenueWorkspaceQuery
+	withUser      *UserQuery
 	withEntity    *EntityQuery
 	withFKs       bool
 	modifiers     []func(*sql.Selector)
@@ -82,6 +84,28 @@ func (_q *EntityIdentifierQuery) QueryWorkspace() *RevenueWorkspaceQuery {
 			sqlgraph.From(entityidentifier.Table, entityidentifier.FieldID, selector),
 			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, entityidentifier.WorkspaceTable, entityidentifier.WorkspaceColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryUser chains the current query on the "user" edge.
+func (_q *EntityIdentifierQuery) QueryUser() *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entityidentifier.Table, entityidentifier.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, entityidentifier.UserTable, entityidentifier.UserColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -304,6 +328,7 @@ func (_q *EntityIdentifierQuery) Clone() *EntityIdentifierQuery {
 		inters:        append([]Interceptor{}, _q.inters...),
 		predicates:    append([]predicate.EntityIdentifier{}, _q.predicates...),
 		withWorkspace: _q.withWorkspace.Clone(),
+		withUser:      _q.withUser.Clone(),
 		withEntity:    _q.withEntity.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -319,6 +344,17 @@ func (_q *EntityIdentifierQuery) WithWorkspace(opts ...func(*RevenueWorkspaceQue
 		opt(query)
 	}
 	_q.withWorkspace = query
+	return _q
+}
+
+// WithUser tells the query-builder to eager-load the nodes that are connected to
+// the "user" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *EntityIdentifierQuery) WithUser(opts ...func(*UserQuery)) *EntityIdentifierQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withUser = query
 	return _q
 }
 
@@ -418,12 +454,13 @@ func (_q *EntityIdentifierQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		nodes       = []*EntityIdentifier{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			_q.withWorkspace != nil,
+			_q.withUser != nil,
 			_q.withEntity != nil,
 		}
 	)
-	if _q.withWorkspace != nil || _q.withEntity != nil {
+	if _q.withWorkspace != nil || _q.withUser != nil || _q.withEntity != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -453,6 +490,12 @@ func (_q *EntityIdentifierQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 	if query := _q.withWorkspace; query != nil {
 		if err := _q.loadWorkspace(ctx, query, nodes, nil,
 			func(n *EntityIdentifier, e *RevenueWorkspace) { n.Edges.Workspace = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withUser; query != nil {
+		if err := _q.loadUser(ctx, query, nodes, nil,
+			func(n *EntityIdentifier, e *User) { n.Edges.User = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -495,6 +538,38 @@ func (_q *EntityIdentifierQuery) loadWorkspace(ctx context.Context, query *Reven
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "revenue_workspace_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *EntityIdentifierQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*EntityIdentifier, init func(*EntityIdentifier), assign func(*EntityIdentifier, *User)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*EntityIdentifier)
+	for i := range nodes {
+		if nodes[i].user_entity_identifiers == nil {
+			continue
+		}
+		fk := *nodes[i].user_entity_identifiers
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(user.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "user_entity_identifiers" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

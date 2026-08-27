@@ -41,16 +41,35 @@ describe("entity resolver", () => {
     expect(formatResourceRef({ product: "CADENCE", type: "vendor", externalId: "ven:5512" })).toBe(
       "cadence:vendor:ven:5512",
     );
-    expect(parseResourceRef("gmail:thread:1")).toEqual({ product: "gmail", type: "thread", externalId: "1" });
+    expect(parseResourceRef("gmail:thread:1")).toEqual({
+      product: "gmail",
+      type: "thread",
+      externalId: "1",
+    });
     expect(() => parseResourceRef("gmail.com:thread:1")).toThrow(/product/);
   });
 
   it("links two products deterministically and idempotently", async () => {
     const { root, note } = await fixture();
     const records: ProductEntityRecord[] = [
-      { product: "conduit", type: "customer", externalId: "cus_1", identifiers: { emailDomain: "ACME.com" } },
-      { product: "cadence", type: "vendor", externalId: "ven_2", identifiers: { taxId: "US-94-123" } },
-      { product: "eigen", type: "entity", externalId: "other", identifiers: { emailDomain: "other.example" } },
+      {
+        product: "conduit",
+        type: "customer",
+        externalId: "cus_1",
+        identifiers: { emailDomain: "ACME.com" },
+      },
+      {
+        product: "cadence",
+        type: "vendor",
+        externalId: "ven_2",
+        identifiers: { taxId: "US-94-123" },
+      },
+      {
+        product: "eigen",
+        type: "entity",
+        externalId: "other",
+        identifiers: { emailDomain: "other.example" },
+      },
     ];
     const first = await reconcileEntityNote({
       filePath: note,
@@ -70,8 +89,18 @@ describe("entity resolver", () => {
   it("persists ambiguous deterministic matches for human review without linking", async () => {
     const { root, note } = await fixture();
     const records: ProductEntityRecord[] = [
-      { product: "conduit", type: "customer", externalId: "cus_1", identifiers: { emailDomain: "acme.com" } },
-      { product: "conduit", type: "customer", externalId: "cus_2", identifiers: { emailDomain: "acme.com" } },
+      {
+        product: "conduit",
+        type: "customer",
+        externalId: "cus_1",
+        identifiers: { emailDomain: "acme.com" },
+      },
+      {
+        product: "conduit",
+        type: "customer",
+        externalId: "cus_2",
+        identifiers: { emailDomain: "acme.com" },
+      },
     ];
     const result = await reconcileEntityNote({
       filePath: note,
@@ -98,6 +127,8 @@ describe("entity resolver", () => {
       chosenRef: "conduit:customer:cus_2",
     });
     expect(accepted.status).toBe("accepted");
-    expect(noteFrontmatter(await fs.readFile(note, "utf8")).resourceRefs).toEqual(["conduit:customer:cus_2"]);
+    expect(noteFrontmatter(await fs.readFile(note, "utf8")).resourceRefs).toEqual([
+      "conduit:customer:cus_2",
+    ]);
   });
 });

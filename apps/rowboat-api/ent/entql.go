@@ -2820,6 +2820,18 @@ var schemaGraph = func() *sqlgraph.Schema {
 		"RevenueWorkspace",
 	)
 	graph.MustAddE(
+		"user",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   entityidentifier.UserTable,
+			Columns: []string{entityidentifier.UserColumn},
+			Bidi:    false,
+		},
+		"EntityIdentifier",
+		"User",
+	)
+	graph.MustAddE(
 		"entity",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -2842,6 +2854,18 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		"EntityResourceRef",
 		"RevenueWorkspace",
+	)
+	graph.MustAddE(
+		"user",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   entityresourceref.UserTable,
+			Columns: []string{entityresourceref.UserColumn},
+			Bidi:    false,
+		},
+		"EntityResourceRef",
+		"User",
 	)
 	graph.MustAddE(
 		"entity",
@@ -5412,18 +5436,6 @@ var schemaGraph = func() *sqlgraph.Schema {
 		"Person",
 	)
 	graph.MustAddE(
-		"entities",
-		&sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.EntitiesTable,
-			Columns: []string{user.EntitiesColumn},
-			Bidi:    false,
-		},
-		"User",
-		"Entity",
-	)
-	graph.MustAddE(
 		"person_identities",
 		&sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -5626,6 +5638,42 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		"User",
 		"RelationshipSourceStatus",
+	)
+	graph.MustAddE(
+		"entities",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntitiesTable,
+			Columns: []string{user.EntitiesColumn},
+			Bidi:    false,
+		},
+		"User",
+		"Entity",
+	)
+	graph.MustAddE(
+		"entity_resource_refs",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityResourceRefsTable,
+			Columns: []string{user.EntityResourceRefsColumn},
+			Bidi:    false,
+		},
+		"User",
+		"EntityResourceRef",
+	)
+	graph.MustAddE(
+		"entity_identifiers",
+		&sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityIdentifiersTable,
+			Columns: []string{user.EntityIdentifiersColumn},
+			Bidi:    false,
+		},
+		"User",
+		"EntityIdentifier",
 	)
 	graph.MustAddE(
 		"action_proposals",
@@ -9272,6 +9320,20 @@ func (f *EntityIdentifierFilter) WhereHasWorkspaceWith(preds ...predicate.Revenu
 	})))
 }
 
+// WhereHasUser applies a predicate to check if query has an edge user.
+func (f *EntityIdentifierFilter) WhereHasUser() {
+	f.Where(entql.HasEdge("user"))
+}
+
+// WhereHasUserWith applies a predicate to check if query has an edge user with a given conditions (other predicates).
+func (f *EntityIdentifierFilter) WhereHasUserWith(preds ...predicate.User) {
+	f.Where(entql.HasEdgeWith("user", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
 // WhereHasEntity applies a predicate to check if query has an edge entity.
 func (f *EntityIdentifierFilter) WhereHasEntity() {
 	f.Where(entql.HasEdge("entity"))
@@ -9349,6 +9411,20 @@ func (f *EntityResourceRefFilter) WhereHasWorkspace() {
 // WhereHasWorkspaceWith applies a predicate to check if query has an edge workspace with a given conditions (other predicates).
 func (f *EntityResourceRefFilter) WhereHasWorkspaceWith(preds ...predicate.RevenueWorkspace) {
 	f.Where(entql.HasEdgeWith("workspace", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasUser applies a predicate to check if query has an edge user.
+func (f *EntityResourceRefFilter) WhereHasUser() {
+	f.Where(entql.HasEdge("user"))
+}
+
+// WhereHasUserWith applies a predicate to check if query has an edge user with a given conditions (other predicates).
+func (f *EntityResourceRefFilter) WhereHasUserWith(preds ...predicate.User) {
+	f.Where(entql.HasEdgeWith("user", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}
@@ -17126,20 +17202,6 @@ func (f *UserFilter) WhereHasRelationshipPersonsWith(preds ...predicate.Person) 
 	})))
 }
 
-// WhereHasEntities applies a predicate to check if query has an edge entities.
-func (f *UserFilter) WhereHasEntities() {
-	f.Where(entql.HasEdge("entities"))
-}
-
-// WhereHasEntitiesWith applies a predicate to check if query has an edge entities with a given conditions (other predicates).
-func (f *UserFilter) WhereHasEntitiesWith(preds ...predicate.Entity) {
-	f.Where(entql.HasEdgeWith("entities", sqlgraph.WrapFunc(func(s *sql.Selector) {
-		for _, p := range preds {
-			p(s)
-		}
-	})))
-}
-
 // WhereHasPersonIdentities applies a predicate to check if query has an edge person_identities.
 func (f *UserFilter) WhereHasPersonIdentities() {
 	f.Where(entql.HasEdge("person_identities"))
@@ -17372,6 +17434,48 @@ func (f *UserFilter) WhereHasRelationshipSourceStatuses() {
 // WhereHasRelationshipSourceStatusesWith applies a predicate to check if query has an edge relationship_source_statuses with a given conditions (other predicates).
 func (f *UserFilter) WhereHasRelationshipSourceStatusesWith(preds ...predicate.RelationshipSourceStatus) {
 	f.Where(entql.HasEdgeWith("relationship_source_statuses", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasEntities applies a predicate to check if query has an edge entities.
+func (f *UserFilter) WhereHasEntities() {
+	f.Where(entql.HasEdge("entities"))
+}
+
+// WhereHasEntitiesWith applies a predicate to check if query has an edge entities with a given conditions (other predicates).
+func (f *UserFilter) WhereHasEntitiesWith(preds ...predicate.Entity) {
+	f.Where(entql.HasEdgeWith("entities", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasEntityResourceRefs applies a predicate to check if query has an edge entity_resource_refs.
+func (f *UserFilter) WhereHasEntityResourceRefs() {
+	f.Where(entql.HasEdge("entity_resource_refs"))
+}
+
+// WhereHasEntityResourceRefsWith applies a predicate to check if query has an edge entity_resource_refs with a given conditions (other predicates).
+func (f *UserFilter) WhereHasEntityResourceRefsWith(preds ...predicate.EntityResourceRef) {
+	f.Where(entql.HasEdgeWith("entity_resource_refs", sqlgraph.WrapFunc(func(s *sql.Selector) {
+		for _, p := range preds {
+			p(s)
+		}
+	})))
+}
+
+// WhereHasEntityIdentifiers applies a predicate to check if query has an edge entity_identifiers.
+func (f *UserFilter) WhereHasEntityIdentifiers() {
+	f.Where(entql.HasEdge("entity_identifiers"))
+}
+
+// WhereHasEntityIdentifiersWith applies a predicate to check if query has an edge entity_identifiers with a given conditions (other predicates).
+func (f *UserFilter) WhereHasEntityIdentifiersWith(preds ...predicate.EntityIdentifier) {
+	f.Where(entql.HasEdgeWith("entity_identifiers", sqlgraph.WrapFunc(func(s *sql.Selector) {
 		for _, p := range preds {
 			p(s)
 		}

@@ -24,6 +24,8 @@ const (
 	FieldRef = "ref"
 	// EdgeWorkspace holds the string denoting the workspace edge name in mutations.
 	EdgeWorkspace = "workspace"
+	// EdgeUser holds the string denoting the user edge name in mutations.
+	EdgeUser = "user"
 	// EdgeEntity holds the string denoting the entity edge name in mutations.
 	EdgeEntity = "entity"
 	// Table holds the table name of the entityresourceref in the database.
@@ -35,6 +37,13 @@ const (
 	WorkspaceInverseTable = "revenue_workspaces"
 	// WorkspaceColumn is the table column denoting the workspace relation/edge.
 	WorkspaceColumn = "revenue_workspace_id"
+	// UserTable is the table that holds the user relation/edge.
+	UserTable = "entity_resource_refs"
+	// UserInverseTable is the table name for the User entity.
+	// It exists in this package in order to avoid circular dependency with the "user" package.
+	UserInverseTable = "users"
+	// UserColumn is the table column denoting the user relation/edge.
+	UserColumn = "user_entity_resource_refs"
 	// EntityTable is the table that holds the entity relation/edge.
 	EntityTable = "entity_resource_refs"
 	// EntityInverseTable is the table name for the Entity entity.
@@ -57,6 +66,7 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"entity_normalized_resource_refs",
 	"revenue_workspace_id",
+	"user_entity_resource_refs",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -124,6 +134,13 @@ func ByWorkspaceField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
+// ByUserField orders the results by user field.
+func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByEntityField orders the results by entity field.
 func ByEntityField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -135,6 +152,13 @@ func newWorkspaceStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(WorkspaceInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, WorkspaceTable, WorkspaceColumn),
+	)
+}
+func newUserStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(UserInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
 	)
 }
 func newEntityStep() *sqlgraph.Step {

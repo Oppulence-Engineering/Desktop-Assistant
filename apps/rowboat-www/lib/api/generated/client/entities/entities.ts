@@ -45,21 +45,6 @@ export type resolveEntityByRefResponse404 = {
   status: 404;
 };
 
-export type resolveEntityByRefResponse409 = {
-  data: N409Response;
-  status: 409;
-};
-
-export type resolveEntityByRefResponse413 = {
-  data: ErrorEnvelope;
-  status: 413;
-};
-
-export type resolveEntityByRefResponse415 = {
-  data: ErrorEnvelope;
-  status: 415;
-};
-
 export type resolveEntityByRefResponse500 = {
   data: N500Response;
   status: 500;
@@ -73,9 +58,6 @@ export type resolveEntityByRefResponseError = (
   | resolveEntityByRefResponse401
   | resolveEntityByRefResponse403
   | resolveEntityByRefResponse404
-  | resolveEntityByRefResponse409
-  | resolveEntityByRefResponse413
-  | resolveEntityByRefResponse415
   | resolveEntityByRefResponse500
 ) & {
   headers: Headers;
@@ -230,21 +212,6 @@ export type getEntityResponse404 = {
   status: 404;
 };
 
-export type getEntityResponse409 = {
-  data: N409Response;
-  status: 409;
-};
-
-export type getEntityResponse413 = {
-  data: ErrorEnvelope;
-  status: 413;
-};
-
-export type getEntityResponse415 = {
-  data: ErrorEnvelope;
-  status: 415;
-};
-
 export type getEntityResponse500 = {
   data: N500Response;
   status: 500;
@@ -258,9 +225,6 @@ export type getEntityResponseError = (
   | getEntityResponse401
   | getEntityResponse403
   | getEntityResponse404
-  | getEntityResponse409
-  | getEntityResponse413
-  | getEntityResponse415
   | getEntityResponse500
 ) & {
   headers: Headers;

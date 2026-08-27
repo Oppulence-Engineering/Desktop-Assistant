@@ -3,13 +3,17 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { z } from "zod";
 import { writeJsonAtomic } from "../filesystem/atomic_write.js";
-import { readEntityConfig } from "./entity-config.js";
 import { readJsonConfig } from "../config/json_config.js";
 import {
   ensureEntityIdentity,
   updateEntityIdentity,
   type EntityIdentitySnapshot,
 } from "./entity-identity.js";
+import {
+  formatResourceRef,
+  normalizeEntityIdentifiers,
+  parseResourceRef,
+} from "./entity-reference.js";
 
 const REF_PART = /^[a-z][a-z0-9_-]{0,63}$/;
 
@@ -17,12 +21,46 @@ export type EntityReadAdapter = (
   identifiers: Record<string, string[]>,
 ) => Promise<ProductEntityRecord[]>;
 const readAdapters = new Map<string, EntityReadAdapter>();
+export type EntitySourceFact = string | number | boolean | null;
+export type EntityRefReadAdapter = (
+  ref: string,
+) => Promise<Record<string, EntitySourceFact> | undefined>;
+const refReadAdapters = new Map<string, EntityRefReadAdapter>();
 
 export function registerEntityReadAdapter(product: string, adapter: EntityReadAdapter): () => void {
   const normalized = product.trim().toLowerCase();
   if (!REF_PART.test(normalized)) throw new Error(`invalid entity adapter product ${product}`);
   readAdapters.set(normalized, adapter);
   return () => readAdapters.delete(normalized);
+}
+
+/** Register a bounded Read-seam lookup used by Copilot after identity resolution. */
+export function registerEntityRefReadAdapter(
+  product: string,
+  adapter: EntityRefReadAdapter,
+): () => void {
+  const normalized = product.trim().toLowerCase();
+  if (!REF_PART.test(normalized)) throw new Error(`invalid entity adapter product ${product}`);
+  refReadAdapters.set(normalized, adapter);
+  return () => refReadAdapters.delete(normalized);
+}
+
+export async function readEntitySourceFacts(
+  ref: string,
+): Promise<Record<string, EntitySourceFact> | undefined> {
+  const parsed = parseResourceRef(ref);
+  const adapter = refReadAdapters.get(parsed.product);
+  if (!adapter) return undefined;
+  const raw = await adapter(formatResourceRef(parsed));
+  if (!raw) return undefined;
+  const facts: Record<string, EntitySourceFact> = {};
+  for (const [key, value] of Object.entries(raw).slice(0, 20)) {
+    if (!/^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(key)) continue;
+    if (typeof value === "string") facts[key] = value.replace(/\s+/g, " ").trim().slice(0, 500);
+    else if (typeof value === "number" && Number.isFinite(value)) facts[key] = value;
+    else if (typeof value === "boolean" || value === null) facts[key] = value;
+  }
+  return Object.keys(facts).length > 0 ? facts : undefined;
 }
 
 export async function readEntityRecords(
@@ -84,79 +122,18 @@ function serializeSuggestionFile<T>(filePath: string, operation: () => Promise<T
   const prior = suggestionQueues.get(filePath) ?? Promise.resolve();
   const next = prior.catch(() => undefined).then(operation);
   suggestionQueues.set(filePath, next);
-  void next.finally(() => {
-    if (suggestionQueues.get(filePath) === next) suggestionQueues.delete(filePath);
-  });
+  void next.then(
+    () => {
+      if (suggestionQueues.get(filePath) === next) suggestionQueues.delete(filePath);
+    },
+    () => {
+      if (suggestionQueues.get(filePath) === next) suggestionQueues.delete(filePath);
+    },
+  );
   return next;
 }
 
-export function parseResourceRef(value: string): {
-  product: string;
-  type: string;
-  externalId: string;
-} {
-  const first = value.indexOf(":");
-  const second = value.indexOf(":", first + 1);
-  if (first <= 0 || second <= first + 1 || second === value.length - 1) {
-    throw new Error(`invalid resourceRef ${JSON.stringify(value)}`);
-  }
-  const product = value.slice(0, first).toLowerCase();
-  const type = value.slice(first + 1, second).toLowerCase();
-  const externalId = value.slice(second + 1).trim();
-  if (!REF_PART.test(product)) throw new Error(`invalid resourceRef product ${product}`);
-  if (!REF_PART.test(type)) throw new Error(`invalid resourceRef type ${type}`);
-  if (
-    externalId.length > 256 ||
-    [...externalId].some(
-      (character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127,
-    )
-  ) {
-    throw new Error("invalid resourceRef external id");
-  }
-  return { product, type, externalId };
-}
-
-export function formatResourceRef(
-  record: Pick<ProductEntityRecord, "product" | "type" | "externalId">,
-): string {
-  const value = `${record.product.toLowerCase()}:${record.type.toLowerCase()}:${record.externalId.trim()}`;
-  parseResourceRef(value);
-  return value;
-}
-
-function canonicalIdentifierKey(key: string): string {
-  const compact = key
-    .trim()
-    .replace(/[_\s-]/g, "")
-    .toLowerCase();
-  if (compact === "emaildomain" || compact === "emaildomains" || compact === "domain")
-    return "emailDomains";
-  if (compact === "taxid" || compact === "taxids") return "taxIds";
-  return key.trim();
-}
-
-function canonicalIdentifierValue(key: string, value: string): string {
-  const trimmed = value.trim();
-  if (key === "emailDomains") return trimmed.toLowerCase().replace(/^@/, "").replace(/\.$/, "");
-  if (key === "taxIds") return trimmed.toUpperCase().replace(/[^A-Z0-9]/g, "");
-  return trimmed;
-}
-
-export function normalizeEntityIdentifiers(
-  identifiers: Record<string, string | string[]>,
-): Record<string, string[]> {
-  const normalized: Record<string, string[]> = {};
-  for (const [rawKey, rawValues] of Object.entries(identifiers)) {
-    const key = canonicalIdentifierKey(rawKey);
-    if (!key || key.length > 64) continue;
-    const values = (Array.isArray(rawValues) ? rawValues : [rawValues])
-      .map((value) => canonicalIdentifierValue(key, value))
-      .filter((value) => value.length > 0 && value.length <= 256);
-    if (values.length === 0) continue;
-    normalized[key] = [...new Set([...(normalized[key] ?? []), ...values])].sort();
-  }
-  return normalized;
-}
+export { formatResourceRef, normalizeEntityIdentifiers, parseResourceRef };
 
 function identifierMatches(
   entity: Record<string, string[]>,
@@ -342,26 +319,4 @@ export async function reconcileEntityNote(input: {
     unlinkedProducts: [...allProducts].filter((product) => !matchedProducts.has(product)).sort(),
     suggestions,
   };
-}
-
-/** Mirror-sync seam: provider packages call this after writing their local note. */
-export async function reconcileMirroredEntity(
-  filePath: string,
-  workDir: string,
-  records: ProductEntityRecord[],
-  identifiers?: Record<string, string | string[]>,
-): Promise<EntityResolutionResult> {
-  const config = await readEntityConfig(workDir);
-  const adapterRecords = config.resolveOnSync ? await readEntityRecords(identifiers ?? {}) : [];
-  const result = config.resolveOnSync
-    ? await reconcileEntityNote({
-        filePath,
-        workDir,
-        records: [...records, ...adapterRecords],
-        identifiers,
-      })
-    : await reconcileEntityNote({ filePath, workDir, records: [], identifiers });
-  const { syncEntityNotes } = await import("./entity-spine.js");
-  await syncEntityNotes([filePath], workDir);
-  return result;
 }

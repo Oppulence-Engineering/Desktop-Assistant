@@ -34,6 +34,22 @@ func (Widget) Edges() []ent.Edge { return []ent.Edge{edge.From("user", User.Type
 	assertRules(t, violations, "tenant-read-scope", "tenant-write-scope")
 }
 
+func TestTenantRegistryGuardDetectsWorkspaceMixinWithoutUserEdge(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "ent/schema/widget.go", `package schema
+import "entgo.io/ent"
+type Widget struct{ ent.Schema }
+func (Widget) Mixin() []ent.Mixin { return []ent.Mixin{mixin.WorkspaceTenantMixin{}} }
+`)
+	writeFile(t, root, "internal/db/interceptors.go", "package db\n")
+
+	violations, err := checkTenantRegistries(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertRules(t, violations, "tenant-read-scope", "tenant-write-scope")
+}
+
 func TestDependencyGuardRejectsInternalToCommandImport(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "internal/example/example.go", `package example

@@ -239,6 +239,29 @@ func HasWorkspaceWith(preds ...predicate.RevenueWorkspace) predicate.EntityResou
 	})
 }
 
+// HasUser applies the HasEdge predicate on the "user" edge.
+func HasUser() predicate.EntityResourceRef {
+	return predicate.EntityResourceRef(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasUserWith applies the HasEdge predicate on the "user" edge with a given conditions (other predicates).
+func HasUserWith(preds ...predicate.User) predicate.EntityResourceRef {
+	return predicate.EntityResourceRef(func(s *sql.Selector) {
+		step := newUserStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasEntity applies the HasEdge predicate on the "entity" edge.
 func HasEntity() predicate.EntityResourceRef {
 	return predicate.EntityResourceRef(func(s *sql.Selector) {

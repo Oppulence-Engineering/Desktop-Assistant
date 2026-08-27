@@ -92,7 +92,10 @@ export const ResolveEntityByRef200Response = zod
           )
           .max(resolveEntityByRef200ResponseIdentifiersMaxOne),
       )
-      .optional(),
+      .optional()
+      .describe(
+        "At most 32 identifier classes. Keys must match ^[A-Za-z][A-Za-z0-9_.-]{0,63}$; values are unique one-way fingerprints.",
+      ),
     kind: zod
       .string()
       .min(1)
@@ -165,53 +168,6 @@ export const ResolveEntityByRef403Response = zod
   );
 
 export const ResolveEntityByRef404Response = zod
-  .strictObject({
-    code: zod.string().describe("Stable machine-readable error code."),
-    detail: zod.string().optional().describe("Human-readable error detail."),
-    instance: zod.string().nullish().describe("Optional occurrence URI."),
-    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
-    status: zod.int().describe("HTTP status code."),
-    title: zod.string().describe("Short HTTP-status summary."),
-    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
-    type: zod.string().describe("Problem type URI."),
-  })
-  .describe(
-    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
-  );
-
-export const ResolveEntityByRef409Response = zod
-  .strictObject({
-    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
-    detail: zod.string().optional().describe("Human-readable error detail."),
-    reconnectRequired: zod
-      .boolean()
-      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
-    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
-    status: zod.int().describe("HTTP status code."),
-    title: zod.string().describe("Short HTTP-status summary."),
-    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
-    type: zod.string().describe("Problem type URI."),
-  })
-  .describe(
-    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
-  );
-
-export const ResolveEntityByRef413Response = zod
-  .strictObject({
-    code: zod.string().describe("Stable machine-readable error code."),
-    detail: zod.string().optional().describe("Human-readable error detail."),
-    instance: zod.string().nullish().describe("Optional occurrence URI."),
-    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
-    status: zod.int().describe("HTTP status code."),
-    title: zod.string().describe("Short HTTP-status summary."),
-    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
-    type: zod.string().describe("Problem type URI."),
-  })
-  .describe(
-    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
-  );
-
-export const ResolveEntityByRef415Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),
@@ -374,7 +330,10 @@ export const MergeEntities200Response = zod
               )
               .max(mergeEntities200ResponseCanonicalIdentifiersMaxOne),
           )
-          .optional(),
+          .optional()
+          .describe(
+            "At most 32 identifier classes. Keys must match ^[A-Za-z][A-Za-z0-9_.-]{0,63}$; values are unique one-way fingerprints.",
+          ),
         kind: zod
           .string()
           .min(1)
@@ -437,7 +396,10 @@ export const MergeEntities200Response = zod
               )
               .max(mergeEntities200ResponseTombstoneIdentifiersMaxOne),
           )
-          .optional(),
+          .optional()
+          .describe(
+            "At most 32 identifier classes. Keys must match ^[A-Za-z][A-Za-z0-9_.-]{0,63}$; values are unique one-way fingerprints.",
+          ),
         kind: zod
           .string()
           .min(1)
@@ -669,7 +631,10 @@ export const GetEntity200Response = zod
           )
           .max(getEntity200ResponseIdentifiersMaxOne),
       )
-      .optional(),
+      .optional()
+      .describe(
+        "At most 32 identifier classes. Keys must match ^[A-Za-z][A-Za-z0-9_.-]{0,63}$; values are unique one-way fingerprints.",
+      ),
     kind: zod
       .string()
       .min(1)
@@ -742,53 +707,6 @@ export const GetEntity403Response = zod
   );
 
 export const GetEntity404Response = zod
-  .strictObject({
-    code: zod.string().describe("Stable machine-readable error code."),
-    detail: zod.string().optional().describe("Human-readable error detail."),
-    instance: zod.string().nullish().describe("Optional occurrence URI."),
-    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
-    status: zod.int().describe("HTTP status code."),
-    title: zod.string().describe("Short HTTP-status summary."),
-    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
-    type: zod.string().describe("Problem type URI."),
-  })
-  .describe(
-    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
-  );
-
-export const GetEntity409Response = zod
-  .strictObject({
-    code: zod.enum(["reconnect_required"]).describe("Stable machine-readable error code."),
-    detail: zod.string().optional().describe("Human-readable error detail."),
-    reconnectRequired: zod
-      .boolean()
-      .describe("Whether the desktop should force the user through a new OAuth connection flow."),
-    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
-    status: zod.int().describe("HTTP status code."),
-    title: zod.string().describe("Short HTTP-status summary."),
-    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
-    type: zod.string().describe("Problem type URI."),
-  })
-  .describe(
-    "Problem details used when an upstream refresh token is invalid and the desktop must reconnect.",
-  );
-
-export const GetEntity413Response = zod
-  .strictObject({
-    code: zod.string().describe("Stable machine-readable error code."),
-    detail: zod.string().optional().describe("Human-readable error detail."),
-    instance: zod.string().nullish().describe("Optional occurrence URI."),
-    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
-    status: zod.int().describe("HTTP status code."),
-    title: zod.string().describe("Short HTTP-status summary."),
-    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
-    type: zod.string().describe("Problem type URI."),
-  })
-  .describe(
-    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
-  );
-
-export const GetEntity415Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),
@@ -886,7 +804,10 @@ export const PutEntityBody = zod
           )
           .max(putEntityBodyIdentifiersMaxOne),
       )
-      .optional(),
+      .optional()
+      .describe(
+        "At most 32 identifier classes. Keys must match ^[A-Za-z][A-Za-z0-9_.-]{0,63}$; values are unique one-way fingerprints.",
+      ),
     kind: zod.string().min(1).max(putEntityBodyKindMax),
     oneLineSummary: zod.string().max(putEntityBodyOneLineSummaryMax).optional(),
     resourceRefs: zod
@@ -902,7 +823,41 @@ export const PutEntityBody = zod
   })
   .describe(
     "Strict projection allowlist accepted by PUT. Unknown fields, raw identifiers, and note bodies are rejected.",
-  );
+  )
+  .superRefine((value, ctx) => {
+    // entity-projection-collection-parity: OpenAPI maxProperties, the documented
+    // identifier-key pattern, and uniqueItems are not emitted by Orval's Zod client.
+    if (value.identifiers && Object.keys(value.identifiers).length > 32) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["identifiers"],
+        message: "identifiers must have at most 32 keys",
+      });
+    }
+    for (const [key, fingerprints] of Object.entries(value.identifiers ?? {})) {
+      if (!/^[A-Za-z][A-Za-z0-9_.-]{0,63}$/.test(key)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["identifiers", key],
+          message: "invalid identifier key",
+        });
+      }
+      if (new Set(fingerprints).size !== fingerprints.length) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["identifiers", key],
+          message: "identifier fingerprints must be unique",
+        });
+      }
+    }
+    if (value.resourceRefs && new Set(value.resourceRefs).size !== value.resourceRefs.length) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["resourceRefs"],
+        message: "resourceRefs must be unique",
+      });
+    }
+  });
 
 export const putEntity200ResponseCanonicalEntityIdMin = 26;
 export const putEntity200ResponseCanonicalEntityIdMax = 26;
@@ -967,7 +922,10 @@ export const PutEntity200Response = zod
           )
           .max(putEntity200ResponseIdentifiersMaxOne),
       )
-      .optional(),
+      .optional()
+      .describe(
+        "At most 32 identifier classes. Keys must match ^[A-Za-z][A-Za-z0-9_.-]{0,63}$; values are unique one-way fingerprints.",
+      ),
     kind: zod
       .string()
       .min(1)

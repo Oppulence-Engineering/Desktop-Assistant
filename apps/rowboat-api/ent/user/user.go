@@ -113,8 +113,6 @@ const (
 	EdgeRelationshipIdentities = "relationship_identities"
 	// EdgeRelationshipPersons holds the string denoting the relationship_persons edge name in mutations.
 	EdgeRelationshipPersons = "relationship_persons"
-	// EdgeEntities holds the string denoting the entities edge name in mutations.
-	EdgeEntities = "entities"
 	// EdgePersonIdentities holds the string denoting the person_identities edge name in mutations.
 	EdgePersonIdentities = "person_identities"
 	// EdgePersonSuppressions holds the string denoting the person_suppressions edge name in mutations.
@@ -149,6 +147,12 @@ const (
 	EdgeRelationshipStateSnapshots = "relationship_state_snapshots"
 	// EdgeRelationshipSourceStatuses holds the string denoting the relationship_source_statuses edge name in mutations.
 	EdgeRelationshipSourceStatuses = "relationship_source_statuses"
+	// EdgeEntities holds the string denoting the entities edge name in mutations.
+	EdgeEntities = "entities"
+	// EdgeEntityResourceRefs holds the string denoting the entity_resource_refs edge name in mutations.
+	EdgeEntityResourceRefs = "entity_resource_refs"
+	// EdgeEntityIdentifiers holds the string denoting the entity_identifiers edge name in mutations.
+	EdgeEntityIdentifiers = "entity_identifiers"
 	// EdgeActionProposals holds the string denoting the action_proposals edge name in mutations.
 	EdgeActionProposals = "action_proposals"
 	// EdgeApprovalTokens holds the string denoting the approval_tokens edge name in mutations.
@@ -463,13 +467,6 @@ const (
 	RelationshipPersonsInverseTable = "relationship_persons"
 	// RelationshipPersonsColumn is the table column denoting the relationship_persons relation/edge.
 	RelationshipPersonsColumn = "user_relationship_persons"
-	// EntitiesTable is the table that holds the entities relation/edge.
-	EntitiesTable = "entities"
-	// EntitiesInverseTable is the table name for the Entity entity.
-	// It exists in this package in order to avoid circular dependency with the "entity" package.
-	EntitiesInverseTable = "entities"
-	// EntitiesColumn is the table column denoting the entities relation/edge.
-	EntitiesColumn = "user_entities"
 	// PersonIdentitiesTable is the table that holds the person_identities relation/edge.
 	PersonIdentitiesTable = "person_identities"
 	// PersonIdentitiesInverseTable is the table name for the PersonIdentity entity.
@@ -589,6 +586,27 @@ const (
 	RelationshipSourceStatusesInverseTable = "relationship_source_status"
 	// RelationshipSourceStatusesColumn is the table column denoting the relationship_source_statuses relation/edge.
 	RelationshipSourceStatusesColumn = "user_relationship_source_statuses"
+	// EntitiesTable is the table that holds the entities relation/edge.
+	EntitiesTable = "entities"
+	// EntitiesInverseTable is the table name for the Entity entity.
+	// It exists in this package in order to avoid circular dependency with the "entity" package.
+	EntitiesInverseTable = "entities"
+	// EntitiesColumn is the table column denoting the entities relation/edge.
+	EntitiesColumn = "user_entities"
+	// EntityResourceRefsTable is the table that holds the entity_resource_refs relation/edge.
+	EntityResourceRefsTable = "entity_resource_refs"
+	// EntityResourceRefsInverseTable is the table name for the EntityResourceRef entity.
+	// It exists in this package in order to avoid circular dependency with the "entityresourceref" package.
+	EntityResourceRefsInverseTable = "entity_resource_refs"
+	// EntityResourceRefsColumn is the table column denoting the entity_resource_refs relation/edge.
+	EntityResourceRefsColumn = "user_entity_resource_refs"
+	// EntityIdentifiersTable is the table that holds the entity_identifiers relation/edge.
+	EntityIdentifiersTable = "entity_identifiers"
+	// EntityIdentifiersInverseTable is the table name for the EntityIdentifier entity.
+	// It exists in this package in order to avoid circular dependency with the "entityidentifier" package.
+	EntityIdentifiersInverseTable = "entity_identifiers"
+	// EntityIdentifiersColumn is the table column denoting the entity_identifiers relation/edge.
+	EntityIdentifiersColumn = "user_entity_identifiers"
 	// ActionProposalsTable is the table that holds the action_proposals relation/edge.
 	ActionProposalsTable = "action_proposals"
 	// ActionProposalsInverseTable is the table name for the ActionProposal entity.
@@ -1280,20 +1298,6 @@ func ByRelationshipPersons(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOpti
 	}
 }
 
-// ByEntitiesCount orders the results by entities count.
-func ByEntitiesCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newEntitiesStep(), opts...)
-	}
-}
-
-// ByEntities orders the results by entities terms.
-func ByEntities(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newEntitiesStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByPersonIdentitiesCount orders the results by person_identities count.
 func ByPersonIdentitiesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -1529,6 +1533,48 @@ func ByRelationshipSourceStatusesCount(opts ...sql.OrderTermOption) OrderOption 
 func ByRelationshipSourceStatuses(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newRelationshipSourceStatusesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByEntitiesCount orders the results by entities count.
+func ByEntitiesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEntitiesStep(), opts...)
+	}
+}
+
+// ByEntities orders the results by entities terms.
+func ByEntities(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEntitiesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByEntityResourceRefsCount orders the results by entity_resource_refs count.
+func ByEntityResourceRefsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEntityResourceRefsStep(), opts...)
+	}
+}
+
+// ByEntityResourceRefs orders the results by entity_resource_refs terms.
+func ByEntityResourceRefs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEntityResourceRefsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByEntityIdentifiersCount orders the results by entity_identifiers count.
+func ByEntityIdentifiersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEntityIdentifiersStep(), opts...)
+	}
+}
+
+// ByEntityIdentifiers orders the results by entity_identifiers terms.
+func ByEntityIdentifiers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEntityIdentifiersStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -1867,13 +1913,6 @@ func newRelationshipPersonsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipPersonsTable, RelationshipPersonsColumn),
 	)
 }
-func newEntitiesStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(EntitiesInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, EntitiesTable, EntitiesColumn),
-	)
-}
 func newPersonIdentitiesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -1991,6 +2030,27 @@ func newRelationshipSourceStatusesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RelationshipSourceStatusesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipSourceStatusesTable, RelationshipSourceStatusesColumn),
+	)
+}
+func newEntitiesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EntitiesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EntitiesTable, EntitiesColumn),
+	)
+}
+func newEntityResourceRefsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EntityResourceRefsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EntityResourceRefsTable, EntityResourceRefsColumn),
+	)
+}
+func newEntityIdentifiersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EntityIdentifiersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EntityIdentifiersTable, EntityIdentifiersColumn),
 	)
 }
 func newActionProposalsStep() *sqlgraph.Step {

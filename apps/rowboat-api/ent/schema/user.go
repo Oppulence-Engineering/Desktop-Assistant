@@ -99,7 +99,6 @@ func (User) Edges() []ent.Edge {
 		edge.To("relationship_participants", RelationshipParticipant.Type).Annotations(entproto.Skip()),
 		edge.To("relationship_identities", RelationshipIdentity.Type).Annotations(entproto.Skip()),
 		edge.To("relationship_persons", Person.Type).Annotations(entproto.Skip()),
-		edge.To("entities", Entity.Type).Annotations(entproto.Skip()),
 		edge.To("person_identities", PersonIdentity.Type).Annotations(entproto.Skip()),
 		edge.To("person_suppressions", PersonSuppression.Type).Annotations(entproto.Skip()),
 		edge.To("person_attributes", PersonAttribute.Type).Annotations(entproto.Skip()),
@@ -117,6 +116,11 @@ func (User) Edges() []ent.Edge {
 		edge.To("relationship_assertions", RelationshipAssertion.Type).Annotations(entproto.Skip()),
 		edge.To("relationship_state_snapshots", RelationshipStateSnapshot.Type).Annotations(entproto.Skip()),
 		edge.To("relationship_source_statuses", RelationshipSourceStatus.Type).Annotations(entproto.Skip()),
+		// RFC 022 shared entity spine. The user edge records the mutating actor;
+		// workspace membership remains the authorization boundary.
+		edge.To("entities", Entity.Type).Annotations(entproto.Skip(), entgql.Skip()),
+		edge.To("entity_resource_refs", EntityResourceRef.Type).Annotations(entproto.Skip(), entgql.Skip()),
+		edge.To("entity_identifiers", EntityIdentifier.Type).Annotations(entproto.Skip(), entgql.Skip()),
 		// RFC 023 closed-loop actions.
 		edge.To("action_proposals", ActionProposal.Type).Annotations(entproto.Skip()),
 		edge.To("approval_tokens", ApprovalToken.Type).Annotations(entproto.Skip()),

@@ -4,7 +4,6 @@ import * as path from "node:path";
 import { z } from "zod";
 import { splitFrontmatter, joinFrontmatter } from "../application/lib/parse-frontmatter.js";
 import { writeJsonAtomic, writeTextAtomic } from "../filesystem/atomic_write.js";
-import { readJsonConfig } from "../config/json_config.js";
 
 const CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const ULID_PATTERN = /^[0-9A-HJKMNP-TV-Z]{26}$/;
@@ -40,6 +39,19 @@ export interface EntityBackfillResult {
   minted: number;
   duplicateReminted: number;
   markerPath: string;
+}
+
+type EntityIdentityObserver = (filePath: string, identity: EntityIdentitySnapshot) => void;
+const identityObservers = new Set<EntityIdentityObserver>();
+
+/** Keep long-lived path caches coherent with resolver-owned identity mutations. */
+export function registerEntityIdentityObserver(observer: EntityIdentityObserver): () => void {
+  identityObservers.add(observer);
+  return () => identityObservers.delete(observer);
+}
+
+function notifyIdentityObservers(filePath: string, identity: EntityIdentitySnapshot): void {
+  for (const observer of identityObservers) observer(path.resolve(filePath), identity);
 }
 
 function encodeBase32(value: bigint, length: number): string {
@@ -206,9 +218,7 @@ export async function updateEntityIdentity(
           ].sort(),
         }
       : {}),
-    ...(update.identifiers
-      ? { identifiers: normalizeIdentifierValues(update.identifiers) }
-      : {}),
+    ...(update.identifiers ? { identifiers: normalizeIdentifierValues(update.identifiers) } : {}),
   };
   const nextContent = joinFrontmatter(
     {
@@ -221,6 +231,7 @@ export async function updateEntityIdentity(
     body,
   );
   if (nextContent !== content) await writeTextAtomic(filePath, nextContent);
+  notifyIdentityObservers(filePath, identity);
   return identity;
 }
 
@@ -281,33 +292,29 @@ export async function stabilizeEntityNoteMutation(
   filePath: string,
   workDir: string,
   previous?: EntityIdentitySnapshot,
+  options: { mintIfUntracked?: boolean } = {},
 ): Promise<EntityIdentitySnapshot | undefined> {
   const knowledgeDir = path.join(workDir, "knowledge");
   const ensured = await ensureEntityIdentity(filePath, knowledgeDir, previous);
   if (!ensured.identity) return undefined;
+  let currentIdentity = ensured.identity;
+  if (!previous && options.mintIfUntracked && !ensured.minted) {
+    currentIdentity = await updateEntityIdentity(filePath, knowledgeDir, { id: mintEntityId() });
+  }
   for (const candidate of await scanMarkdown(knowledgeDir)) {
     if (path.resolve(candidate) === path.resolve(filePath)) continue;
     const identity = await readEntityIdentity(candidate, knowledgeDir);
-    if (identity?.id !== ensured.identity.id) continue;
-    if (previous) throw new Error(`duplicate entity id ${identity.id} in ${filePath} and ${candidate}`);
+    if (identity?.id !== currentIdentity.id) continue;
+    if (previous)
+      throw new Error(`duplicate entity id ${identity.id} in ${filePath} and ${candidate}`);
     return updateEntityIdentity(filePath, knowledgeDir, { id: mintEntityId() });
   }
-  return ensured.identity;
+  return currentIdentity;
 }
 
-/** One-time, restart-safe backfill for all recognized entity notes. */
+/** Restart-safe backfill and duplicate audit for all recognized entity notes. */
 export async function backfillEntityIds(workDir: string): Promise<EntityBackfillResult> {
   const markerPath = path.join(workDir, "config", "entity-ids-backfilled.json");
-  try {
-    const Marker = z.object({ completedAt: z.string().optional(), processed: z.number().optional(), minted: z.number().optional(), duplicateReminted: z.number().optional() }).passthrough();
-    const { config: marker } = await readJsonConfig(markerPath, Marker, (): z.infer<typeof Marker> => ({}));
-    if (marker.completedAt) {
-      return { processed: marker.processed ?? 0, minted: marker.minted ?? 0, duplicateReminted: marker.duplicateReminted ?? 0, markerPath };
-    }
-  } catch (cause) {
-    if ((cause as NodeJS.ErrnoException).code !== "ENOENT") throw cause;
-  }
-
   const knowledgeDir = path.join(workDir, "knowledge");
   let processed = 0;
   let minted = 0;
@@ -318,7 +325,9 @@ export async function backfillEntityIds(workDir: string): Promise<EntityBackfill
     if (!result.identity) continue;
     let identity = result.identity;
     if (owners.has(identity.id)) {
-      const updatedIdentity = await updateEntityIdentity(filePath, knowledgeDir, { id: mintEntityId() });
+      const updatedIdentity = await updateEntityIdentity(filePath, knowledgeDir, {
+        id: mintEntityId(),
+      });
       result = { identity: updatedIdentity, minted: false, changed: true };
       identity = updatedIdentity;
       duplicateReminted += 1;
@@ -328,6 +337,12 @@ export async function backfillEntityIds(workDir: string): Promise<EntityBackfill
     if (result.minted) minted += 1;
   }
   await fs.mkdir(path.dirname(markerPath), { recursive: true });
-  await writeJsonAtomic(markerPath, { schema: 1, completedAt: new Date().toISOString(), processed, minted, duplicateReminted });
+  await writeJsonAtomic(markerPath, {
+    schema: 1,
+    completedAt: new Date().toISOString(),
+    processed,
+    minted,
+    duplicateReminted,
+  });
   return { processed, minted, duplicateReminted, markerPath };
 }

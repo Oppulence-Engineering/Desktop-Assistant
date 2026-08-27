@@ -114,6 +114,7 @@ import { Button } from "@oppulence/ui/components/button";
 import { Toaster } from "@oppulence/ui/components/sonner";
 import { BillingErrorDialog } from "@/components/billing-error-dialog";
 import { SessionReconnectDialog } from "@/components/session-reconnect-dialog";
+import { EntityLinkReviewCard } from "@/components/entity-link-review-card";
 import { shouldShowSessionReconnect } from "@/lib/session-reconnect";
 import { matchBillingError, type BillingErrorMatch } from "@/lib/billing-error";
 import {
@@ -7911,6 +7912,7 @@ function App() {
           }}
         />
       </SidebarSectionProvider>
+      <EntityLinkReviewCard />
       <Toaster />
       <ProductTour
         // Gated at render as well as at open. A tour that started legitimately

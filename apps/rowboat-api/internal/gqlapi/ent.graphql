@@ -5663,6 +5663,7 @@ type EntityIdentifier implements Node {
   updatedAt: Time!
   key: String!
   workspace: RevenueWorkspace!
+  user: User!
   entity: Entity!
 }
 """
@@ -5728,6 +5729,11 @@ input EntityIdentifierWhereInput {
   hasWorkspace: Boolean
   hasWorkspaceWith: [RevenueWorkspaceWhereInput!]
   """
+  user edge predicates
+  """
+  hasUser: Boolean
+  hasUserWith: [UserWhereInput!]
+  """
   entity edge predicates
   """
   hasEntity: Boolean
@@ -5739,6 +5745,7 @@ type EntityResourceRef implements Node {
   updatedAt: Time!
   ref: String!
   workspace: RevenueWorkspace!
+  user: User!
   entity: Entity!
 }
 """
@@ -5803,6 +5810,11 @@ input EntityResourceRefWhereInput {
   """
   hasWorkspace: Boolean
   hasWorkspaceWith: [RevenueWorkspaceWhereInput!]
+  """
+  user edge predicates
+  """
+  hasUser: Boolean
+  hasUserWith: [UserWhereInput!]
   """
   entity edge predicates
   """
@@ -15160,7 +15172,6 @@ type User implements Node {
   relationshipParticipants: [RelationshipParticipant!]
   relationshipIdentities: [RelationshipIdentity!]
   relationshipPersons: [Person!]
-  entities: [Entity!]
   personIdentities: [PersonIdentity!]
   personSuppressions: [PersonSuppression!]
   personAttributes: [PersonAttribute!]
@@ -15509,11 +15520,6 @@ input UserWhereInput {
   """
   hasRelationshipPersons: Boolean
   hasRelationshipPersonsWith: [PersonWhereInput!]
-  """
-  entities edge predicates
-  """
-  hasEntities: Boolean
-  hasEntitiesWith: [EntityWhereInput!]
   """
   person_identities edge predicates
   """

@@ -3789,6 +3789,17 @@ func (_q *EntityIdentifierQuery) collectField(ctx context.Context, oneNode bool,
 			}
 			_q.withWorkspace = query
 
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+
 		case "entity":
 			var (
 				alias = field.Alias
@@ -3887,6 +3898,17 @@ func (_q *EntityResourceRefQuery) collectField(ctx context.Context, oneNode bool
 				return err
 			}
 			_q.withWorkspace = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
 
 		case "entity":
 			var (
@@ -11451,19 +11473,6 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedRelationshipPersons(alias, func(wq *PersonQuery) {
-				*wq = *query
-			})
-
-		case "entities":
-			var (
-				alias = field.Alias
-				path  = append(path, alias)
-				query = (&EntityClient{config: _q.config}).Query()
-			)
-			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, entityImplementors)...); err != nil {
-				return err
-			}
-			_q.WithNamedEntities(alias, func(wq *EntityQuery) {
 				*wq = *query
 			})
 

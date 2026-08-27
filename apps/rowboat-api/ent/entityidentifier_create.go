@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -89,6 +90,17 @@ func (_c *EntityIdentifierCreate) SetWorkspaceID(id uuid.UUID) *EntityIdentifier
 // SetWorkspace sets the "workspace" edge to the RevenueWorkspace entity.
 func (_c *EntityIdentifierCreate) SetWorkspace(v *RevenueWorkspace) *EntityIdentifierCreate {
 	return _c.SetWorkspaceID(v.ID)
+}
+
+// SetUserID sets the "user" edge to the User entity by ID.
+func (_c *EntityIdentifierCreate) SetUserID(id uuid.UUID) *EntityIdentifierCreate {
+	_c.mutation.SetUserID(id)
+	return _c
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (_c *EntityIdentifierCreate) SetUser(v *User) *EntityIdentifierCreate {
+	return _c.SetUserID(v.ID)
 }
 
 // SetEntityID sets the "entity" edge to the Entity entity by ID.
@@ -190,6 +202,9 @@ func (_c *EntityIdentifierCreate) check() error {
 	if len(_c.mutation.WorkspaceIDs()) == 0 {
 		return &ValidationError{Name: "workspace", err: errors.New(`ent: missing required edge "EntityIdentifier.workspace"`)}
 	}
+	if len(_c.mutation.UserIDs()) == 0 {
+		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "EntityIdentifier.user"`)}
+	}
 	if len(_c.mutation.EntityIDs()) == 0 {
 		return &ValidationError{Name: "entity", err: errors.New(`ent: missing required edge "EntityIdentifier.entity"`)}
 	}
@@ -260,6 +275,23 @@ func (_c *EntityIdentifierCreate) createSpec() (*EntityIdentifier, *sqlgraph.Cre
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.revenue_workspace_id = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   entityidentifier.UserTable,
+			Columns: []string{entityidentifier.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.user_entity_identifiers = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.EntityIDs(); len(nodes) > 0 {

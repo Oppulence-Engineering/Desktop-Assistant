@@ -32,6 +32,7 @@ export interface EntitySpine {
    * @pattern ^[0-9A-HJKMNP-TV-Z]{26}$
    */
   id: string;
+  /** At most 32 identifier classes. Keys must match ^[A-Za-z][A-Za-z0-9_.-]{0,63}$; values are unique one-way fingerprints. */
   identifiers?: EntitySpineIdentifiers;
   /**
    * Non-customer entity kind.

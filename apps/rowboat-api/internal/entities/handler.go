@@ -13,9 +13,13 @@ import (
 
 const maxBody = 256 << 10
 
+// Handler exposes the authenticated RFC 022 entity spine routes.
 type Handler struct{ service *Service }
 
+// NewHandler constructs an entity spine HTTP handler.
 func NewHandler(service *Service) *Handler { return &Handler{service: service} }
+
+// Mount registers the entity spine routes on r.
 func (h *Handler) Mount(r chi.Router) {
 	r.Put("/v1/entities/{id}", h.Put)
 	r.Get("/v1/entities", h.Resolve)
@@ -64,6 +68,8 @@ func writeErr(w http.ResponseWriter, err error) {
 		}
 	}
 }
+
+// Put creates or updates a privacy-safe entity projection.
 func (h *Handler) Put(w http.ResponseWriter, r *http.Request) {
 	var in Projection
 	if !strict(w, r, &in) {
@@ -80,6 +86,8 @@ func (h *Handler) Put(w http.ResponseWriter, r *http.Request) {
 	}
 	httpx.WriteJSON(w, 200, out)
 }
+
+// Get returns one entity projection or durable merge tombstone.
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	out, err := h.service.Get(r.Context(), chi.URLParam(r, "id"))
 	if err != nil {
@@ -88,6 +96,8 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	httpx.WriteJSON(w, 200, out)
 }
+
+// Resolve reverse-resolves one exact external resource reference.
 func (h *Handler) Resolve(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	if len(q) != 1 || len(q["ref"]) != 1 || strings.TrimSpace(q["ref"][0]) == "" {
@@ -101,6 +111,8 @@ func (h *Handler) Resolve(w http.ResponseWriter, r *http.Request) {
 	}
 	httpx.WriteJSON(w, 200, out)
 }
+
+// Merge idempotently merges a source entity into a canonical target.
 func (h *Handler) Merge(w http.ResponseWriter, r *http.Request) {
 	var in MergeInput
 	if !strict(w, r, &in) {

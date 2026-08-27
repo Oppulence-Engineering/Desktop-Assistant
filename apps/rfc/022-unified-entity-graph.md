@@ -252,6 +252,55 @@ shared domain can be genuinely ambiguous and must remain reviewable. A merged
 - Shared spine syncs only the projection (verified) and is FGA-org-scoped.
 - The Copilot can answer a cross-product question about one entity citing refs from ≥ 2 products.
 
+## Completion record (2026-08-27)
+
+RFC 022 shipped after two independent adversarial reviews, one centered on the
+desktop/local-first boundary and one centered on the backend/tenant boundary.
+Every actionable finding was addressed before completion:
+
+- **Desktop authority and recovery:** ordinary graph writes cannot author
+  resolver-owned identity fields; startup always validates identities and
+  repairs duplicates; canonical adoption is collision-aware and refreshes the
+  watcher snapshot; ambiguous links can only be accepted through the
+  user-controlled renderer/IPC path.
+- **Durable synchronization:** the projection outbox classifies permanent and
+  transient failures, dead-letters non-retryable items without head-of-line
+  blocking, uses bounded backoff and lifecycle-owned replay, and exposes durable
+  degraded health and remediation when capacity is exhausted.
+- **Privacy and contracts:** only the fixed projection crosses the device
+  boundary; identifier values are one-way fingerprints and keys use the bounded
+  protocol taxonomy. OpenAPI, generated TypeScript, and generated Zod enforce
+  the same resource-ref, identifier-key, uniqueness, and collection limits.
+- **Tenant authority and convergence:** the current verified WorkOS org claim
+  selects the exact workspace; Ent read and mutation guards scope `Entity`,
+  `EntityResourceRef`, and `EntityIdentifier`; transaction retries and
+  compare-and-swap updates preserve concurrent evidence; stale aliases forward
+  new evidence to the canonical entity.
+
+Acceptance was exercised through the real integration boundaries, not only
+unit fixtures:
+
+- a disposable PostgreSQL instance passed the same-entity distinct-evidence
+  race test ten consecutive times, including equality between the public JSON
+  projection and normalized resource-ref/identifier rows;
+- the real OIDC dev identity service and API accepted same-org writes and reads,
+  hid both direct and reverse lookups from a different org, rejected raw
+  identifiers, unknown JSON fields, and unsupported media types, and preserved
+  both Conduitt and Cadence refs;
+- the built desktop `createEntitySpineClient` performed PUT, GET, and reverse
+  resolution against that API, and the generated web Zod response schema parsed
+  the resulting authenticated response;
+- focused desktop acceptance covers stable rename/backfill, deterministic
+  Conduitt + Cadence sandbox Read-seam reconciliation, human-gated ambiguous
+  links, offline replay/dead letters/capacity health, privacy-safe projection,
+  and Copilot source facts with independent product citations.
+
+The product-specific Conduitt, Cadence, Canvas, and Eigen connector
+implementations remain owned by RFC 008/RFC 013, as stated in this RFC's
+non-goals. RFC 022 provides and validates the production registration,
+reconciliation, projection, and citation contracts those connectors invoke; it
+does not duplicate their provider-specific transport work.
+
 ## Alternatives considered
 
 - **Fuzzy/embedding entity matching as the primary resolver** — rejected as primary: silent wrong-merges in finance are unacceptable. Deterministic-first; embeddings ([RFC 021](./complete-021-semantic-memory-index.md)) only **suggest** candidates for human confirmation.

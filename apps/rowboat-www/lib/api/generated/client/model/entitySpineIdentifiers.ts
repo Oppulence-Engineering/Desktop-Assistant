@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * At most 32 identifier classes. Keys must match ^[A-Za-z][A-Za-z0-9_.-]{0,63}$; values are unique one-way fingerprints.
+ */
 export type EntitySpineIdentifiers = { [key: string]: string[] };

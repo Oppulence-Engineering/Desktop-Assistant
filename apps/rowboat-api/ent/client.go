@@ -5266,6 +5266,22 @@ func (c *EntityIdentifierClient) QueryWorkspace(_m *EntityIdentifier) *RevenueWo
 	return query
 }
 
+// QueryUser queries the user edge of a EntityIdentifier.
+func (c *EntityIdentifierClient) QueryUser(_m *EntityIdentifier) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entityidentifier.Table, entityidentifier.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, entityidentifier.UserTable, entityidentifier.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryEntity queries the entity edge of a EntityIdentifier.
 func (c *EntityIdentifierClient) QueryEntity(_m *EntityIdentifier) *EntityQuery {
 	query := (&EntityClient{config: c.config}).Query()
@@ -5425,6 +5441,22 @@ func (c *EntityResourceRefClient) QueryWorkspace(_m *EntityResourceRef) *Revenue
 			sqlgraph.From(entityresourceref.Table, entityresourceref.FieldID, id),
 			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, entityresourceref.WorkspaceTable, entityresourceref.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a EntityResourceRef.
+func (c *EntityResourceRefClient) QueryUser(_m *EntityResourceRef) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entityresourceref.Table, entityresourceref.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, entityresourceref.UserTable, entityresourceref.UserColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -14885,22 +14917,6 @@ func (c *UserClient) QueryRelationshipPersons(_m *User) *PersonQuery {
 	return query
 }
 
-// QueryEntities queries the entities edge of a User.
-func (c *UserClient) QueryEntities(_m *User) *EntityQuery {
-	query := (&EntityClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(entity.Table, entity.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.EntitiesTable, user.EntitiesColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryPersonIdentities queries the person_identities edge of a User.
 func (c *UserClient) QueryPersonIdentities(_m *User) *PersonIdentityQuery {
 	query := (&PersonIdentityClient{config: c.config}).Query()
@@ -15166,6 +15182,54 @@ func (c *UserClient) QueryRelationshipSourceStatuses(_m *User) *RelationshipSour
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(relationshipsourcestatus.Table, relationshipsourcestatus.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.RelationshipSourceStatusesTable, user.RelationshipSourceStatusesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEntities queries the entities edge of a User.
+func (c *UserClient) QueryEntities(_m *User) *EntityQuery {
+	query := (&EntityClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(entity.Table, entity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.EntitiesTable, user.EntitiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEntityResourceRefs queries the entity_resource_refs edge of a User.
+func (c *UserClient) QueryEntityResourceRefs(_m *User) *EntityResourceRefQuery {
+	query := (&EntityResourceRefClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(entityresourceref.Table, entityresourceref.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.EntityResourceRefsTable, user.EntityResourceRefsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEntityIdentifiers queries the entity_identifiers edge of a User.
+func (c *UserClient) QueryEntityIdentifiers(_m *User) *EntityIdentifierQuery {
+	query := (&EntityIdentifierClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(entityidentifier.Table, entityidentifier.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.EntityIdentifiersTable, user.EntityIdentifiersColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
