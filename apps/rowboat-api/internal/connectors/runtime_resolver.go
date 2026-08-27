@@ -143,15 +143,12 @@ func (r *MCPRuntimeResolver) ResolveMCP(ctx context.Context, userID, connectorNa
 		current, currentErr := r.client.MCPConnection.Query().Where(
 			mcpconnection.IDEQ(mc.ID),
 			mcpconnection.ConnectorEQ(connectorName),
-			mcpconnection.OrganizationIDEQ(connectorOrganizationID(owner)),
+			mcpconnection.OrganizationIDEQ(bound.OrganizationID),
 			mcpconnection.StatusEQ("active"),
 			mcpconnection.CredentialGenerationEQ(result.CurrentCredentialGeneration),
 			mcpconnection.HasUserWith(user.IDEQ(owner.ID)),
 		).Only(auth.WithInternal(ctx))
 		if currentErr != nil {
-			if result != nil && result.Token.RefreshToken != "" {
-				_ = r.ory.revoke(context.WithoutCancel(ctx), result.Token.RefreshToken)
-			}
 			return "", "", "", fmt.Errorf("connector %q lifecycle changed during refresh: %w", connectorName, errConnectorCredentialSuperseded)
 		}
 		mc = current

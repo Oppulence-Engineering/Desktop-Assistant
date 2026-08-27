@@ -2,6 +2,9 @@ package connectors
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -369,4 +372,49 @@ func TestWorkerRuntimeRefreshFailureGenerationFenceAndFamilyInvalidation(t *test
 			}
 		}
 	})
+}
+
+func TestWorkerRuntimeCachedRefreshReloadFailureDoesNotRevokeFamily(t *testing.T) {
+	var revokeHits atomic.Int64
+	ory := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/oauth2/revoke" {
+			revokeHits.Add(1)
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(ory.Close)
+	client, owner, sealer := runtimeTestDB(t)
+	registry := runtimeRegistry(t, runtimeOAuthRegistry, "")
+	sealed, _ := sealer.SealString("cached-old-refresh")
+	connection := client.MCPConnection.Create().SetUser(owner).SetConnector("canvas").SetAudience("canvas-api").
+		SetOrganizationID("org_1").SetScopes([]string{"canvas:invoices.read"}).SetRefreshTokenEncrypted(sealed).
+		SaveX(auth.WithInternal(context.Background()))
+	cache := workosauth.NewMemoryRefreshCache()
+	resolver := NewMCPRuntimeResolver(client, sealer, registry, Config{OryPublicURL: ory.URL})
+	resolver.SetResourceTokenIssuer(&countingIssuer{})
+	resolver.SetRefreshDedup(cache, sealer, zap.NewNop())
+
+	bound := newConnectorRefreshContext("canvas", connection.ID.String(), "org_1", connection.CredentialGeneration, "canvas-api", connection.Scopes)
+	keyMaterial, err := json.Marshal(struct {
+		Context      connectorRefreshContext `json:"context"`
+		RefreshToken string                  `json:"refresh_token"`
+	}{Context: bound, RefreshToken: "cached-old-refresh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(keyMaterial)
+	resultKey := "connectors:refresh:result:v2:" + hex.EncodeToString(sum[:])
+	if err := resolver.refresh.store(context.Background(), resultKey, &connectorRefreshResult{
+		Context: bound, CurrentCredentialGeneration: connection.CredentialGeneration + 1,
+		Token: oryToken{AccessToken: "cached-access", RefreshToken: "cached-next-refresh", Scope: "canvas:invoices.read"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, _, _, err := resolver.ResolveMCP(context.Background(), owner.ID.String(), "canvas"); err == nil || !strings.Contains(err.Error(), errConnectorCredentialSuperseded.Error()) {
+		t.Fatalf("cached reload failure = %v", err)
+	}
+	if revokeHits.Load() != 0 {
+		t.Fatalf("cached lifecycle-owned refresh family was revoked %d times", revokeHits.Load())
+	}
 }
