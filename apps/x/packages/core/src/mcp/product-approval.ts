@@ -4,6 +4,7 @@ import {
   LEGACY_DEEP_LINK_SCHEME,
   OLDEST_DEEP_LINK_SCHEME,
 } from "@x/shared/branding";
+import type { McpApprovalRequestBinding } from "./approval-request.js";
 
 export type DirectProductMcpErrorKind =
   | "authentication_required"
@@ -81,13 +82,12 @@ export function parseMcpApprovalDeepLink(url: string): McpApprovalCompletion | n
 
 type PendingApproval = {
   challengeId: string;
-  serverName: string;
-  toolName: string;
-  argumentsDigest: string;
-  actor?: string;
-  action?: string;
+  binding: Readonly<McpApprovalRequestBinding & { actor?: string; action?: string }>;
   expiresAt: number;
-  retry: (token: string) => Promise<unknown>;
+  retry: (
+    token: string,
+    binding: Readonly<McpApprovalRequestBinding & { actor?: string; action?: string }>,
+  ) => Promise<unknown>;
   resolve: (value: unknown) => void;
   reject: (error: Error) => void;
   timer: ReturnType<typeof setTimeout>;
@@ -162,12 +162,13 @@ export function pendingMcpApprovalCount(): number {
 export function registerMcpApprovalResult(completion: McpApprovalCompletion): boolean {
   const pending = pendingApprovals.get(completion.challengeId);
   if (!pending) return false;
+  const { binding } = pending;
   const matches =
-    completion.serverName === pending.serverName &&
-    completion.toolName === pending.toolName &&
-    completion.argumentsDigest === pending.argumentsDigest &&
-    completion.actor === pending.actor &&
-    completion.action === pending.action;
+    completion.serverName === binding.serverName &&
+    completion.toolName === binding.toolName &&
+    completion.argumentsDigest === binding.argumentsDigest &&
+    completion.actor === binding.actor &&
+    completion.action === binding.action;
   if (!matches) {
     rejectPending(pending, "Approval completion did not match the pending product action.");
     return false;
@@ -183,7 +184,7 @@ export function registerMcpApprovalResult(completion: McpApprovalCompletion): bo
 
   // Remove before retrying. A replayed deep link cannot observe or reuse the token.
   finishPending(pending);
-  void pending.retry(completion.token).then(pending.resolve, pending.reject);
+  void pending.retry(completion.token, binding).then(pending.resolve, pending.reject);
   return true;
 }
 
@@ -261,7 +262,11 @@ export async function awaitApprovalAndRetry(
   toolName: string,
   input: Record<string, unknown>,
   error: unknown,
-  retry: (token: string) => Promise<unknown>,
+  requestBinding: Readonly<McpApprovalRequestBinding> | undefined,
+  retry: (
+    token: string,
+    binding: Readonly<McpApprovalRequestBinding & { actor?: string; action?: string }>,
+  ) => Promise<unknown>,
 ): Promise<unknown> {
   const classified = classifyDirectProductMcpError(error);
   if (classified.kind !== "approval_required" || !classified.approvalChallengeUrl)
@@ -283,6 +288,20 @@ export async function awaitApprovalAndRetry(
 
   const challengeId = randomBytes(32).toString("base64url");
   const argumentsDigest = canonicalArgumentsDigest(input);
+  if (
+    !requestBinding ||
+    requestBinding.serverName !== serverName ||
+    requestBinding.toolName !== toolName ||
+    requestBinding.argumentsDigest !== argumentsDigest
+  )
+    throw new Error("The approval-required MCP request could not be bound to its exact transport.");
+  const binding = deepFreeze({
+    ...requestBinding,
+    endpoint: { ...requestBinding.endpoint },
+    configuredEndpoint: { ...requestBinding.configuredEndpoint },
+    actor: classified.actor,
+    action: classified.action,
+  });
   url.searchParams.set("desktop_challenge_id", challengeId);
   url.searchParams.set("desktop_server", serverName);
   url.searchParams.set("desktop_tool", toolName);
@@ -294,11 +313,7 @@ export async function awaitApprovalAndRetry(
     const expiresAt = Date.now() + APPROVAL_TTL_MS;
     const pending: PendingApproval = {
       challengeId,
-      serverName,
-      toolName,
-      argumentsDigest,
-      actor: classified.actor,
-      action: classified.action,
+      binding,
       expiresAt,
       retry,
       resolve,

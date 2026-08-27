@@ -55,6 +55,7 @@ export interface ConnectorMCPTokenResponse {
   token_type?: string;
   expires_at?: number;
   mcpUrl: string;
+  connectionId?: string;
 }
 export interface HubSpotSearchResponse {
   objectType: "contact" | "company" | "deal" | "ticket";
@@ -361,7 +362,26 @@ export async function getConnectorMCPTokenViaBackend(
   );
   if (!res.ok)
     throw new Error(`connector mcp token failed: ${res.status} ${await readError(res)}`.trim());
-  return (await res.json()) as ConnectorMCPTokenResponse;
+  const body = z
+    .object({
+      access_token: z.string(),
+      token_type: z.string().optional(),
+      expires_at: z.number().optional(),
+      mcpUrl: z.string().optional(),
+      mcp_url: z.string().optional(),
+      connectionId: z.string().optional(),
+      connection_id: z.string().optional(),
+    })
+    .parse(await res.json());
+  const mcpUrl = body.mcpUrl ?? body.mcp_url;
+  if (!mcpUrl) throw new Error("connector mcp token returned no mcpUrl");
+  return {
+    access_token: body.access_token,
+    token_type: body.token_type,
+    expires_at: body.expires_at,
+    mcpUrl,
+    connectionId: body.connectionId ?? body.connection_id,
+  };
 }
 export async function searchHubSpotViaBackend(input: {
   objectType: "contact" | "company" | "deal" | "ticket";

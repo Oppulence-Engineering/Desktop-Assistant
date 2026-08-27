@@ -10,6 +10,12 @@ import {
   registerMcpApprovalResult,
   snapshotMcpArguments,
 } from "./product-approval.js";
+import {
+  mcpAuthorizationSessionFingerprint,
+  mcpHeadersDigest,
+  normalizeMcpEndpoint,
+  type McpApprovalRequestBinding,
+} from "./approval-request.js";
 
 const challengeError = {
   status: 428,
@@ -20,6 +26,35 @@ const challengeError = {
     action: "payment.release",
   }),
 };
+
+function binding(
+  serverName: string,
+  toolName: string,
+  input: Record<string, unknown>,
+): McpApprovalRequestBinding {
+  const headers = {
+    Authorization: "Bearer ordinary",
+    "content-type": "application/json",
+    "mcp-session-id": "session-1",
+  };
+  return {
+    serverName,
+    configuredEndpoint: normalizeMcpEndpoint("https://product.example/mcp"),
+    connectionId: "connection-1",
+    configGeneration: 1,
+    configDigest: "config-digest",
+    configuredHeadersDigest: mcpHeadersDigest({ Authorization: "Bearer ordinary" }),
+    credentialFingerprint: mcpAuthorizationSessionFingerprint({
+      Authorization: "Bearer ordinary",
+    }),
+    endpoint: normalizeMcpEndpoint("https://product.example/mcp"),
+    headersDigest: mcpHeadersDigest(headers),
+    authorizationSessionFingerprint: mcpAuthorizationSessionFingerprint(headers),
+    sessionId: "session-1",
+    toolName,
+    argumentsDigest: canonicalArgumentsDigest(input),
+  };
+}
 
 describe("direct product MCP authorization behavior", () => {
   beforeEach(() => configureMcpApprovalUrlOpener(async () => {}));
@@ -52,6 +87,7 @@ describe("direct product MCP authorization behavior", () => {
       "release_payment",
       input,
       challengeError,
+      binding("rowboat-corinthian", "release_payment", input),
       retry,
     );
     await vi.waitFor(() => expect(opened).toBeDefined());
@@ -80,11 +116,13 @@ describe("direct product MCP authorization behavior", () => {
       opened = new URL(url);
     });
     const retry = vi.fn(async (token: string) => token);
+    const input = { paymentRunId: "run_123" };
     const resultPromise = awaitApprovalAndRetry(
       "rowboat-cadence",
       "payment.execute",
-      { paymentRunId: "run_123" },
+      input,
       challengeError,
+      binding("rowboat-cadence", "payment.execute", input),
       retry,
     );
     await vi.waitFor(() => expect(opened).toBeDefined());
@@ -139,11 +177,13 @@ describe("direct product MCP authorization behavior", () => {
       opened = new URL(url);
     });
     const retry = vi.fn(async () => "should-not-run");
+    const input = { amount: 1 };
     const resultPromise = awaitApprovalAndRetry(
       "server",
       "tool",
-      { amount: 1 },
+      input,
       challengeError,
+      binding("server", "tool", input),
       retry,
     );
     await vi.waitFor(() => expect(opened).toBeDefined());
@@ -172,7 +212,14 @@ describe("direct product MCP authorization behavior", () => {
         opened = new URL(url);
       });
       const retry = vi.fn(async () => "should-not-run");
-      const resultPromise = awaitApprovalAndRetry("server", "tool", {}, challengeError, retry);
+      const resultPromise = awaitApprovalAndRetry(
+        "server",
+        "tool",
+        {},
+        challengeError,
+        binding("server", "tool", {}),
+        retry,
+      );
       await vi.waitFor(() => expect(opened).toBeDefined());
       registerMcpApprovalResult({
         challengeId: opened.searchParams.get("desktop_challenge_id")!,
@@ -206,6 +253,7 @@ describe("direct product MCP authorization behavior", () => {
       "tool",
       {},
       challengeError,
+      binding("server", "tool", {}),
       async () => "no",
     );
     const rejection = expect(resultPromise).rejects.toThrow(/expired/);
@@ -226,6 +274,7 @@ describe("direct product MCP authorization behavior", () => {
           status: 428,
           body: '{"approvalChallengeUrl":"javascript:alert(1)"}',
         },
+        undefined,
         async () => null,
       ),
     ).rejects.toThrow(/unsafe/);
