@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import { WorkDir } from "@x/core/config/config";
 import type { MeetingCalendarEvent } from "@x/shared/meetings";
 import { normalizeMeetingEvent } from "@x/shared/meetings";
-import { registerMcpApprovalResult } from "@x/core/mcp/product-approval";
+import { parseMcpApprovalDeepLink, registerMcpApprovalResult } from "@x/core/mcp/product-approval";
 import { peekMeetingController } from "./meeting-controller.js";
 import { sendRendererEvent } from "./renderer-events.js";
 import {
@@ -58,7 +58,7 @@ function getDeepLinkPayload(url: string): string | null {
  * triggers sync — both main-process concerns.
  */
 export function dispatchUrl(url: string): void {
-  const approval = parseMcpApprovalCompletion(url);
+  const approval = parseMcpApprovalDeepLink(url);
   if (approval) {
     registerMcpApprovalResult(approval);
     const win = mainWindowRef;
@@ -72,41 +72,6 @@ export function dispatchUrl(url: string): void {
   } else {
     dispatchDeepLink(url);
   }
-}
-
-function parseMcpApprovalCompletion(
-  url: string,
-): Parameters<typeof registerMcpApprovalResult>[0] | null {
-  const rest = getDeepLinkPayload(url);
-  if (rest === null) return null;
-  const queryIdx = rest.indexOf("?");
-  const host = (queryIdx >= 0 ? rest.slice(0, queryIdx) : rest).replace(/\/$/, "");
-  if (host !== "mcp-approval") return null;
-  const params = new URLSearchParams(queryIdx >= 0 ? rest.slice(queryIdx + 1) : "");
-  const serverName = params.get("server");
-  const challengeId = params.get("challenge_id") ?? params.get("desktop_challenge_id");
-  const toolName = params.get("tool");
-  const argumentsDigest = params.get("arguments_digest");
-  const statusValue = params.get("status") ?? "approved";
-  const token = params.get("approval_token") ?? params.get("token");
-  if (
-    !serverName ||
-    !challengeId ||
-    !toolName ||
-    !argumentsDigest ||
-    !["approved", "denied", "cancelled", "expired"].includes(statusValue)
-  )
-    return null;
-  return {
-    serverName,
-    challengeId,
-    toolName,
-    argumentsDigest,
-    actor: params.get("actor") ?? undefined,
-    action: params.get("action") ?? undefined,
-    status: statusValue as "approved" | "denied" | "cancelled" | "expired",
-    token: token ?? undefined,
-  };
 }
 
 export function dispatchDeepLink(url: string): void {

@@ -6,6 +6,7 @@ import {
   classifyDirectProductMcpError,
   configureMcpApprovalUrlOpener,
   pendingMcpApprovalCount,
+  parseMcpApprovalDeepLink,
   registerMcpApprovalResult,
   snapshotMcpArguments,
 } from "./product-approval.js";
@@ -71,6 +72,44 @@ describe("direct product MCP authorization behavior", () => {
     expect(registerMcpApprovalResult(completion)).toBe(false);
     expect(retry).toHaveBeenCalledOnce();
     expect(pendingMcpApprovalCount()).toBe(0);
+  });
+
+  it("resumes through the packaged desktop approval deep-link adapter", async () => {
+    let opened!: URL;
+    configureMcpApprovalUrlOpener(async (url) => {
+      opened = new URL(url);
+    });
+    const retry = vi.fn(async (token: string) => token);
+    const resultPromise = awaitApprovalAndRetry(
+      "rowboat-cadence",
+      "payment.execute",
+      { paymentRunId: "run_123" },
+      challengeError,
+      retry,
+    );
+    await vi.waitFor(() => expect(opened).toBeDefined());
+
+    const completionUrl = new URL("oppulence://mcp-approval");
+    completionUrl.searchParams.set(
+      "challenge_id",
+      opened.searchParams.get("desktop_challenge_id")!,
+    );
+    completionUrl.searchParams.set("server", opened.searchParams.get("desktop_server")!);
+    completionUrl.searchParams.set("tool", opened.searchParams.get("desktop_tool")!);
+    completionUrl.searchParams.set(
+      "arguments_digest",
+      opened.searchParams.get("desktop_arguments_digest")!,
+    );
+    completionUrl.searchParams.set("actor", opened.searchParams.get("desktop_actor")!);
+    completionUrl.searchParams.set("action", opened.searchParams.get("desktop_action")!);
+    completionUrl.searchParams.set("status", "approved");
+    completionUrl.searchParams.set("approval_token", "packaged-one-time-token");
+
+    const completion = parseMcpApprovalDeepLink(completionUrl.toString());
+    expect(completion).not.toBeNull();
+    expect(registerMcpApprovalResult(completion!)).toBe(true);
+    await expect(resultPromise).resolves.toBe("packaged-one-time-token");
+    expect(retry).toHaveBeenCalledOnce();
   });
 
   it("canonicalizes and freezes the approved retry arguments against caller mutation", async () => {

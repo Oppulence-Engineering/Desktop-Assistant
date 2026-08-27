@@ -1,7 +1,9 @@
+# Provisions the staging public desktop sign-in client. Connector-broker clients
+# are generated separately by charts/hydra/generate_clients.py.
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: rowboat-oauth-clients-staging
+  name: rowboat-desktop-oauth-client-staging
   labels:
     app.kubernetes.io/part-of: rowboat
     app.kubernetes.io/environment: staging
@@ -13,32 +15,40 @@ spec:
       restartPolicy: OnFailure
       automountServiceAccountToken: false
       containers:
-        - name: create-clients
+        - name: reconcile-client
           image: oryd/hydra:v2.2.0
           env:
             - name: HYDRA_ADMIN_URL
               value: http://hydra-admin.ory-staging.svc.cluster.local:4445
-            - name: BROKER_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: rowboat-api-secrets
-                  key: ORY_BROKER_CLIENT_SECRET
           command: [/bin/sh, -c]
           args:
             - |
               set -eu
-              hydra create oauth2-client --endpoint "$HYDRA_ADMIN_URL" \
-                --id solomon-desktop-staging --name "Solomon AI Desktop Staging" \
-                --grant-type authorization_code,refresh_token --response-type code \
-                --token-endpoint-auth-method none \
-                --scope openid,offline_access,email,profile \
-                --redirect-uri "solomon-ai-staging://callback" --skip-consent=false
-              hydra create oauth2-client --endpoint "$HYDRA_ADMIN_URL" \
-                --id solomon-connector-broker-staging --name "Solomon Connector Broker Staging" \
-                --grant-type authorization_code,refresh_token --response-type code \
-                --token-endpoint-auth-method client_secret_basic --secret "$BROKER_CLIENT_SECRET" \
-                --scope openid,offline_access,canvas.read,canvas.watch,corinthian.read,corinthian.act,cadence.read,cadence.payment_run.approve_request \
-                --redirect-uri "https://api.x.staging.solomon-ai.co/v1/connections/canvas/callback" \
-                --redirect-uri "https://api.x.staging.solomon-ai.co/v1/connections/corinthian/callback" \
-                --redirect-uri "https://api.x.staging.solomon-ai.co/v1/connections/cadence/callback" \
-                --audience mcp:canvas-staging,mcp:corinthian-staging,mcp:cadence-staging
+              if hydra get oauth2-client solomon-desktop-staging --endpoint "$HYDRA_ADMIN_URL" >/dev/null 2>&1; then
+                hydra update oauth2-client solomon-desktop-staging \
+                  --endpoint "$HYDRA_ADMIN_URL" \
+                  --name "Solomon AI Desktop Staging" \
+                  --grant-type authorization_code,refresh_token \
+                  --response-type code \
+                  --token-endpoint-auth-method none \
+                  --scope openid,offline_access,email,profile \
+                  --redirect-uri "solomon-ai-staging://callback" \
+                  --skip-consent=false
+              else
+                cat > /tmp/solomon-desktop-staging.json <<'JSON'
+              {
+                "client_id": "solomon-desktop-staging",
+                "client_name": "Solomon AI Desktop Staging",
+                "grant_types": ["authorization_code", "refresh_token"],
+                "response_types": ["code"],
+                "token_endpoint_auth_method": "none",
+                "scope": "openid offline_access email profile",
+                "redirect_uris": ["solomon-ai-staging://callback"],
+                "skip_consent": false
+              }
+              JSON
+                wget -qO- \
+                  --header "Content-Type: application/json" \
+                  --post-file /tmp/solomon-desktop-staging.json \
+                  "$HYDRA_ADMIN_URL/admin/clients" >/dev/null
+              fi

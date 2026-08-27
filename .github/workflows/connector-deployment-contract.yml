@@ -1,0 +1,68 @@
+name: Connector Deployment Contract
+
+on:
+  pull_request:
+    paths:
+      - "charts/hydra/**"
+      - "charts/rowboat-api/**"
+      - "charts/oauth-consent/**"
+      - "apps/rowboat-api/internal/connectors/default_connectors.json"
+      - "apps/rowboat-api/internal/connectors/registry.go"
+      - "apps/oauth-consent/**"
+      - "apps/x/package.json"
+      - "apps/x/pnpm-lock.yaml"
+      - "apps/x/packages/shared/src/branding.ts"
+      - "apps/x/packages/core/src/mcp/product-approval.ts"
+      - "apps/x/packages/core/src/mcp/product-approval.test.ts"
+      - "apps/x/apps/main/src/deeplink.ts"
+      - "packages/oauth-resource-server-go/**"
+      - "packages/oauth-resource-server-ts/**"
+      - "docs/deployment-examples/product-resource-server.env.example"
+      - "apps/rfc/012-connector-suite-and-consent-broker.md"
+      - "apps/rfc/020-native-third-party-action-engine.md"
+      - ".github/workflows/connector-deployment-contract.yml"
+  push:
+    branches: [develop, main]
+    paths:
+      - "charts/hydra/**"
+      - "charts/rowboat-api/**"
+      - "charts/oauth-consent/**"
+      - "apps/rowboat-api/internal/connectors/default_connectors.json"
+      - "apps/rowboat-api/internal/connectors/registry.go"
+      - "apps/oauth-consent/**"
+      - "apps/x/package.json"
+      - "apps/x/pnpm-lock.yaml"
+      - "apps/x/packages/shared/src/branding.ts"
+      - "apps/x/packages/core/src/mcp/product-approval.ts"
+      - "apps/x/packages/core/src/mcp/product-approval.test.ts"
+      - "apps/x/apps/main/src/deeplink.ts"
+      - "packages/oauth-resource-server-go/**"
+      - "packages/oauth-resource-server-ts/**"
+      - "docs/deployment-examples/product-resource-server.env.example"
+      - "apps/rfc/012-connector-suite-and-consent-broker.md"
+      - "apps/rfc/020-native-third-party-action-engine.md"
+      - ".github/workflows/connector-deployment-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deployment-contract:
+    name: Generated clients, charts, Hydra v2, and desktop approval
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: azure/setup-helm@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: apps/x/pnpm-lock.yaml
+      - name: Install desktop workspace dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: apps/x
+      - name: Run connector deployment-contract acceptance
+        run: ./charts/hydra/tests/deployment-contract.sh

@@ -1,4 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
+import {
+  DEEP_LINK_SCHEME,
+  LEGACY_DEEP_LINK_SCHEME,
+  OLDEST_DEEP_LINK_SCHEME,
+} from "@x/shared/branding";
 
 export type DirectProductMcpErrorKind =
   | "authentication_required"
@@ -26,6 +31,52 @@ export interface McpApprovalCompletion {
   action?: string;
   status: "approved" | "denied" | "cancelled" | "expired";
   token?: string;
+}
+
+const APPROVAL_DEEP_LINK_SCHEMES = [
+  DEEP_LINK_SCHEME,
+  LEGACY_DEEP_LINK_SCHEME,
+  OLDEST_DEEP_LINK_SCHEME,
+] as const;
+
+/** Parse the packaged desktop callback for a one-time product approval. */
+export function parseMcpApprovalDeepLink(url: string): McpApprovalCompletion | null {
+  const scheme = APPROVAL_DEEP_LINK_SCHEMES.find((candidate) => url.startsWith(`${candidate}://`));
+  if (!scheme) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  if (parsed.hostname !== "mcp-approval" || (parsed.pathname !== "" && parsed.pathname !== "/"))
+    return null;
+
+  const serverName = parsed.searchParams.get("server");
+  const challengeId =
+    parsed.searchParams.get("challenge_id") ?? parsed.searchParams.get("desktop_challenge_id");
+  const toolName = parsed.searchParams.get("tool");
+  const argumentsDigest = parsed.searchParams.get("arguments_digest");
+  const statusValue = parsed.searchParams.get("status") ?? "approved";
+  const token = parsed.searchParams.get("approval_token") ?? parsed.searchParams.get("token");
+  if (
+    !serverName ||
+    !challengeId ||
+    !toolName ||
+    !argumentsDigest ||
+    !["approved", "denied", "cancelled", "expired"].includes(statusValue)
+  )
+    return null;
+  return {
+    serverName,
+    challengeId,
+    toolName,
+    argumentsDigest,
+    actor: parsed.searchParams.get("actor") ?? undefined,
+    action: parsed.searchParams.get("action") ?? undefined,
+    status: statusValue as McpApprovalCompletion["status"],
+    token: token ?? undefined,
+  };
 }
 
 type PendingApproval = {

@@ -1,0 +1,138 @@
+{
+  "generatedBy": "charts/hydra/generate_clients.py",
+  "registry": "apps/rowboat-api/internal/connectors/default_connectors.json",
+  "environments": {
+    "production": {
+      "issuer": "https://api.oppulence.io",
+      "jwksUrl": "https://api.oppulence.io/.well-known/connector-jwks.json",
+      "allowedAlgorithms": [
+        "RS256"
+      ],
+      "products": [
+        {
+          "connector": "canvas",
+          "audience": "mcp:canvas",
+          "scopes": [
+            "canvas:invoices.read",
+            "canvas:customers.read",
+            "canvas:transactions.read"
+          ],
+          "requiredScopes": [
+            "canvas:invoices.read",
+            "canvas:customers.read"
+          ]
+        },
+        {
+          "connector": "corinthian",
+          "audience": "mcp:corinthian",
+          "scopes": [
+            "corinthian:ar.read",
+            "corinthian:collections.read"
+          ],
+          "requiredScopes": [
+            "corinthian:ar.read"
+          ]
+        },
+        {
+          "connector": "cadence",
+          "audience": "mcp:cadence",
+          "scopes": [
+            "cadence:payment_runs.read",
+            "cadence:payments.execute"
+          ],
+          "requiredScopes": [
+            "cadence:payment_runs.read"
+          ]
+        },
+        {
+          "connector": "conduit",
+          "audience": "mcp:conduit",
+          "scopes": [
+            "conduit:pipelines.read",
+            "conduit:pipelines.write"
+          ],
+          "requiredScopes": [
+            "conduit:pipelines.read"
+          ]
+        },
+        {
+          "connector": "eigen",
+          "audience": "mcp:eigen",
+          "scopes": [
+            "eigen:knowledge.read",
+            "eigen:actions.execute"
+          ],
+          "requiredScopes": [
+            "eigen:knowledge.read"
+          ]
+        }
+      ]
+    },
+    "staging": {
+      "issuer": "https://api.x.staging.solomon-ai.co",
+      "jwksUrl": "https://api.x.staging.solomon-ai.co/.well-known/connector-jwks.json",
+      "allowedAlgorithms": [
+        "RS256"
+      ],
+      "products": [
+        {
+          "connector": "canvas",
+          "audience": "mcp:canvas",
+          "scopes": [
+            "canvas:invoices.read",
+            "canvas:customers.read",
+            "canvas:transactions.read"
+          ],
+          "requiredScopes": [
+            "canvas:invoices.read",
+            "canvas:customers.read"
+          ]
+        },
+        {
+          "connector": "corinthian",
+          "audience": "mcp:corinthian",
+          "scopes": [
+            "corinthian:ar.read",
+            "corinthian:collections.read"
+          ],
+          "requiredScopes": [
+            "corinthian:ar.read"
+          ]
+        },
+        {
+          "connector": "cadence",
+          "audience": "mcp:cadence",
+          "scopes": [
+            "cadence:payment_runs.read",
+            "cadence:payments.execute"
+          ],
+          "requiredScopes": [
+            "cadence:payment_runs.read"
+          ]
+        },
+        {
+          "connector": "conduit",
+          "audience": "mcp:conduit",
+          "scopes": [
+            "conduit:pipelines.read",
+            "conduit:pipelines.write"
+          ],
+          "requiredScopes": [
+            "conduit:pipelines.read"
+          ]
+        },
+        {
+          "connector": "eigen",
+          "audience": "mcp:eigen",
+          "scopes": [
+            "eigen:knowledge.read",
+            "eigen:actions.execute"
+          ],
+          "requiredScopes": [
+            "eigen:knowledge.read"
+          ]
+        }
+      ]
+    }
+  }
+}

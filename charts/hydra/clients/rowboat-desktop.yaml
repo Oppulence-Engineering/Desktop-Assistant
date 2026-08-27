@@ -1,19 +1,9 @@
-# Provisions the OAuth 2.0 clients Solomon AI needs, via a one-shot Job that calls
-# the Hydra Admin API (cluster-internal). Idempotent: re-running updates the
-# clients. Apply after Hydra is up:
-#
-#   kubectl apply -n ory -f charts/hydra/clients/rowboat-desktop.yaml
-#
-# Two production clients are created. Copy this manifest for staging and change
-# the namespace, admin URL, client ids, callback hosts, and deep-link scheme. Do
-# not share clients or secrets across environments.
-#   1. solomon-desktop          — PUBLIC client (PKCE, no secret) for sign-in.
-#   2. solomon-connector-broker — CONFIDENTIAL client used by rowboat-api to
-#      broker per-product connector tokens (auth-code + refresh).
+# Provisions the public desktop sign-in client. Connector-broker clients are
+# generated separately by charts/hydra/generate_clients.py.
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: rowboat-oauth-clients
+  name: rowboat-desktop-oauth-client
   labels:
     app.kubernetes.io/part-of: rowboat
 spec:
@@ -21,51 +11,46 @@ spec:
   ttlSecondsAfterFinished: 600
   template:
     metadata:
-      name: rowboat-oauth-clients
+      name: rowboat-desktop-oauth-client
     spec:
       restartPolicy: OnFailure
+      automountServiceAccountToken: false
       containers:
-        - name: create-clients
+        - name: reconcile-client
           image: oryd/hydra:v2.2.0
           env:
             - name: HYDRA_ADMIN_URL
               value: http://hydra-admin.ory.svc.cluster.local:4445
-            # Confidential broker client secret, injected from a Secret.
-            - name: BROKER_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: rowboat-api-secrets
-                  key: ORY_BROKER_CLIENT_SECRET
-          command:
-            - /bin/sh
-            - -c
+          command: [/bin/sh, -c]
+          args:
             - |
               set -eu
-              echo "Creating solomon-desktop (public, PKCE)..."
-              hydra create oauth2-client \
-                --endpoint "$HYDRA_ADMIN_URL" \
-                --id solomon-desktop \
-                --name "Solomon AI Desktop" \
-                --grant-type authorization_code,refresh_token \
-                --response-type code \
-                --token-endpoint-auth-method none \
-                --scope openid,offline_access,email,profile \
-                --redirect-uri "http://127.0.0.1/callback" \
-                --redirect-uri "solomon-ai://callback" \
-                --skip-consent=false
-
-              echo "Creating solomon-connector-broker (confidential)..."
-              hydra create oauth2-client \
-                --endpoint "$HYDRA_ADMIN_URL" \
-                --id solomon-connector-broker \
-                --name "Solomon AI Connector Broker" \
-                --grant-type authorization_code,refresh_token \
-                --response-type code \
-                --token-endpoint-auth-method client_secret_basic \
-                --secret "$BROKER_CLIENT_SECRET" \
-                --scope openid,offline_access,canvas.read,canvas.watch,corinthian.read,corinthian.act,cadence.read,cadence.payment_run.approve_request \
-                --redirect-uri "https://api.x.solomon-ai.co/v1/connections/canvas/callback" \
-                --redirect-uri "https://api.x.solomon-ai.co/v1/connections/corinthian/callback" \
-                --redirect-uri "https://api.x.solomon-ai.co/v1/connections/billflow/callback" \
-                --audience mcp:canvas,mcp:corinthian,mcp:cadence
-              echo "done"
+              if hydra get oauth2-client solomon-desktop --endpoint "$HYDRA_ADMIN_URL" >/dev/null 2>&1; then
+                hydra update oauth2-client solomon-desktop \
+                  --endpoint "$HYDRA_ADMIN_URL" \
+                  --name "Solomon AI Desktop" \
+                  --grant-type authorization_code,refresh_token \
+                  --response-type code \
+                  --token-endpoint-auth-method none \
+                  --scope openid,offline_access,email,profile \
+                  --redirect-uri "http://127.0.0.1/callback" \
+                  --redirect-uri "solomon-ai://callback" \
+                  --skip-consent=false
+              else
+                cat > /tmp/solomon-desktop.json <<'JSON'
+              {
+                "client_id": "solomon-desktop",
+                "client_name": "Solomon AI Desktop",
+                "grant_types": ["authorization_code", "refresh_token"],
+                "response_types": ["code"],
+                "token_endpoint_auth_method": "none",
+                "scope": "openid offline_access email profile",
+                "redirect_uris": ["http://127.0.0.1/callback", "solomon-ai://callback"],
+                "skip_consent": false
+              }
+              JSON
+                wget -qO- \
+                  --header "Content-Type: application/json" \
+                  --post-file /tmp/solomon-desktop.json \
+                  "$HYDRA_ADMIN_URL/admin/clients" >/dev/null
+              fi
