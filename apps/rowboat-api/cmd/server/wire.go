@@ -120,7 +120,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// background JWKS refresh goroutine, which must outlive boot so the verifier
 	// can pick up the IdP's rotated signing keys. oauthrs.New bounds its own
 	// boot-time HTTP fetches internally, so this won't hang startup.
-	v, verr := oauthrs.New(ctx, oauthrs.Config{
+	v, verr := oauthrs.NewGeneric(ctx, oauthrs.GenericConfig{
 		IssuerURL:      cfg.TokenIssuer,
 		Audience:       cfg.TokenAudience,
 		JWKSURL:        cfg.JWKSURL,
@@ -305,7 +305,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		WebhookSigningSecret: cfg.WebhookSigningSecret,
 	}, log)
 	if strings.TrimSpace(cfg.GoogleWebhookOIDCAudience) != "" {
-		googlePushVerifier, err := oauthrs.New(ctx, oauthrs.Config{
+		googlePushVerifier, err := oauthrs.NewGeneric(ctx, oauthrs.GenericConfig{
 			IssuerURL:      "https://accounts.google.com",
 			Audience:       cfg.GoogleWebhookOIDCAudience,
 			JWKSURL:        "https://www.googleapis.com/oauth2/v3/certs",
