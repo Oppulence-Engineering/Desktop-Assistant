@@ -34,6 +34,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
@@ -131,6 +132,7 @@ type UserQuery struct {
 	withRelationshipParticipants                *RelationshipParticipantQuery
 	withRelationshipIdentities                  *RelationshipIdentityQuery
 	withRelationshipPersons                     *PersonQuery
+	withEntities                                *EntityQuery
 	withPersonIdentities                        *PersonIdentityQuery
 	withPersonSuppressions                      *PersonSuppressionQuery
 	withPersonAttributes                        *PersonAttributeQuery
@@ -195,6 +197,7 @@ type UserQuery struct {
 	withNamedRelationshipParticipants           map[string]*RelationshipParticipantQuery
 	withNamedRelationshipIdentities             map[string]*RelationshipIdentityQuery
 	withNamedRelationshipPersons                map[string]*PersonQuery
+	withNamedEntities                           map[string]*EntityQuery
 	withNamedPersonIdentities                   map[string]*PersonIdentityQuery
 	withNamedPersonSuppressions                 map[string]*PersonSuppressionQuery
 	withNamedPersonAttributes                   map[string]*PersonAttributeQuery
@@ -1218,6 +1221,28 @@ func (_q *UserQuery) QueryRelationshipPersons() *PersonQuery {
 	return query
 }
 
+// QueryEntities chains the current query on the "entities" edge.
+func (_q *UserQuery) QueryEntities() *EntityQuery {
+	query := (&EntityClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(entity.Table, entity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.EntitiesTable, user.EntitiesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryPersonIdentities chains the current query on the "person_identities" edge.
 func (_q *UserQuery) QueryPersonIdentities() *PersonIdentityQuery {
 	query := (&PersonIdentityClient{config: _q.config}).Query()
@@ -1872,6 +1897,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withRelationshipParticipants:           _q.withRelationshipParticipants.Clone(),
 		withRelationshipIdentities:             _q.withRelationshipIdentities.Clone(),
 		withRelationshipPersons:                _q.withRelationshipPersons.Clone(),
+		withEntities:                           _q.withEntities.Clone(),
 		withPersonIdentities:                   _q.withPersonIdentities.Clone(),
 		withPersonSuppressions:                 _q.withPersonSuppressions.Clone(),
 		withPersonAttributes:                   _q.withPersonAttributes.Clone(),
@@ -2381,6 +2407,17 @@ func (_q *UserQuery) WithRelationshipPersons(opts ...func(*PersonQuery)) *UserQu
 	return _q
 }
 
+// WithEntities tells the query-builder to eager-load the nodes that are connected to
+// the "entities" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithEntities(opts ...func(*EntityQuery)) *UserQuery {
+	query := (&EntityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEntities = query
+	return _q
+}
+
 // WithPersonIdentities tells the query-builder to eager-load the nodes that are connected to
 // the "person_identities" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithPersonIdentities(opts ...func(*PersonIdentityQuery)) *UserQuery {
@@ -2668,7 +2705,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [63]bool{
+		loadedTypes = [64]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -2713,6 +2750,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withRelationshipParticipants != nil,
 			_q.withRelationshipIdentities != nil,
 			_q.withRelationshipPersons != nil,
+			_q.withEntities != nil,
 			_q.withPersonIdentities != nil,
 			_q.withPersonSuppressions != nil,
 			_q.withPersonAttributes != nil,
@@ -3089,6 +3127,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadRelationshipPersons(ctx, query, nodes,
 			func(n *User) { n.Edges.RelationshipPersons = []*Person{} },
 			func(n *User, e *Person) { n.Edges.RelationshipPersons = append(n.Edges.RelationshipPersons, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withEntities; query != nil {
+		if err := _q.loadEntities(ctx, query, nodes,
+			func(n *User) { n.Edges.Entities = []*Entity{} },
+			func(n *User, e *Entity) { n.Edges.Entities = append(n.Edges.Entities, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -3555,6 +3600,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadRelationshipPersons(ctx, query, nodes,
 			func(n *User) { n.appendNamedRelationshipPersons(name) },
 			func(n *User, e *Person) { n.appendNamedRelationshipPersons(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedEntities {
+		if err := _q.loadEntities(ctx, query, nodes,
+			func(n *User) { n.appendNamedEntities(name) },
+			func(n *User, e *Entity) { n.appendNamedEntities(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -5062,6 +5114,37 @@ func (_q *UserQuery) loadRelationshipPersons(ctx context.Context, query *PersonQ
 	}
 	return nil
 }
+func (_q *UserQuery) loadEntities(ctx context.Context, query *EntityQuery, nodes []*User, init func(*User), assign func(*User, *Entity)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Entity(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.EntitiesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_entities
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_entities" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_entities" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *UserQuery) loadPersonIdentities(ctx context.Context, query *PersonIdentityQuery, nodes []*User, init func(*User), assign func(*User, *PersonIdentity)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*User)
@@ -6335,6 +6418,20 @@ func (_q *UserQuery) WithNamedRelationshipPersons(name string, opts ...func(*Per
 		_q.withNamedRelationshipPersons = make(map[string]*PersonQuery)
 	}
 	_q.withNamedRelationshipPersons[name] = query
+	return _q
+}
+
+// WithNamedEntities tells the query-builder to eager-load the nodes that are connected to the "entities"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedEntities(name string, opts ...func(*EntityQuery)) *UserQuery {
+	query := (&EntityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedEntities == nil {
+		_q.withNamedEntities = make(map[string]*EntityQuery)
+	}
+	_q.withNamedEntities[name] = query
 	return _q
 }
 

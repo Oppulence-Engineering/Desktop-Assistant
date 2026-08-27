@@ -1388,6 +1388,29 @@ func HasRelationshipPersonsWith(preds ...predicate.Person) predicate.User {
 	})
 }
 
+// HasEntities applies the HasEdge predicate on the "entities" edge.
+func HasEntities() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, EntitiesTable, EntitiesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasEntitiesWith applies the HasEdge predicate on the "entities" edge with a given conditions (other predicates).
+func HasEntitiesWith(preds ...predicate.Entity) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newEntitiesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasPersonIdentities applies the HasEdge predicate on the "person_identities" edge.
 func HasPersonIdentities() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

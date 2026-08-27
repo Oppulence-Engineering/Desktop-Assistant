@@ -18,6 +18,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
@@ -88,6 +89,7 @@ type RevenueWorkspaceQuery struct {
 	withRelationshipStateSnapshots              *RelationshipStateSnapshotQuery
 	withRelationshipSourceStatuses              *RelationshipSourceStatusQuery
 	withRelationshipPersons                     *PersonQuery
+	withEntities                                *EntityQuery
 	withPersonIdentities                        *PersonIdentityQuery
 	withPersonSuppressions                      *PersonSuppressionQuery
 	withPersonAttributes                        *PersonAttributeQuery
@@ -124,6 +126,7 @@ type RevenueWorkspaceQuery struct {
 	withNamedRelationshipStateSnapshots         map[string]*RelationshipStateSnapshotQuery
 	withNamedRelationshipSourceStatuses         map[string]*RelationshipSourceStatusQuery
 	withNamedRelationshipPersons                map[string]*PersonQuery
+	withNamedEntities                           map[string]*EntityQuery
 	withNamedPersonIdentities                   map[string]*PersonIdentityQuery
 	withNamedPersonSuppressions                 map[string]*PersonSuppressionQuery
 	withNamedPersonAttributes                   map[string]*PersonAttributeQuery
@@ -803,6 +806,28 @@ func (_q *RevenueWorkspaceQuery) QueryRelationshipPersons() *PersonQuery {
 	return query
 }
 
+// QueryEntities chains the current query on the "entities" edge.
+func (_q *RevenueWorkspaceQuery) QueryEntities() *EntityQuery {
+	query := (&EntityClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(entity.Table, entity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.EntitiesTable, revenueworkspace.EntitiesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryPersonIdentities chains the current query on the "person_identities" edge.
 func (_q *RevenueWorkspaceQuery) QueryPersonIdentities() *PersonIdentityQuery {
 	query := (&PersonIdentityClient{config: _q.config}).Query()
@@ -1134,6 +1159,7 @@ func (_q *RevenueWorkspaceQuery) Clone() *RevenueWorkspaceQuery {
 		withRelationshipStateSnapshots:         _q.withRelationshipStateSnapshots.Clone(),
 		withRelationshipSourceStatuses:         _q.withRelationshipSourceStatuses.Clone(),
 		withRelationshipPersons:                _q.withRelationshipPersons.Clone(),
+		withEntities:                           _q.withEntities.Clone(),
 		withPersonIdentities:                   _q.withPersonIdentities.Clone(),
 		withPersonSuppressions:                 _q.withPersonSuppressions.Clone(),
 		withPersonAttributes:                   _q.withPersonAttributes.Clone(),
@@ -1464,6 +1490,17 @@ func (_q *RevenueWorkspaceQuery) WithRelationshipPersons(opts ...func(*PersonQue
 	return _q
 }
 
+// WithEntities tells the query-builder to eager-load the nodes that are connected to
+// the "entities" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithEntities(opts ...func(*EntityQuery)) *RevenueWorkspaceQuery {
+	query := (&EntityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withEntities = query
+	return _q
+}
+
 // WithPersonIdentities tells the query-builder to eager-load the nodes that are connected to
 // the "person_identities" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *RevenueWorkspaceQuery) WithPersonIdentities(opts ...func(*PersonIdentityQuery)) *RevenueWorkspaceQuery {
@@ -1604,7 +1641,7 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		nodes       = []*RevenueWorkspace{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [34]bool{
+		loadedTypes = [35]bool{
 			_q.withUser != nil,
 			_q.withMembers != nil,
 			_q.withRelationships != nil,
@@ -1634,6 +1671,7 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			_q.withRelationshipStateSnapshots != nil,
 			_q.withRelationshipSourceStatuses != nil,
 			_q.withRelationshipPersons != nil,
+			_q.withEntities != nil,
 			_q.withPersonIdentities != nil,
 			_q.withPersonSuppressions != nil,
 			_q.withPersonAttributes != nil,
@@ -1912,6 +1950,13 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			return nil, err
 		}
 	}
+	if query := _q.withEntities; query != nil {
+		if err := _q.loadEntities(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.Entities = []*Entity{} },
+			func(n *RevenueWorkspace, e *Entity) { n.Edges.Entities = append(n.Edges.Entities, e) }); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withPersonIdentities; query != nil {
 		if err := _q.loadPersonIdentities(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.Edges.PersonIdentities = []*PersonIdentity{} },
@@ -2166,6 +2211,13 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		if err := _q.loadRelationshipPersons(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.appendNamedRelationshipPersons(name) },
 			func(n *RevenueWorkspace, e *Person) { n.appendNamedRelationshipPersons(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedEntities {
+		if err := _q.loadEntities(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedEntities(name) },
+			func(n *RevenueWorkspace, e *Entity) { n.appendNamedEntities(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -3112,6 +3164,37 @@ func (_q *RevenueWorkspaceQuery) loadRelationshipPersons(ctx context.Context, qu
 	}
 	return nil
 }
+func (_q *RevenueWorkspaceQuery) loadEntities(ctx context.Context, query *EntityQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *Entity)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Entity(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.EntitiesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *RevenueWorkspaceQuery) loadPersonIdentities(ctx context.Context, query *PersonIdentityQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *PersonIdentity)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
@@ -3741,6 +3824,20 @@ func (_q *RevenueWorkspaceQuery) WithNamedRelationshipPersons(name string, opts 
 		_q.withNamedRelationshipPersons = make(map[string]*PersonQuery)
 	}
 	_q.withNamedRelationshipPersons[name] = query
+	return _q
+}
+
+// WithNamedEntities tells the query-builder to eager-load the nodes that are connected to the "entities"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedEntities(name string, opts ...func(*EntityQuery)) *RevenueWorkspaceQuery {
+	query := (&EntityClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedEntities == nil {
+		_q.withNamedEntities = make(map[string]*EntityQuery)
+	}
+	_q.withNamedEntities[name] = query
 	return _q
 }
 

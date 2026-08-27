@@ -110,6 +110,8 @@ type RevenueWorkspaceEdges struct {
 	RelationshipSourceStatuses []*RelationshipSourceStatus `json:"relationship_source_statuses,omitempty"`
 	// RelationshipPersons holds the value of the relationship_persons edge.
 	RelationshipPersons []*Person `json:"relationship_persons,omitempty"`
+	// Entities holds the value of the entities edge.
+	Entities []*Entity `json:"entities,omitempty"`
 	// PersonIdentities holds the value of the person_identities edge.
 	PersonIdentities []*PersonIdentity `json:"person_identities,omitempty"`
 	// PersonSuppressions holds the value of the person_suppressions edge.
@@ -122,9 +124,9 @@ type RevenueWorkspaceEdges struct {
 	PersonMergeCandidates []*PersonMergeCandidate `json:"person_merge_candidates,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [34]bool
+	loadedTypes [35]bool
 	// totalCount holds the count of the edges above.
-	totalCount [34]map[string]int
+	totalCount [35]map[string]int
 
 	namedMembers                            map[string][]*RevenueWorkspaceMember
 	namedRelationships                      map[string][]*Relationship
@@ -154,6 +156,7 @@ type RevenueWorkspaceEdges struct {
 	namedRelationshipStateSnapshots         map[string][]*RelationshipStateSnapshot
 	namedRelationshipSourceStatuses         map[string][]*RelationshipSourceStatus
 	namedRelationshipPersons                map[string][]*Person
+	namedEntities                           map[string][]*Entity
 	namedPersonIdentities                   map[string][]*PersonIdentity
 	namedPersonSuppressions                 map[string][]*PersonSuppression
 	namedPersonAttributes                   map[string][]*PersonAttribute
@@ -424,10 +427,19 @@ func (e RevenueWorkspaceEdges) RelationshipPersonsOrErr() ([]*Person, error) {
 	return nil, &NotLoadedError{edge: "relationship_persons"}
 }
 
+// EntitiesOrErr returns the Entities value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) EntitiesOrErr() ([]*Entity, error) {
+	if e.loadedTypes[29] {
+		return e.Entities, nil
+	}
+	return nil, &NotLoadedError{edge: "entities"}
+}
+
 // PersonIdentitiesOrErr returns the PersonIdentities value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) PersonIdentitiesOrErr() ([]*PersonIdentity, error) {
-	if e.loadedTypes[29] {
+	if e.loadedTypes[30] {
 		return e.PersonIdentities, nil
 	}
 	return nil, &NotLoadedError{edge: "person_identities"}
@@ -436,7 +448,7 @@ func (e RevenueWorkspaceEdges) PersonIdentitiesOrErr() ([]*PersonIdentity, error
 // PersonSuppressionsOrErr returns the PersonSuppressions value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) PersonSuppressionsOrErr() ([]*PersonSuppression, error) {
-	if e.loadedTypes[30] {
+	if e.loadedTypes[31] {
 		return e.PersonSuppressions, nil
 	}
 	return nil, &NotLoadedError{edge: "person_suppressions"}
@@ -445,7 +457,7 @@ func (e RevenueWorkspaceEdges) PersonSuppressionsOrErr() ([]*PersonSuppression, 
 // PersonAttributesOrErr returns the PersonAttributes value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) PersonAttributesOrErr() ([]*PersonAttribute, error) {
-	if e.loadedTypes[31] {
+	if e.loadedTypes[32] {
 		return e.PersonAttributes, nil
 	}
 	return nil, &NotLoadedError{edge: "person_attributes"}
@@ -454,7 +466,7 @@ func (e RevenueWorkspaceEdges) PersonAttributesOrErr() ([]*PersonAttribute, erro
 // PersonInteractionStatsOrErr returns the PersonInteractionStats value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) PersonInteractionStatsOrErr() ([]*PersonInteractionStat, error) {
-	if e.loadedTypes[32] {
+	if e.loadedTypes[33] {
 		return e.PersonInteractionStats, nil
 	}
 	return nil, &NotLoadedError{edge: "person_interaction_stats"}
@@ -463,7 +475,7 @@ func (e RevenueWorkspaceEdges) PersonInteractionStatsOrErr() ([]*PersonInteracti
 // PersonMergeCandidatesOrErr returns the PersonMergeCandidates value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) PersonMergeCandidatesOrErr() ([]*PersonMergeCandidate, error) {
-	if e.loadedTypes[33] {
+	if e.loadedTypes[34] {
 		return e.PersonMergeCandidates, nil
 	}
 	return nil, &NotLoadedError{edge: "person_merge_candidates"}
@@ -744,6 +756,11 @@ func (_m *RevenueWorkspace) QueryRelationshipSourceStatuses() *RelationshipSourc
 // QueryRelationshipPersons queries the "relationship_persons" edge of the RevenueWorkspace entity.
 func (_m *RevenueWorkspace) QueryRelationshipPersons() *PersonQuery {
 	return NewRevenueWorkspaceClient(_m.config).QueryRelationshipPersons(_m)
+}
+
+// QueryEntities queries the "entities" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryEntities() *EntityQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryEntities(_m)
 }
 
 // QueryPersonIdentities queries the "person_identities" edge of the RevenueWorkspace entity.
@@ -1510,6 +1527,30 @@ func (_m *RevenueWorkspace) appendNamedRelationshipPersons(name string, edges ..
 		_m.Edges.namedRelationshipPersons[name] = []*Person{}
 	} else {
 		_m.Edges.namedRelationshipPersons[name] = append(_m.Edges.namedRelationshipPersons[name], edges...)
+	}
+}
+
+// NamedEntities returns the Entities named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedEntities(name string) ([]*Entity, error) {
+	if _m.Edges.namedEntities == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedEntities[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedEntities(name string, edges ...*Entity) {
+	if _m.Edges.namedEntities == nil {
+		_m.Edges.namedEntities = make(map[string][]*Entity)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedEntities[name] = []*Entity{}
+	} else {
+		_m.Edges.namedEntities[name] = append(_m.Edges.namedEntities[name], edges...)
 	}
 }
 

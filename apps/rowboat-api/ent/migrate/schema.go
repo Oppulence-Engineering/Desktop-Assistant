@@ -1205,6 +1205,60 @@ var (
 			},
 		},
 	}
+	// EntitiesColumns holds the columns for the "entities" table.
+	EntitiesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "entity_id", Type: field.TypeString},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "display_name", Type: field.TypeString},
+		{Name: "resource_refs", Type: field.TypeJSON},
+		{Name: "identifiers", Type: field.TypeJSON},
+		{Name: "one_line_summary", Type: field.TypeString, Nullable: true},
+		{Name: "status", Type: field.TypeString, Default: "active"},
+		{Name: "canonical_entity_id", Type: field.TypeString, Nullable: true},
+		{Name: "version", Type: field.TypeInt, Default: 1},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_entities", Type: field.TypeUUID},
+	}
+	// EntitiesTable holds the schema information for the "entities" table.
+	EntitiesTable = &schema.Table{
+		Name:       "entities",
+		Columns:    EntitiesColumns,
+		PrimaryKey: []*schema.Column{EntitiesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "entities_revenue_workspaces_entities",
+				Columns:    []*schema.Column{EntitiesColumns[12]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "entities_users_entities",
+				Columns:    []*schema.Column{EntitiesColumns[13]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "entity_entity_id_revenue_workspace_id",
+				Unique:  true,
+				Columns: []*schema.Column{EntitiesColumns[3], EntitiesColumns[12]},
+			},
+			{
+				Name:    "entity_status_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{EntitiesColumns[9], EntitiesColumns[12]},
+			},
+			{
+				Name:    "entity_display_name_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{EntitiesColumns[5], EntitiesColumns[12]},
+			},
+		},
+	}
 	// GoogleWatchesColumns holds the columns for the "google_watches" table.
 	GoogleWatchesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -3696,6 +3750,7 @@ var (
 		CommitmentEventsTable,
 		ConversationIntelligenceArtifactsTable,
 		CreditLedgersTable,
+		EntitiesTable,
 		GoogleWatchesTable,
 		LlmUsagesTable,
 		LlmUsageHistoriesTable,
@@ -3801,6 +3856,8 @@ func init() {
 	ConversationIntelligenceArtifactsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
 	ConversationIntelligenceArtifactsTable.ForeignKeys[2].RefTable = UsersTable
 	CreditLedgersTable.ForeignKeys[0].RefTable = UsersTable
+	EntitiesTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	EntitiesTable.ForeignKeys[1].RefTable = UsersTable
 	GoogleWatchesTable.ForeignKeys[0].RefTable = UsersTable
 	LlmUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	McpConnectionsTable.ForeignKeys[0].RefTable = UsersTable

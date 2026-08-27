@@ -75,6 +75,9 @@ type ConversationIntelligenceArtifact func(*sql.Selector)
 // CreditLedger is the predicate function for creditledger builders.
 type CreditLedger func(*sql.Selector)
 
+// Entity is the predicate function for entity builders.
+type Entity func(*sql.Selector)
+
 // GoogleWatch is the predicate function for googlewatch builders.
 type GoogleWatch func(*sql.Selector)
 

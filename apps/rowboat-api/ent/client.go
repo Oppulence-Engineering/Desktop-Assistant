@@ -40,6 +40,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusagehistory"
@@ -142,6 +143,8 @@ type Client struct {
 	ConversationIntelligenceArtifact *ConversationIntelligenceArtifactClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
+	// Entity is the client for interacting with the Entity builders.
+	Entity *EntityClient
 	// GoogleWatch is the client for interacting with the GoogleWatch builders.
 	GoogleWatch *GoogleWatchClient
 	// LLMUsage is the client for interacting with the LLMUsage builders.
@@ -279,6 +282,7 @@ func (c *Client) init() {
 	c.CommitmentEvent = NewCommitmentEventClient(c.config)
 	c.ConversationIntelligenceArtifact = NewConversationIntelligenceArtifactClient(c.config)
 	c.CreditLedger = NewCreditLedgerClient(c.config)
+	c.Entity = NewEntityClient(c.config)
 	c.GoogleWatch = NewGoogleWatchClient(c.config)
 	c.LLMUsage = NewLLMUsageClient(c.config)
 	c.LLMUsageHistory = NewLLMUsageHistoryClient(c.config)
@@ -481,6 +485,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		CommitmentEvent:                   NewCommitmentEventClient(cfg),
 		ConversationIntelligenceArtifact:  NewConversationIntelligenceArtifactClient(cfg),
 		CreditLedger:                      NewCreditLedgerClient(cfg),
+		Entity:                            NewEntityClient(cfg),
 		GoogleWatch:                       NewGoogleWatchClient(cfg),
 		LLMUsage:                          NewLLMUsageClient(cfg),
 		LLMUsageHistory:                   NewLLMUsageHistoryClient(cfg),
@@ -572,6 +577,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		CommitmentEvent:                   NewCommitmentEventClient(cfg),
 		ConversationIntelligenceArtifact:  NewConversationIntelligenceArtifactClient(cfg),
 		CreditLedger:                      NewCreditLedgerClient(cfg),
+		Entity:                            NewEntityClient(cfg),
 		GoogleWatch:                       NewGoogleWatchClient(cfg),
 		LLMUsage:                          NewLLMUsageClient(cfg),
 		LLMUsageHistory:                   NewLLMUsageHistoryClient(cfg),
@@ -656,9 +662,9 @@ func (c *Client) Use(hooks ...Hook) {
 		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
 		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
 		c.CommitmentDependency, c.CommitmentEvent, c.ConversationIntelligenceArtifact,
-		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
-		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
-		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
+		c.CreditLedger, c.Entity, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory,
+		c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta,
+		c.MailSignal, c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
 		c.OAuthConnectionHistory, c.OAuthPending, c.Person, c.PersonAttribute,
 		c.PersonIdentity, c.PersonInteractionStat, c.PersonMergeCandidate,
 		c.PersonSuppression, c.PolicyDecisionSnapshot, c.Relationship,
@@ -687,9 +693,9 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
 		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
 		c.CommitmentDependency, c.CommitmentEvent, c.ConversationIntelligenceArtifact,
-		c.CreditLedger, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
-		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
-		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
+		c.CreditLedger, c.Entity, c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory,
+		c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta,
+		c.MailSignal, c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
 		c.OAuthConnectionHistory, c.OAuthPending, c.Person, c.PersonAttribute,
 		c.PersonIdentity, c.PersonInteractionStat, c.PersonMergeCandidate,
 		c.PersonSuppression, c.PolicyDecisionSnapshot, c.Relationship,
@@ -757,6 +763,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ConversationIntelligenceArtifact.mutate(ctx, m)
 	case *CreditLedgerMutation:
 		return c.CreditLedger.mutate(ctx, m)
+	case *EntityMutation:
+		return c.Entity.mutate(ctx, m)
 	case *GoogleWatchMutation:
 		return c.GoogleWatch.mutate(ctx, m)
 	case *LLMUsageMutation:
@@ -4915,6 +4923,172 @@ func (c *CreditLedgerClient) mutate(ctx context.Context, m *CreditLedgerMutation
 		return (&CreditLedgerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CreditLedger mutation op: %q", m.Op())
+	}
+}
+
+// EntityClient is a client for the Entity schema.
+type EntityClient struct {
+	config
+}
+
+// NewEntityClient returns a client for the Entity from the given config.
+func NewEntityClient(c config) *EntityClient {
+	return &EntityClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `entity.Hooks(f(g(h())))`.
+func (c *EntityClient) Use(hooks ...Hook) {
+	c.hooks.Entity = append(c.hooks.Entity, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `entity.Intercept(f(g(h())))`.
+func (c *EntityClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Entity = append(c.inters.Entity, interceptors...)
+}
+
+// Create returns a builder for creating a Entity entity.
+func (c *EntityClient) Create() *EntityCreate {
+	mutation := newEntityMutation(c.config, OpCreate)
+	return &EntityCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Entity entities.
+func (c *EntityClient) CreateBulk(builders ...*EntityCreate) *EntityCreateBulk {
+	return &EntityCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *EntityClient) MapCreateBulk(slice any, setFunc func(*EntityCreate, int)) *EntityCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &EntityCreateBulk{err: fmt.Errorf("calling to EntityClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*EntityCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &EntityCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Entity.
+func (c *EntityClient) Update() *EntityUpdate {
+	mutation := newEntityMutation(c.config, OpUpdate)
+	return &EntityUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *EntityClient) UpdateOne(_m *Entity) *EntityUpdateOne {
+	mutation := newEntityMutation(c.config, OpUpdateOne, withEntity(_m))
+	return &EntityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *EntityClient) UpdateOneID(id uuid.UUID) *EntityUpdateOne {
+	mutation := newEntityMutation(c.config, OpUpdateOne, withEntityID(id))
+	return &EntityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Entity.
+func (c *EntityClient) Delete() *EntityDelete {
+	mutation := newEntityMutation(c.config, OpDelete)
+	return &EntityDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *EntityClient) DeleteOne(_m *Entity) *EntityDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *EntityClient) DeleteOneID(id uuid.UUID) *EntityDeleteOne {
+	builder := c.Delete().Where(entity.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &EntityDeleteOne{builder}
+}
+
+// Query returns a query builder for Entity.
+func (c *EntityClient) Query() *EntityQuery {
+	return &EntityQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeEntity},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Entity entity by its id.
+func (c *EntityClient) Get(ctx context.Context, id uuid.UUID) (*Entity, error) {
+	return c.Query().Where(entity.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *EntityClient) GetX(ctx context.Context, id uuid.UUID) *Entity {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a Entity.
+func (c *EntityClient) QueryWorkspace(_m *Entity) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entity.Table, entity.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, entity.WorkspaceTable, entity.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a Entity.
+func (c *EntityClient) QueryUser(_m *Entity) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entity.Table, entity.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, entity.UserTable, entity.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *EntityClient) Hooks() []Hook {
+	hooks := c.hooks.Entity
+	return append(hooks[:len(hooks):len(hooks)], entity.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *EntityClient) Interceptors() []Interceptor {
+	return c.inters.Entity
+}
+
+func (c *EntityClient) mutate(ctx context.Context, m *EntityMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&EntityCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&EntityUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&EntityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&EntityDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Entity mutation op: %q", m.Op())
 	}
 }
 
@@ -12747,6 +12921,22 @@ func (c *RevenueWorkspaceClient) QueryRelationshipPersons(_m *RevenueWorkspace) 
 	return query
 }
 
+// QueryEntities queries the entities edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryEntities(_m *RevenueWorkspace) *EntityQuery {
+	query := (&EntityClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(entity.Table, entity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.EntitiesTable, revenueworkspace.EntitiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryPersonIdentities queries the person_identities edge of a RevenueWorkspace.
 func (c *RevenueWorkspaceClient) QueryPersonIdentities(_m *RevenueWorkspace) *PersonIdentityQuery {
 	query := (&PersonIdentityClient{config: c.config}).Query()
@@ -14281,6 +14471,22 @@ func (c *UserClient) QueryRelationshipPersons(_m *User) *PersonQuery {
 	return query
 }
 
+// QueryEntities queries the entities edge of a User.
+func (c *UserClient) QueryEntities(_m *User) *EntityQuery {
+	query := (&EntityClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(entity.Table, entity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.EntitiesTable, user.EntitiesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryPersonIdentities queries the person_identities edge of a User.
 func (c *UserClient) QueryPersonIdentities(_m *User) *PersonIdentityQuery {
 	query := (&PersonIdentityClient{config: c.config}).Query()
@@ -15218,7 +15424,7 @@ type (
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
 		CommitmentDependency, CommitmentEvent, ConversationIntelligenceArtifact,
-		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
+		CreditLedger, Entity, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
 		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailSignal, MailThread,
 		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
 		Person, PersonAttribute, PersonIdentity, PersonInteractionStat,
@@ -15240,7 +15446,7 @@ type (
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
 		CommitmentDependency, CommitmentEvent, ConversationIntelligenceArtifact,
-		CreditLedger, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
+		CreditLedger, Entity, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
 		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailSignal, MailThread,
 		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
 		Person, PersonAttribute, PersonIdentity, PersonInteractionStat,

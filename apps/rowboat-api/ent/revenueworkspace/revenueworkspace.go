@@ -98,6 +98,8 @@ const (
 	EdgeRelationshipSourceStatuses = "relationship_source_statuses"
 	// EdgeRelationshipPersons holds the string denoting the relationship_persons edge name in mutations.
 	EdgeRelationshipPersons = "relationship_persons"
+	// EdgeEntities holds the string denoting the entities edge name in mutations.
+	EdgeEntities = "entities"
 	// EdgePersonIdentities holds the string denoting the person_identities edge name in mutations.
 	EdgePersonIdentities = "person_identities"
 	// EdgePersonSuppressions holds the string denoting the person_suppressions edge name in mutations.
@@ -313,6 +315,13 @@ const (
 	RelationshipPersonsInverseTable = "relationship_persons"
 	// RelationshipPersonsColumn is the table column denoting the relationship_persons relation/edge.
 	RelationshipPersonsColumn = "revenue_workspace_id"
+	// EntitiesTable is the table that holds the entities relation/edge.
+	EntitiesTable = "entities"
+	// EntitiesInverseTable is the table name for the Entity entity.
+	// It exists in this package in order to avoid circular dependency with the "entity" package.
+	EntitiesInverseTable = "entities"
+	// EntitiesColumn is the table column denoting the entities relation/edge.
+	EntitiesColumn = "revenue_workspace_id"
 	// PersonIdentitiesTable is the table that holds the person_identities relation/edge.
 	PersonIdentitiesTable = "person_identities"
 	// PersonIdentitiesInverseTable is the table name for the PersonIdentity entity.
@@ -883,6 +892,20 @@ func ByRelationshipPersons(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOpti
 	}
 }
 
+// ByEntitiesCount orders the results by entities count.
+func ByEntitiesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newEntitiesStep(), opts...)
+	}
+}
+
+// ByEntities orders the results by entities terms.
+func ByEntities(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newEntitiesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByPersonIdentitiesCount orders the results by person_identities count.
 func ByPersonIdentitiesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -1153,6 +1176,13 @@ func newRelationshipPersonsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RelationshipPersonsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RelationshipPersonsTable, RelationshipPersonsColumn),
+	)
+}
+func newEntitiesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(EntitiesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, EntitiesTable, EntitiesColumn),
 	)
 }
 func newPersonIdentitiesStep() *sqlgraph.Step {

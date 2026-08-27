@@ -99,6 +99,7 @@ func (User) Edges() []ent.Edge {
 		edge.To("relationship_participants", RelationshipParticipant.Type).Annotations(entproto.Skip()),
 		edge.To("relationship_identities", RelationshipIdentity.Type).Annotations(entproto.Skip()),
 		edge.To("relationship_persons", Person.Type).Annotations(entproto.Skip()),
+		edge.To("entities", Entity.Type).Annotations(entproto.Skip()),
 		edge.To("person_identities", PersonIdentity.Type).Annotations(entproto.Skip()),
 		edge.To("person_suppressions", PersonSuppression.Type).Annotations(entproto.Skip()),
 		edge.To("person_attributes", PersonAttribute.Type).Annotations(entproto.Skip()),
