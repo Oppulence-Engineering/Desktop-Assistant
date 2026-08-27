@@ -1068,10 +1068,11 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "could not read refresh token", "internal_error")
 		return
 	}
-	persistRefresh := func(pctx context.Context, tok *oryToken) error {
+	refreshContext := newConnectorRefreshContext(name, mc.ID.String(), mc.OrganizationID, mc.CredentialGeneration, mc.Audience, mc.Scopes)
+	persistRefresh := func(pctx context.Context, tok *oryToken) (int64, error) {
 		tx, txErr := h.client.Tx(auth.WithUser(pctx, u))
 		if txErr != nil {
-			return fmt.Errorf("begin connector refresh transaction: %w", txErr)
+			return 0, fmt.Errorf("begin connector refresh transaction: %w", txErr)
 		}
 		rollback := true
 		defer func() {
@@ -1090,7 +1091,7 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		if tok.RefreshToken != "" {
 			sealedRefresh, sealErr := h.sealer.SealString(tok.RefreshToken)
 			if sealErr != nil {
-				return fmt.Errorf("seal rotated connector refresh token: %w", sealErr)
+				return 0, fmt.Errorf("seal rotated connector refresh token: %w", sealErr)
 			}
 			update.SetRefreshTokenEncrypted(sealedRefresh).AddCredentialGeneration(1)
 			newGeneration++
@@ -1098,9 +1099,9 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		updated, saveErr := update.Save(auth.WithUser(pctx, u))
 		if saveErr != nil {
 			if ent.IsNotFound(saveErr) {
-				return errConnectorCredentialSuperseded
+				return 0, errConnectorCredentialSuperseded
 			}
-			return fmt.Errorf("persist rotated connector refresh token: %w", saveErr)
+			return 0, fmt.Errorf("persist rotated connector refresh token: %w", saveErr)
 		}
 		if auditErr := h.persistAuditTransitionWithClient(pctx, tx.Client(), u, auditRecord{
 			EventType: "token_refresh_committed",
@@ -1108,16 +1109,15 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 			Connector: name, ConnectionID: mc.ID, OrganizationID: mc.OrganizationID,
 			Audience: mc.Audience, Granted: mc.Scopes,
 		}); auditErr != nil {
-			return auditErr
+			return 0, auditErr
 		}
 		if commitErr := tx.Commit(); commitErr != nil {
-			return fmt.Errorf("commit connector refresh: %w", commitErr)
+			return 0, fmt.Errorf("commit connector refresh: %w", commitErr)
 		}
 		rollback = false
-		mc = updated
-		return nil
+		return updated.CredentialGeneration, nil
 	}
-	tok, err := h.refresh.refresh(ctx, name, h.ory, string(refresh), persistRefresh)
+	result, err := h.refresh.refresh(ctx, refreshContext, h.ory, string(refresh), persistRefresh)
 	if err != nil {
 		if errors.Is(err, errConnectorRefreshInProgress) {
 			w.Header().Set("Retry-After", "2")
@@ -1127,13 +1127,13 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		code := "upstream_error"
 		switch {
 		case isRefreshFamilyInvalidation(err):
-			_ = mc.Update().Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active")).SetStatus("invalidated").SetRevokedAt(time.Now().UTC()).SetRevokedReason("refresh_token_reuse").SetRevokedBy("provider").SetRevocationSucceeded(true).ClearRefreshTokenEncrypted().ClearAPIKeyEncrypted().Exec(ctx)
+			_ = mc.Update().Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active")).SetStatus("invalidated").AddCredentialGeneration(1).SetRevokedAt(time.Now().UTC()).SetRevokedReason("refresh_token_reuse").SetRevokedBy("provider").SetRevocationSucceeded(true).ClearRefreshTokenEncrypted().ClearAPIKeyEncrypted().Exec(ctx)
 			h.appendAudit(ctx, u, auditRecord{EventType: "connection_invalidated", Connector: name, ConnectionID: mc.ID, Audience: mc.Audience, Granted: mc.Scopes, Reason: "refresh_token_reuse", Result: "credential_family_invalidated"})
 			connectormetrics.Revocation.WithLabelValues(name, "refresh_family_invalidated").Inc()
 			code = "connection_revoked"
 		case isOAuthErrorCode(err, "invalid_grant"):
 			code = "reauth_required"
-			_ = mc.Update().Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active")).SetStatus("reauth_required").ClearRefreshTokenEncrypted().Exec(ctx)
+			_ = mc.Update().Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active")).SetStatus("reauth_required").AddCredentialGeneration(1).ClearRefreshTokenEncrypted().Exec(ctx)
 			h.appendAudit(ctx, u, auditRecord{EventType: "connection_reauth_required", Connector: name, ConnectionID: mc.ID, Audience: mc.Audience, Granted: mc.Scopes, Reason: "invalid_grant"})
 		default:
 			_ = mc.Update().Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active")).SetStatus("error").Exec(ctx)
@@ -1143,22 +1143,45 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Cached refresh results can arrive after another replica fenced this
-	// connection. Re-read the immutable org-owned row before minting any token.
+	// connection. Prove that the persisted result generation is still current,
+	// then re-authorize audience, scope, and entitlement immediately before mint.
 	current, currentErr := h.client.MCPConnection.Query().Where(
-		mcpconnection.IDEQ(mc.ID), mcpconnection.OrganizationIDEQ(connectorOrganizationID(u)), mcpconnection.StatusEQ("active"),
+		mcpconnection.IDEQ(mc.ID),
+		mcpconnection.ConnectorEQ(name),
+		mcpconnection.OrganizationIDEQ(refreshContext.OrganizationID),
+		mcpconnection.CredentialGenerationEQ(result.CurrentCredentialGeneration),
+		mcpconnection.StatusEQ("active"),
 	).Only(ctx)
-	if currentErr != nil {
-		if tok.RefreshToken != "" {
-			_ = h.ory.revoke(context.WithoutCancel(ctx), tok.RefreshToken)
-		}
+	if currentErr != nil || current.OrganizationID != connectorOrganizationID(u) || !current.RevokedAt.IsZero() {
 		httpx.Error(w, http.StatusGone, "connector connection is revoked", "connection_revoked")
 		return
 	}
 	mc = current
-	if _, err := h.grantedScopes(name, validatedScopes, tok.Scope); err != nil {
+	if audience != c.Audience || audience != refreshContext.Audience || audience != mc.Audience {
+		connectormetrics.TokenMint.WithLabelValues(name, "audience_mismatch").Inc()
+		h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Reason: "audience_mismatch"})
+		httpx.Error(w, http.StatusBadRequest, "requested audience does not match connection", "audience_mismatch")
+		return
+	}
+	if !isSubset(validatedScopes, mc.Scopes) {
+		connectormetrics.TokenMint.WithLabelValues(name, "scope_not_granted").Inc()
+		h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Requested: validatedScopes, Granted: mc.Scopes, Reason: "scope_not_granted"})
+		httpx.Error(w, http.StatusForbidden, "requested scopes are not granted on this connection", "scope_not_granted")
+		return
+	}
+	if _, err := h.grantedScopes(name, validatedScopes, result.Token.Scope); err != nil {
 		connectormetrics.TokenMint.WithLabelValues(name, "scope_escalation").Inc()
 		h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Requested: validatedScopes, Reason: "scope_escalation"})
 		httpx.Error(w, http.StatusBadGateway, "upstream token scope mismatch", "scope_escalation")
+		return
+	}
+	if allowed, reason := h.isEntitled(ctx, u, c, validatedScopes); !allowed {
+		connectormetrics.TokenMint.WithLabelValues(name, "entitlement_denied").Inc()
+		h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Requested: validatedScopes, Reason: reason})
+		if reason != "entitlement_unavailable" {
+			_ = h.revokeConnection(context.WithoutCancel(ctx), u, mc, reason, "entitlement", "invalidated")
+		}
+		httpx.Error(w, http.StatusForbidden, "connector entitlement denied", reason)
 		return
 	}
 	h.writeResourceToken(ctx, w, u, c, mc, audience, validatedScopes)

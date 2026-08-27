@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
@@ -33,6 +34,63 @@ type RefreshCache interface {
 	Unlock(context.Context, string) error
 }
 
+// connectorRefreshContext binds one cached provider result to the immutable
+// connection identity and the exact credential generation that initiated the
+// rotation. Generation changes fence cached results after disconnect,
+// invalidation, reconnect, and subsequent credential rotation.
+type connectorRefreshContext struct {
+	Connector                    string   `json:"connector"`
+	ConnectionID                 string   `json:"connection_id"`
+	OrganizationID               string   `json:"organization_id"`
+	ExpectedCredentialGeneration int64    `json:"expected_credential_generation"`
+	Audience                     string   `json:"audience"`
+	GrantedScopes                []string `json:"granted_scopes"`
+}
+
+func newConnectorRefreshContext(connector, connectionID, organizationID string, generation int64, audience string, scopes []string) connectorRefreshContext {
+	canonicalScopes := slices.Clone(scopes)
+	slices.Sort(canonicalScopes)
+	canonicalScopes = slices.Compact(canonicalScopes)
+	return connectorRefreshContext{
+		Connector:                    connector,
+		ConnectionID:                 connectionID,
+		OrganizationID:               organizationID,
+		ExpectedCredentialGeneration: generation,
+		Audience:                     audience,
+		GrantedScopes:                canonicalScopes,
+	}
+}
+
+func (c connectorRefreshContext) valid() bool {
+	return c.Connector != "" && c.ConnectionID != "" && c.OrganizationID != "" && c.ExpectedCredentialGeneration > 0 && c.Audience != ""
+}
+
+func (c connectorRefreshContext) equal(other connectorRefreshContext) bool {
+	return c.Connector == other.Connector &&
+		c.ConnectionID == other.ConnectionID &&
+		c.OrganizationID == other.OrganizationID &&
+		c.ExpectedCredentialGeneration == other.ExpectedCredentialGeneration &&
+		c.Audience == other.Audience &&
+		slices.Equal(c.GrantedScopes, other.GrantedScopes)
+}
+
+type connectorRefreshResult struct {
+	Context                     connectorRefreshContext `json:"context"`
+	CurrentCredentialGeneration int64                   `json:"current_credential_generation"`
+	Token                       oryToken                `json:"token"`
+}
+
+func (r *connectorRefreshResult) validFor(expected connectorRefreshContext) bool {
+	if r == nil || !r.Context.equal(expected) || r.Token.AccessToken == "" {
+		return false
+	}
+	currentGeneration := expected.ExpectedCredentialGeneration
+	if r.Token.RefreshToken != "" {
+		currentGeneration++
+	}
+	return r.CurrentCredentialGeneration == currentGeneration
+}
+
 // refreshDeduper serializes rotation of one-use connector refresh tokens both
 // within a process and across replicas. Successful results are sealed before
 // entering Redis because they contain live access and refresh credentials.
@@ -49,21 +107,37 @@ func (d *refreshDeduper) configure(cache RefreshCache, sealer *crypto.Sealer, lo
 	d.log = log
 }
 
-func (d *refreshDeduper) refresh(ctx context.Context, connector string, ory *oryClient, oldRefresh string, persist func(context.Context, *oryToken) error) (*oryToken, error) {
+func (d *refreshDeduper) refresh(
+	ctx context.Context,
+	bound connectorRefreshContext,
+	ory *oryClient,
+	oldRefresh string,
+	persist func(context.Context, *oryToken) (int64, error),
+) (*connectorRefreshResult, error) {
 	if d.cache == nil || d.sealer == nil {
 		return nil, errors.New("connector refresh dedup is not configured")
 	}
-	sum := sha256.Sum256([]byte(connector + "\x00" + oldRefresh))
+	if !bound.valid() || oldRefresh == "" {
+		return nil, errors.New("connector refresh context is incomplete")
+	}
+	keyMaterial, err := json.Marshal(struct {
+		Context      connectorRefreshContext `json:"context"`
+		RefreshToken string                  `json:"refresh_token"`
+	}{Context: bound, RefreshToken: oldRefresh})
+	if err != nil {
+		return nil, fmt.Errorf("marshal connector refresh context: %w", err)
+	}
+	sum := sha256.Sum256(keyMaterial)
 	key := hex.EncodeToString(sum[:])
-	resultKey := "connectors:refresh:result:v1:" + key
-	lockKey := "connectors:refresh:lock:v1:" + key
+	resultKey := "connectors:refresh:result:v2:" + key
+	lockKey := "connectors:refresh:lock:v2:" + key
 
-	if tok, ok := d.cached(ctx, resultKey); ok {
-		return tok, nil
+	if result, ok := d.cached(ctx, resultKey, bound); ok {
+		return result, nil
 	}
 
 	v, err, _ := d.sf.Do(key, func() (any, error) {
-		// Token rotation must survive the first request disconnecting; otherwise
+		// Token rotation must survive the first request disconnecting. Otherwise
 		// the upstream may consume the token while persistence is canceled.
 		detached, cancel := context.WithTimeout(context.WithoutCancel(ctx), 25*time.Second)
 		defer cancel()
@@ -75,8 +149,8 @@ func (d *refreshDeduper) refresh(ctx context.Context, connector string, ory *ory
 		if !locked {
 			deadline := time.Now().Add(connectorRefreshPollWait)
 			for time.Now().Before(deadline) {
-				if tok, ok := d.cached(detached, resultKey); ok {
-					return tok, nil
+				if result, ok := d.cached(detached, resultKey, bound); ok {
+					return result, nil
 				}
 				select {
 				case <-detached.Done():
@@ -96,8 +170,8 @@ func (d *refreshDeduper) refresh(ctx context.Context, connector string, ory *ory
 			}
 		}()
 
-		if tok, ok := d.cached(detached, resultKey); ok {
-			return tok, nil
+		if result, ok := d.cached(detached, resultKey, bound); ok {
+			return result, nil
 		}
 		tok, err := ory.refresh(detached, oldRefresh)
 		if err != nil {
@@ -107,7 +181,8 @@ func (d *refreshDeduper) refresh(ctx context.Context, connector string, ory *ory
 		if persist == nil {
 			return nil, errors.New("connector refresh persistence is not configured")
 		}
-		if err := persist(detached, tok); err != nil {
+		currentGeneration, err := persist(detached, tok)
+		if err != nil {
 			// The one-use upstream token may already be consumed. Keep the lock
 			// until its TTL rather than immediately allowing a second rotation.
 			unlock = false
@@ -119,7 +194,19 @@ func (d *refreshDeduper) refresh(ctx context.Context, connector string, ory *ory
 			}
 			return nil, err
 		}
-		if err := d.store(detached, resultKey, tok); err != nil {
+		result := &connectorRefreshResult{
+			Context:                     bound,
+			CurrentCredentialGeneration: currentGeneration,
+			Token:                       *tok,
+		}
+		if !result.validFor(bound) {
+			unlock = false
+			if tok.RefreshToken != "" {
+				_ = ory.revoke(context.WithoutCancel(detached), tok.RefreshToken)
+			}
+			return nil, errors.New("connector refresh persistence returned an unexpected credential generation")
+		}
+		if err := d.store(detached, resultKey, result); err != nil {
 			// Persistence already succeeded, so do not fail the request. A cache
 			// outage may make a replay return refresh_in_progress/error, but never
 			// justifies issuing a second rotation call here.
@@ -128,19 +215,19 @@ func (d *refreshDeduper) refresh(ctx context.Context, connector string, ory *ory
 			}
 			unlock = false
 		}
-		return tok, nil
+		return result, nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	tok, ok := v.(*oryToken)
-	if !ok || tok == nil {
+	result, ok := v.(*connectorRefreshResult)
+	if !ok || !result.validFor(bound) {
 		return nil, errors.New("invalid connector refresh result")
 	}
-	return tok, nil
+	return result, nil
 }
 
-func (d *refreshDeduper) cached(ctx context.Context, key string) (*oryToken, bool) {
+func (d *refreshDeduper) cached(ctx context.Context, key string, expected connectorRefreshContext) (*connectorRefreshResult, bool) {
 	sealed, ok, err := d.cache.Get(ctx, key)
 	if err != nil || !ok {
 		return nil, false
@@ -149,15 +236,15 @@ func (d *refreshDeduper) cached(ctx context.Context, key string) (*oryToken, boo
 	if err != nil {
 		return nil, false
 	}
-	var tok oryToken
-	if json.Unmarshal(raw, &tok) != nil || tok.AccessToken == "" {
+	var result connectorRefreshResult
+	if json.Unmarshal(raw, &result) != nil || !result.validFor(expected) {
 		return nil, false
 	}
-	return &tok, true
+	return &result, true
 }
 
-func (d *refreshDeduper) store(ctx context.Context, key string, tok *oryToken) error {
-	raw, err := json.Marshal(tok)
+func (d *refreshDeduper) store(ctx context.Context, key string, result *connectorRefreshResult) error {
+	raw, err := json.Marshal(result)
 	if err != nil {
 		return err
 	}
