@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ConnectorAuthType } from "./connectorAuthType";
+import type { ConnectorConnectionHealth } from "./connectorConnectionHealth";
 import type { ConnectorHealth } from "./connectorHealth";
 import type { ConnectorScope } from "./connectorScope";
 import type { ConnectorStatus } from "./connectorStatus";
@@ -30,6 +31,13 @@ export interface Connector {
    * @nullable
    */
   connectedAt?: string | null;
+  /** Effective per-user connection health. */
+  connectionHealth: ConnectorConnectionHealth;
+  /**
+   * Machine-readable reason for degraded, disabled, or disconnected health.
+   * @nullable
+   */
+  connectionReason?: string | null;
   /** Short product capability description. */
   description: string;
   /** Human-readable connector name. */

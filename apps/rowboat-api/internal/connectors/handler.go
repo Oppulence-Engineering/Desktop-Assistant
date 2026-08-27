@@ -651,11 +651,6 @@ func (h *Handler) deleteTicket(ctx context.Context, pending *ent.OAuthPending) {
 	}
 }
 
-func (h *Handler) upsertConnection(ctx context.Context, u *ent.User, c Connector, refreshToken string, scopes []string) (*ent.MCPConnection, error) {
-	connection, _, err := h.upsertConnectionWithClient(ctx, h.client, u, c, refreshToken, scopes)
-	return connection, err
-}
-
 func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Client, u *ent.User, c Connector, refreshToken string, scopes []string) (*ent.MCPConnection, []byte, error) {
 	sealed, err := h.sealer.SealString(refreshToken)
 	if err != nil {
@@ -820,21 +815,19 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 			httpx.Error(w, http.StatusTooManyRequests, "token refresh in progress; retry shortly", "refresh_in_progress")
 			return
 		}
-		status := "error"
 		code := "upstream_error"
-		if isRefreshFamilyInvalidation(err) {
+		switch {
+		case isRefreshFamilyInvalidation(err):
 			_ = mc.Update().SetStatus("invalidated").SetRevokedAt(time.Now().UTC()).SetRevokedReason("refresh_token_reuse").SetRevokedBy("provider").SetRevocationSucceeded(true).ClearRefreshTokenEncrypted().ClearAPIKeyEncrypted().Exec(ctx)
 			h.appendAudit(ctx, u, auditRecord{EventType: "connection_invalidated", Connector: name, ConnectionID: mc.ID, Audience: mc.Audience, Granted: mc.Scopes, Reason: "refresh_token_reuse", Result: "credential_family_invalidated"})
 			connectormetrics.Revocation.WithLabelValues(name, "refresh_family_invalidated").Inc()
-			status = "invalidated"
 			code = "connection_revoked"
-		} else if isOAuthErrorCode(err, "invalid_grant") {
-			status = "reauth_required"
+		case isOAuthErrorCode(err, "invalid_grant"):
 			code = "reauth_required"
-			_ = mc.Update().SetStatus(status).ClearRefreshTokenEncrypted().Exec(ctx)
+			_ = mc.Update().SetStatus("reauth_required").ClearRefreshTokenEncrypted().Exec(ctx)
 			h.appendAudit(ctx, u, auditRecord{EventType: "connection_reauth_required", Connector: name, ConnectionID: mc.ID, Audience: mc.Audience, Granted: mc.Scopes, Reason: "invalid_grant"})
-		} else {
-			_ = mc.Update().SetStatus(status).Exec(ctx)
+		default:
+			_ = mc.Update().SetStatus("error").Exec(ctx)
 		}
 		h.log.Warn("mcp-token refresh failed", zap.String("connector", name), zap.Error(err))
 		httpx.Error(w, http.StatusBadGateway, "token refresh failed", code)

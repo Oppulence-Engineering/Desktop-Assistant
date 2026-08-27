@@ -42,7 +42,7 @@ func TestProductEntitlementStrictValidation(t *testing.T) {
 }
 
 func TestProductEntitlementTimeoutFailsClosed(t *testing.T) {
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		time.Sleep(entitlementTimeout + 100*time.Millisecond)
 		_, _ = w.Write([]byte(`{"allowed":true}`))
 	}))

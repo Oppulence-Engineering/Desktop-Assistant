@@ -697,6 +697,13 @@ export const ListConnectors200Response = zod
               .string()
               .nullish()
               .describe("RFC3339 connection timestamp when connected."),
+            connectionHealth: zod
+              .enum(["healthy", "degraded", "disabled", "disconnected"])
+              .describe("Effective per-user connection health."),
+            connectionReason: zod
+              .string()
+              .nullish()
+              .describe("Machine-readable reason for degraded, disabled, or disconnected health."),
             description: zod.string().describe("Short product capability description."),
             displayName: zod.string().describe("Human-readable connector name."),
             grantedScopes: zod

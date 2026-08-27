@@ -157,7 +157,7 @@ func parseRegistry(data []byte, environment string) ([]Connector, error) {
 		}
 		if raw := strings.TrimSpace(list[i].EntitlementURL); raw != "" {
 			u, err := url.Parse(raw)
-			if err != nil || u.Scheme == "" || u.Host == "" || u.User != nil || u.Fragment != "" || (u.Scheme != "https" && !(environment == "development" && u.Scheme == "http")) {
+			if err != nil || u.Scheme == "" || u.Host == "" || u.User != nil || u.Fragment != "" || (u.Scheme != "https" && (environment != "development" || u.Scheme != "http")) {
 				return nil, fmt.Errorf("connector %q entitlementUrl must be an absolute HTTPS URL (HTTP is development-only)", list[i].Name)
 			}
 			list[i].EntitlementURL = u.String()

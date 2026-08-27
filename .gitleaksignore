@@ -44,3 +44,10 @@ c23e31af95badd639d2fd3605275dfa8491a5b0d:apps/rowboat-api/internal/openapidoc/en
 ad4ea23d79a1a5788233ae8eb3e84e60632bd3b1:apps/copilot/README.md:curl-auth-header:45
 10f76ef49f6f14cf9658b49963aef338f6bcd4d2:apps/rowboat/package.json:github-fine-grained-pat:41
 6500289db435205b46118f9d7bd5f0d412d9d589:charts/hydra/secrets.example.yaml:generic-api-key:11
+# RFC 012 deterministic local acceptance fixtures and non-secret OpenAPI examples.
+8379924eda111bb75cf292a6875785613aa08bd9:apps/rowboat-api/integration/rfc012/postgres16.sh:generic-api-key:134
+8379924eda111bb75cf292a6875785613aa08bd9:apps/rowboat-api/integration/rfc012/postgres16.sh:generic-api-key:146
+8379924eda111bb75cf292a6875785613aa08bd9:apps/rowboat-api/integration/rfc012/postgres16.sh:generic-api-key:178
+9a14af9872f72093f685a65c2e4363818fc0d031:apps/rowboat-api/integration/rfc012/postgres16.sh:generic-api-key:112
+9a14af9872f72093f685a65c2e4363818fc0d031:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:632
+9a14af9872f72093f685a65c2e4363818fc0d031:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:641

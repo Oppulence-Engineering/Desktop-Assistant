@@ -142,6 +142,16 @@ export const getListConnectorsResponseMock = (
         faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
         undefined,
       ]),
+      connectionHealth: faker.helpers.arrayElement([
+        "healthy",
+        "degraded",
+        "disabled",
+        "disconnected",
+      ] as const),
+      connectionReason: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+        undefined,
+      ]),
       description: faker.string.alpha({ length: { min: 10, max: 20 } }),
       displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
       grantedScopes: faker.helpers.arrayElement([

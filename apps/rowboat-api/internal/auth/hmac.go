@@ -26,6 +26,7 @@ const (
 	hookSignatureV1   = "v1"
 )
 
+// ErrHookNonceReplayed indicates that an authenticated hook nonce was reused.
 var ErrHookNonceReplayed = errors.New("hook nonce already reserved")
 
 // HookNonceStore atomically reserves authenticated request nonces until expiry.
@@ -38,10 +39,12 @@ type HookNonceStore interface {
 // replay barrier. The migration creates hook_nonce_reservations.
 type PostgresHookNonceStore struct{ db *sql.DB }
 
+// NewPostgresHookNonceStore creates a cross-replica nonce reservation store.
 func NewPostgresHookNonceStore(db *sql.DB) *PostgresHookNonceStore {
 	return &PostgresHookNonceStore{db: db}
 }
 
+// Reserve atomically records a nonce until its authentication window expires.
 func (s *PostgresHookNonceStore) Reserve(ctx context.Context, nonce string, expiresAt time.Time) error {
 	if s == nil || s.db == nil {
 		return errors.New("hook nonce store is not configured")
@@ -68,10 +71,12 @@ type MemoryHookNonceStore struct {
 	nonces map[string]time.Time
 }
 
+// NewMemoryHookNonceStore creates a process-local nonce store for tests and development.
 func NewMemoryHookNonceStore() *MemoryHookNonceStore {
 	return &MemoryHookNonceStore{nonces: make(map[string]time.Time)}
 }
 
+// Reserve records a nonce unless an unexpired reservation already exists.
 func (s *MemoryHookNonceStore) Reserve(_ context.Context, nonce string, expiresAt time.Time) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

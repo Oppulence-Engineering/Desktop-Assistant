@@ -74,7 +74,7 @@ export function dispatchUrl(url: string): void {
   }
 }
 
-export function parseMcpApprovalCompletion(
+function parseMcpApprovalCompletion(
   url: string,
 ): Parameters<typeof registerMcpApprovalResult>[0] | null {
   const rest = getDeepLinkPayload(url);

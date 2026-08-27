@@ -12,8 +12,10 @@ import (
 // connection tombstone never retains usable credentials.
 type ConnectorRevocationJob struct{ ent.Schema }
 
+// Mixin attaches common identity and timestamp fields.
 func (ConnectorRevocationJob) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
 
+// Fields declares durable revocation work and retry state.
 func (ConnectorRevocationJob) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("connection_id", uuid.UUID{}),
@@ -28,6 +30,7 @@ func (ConnectorRevocationJob) Fields() []ent.Field {
 	}
 }
 
+// Indexes enforces one revocation job per connection and supports due-work scans.
 func (ConnectorRevocationJob) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("connection_id").Unique(),

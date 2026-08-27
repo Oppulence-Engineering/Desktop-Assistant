@@ -21,6 +21,8 @@ const (
 	maxResourceTokenTTL     = 15 * time.Minute
 )
 
+// ResourceTokenClaims binds a short-lived product token to its actor, tenant,
+// connection, connector, audience, scopes, and trust tier.
 type ResourceTokenClaims struct {
 	UserID         string
 	OrganizationID string
@@ -31,6 +33,7 @@ type ResourceTokenClaims struct {
 	TrustTier      string
 }
 
+// ResourceTokenIssuer mints connector-bound resource tokens and publishes JWKS.
 type ResourceTokenIssuer interface {
 	Mint(ResourceTokenClaims) (token string, expiresAt time.Time, err error)
 	JWKS() map[string]any
@@ -100,7 +103,7 @@ func NewRSAResourceTokenIssuer(activePrivateKeyPEM []byte, activeKeyID, issuer s
 	if !ok {
 		return nil, fmt.Errorf("connector resource token active key %q is not present in verification keyring", activeKeyID)
 	}
-	if primary.E != privateKey.PublicKey.E || primary.N.Cmp(privateKey.PublicKey.N) != 0 {
+	if primary.E != privateKey.E || primary.N.Cmp(privateKey.N) != 0 {
 		return nil, fmt.Errorf("connector resource token active key %q does not match signing private key", activeKeyID)
 	}
 	return &RSAResourceTokenIssuer{privateKey: privateKey, keyID: activeKeyID, issuer: issuer, ttl: ttl, verificationKeys: keys}, nil
@@ -148,6 +151,7 @@ func parseRSAPublicKey(keyPEM []byte) (*rsa.PublicKey, error) {
 	return nil, errors.New("key must contain an RSA public or private key")
 }
 
+// Mint creates a short-lived RS256 resource token with strict connector bindings.
 func (i *RSAResourceTokenIssuer) Mint(c ResourceTokenClaims) (string, time.Time, error) {
 	if i == nil || i.privateKey == nil {
 		return "", time.Time{}, errors.New("connector resource token issuer is not configured")

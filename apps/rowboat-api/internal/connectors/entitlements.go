@@ -3,7 +3,6 @@ package connectors
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -83,14 +82,4 @@ func (h *Handler) productEntitlement(ctx context.Context, owner *ent.User, conn 
 		return false, "entitlement_unavailable"
 	}
 	return false, decision.Reason
-}
-
-func validateEntitlementReason(reason string) error {
-	if reason == "entitlement_unavailable" {
-		return nil
-	}
-	if _, ok := authoritativeDenialReasons[reason]; !ok {
-		return fmt.Errorf("unknown entitlement denial reason %q", reason)
-	}
-	return nil
 }
