@@ -5,8 +5,8 @@ import { safeEqual, signValue, verifySignedValue } from './crypto.js';
 import { AppError, badRequest } from './errors.js';
 import { consentPage, entitlementDeniedPage, errorPage } from './html.js';
 import { OryAdmin } from './ory.js';
-import { RowboatHooks, type ConsentContext } from './rowboat.js';
-import { StateStore, type ConsentSession } from './state.js';
+import { RowboatHooks, type AuditRequest, type ConsentContext } from './rowboat.js';
+import type { ConsentStateStore, ConsentSession } from './state.js';
 import { WorkOS } from './workos.js';
 
 const LOGIN_COOKIE = 'rowboat_login';
@@ -20,7 +20,7 @@ interface Dependencies {
   ory?: OryAdmin;
   workos?: WorkOS;
   hooks?: RowboatHooks;
-  store?: StateStore;
+  store?: ConsentStateStore;
 }
 
 export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express {
@@ -28,7 +28,8 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
   const ory = dependencies.ory ?? new OryAdmin(cfg.ory.adminUrl, cfg.upstreamTimeoutMs);
   const workos = dependencies.workos ?? new WorkOS(cfg.workos, cfg.upstreamTimeoutMs);
   const hooks = dependencies.hooks ?? new RowboatHooks(cfg.rowboatApi, cfg.upstreamTimeoutMs);
-  const store = dependencies.store ?? new StateStore(cfg.sessionTtlMs);
+  const store = dependencies.store;
+  if (!store) throw new Error('shared_state_store_required');
   const cookieOptions = {
     httpOnly: true,
     secure: cfg.cookieSecure,
@@ -63,7 +64,7 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
         const { redirect_to } = await ory.acceptLogin(challenge, login.subject);
         return res.redirect(redirect_to);
       }
-      const flow = store.createLoginFlow(challenge);
+      const flow = await store.createLoginFlow(challenge);
       setSignedCookie(res, LOGIN_COOKIE, flow.cookieBinding, cfg.cookieSecret, cookieOptions);
       return res.redirect(await workos.authorizeLoginURL(flow.state, flow.nonce));
     }),
@@ -75,7 +76,7 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
       const code = ChallengeSchema.parse(req.query.code);
       const state = ChallengeSchema.parse(req.query.state);
       const binding = readSignedCookie(req, LOGIN_COOKIE, cfg.cookieSecret);
-      const flow = store.consumeLoginFlow(state, binding);
+      const flow = await store.consumeLoginFlow(state, binding);
       if (!flow.challenge) throw badRequest('login_flow_invalid');
       const identity = await workos.exchangeLogin(code, flow.nonce);
       const { redirect_to } = await ory.acceptLogin(flow.challenge, identity.workosUserId);
@@ -106,7 +107,7 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
         consent.requested_access_token_audience,
         consent.requested_scope,
       );
-      const session = store.createConsent({
+      const session = await store.createConsent({
         challenge,
         subject: consent.subject,
         hydraClientId,
@@ -119,7 +120,7 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
         scopes: context.scopes.map((scope) => scope.name),
         result: context.entitlement.allowed ? 'eligible' : context.entitlement.reason,
       });
-      store.transition(session.id, 'created', 'shown');
+      await store.transition(session.id, 'created', 'shown');
       setSignedCookie(res, CONSENT_COOKIE, session.id, cfg.cookieSecret, cookieOptions);
       return res
         .status(200)
@@ -131,28 +132,28 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
   app.post(
     '/consent/decision',
     asyncRoute(async (req, res) => {
-      const session = consentSession(req, cfg, store);
+      const session = await consentSession(req, cfg, store);
       verifyCsrf(session, req.body.csrf);
       const decision = DecisionSchema.parse(req.body.decision);
       if (decision === 'deny') {
-        store.transition(session.id, 'shown', 'processing');
+        await store.transition(session.id, 'shown', 'processing');
         try {
-          await hooks.audit({
+          const { redirect_to } = await ory.rejectConsent(
+            session.challenge,
+            'The user denied the connector authorization request.',
+          );
+          await store.transition(session.id, 'processing', 'denied');
+          await deliverFinalAudit(store, hooks, {
             event: 'consent.denied',
             sessionId: session.id,
             context: session.context,
             scopes: session.context.scopes.map((scope) => scope.name),
             result: session.context.entitlement.allowed ? 'user_denied' : session.context.entitlement.reason,
           });
-          const { redirect_to } = await ory.rejectConsent(
-            session.challenge,
-            'The user denied the connector authorization request.',
-          );
-          store.transition(session.id, 'processing', 'denied');
           res.clearCookie(CONSENT_COOKIE, { ...cookieOptions, maxAge: undefined });
           return res.redirect(redirect_to);
         } catch (error) {
-          store.failConsent(session.id);
+          await store.failConsent(session.id);
           throw error;
         }
       }
@@ -168,14 +169,14 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
       if (needsHighConfirmation && req.body.confirm_high !== 'yes') {
         throw badRequest('high_scope_confirmation_required', 'Confirm the high-trust access before approving.');
       }
-      store.setSelectedScopes(session.id, selected);
+      await store.setSelectedScopes(session.id, selected);
       if (selectedDefinitions.some((scope) => scope.requires_step_up)) {
-        store.transition(session.id, 'shown', 'step_up_pending');
-        const flow = store.createStepUpFlow(session.id);
+        await store.transition(session.id, 'shown', 'step_up_pending');
+        const flow = await store.createStepUpFlow(session.id);
         setSignedCookie(res, STEP_UP_COOKIE, flow.cookieBinding, cfg.cookieSecret, cookieOptions);
         return res.redirect(await workos.authorizeStepUpURL(flow.state, flow.nonce));
       }
-      store.transition(session.id, 'shown', 'processing');
+      await store.transition(session.id, 'shown', 'processing');
       return finishApproval(res, session, selected, store, hooks, ory, cookieOptions);
     }),
   );
@@ -186,18 +187,18 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
       const code = ChallengeSchema.parse(req.query.code);
       const state = ChallengeSchema.parse(req.query.state);
       const binding = readSignedCookie(req, STEP_UP_COOKIE, cfg.cookieSecret);
-      const flow = store.consumeStepUpFlow(state, binding);
+      const flow = await store.consumeStepUpFlow(state, binding);
       if (!flow.consentSessionId) throw badRequest('step_up_flow_invalid');
-      const session = store.getConsent(flow.consentSessionId);
+      const session = await store.getConsent(flow.consentSessionId);
       if (session.status !== 'step_up_pending' || !session.selectedScopes)
         throw new AppError(409, 'step_up_replay', 'This verification has already been used.');
       try {
         await workos.exchangeStepUp(code, flow.nonce, session.subject);
-        store.transition(session.id, 'step_up_pending', 'processing');
+        await store.transition(session.id, 'step_up_pending', 'processing');
         res.clearCookie(STEP_UP_COOKIE, { ...cookieOptions, maxAge: undefined });
         return finishApproval(res, session, session.selectedScopes, store, hooks, ory, cookieOptions);
       } catch (error) {
-        store.failConsent(session.id);
+        await store.failConsent(session.id);
         throw error;
       }
     }),
@@ -232,7 +233,7 @@ async function finishApproval(
   res: Response,
   session: ConsentSession,
   scopes: string[],
-  store: StateStore,
+  store: ConsentStateStore,
   hooks: RowboatHooks,
   ory: OryAdmin,
   cookieOptions: {
@@ -244,25 +245,53 @@ async function finishApproval(
   },
 ): Promise<void> {
   try {
-    await hooks.audit({
+    const { redirect_to } = await ory.acceptConsent(session.challenge, {
+      grantScope: scopes,
+      grantAudience: [session.context.connector.audience],
+      workosUserId: session.subject,
+    });
+    await store.transition(session.id, 'processing', 'approved');
+    await deliverFinalAudit(store, hooks, {
       event: 'consent.granted',
       sessionId: session.id,
       context: session.context,
       scopes,
       result: 'approved',
     });
-    const { redirect_to } = await ory.acceptConsent(session.challenge, {
-      grantScope: scopes,
-      grantAudience: [session.context.connector.audience],
-      workosUserId: session.subject,
-    });
-    store.transition(session.id, 'processing', 'approved');
     res.clearCookie(CONSENT_COOKIE, { ...cookieOptions, maxAge: undefined });
     res.redirect(redirect_to);
   } catch (error) {
-    store.failConsent(session.id);
+    await store.failConsent(session.id);
     throw error;
   }
+}
+
+async function deliverFinalAudit(store: ConsentStateStore, hooks: RowboatHooks, payload: AuditRequest): Promise<void> {
+  const id = `${payload.sessionId}:${payload.event}`;
+  const durablePayload = { ...payload, eventId: id };
+  await store.enqueueAudit(id, durablePayload);
+  try {
+    await hooks.audit(durablePayload);
+    await store.completeAudit(id);
+  } catch (error) {
+    await store.retryAudit(id, error instanceof Error ? error.message : 'audit_delivery_failed');
+    // Hydra has already committed the decision. The outbox owns retry, so the browser may continue.
+  }
+}
+
+export async function drainAuditOutbox(store: ConsentStateStore, hooks: RowboatHooks, limit = 25): Promise<number> {
+  const items = await store.claimAudits(limit);
+  await Promise.all(
+    items.map(async (item) => {
+      try {
+        await hooks.audit(item.payload as AuditRequest);
+        await store.completeAudit(item.id);
+      } catch (error) {
+        await store.retryAudit(item.id, error instanceof Error ? error.message : 'audit_delivery_failed');
+      }
+    }),
+  );
+  return items.length;
 }
 
 function validateContext(
@@ -305,10 +334,10 @@ function sameUniqueSet(left: string[], right: string[]): boolean {
   );
 }
 
-function consentSession(req: Request, cfg: Config, store: StateStore): ConsentSession {
+async function consentSession(req: Request, cfg: Config, store: ConsentStateStore): Promise<ConsentSession> {
   const id = readSignedCookie(req, CONSENT_COOKIE, cfg.cookieSecret);
   if (!id) throw badRequest('consent_cookie_invalid');
-  return store.getConsent(id);
+  return await store.getConsent(id);
 }
 
 function verifyCsrf(session: ConsentSession, supplied: unknown): void {

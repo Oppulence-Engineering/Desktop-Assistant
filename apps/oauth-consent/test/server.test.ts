@@ -7,6 +7,7 @@ import type { Config } from '../src/config.js';
 import { hmac, safeEqual } from '../src/crypto.js';
 import type { ConsentContext } from '../src/rowboat.js';
 import { buildApp } from '../src/server.js';
+import { StateStore } from '../src/state.js';
 
 const HOOK_SECRET = 'hook-secret-that-is-at-least-thirty-two-bytes';
 const COOKIE_SECRET = 'cookie-secret-that-is-at-least-thirty-two-bytes';
@@ -159,6 +160,7 @@ class RowboatMock {
   readonly audits: Array<Record<string, unknown>> = [];
   verifiedRequests = 0;
   badResponseSignature = false;
+  failNextAudits = 0;
   contextFactory: (request: Record<string, unknown>) => ConsentContext = (request) =>
     makeContext((request.requested_scopes as string[]).map(scopeByName), {
       subject: String(request.workos_user_id),
@@ -175,6 +177,7 @@ class RowboatMock {
     this.app.post('/oauth-hooks/consent-audit', (req, res) => {
       if (!this.verifyRequest(req)) return res.status(401).json({ error: 'bad signature' });
       this.audits.push(JSON.parse(String(req.body)) as Record<string, unknown>);
+      if (this.failNextAudits-- > 0) return res.status(503).json({ error: 'temporary' });
       return this.sendSigned(req, res, { accepted: true });
     });
   }
@@ -310,6 +313,7 @@ interface Harness {
   rowboat: RowboatMock;
   browser: BrowserClient;
   app: RunningServer;
+  store: StateStore;
   servers: RunningServer[];
 }
 
@@ -331,6 +335,8 @@ beforeEach(async () => {
     cookieSecure: false,
     sessionTtlMs: 600_000,
     upstreamTimeoutMs: 2_000,
+    databaseUrl: 'postgres://test/test',
+    auditRetryIntervalMs: 5_000,
     ory: { adminUrl: oryServer.url },
     workos: {
       clientId: CLIENT_ID,
@@ -349,13 +355,15 @@ beforeEach(async () => {
       signatureMaxAgeMs: 300_000,
     },
   };
-  const app = await listen(buildApp(cfg));
+  const store = new StateStore(cfg.sessionTtlMs);
+  const app = await listen(buildApp(cfg, { store }));
   harness = {
     ory,
     workos,
     rowboat,
     browser: new BrowserClient(),
     app,
+    store,
     servers: [app, rowboatServer, workosServer, oryServer],
   };
 });
@@ -438,7 +446,7 @@ describe('consent rendering and decisions', () => {
     expect(harness.rowboat.verifiedRequests).toBe(3);
   });
 
-  it('supports an explicit deny POST and audits it before rejecting with Hydra', async () => {
+  it('supports an explicit deny POST and audits it after rejecting with Hydra', async () => {
     const challenge = 'consent_deny';
     harness.ory.setConsent(challenge, [lowScope]);
     const shown = await harness.browser.get(harness.app.url, `/consent?consent_challenge=${challenge}`);
@@ -452,6 +460,22 @@ describe('consent rendering and decisions', () => {
       expect.objectContaining({ error: 'access_denied', error_description: expect.any(String) }),
     ]);
     expect(harness.ory.acceptedConsents).toHaveLength(0);
+  });
+
+  it('redirects after Hydra approval and retains a failed final audit for replay', async () => {
+    const challenge = 'consent_audit_retry';
+    harness.ory.setConsent(challenge, [lowScope]);
+    const shown = await harness.browser.get(harness.app.url, `/consent?consent_challenge=${challenge}`);
+    harness.rowboat.failNextAudits = 1;
+    const approved = await harness.browser.post(harness.app.url, '/consent/decision', [
+      ['csrf', csrf(await shown.text())],
+      ['decision', 'approve'],
+      ['scope', lowScope.name],
+    ]);
+    expect(approved.status).toBe(302);
+    expect(harness.ory.acceptedConsents).toHaveLength(1);
+    const pending = await harness.store.claimAudits(10);
+    expect(pending).toEqual([expect.objectContaining({ id: expect.stringContaining(':consent.granted') })]);
   });
 
   it('renders entitlement/upsell denial separately and cannot approve it', async () => {

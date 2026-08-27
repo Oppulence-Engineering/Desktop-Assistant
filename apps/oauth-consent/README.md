@@ -18,8 +18,8 @@ cross-product or self-hosted deployment.
 
 ### Consent state machine
 
-A Hydra consent challenge is never auto-accepted. The service uses this local,
-expiring state machine:
+A Hydra consent challenge is never auto-accepted. The service uses this shared,
+PostgreSQL-backed expiring state machine:
 
 ```text
 created -> shown -> processing -> approved
@@ -54,6 +54,25 @@ Sessions are consumed before asynchronous upstream work. Replayed forms,
 WorkOS callbacks, stale cookies, and replaced challenges fail closed. Upstream
 errors expose only stable local error codes and never include upstream response
 bodies.
+
+### Shared state and audit delivery
+
+Production requires `DATABASE_URL` and the migration in `migrations/` to be
+applied before rollout. Login, consent, CSRF, challenge, and step-up records use
+database TTL checks, atomic compare-and-set transitions, and `DELETE ...
+RETURNING` single-use consumption, so requests may move between replicas.
+
+Hydra is accepted or rejected before the final `consent.granted` or
+`consent.denied` hook is sent. Final events use stable event IDs and a durable
+PostgreSQL outbox. Hook failure does not undo an already committed Hydra
+decision. Any replica retries pending rows using `FOR UPDATE SKIP LOCKED` and
+exponential backoff. `AUDIT_RETRY_INTERVAL_MS` defaults to 5000.
+
+Run PostgreSQL multi-instance, CAS, consume, and restart/replay tests with:
+
+```bash
+TEST_DATABASE_URL=postgres://... npm test
+```
 
 ## rowboat-api hook contract
 

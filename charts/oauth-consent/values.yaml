@@ -52,11 +52,12 @@ config:
   HOOK_SIGNATURE_MAX_AGE_MS: "300000"
   CONSENT_SESSION_TTL_MS: "600000"
   UPSTREAM_TIMEOUT_MS: "5000"
+  AUDIT_RETRY_INTERVAL_MS: "5000"
   COOKIE_SECURE: "true"
 
 # Production/staging must use an externally managed Secret. Set createSecret
 # only for disposable development clusters. Required keys:
-# WORKOS_CLIENT_ID, WORKOS_API_KEY, HOOK_HMAC_SECRET, COOKIE_SECRET.
+# WORKOS_CLIENT_ID, WORKOS_API_KEY, HOOK_HMAC_SECRET, COOKIE_SECRET, DATABASE_URL.
 existingSecret: oauth-consent-secrets
 createSecret: false
 secretValues: {}
