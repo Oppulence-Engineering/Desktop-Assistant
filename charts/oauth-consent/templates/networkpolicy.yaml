@@ -17,6 +17,15 @@ spec:
     - ports:
         - { protocol: UDP, port: 53 }
         - { protocol: TCP, port: 53 }
+    - ports:
         - { protocol: TCP, port: 443 }
         - { protocol: TCP, port: 4445 }
+    {{- range .Values.networkPolicy.postgresql.cidrs }}
+    - to:
+        - ipBlock:
+            cidr: {{ . | quote }}
+      ports:
+        - protocol: TCP
+          port: {{ $.Values.networkPolicy.postgresql.port }}
+    {{- end }}
 {{- end }}

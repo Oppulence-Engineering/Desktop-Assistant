@@ -14,6 +14,9 @@ export interface ConsentSession {
   context: ConsentContext;
   status: ConsentStatus;
   selectedScopes?: string[];
+  decision?: 'approve' | 'deny';
+  decisionPayload?: unknown;
+  hydraCommittedAt?: number;
   expiresAt: number;
 }
 
@@ -54,6 +57,11 @@ export interface ConsentStateStore {
   claimAudits(limit: number): Promise<AuditOutboxItem[]> | AuditOutboxItem[];
   completeAudit(id: string): Promise<void> | void;
   retryAudit(id: string, error: string): Promise<void> | void;
+  prepareDecision(id: string, decision: 'approve' | 'deny', payload: unknown): Promise<ConsentSession> | ConsentSession;
+  finalizeDecision(id: string, payload: unknown): Promise<void> | void;
+  pendingDecisions(limit: number): Promise<ConsentSession[]> | ConsentSession[];
+  ready(): Promise<boolean> | boolean;
+  cleanup(): Promise<void> | void;
 }
 
 /** Process-local implementation for unit tests only. Production startup never constructs it. */
@@ -68,7 +76,7 @@ export class StateStore implements ConsentStateStore {
   createConsent(input: Omit<ConsentSession, 'id' | 'csrf' | 'status' | 'expiresAt'>): ConsentSession {
     for (const value of this.consent.values())
       if (value.challenge === input.challenge && !['approved', 'denied', 'failed'].includes(value.status))
-        value.status = 'failed';
+        throw conflict('consent_challenge_active');
     const value = {
       ...input,
       id: randomToken(),
@@ -150,6 +158,28 @@ export class StateStore implements ConsentStateStore {
     this.outbox.delete(id);
   }
   retryAudit(_id: string, _error: string): void {}
+  prepareDecision(id: string, decision: 'approve' | 'deny', payload: unknown): ConsentSession {
+    const value = this.transition(id, ['shown', 'step_up_pending'], 'processing');
+    value.decision = decision;
+    value.decisionPayload = payload;
+    return value;
+  }
+  finalizeDecision(id: string, payload: unknown): void {
+    const value = this.getConsent(id);
+    value.status = value.decision === 'approve' ? 'approved' : 'denied';
+    value.hydraCommittedAt = this.now();
+    this.enqueueAudit(`${id}:final`, payload);
+  }
+  pendingDecisions(): ConsentSession[] {
+    return [...this.consent.values()].filter((v) => v.status === 'processing' && !!v.decision);
+  }
+  ready(): boolean {
+    return true;
+  }
+  cleanup(): void {
+    for (const [id, value] of this.consent) if (value.expiresAt <= this.now()) this.consent.delete(id);
+    for (const [id, value] of this.flows) if (value.expiresAt <= this.now()) this.flows.delete(id);
+  }
 }
 
 export class PostgresStateStore implements ConsentStateStore {
@@ -166,14 +196,8 @@ export class PostgresStateStore implements ConsentStateStore {
       status: 'created',
       expiresAt: Date.now() + this.ttlMs,
     };
-    const client = await this.pool.connect();
     try {
-      await client.query('BEGIN');
-      await client.query(
-        `UPDATE oauth_consent_sessions SET status = 'failed', version = version + 1 WHERE challenge = $1 AND expires_at > now() AND status NOT IN ('approved','denied','failed')`,
-        [input.challenge],
-      );
-      await client.query(
+      await this.pool.query(
         `INSERT INTO oauth_consent_sessions (id, challenge, csrf, subject, hydra_client_id, context, status, expires_at) VALUES ($1,$2,$3,$4,$5,$6,$7,to_timestamp($8 / 1000.0))`,
         [
           session.id,
@@ -186,13 +210,10 @@ export class PostgresStateStore implements ConsentStateStore {
           session.expiresAt,
         ],
       );
-      await client.query('COMMIT');
       return session;
     } catch (error) {
-      await client.query('ROLLBACK');
+      if ((error as { code?: string }).code === '23505') throw conflict('consent_challenge_active');
       throw error;
-    } finally {
-      client.release();
     }
   }
 
@@ -319,6 +340,61 @@ export class PostgresStateStore implements ConsentStateStore {
       [id, error.slice(0, 1000)],
     );
   }
+
+  async prepareDecision(id: string, decision: 'approve' | 'deny', payload: unknown): Promise<ConsentSession> {
+    const result = await this.pool.query(
+      `UPDATE oauth_consent_sessions SET status='processing', decision=$2, decision_payload=$3, version=version+1
+       WHERE id=$1 AND status = ANY($4::text[]) AND expires_at > now()
+       RETURNING id, challenge, csrf, subject, hydra_client_id, context, status, selected_scopes, decision, decision_payload,
+       extract(epoch from hydra_committed_at)*1000 AS hydra_committed_at_ms, extract(epoch from expires_at)*1000 AS expires_at_ms`,
+      [id, decision, JSON.stringify(payload), ['shown', 'step_up_pending']],
+    );
+    if (!result.rowCount) throw conflict('consent_replay');
+    return rowToConsent(result.rows[0]);
+  }
+
+  async finalizeDecision(id: string, payload: unknown): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await client.query(
+        `UPDATE oauth_consent_sessions SET status=CASE decision WHEN 'approve' THEN 'approved' ELSE 'denied' END,
+         hydra_committed_at=COALESCE(hydra_committed_at,now()), version=version+1
+         WHERE id=$1 AND status='processing' AND decision IS NOT NULL RETURNING id`,
+        [id],
+      );
+      if (!result.rowCount) throw conflict('consent_replay');
+      await client.query(
+        `INSERT INTO oauth_consent_audit_outbox (id,payload,next_attempt_at) VALUES ($1,$2,now()) ON CONFLICT (id) DO NOTHING`,
+        [`${id}:final`, JSON.stringify(payload)],
+      );
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async pendingDecisions(limit: number): Promise<ConsentSession[]> {
+    const result = await this.pool.query(
+      `SELECT id, challenge, csrf, subject, hydra_client_id, context, status, selected_scopes, decision, decision_payload,
+       extract(epoch from hydra_committed_at)*1000 AS hydra_committed_at_ms, extract(epoch from expires_at)*1000 AS expires_at_ms
+       FROM oauth_consent_sessions WHERE status='processing' AND decision IS NOT NULL AND expires_at > now() ORDER BY created_at LIMIT $1`,
+      [limit],
+    );
+    return result.rows.map(rowToConsent);
+  }
+  async ready(): Promise<boolean> {
+    await this.pool.query('SELECT 1');
+    return true;
+  }
+  async cleanup(): Promise<void> {
+    await this.pool.query(`DELETE FROM oauth_consent_browser_flows WHERE expires_at <= now()`);
+    await this.pool.query(`DELETE FROM oauth_consent_sessions WHERE expires_at <= now()`);
+    await this.pool.query(`DELETE FROM oauth_consent_audit_outbox WHERE delivered_at < now() - interval '30 days'`);
+  }
 }
 
 function rowToConsent(row: Record<string, unknown>): ConsentSession {
@@ -331,6 +407,9 @@ function rowToConsent(row: Record<string, unknown>): ConsentSession {
     context: row.context as ConsentContext,
     status: row.status as ConsentStatus,
     selectedScopes: (row.selected_scopes as string[] | null) ?? undefined,
+    decision: row.decision === 'approve' || row.decision === 'deny' ? row.decision : undefined,
+    decisionPayload: row.decision_payload ?? undefined,
+    hydraCommittedAt: row.hydra_committed_at_ms ? Number(row.hydra_committed_at_ms) : undefined,
     expiresAt: Number(row.expires_at_ms),
   };
 }

@@ -58,6 +58,46 @@ suite('PostgreSQL state store multi-instance behavior', () => {
     expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
   });
 
+  it('permits only one concurrent active session for a Hydra challenge', async () => {
+    const results = await Promise.allSettled([
+      a.createConsent({ challenge: 'challenge_unique', subject: 'user_test', hydraClientId: 'desktop', context }),
+      b.createConsent({ challenge: 'challenge_unique', subject: 'user_test', hydraClientId: 'desktop', context }),
+    ]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+  });
+
+  it('durably records intent before Hydra and atomically finalizes one semantic audit', async () => {
+    const session = await a.createConsent({
+      challenge: 'challenge_fault',
+      subject: 'user_test',
+      hydraClientId: 'desktop',
+      context,
+    });
+    await a.transition(session.id, 'created', 'shown');
+    const payload = { event: 'consent.granted', eventId: `${session.id}:final` };
+    await a.prepareDecision(session.id, 'approve', payload);
+
+    const restarted = new PostgresStateStore(poolB, 60_000);
+    expect((await restarted.pendingDecisions(10)).map((item) => item.id)).toContain(session.id);
+    await restarted.finalizeDecision(session.id, payload);
+    const audits = await a.claimAudits(10);
+    expect(audits.filter((item) => item.id === `${session.id}:final`)).toHaveLength(1);
+  });
+
+  it('cleans up expired browser flows and sessions', async () => {
+    const short = new PostgresStateStore(poolA, -1);
+    await short.createLoginFlow('expired_flow');
+    const session = await short.createConsent({
+      challenge: 'expired_session',
+      subject: 'user_test',
+      hydraClientId: 'desktop',
+      context,
+    });
+    await short.cleanup();
+    await expect(short.getConsent(session.id)).rejects.toThrow();
+  });
+
   it('survives process restart and replays durable audit work once claimed', async () => {
     await a.enqueueAudit('restart:event', { event: 'consent.granted' });
     const restarted = new PostgresStateStore(poolB, 60_000);

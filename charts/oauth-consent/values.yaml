@@ -64,6 +64,10 @@ secretValues: {}
 
 networkPolicy:
   enabled: true
+  postgresql:
+    port: 5432
+    # Explicit database destination CIDRs. Never use 0.0.0.0/0 in production.
+    cidrs: []
 
 podDisruptionBudget:
   enabled: true

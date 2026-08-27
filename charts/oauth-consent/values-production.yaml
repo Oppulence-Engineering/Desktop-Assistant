@@ -1,6 +1,13 @@
 replicaCount: 2
 existingSecret: oauth-consent-secrets
 createSecret: false
+networkPolicy:
+  enabled: true
+  postgresql:
+    port: 5432
+    # Override with the managed PostgreSQL private endpoint CIDR(s). This /32 is
+    # an example only and intentionally does not grant broad RFC1918 egress.
+    cidrs: ["10.0.0.10/32"]
 config:
   ORY_ADMIN_URL: http://hydra-admin.ory.svc.cluster.local:4445
   WORKOS_ISSUER: https://auth.solomon-ai.co

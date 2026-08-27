@@ -57,16 +57,31 @@ bodies.
 
 ### Shared state and audit delivery
 
-Production requires `DATABASE_URL` and the migration in `migrations/` to be
-applied before rollout. Login, consent, CSRF, challenge, and step-up records use
+Production requires `DATABASE_URL`. The image packages `migrations/`, and the
+Helm Deployment runs `npm run migrate` in an init container under a PostgreSQL
+advisory lock before any application container starts. Login, consent, CSRF,
+challenge, and step-up records use
 database TTL checks, atomic compare-and-set transitions, and `DELETE ...
 RETURNING` single-use consumption, so requests may move between replicas.
 
-Hydra is accepted or rejected before the final `consent.granted` or
-`consent.denied` hook is sent. Final events use stable event IDs and a durable
-PostgreSQL outbox. Hook failure does not undo an already committed Hydra
-decision. Any replica retries pending rows using `FOR UPDATE SKIP LOCKED` and
-exponential backoff. `AUDIT_RETRY_INTERVAL_MS` defaults to 5000.
+Before Hydra is called, the chosen decision, selected scopes, and complete final
+audit payload are durably committed as decision intent. A partial unique index
+permits only one unexpired active session per Hydra challenge. After Hydra
+accepts or rejects, the session transition and stable `<session>:final` outbox
+event are committed in one database transaction. A reconciler retries durable
+processing intents after process crashes or upstream faults. The stable event ID
+provides exactly-once semantic audit delivery when the audit receiver applies
+its documented event-ID deduplication. Any replica claims outbox rows with `FOR
+UPDATE SKIP LOCKED` and exponential backoff. Expired flows and sessions, plus
+delivered audit rows older than 30 days, are cleaned periodically.
+
+`/healthz` is process liveness only. `/readyz` executes `SELECT 1` and returns
+503 when PostgreSQL is unavailable. The chart uses `/readyz` for readiness.
+
+When NetworkPolicy is enabled, PostgreSQL egress is denied unless
+`networkPolicy.postgresql.cidrs` explicitly lists destination CIDRs. Set these
+to the managed database private endpoint ranges and set
+`networkPolicy.postgresql.port` if it is not 5432. Do not use `0.0.0.0/0`.
 
 Run PostgreSQL multi-instance, CAS, consume, and restart/replay tests with:
 
@@ -190,12 +205,10 @@ The response is:
 { "accepted": true }
 ```
 
-Audit writes are fail-closed and occur before rendering or calling Hydra's
-accept/reject endpoint. This guarantees that no grant or denial proceeds
-without a durable audit acknowledgement. It also means a rare Hydra failure can
-leave an acknowledged decision event without a completed Hydra transition, so
-rowboat-api should retain `consent_session_id` and the Hydra challenge for
-reconciliation.
+The shown event remains fail-closed before rendering. Final decision intent is
+persisted before Hydra, while the final semantic audit is transactionally
+enqueued only after Hydra succeeds. Pending intents are reconciled after faults,
+and final audit delivery is deduplicated by stable `event_id`.
 
 ## Backend alignment assumptions
 

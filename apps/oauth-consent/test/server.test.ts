@@ -477,7 +477,7 @@ describe('consent rendering and decisions', () => {
     expect(approved.status).toBe(302);
     expect(harness.ory.acceptedConsents).toHaveLength(1);
     const pending = await harness.store.claimAudits(10);
-    expect(pending).toEqual([expect.objectContaining({ id: expect.stringContaining(':consent.granted') })]);
+    expect(pending).toEqual([expect.objectContaining({ id: expect.stringContaining(':final') })]);
   });
 
   it('renders entitlement/upsell denial separately and cannot approve it', async () => {
