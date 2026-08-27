@@ -22,7 +22,10 @@ const retryTimer = setInterval(
 );
 retryTimer.unref();
 const reconcileTimer = setInterval(
-  () => void reconcileDecisions(store, ory, hooks).catch(logBackground('decision reconciliation failed')),
+  () =>
+    void reconcileDecisions(store, ory, hooks, 25, cfg.decisionLeaseMs).catch(
+      logBackground('decision reconciliation failed'),
+    ),
   cfg.auditRetryIntervalMs,
 );
 const cleanupTimer = setInterval(() => void store.cleanup().catch(logBackground('state cleanup failed')), 60_000);

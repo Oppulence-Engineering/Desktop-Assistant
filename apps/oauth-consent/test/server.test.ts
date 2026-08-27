@@ -119,6 +119,8 @@ class WorkOSMock {
   private privateKey!: KeyLike;
   private publicJwk!: JWK;
   private baseUrl = '';
+  failNextToken = 0;
+  failNextJwks = 0;
 
   async initialize(): Promise<void> {
     const { privateKey, publicKey } = await generateKeyPair('RS256');
@@ -133,9 +135,13 @@ class WorkOSMock {
         issuer: this.baseUrl,
       });
     });
-    this.app.get('/jwks', (_req, res) => res.json({ keys: [this.publicJwk] }));
+    this.app.get('/jwks', (_req, res) => {
+      if (this.failNextJwks-- > 0) return res.status(503).json({ error: 'temporary' });
+      return res.json({ keys: [this.publicJwk] });
+    });
     this.app.get('/authorize', (_req, res) => res.status(204).end());
     this.app.post('/token', async (req, res) => {
+      if (this.failNextToken-- > 0) return res.status(503).json({ error: 'temporary' });
       const claims = this.tokenClaims.get(String(req.body.code));
       if (!claims) return res.status(400).json({ error: 'invalid_grant', secret: 'must-not-leak' });
       const token = await new SignJWT(claims)
@@ -161,6 +167,7 @@ class RowboatMock {
   verifiedRequests = 0;
   badResponseSignature = false;
   failNextAudits = 0;
+  failNextContexts = 0;
   contextFactory: (request: Record<string, unknown>) => ConsentContext = (request) =>
     makeContext((request.requested_scopes as string[]).map(scopeByName), {
       subject: String(request.workos_user_id),
@@ -171,6 +178,7 @@ class RowboatMock {
     this.app.use(express.text({ type: 'application/json', limit: '1mb' }));
     this.app.post('/oauth-hooks/pre-consent', (req, res) => {
       if (!this.verifyRequest(req)) return res.status(401).json({ error: 'bad signature' });
+      if (this.failNextContexts-- > 0) return res.status(503).json({ error: 'temporary' });
       const request = JSON.parse(String(req.body)) as Record<string, unknown>;
       return this.sendSigned(req, res, this.contextFactory(request));
     });
@@ -339,6 +347,7 @@ beforeEach(async () => {
     upstreamTimeoutMs: 2_000,
     databaseUrl: 'postgres://test/test',
     auditRetryIntervalMs: 5_000,
+    decisionLeaseMs: 1_000,
     ory: { adminUrl: oryServer.url },
     workos: {
       clientId: CLIENT_ID,
@@ -445,7 +454,7 @@ describe('consent rendering and decisions', () => {
         }),
       }),
     ]);
-    expect(harness.rowboat.verifiedRequests).toBe(3);
+    expect(harness.rowboat.verifiedRequests).toBe(4);
   });
 
   it('supports an explicit deny POST and audits it after rejecting with Hydra', async () => {
@@ -608,6 +617,101 @@ describe('money-moving WorkOS step-up', () => {
     expect(harness.ory.acceptedConsents).toHaveLength(0);
     expect(eventNames(harness.rowboat)).toEqual(['consent.shown']);
   });
+
+  it.each(['exchange', 'jwks'] as const)(
+    'rotates to a fresh bound flow after transient %s failure and reuses it after a dropped redirect',
+    async (failure) => {
+      const challenge = `consent_step_transient_${failure}`;
+      harness.ory.setConsent(challenge, [lowScope, moneyScope]);
+      const shown = await harness.browser.get(harness.app.url, `/consent?consent_challenge=${challenge}`);
+      const stepUp = await harness.browser.post(harness.app.url, '/consent/decision', [
+        ['csrf', csrf(await shown.text())],
+        ['decision', 'approve'],
+        ['scope', lowScope.name],
+        ['scope', moneyScope.name],
+        ['confirm_high', 'yes'],
+      ]);
+      const original = new URL(stepUp.headers.get('location')!);
+      const originalState = original.searchParams.get('state')!;
+      const originalNonce = original.searchParams.get('nonce')!;
+      const originalCookies = harness.browser.cookieHeader();
+      harness.workos.tokenClaims.set('transient-code', {
+        sub: SUBJECT,
+        nonce: originalNonce,
+        amr: ['mfa'],
+        acr: STEP_UP_ACR,
+      });
+      if (failure === 'exchange') harness.workos.failNextToken = 1;
+      else harness.workos.failNextJwks = 1;
+
+      const recovery = await harness.browser.get(
+        harness.app.url,
+        `/step-up/callback?code=transient-code&state=${encodeURIComponent(originalState)}`,
+      );
+      expect(recovery.status).toBe(302);
+      const freshLocation = recovery.headers.get('location')!;
+      const fresh = new URL(freshLocation);
+      expect(fresh.searchParams.get('state')).not.toBe(originalState);
+      expect(fresh.searchParams.get('nonce')).not.toBe(originalNonce);
+
+      const droppedResponseRetry = await harness.browser.get(
+        harness.app.url,
+        `/step-up/callback?code=transient-code&state=${encodeURIComponent(originalState)}`,
+        originalCookies,
+      );
+      expect(droppedResponseRetry.status).toBe(302);
+      expect(droppedResponseRetry.headers.get('location')).toBe(freshLocation);
+
+      harness.workos.tokenClaims.set('fresh-code', {
+        sub: SUBJECT,
+        nonce: fresh.searchParams.get('nonce')!,
+        amr: ['pwd', 'mfa'],
+        acr: STEP_UP_ACR,
+      });
+      const completed = await harness.browser.get(
+        harness.app.url,
+        `/step-up/callback?code=fresh-code&state=${encodeURIComponent(fresh.searchParams.get('state')!)}`,
+      );
+      expect(completed.status).toBe(302);
+      expect(harness.ory.acceptedConsents).toHaveLength(1);
+      expect(eventNames(harness.rowboat)).toEqual(['consent.shown', 'consent.granted']);
+    },
+  );
+});
+
+describe('approval-time entitlement revalidation', () => {
+  it('rejects with Hydra when the plan is revoked between consent rendering and approval', async () => {
+    const challenge = 'consent_plan_revoked';
+    harness.ory.setConsent(challenge, [lowScope]);
+    const shown = await harness.browser.get(harness.app.url, `/consent?consent_challenge=${challenge}`);
+    harness.rowboat.contextFactory = () =>
+      makeContext([lowScope], { entitlement: { allowed: false, reason: 'scope_not_in_plan' } });
+
+    const response = await harness.browser.post(harness.app.url, '/consent/decision', [
+      ['csrf', csrf(await shown.text())],
+      ['decision', 'approve'],
+      ['scope', lowScope.name],
+    ]);
+    expect(response.status).toBe(302);
+    expect(harness.ory.acceptedConsents).toHaveLength(0);
+    expect(harness.ory.rejectedConsents).toHaveLength(1);
+    expect(eventNames(harness.rowboat)).toEqual(['consent.shown', 'consent.denied']);
+  });
+
+  it('does not call Hydra when authoritative revalidation times out', async () => {
+    const challenge = 'consent_plan_timeout';
+    harness.ory.setConsent(challenge, [lowScope]);
+    const shown = await harness.browser.get(harness.app.url, `/consent?consent_challenge=${challenge}`);
+    harness.rowboat.failNextContexts = 1;
+    const response = await harness.browser.post(harness.app.url, '/consent/decision', [
+      ['csrf', csrf(await shown.text())],
+      ['decision', 'approve'],
+      ['scope', lowScope.name],
+    ]);
+    expect(response.status).toBe(502);
+    expect(harness.ory.acceptedConsents).toHaveLength(0);
+    expect(harness.ory.rejectedConsents).toHaveLength(0);
+  });
 });
 
 describe('consent security rejection paths', () => {
@@ -703,7 +807,8 @@ describe('consent security rejection paths', () => {
       ],
       originalCookies,
     );
-    expect(replay.status).toBe(409);
+    expect(replay.status).toBe(302);
+    expect(replay.headers.get('location')).toBe('http://desktop.test/consent-complete');
     expect(harness.ory.acceptedConsents).toHaveLength(1);
   });
 

@@ -89,6 +89,7 @@ export interface ContextRequest {
 
 export interface AuditRequest {
   eventId?: string;
+  occurredAt?: string;
   event: ConsentAuditEvent;
   sessionId: string;
   context: ConsentContext;
@@ -125,7 +126,7 @@ export class RowboatHooks {
         version: 1,
         event_id: input.eventId ?? randomToken(),
         event: input.event,
-        occurred_at: new Date(this.now()).toISOString(),
+        occurred_at: input.occurredAt ?? new Date(this.now()).toISOString(),
         consent_session_id: input.sessionId,
         context_request_id: input.context.request_id,
         workos_user_id: input.context.subject,

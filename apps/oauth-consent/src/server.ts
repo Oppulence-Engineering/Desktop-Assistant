@@ -4,9 +4,9 @@ import type { Config } from './config.js';
 import { safeEqual, signValue, verifySignedValue } from './crypto.js';
 import { AppError, badRequest } from './errors.js';
 import { consentPage, entitlementDeniedPage, errorPage } from './html.js';
-import { OryAdmin } from './ory.js';
+import { OryAdmin, OryRequestError } from './ory.js';
 import { RowboatHooks, type AuditRequest, type ConsentContext } from './rowboat.js';
-import type { ConsentStateStore, ConsentSession } from './state.js';
+import type { ConsentStateStore, ConsentSession, DecisionClaim, StepUpFlowClaim } from './state.js';
 import { WorkOS } from './workos.js';
 
 const LOGIN_COOKIE = 'rowboat_login';
@@ -116,20 +116,20 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
         consent.requested_access_token_audience,
         requestedProductScopes,
       );
-      const session = await store.createConsent({
-        challenge,
-        subject: consent.subject,
-        hydraClientId,
-        context,
-      });
-      await hooks.audit({
-        event: 'consent.shown',
-        sessionId: session.id,
-        context,
-        scopes: context.scopes.map((scope) => scope.name),
-        result: context.entitlement.allowed ? 'eligible' : context.entitlement.reason,
-      });
-      await store.transition(session.id, 'created', 'shown');
+      const session = await store.getOrCreateShownConsent(
+        { challenge, subject: consent.subject, hydraClientId, context },
+        (created) =>
+          ({
+            event: 'consent.shown',
+            eventId: `${created.id}:shown`,
+            occurredAt: new Date(created.createdAt).toISOString(),
+            sessionId: created.id,
+            context: created.context,
+            scopes: created.context.scopes.map((scope) => scope.name),
+            result: created.context.entitlement.allowed ? 'eligible' : created.context.entitlement.reason,
+          }) satisfies AuditRequest,
+      );
+      await drainAuditOutbox(store, hooks);
       setSignedCookie(res, CONSENT_COOKIE, session.id, cfg.cookieSecret, cookieOptions);
       return res
         .status(200)
@@ -144,6 +144,16 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
       const session = await consentSession(req, cfg, store);
       verifyCsrf(session, req.body.csrf);
       const decision = DecisionSchema.parse(req.body.decision);
+      if (session.status === 'approved' || session.status === 'denied') {
+        if (session.decision !== decision)
+          throw new AppError(409, 'consent_replay', 'This decision is already complete.');
+        res.clearCookie(CONSENT_COOKIE, { ...cookieOptions, maxAge: undefined });
+        return session.hydraRedirectTo
+          ? res.redirect(session.hydraRedirectTo)
+          : res.status(200).type('html').send(completedPage());
+      }
+      if (session.status === 'processing')
+        return res.status(202).type('html').send(completedPage('Authorization is being finalized.'));
       if (decision === 'deny') {
         const audit = finalAudit(
           session,
@@ -153,19 +163,11 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
             ? 'user_denied'
             : (session.context.entitlement.reason ?? 'entitlement_denied'),
         );
-        await store.prepareDecision(session.id, 'deny', audit);
-        try {
-          const { redirect_to } = await ory.rejectConsent(
-            session.challenge,
-            'The user denied the connector authorization request.',
-          );
-          await store.finalizeDecision(session.id, audit);
-          await drainAuditOutbox(store, hooks);
-          res.clearCookie(CONSENT_COOKIE, { ...cookieOptions, maxAge: undefined });
-          return res.redirect(redirect_to);
-        } catch (error) {
-          throw error;
-        }
+        const claim = await store.prepareDecision(session.id, 'deny', audit, cfg.decisionLeaseMs);
+        const redirectTo = await executeDecision(claim, store, hooks, ory);
+        await drainAuditOutbox(store, hooks);
+        res.clearCookie(CONSENT_COOKIE, { ...cookieOptions, maxAge: undefined });
+        return redirectTo ? res.redirect(redirectTo) : res.status(200).type('html').send(completedPage());
       }
 
       if (!session.context.entitlement.allowed)
@@ -179,14 +181,18 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
       if (needsHighConfirmation && req.body.confirm_high !== 'yes') {
         throw badRequest('high_scope_confirmation_required', 'Confirm the high-trust access before approving.');
       }
+      const requiresStepUp = selectedDefinitions.some((scope) => scope.requires_step_up);
+      if (requiresStepUp) {
+        await revalidateApproval(session, selected, hooks);
+      }
       await store.setSelectedScopes(session.id, selected);
-      if (selectedDefinitions.some((scope) => scope.requires_step_up)) {
+      if (requiresStepUp) {
         await store.transition(session.id, 'shown', 'step_up_pending');
         const flow = await store.createStepUpFlow(session.id);
         setSignedCookie(res, STEP_UP_COOKIE, flow.cookieBinding, cfg.cookieSecret, cookieOptions);
         return res.redirect(await workos.authorizeStepUpURL(flow.state, flow.nonce));
       }
-      return finishApproval(res, session, selected, store, hooks, ory, cookieOptions);
+      return finishApproval(res, session, selected, store, hooks, ory, cookieOptions, cfg.decisionLeaseMs);
     }),
   );
 
@@ -196,18 +202,35 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
       const code = ChallengeSchema.parse(req.query.code);
       const state = ChallengeSchema.parse(req.query.state);
       const binding = readSignedCookie(req, STEP_UP_COOKIE, cfg.cookieSecret);
-      const flow = await store.consumeStepUpFlow(state, binding);
-      if (!flow.consentSessionId) throw badRequest('step_up_flow_invalid');
-      const session = await store.getConsent(flow.consentSessionId);
+      const claim = await store.claimStepUpFlow(state, binding, cfg.decisionLeaseMs);
+      if (claim.replacement) return redirectStepUp(res, claim, workos, cfg, cookieOptions);
+      if (!claim.flow.consentSessionId) throw badRequest('step_up_flow_invalid');
+      const session = await store.getConsent(claim.flow.consentSessionId);
       if (session.status !== 'step_up_pending' || !session.selectedScopes)
         throw new AppError(409, 'step_up_replay', 'This verification has already been used.');
       try {
-        await workos.exchangeStepUp(code, flow.nonce, session.subject);
-        res.clearCookie(STEP_UP_COOKIE, { ...cookieOptions, maxAge: undefined });
-        return finishApproval(res, session, session.selectedScopes, store, hooks, ory, cookieOptions);
+        await workos.exchangeStepUp(code, claim.flow.nonce, session.subject);
       } catch (error) {
+        if (error instanceof AppError && error.status >= 500) {
+          const replacement = await store.recoverStepUpFlow(claim);
+          setSignedCookie(res, STEP_UP_COOKIE, replacement.cookieBinding, cfg.cookieSecret, cookieOptions);
+          return res.redirect(await workos.authorizeStepUpURL(replacement.state, replacement.nonce));
+        }
+        await store.completeStepUpFlow(claim);
         throw error;
       }
+      await store.completeStepUpFlow(claim);
+      res.clearCookie(STEP_UP_COOKIE, { ...cookieOptions, maxAge: undefined });
+      return finishApproval(
+        res,
+        session,
+        session.selectedScopes,
+        store,
+        hooks,
+        ory,
+        cookieOptions,
+        cfg.decisionLeaseMs,
+      );
     }),
   );
 
@@ -250,22 +273,15 @@ async function finishApproval(
     maxAge: number;
     path: string;
   },
+  decisionLeaseMs: number,
 ): Promise<void> {
   const audit = finalAudit(session, 'consent.granted', scopes, 'approved');
-  await store.prepareDecision(session.id, 'approve', audit);
-  try {
-    const { redirect_to } = await ory.acceptConsent(session.challenge, {
-      grantScope: ['offline_access', ...scopes],
-      grantAudience: [session.context.connector.audience],
-      workosUserId: session.subject,
-    });
-    await store.finalizeDecision(session.id, audit);
-    await drainAuditOutbox(store, hooks);
-    res.clearCookie(CONSENT_COOKIE, { ...cookieOptions, maxAge: undefined });
-    res.redirect(redirect_to);
-  } catch (error) {
-    throw error;
-  }
+  const claim = await store.prepareDecision(session.id, 'approve', audit, decisionLeaseMs);
+  const redirectTo = await executeDecision(claim, store, hooks, ory);
+  await drainAuditOutbox(store, hooks);
+  res.clearCookie(CONSENT_COOKIE, { ...cookieOptions, maxAge: undefined });
+  if (redirectTo) res.redirect(redirectTo);
+  else res.status(200).type('html').send(completedPage());
 }
 
 function finalAudit(
@@ -274,7 +290,19 @@ function finalAudit(
   scopes: string[],
   result: string,
 ): AuditRequest {
-  return { event, eventId: `${session.id}:final`, sessionId: session.id, context: session.context, scopes, result };
+  return {
+    event,
+    eventId: `${session.id}:final`,
+    occurredAt: new Date().toISOString(),
+    sessionId: session.id,
+    context: session.context,
+    scopes,
+    result,
+  };
+}
+
+interface ReconciliationFaults {
+  afterHydra?: (claim: DecisionClaim) => Promise<void> | void;
 }
 
 export async function reconcileDecisions(
@@ -282,23 +310,143 @@ export async function reconcileDecisions(
   ory: OryAdmin,
   hooks: RowboatHooks,
   limit = 25,
+  leaseMs = 30_000,
+  faults: ReconciliationFaults = {},
 ): Promise<number> {
-  const sessions = await store.pendingDecisions(limit);
-  for (const session of sessions) {
-    const audit = session.decisionPayload as AuditRequest;
-    if (session.decision === 'approve') {
-      await ory.acceptConsent(session.challenge, {
-        grantScope: ['offline_access', ...(session.selectedScopes ?? [])],
-        grantAudience: [session.context.connector.audience],
-        workosUserId: session.subject,
-      });
-    } else if (session.decision === 'deny') {
-      await ory.rejectConsent(session.challenge, 'The user denied the connector authorization request.');
+  const claims = await store.claimDecisions(limit, leaseMs);
+  for (const claim of claims) {
+    try {
+      await executeDecision(claim, store, hooks, ory, faults);
+    } catch {
+      // The durable retry state is updated by executeDecision. One failed item
+      // must not starve unrelated decisions claimed in the same batch.
     }
-    await store.finalizeDecision(session.id, audit);
   }
-  if (sessions.length) await drainAuditOutbox(store, hooks);
-  return sessions.length;
+  if (claims.length) await drainAuditOutbox(store, hooks);
+  return claims.length;
+}
+
+async function executeDecision(
+  initialClaim: DecisionClaim,
+  store: ConsentStateStore,
+  hooks: RowboatHooks,
+  ory: OryAdmin,
+  faults: ReconciliationFaults = {},
+): Promise<string | undefined> {
+  let claim = initialClaim;
+  if (claim.session.decision === 'approve') {
+    try {
+      await revalidateApproval(claim.session, claim.session.selectedScopes ?? [], hooks);
+    } catch (error) {
+      if (error instanceof AppError && error.status < 500) {
+        const denial = finalAudit(
+          claim.session,
+          'consent.denied',
+          claim.session.selectedScopes ?? [],
+          'authorization_context_changed',
+        );
+        claim = await store.replaceClaimedDecision(claim, 'deny', denial);
+      } else {
+        await store.retryDecision(claim, errorMessage(error));
+        throw error;
+      }
+    }
+  }
+
+  try {
+    const completion =
+      claim.session.decision === 'approve'
+        ? await ory.acceptConsent(claim.session.challenge, {
+            grantScope: ['offline_access', ...(claim.session.selectedScopes ?? [])],
+            grantAudience: [claim.session.context.connector.audience],
+            workosUserId: claim.session.subject,
+          })
+        : await ory.rejectConsent(claim.session.challenge, 'The user denied the connector authorization request.');
+    await faults.afterHydra?.(claim);
+    await store.finalizeDecision(claim, completion.redirect_to);
+    return completion.redirect_to;
+  } catch (error) {
+    if (error instanceof InjectedPostHydraCrash) throw error;
+    try {
+      const terminal =
+        error instanceof OryRequestError && [409, 410].includes(error.upstreamStatus)
+          ? true
+          : !(await ory.consentRequestPending(claim.session.challenge));
+      if (terminal) {
+        await store.finalizeDecision(claim);
+        return undefined;
+      }
+    } catch (probeError) {
+      await store.retryDecision(claim, errorMessage(probeError));
+      throw probeError;
+    }
+    await store.retryDecision(claim, errorMessage(error));
+    throw error;
+  }
+}
+
+/** Fault-injection sentinel used to model a process death after Hydra commits. */
+export class InjectedPostHydraCrash extends Error {}
+
+async function redirectStepUp(
+  res: Response,
+  claim: StepUpFlowClaim,
+  workos: WorkOS,
+  cfg: Config,
+  cookieOptions: {
+    httpOnly: boolean;
+    secure: boolean;
+    sameSite: 'lax';
+    maxAge: number;
+    path: string;
+  },
+): Promise<void> {
+  const replacement = claim.replacement;
+  if (!replacement?.state) throw badRequest('step_up_recovery_invalid');
+  setSignedCookie(res, STEP_UP_COOKIE, replacement.cookieBinding, cfg.cookieSecret, cookieOptions);
+  res.redirect(await workos.authorizeStepUpURL(replacement.state, replacement.nonce));
+}
+
+async function revalidateApproval(session: ConsentSession, selected: string[], hooks: RowboatHooks): Promise<void> {
+  const fresh = await hooks.context({
+    challenge: session.challenge,
+    workosUserId: session.subject,
+    hydraClientId: session.hydraClientId,
+    requestedAudience: [session.context.connector.audience],
+    requestedScopes: session.context.scopes.map((scope) => scope.name),
+  });
+  validateContext(
+    fresh,
+    session.subject,
+    session.hydraClientId,
+    [session.context.connector.audience],
+    session.context.scopes.map((scope) => scope.name),
+  );
+  if (!fresh.entitlement.allowed)
+    throw new AppError(403, 'entitlement_revoked', 'This connection is no longer available for the current plan.');
+  if (
+    fresh.connector.id !== session.context.connector.id ||
+    securityPolicyFingerprint(fresh) !== securityPolicyFingerprint(session.context)
+  ) {
+    throw new AppError(403, 'consent_context_drift', 'The authorization policy changed. Review the request again.');
+  }
+  validateSelectedScopes(fresh, selected);
+}
+
+function securityPolicyFingerprint(context: ConsentContext): string {
+  return JSON.stringify(
+    [...context.scopes]
+      .sort((left, right) => left.name.localeCompare(right.name))
+      .map(({ name, required, tier, requires_step_up }) => ({ name, required, tier, requires_step_up })),
+  );
+}
+
+function completedPage(message = 'Authorization is complete. You may return to the application.'): string {
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Authorization complete</title></head><body><main><h1>Authorization complete</h1><p>${message}</p></main></body></html>`;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'decision_reconciliation_failed';
 }
 
 export async function drainAuditOutbox(store: ConsentStateStore, hooks: RowboatHooks, limit = 25): Promise<number> {

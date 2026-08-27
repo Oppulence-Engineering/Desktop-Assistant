@@ -1,6 +1,6 @@
 /** WorkOS AuthKit OIDC federation: discovery, authorize URL, code exchange,
  * and id_token verification. */
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, errors as joseErrors, jwtVerify } from 'jose';
 import { z } from 'zod';
 import type { Config } from './config.js';
 import { AppError, upstream } from './errors.js';
@@ -143,7 +143,8 @@ export class WorkOS {
         issuer: d.issuer,
         audience: this.cfg.clientId,
       }));
-    } catch {
+    } catch (error) {
+      if (!isInvalidIdentityToken(error)) throw upstream('workos_jwks');
       throw new AppError(401, 'workos_token_invalid', 'Identity verification failed.');
     }
     if (payload.nonce !== expectedNonce || typeof payload.sub !== 'string' || !payload.sub) {
@@ -159,4 +160,16 @@ export class WorkOS {
       acr: typeof payload.acr === 'string' ? payload.acr : undefined,
     };
   }
+}
+
+function isInvalidIdentityToken(error: unknown): boolean {
+  return (
+    error instanceof joseErrors.JWSInvalid ||
+    error instanceof joseErrors.JWTInvalid ||
+    error instanceof joseErrors.JWTClaimValidationFailed ||
+    error instanceof joseErrors.JWTExpired ||
+    error instanceof joseErrors.JWSSignatureVerificationFailed ||
+    error instanceof joseErrors.JWKSNoMatchingKey ||
+    error instanceof joseErrors.JWKSMultipleMatchingKeys
+  );
 }

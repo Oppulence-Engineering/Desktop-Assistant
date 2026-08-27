@@ -34,7 +34,8 @@ created/shown/step_up_pending/processing -> failed
 2. Calls the signed rowboat-api context hook.
 3. Requires exact subject, Hydra client ID, single audience, and scope-set
    matches.
-4. Writes `consent.shown` through the signed audit hook.
+4. Atomically creates or reuses the challenge session and its deterministic
+   `<session>:shown` audit-outbox event.
 5. Renders either the consent form or a separate entitlement/upsell denial
    page.
 
@@ -46,34 +47,44 @@ Approving or denying is always an explicit CSRF-protected `POST`.
 
 Selected `high` or `money_moving` scopes require a separate acknowledgement.
 Any selected scope with `requires_step_up: true` enters a separate WorkOS OIDC
-flow using a new one-time state, browser binding, and OIDC nonce. Approval
+flow using a new state, browser binding, and OIDC nonce. Approval
 requires the returned subject to match the Hydra subject, `amr` to contain
 `WORKOS_STEP_UP_AMR`, and `acr` to exactly equal `WORKOS_STEP_UP_ACR`.
+The callback claims the flow with a database lease but does not consume it until
+token and assurance verification succeeds. Transient token-exchange or JWKS
+failures atomically create a fresh flow with the same browser binding; the old
+state remains a retry alias so a dropped recovery redirect returns the same
+fresh authorization URL.
 
-Sessions are consumed before asynchronous upstream work. Replayed forms,
-WorkOS callbacks, stale cookies, and replaced challenges fail closed. Upstream
-errors expose only stable local error codes and never include upstream response
-bodies.
+Before every approval, including reconciled approvals, the service repeats the
+signed context/entitlement request and checks identity, audience, connector,
+scope policy, selected scopes, and current entitlement. Policy drift is
+converted to a Hydra denial; hook timeout or signature failure makes no Hydra
+decision and leaves durable retry work. Replayed forms, stale cookies, and
+replaced challenges fail closed. Upstream errors expose only stable local error
+codes and never include upstream response bodies.
 
 ### Shared state and audit delivery
 
 Production requires `DATABASE_URL`. The image packages `migrations/`, and the
 Helm Deployment runs `npm run migrate` in an init container under a PostgreSQL
 advisory lock before any application container starts. Login, consent, CSRF,
-challenge, and step-up records use
-database TTL checks, atomic compare-and-set transitions, and `DELETE ...
-RETURNING` single-use consumption, so requests may move between replicas.
+challenge, and step-up records use database TTL checks and atomic compare-and-set
+transitions, so requests may move between replicas.
 
 Before Hydra is called, the chosen decision, selected scopes, and complete final
-audit payload are durably committed as decision intent. A partial unique index
-permits only one unexpired active session per Hydra challenge. After Hydra
-accepts or rejects, the session transition and stable `<session>:final` outbox
-event are committed in one database transaction. A reconciler retries durable
-processing intents after process crashes or upstream faults. The stable event ID
-provides exactly-once semantic audit delivery when the audit receiver applies
-its documented event-ID deduplication. Any replica claims outbox rows with `FOR
-UPDATE SKIP LOCKED` and exponential backoff. Expired flows and sessions, plus
-delivered audit rows older than 30 days, are cleaned periodically.
+audit payload are durably committed as decision intent and leased to one worker.
+A unique index permits only one session per Hydra challenge. After Hydra accepts
+or rejects, the session transition, returned redirect, and stable
+`<session>:final` outbox event are committed in one database transaction. If a
+process dies after Hydra commits, a later lease holder treats Hydra's terminal
+`409`/`410` response as convergence and finalizes the same durable intent. Two
+reconcilers cannot own the same live lease. The stable event ID and persisted
+`occurred_at` provide exactly-once semantic audit delivery when the receiver
+applies its documented event-ID deduplication. Any replica claims outbox rows
+with `FOR UPDATE SKIP LOCKED` and exponential backoff. Expired browser flows and
+non-processing sessions, plus delivered audit rows older than 30 days, are
+cleaned periodically.
 
 `/healthz` is process liveness only. `/readyz` executes `SELECT 1` and returns
 503 when PostgreSQL is unavailable. The chart uses `/readyz` for readiness.
@@ -205,10 +216,11 @@ The response is:
 { "accepted": true }
 ```
 
-The shown event remains fail-closed before rendering. Final decision intent is
-persisted before Hydra, while the final semantic audit is transactionally
-enqueued only after Hydra succeeds. Pending intents are reconciled after faults,
-and final audit delivery is deduplicated by stable `event_id`.
+The shown event is durably enqueued in the same transaction that creates the
+session, before rendering. Final decision intent is persisted before Hydra,
+while the final semantic audit is transactionally enqueued only after Hydra
+converges. Pending intents are reconciled after faults, and audit delivery is
+deduplicated by stable `event_id`.
 
 ## Backend alignment assumptions
 
@@ -229,10 +241,8 @@ The coordinator should align rowboat-api to these explicit assumptions:
 8. The configured WorkOS tenant emits an OIDC `nonce`, an `amr` array containing
    the configured MFA method, and an `acr` exactly matching the requested
    step-up value.
-9. The in-process state store is appropriate only for one replica or a
-   load-balanced deployment with session affinity. Before horizontally scaling,
-   replace `StateStore` with a shared atomic TTL store while preserving its
-   one-time transition semantics.
+9. Production uses `PostgresStateStore`; `StateStore` is process-local test
+   infrastructure only.
 
 ## Configuration
 
@@ -243,6 +253,9 @@ The coordinator should align rowboat-api to these explicit assumptions:
 | `COOKIE_SECURE`               | Set consent cookies `Secure`; set `false` only for local HTTP tests | `true`                                           |
 | `CONSENT_SESSION_TTL_MS`      | Login, consent, and step-up state TTL                               | `600000`                                         |
 | `UPSTREAM_TIMEOUT_MS`         | Ory, WorkOS, and rowboat-api request timeout                        | `5000`                                           |
+| `DATABASE_URL`                | Shared PostgreSQL connection string                                 | required                                         |
+| `AUDIT_RETRY_INTERVAL_MS`     | Audit and decision reconciliation interval                          | `5000`                                           |
+| `DECISION_LEASE_MS`           | Hydra decision and MFA claim lease duration                         | `30000`                                          |
 | `ORY_ADMIN_URL`               | Hydra Admin API base URL                                            | cluster-local Hydra URL                          |
 | `WORKOS_CLIENT_ID`            | WorkOS OIDC client ID                                               | required                                         |
 | `WORKOS_API_KEY`              | WorkOS confidential client secret                                   | required                                         |

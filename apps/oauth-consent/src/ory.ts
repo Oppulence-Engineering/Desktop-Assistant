@@ -1,6 +1,6 @@
 /** Thin client for the Ory Hydra Admin API (login/consent/logout flows). */
 import { z } from 'zod';
-import { upstream } from './errors.js';
+import { AppError, upstream } from './errors.js';
 
 const LoginRequestSchema = z.object({
   skip: z.boolean(),
@@ -32,6 +32,12 @@ const AcceptConsentOptsSchema = z.object({
 });
 type AcceptConsentOpts = z.infer<typeof AcceptConsentOptsSchema>;
 
+export class OryRequestError extends AppError {
+  constructor(readonly upstreamStatus: number) {
+    super(502, `ory_upstream_${upstreamStatus}`, 'The authorization service is temporarily unavailable.');
+  }
+}
+
 export class OryAdmin {
   constructor(
     private readonly adminUrl: string,
@@ -50,7 +56,7 @@ export class OryAdmin {
     } catch {
       throw upstream('ory');
     }
-    if (!res.ok) throw upstream('ory', res.status);
+    if (!res.ok) throw new OryRequestError(res.status);
     try {
       return schema.parse(await res.json());
     } catch {
@@ -85,6 +91,16 @@ export class OryAdmin {
       'GET',
       `/admin/oauth2/auth/requests/consent?consent_challenge=${encodeURIComponent(challenge)}`,
     );
+  }
+
+  async consentRequestPending(challenge: string): Promise<boolean> {
+    try {
+      await this.getConsentRequest(challenge);
+      return true;
+    } catch (error) {
+      if (error instanceof OryRequestError && [404, 409, 410].includes(error.upstreamStatus)) return false;
+      throw error;
+    }
   }
 
   acceptConsent(challenge: string, opts: AcceptConsentOpts): Promise<Completion> {

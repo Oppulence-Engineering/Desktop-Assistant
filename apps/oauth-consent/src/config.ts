@@ -9,6 +9,7 @@ export const ConfigSchema = z.object({
   upstreamTimeoutMs: z.number().int().min(100).max(30_000),
   databaseUrl: z.string().min(1),
   auditRetryIntervalMs: z.number().int().min(1_000).max(300_000),
+  decisionLeaseMs: z.number().int().min(1_000).max(300_000),
   ory: z.object({ adminUrl: z.string().url() }),
   workos: z.object({
     clientId: z.string().min(1),
@@ -40,6 +41,7 @@ export function loadConfig(): Config {
     upstreamTimeoutMs: Number(env.UPSTREAM_TIMEOUT_MS ?? 5_000),
     databaseUrl: env.DATABASE_URL ?? '',
     auditRetryIntervalMs: Number(env.AUDIT_RETRY_INTERVAL_MS ?? 5_000),
+    decisionLeaseMs: Number(env.DECISION_LEASE_MS ?? 30_000),
     ory: { adminUrl: env.ORY_ADMIN_URL ?? 'http://hydra-admin.ory.svc.cluster.local:4445' },
     workos: {
       clientId: env.WORKOS_CLIENT_ID ?? '',
