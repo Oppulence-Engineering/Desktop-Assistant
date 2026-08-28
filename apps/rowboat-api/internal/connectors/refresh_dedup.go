@@ -185,6 +185,14 @@ func (d *refreshDeduper) refresh(
 		if err := requireConnectorRefreshOwnership(detached, d.cache, lockKey, owner); err != nil {
 			return nil, err
 		}
+		var permit *credentialCustodyPermit
+		if d.custody != nil {
+			permit, err = d.custody.acquireProviderOperation()
+			if err != nil {
+				return nil, err
+			}
+			defer permit.release()
+		}
 		tok, err := ory.refresh(detached, oldRefresh)
 		if err != nil {
 			return nil, err
@@ -213,7 +221,7 @@ func (d *refreshDeduper) refresh(
 				// revoke, because the provider may already have accepted it.
 				if revokeErr := revokeCredentialBounded(context.WithoutCancel(detached), ory, tok.RefreshToken); revokeErr != nil {
 					recoveryID, revoked, recoveryErr := establishCredentialRecovery(
-						d.custody, d.client, d.sealer, ory, d.log, uuid.New(),
+						d.custody, permit, d.client, d.sealer, ory, d.log, uuid.New(),
 						bound.Connector, credentialRecoveryOwnerRotation, bound.ConnectionID,
 						tok.RefreshToken, time.Now().UTC(),
 					)

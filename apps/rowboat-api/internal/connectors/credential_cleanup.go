@@ -126,6 +126,7 @@ func persistCredentialRecovery(
 // for providers that offer neither idempotent exchange nor token introspection.
 func establishCredentialRecovery(
 	supervisor *credentialCustodySupervisor,
+	permit *credentialCustodyPermit,
 	client *ent.Client,
 	sealer *crypto.Sealer,
 	ory *oryClient,
@@ -140,7 +141,11 @@ func establishCredentialRecovery(
 	if supervisor == nil {
 		return uuid.Nil, false, errors.New("credential custody supervisor is not configured")
 	}
-	result := supervisor.submit(func() credentialCustodyResult {
+	submit := supervisor.submit
+	if permit != nil {
+		submit = permit.submit
+	}
+	result := submit(func() credentialCustodyResult {
 		for attempt := 0; ; attempt++ {
 			writeCtx, cancel := context.WithTimeout(processContext(), 5*time.Second)
 			recoveryID, err := persistCredentialRecovery(writeCtx, client, sealer, id, connector, ownerKind, ownerID, refreshToken, nextAttemptAt)

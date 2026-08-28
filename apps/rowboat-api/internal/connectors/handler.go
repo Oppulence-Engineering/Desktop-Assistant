@@ -693,6 +693,14 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	redirectURI := strings.TrimRight(h.cfg.PublicBaseURL, "/") + "/v1/connections/" + name + "/callback"
+	permit, err := h.custody.acquireProviderOperation()
+	if err != nil {
+		_ = h.finishCallback(ctx, pending, owner, cp, claimID, "restart_required", "server_shutdown", nil, nil)
+		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "shutdown_rejected").Inc()
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "restart_required", "")
+		return
+	}
+	defer permit.release()
 	tok, err := h.ory.exchange(ctx, code, redirectURI, cp.Verifier)
 	if err != nil {
 		h.log.Warn("token exchange failed", zap.String("connector", name), zap.Error(err))
@@ -707,7 +715,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	// irreducible. From this point forward the handler cannot return a live grant
 	// without either this encrypted journal row or confirmed provider revocation.
 	recoveryID, revoked, recoveryErr := establishCredentialRecovery(
-		h.custody, h.client, h.sealer, h.ory, h.log, pending.ID,
+		h.custody, permit, h.client, h.sealer, h.ory, h.log, pending.ID,
 		name, credentialRecoveryOwnerCallback, pending.ID.String(), tok.RefreshToken,
 		pending.ExpiresAt.UTC().Add(credentialCleanupAdoptionGrace),
 	)
@@ -870,7 +878,7 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	recoveryID, revoked, recoveryErr := establishCredentialRecovery(
-		h.custody, h.client, h.sealer, h.ory, h.log, pending.ID,
+		h.custody, nil, h.client, h.sealer, h.ory, h.log, pending.ID,
 		name, credentialRecoveryOwnerCallback, pending.ID.String(), cp.RefreshToken,
 		pending.ExpiresAt.UTC().Add(credentialCleanupAdoptionGrace),
 	)

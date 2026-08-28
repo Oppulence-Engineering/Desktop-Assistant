@@ -204,6 +204,52 @@ func TestCredentialCustodySupervisorShutdownDualOutageIsBoundedAndExplicit(t *te
 	}
 }
 
+func TestCredentialCustodySupervisorPreShutdownProviderOperationCanSubmitAfterDrainStarts(t *testing.T) {
+	s := newCredentialCustodySupervisor(zap.NewNop(), 1, 1)
+	permit, err := s.acquireProviderOperation()
+	if err != nil {
+		t.Fatalf("acquire provider operation: %v", err)
+	}
+
+	s.beginShutdown()
+	closed := make(chan error, 1)
+	go func() { closed <- s.closeContext(context.Background()) }()
+
+	deadline := time.Now().Add(time.Second)
+	for {
+		s.mu.RLock()
+		stopping := s.stopping
+		s.mu.RUnlock()
+		if stopping || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
+
+	// This models an HTTP handler whose provider response arrives after the
+	// listener drain deadline. Because the provider call was registered before
+	// shutdown, the resulting credential is still admitted and tracked.
+	result := permit.submit(func() credentialCustodyResult {
+		return credentialCustodyResult{recoveryID: "durable-after-late-provider-response"}
+	})
+	permit.release()
+	if result.err != nil || result.recoveryID == "" {
+		t.Fatalf("pre-shutdown provider response was dropped: %+v", result)
+	}
+	select {
+	case err := <-closed:
+		if err != nil {
+			t.Fatalf("shutdown after late provider response: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("shutdown did not wait for pre-shutdown provider operation")
+	}
+
+	if _, err := s.acquireProviderOperation(); !errors.Is(err, errCredentialCustodyStopping) {
+		t.Fatalf("post-drain provider operation was not rejected before exchange: %v", err)
+	}
+}
+
 func TestCredentialCustodySupervisorQuiescePreservesAcceptedRequestAdmission(t *testing.T) {
 	s := newCredentialCustodySupervisor(zap.NewNop(), 1, 1)
 	s.beginShutdown()
