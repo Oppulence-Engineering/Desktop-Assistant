@@ -1,5 +1,87 @@
 # Changelog
 
+## [0.1.31](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.30...v0.1.31) (2026-08-28)
+
+
+### Features
+
+* **billing:** gate email labeling on a live paid subscription ([f3ef807](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/f3ef807c385ddeb408d34162bced986dbbd12264))
+* desktop + gateway cost, correctness and reliability fixes ([219b348](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/219b348804a0fd7523012b0f2fc733040e3b9768))
+* **desktop,api:** hermetic Gmail dogfooding, cheaper default model, full-page auth and settings ([#227](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/227)) ([6f67778](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6f677784db07937018a8afbd24d4f9183feea35a))
+* **desktop:** integrate RFC 012 connector lifecycle ([05c15c7](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/05c15c7aa7f2025644c41e3f814eea769b428f82))
+* harden platform and add Oppulence Voice cloud service ([cbcb60c](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/cbcb60ccec7a4dc52689ed644ece07fbd5ad0a5c))
+* **memory:** index labeled email so the labels are searchable ([6bcac69](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6bcac698f4165fa23ab6acd760c354a6eb245d81))
+* promote develop to main — inference cost, Google connect, and reliability ([62834ce](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/62834ce2815dca4e7230e171b7edcaea61ee50e1))
+* **revenue:** implement relationship assertion authority ([d9fea83](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/d9fea83b49100221ce0e84cb10e6b9fc29c4af07))
+* **x:** embed in-process with ONNX Runtime, ahead of Ollama ([bc20a58](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/bc20a585304854e9a402cbba9e520c0db52e885c))
+* **x:** integrate RFC 022 entity graph ([5205f37](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/5205f372f3c4c26f0e30fba14af0847f66c64479))
+* **x:** run memory embeddings on-device by default ([09464d9](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/09464d94e789d9592206cedbd680e3b924666a00))
+* **x:** ship the embedding model with the app ([bc659d5](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/bc659d567019dec7a00c21550cc9a3c942428df4))
+
+
+### Bug Fixes
+
+* **approvals:** bind endpoint query semantics ([3dbe514](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/3dbe51451cbb1b689fc87d6ad62cced23316d7dc))
+* **approvals:** redeem completion codes over TLS ([9f6eee0](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/9f6eee035255ded903dbd0504e94f7f4a10a406e))
+* BYOK labeling gate, e2e packager resources, and staging secret isolation ([#234](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/234)) ([7eebc31](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/7eebc31aae4c9ed4bc3681c11f16a69f8142e4d9))
+* **ci:** gofmt the price table, and compare URL hosts instead of substrings ([cdb5d83](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/cdb5d830b641fff0106caa596c956fadb0186986))
+* **ci:** make Electron smoke artifact inspectable ([8afea1b](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/8afea1bd525e1b73eca55cf3a1b21143b5311dcb))
+* **ci:** restore desktop and API quality gates ([b949311](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/b9493118137ab73f49b7ee3ec152efeb369a0cbb))
+* **connectors:** align desktop and hosted OAuth callbacks ([165bed2](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/165bed296ad533080eb386d7c79ebedd208c72c2))
+* **connectors:** close RFC 012 quality gates ([dbee152](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/dbee152ab3ac6fed5f2eccbef98d3aab73073c77))
+* **deploy:** reconcile connector broker contract ([5d079d0](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/5d079d01c51c5d7387baae39e8006c37d02b37c4))
+* **desktop:** isolate approval MCP retries ([24bb364](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/24bb3646119003c707e56f4998fadf9d33a2a902))
+* **desktop:** keep packaged V8 snapshot loadable ([c58099d](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/c58099d99c76dc55c99ba57f7d7d0c0a86969bfe))
+* **entity:** close RFC 022 adversarial findings ([6a7d011](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6a7d011b29467a47f74c8f15c8ca8f53b7f29710))
+* **entity:** harden RFC 022 convergence and privacy ([5717faa](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/5717faaa63be9f47f3f7a9ce380486f684fb8d64))
+* **gmail:** bound inline images in a snapshot, and match cids exactly ([92326c0](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/92326c0c738b036022b8305617329a2fcbf86e94))
+* **google:** a claim before the callback must not succeed or burn the ticket ([dd0c63c](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/dd0c63c4b507f27e092eb35a1b33defd88ebdc11))
+* make the runs dir deterministic and stop the suite timing out on load ([c899afc](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/c899afcd3f94d54e6bc9a38deffcc60d8a465d58))
+* **oauth:** complete a managed Google connect without the deep link ([cf7ccf9](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/cf7ccf964eb0f5338c5c5812178edb830a3a397c))
+* **revenue:** harden relationship authority rollout ([bf71fb9](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/bf71fb97b32872e5d111a4141d8c3842a4bbdb59))
+* **security:** close CodeQL injection paths ([7d367cb](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/7d367cbbedd9b7ba7477b86a8cde81810a8c6c7b))
+* **x:** agent notes — stop marking runs it never read, and back off failures ([24475aa](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/24475aabd351960bb4a4c2b54aca3e39dfe98789))
+* **x:** back off failed graph files instead of re-detecting them forever ([a6a94ad](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a6a94ad8d8e055877e415bf59d9398766e10ea8f))
+* **x:** bind MCP approvals to exact request ([0011667](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/0011667b6233e3c348e0b24e744e42d7712566d8))
+* **x:** contain local-runtime failures instead of failing the index pass ([848c7bc](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/848c7bc037496219eb5415a34065e16ff2bfa9ad))
+* **x:** delete old service logs instead of keeping every one ([9da2c1e](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/9da2c1eab4112f51b55ad6db7dfe7318574fb81f))
+* **x:** don't let a bad models.json take every LLM service down ([771d8ba](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/771d8bae4e87cbf9958db6622134865924019e04))
+* **x:** give every atomic write its own tmp file ([acd1bba](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/acd1bba7ba7739c4906d709ff6fb69823b3923ed))
+* **x:** give the memory failure its own outcome message ([bc17097](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/bc17097f9f2418d7c4c7f2d484b5fed02502fdc0))
+* **x:** guard the four JSON.parse sites that could take a feature down ([cd90678](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/cd906789f35a2b7a92b734ec21dc2cb081aed7b8))
+* **x:** handle stream errors instead of leaking them to the global handler ([d498f7e](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/d498f7ec2e3826e15df34dff5dd69c7e78c88fb7))
+* **x:** let Google connect reach the local stack's http mock ([2972da5](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/2972da56d1c00836725fab15f23bbcc7b39c2674))
+* **x:** make the runs dir deterministic, and stop the suite timing out on load ([6fb1eba](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6fb1eba7b7204c8bc864abbc9b36922f60d45b37))
+* **x:** make toasts visible, and tell the truth when billing is unconfigured ([2b91449](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/2b914498d0a8b861bc9dc9dfcad7fa1ff52fb275))
+* **x:** mint the gateway bearer at send time, not at queue time ([a99ca59](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a99ca59c64d8e3c8077a70fe250027b13f7e7f71))
+* **x:** prune processed events instead of keeping every one ([5550759](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/55507599f1e4804cfdbb0eaf937c12fb8ba368b8))
+* **x:** prune run logs instead of keeping every run forever ([aa4fcff](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/aa4fcff90ba4f04f76a0ecac35a63c3a4caf9bc2))
+* **x:** reap abandoned model downloads ([b7dd2e8](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/b7dd2e80ea985ec49c5f98282ae2519182e8549b))
+* **x:** securely resume approved MCP calls ([256ebff](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/256ebff4b780f0c4713d9781f010e8bf3c55981c))
+* **x:** send the upgrade button to billing instead of the API root ([7e1da8e](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/7e1da8e7e65583af1657051e9b39ffef1795ffea))
+* **x:** serialize config writes that read, await, then write ([854bd11](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/854bd11cafde2c199cba9dc25ce10e4d6eab21c4))
+* **x:** stop a corrupt config file from disabling MCP and scheduling ([b1928ae](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/b1928ae129d83b17ed881d1c2f6797c195278df8))
+* **x:** stop leading email rows with tracking pixels and invisible padding ([93606b4](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/93606b4a2b59ccbe2914c226b245f98ce3b2ed2f))
+* **x:** stop one failed write from killing all service logging ([5994bf8](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/5994bf8d5cf4d57b5d6eed605d07bec0f1fdcbd9))
+* **x:** stop re-billing email labels that never succeed ([468a9ae](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/468a9ae654da7be0e90deaf3298093b98c13bbd8))
+* **x:** stop re-billing note tags that never succeed ([4164c4a](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/4164c4afc17d45503ddcd128ae800c8b4aeaf209))
+* **x:** stop reporting a failing retry loop as progress ([0e897bc](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/0e897bc0c8c1ac15318b7467c55beecf15ed796e))
+* **x:** stop the runs repo leaking an unhandled rejection, and steady two tests ([ef96be0](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/ef96be00372f70011dfae0081131cd4ec264d00b))
+* **x:** survive first-run failures in background service init loops ([8f572cc](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/8f572ccc7c2ce5c1d3dbc9286016a530ad2070c2))
+* **x:** write config files atomically, and repair without a no-config window ([8c3e66e](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/8c3e66ee1225647d3c3b72dcf07bc720e0b68540))
+* **x:** write state files atomically so a crash can't reset them ([2aa5124](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/2aa51240a947b3b616f409c47908ef906562bc3b))
+
+
+### Performance
+
+* **agents:** cache the repeated prompt prefix, and stop logging it ([2e53a47](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/2e53a47a1eccfa59c7a8e1536bf2aaf70531ea6a))
+* **x:** stop reading every email in full on every knowledge poll ([36df618](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/36df6186069f70b713f03d61981a6e6afe20a181))
+
+
+### Refactors
+
+* **mcp:** inject approval redemption repository ([3244315](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/3244315c6780203bd4e86da1543234da7ade45fa))
+
 ## [0.1.30](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.29...v0.1.30) (2026-08-07)
 
 
