@@ -86,8 +86,8 @@ cat > "$SCRATCH/connectors.json" <<JSON
       {"name":"dev:payments.execute","displayName":"Execute payments","description":"Execute an approved disposable payment.","grantTier":"optional","risk":"money-moving","implies":["dev:records.read"],"stepUpRequired":true,"perInvocationApproval":true,"requiredPlan":"intelligence"}
     ],
     "mcpTools":[
-      {"name":"records.read","trustTier":"read"},
-      {"name":"payments.execute","trustTier":"money-moving"}
+      {"name":"records.read","trustTier":"read","requiredScopes":["dev:records.read"]},
+      {"name":"payments.execute","trustTier":"money-moving","requiredScopes":["dev:payments.execute"]}
     ]
   }
 ]

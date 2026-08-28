@@ -144,7 +144,15 @@ func TestRFC012PublicContract(t *testing.T) {
 		connectionID = claimed.ConnectionID
 		require.NotEmpty(t, connectionID)
 		replay := c.json("POST", mustEnv(t, "RFC012_API2_URL")+"/v1/connections/"+connector+"/claim", tokenA, map[string]string{"state": claimTicket})
-		require.NotEqual(t, 200, replay.status, "claim ticket replay succeeded")
+		require.Equal(t, http.StatusOK, replay.status, replay.body)
+		var replayedClaim struct {
+			ConnectionID string `json:"connectionId"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(replay.body), &replayedClaim))
+		require.Equal(t, connectionID, replayedClaim.ConnectionID, "exact claim replay returned a different connection")
+		var connectionRows int
+		require.NoError(t, db.QueryRow(`SELECT count(*) FROM mcp_connections WHERE id=$1`, connectionID).Scan(&connectionRows))
+		require.Equal(t, 1, connectionRows, "exact claim replay created duplicate connection state")
 		other := c.json("GET", api+"/v1/connectors", tokenB, nil)
 		require.Equal(t, 200, other.status, other.body)
 		require.NotContains(t, other.body, `"connected":true`, "tenant B observed tenant A connection")
@@ -256,7 +264,7 @@ func TestRFC012PublicContract(t *testing.T) {
 		wrongActorSession, wrongActorConfig := approvalResourceBinding(t, wrongActorToken)
 		wrongActorRedeem["product_session_id"] = wrongActorSession
 		wrongActorRedeem["product_config_digest"] = wrongActorConfig
-		require.Equal(t, http.StatusBadRequest, c.json("POST", product+"/v1/approvals/redeem", wrongActorToken, wrongActorRedeem).status, "authenticated wrong actor redeemed approval")
+		require.Equal(t, http.StatusForbidden, c.json("POST", product+"/v1/approvals/redeem", wrongActorToken, wrongActorRedeem).status, "authenticated wrong actor redeemed approval")
 		wrongOriginBody := mapsClone(issueBody)
 		wrongOriginBody["desktop_challenge_id"] = "wrong-origin-challenge"
 		wrongOriginBody["product_origin"] = "https://wrong-origin.example"
@@ -333,7 +341,7 @@ func TestRFC012PublicContract(t *testing.T) {
 
 		// A new product entitlement generation denies the already-issued token on
 		// the next request without waiting for token expiry or another broker mint.
-		require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/entitlements", "", map[string]any{"user_id": "user_rfc012_a", "allowed": false, "reason": "subscription_generation_changed"}, "X-Fixture-Secret", fixtureSecret).status)
+		require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/entitlements", "", map[string]any{"user_id": "user_rfc012_a", "allowed": false, "reason": "user_banned"}, "X-Fixture-Secret", fixtureSecret).status)
 		require.Equal(t, http.StatusForbidden, c.json("POST", product+"/v1/mcp/read", resourceToken, nil).status)
 		require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/entitlements", "", map[string]any{"user_id": "user_rfc012_a", "allowed": true}, "X-Fixture-Secret", fixtureSecret).status)
 
@@ -369,6 +377,21 @@ func TestRFC012PublicContract(t *testing.T) {
 		// same authenticated principal, so wait for the production bucket to roll
 		// rather than weakening or bypassing the limiter in acceptance.
 		time.Sleep(11 * time.Second)
+
+		// The preceding lifecycle test intentionally invalidates the current grant.
+		// Establish an independent active grant before downgrading the subscription so
+		// this subtest proves entitlement enforcement rather than merely observing the
+		// earlier tombstone.
+		start := c.json("POST", api+"/v1/connections/"+connector+"/start", tokenA, map[string]any{"requestedScopes": []string{"dev:records.read", "dev:payments.execute"}})
+		require.Equal(t, http.StatusOK, start.status, start.body)
+		var started struct {
+			AuthorizeURL string `json:"authorize_url"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(start.body), &started))
+		callback := completeConsent(t, started.AuthorizeURL, []string{"dev:records.read", "dev:payments.execute"})
+		claim := c.json("POST", api+"/v1/connections/"+connector+"/claim", tokenA, map[string]string{"state": queryFromLocation(t, callback.header.Get("Location"), "session")})
+		require.Equal(t, http.StatusOK, claim.status, claim.body)
+
 		_, err := db.Exec(`UPDATE subscriptions SET status='past_due',updated_at=now() WHERE user_subscription=(SELECT id FROM users WHERE workos_user_id='user_rfc012_a')`)
 		require.NoError(t, err)
 		denied := c.json("POST", api+"/v1/connections/"+connector+"/mcp-token", tokenA, nil)
