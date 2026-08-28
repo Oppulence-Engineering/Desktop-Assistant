@@ -28,6 +28,7 @@ export interface ObservedMcpToolCallRequest {
 export interface McpApprovalRequestBinding
   extends McpConfigApprovalSnapshot, ObservedMcpToolCallRequest {
   argumentsDigest: string;
+  desktopChallengeId?: string;
 }
 
 type ToolCallBody = {

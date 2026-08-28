@@ -25,13 +25,12 @@ export interface DirectProductMcpError {
 
 export interface McpApprovalCompletion {
   challengeId: string;
-  serverName: string;
-  toolName: string;
-  argumentsDigest: string;
-  actor?: string;
-  action?: string;
   status: "approved" | "denied" | "cancelled" | "expired";
-  token?: string;
+  code?: string;
+}
+
+export interface McpApprovalRedemption {
+  approvalToken: string;
 }
 
 const APPROVAL_DEEP_LINK_SCHEMES = [
@@ -53,30 +52,24 @@ export function parseMcpApprovalDeepLink(url: string): McpApprovalCompletion | n
   if (parsed.hostname !== "mcp-approval" || (parsed.pathname !== "" && parsed.pathname !== "/"))
     return null;
 
-  const serverName = parsed.searchParams.get("server");
   const challengeId =
     parsed.searchParams.get("challenge_id") ?? parsed.searchParams.get("desktop_challenge_id");
-  const toolName = parsed.searchParams.get("tool");
-  const argumentsDigest = parsed.searchParams.get("arguments_digest");
   const statusValue = parsed.searchParams.get("status") ?? "approved";
-  const token = parsed.searchParams.get("approval_token") ?? parsed.searchParams.get("token");
+  const code = parsed.searchParams.get("code");
+  // Bearer-shaped parameters are rejected rather than ignored so legacy or
+  // malicious callbacks can never accidentally reintroduce URL token handling.
   if (
-    !serverName ||
     !challengeId ||
-    !toolName ||
-    !argumentsDigest ||
-    !["approved", "denied", "cancelled", "expired"].includes(statusValue)
+    parsed.searchParams.has("approval_token") ||
+    parsed.searchParams.has("token") ||
+    !["approved", "denied", "cancelled", "expired"].includes(statusValue) ||
+    (statusValue === "approved" && !code)
   )
     return null;
   return {
-    serverName,
     challengeId,
-    toolName,
-    argumentsDigest,
-    actor: parsed.searchParams.get("actor") ?? undefined,
-    action: parsed.searchParams.get("action") ?? undefined,
     status: statusValue as McpApprovalCompletion["status"],
-    token: token ?? undefined,
+    code: code ?? undefined,
   };
 }
 
@@ -84,6 +77,14 @@ type PendingApproval = {
   challengeId: string;
   binding: Readonly<McpApprovalRequestBinding & { actor?: string; action?: string }>;
   expiresAt: number;
+  verifier: string;
+  productOrigin: string;
+  redeem: (
+    code: string,
+    verifier: string,
+    productOrigin: string,
+    binding: Readonly<McpApprovalRequestBinding & { actor?: string; action?: string }>,
+  ) => Promise<McpApprovalRedemption>;
   retry: (
     token: string,
     binding: Readonly<McpApprovalRequestBinding & { actor?: string; action?: string }>,
@@ -162,29 +163,26 @@ export function pendingMcpApprovalCount(): number {
 export function registerMcpApprovalResult(completion: McpApprovalCompletion): boolean {
   const pending = pendingApprovals.get(completion.challengeId);
   if (!pending) return false;
-  const { binding } = pending;
-  const matches =
-    completion.serverName === binding.serverName &&
-    completion.toolName === binding.toolName &&
-    completion.argumentsDigest === binding.argumentsDigest &&
-    completion.actor === binding.actor &&
-    completion.action === binding.action;
-  if (!matches) {
-    rejectPending(pending, "Approval completion did not match the pending product action.");
-    return false;
-  }
   if (Date.now() >= pending.expiresAt || completion.status === "expired") {
     rejectPending(pending, "Approval expired before the product action could resume.");
     return false;
   }
-  if (completion.status !== "approved" || !completion.token || completion.token.length > 8192) {
+  if (completion.status !== "approved" || !completion.code || completion.code.length > 1024) {
     rejectPending(pending, `Approval was ${completion.status}.`);
     return false;
   }
 
-  // Remove before retrying. A replayed deep link cannot observe or reuse the token.
+  // Remove before redemption. A replayed protocol invocation cannot trigger a
+  // second HTTPS exchange, and the approval bearer never enters this URL path.
   finishPending(pending);
-  void pending.retry(completion.token, binding).then(pending.resolve, pending.reject);
+  void pending
+    .redeem(completion.code, pending.verifier, pending.productOrigin, pending.binding)
+    .then(({ approvalToken }) => {
+      if (!approvalToken || approvalToken.length > 8192)
+        throw new Error("The product returned an invalid approval redemption response.");
+      return pending.retry(approvalToken, pending.binding);
+    })
+    .then(pending.resolve, pending.reject);
   return true;
 }
 
@@ -267,6 +265,7 @@ export async function awaitApprovalAndRetry(
     token: string,
     binding: Readonly<McpApprovalRequestBinding & { actor?: string; action?: string }>,
   ) => Promise<unknown>,
+  redeem: PendingApproval["redeem"],
 ): Promise<unknown> {
   const classified = classifyDirectProductMcpError(error);
   if (classified.kind !== "approval_required" || !classified.approvalChallengeUrl)
@@ -282,11 +281,17 @@ export async function awaitApprovalAndRetry(
     !(url.protocol === "http:" && ["localhost", "127.0.0.1", "::1"].includes(url.hostname))
   )
     throw new Error("The product returned an unsafe approval URL.");
+  const productOrigin = requestBinding?.endpoint.origin;
+  if (!productOrigin) throw new Error("The approval-required MCP request had no product origin.");
+  if (url.origin !== productOrigin)
+    throw new Error("The approval URL did not match the exact product origin.");
   if (!openApprovalUrl) throw new Error("Approval cannot be opened on this device.");
   if (pendingApprovals.size >= MAX_PENDING_APPROVALS)
     throw new Error("Too many product approvals are pending.");
 
   const challengeId = randomBytes(32).toString("base64url");
+  const verifier = randomBytes(32).toString("base64url");
+  const verifierChallenge = createHash("sha256").update(verifier).digest("base64url");
   const argumentsDigest = canonicalArgumentsDigest(input);
   if (
     !requestBinding ||
@@ -301,11 +306,15 @@ export async function awaitApprovalAndRetry(
     configuredEndpoint: { ...requestBinding.configuredEndpoint },
     actor: classified.actor,
     action: classified.action,
+    desktopChallengeId: challengeId,
   });
   url.searchParams.set("desktop_challenge_id", challengeId);
   url.searchParams.set("desktop_server", serverName);
   url.searchParams.set("desktop_tool", toolName);
   url.searchParams.set("desktop_arguments_digest", argumentsDigest);
+  url.searchParams.set("desktop_connection_id", requestBinding.connectionId ?? "");
+  url.searchParams.set("desktop_code_challenge", verifierChallenge);
+  url.searchParams.set("desktop_code_challenge_method", "S256");
   if (classified.actor) url.searchParams.set("desktop_actor", classified.actor);
   if (classified.action) url.searchParams.set("desktop_action", classified.action);
 
@@ -315,6 +324,9 @@ export async function awaitApprovalAndRetry(
       challengeId,
       binding,
       expiresAt,
+      verifier,
+      productOrigin,
+      redeem,
       retry,
       resolve,
       reject,

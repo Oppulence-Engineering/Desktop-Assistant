@@ -100,6 +100,42 @@ async function assertApprovalConfigCurrent(
   );
 }
 
+async function redeemApprovalCode(
+  serverName: string,
+  code: string,
+  verifier: string,
+  productOrigin: string,
+  binding: Readonly<McpApprovalRequestBinding & { actor?: string; action?: string }>,
+): Promise<{ approvalToken: string }> {
+  const repo = container.resolve<IMcpConfigRepo>("mcpConfigRepo");
+  const { mcpServers } = await repo.getConfig();
+  const config = mcpServers[serverName];
+  if (!config || "command" in config) throw new Error("The approved product is no longer configured.");
+  await assertApprovalConfigCurrent(repo, serverName, binding);
+  if (new URL(config.url).origin !== productOrigin || binding.endpoint.origin !== productOrigin)
+    throw new Error("The approval redemption origin did not match the bound product origin.");
+  const response = await fetch(new URL("/v1/approvals/redeem", productOrigin), {
+    method: "POST",
+    redirect: "error",
+    headers: { ...(config.headers ?? {}), "content-type": "application/json" },
+    body: JSON.stringify({
+      code,
+      code_verifier: verifier,
+      desktop_challenge_id: binding.desktopChallengeId,
+      connection_id: binding.connectionId,
+      tool: binding.toolName,
+      arguments_digest: binding.argumentsDigest,
+      actor: binding.actor,
+      action: binding.action,
+    }),
+  });
+  if (!response.ok) throw new Error(`Approval code redemption failed (${response.status}).`);
+  const body = (await response.json()) as Record<string, unknown>;
+  if (typeof body.approval_token !== "string")
+    throw new Error("The product returned an invalid approval redemption response.");
+  return { approvalToken: body.approval_token };
+}
+
 function takeObservedToolCall(
   client: Client,
   toolName: string,
@@ -317,6 +353,8 @@ async function executeToolAttempt(
           token,
           binding,
         }),
+      (code, verifier, productOrigin, binding) =>
+        redeemApprovalCode(serverName, code, verifier, productOrigin, binding),
     );
   } finally {
     // One-time approval credentials must never remain on a pooled transport.

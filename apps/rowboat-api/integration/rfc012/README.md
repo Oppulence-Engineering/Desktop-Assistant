@@ -52,7 +52,9 @@ go test -tags=rfc012acceptance ./integration \
 - entitlement denial before consent and before token mint
 - audience-bound, scoped resource tokens with a maximum 15-minute lifetime
 - product MCP rejection for wrong audience, expiration, and missing scope
-- product-owned HTTP 428 approval challenge, successful retry, and denial of approval reuse
+- product-owned HTTP 428 approval challenge, code-only custom-protocol completion,
+  authenticated TLS redemption, PKCE and exact-request binding, and denial of
+  completion-code or approval-token reuse
 - desktop-shaped cookie, redirect, MFA, and `rowboat://` protocol handling
 - cross-tenant connection isolation
 - upstream revocation result, local tombstone, broker audit, and product audit

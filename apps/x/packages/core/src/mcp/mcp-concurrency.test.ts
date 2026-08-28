@@ -130,11 +130,8 @@ import { configureMcpApprovalUrlOpener, registerMcpApprovalResult } from "./prod
 function completion(opened: URL, token = "one-time-secret") {
   return {
     challengeId: opened.searchParams.get("desktop_challenge_id")!,
-    serverName: opened.searchParams.get("desktop_server")!,
-    toolName: opened.searchParams.get("desktop_tool")!,
-    argumentsDigest: opened.searchParams.get("desktop_arguments_digest")!,
     status: "approved" as const,
-    token,
+    code: token,
   };
 }
 
@@ -158,6 +155,7 @@ describe("MCP approval transport isolation", () => {
       opened = new URL(url);
     });
     vi.stubGlobal("fetch", async (input: string | URL | Request, init?: RequestInit) => {
+      const requestURL = new URL(input instanceof Request ? input.url : input.toString());
       const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
       const rpcMethod = typeof body?.method === "string" ? body.method : undefined;
       const requestHeaders = new Headers(init?.headers);
@@ -170,6 +168,10 @@ describe("MCP approval transport isolation", () => {
         headers,
         redirect: init?.redirect,
       });
+
+      if (requestURL.pathname === "/v1/approvals/redeem") {
+        return Response.json({ approval_token: "one-time-secret" });
+      }
 
       if (rpcMethod === "initialize") {
         if (clientNumber === 2 && state.mutateDuringPrivilegedInitialize) {

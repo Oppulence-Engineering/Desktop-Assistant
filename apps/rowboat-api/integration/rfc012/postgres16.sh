@@ -77,7 +77,7 @@ cat > "$SCRATCH/connectors.json" <<JSON
     "authType":"oauth",
     "audience":"dev-product-api",
     "requiredPlan":"intelligence",
-    "entitlementUrl":"http://127.0.0.1:${PRODUCT_PORT}/v1/entitlements",
+    "entitlementUrl":"https://localhost:${PRODUCT_PORT}/v1/entitlements",
     "status":"enabled",
     "health":"healthy",
     "environments":["development"],
@@ -113,7 +113,7 @@ REDIS_URL="redis://127.0.0.1:${REDIS_PORT}/0"
 OIDC_URL="http://127.0.0.1:${OIDC_PORT}"
 API_URL="http://127.0.0.1:${API_PORT}"
 API2_URL="http://127.0.0.1:${API2_PORT}"
-PRODUCT_URL="http://127.0.0.1:${PRODUCT_PORT}"
+PRODUCT_URL="https://localhost:${PRODUCT_PORT}"
 CONSENT_URL="http://127.0.0.1:${CONSENT_PORT}"
 CONSENT2_URL="http://127.0.0.1:${CONSENT2_PORT}"
 BROKER_KEY=$(cat "$SCRATCH/broker.pem")
@@ -136,6 +136,7 @@ start_api() {
   HTTP_ADDR="127.0.0.1:${port}" METRICS_ADDR="127.0.0.1:${metrics}" GRPC_ADDR= \
   DATABASE_URL="$DATABASE_URL" AUTO_MIGRATE=false \
   REDIS_URL="$REDIS_URL" \
+  SSL_CERT_FILE="$SCRATCH/fixture-tls.crt" \
   DB_ENCRYPTION_KEY='rfc012-local-column-encryption-key' \
   OIDC_ISSUER_URL="$OIDC_URL" TOKEN_ISSUER="$OIDC_URL" TOKEN_AUDIENCE=rowboat-api JWKS_URL="$OIDC_URL/.well-known/jwks.json" \
   ORY_PUBLIC_URL="$OIDC_URL" ORY_BROKER_CLIENT_ID=rowboat-rfc012 ORY_BROKER_CLIENT_SECRET=rfc012-secret \
@@ -158,6 +159,7 @@ DATABASE_URL="$DATABASE_URL" PRODUCT_MCP_ADDR="127.0.0.1:${PRODUCT_PORT}" \
   SSL_CERT_FILE="$SCRATCH/fixture-tls.crt" \
   PRODUCT_MCP_AUDIENCE=dev-product-api PRODUCT_MCP_ISSUER="$API_URL" PRODUCT_MCP_JWKS_URL="$API_URL/.well-known/connector-jwks.json" \
   PRODUCT_MCP_FIXTURE_SECRET=rfc012-fixture-secret \
+  PRODUCT_MCP_TLS_CERT="$SCRATCH/fixture-tls.crt" PRODUCT_MCP_TLS_KEY="$SCRATCH/fixture-tls.key" \
   PRODUCT_ENTITLEMENT_HMAC_KEY="$ENTITLEMENT_HMAC_KEY" \
   "$SCRATCH/bin/dev-product-mcp" >"$SCRATCH/product.log" 2>&1 & PIDS+=("$!")
 wait_http "$PRODUCT_URL/healthz"
@@ -194,6 +196,8 @@ env \
   RFC012_TENANT_A_JWT="$TOKEN_A" RFC012_TENANT_B_JWT="$TOKEN_B" RFC012_UNENTITLED_JWT="$TOKEN_U" \
   RFC012_TENANT_A_ORG_ID=org_rfc012_a RFC012_CONNECTOR=dev \
   RFC012_BROKER_PRIVATE_KEY_PEM="$BROKER_KEY" RFC012_BROKER_TOKEN_ISSUER="$API_URL" RFC012_BROKER_TOKEN_KEY_ID=rfc012-broker-key \
+  SSL_CERT_FILE="$SCRATCH/fixture-tls.crt" \
+  RFC012_TLS_CA="$SCRATCH/fixture-tls.crt" \
   DATABASE_URL="$DATABASE_URL" \
   go test -tags=rfc012acceptance ./integration -run TestRFC012PublicContract -count=1 -v | tee "$SCRATCH/acceptance.log"
 

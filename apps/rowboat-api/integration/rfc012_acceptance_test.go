@@ -6,8 +6,11 @@ import (
 	"bytes"
 	"context"
 	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -42,7 +45,7 @@ func TestRFC012PublicContract(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = db.Close() })
 	require.NoError(t, db.PingContext(context.Background()))
-	c := &client{t: t, http: &http.Client{Timeout: 15 * time.Second}}
+	c := &client{t: t, http: fixtureHTTPClient(t)}
 
 	// Materialize each authenticated tenant through the real middleware, then
 	// grant only tenant A the disposable intelligence subscription required by
@@ -201,9 +204,65 @@ func TestRFC012PublicContract(t *testing.T) {
 		challenge := c.json("POST", product+"/v1/mcp/pay?resource_id=payrun-1", resourceToken, nil)
 		require.Equal(t, 428, challenge.status, challenge.body)
 		require.Equal(t, "approval_required", challenge.code())
-		approval := "approval-rfc012-one-time"
-		_, err = db.Exec(`INSERT INTO dev_product_approvals(token_hash,connection_id,action,resource_id,expires_at) VALUES(encode(digest($1,'sha256'),'hex'),$2,'pay','payrun-1',now()+interval '5 minutes')`, approval, connectionID)
-		require.NoError(t, err)
+		verifier := "rfc012-desktop-pkce-verifier-with-sufficient-entropy"
+		sum := sha256.Sum256([]byte(verifier))
+		inputDigest := "digest-payrun-1"
+		desktopChallenge := "desktop-challenge-rfc012"
+		actor := "user_rfc012_a"
+		issueBody := map[string]any{
+			"product_origin": product, "approval_id": "payrun-1", "desktop_challenge_id": desktopChallenge,
+			"connection_id": connectionID, "action": "payment.release", "input_digest": inputDigest,
+			"approver": actor, "code_challenge": base64.RawURLEncoding.EncodeToString(sum[:]),
+		}
+		issued := c.jsonHeader("POST", product+"/v1/approvals", "", issueBody, "X-Fixture-Secret", fixtureSecret)
+		require.Equal(t, http.StatusCreated, issued.status, issued.body)
+		require.NotContains(t, strings.ToLower(issued.body), "approval_token")
+		var issuedBody struct {
+			CompletionCode string `json:"completion_code"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(issued.body), &issuedBody))
+		require.NotEmpty(t, issuedBody.CompletionCode)
+		redeemBody := map[string]any{
+			"code": issuedBody.CompletionCode, "code_verifier": verifier, "desktop_challenge_id": desktopChallenge,
+			"connection_id": connectionID, "tool": "payments.execute", "arguments_digest": inputDigest,
+			"actor": actor, "action": "payment.release",
+		}
+		for label, mutation := range map[string]map[string]any{
+			"wrong verifier": {"code_verifier": "wrong-verifier"},
+			"wrong session":  {"connection_id": "wrong-connection"},
+			"wrong action":   {"action": "payment.cancel"},
+		} {
+			attempt := mapsClone(redeemBody)
+			for key, value := range mutation {
+				attempt[key] = value
+			}
+			failed := c.json("POST", product+"/v1/approvals/redeem", resourceToken, attempt)
+			require.Equal(t, http.StatusBadRequest, failed.status, label+": "+failed.body)
+			require.NotContains(t, failed.body, issuedBody.CompletionCode)
+		}
+		wrongOriginBody := mapsClone(issueBody)
+		wrongOriginBody["desktop_challenge_id"] = "wrong-origin-challenge"
+		wrongOriginBody["product_origin"] = "https://wrong-origin.example"
+		wrongOrigin := c.jsonHeader("POST", product+"/v1/approvals", "", wrongOriginBody, "X-Fixture-Secret", fixtureSecret)
+		require.Equal(t, http.StatusCreated, wrongOrigin.status)
+		var wrongOriginIssued struct {
+			CompletionCode string `json:"completion_code"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(wrongOrigin.body), &wrongOriginIssued))
+		wrongOriginRedeem := mapsClone(redeemBody)
+		wrongOriginRedeem["code"] = wrongOriginIssued.CompletionCode
+		wrongOriginRedeem["desktop_challenge_id"] = "wrong-origin-challenge"
+		require.Equal(t, http.StatusBadRequest, c.json("POST", product+"/v1/approvals/redeem", resourceToken, wrongOriginRedeem).status)
+
+		redeemed := c.json("POST", product+"/v1/approvals/redeem", resourceToken, redeemBody)
+		require.Equal(t, http.StatusOK, redeemed.status, redeemed.body)
+		var redemption struct {
+			ApprovalToken string `json:"approval_token"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(redeemed.body), &redemption))
+		require.NotEmpty(t, redemption.ApprovalToken)
+		require.Equal(t, http.StatusBadRequest, c.json("POST", product+"/v1/approvals/redeem", resourceToken, redeemBody).status, "completion code was replayable")
+		approval := redemption.ApprovalToken
 		retry := c.jsonHeader("POST", product+"/v1/mcp/pay?resource_id=payrun-1", resourceToken, nil, "X-Approval-Token", approval)
 		require.Equal(t, 200, retry.status, retry.body)
 		reuse := c.jsonHeader("POST", product+"/v1/mcp/pay?resource_id=payrun-1", resourceToken, nil, "X-Approval-Token", approval)
@@ -283,6 +342,23 @@ func jwtKeyID(t *testing.T, raw string) string {
 	kid, _ := tok.Header["kid"].(string)
 	require.NotEmpty(t, kid)
 	return kid
+}
+
+func mapsClone(input map[string]any) map[string]any {
+	result := make(map[string]any, len(input))
+	for key, value := range input {
+		result[key] = value
+	}
+	return result
+}
+
+func fixtureHTTPClient(t *testing.T) *http.Client {
+	t.Helper()
+	pemBytes, err := os.ReadFile(mustEnv(t, "RFC012_TLS_CA"))
+	require.NoError(t, err)
+	roots := x509.NewCertPool()
+	require.True(t, roots.AppendCertsFromPEM(pemBytes))
+	return &http.Client{Timeout: 15 * time.Second, Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12}}}
 }
 
 var csrfPattern = regexp.MustCompile(`name="csrf" value="([^"]+)"`)

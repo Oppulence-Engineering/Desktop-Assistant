@@ -23,6 +23,12 @@ Routes:
 - `POST /v1/mcp/read`, audience `dev-product-api`, scope `dev:records.read`
 - `POST /v1/mcp/pay?resource_id=...`, scope `dev:payments.execute` and a
   single-use `X-Approval-Token`
+- `POST /v1/approvals` models the product approval UI completing with an opaque
+  single-use code. The code is bound to product origin, approval, desktop
+  challenge, connection, exact action/input digest, approver, expiry, and an
+  S256 verifier challenge. It never returns the approval bearer.
+- `POST /v1/approvals/redeem` requires the normal authenticated product resource
+  token over TLS and returns the approval bearer only in the HTTPS response body.
+  Redemption is atomic and rejects replay or any binding mismatch.
 
-The acceptance harness seeds `dev_product_connections` and
-`dev_product_approvals`. No provider API key is accepted, returned, or persisted.
+No provider API key is accepted, returned, or persisted.

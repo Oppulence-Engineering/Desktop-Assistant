@@ -5,7 +5,10 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
@@ -72,6 +75,9 @@ func main() {
 	mux.HandleFunc("POST /v1/entitlements", s.entitlement)
 	mux.HandleFunc("POST /fixture/entitlements", s.setEntitlement)
 	mux.HandleFunc("POST /v1/approvals", s.issueApproval)
+	mux.Handle("POST /v1/approvals/redeem", verifier.RequireMCPToken(oauthrs.MCPTokenOptions{
+		Audience: audience, RequiredScopes: []string{"dev:payments.execute"}, ConnectionValidator: s.active,
+	})(http.HandlerFunc(s.redeemApproval)))
 	mux.Handle("POST /v1/mcp/read", verifier.RequireMCPToken(oauthrs.MCPTokenOptions{
 		Audience: audience, RequiredScopes: []string{"dev:records.read"}, ConnectionValidator: s.active,
 	})(http.HandlerFunc(s.read)))
@@ -89,8 +95,14 @@ func main() {
 		WriteTimeout:      15 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
-	if err := httpServer.ListenAndServe(); err != nil {
-		log.Printf("dev product MCP stopped: %v", err)
+	var serveErr error
+	if cert, key := strings.TrimSpace(os.Getenv("PRODUCT_MCP_TLS_CERT")), strings.TrimSpace(os.Getenv("PRODUCT_MCP_TLS_KEY")); cert != "" && key != "" {
+		serveErr = httpServer.ListenAndServeTLS(cert, key)
+	} else {
+		serveErr = httpServer.ListenAndServe()
+	}
+	if serveErr != nil {
+		log.Printf("dev product MCP stopped: %v", serveErr)
 	}
 }
 
@@ -103,6 +115,12 @@ CREATE TABLE IF NOT EXISTS dev_product_connections (
 CREATE TABLE IF NOT EXISTS dev_product_approvals (
  token_hash text PRIMARY KEY, connection_id text NOT NULL, action text NOT NULL,
  resource_id text NOT NULL, expires_at timestamptz NOT NULL, consumed_at timestamptz
+);
+CREATE TABLE IF NOT EXISTS dev_product_approval_codes (
+ code_hash text PRIMARY KEY, product_origin text NOT NULL, approval_id text NOT NULL,
+ desktop_challenge_id text NOT NULL, connection_id text NOT NULL, action text NOT NULL,
+ input_digest text NOT NULL, approver text NOT NULL, verifier_challenge text NOT NULL,
+ expires_at timestamptz NOT NULL, consumed_at timestamptz
 );
 CREATE TABLE IF NOT EXISTS dev_product_audit (
  id bigserial PRIMARY KEY, tenant_id text NOT NULL, connection_id text NOT NULL,
@@ -188,20 +206,94 @@ func (s *server) issueApproval(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var body struct {
-		ConnectionID string `json:"connection_id"`
-		ResourceID   string `json:"resource_id"`
+		ProductOrigin      string `json:"product_origin"`
+		ApprovalID         string `json:"approval_id"`
+		DesktopChallengeID string `json:"desktop_challenge_id"`
+		ConnectionID       string `json:"connection_id"`
+		Action             string `json:"action"`
+		InputDigest        string `json:"input_digest"`
+		Approver           string `json:"approver"`
+		VerifierChallenge  string `json:"code_challenge"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&body); err != nil || body.ConnectionID == "" || body.ResourceID == "" {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10)).Decode(&body); err != nil ||
+		body.ProductOrigin == "" || body.ApprovalID == "" || body.DesktopChallengeID == "" || body.ConnectionID == "" ||
+		body.Action == "" || body.InputDigest == "" || body.Approver == "" || body.VerifierChallenge == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"code": "invalid_approval"})
 		return
 	}
-	token := "approval-" + body.ConnectionID + "-" + body.ResourceID + "-" + time.Now().UTC().Format("150405.000000000")
-	_, err := s.db.ExecContext(r.Context(), `INSERT INTO dev_product_approvals(token_hash,connection_id,action,resource_id,expires_at) VALUES(encode(digest($1,'sha256'),'hex'),$2,'pay',$3,now()+interval '5 minutes')`, token, body.ConnectionID, body.ResourceID)
+	code := opaque(32)
+	_, err := s.db.ExecContext(r.Context(), `INSERT INTO dev_product_approval_codes
+	 (code_hash,product_origin,approval_id,desktop_challenge_id,connection_id,action,input_digest,approver,verifier_challenge,expires_at)
+	 VALUES(encode(digest($1,'sha256'),'hex'),$2,$3,$4,$5,$6,$7,$8,$9,now()+interval '5 minutes')`,
+		code, body.ProductOrigin, body.ApprovalID, body.DesktopChallengeID, body.ConnectionID, body.Action, body.InputDigest, body.Approver, body.VerifierChallenge)
 	if err != nil {
 		writeJSON(w, 500, map[string]string{"code": "approval_failed"})
 		return
 	}
-	writeJSON(w, http.StatusCreated, map[string]string{"approval_token": token})
+	writeJSON(w, http.StatusCreated, map[string]string{"completion_code": code, "desktop_challenge_id": body.DesktopChallengeID})
+}
+
+func (s *server) redeemApproval(w http.ResponseWriter, r *http.Request) {
+	c, _ := oauthrs.ClaimsFromContext(r.Context())
+	var body struct {
+		Code               string `json:"code"`
+		Verifier           string `json:"code_verifier"`
+		DesktopChallengeID string `json:"desktop_challenge_id"`
+		ConnectionID       string `json:"connection_id"`
+		Tool               string `json:"tool"`
+		ArgumentsDigest    string `json:"arguments_digest"`
+		Actor              string `json:"actor"`
+		Action             string `json:"action"`
+	}
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 16<<10))
+	dec.DisallowUnknownFields()
+	if dec.Decode(&body) != nil || body.Code == "" || body.Verifier == "" || body.DesktopChallengeID == "" || body.ConnectionID == "" || body.ArgumentsDigest == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"code": "invalid_completion_code"})
+		return
+	}
+	if body.ConnectionID != c.ConnectionID {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"code": "invalid_completion_code"})
+		return
+	}
+	scheme := "https"
+	if r.TLS == nil {
+		scheme = "http"
+	}
+	origin := scheme + "://" + r.Host
+	challenge := sha256.Sum256([]byte(body.Verifier))
+	verifierChallenge := base64.RawURLEncoding.EncodeToString(challenge[:])
+	tx, err := s.db.BeginTx(r.Context(), nil)
+	if err != nil {
+		writeJSON(w, 500, map[string]string{"code": "redemption_failed"})
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+	var approvalID string
+	err = tx.QueryRowContext(r.Context(), `UPDATE dev_product_approval_codes SET consumed_at=now()
+	 WHERE code_hash=encode(digest($1,'sha256'),'hex') AND product_origin=$2 AND desktop_challenge_id=$3
+	 AND connection_id=$4 AND action=$5 AND input_digest=$6 AND approver=$7 AND verifier_challenge=$8
+	 AND expires_at>now() AND consumed_at IS NULL RETURNING approval_id`, body.Code, origin,
+		body.DesktopChallengeID, c.ConnectionID, body.Action, body.ArgumentsDigest, body.Actor, verifierChallenge).Scan(&approvalID)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"code": "invalid_completion_code"})
+		return
+	}
+	token := opaque(32)
+	_, err = tx.ExecContext(r.Context(), `INSERT INTO dev_product_approvals(token_hash,connection_id,action,resource_id,expires_at)
+	 VALUES(encode(digest($1,'sha256'),'hex'),$2,'pay',$3,now()+interval '5 minutes')`, token, c.ConnectionID, approvalID)
+	if err != nil || tx.Commit() != nil {
+		writeJSON(w, 500, map[string]string{"code": "redemption_failed"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"approval_token": token})
+}
+
+func opaque(n int) string {
+	b := make([]byte, n)
+	if _, err := rand.Read(b); err != nil {
+		panic(err)
+	}
+	return base64.RawURLEncoding.EncodeToString(b)
 }
 
 func (s *server) active(ctx context.Context, c *oauthrs.Claims) (bool, error) {
