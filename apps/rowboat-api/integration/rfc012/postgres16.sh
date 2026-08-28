@@ -15,11 +15,15 @@ PY
 }
 PG_PORT=$(free_port)
 REDIS_PORT=$(free_port)
+REDIS_PROXY_PORT=$(free_port)
+REDIS_CONTROL_PORT=$(free_port)
 OIDC_PORT=$(free_port)
 API_PORT=$(free_port)
 API2_PORT=$(free_port)
+API3_PORT=$(free_port)
 METRICS_PORT=$(free_port)
 METRICS2_PORT=$(free_port)
+METRICS3_PORT=$(free_port)
 PRODUCT_PORT=$(free_port)
 CONSENT_PORT=$(free_port)
 CONSENT2_PORT=$(free_port)
@@ -60,7 +64,25 @@ echo 'JCODE_CHECKPOINT {"message":"Building real RFC 012 services"}'
 go build -o "$SCRATCH/bin/devstack" ./cmd/devstack
 go build -o "$SCRATCH/bin/rowboat-api" ./cmd/server
 go build -o "$SCRATCH/bin/dev-product-mcp" ./cmd/dev-product-mcp
+go build -o "$SCRATCH/bin/rfc012-faultproxy" ./integration/rfc012/faultproxy
 (cd ../oauth-consent && npm ci --no-audit --no-fund && npm run build) >"$SCRATCH/consent-build.log" 2>&1
+# Builds can take long enough for an unreserved port selected at script entry to
+# be claimed by another process. Refresh the complete port set immediately
+# before any fixture binds it.
+PG_PORT=$(free_port)
+REDIS_PORT=$(free_port)
+REDIS_PROXY_PORT=$(free_port)
+REDIS_CONTROL_PORT=$(free_port)
+OIDC_PORT=$(free_port)
+API_PORT=$(free_port)
+API2_PORT=$(free_port)
+API3_PORT=$(free_port)
+METRICS_PORT=$(free_port)
+METRICS2_PORT=$(free_port)
+METRICS3_PORT=$(free_port)
+PRODUCT_PORT=$(free_port)
+CONSENT_PORT=$(free_port)
+CONSENT2_PORT=$(free_port)
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$SCRATCH/broker.pem" >/dev/null 2>&1
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$SCRATCH/broker-next.pem" >/dev/null 2>&1
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj '/CN=localhost' \
@@ -106,15 +128,23 @@ DATABASE_URL="postgres://postgres:postgres@127.0.0.1:${PG_PORT}/rowboat_rfc012?s
 DATABASE_URL="$DATABASE_URL" AUTO_MIGRATE=false go run ./cmd/migrate apply >"$SCRATCH/migrate.log" 2>&1
 (cd ../oauth-consent && DATABASE_URL="$DATABASE_URL" npm run migrate) >>"$SCRATCH/migrate.log" 2>&1
 
-echo 'JCODE_CHECKPOINT {"message":"Starting shared Redis for cross-replica refresh serialization"}'
+echo 'JCODE_CHECKPOINT {"message":"Starting shared Redis 7 and deterministic acceptance fault proxy"}'
 docker run -d --rm --name "$REDIS_NAME" -p "127.0.0.1:${REDIS_PORT}:6379" redis:7-alpine >/dev/null
 for _ in $(seq 1 60); do docker exec "$REDIS_NAME" redis-cli ping 2>/dev/null | grep -q PONG && break; sleep 1; done
 docker exec "$REDIS_NAME" redis-cli ping | grep -q PONG
-REDIS_URL="redis://127.0.0.1:${REDIS_PORT}/0"
+REDIS_ADMIN_URL="redis://127.0.0.1:${REDIS_PORT}/0"
+REDIS_URL="redis://127.0.0.1:${REDIS_PROXY_PORT}/0"
+REDIS_FAULT_URL="http://127.0.0.1:${REDIS_CONTROL_PORT}"
+RFC012_FAULT_SECRET=rfc012-fault-secret
+LISTEN_ADDR="127.0.0.1:${REDIS_PROXY_PORT}" CONTROL_ADDR="127.0.0.1:${REDIS_CONTROL_PORT}" \
+  UPSTREAM_ADDR="127.0.0.1:${REDIS_PORT}" CONTROL_SECRET="$RFC012_FAULT_SECRET" \
+  "$SCRATCH/bin/rfc012-faultproxy" >"$SCRATCH/redis-fault-proxy.log" 2>&1 & PIDS+=("$!")
+wait_http "$REDIS_FAULT_URL/healthz"
 
 OIDC_URL="http://127.0.0.1:${OIDC_PORT}"
 API_URL="http://127.0.0.1:${API_PORT}"
 API2_URL="http://127.0.0.1:${API2_PORT}"
+API3_URL="http://127.0.0.1:${API3_PORT}"
 PRODUCT_URL="https://127.0.0.1:${PRODUCT_PORT}"
 CONSENT_URL="http://127.0.0.1:${CONSENT_PORT}"
 CONSENT2_URL="http://127.0.0.1:${CONSENT2_PORT}"
@@ -127,6 +157,7 @@ PY
 )
 
 ADDR="127.0.0.1:${OIDC_PORT}" ISSUER="$OIDC_URL" AUDIENCE=rowboat-api HYDRA_CONSENT_URL="$CONSENT_URL" \
+  DEVSTACK_FIXTURE_SECRET="$RFC012_FAULT_SECRET" \
   FIXTURE_SUBJECT=user_rfc012_a FIXTURE_EMAIL=a@example.test \
   "$SCRATCH/bin/devstack" >"$SCRATCH/devstack.log" 2>&1 & PIDS+=("$!")
 wait_http "$OIDC_URL/.well-known/openid-configuration"
@@ -152,11 +183,14 @@ start_api() {
 	  CONNECTOR_INVALIDATION_PRINCIPALS_JSON="$PRODUCT_PRINCIPALS_JSON" \
   "$SCRATCH/bin/rowboat-api" >"$log" 2>&1 & PIDS+=("$!")
 }
-echo 'JCODE_CHECKPOINT {"message":"Starting two real rowboat-api instances with migrated shared PostgreSQL"}'
+echo 'JCODE_CHECKPOINT {"message":"Starting three real rowboat-api instances with migrated shared PostgreSQL"}'
 start_api "$API_PORT" "$METRICS_PORT" "$SCRATCH/api-1.log" "$BROKER_KEY" rfc012-broker-key
 start_api "$API2_PORT" "$METRICS2_PORT" "$SCRATCH/api-2.log" "$BROKER_NEXT_KEY" rfc012-broker-next
+start_api "$API3_PORT" "$METRICS3_PORT" "$SCRATCH/api-crash.log" "$BROKER_KEY" rfc012-broker-key
+API3_PID="${PIDS[${#PIDS[@]}-1]}"
 wait_http "$API_URL/healthz"
 wait_http "$API2_URL/healthz"
+wait_http "$API3_URL/healthz"
 
 DATABASE_URL="$DATABASE_URL" PRODUCT_MCP_ADDR="127.0.0.1:${PRODUCT_PORT}" \
   SSL_CERT_FILE="$SCRATCH/fixture-tls.crt" \
@@ -198,6 +232,9 @@ env \
   RFC012_API_URL="$API_URL" RFC012_PRODUCT_MCP_URL="$PRODUCT_URL" \
   RFC012_API2_URL="$API2_URL" RFC012_CONSENT_URL="$CONSENT_URL" RFC012_CONSENT2_URL="$CONSENT2_URL" \
 	  RFC012_FIXTURE_SECRET=rfc012-fixture-secret RFC012_HOOK_SECRET=rfc012-hook-secret-at-least-32-bytes \
+	  RFC012_FAULT_SECRET="$RFC012_FAULT_SECRET" RFC012_OAUTH_FAULT_URL="$OIDC_URL/fixture/oauth-faults" \
+	  RFC012_REDIS_FAULT_URL="$REDIS_FAULT_URL" RFC012_REDIS_ADMIN_URL="$REDIS_ADMIN_URL" \
+	  RFC012_CRASH_API_URL="$API3_URL" RFC012_CRASH_API_PID="$API3_PID" \
 	  RFC012_PRODUCT_SERVICE_PRINCIPAL=dev-product-service RFC012_PRODUCT_SERVICE_HMAC_SECRET="$PRODUCT_STATUS_HMAC_KEY" \
   RFC012_TENANT_A_JWT="$TOKEN_A" RFC012_TENANT_B_JWT="$TOKEN_B" RFC012_UNENTITLED_JWT="$TOKEN_U" \
   RFC012_TENANT_A_ORG_ID=org_rfc012_a RFC012_CONNECTOR=dev \
@@ -205,7 +242,7 @@ env \
   SSL_CERT_FILE="$SCRATCH/fixture-tls.crt" \
   RFC012_TLS_CA="$SCRATCH/fixture-tls.crt" \
   DATABASE_URL="$DATABASE_URL" \
-  go test -tags=rfc012acceptance ./integration -run TestRFC012PublicContract -count=1 -v | tee "$SCRATCH/acceptance.log"
+	  go test -tags=rfc012acceptance ./integration -run "${RFC012_TEST_RUN:-TestRFC012(Public|Fault)Contract}" -count=1 -v | tee "$SCRATCH/acceptance.log"
 
 echo "RFC012_ACCEPTANCE_ARTIFACTS=$SCRATCH"
 trap - EXIT INT TERM

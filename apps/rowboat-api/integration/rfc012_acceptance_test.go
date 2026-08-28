@@ -25,11 +25,13 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 )
 
@@ -457,6 +459,469 @@ func TestRFC012PublicContract(t *testing.T) {
 			require.Positive(t, count, "missing durable semantic event %s", eventType)
 		}
 	})
+}
+
+// TestRFC012FaultContract drives the production connector refresh, custody,
+// fencing, and worker paths through real PostgreSQL 16 and Redis 7. Faults live
+// only in disposable external fixtures: a Redis protocol proxy, the dev OAuth
+// provider, PostgreSQL triggers installed after migrations, and one dedicated
+// API process that is killed at the documented irreducible crash boundary.
+func TestRFC012FaultContract(t *testing.T) {
+	api := mustEnv(t, "RFC012_API_URL")
+	api2 := mustEnv(t, "RFC012_API2_URL")
+	crashAPI := mustEnv(t, "RFC012_CRASH_API_URL")
+	product := mustEnv(t, "RFC012_PRODUCT_MCP_URL")
+	dsn := mustEnv(t, "DATABASE_URL")
+	connector := getenv("RFC012_CONNECTOR", "dev")
+	faultSecret := mustEnv(t, "RFC012_FAULT_SECRET")
+
+	db, err := sql.Open("pgx", dsn)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+	require.NoError(t, db.PingContext(context.Background()))
+
+	redisOptions, err := redis.ParseURL(mustEnv(t, "RFC012_REDIS_ADMIN_URL"))
+	require.NoError(t, err)
+	redisAdmin := redis.NewClient(redisOptions)
+	t.Cleanup(func() { _ = redisAdmin.Close() })
+	require.NoError(t, redisAdmin.Ping(t.Context()).Err())
+
+	c := &client{t: t, http: fixtureHTTPClient(t)}
+
+	t.Run("Redis unavailable before lock fails without provider call", func(t *testing.T) {
+		resetFaults(t, c, faultSecret)
+		connection := provisionFaultConnection(t, c, db, api, product, connector, "redis-before-lock")
+		require.NoError(t, redisAdmin.FlushDB(t.Context()).Err())
+		setRedisAvailability(t, c, faultSecret, false)
+		defer setRedisAvailability(t, c, faultSecret, true)
+		response, requestErr := requestJSON(c.http, http.MethodPost, api+"/v1/connections/"+connector+"/mcp-token", connection.token, nil)
+		setRedisAvailability(t, c, faultSecret, true)
+		require.NoError(t, requestErr)
+		require.Equal(t, http.StatusBadGateway, response.status, response.body)
+		status := oauthFaultState(t, c, faultSecret)
+		require.Zero(t, status.RefreshCalls, "provider was called before the Redis lease was acquired")
+		assertConnectionGeneration(t, db, connection.id, connection.generation)
+	})
+
+	t.Run("lease expiry transfers ownership and stale unlock preserves successor", func(t *testing.T) {
+		resetFaults(t, c, faultSecret)
+		connection := provisionFaultConnection(t, c, db, api, product, connector, "lease-transfer")
+		require.NoError(t, redisAdmin.FlushDB(t.Context()).Err())
+		configureOAuthFaults(t, c, faultSecret, map[string]any{
+			"reset": true,
+			"refresh_plans": []map[string]any{
+				{"id": "stale-owner", "hold_before_response": true},
+				{"id": "successor", "hold_before_response": true},
+			},
+		})
+
+		first := asyncJSON(c.http, http.MethodPost, api+"/v1/connections/"+connector+"/mcp-token", connection.token, nil)
+		waitOAuthPlan(t, c, faultSecret, "stale-owner", func(plan oauthFaultPlanState) bool { return plan.Entered })
+		lockKey := waitRedisKey(t, redisAdmin, "connectors:refresh:lock:v2:*")
+		ownerA, err := redisAdmin.Get(t.Context(), lockKey).Result()
+		require.NoError(t, err)
+		require.NoError(t, redisAdmin.PExpire(t.Context(), lockKey, 150*time.Millisecond).Err())
+		require.Eventually(t, func() bool { return redisAdmin.Exists(t.Context(), lockKey).Val() == 0 }, 3*time.Second, 25*time.Millisecond)
+
+		second := asyncJSON(c.http, http.MethodPost, api2+"/v1/connections/"+connector+"/mcp-token", connection.token, nil)
+		waitOAuthPlan(t, c, faultSecret, "successor", func(plan oauthFaultPlanState) bool { return plan.Entered })
+		ownerB, err := redisAdmin.Get(t.Context(), lockKey).Result()
+		require.NoError(t, err)
+		require.NotEqual(t, ownerA, ownerB, "expired owner token was reused")
+
+		releaseOAuthPlan(t, c, faultSecret, "stale-owner")
+		firstResult := waitAsyncJSON(t, first, 15*time.Second)
+		require.NoError(t, firstResult.err)
+		require.Equal(t, http.StatusTooManyRequests, firstResult.response.status, firstResult.response.body)
+		currentOwner, err := redisAdmin.Get(t.Context(), lockKey).Result()
+		require.NoError(t, err)
+		require.Equal(t, ownerB, currentOwner, "stale owner unlock deleted the successor lease")
+
+		releaseOAuthPlan(t, c, faultSecret, "successor")
+		secondResult := waitAsyncJSON(t, second, 15*time.Second)
+		require.NoError(t, secondResult.err)
+		require.Equal(t, http.StatusOK, secondResult.response.status, secondResult.response.body)
+		assertConnectionGeneration(t, db, connection.id, connection.generation+1)
+	})
+
+	t.Run("sealed result cache write failure keeps successful persistence fenced", func(t *testing.T) {
+		resetFaults(t, c, faultSecret)
+		connection := provisionFaultConnection(t, c, db, api, product, connector, "cache-write")
+		require.NoError(t, redisAdmin.FlushDB(t.Context()).Err())
+		configureRedisFailure(t, c, faultSecret, "SET", "connectors:refresh:result:v2:")
+		defer clearRedisFailure(t, c, faultSecret)
+		response := c.json("POST", api+"/v1/connections/"+connector+"/mcp-token", connection.token, nil)
+		clearRedisFailure(t, c, faultSecret)
+		require.Equal(t, http.StatusOK, response.status, response.body)
+		assertConnectionGeneration(t, db, connection.id, connection.generation+1)
+		resultKeys, err := redisAdmin.Keys(t.Context(), "connectors:refresh:result:v2:*").Result()
+		require.NoError(t, err)
+		require.Empty(t, resultKeys, "sealed result unexpectedly reached Redis through the injected SET failure")
+		lockKeys, err := redisAdmin.Keys(t.Context(), "connectors:refresh:lock:v2:*").Result()
+		require.NoError(t, err)
+		require.NotEmpty(t, lockKeys, "cache write failure released the owned lease and reopened rotation")
+		proxy := redisFaultState(t, c, faultSecret)
+		require.Positive(t, proxy.Failed, "result-cache SET was not intercepted")
+	})
+
+	t.Run("Redis loss after provider response retains cleanup until revoke recovery", func(t *testing.T) {
+		resetFaults(t, c, faultSecret)
+		connection := provisionFaultConnection(t, c, db, api, product, connector, "redis-after-response")
+		require.NoError(t, redisAdmin.FlushDB(t.Context()).Err())
+		configureOAuthFaults(t, c, faultSecret, map[string]any{
+			"reset":       true,
+			"revoke_fail": true,
+			"refresh_plans": []map[string]any{{
+				"id": "redis-loss", "after_response_url": mustEnv(t, "RFC012_REDIS_FAULT_URL") + "/control/down",
+				"after_response_secret": faultSecret,
+			}},
+		})
+		defer configureOAuthFaults(t, c, faultSecret, map[string]any{"revoke_fail": false})
+		defer setRedisAvailability(t, c, faultSecret, true)
+		response, requestErr := requestJSON(c.http, http.MethodPost, api+"/v1/connections/"+connector+"/mcp-token", connection.token, nil)
+		waitOAuthPlan(t, c, faultSecret, "redis-loss", func(plan oauthFaultPlanState) bool { return plan.PostActionDone })
+		setRedisAvailability(t, c, faultSecret, true)
+		require.NoError(t, requestErr)
+		require.Equal(t, http.StatusBadGateway, response.status, response.body)
+
+		var status, lastError string
+		var attempts int
+		require.NoError(t, db.QueryRow(`SELECT status,attempts,last_error_code FROM connector_credential_cleanup_jobs WHERE connection_id=$1`, connection.id).Scan(&status, &attempts, &lastError))
+		require.Equal(t, "pending", status)
+		require.Equal(t, 1, attempts)
+		require.Equal(t, "provider_revoke_unconfirmed", lastError)
+		configureOAuthFaults(t, c, faultSecret, map[string]any{"revoke_fail": false})
+		_, err = db.Exec(`UPDATE connector_credential_cleanup_jobs SET next_attempt_at=now() WHERE connection_id=$1`, connection.id)
+		require.NoError(t, err)
+		require.Eventually(t, func() bool {
+			var count int
+			_ = db.QueryRow(`SELECT count(*) FROM connector_credential_cleanup_jobs WHERE connection_id=$1`, connection.id).Scan(&count)
+			return count == 0
+		}, 25*time.Second, 250*time.Millisecond, "production cleanup worker did not recover the durable PostgreSQL job")
+		provider := oauthFaultState(t, c, faultSecret)
+		require.GreaterOrEqual(t, provider.RevokeCalls, 4, "bounded revoke failures and durable retry were not both exercised")
+	})
+
+	t.Run("cleanup insert failure falls back to durable PostgreSQL recovery journal", func(t *testing.T) {
+		resetFaults(t, c, faultSecret)
+		connection := provisionFaultConnection(t, c, db, api, product, connector, "recovery-journal")
+		require.NoError(t, redisAdmin.FlushDB(t.Context()).Err())
+		installCleanupInsertFault(t, db)
+		t.Cleanup(func() { removeCleanupInsertFault(db) })
+		enableCleanupInsertFault(t, db)
+		configureOAuthFaults(t, c, faultSecret, map[string]any{"reset": true, "revoke_fail": true})
+		defer configureOAuthFaults(t, c, faultSecret, map[string]any{"revoke_fail": false})
+		response, requestErr := requestJSON(longHTTPClient(c.http, 35*time.Second), http.MethodPost, api+"/v1/connections/"+connector+"/mcp-token", connection.token, nil)
+		require.NoError(t, requestErr)
+		require.Equal(t, http.StatusBadGateway, response.status, response.body)
+
+		var recoveryID, status, lastError string
+		var attempts int
+		require.NoError(t, db.QueryRow(`SELECT id::text,status,attempts,COALESCE(last_error_code,'') FROM connector_credential_recoveries WHERE owner_id=$1`, connection.id).Scan(&recoveryID, &status, &attempts, &lastError))
+		require.NotEmpty(t, recoveryID)
+		require.Equal(t, "pending", status)
+		require.Zero(t, attempts, "newly journaled recovery should not claim a worker attempt")
+		require.Empty(t, lastError, "provider failures before journal custody are not worker attempts")
+		require.Eventually(t, func() bool {
+			return db.QueryRow(`SELECT status,attempts,COALESCE(last_error_code,'') FROM connector_credential_recoveries WHERE id=$1`, recoveryID).
+				Scan(&status, &attempts, &lastError) == nil && status == "pending" && attempts >= 1 && lastError == "provider_revoke_unconfirmed"
+		}, 25*time.Second, 250*time.Millisecond, "production recovery worker did not retain the journal after provider revoke failure")
+		configureOAuthFaults(t, c, faultSecret, map[string]any{"revoke_fail": false})
+		_, err = db.Exec(`UPDATE connector_credential_recoveries SET next_attempt_at=now() WHERE id=$1`, recoveryID)
+		require.NoError(t, err)
+		require.Eventually(t, func() bool {
+			var count int
+			_ = db.QueryRow(`SELECT count(*) FROM connector_credential_recoveries WHERE id=$1`, recoveryID).Scan(&count)
+			return count == 0
+		}, 25*time.Second, 250*time.Millisecond, "production recovery worker did not revoke and remove the independent journal row")
+	})
+
+	t.Run("API process kill after provider response leaves no false local commit", func(t *testing.T) {
+		resetFaults(t, c, faultSecret)
+		connection := provisionFaultConnection(t, c, db, crashAPI, product, connector, "process-kill")
+		require.NoError(t, redisAdmin.FlushDB(t.Context()).Err())
+		pid, err := strconv.Atoi(mustEnv(t, "RFC012_CRASH_API_PID"))
+		require.NoError(t, err)
+		configureOAuthFaults(t, c, faultSecret, map[string]any{
+			"reset":         true,
+			"refresh_plans": []map[string]any{{"id": "crash-boundary", "signal_pid": pid}},
+		})
+		request := asyncJSON(longHTTPClient(c.http, 20*time.Second), http.MethodPost, crashAPI+"/v1/connections/"+connector+"/mcp-token", connection.token, nil)
+		waitOAuthPlan(t, c, faultSecret, "crash-boundary", func(plan oauthFaultPlanState) bool { return plan.PostActionDone })
+		require.NoError(t, syscall.Kill(pid, syscall.SIGKILL))
+		result := waitAsyncJSON(t, request, 20*time.Second)
+		require.Error(t, result.err, "killed API unexpectedly completed the public response")
+		assertConnectionGeneration(t, db, connection.id, connection.generation)
+		lockKey := waitRedisKey(t, redisAdmin, "connectors:refresh:lock:v2:*")
+		var custodyRows int
+		require.NoError(t, db.QueryRow(`SELECT
+			(SELECT count(*) FROM connector_credential_cleanup_jobs WHERE connection_id::text=$1) +
+			(SELECT count(*) FROM connector_credential_recoveries WHERE owner_id=$1)`, connection.id).Scan(&custodyRows))
+		require.Zero(t, custodyRows, "process killed before custody establishment reported a false durable handoff")
+		require.NoError(t, redisAdmin.PExpire(t.Context(), lockKey, 150*time.Millisecond).Err())
+		require.Eventually(t, func() bool { return redisAdmin.Exists(t.Context(), lockKey).Val() == 0 }, 3*time.Second, 25*time.Millisecond,
+			"orphaned crash-owner lease did not expire")
+		recovered := c.json("POST", api2+"/v1/connections/"+connector+"/mcp-token", connection.token, nil)
+		require.Equal(t, http.StatusOK, recovered.status, recovered.body)
+		assertConnectionGeneration(t, db, connection.id, connection.generation+1)
+	})
+}
+
+type faultConnection struct {
+	id         string
+	token      string
+	generation int64
+}
+
+type asyncJSONResult struct {
+	response response
+	err      error
+}
+
+type oauthFaultPlanState struct {
+	ID             string `json:"id"`
+	Entered        bool   `json:"entered"`
+	ResponseSent   bool   `json:"response_sent"`
+	PostActionDone bool   `json:"post_action_done"`
+}
+
+type oauthFaultStateResponse struct {
+	RefreshCalls int                   `json:"refresh_calls"`
+	RevokeCalls  int                   `json:"revoke_calls"`
+	RevokeFail   bool                  `json:"revoke_fail"`
+	Plans        []oauthFaultPlanState `json:"plans"`
+}
+
+type redisFaultStateResponse struct {
+	Available bool             `json:"available"`
+	Failed    int64            `json:"failed"`
+	Observed  map[string]int64 `json:"observed"`
+}
+
+func provisionFaultConnection(t *testing.T, c *client, db *sql.DB, api, product, connector, _ string) faultConnection {
+	t.Helper()
+	redisOptions, err := redis.ParseURL(mustEnv(t, "RFC012_REDIS_ADMIN_URL"))
+	require.NoError(t, err)
+	redisAdmin := redis.NewClient(redisOptions)
+	require.NoError(t, redisAdmin.FlushDB(t.Context()).Err())
+	require.NoError(t, redisAdmin.Close())
+	userID := "user_rfc012_a"
+	token := mustEnv(t, "RFC012_TENANT_A_JWT")
+	require.Equal(t, http.StatusOK, c.json("GET", api+"/v1/connectors", token, nil).status)
+	_, err = db.Exec(`INSERT INTO subscriptions(id,created_at,updated_at,plan,status,sanctioned_credits,stripe_customer_id,stripe_subscription_id,user_subscription)
+		SELECT gen_random_uuid(),now(),now(),'intelligence','active',10000,'','',id FROM users WHERE workos_user_id=$1
+		ON CONFLICT(user_subscription) DO UPDATE SET plan='intelligence',status='active',updated_at=now()`, userID)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/entitlements", "", map[string]any{"user_id": userID, "allowed": true}, "X-Fixture-Secret", mustEnv(t, "RFC012_FIXTURE_SECRET")).status)
+	start := c.json("POST", api+"/v1/connections/"+connector+"/start", token, map[string]any{"requestedScopes": []string{"dev:records.read", "dev:payments.execute"}})
+	require.Equal(t, http.StatusOK, start.status, start.body)
+	var started struct {
+		AuthorizeURL string `json:"authorize_url"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(start.body), &started))
+	callback := completeConsent(t, started.AuthorizeURL, []string{"dev:records.read", "dev:payments.execute"})
+	claim := c.json("POST", api+"/v1/connections/"+connector+"/claim", token, map[string]string{"state": queryFromLocation(t, callback.header.Get("Location"), "session")})
+	require.Equal(t, http.StatusOK, claim.status, claim.body)
+	var claimed struct {
+		ConnectionID string `json:"connectionId"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(claim.body), &claimed))
+	var generation int64
+	require.NoError(t, db.QueryRow(`SELECT credential_generation FROM mcp_connections WHERE id=$1`, claimed.ConnectionID).Scan(&generation))
+	return faultConnection{id: claimed.ConnectionID, token: token, generation: generation}
+}
+
+func configureOAuthFaults(t *testing.T, c *client, secret string, body any) {
+	t.Helper()
+	response := c.jsonHeader("POST", mustEnv(t, "RFC012_OAUTH_FAULT_URL"), "", body, "X-Fixture-Secret", secret)
+	require.Equal(t, http.StatusNoContent, response.status, response.body)
+}
+
+func resetFaults(t *testing.T, c *client, secret string) {
+	t.Helper()
+	configureOAuthFaults(t, c, secret, map[string]any{"reset": true})
+	setRedisAvailability(t, c, secret, true)
+	clearRedisFailure(t, c, secret)
+}
+
+func oauthFaultState(t *testing.T, c *client, secret string) oauthFaultStateResponse {
+	t.Helper()
+	response := c.jsonHeader("GET", mustEnv(t, "RFC012_OAUTH_FAULT_URL"), "", nil, "X-Fixture-Secret", secret)
+	require.Equal(t, http.StatusOK, response.status, response.body)
+	var state oauthFaultStateResponse
+	require.NoError(t, json.Unmarshal([]byte(response.body), &state))
+	return state
+}
+
+func waitOAuthPlan(t *testing.T, c *client, secret, id string, ready func(oauthFaultPlanState) bool) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		for _, plan := range oauthFaultState(t, c, secret).Plans {
+			if plan.ID == id {
+				return ready(plan)
+			}
+		}
+		return false
+	}, 10*time.Second, 25*time.Millisecond, "OAuth fault plan %s did not reach the requested phase", id)
+}
+
+func releaseOAuthPlan(t *testing.T, c *client, secret, id string) {
+	t.Helper()
+	endpoint := mustEnv(t, "RFC012_OAUTH_FAULT_URL") + "/release?id=" + url.QueryEscape(id)
+	response := c.jsonHeader("POST", endpoint, "", nil, "X-Fixture-Secret", secret)
+	require.Equal(t, http.StatusNoContent, response.status, response.body)
+}
+
+func redisControl(t *testing.T, c *client, secret, path string, body any) response {
+	t.Helper()
+	return c.jsonHeader("POST", mustEnv(t, "RFC012_REDIS_FAULT_URL")+path, "", body, "X-Fixture-Secret", secret)
+}
+
+func setRedisAvailability(t *testing.T, c *client, secret string, available bool) {
+	t.Helper()
+	path := "/control/down"
+	if available {
+		path = "/control/up"
+	}
+	response := redisControl(t, c, secret, path, nil)
+	require.Equal(t, http.StatusNoContent, response.status, response.body)
+}
+
+func configureRedisFailure(t *testing.T, c *client, secret, command, keyPrefix string) {
+	t.Helper()
+	response := redisControl(t, c, secret, "/control", map[string]any{"fail_command": command, "fail_key_prefix": keyPrefix})
+	require.Equal(t, http.StatusNoContent, response.status, response.body)
+}
+
+func clearRedisFailure(t *testing.T, c *client, secret string) {
+	t.Helper()
+	response := redisControl(t, c, secret, "/control", map[string]any{"clear_failure": true})
+	require.Equal(t, http.StatusNoContent, response.status, response.body)
+}
+
+func redisFaultState(t *testing.T, c *client, secret string) redisFaultStateResponse {
+	t.Helper()
+	response := c.jsonHeader("GET", mustEnv(t, "RFC012_REDIS_FAULT_URL")+"/state", "", nil, "X-Fixture-Secret", secret)
+	require.Equal(t, http.StatusOK, response.status, response.body)
+	var state redisFaultStateResponse
+	require.NoError(t, json.Unmarshal([]byte(response.body), &state))
+	return state
+}
+
+func waitRedisKey(t *testing.T, client *redis.Client, pattern string) string {
+	t.Helper()
+	var key string
+	require.Eventually(t, func() bool {
+		keys, err := client.Keys(t.Context(), pattern).Result()
+		if err == nil && len(keys) == 1 {
+			key = keys[0]
+			return true
+		}
+		return false
+	}, 10*time.Second, 25*time.Millisecond)
+	return key
+}
+
+func asyncJSON(httpClient *http.Client, method, endpoint, bearer string, body any) <-chan asyncJSONResult {
+	result := make(chan asyncJSONResult, 1)
+	go func() {
+		response, err := requestJSON(httpClient, method, endpoint, bearer, body)
+		result <- asyncJSONResult{response: response, err: err}
+	}()
+	return result
+}
+
+func waitAsyncJSON(t *testing.T, result <-chan asyncJSONResult, timeout time.Duration) asyncJSONResult {
+	t.Helper()
+	select {
+	case value := <-result:
+		return value
+	case <-time.After(timeout):
+		t.Fatalf("timed out waiting for asynchronous HTTP request")
+		return asyncJSONResult{}
+	}
+}
+
+func requestJSON(httpClient *http.Client, method, endpoint, bearer string, body any) (response, error) {
+	var reader io.Reader
+	if body != nil {
+		raw, err := json.Marshal(body)
+		if err != nil {
+			return response{}, err
+		}
+		reader = bytes.NewReader(raw)
+	}
+	req, err := http.NewRequest(method, endpoint, reader)
+	if err != nil {
+		return response{}, err
+	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	if bearer != "" {
+		req.Header.Set("Authorization", "Bearer "+bearer)
+	}
+	clientCopy := *httpClient
+	clientCopy.CheckRedirect = func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
+	resp, err := clientCopy.Do(req)
+	if err != nil {
+		return response{}, err
+	}
+	defer resp.Body.Close()
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return response{}, err
+	}
+	return response{status: resp.StatusCode, body: string(raw), header: resp.Header.Clone()}, nil
+}
+
+func longHTTPClient(base *http.Client, timeout time.Duration) *http.Client {
+	copy := *base
+	copy.Timeout = timeout
+	return &copy
+}
+
+func assertConnectionGeneration(t *testing.T, db *sql.DB, connectionID string, expected int64) {
+	t.Helper()
+	var generation int64
+	require.NoError(t, db.QueryRow(`SELECT credential_generation FROM mcp_connections WHERE id=$1`, connectionID).Scan(&generation))
+	require.Equal(t, expected, generation)
+}
+
+func installCleanupInsertFault(t *testing.T, db *sql.DB) {
+	t.Helper()
+	_, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS rfc012_acceptance_fault_controls(name text PRIMARY KEY, enabled boolean NOT NULL);
+		CREATE SEQUENCE IF NOT EXISTS rfc012_cleanup_insert_fault_sequence;
+		CREATE OR REPLACE FUNCTION rfc012_fail_cleanup_insert() RETURNS trigger LANGUAGE plpgsql AS $$
+		DECLARE attempt bigint;
+		BEGIN
+			IF EXISTS(SELECT 1 FROM rfc012_acceptance_fault_controls WHERE name='cleanup_insert' AND enabled) THEN
+				attempt := nextval('rfc012_cleanup_insert_fault_sequence');
+				IF attempt = 1 THEN RAISE EXCEPTION 'rfc012 injected cleanup insert failure'; END IF;
+				UPDATE rfc012_acceptance_fault_controls SET enabled=false WHERE name='cleanup_insert';
+			END IF;
+			RETURN NEW;
+		END $$;
+		DROP TRIGGER IF EXISTS rfc012_fail_cleanup_insert ON connector_credential_cleanup_jobs;
+		CREATE TRIGGER rfc012_fail_cleanup_insert BEFORE INSERT ON connector_credential_cleanup_jobs
+		FOR EACH ROW EXECUTE FUNCTION rfc012_fail_cleanup_insert();`)
+	require.NoError(t, err)
+}
+
+func enableCleanupInsertFault(t *testing.T, db *sql.DB) {
+	t.Helper()
+	_, err := db.Exec(`SELECT setval('rfc012_cleanup_insert_fault_sequence',1,false);
+		INSERT INTO rfc012_acceptance_fault_controls(name,enabled) VALUES('cleanup_insert',true)
+		ON CONFLICT(name) DO UPDATE SET enabled=excluded.enabled`)
+	require.NoError(t, err)
+}
+
+func removeCleanupInsertFault(db *sql.DB) {
+	_, _ = db.Exec(`DROP TRIGGER IF EXISTS rfc012_fail_cleanup_insert ON connector_credential_cleanup_jobs;
+		DROP FUNCTION IF EXISTS rfc012_fail_cleanup_insert();
+		DROP TABLE IF EXISTS rfc012_acceptance_fault_controls;
+		DROP SEQUENCE IF EXISTS rfc012_cleanup_insert_fault_sequence`)
 }
 
 func jwtKeyID(t *testing.T, raw string) string {

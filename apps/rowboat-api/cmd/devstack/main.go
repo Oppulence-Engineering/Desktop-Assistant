@@ -37,8 +37,10 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -59,9 +61,10 @@ var (
 	issuer   string
 	audience string
 
-	authCodes sync.Map // code -> authCode
-	refreshDB sync.Map // refresh_token -> session
-	hydraDB   sync.Map // consent challenge -> hydraConsent
+	authCodes   sync.Map // code -> authCode
+	refreshDB   sync.Map // refresh_token -> session
+	hydraDB     sync.Map // consent challenge -> hydraConsent
+	oauthFaults = newOAuthFaultController()
 )
 
 var routeTaskIDRe = regexp.MustCompile(`(?m)^\d+\.\s+id:\s+([^\n]+)`)
@@ -101,6 +104,55 @@ type session struct {
 	scope    string
 }
 
+type oauthRefreshFaultPlan struct {
+	ID                  string `json:"id"`
+	HoldBeforeResponse  bool   `json:"hold_before_response,omitempty"`
+	AfterResponseURL    string `json:"after_response_url,omitempty"`
+	AfterResponseSecret string `json:"after_response_secret,omitempty"`
+	SignalPID           int    `json:"signal_pid,omitempty"`
+}
+
+type oauthRefreshFaultRuntime struct {
+	plan           oauthRefreshFaultPlan
+	entered        bool
+	responseSent   bool
+	postActionDone bool
+	release        chan struct{}
+	releaseOnce    sync.Once
+}
+
+type oauthFaultController struct {
+	mu           sync.Mutex
+	plans        []*oauthRefreshFaultRuntime
+	refreshCalls int
+	revokeCalls  int
+	revokeFail   bool
+}
+
+type oauthFaultConfig struct {
+	Reset        bool                    `json:"reset,omitempty"`
+	RevokeFail   *bool                   `json:"revoke_fail,omitempty"`
+	RefreshPlans []oauthRefreshFaultPlan `json:"refresh_plans,omitempty"`
+}
+
+type oauthRefreshFaultStatus struct {
+	ID             string `json:"id"`
+	Entered        bool   `json:"entered"`
+	ResponseSent   bool   `json:"response_sent"`
+	PostActionDone bool   `json:"post_action_done"`
+}
+
+type oauthFaultStatus struct {
+	RefreshCalls int                       `json:"refresh_calls"`
+	RevokeCalls  int                       `json:"revoke_calls"`
+	RevokeFail   bool                      `json:"revoke_fail"`
+	Plans        []oauthRefreshFaultStatus `json:"plans"`
+}
+
+func newOAuthFaultController() *oauthFaultController {
+	return &oauthFaultController{}
+}
+
 func main() {
 	addr := getenv("ADDR", ":8090")
 	issuer = getenv("ISSUER", "http://localhost:8090")
@@ -124,6 +176,10 @@ func main() {
 	mux.HandleFunc("/oauth2/auth", handleAuthorize)
 	mux.HandleFunc("/oauth2/token", handleToken)
 	mux.HandleFunc("/oauth2/revoke", handleRevoke)
+	if strings.TrimSpace(os.Getenv("DEVSTACK_FIXTURE_SECRET")) != "" {
+		mux.HandleFunc("/fixture/oauth-faults", handleOAuthFaults)
+		mux.HandleFunc("/fixture/oauth-faults/release", handleOAuthFaultRelease)
+	}
 	mux.HandleFunc("/admin/oauth2/auth/requests/consent", handleHydraConsentRequest)
 	mux.HandleFunc("/admin/oauth2/auth/requests/consent/accept", handleHydraConsentAccept)
 	mux.HandleFunc("/admin/oauth2/auth/requests/consent/reject", handleHydraConsentReject)
@@ -357,6 +413,10 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 
 func handleRevoke(w http.ResponseWriter, r *http.Request) {
 	_ = r.ParseForm()
+	if oauthFaults.recordRevoke() {
+		http.Error(w, "injected provider revoke failure", http.StatusServiceUnavailable)
+		return
+	}
 	if token := strings.TrimSpace(r.Form.Get("token")); token != "" {
 		refreshDB.Delete(token)
 	}
@@ -400,10 +460,40 @@ func tokenFromRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s := v.(session)
-	writeTokenResponse(w, s.sub, s.email, s.clientID, s.audience, s.scope, "", rt, nil, "")
+	plan := oauthFaults.nextRefresh()
+	if plan == nil {
+		writeTokenResponse(w, s.sub, s.email, s.clientID, s.audience, s.scope, "", rt, nil, "")
+		return
+	}
+	plan.markEntered()
+	if plan.plan.HoldBeforeResponse {
+		select {
+		case <-plan.release:
+		case <-r.Context().Done():
+			return
+		}
+	}
+	raw, err := json.Marshal(tokenResponse(s.sub, s.email, s.clientID, s.audience, s.scope, "", rt, nil, ""))
+	if err != nil {
+		http.Error(w, "encode token response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Length", strconv.Itoa(len(raw)))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(raw)
+	if flusher, ok := w.(http.Flusher); ok {
+		flusher.Flush()
+	}
+	plan.markResponseSent()
+	plan.runPostAction()
 }
 
 func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, tokenAudience, scope, nonce, refreshToken string, amr []string, acr string) {
+	writeJSON(w, tokenResponse(sub, email, clientID, tokenAudience, scope, nonce, refreshToken, amr, acr))
+}
+
+func tokenResponse(sub, email, clientID, tokenAudience, scope, nonce, refreshToken string, amr []string, acr string) map[string]any {
 	access := signToken(jwt.MapClaims{
 		"iss":   issuer,
 		"aud":   def(tokenAudience, audience),
@@ -430,14 +520,151 @@ func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, tokenAudien
 	if acr != "" {
 		idClaims["acr"] = acr
 	}
-	writeJSON(w, map[string]any{
+	return map[string]any{
 		"access_token":  access,
 		"id_token":      signToken(idClaims),
 		"refresh_token": refreshToken,
 		"token_type":    "Bearer",
 		"expires_in":    3600,
 		"scope":         scope,
-	})
+	}
+}
+
+func handleOAuthFaults(w http.ResponseWriter, r *http.Request) {
+	if !authorizedFixtureRequest(w, r) {
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		writeJSON(w, oauthFaults.status())
+	case http.MethodPost:
+		var config oauthFaultConfig
+		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&config); err != nil {
+			http.Error(w, "invalid fault config", http.StatusBadRequest)
+			return
+		}
+		oauthFaults.configure(config)
+		w.WriteHeader(http.StatusNoContent)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+func handleOAuthFaultRelease(w http.ResponseWriter, r *http.Request) {
+	if !authorizedFixtureRequest(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	if !oauthFaults.release(r.URL.Query().Get("id")) {
+		http.Error(w, "unknown refresh plan", http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func authorizedFixtureRequest(w http.ResponseWriter, r *http.Request) bool {
+	secret := strings.TrimSpace(os.Getenv("DEVSTACK_FIXTURE_SECRET"))
+	if secret == "" || r.Header.Get("X-Fixture-Secret") != secret {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return false
+	}
+	return true
+}
+
+func (c *oauthFaultController) configure(config oauthFaultConfig) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if config.Reset {
+		c.plans = nil
+		c.refreshCalls = 0
+		c.revokeCalls = 0
+		c.revokeFail = false
+	}
+	if config.RevokeFail != nil {
+		c.revokeFail = *config.RevokeFail
+	}
+	for index, plan := range config.RefreshPlans {
+		if strings.TrimSpace(plan.ID) == "" {
+			plan.ID = fmt.Sprintf("refresh-%d", len(c.plans)+index+1)
+		}
+		c.plans = append(c.plans, &oauthRefreshFaultRuntime{plan: plan, release: make(chan struct{})})
+	}
+}
+
+func (c *oauthFaultController) nextRefresh() *oauthRefreshFaultRuntime {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	index := c.refreshCalls
+	c.refreshCalls++
+	if index >= len(c.plans) {
+		return nil
+	}
+	return c.plans[index]
+}
+
+func (c *oauthFaultController) recordRevoke() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.revokeCalls++
+	return c.revokeFail
+}
+
+func (c *oauthFaultController) release(id string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, plan := range c.plans {
+		if plan.plan.ID == id {
+			plan.releaseOnce.Do(func() { close(plan.release) })
+			return true
+		}
+	}
+	return false
+}
+
+func (c *oauthFaultController) status() oauthFaultStatus {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	status := oauthFaultStatus{RefreshCalls: c.refreshCalls, RevokeCalls: c.revokeCalls, RevokeFail: c.revokeFail}
+	for _, plan := range c.plans {
+		status.Plans = append(status.Plans, oauthRefreshFaultStatus{
+			ID: plan.plan.ID, Entered: plan.entered, ResponseSent: plan.responseSent, PostActionDone: plan.postActionDone,
+		})
+	}
+	return status
+}
+
+func (p *oauthRefreshFaultRuntime) markEntered() {
+	oauthFaults.mu.Lock()
+	p.entered = true
+	oauthFaults.mu.Unlock()
+}
+
+func (p *oauthRefreshFaultRuntime) markResponseSent() {
+	oauthFaults.mu.Lock()
+	p.responseSent = true
+	oauthFaults.mu.Unlock()
+}
+
+func (p *oauthRefreshFaultRuntime) runPostAction() {
+	if p.plan.AfterResponseURL != "" {
+		req, err := http.NewRequest(http.MethodPost, p.plan.AfterResponseURL, nil)
+		if err == nil {
+			req.Header.Set("X-Fixture-Secret", p.plan.AfterResponseSecret)
+			client := &http.Client{Timeout: 5 * time.Second}
+			if resp, doErr := client.Do(req); doErr == nil {
+				_ = resp.Body.Close()
+			}
+		}
+	}
+	if p.plan.SignalPID > 0 {
+		_ = syscall.Kill(p.plan.SignalPID, syscall.SIGSTOP)
+	}
+	oauthFaults.mu.Lock()
+	p.postActionDone = true
+	oauthFaults.mu.Unlock()
 }
 
 // handleWorkOSAuthenticate mocks WorkOS's POST /user_management/authenticate:
