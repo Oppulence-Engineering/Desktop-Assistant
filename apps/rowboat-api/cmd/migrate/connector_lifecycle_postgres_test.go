@@ -4,7 +4,9 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -26,7 +28,7 @@ func TestConnectorLifecyclePostgresConcurrencyCrashAndRetry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -36,12 +38,14 @@ func TestConnectorLifecyclePostgresConcurrencyCrashAndRetry(t *testing.T) {
 		ON CONFLICT(workos_user_id) DO UPDATE SET updated_at=now() RETURNING id`).Scan(&userID); err != nil {
 		t.Fatal(err)
 	}
-	state := "sha256:connector-pg-race"
+	stateDigest := sha256.Sum256([]byte("connector-pg-race"))
+	stateHash := hex.EncodeToString(stateDigest[:])
+	state := "sha256:" + stateHash
 	if _, err := db.ExecContext(ctx, `DELETE FROM oauth_pendings WHERE state=$1`, state); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := db.ExecContext(ctx, `INSERT INTO oauth_pendings(id,created_at,updated_at,state,state_hash,provider,payload_encrypted,expires_at,lifecycle_status)
-		VALUES(gen_random_uuid(),now(),now(),$1,'connector-pg-race','dev-product',decode('00','hex'),now()+interval '10 minutes','callback_completed')`, state); err != nil {
+			VALUES(gen_random_uuid(),now(),now(),$1,$2,'dev-product',decode('00','hex'),now()+interval '10 minutes','callback_completed')`, state, stateHash); err != nil {
 		t.Fatal(err)
 	}
 
@@ -67,11 +71,16 @@ func TestConnectorLifecyclePostgresConcurrencyCrashAndRetry(t *testing.T) {
 
 	// The dedicated outbox preserves the sealed provider credential while the
 	// locally disabled connection is scrubbed immediately.
+	if _, err := db.ExecContext(ctx, `DELETE FROM connector_revocation_jobs WHERE owner_id=$1`, userID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, `DELETE FROM mcp_connections WHERE connector='dev-product' AND user_mcp_connections=$1`, userID); err != nil {
+		t.Fatal(err)
+	}
 	var connectionID string
 	if err := db.QueryRowContext(ctx, `INSERT INTO mcp_connections(id,created_at,updated_at,connector,audience,scopes,refresh_token_encrypted,status,connected_at,user_mcp_connections)
-		VALUES(gen_random_uuid(),now(),now(),'dev-product','dev-product-api','[]',decode('010203','hex'),'invalidated',now(),$1)
-		ON CONFLICT(connector,user_mcp_connections) DO UPDATE SET status='invalidated',refresh_token_encrypted=NULL,revocation_succeeded=false
-		RETURNING id`, userID).Scan(&connectionID); err != nil {
+			VALUES(gen_random_uuid(),now(),now(),'dev-product','dev-product-api','[]',decode('010203','hex'),'invalidated',now(),$1)
+			RETURNING id`, userID).Scan(&connectionID); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := db.ExecContext(ctx, `INSERT INTO connector_revocation_jobs(id,created_at,updated_at,connection_id,owner_id,connector,refresh_token_encrypted,credential_generation,terminal_status,terminal_reason,terminal_actor,status,attempts,next_attempt_at)
@@ -122,12 +131,12 @@ func TestConnectorLifecyclePostgresTwoClientFencingAndClaim(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db1.Close()
+	defer func() { _ = db1.Close() }()
 	db2, err := sql.Open("pgx", dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db2.Close()
+	defer func() { _ = db2.Close() }()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -136,7 +145,9 @@ func TestConnectorLifecyclePostgresTwoClientFencingAndClaim(t *testing.T) {
 	if err := db1.QueryRowContext(ctx, `INSERT INTO users(id,created_at,updated_at,workos_user_id,email) VALUES(gen_random_uuid(),now(),now(),$1,$2) RETURNING id`, "lifecycle-"+suffix, "lifecycle-"+suffix+"@example.invalid").Scan(&userID); err != nil {
 		t.Fatal(err)
 	}
-	defer db1.ExecContext(context.Background(), `DELETE FROM users WHERE id=$1`, userID)
+	defer func() {
+		_, _ = db1.ExecContext(context.Background(), `DELETE FROM users WHERE id=$1`, userID)
+	}()
 	if err := db1.QueryRowContext(ctx, `INSERT INTO mcp_connections(id,created_at,updated_at,connector,audience,scopes,refresh_token_encrypted,credential_generation,status,user_mcp_connections) VALUES(gen_random_uuid(),now(),now(),$1,$2,'[]',decode('01','hex'),1,'active',$3) RETURNING id`, "race-"+suffix, "race-api", userID).Scan(&connectionID); err != nil {
 		t.Fatal(err)
 	}
