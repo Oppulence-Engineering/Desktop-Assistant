@@ -34,7 +34,7 @@ func TestProductEntitlementStrictValidation(t *testing.T) {
 			}))
 			defer s.Close()
 			h := &Handler{}
-			allowed, reason := h.productEntitlement(context.Background(), &ent.User{WorkosUserID: "user_1"}, Connector{Name: "canvas", EntitlementURL: s.URL, entitlementKey: []byte("test-product-key-at-least-32-bytes"), allowPrivateEntitlement: true}, []string{"canvas:invoices.read"})
+			allowed, reason := h.productEntitlement(context.Background(), &ent.User{WorkosUserID: "user_1", WorkosOrgID: "org_1"}, "org_1", Connector{Name: "canvas", EntitlementURL: s.URL, entitlementKey: []byte("test-product-key-at-least-32-bytes"), allowPrivateEntitlement: true}, []string{"canvas:invoices.read"})
 			if allowed != tt.wantAllowed || reason != tt.wantReason {
 				t.Fatalf("got (%v,%q), want (%v,%q)", allowed, reason, tt.wantAllowed, tt.wantReason)
 			}
@@ -89,7 +89,7 @@ func TestProductEntitlementTimeoutFailsClosed(t *testing.T) {
 	}))
 	defer s.Close()
 	h := &Handler{}
-	allowed, reason := h.productEntitlement(context.Background(), &ent.User{WorkosUserID: "user_1"}, Connector{Name: "canvas", EntitlementURL: s.URL, entitlementKey: []byte("test-product-key-at-least-32-bytes"), allowPrivateEntitlement: true}, nil)
+	allowed, reason := h.productEntitlement(context.Background(), &ent.User{WorkosUserID: "user_1", WorkosOrgID: "org_1"}, "org_1", Connector{Name: "canvas", EntitlementURL: s.URL, entitlementKey: []byte("test-product-key-at-least-32-bytes"), allowPrivateEntitlement: true}, nil)
 	if allowed || reason != "entitlement_unavailable" {
 		t.Fatalf("timeout did not fail closed: %v %q", allowed, reason)
 	}

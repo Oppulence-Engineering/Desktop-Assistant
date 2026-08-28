@@ -52,27 +52,30 @@ type entitlementRequest struct {
 // productEntitlement calls the product-owned source of truth. A configured
 // endpoint is always authoritative and fails closed on timeout, malformed JSON,
 // an unknown reason, or a response larger than 64 KiB.
-func (h *Handler) productEntitlement(ctx context.Context, owner *ent.User, conn Connector, scopes []string) (bool, string) {
+func (h *Handler) productEntitlement(ctx context.Context, owner *ent.User, organizationID string, conn Connector, scopes []string) (bool, string) {
+	if owner == nil || organizationID == "" || connectorOrganizationID(owner) != organizationID {
+		return false, "org_mismatch"
+	}
 	if conn.EntitlementURL == "" {
 		return h.localEntitlement(ctx, owner, conn, scopes)
 	}
-	return authoritativeProductEntitlement(ctx, owner, conn, scopes)
+	return authoritativeProductEntitlement(ctx, owner, organizationID, conn, scopes)
 }
 
 // authoritativeProductEntitlement is the single signed transport used by both
 // the HTTP broker and worker-side token minting. Keeping signing, SSRF policy,
 // response bounds, and denial normalization here prevents worker execution from
 // drifting into a weaker entitlement protocol.
-func authoritativeProductEntitlement(ctx context.Context, owner *ent.User, conn Connector, scopes []string) (bool, string) {
-	if owner == nil {
-		return false, "no_subscription"
+func authoritativeProductEntitlement(ctx context.Context, owner *ent.User, organizationID string, conn Connector, scopes []string) (bool, string) {
+	if owner == nil || organizationID == "" || connectorOrganizationID(owner) != organizationID {
+		return false, "org_mismatch"
 	}
 	if len(conn.entitlementKey) < 32 {
 		return false, "entitlement_unavailable"
 	}
 	canonicalScopes := append([]string(nil), scopes...)
 	sort.Strings(canonicalScopes)
-	body, err := json.Marshal(entitlementRequest{Connector: conn.Name, UserID: owner.WorkosUserID, OrgID: owner.WorkosOrgID, Scopes: canonicalScopes})
+	body, err := json.Marshal(entitlementRequest{Connector: conn.Name, UserID: owner.WorkosUserID, OrgID: organizationID, Scopes: canonicalScopes})
 	if err != nil {
 		return false, "entitlement_unavailable"
 	}

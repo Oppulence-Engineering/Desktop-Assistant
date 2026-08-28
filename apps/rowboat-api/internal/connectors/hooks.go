@@ -103,14 +103,17 @@ func (h *Handler) localEntitlement(ctx context.Context, owner *ent.User, conn Co
 	return true, ""
 }
 
-func (h *Handler) isEntitled(ctx context.Context, owner *ent.User, conn Connector, scopes []string) (bool, string) {
+func (h *Handler) isEntitled(ctx context.Context, owner *ent.User, organizationID string, conn Connector, scopes []string) (bool, string) {
+	if owner == nil || organizationID == "" || connectorOrganizationID(owner) != organizationID {
+		return false, "org_mismatch"
+	}
 	if allowed, reason := h.localEntitlement(ctx, owner, conn, scopes); !allowed {
 		return false, reason
 	}
 	if conn.EntitlementURL == "" {
 		return true, ""
 	}
-	return h.productEntitlement(ctx, owner, conn, scopes)
+	return h.productEntitlement(ctx, owner, organizationID, conn, scopes)
 }
 
 func (h *Handler) requiredPlan(conn Connector, scopes []string) string {
@@ -172,10 +175,7 @@ func (h *Handler) PreConsent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allowed, reason := h.isEntitled(r.Context(), owner, conn, scopes)
-	if pending.OwnerOrgID != "" && connectorOrganizationID(owner) != pending.OwnerOrgID {
-		allowed, reason = false, "org_mismatch"
-	}
+	allowed, reason := h.isEntitled(r.Context(), owner, pending.OwnerOrgID, conn, scopes)
 	entitlement := consentEntitlement{Allowed: allowed, Reason: reason}
 	if !allowed && (reason == "no_subscription" || reason == "scope_not_in_plan") {
 		if requiredPlan := h.requiredPlan(conn, scopes); requiredPlan != "" {
@@ -323,7 +323,7 @@ func (h *Handler) ConsentContext(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusNotFound, "consent owner not found", "not_found")
 		return
 	}
-	allowed, reason := h.isEntitled(r.Context(), owner, conn, pending.RequestedScopes)
+	allowed, reason := h.isEntitled(r.Context(), owner, pending.OwnerOrgID, conn, pending.RequestedScopes)
 	h.appendAudit(r.Context(), owner, auditRecord{EventType: "consent_context_read", Connector: conn.Name, Audience: conn.Audience, Requested: pending.RequestedScopes, Reason: reason})
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{
 		"connector": conn.Name, "displayName": conn.DisplayName, "audience": conn.Audience,

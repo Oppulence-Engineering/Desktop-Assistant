@@ -35,12 +35,15 @@ func NewEntitlementService(client *ent.Client, registry *Registry) *EntitlementS
 }
 
 // Check returns the authoritative allow/deny decision and normalized reason.
-func (s *EntitlementService) Check(ctx context.Context, owner *ent.User, conn Connector, scopes []string) (bool, string) {
+func (s *EntitlementService) Check(ctx context.Context, owner *ent.User, organizationID string, conn Connector, scopes []string) (bool, string) {
 	if s == nil || s.client == nil || s.registry == nil || owner == nil || !s.registry.Enabled(conn.Name) {
 		return false, "connector_disabled"
 	}
+	if organizationID == "" || connectorOrganizationID(owner) != organizationID {
+		return false, "org_mismatch"
+	}
 	if conn.EntitlementURL != "" {
-		return authoritativeProductEntitlement(ctx, owner, conn, scopes)
+		return authoritativeProductEntitlement(ctx, owner, organizationID, conn, scopes)
 	}
 	requiredPlan := conn.RequiredPlan
 	for _, scope := range s.registry.definitionsForScopes(conn.Name, scopes) {
@@ -92,8 +95,8 @@ func (s *LifecycleService) SetIssuer(issuer ResourceTokenIssuer) { s.issuer = is
 func (s *LifecycleService) SetLogger(log *zap.Logger) { s.log = log }
 
 // CheckEntitlement evaluates the current registry and product entitlement.
-func (s *LifecycleService) CheckEntitlement(ctx context.Context, owner *ent.User, conn Connector, scopes []string) (bool, string) {
-	return s.entitlements.Check(ctx, owner, conn, scopes)
+func (s *LifecycleService) CheckEntitlement(ctx context.Context, owner *ent.User, organizationID string, conn Connector, scopes []string) (bool, string) {
+	return s.entitlements.Check(ctx, owner, organizationID, conn, scopes)
 }
 
 // PersistRefresh commits a rotated credential only while the exact generation,
@@ -290,7 +293,7 @@ func (s *LifecycleService) MintResourceToken(ctx context.Context, owner *ent.Use
 	if err != nil || !isSubset(validated, current.Scopes) {
 		return nil, fmt.Errorf("connector %q scopes changed before mint", conn.Name)
 	}
-	if allowed, reason := s.entitlements.Check(ctx, owner, conn, validated); !allowed {
+	if allowed, reason := s.entitlements.Check(ctx, owner, current.OrganizationID, conn, validated); !allowed {
 		if reason != "entitlement_unavailable" {
 			_ = s.invalidateEntitlementDenied(context.WithoutCancel(ctx), owner, current, reason)
 		} else {

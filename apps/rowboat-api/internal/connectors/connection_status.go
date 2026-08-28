@@ -102,7 +102,11 @@ func (h *Handler) ConnectionStatus(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusServiceUnavailable, "connection status unavailable", "status_unavailable")
 		return
 	}
-	allowed, _ := NewEntitlementService(h.client, h.registry).Check(r.Context(), owner, connector, connection.Scopes)
+	if connectorOrganizationID(owner) != connection.OrganizationID {
+		httpx.WriteJSON(w, http.StatusOK, map[string]any{"active": false})
+		return
+	}
+	allowed, _ := NewEntitlementService(h.client, h.registry).Check(r.Context(), owner, connection.OrganizationID, connector, connection.Scopes)
 	if !allowed {
 		httpx.WriteJSON(w, http.StatusOK, map[string]any{"active": false})
 		return

@@ -337,7 +337,7 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, err.Error(), "invalid_redirect_target")
 		return
 	}
-	if allowed, reason := h.isEntitled(r.Context(), u, c, requestedScopes); !allowed {
+	if allowed, reason := h.isEntitled(r.Context(), u, connectorOrganizationID(u), c, requestedScopes); !allowed {
 		connectormetrics.Lifecycle.WithLabelValues(name, "start", "entitlement_denied").Inc()
 		h.appendAudit(r.Context(), u, auditRecord{EventType: "oauth_start_rejected", Connector: name, Audience: c.Audience, Requested: requestedScopes, Reason: reason})
 		httpx.Error(w, http.StatusForbidden, "connector entitlement denied", reason)
@@ -890,7 +890,7 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusServiceUnavailable, "connector is disabled", "connector_disabled")
 		return
 	}
-	if allowed, reason := h.isEntitled(ctx, u, c, cp.GrantedScopes); !allowed {
+	if allowed, reason := h.isEntitled(ctx, u, cp.OrgID, c, cp.GrantedScopes); !allowed {
 		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason(reason).Exec(ctx)
 		compensateCredentialRecovery(context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, recoveryID, reason)
 		h.appendAudit(ctx, u, auditRecord{EventType: "oauth_claim_rejected", Connector: name, Requested: cp.RequestedScopes, Granted: cp.GrantedScopes, Reason: reason})
@@ -1043,7 +1043,7 @@ func (h *Handler) SetAPIKey(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "missing apiKey", "bad_request")
 		return
 	}
-	if allowed, reason := h.isEntitled(r.Context(), u, c, c.Scopes); !allowed {
+	if allowed, reason := h.isEntitled(r.Context(), u, connectorOrganizationID(u), c, c.Scopes); !allowed {
 		httpx.Error(w, http.StatusForbidden, "connector entitlement denied", reason)
 		return
 	}
@@ -1335,7 +1335,7 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusForbidden, "requested scopes are not granted on this connection", "scope_not_granted")
 		return
 	}
-	if allowed, reason := h.isEntitled(ctx, u, c, validatedScopes); !allowed {
+	if allowed, reason := h.isEntitled(ctx, u, mc.OrganizationID, c, validatedScopes); !allowed {
 		connectormetrics.TokenMint.WithLabelValues(name, "entitlement_denied").Inc()
 		h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Requested: validatedScopes, Reason: reason})
 		if reason != "entitlement_unavailable" {
@@ -1481,7 +1481,7 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadGateway, "upstream token scope mismatch", "scope_escalation")
 		return
 	}
-	if allowed, reason := h.isEntitled(ctx, u, c, validatedScopes); !allowed {
+	if allowed, reason := h.isEntitled(ctx, u, mc.OrganizationID, c, validatedScopes); !allowed {
 		connectormetrics.TokenMint.WithLabelValues(name, "entitlement_denied").Inc()
 		h.appendAudit(ctx, u, auditRecord{EventType: "token_mint_rejected", Connector: name, ConnectionID: mc.ID, Audience: audience, Requested: validatedScopes, Reason: reason})
 		if reason != "entitlement_unavailable" {

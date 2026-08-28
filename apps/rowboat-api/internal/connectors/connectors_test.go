@@ -569,6 +569,7 @@ func TestPreConsentEntitlement(t *testing.T) {
 		SetExpiresAt(time.Now().Add(time.Minute)).
 		SetLifecycleStatus("started").
 		SetOwnerWorkosUserID(u.WorkosUserID).
+		SetOwnerOrgID("org_1").
 		SetRequestedScopes([]string{"canvas:invoices.read"}).
 		ExecX(context.Background())
 
