@@ -63,3 +63,5 @@ c8c6a346895eb5b30532916c8a6667f288cf4b3a:apps/rowboat-api/migrations/postgres/at
 7a41de51e1e1b0b64ac1aa729ea2515a3d59d5e2:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:878
 7a41de51e1e1b0b64ac1aa729ea2515a3d59d5e2:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:879
 095a65b20378206e6aba0b5f8451ff2ddba2c11a:apps/rowboat-api/integration/rfc012/postgres16.sh:generic-api-key:138
+# RFC 012 deterministic entitlement-readiness acceptance fixture.
+882da331e093db4845af5db876c5a6540b74fe68:apps/rowboat-api/integration/rfc012/postgres16.sh:generic-api-key:219
