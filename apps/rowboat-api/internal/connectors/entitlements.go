@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
 	"net/netip"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -24,6 +26,11 @@ const entitlementTimeout = 3 * time.Second
 const entitlementMaxResponseBytes = 64 << 10
 
 var entitlementClients sync.Map
+
+type entitlementClientKey struct {
+	allowPrivate bool
+	caFile       string
+}
 
 var authoritativeDenialReasons = map[string]struct{}{
 	"no_subscription": {}, "scope_not_in_plan": {}, "user_banned": {},
@@ -121,11 +128,12 @@ func authoritativeProductEntitlement(ctx context.Context, owner *ent.User, conn 
 }
 
 func productEntitlementClient(allowPrivate bool) *http.Client {
-	if cached, ok := entitlementClients.Load(allowPrivate); ok {
+	key := entitlementClientKey{allowPrivate: allowPrivate, caFile: strings.TrimSpace(os.Getenv("SSL_CERT_FILE"))}
+	if cached, ok := entitlementClients.Load(key); ok {
 		return cached.(*http.Client)
 	}
-	client := newProductEntitlementClient(entitlementTransportOptions{allowPrivate: allowPrivate})
-	actual, _ := entitlementClients.LoadOrStore(allowPrivate, client)
+	client := newProductEntitlementClient(entitlementTransportOptions{allowPrivate: allowPrivate, caFile: key.caFile})
+	actual, _ := entitlementClients.LoadOrStore(key, client)
 	return actual.(*http.Client)
 }
 
@@ -138,6 +146,7 @@ type entitlementTransportOptions struct {
 	resolver     entitlementResolver
 	dialContext  func(context.Context, string, string) (net.Conn, error)
 	tlsConfig    *tls.Config
+	caFile       string
 	timeout      time.Duration
 }
 
@@ -159,6 +168,17 @@ func newProductEntitlementClient(options entitlementTransportOptions) *http.Clie
 	base.Proxy = nil
 	if options.tlsConfig != nil {
 		base.TLSClientConfig = options.tlsConfig.Clone()
+	} else {
+		roots, err := x509.SystemCertPool()
+		if err != nil || roots == nil {
+			roots = x509.NewCertPool()
+		}
+		if options.caFile != "" {
+			if pemBytes, readErr := os.ReadFile(options.caFile); readErr == nil {
+				roots.AppendCertsFromPEM(pemBytes)
+			}
+		}
+		base.TLSClientConfig = &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12}
 	}
 	base.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
 		host, port, err := net.SplitHostPort(address)

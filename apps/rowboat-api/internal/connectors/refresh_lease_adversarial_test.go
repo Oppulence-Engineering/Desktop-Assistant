@@ -95,7 +95,7 @@ func TestExpiredConnectorHolderCannotPersistPublishOrDeleteSuccessor(t *testing.
 	}
 
 	close(releaseProvider)
-	if err := <-result; err != errConnectorRefreshInProgress {
+	if err := <-result; !errors.Is(err, errConnectorRefreshInProgress) {
 		t.Fatalf("stale holder result = %v, want refresh in progress", err)
 	}
 	if persists.Load() != 0 {

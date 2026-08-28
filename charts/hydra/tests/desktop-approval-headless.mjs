@@ -72,25 +72,39 @@ const resultPromise = awaitApprovalAndRetry(
     assert.equal(approvedBinding.sessionId, requestBinding.sessionId);
     return { resumed: true, arguments: originalArguments };
   },
+  async (code, verifier, productOrigin, approvedBinding) => {
+    assert.equal(code, "one-time-deployment-contract-code");
+    assert.match(verifier, /^[A-Za-z0-9_-]{43}$/);
+    assert.equal(productOrigin, configuredEndpoint.origin);
+    assert.equal(
+      approvedBinding.desktopChallengeId,
+      approvalUrl.searchParams.get("desktop_challenge_id"),
+    );
+    assert.equal(approvedBinding.connectionId, requestBinding.connectionId);
+    assert.equal(approvedBinding.toolName, requestBinding.toolName);
+    assert.equal(approvedBinding.argumentsDigest, requestBinding.argumentsDigest);
+    return { approvalToken: "one-time-deployment-contract-token" };
+  },
 );
 
 for (let attempts = 0; !approvalUrl && attempts < 100; attempts += 1) {
   await new Promise((resolve) => setTimeout(resolve, 5));
 }
 assert.ok(approvalUrl, "desktop adapter did not open the product approval URL");
+assert.equal(approvalUrl.protocol, "https:");
+assert.equal(approvalUrl.origin, configuredEndpoint.origin);
+assert.ok(approvalUrl.searchParams.get("desktop_code_challenge"));
+assert.equal(approvalUrl.searchParams.get("desktop_code_challenge_method"), "S256");
+assert.equal(approvalUrl.searchParams.has("approval_token"), false);
+assert.equal(approvalUrl.searchParams.has("token"), false);
 
 const callback = new URL("oppulence://mcp-approval");
 callback.searchParams.set("challenge_id", approvalUrl.searchParams.get("desktop_challenge_id"));
-callback.searchParams.set("server", approvalUrl.searchParams.get("desktop_server"));
-callback.searchParams.set("tool", approvalUrl.searchParams.get("desktop_tool"));
-callback.searchParams.set(
-  "arguments_digest",
-  approvalUrl.searchParams.get("desktop_arguments_digest"),
-);
-callback.searchParams.set("actor", approvalUrl.searchParams.get("desktop_actor"));
-callback.searchParams.set("action", approvalUrl.searchParams.get("desktop_action"));
 callback.searchParams.set("status", "approved");
-callback.searchParams.set("approval_token", "one-time-deployment-contract-token");
+callback.searchParams.set("code", "one-time-deployment-contract-code");
+
+assert.equal(callback.searchParams.has("approval_token"), false);
+assert.equal(callback.searchParams.has("token"), false);
 
 const completion = parseMcpApprovalDeepLink(callback.toString());
 assert.ok(completion, "packaged desktop deep-link adapter rejected a valid callback");

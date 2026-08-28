@@ -73,11 +73,11 @@ cat > "$SCRATCH/connectors.json" <<JSON
     "name":"dev",
     "displayName":"RFC 012 Dev Product",
     "description":"Disposable product MCP used for public RFC 012 acceptance",
-    "mcpUrl":"https://localhost:${PRODUCT_PORT}/v1/mcp",
+    "mcpUrl":"https://127.0.0.1:${PRODUCT_PORT}/v1/mcp",
     "authType":"oauth",
     "audience":"dev-product-api",
     "requiredPlan":"intelligence",
-    "entitlementUrl":"https://localhost:${PRODUCT_PORT}/v1/entitlements",
+    "entitlementUrl":"https://127.0.0.1:${PRODUCT_PORT}/v1/entitlements",
     "status":"enabled",
     "health":"healthy",
     "environments":["development"],
@@ -113,7 +113,7 @@ REDIS_URL="redis://127.0.0.1:${REDIS_PORT}/0"
 OIDC_URL="http://127.0.0.1:${OIDC_PORT}"
 API_URL="http://127.0.0.1:${API_PORT}"
 API2_URL="http://127.0.0.1:${API2_PORT}"
-PRODUCT_URL="https://localhost:${PRODUCT_PORT}"
+PRODUCT_URL="https://127.0.0.1:${PRODUCT_PORT}"
 CONSENT_URL="http://127.0.0.1:${CONSENT_PORT}"
 CONSENT2_URL="http://127.0.0.1:${CONSENT2_PORT}"
 BROKER_KEY=$(cat "$SCRATCH/broker.pem")

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net"
@@ -11,6 +12,7 @@ import (
 	"net/http/httptest"
 	"net/netip"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -172,6 +174,34 @@ func TestProductionEntitlementTransportEnforcesTLSCertificateAndSNI(t *testing.T
 	if err == nil {
 		_ = resp.Body.Close()
 		t.Fatal("TLS certificate/SNI hostname mismatch was accepted")
+	}
+}
+
+func TestEntitlementTransportHonorsExplicitCertificateFile(t *testing.T) {
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"allowed":true}`))
+	}))
+	t.Cleanup(server.Close)
+	certificateFile := t.TempDir() + "/entitlement-ca.pem"
+	certificatePEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw})
+	if err := os.WriteFile(certificateFile, certificatePEM, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	parsed, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := newProductEntitlementClient(entitlementTransportOptions{
+		allowPrivate: true,
+		caFile:       certificateFile,
+		timeout:      time.Second,
+	})
+	resp, err := client.Get("https://127.0.0.1:" + parsed.Port())
+	if err != nil {
+		t.Fatalf("explicit entitlement CA was not trusted: %v", err)
+	}
+	if closeErr := resp.Body.Close(); closeErr != nil {
+		t.Fatal(closeErr)
 	}
 }
 
