@@ -1,4 +1,5 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { lookup } from 'node:dns/promises';
 import { type Server, createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { type KeyLike, SignJWT, exportJWK, generateKeyPair } from 'jose';
@@ -12,6 +13,15 @@ import {
   type MCPTokenOptions,
   type ResponseLike,
 } from '../src/index.js';
+
+vi.mock('node:dns/promises', async () => {
+  const actual = await vi.importActual<typeof import('node:dns/promises')>('node:dns/promises');
+  return { ...actual, lookup: vi.fn(actual.lookup) };
+});
+
+const lookupMock = lookup as unknown as {
+  mockResolvedValueOnce(records: Array<{ address: string; family: 4 | 6 }>): void;
+};
 
 const KID = 'test-key-1';
 const ROTATED_KID = 'test-key-2';
@@ -90,6 +100,16 @@ function newVerifier(): Verifier {
     jwksUrl: baseURL,
     allowedJwksOrigins: [new URL(baseURL).origin],
     allowLocalhostDevelopment: true,
+  });
+}
+
+function verifierForJwks(jwksUrl: string, allowLocalhostDevelopment = false): GenericVerifier {
+  return new GenericVerifier({
+    issuerUrl: ISSUER,
+    audience: AUDIENCE,
+    jwksUrl,
+    allowedJwksOrigins: [new URL(jwksUrl).origin],
+    allowLocalhostDevelopment,
   });
 }
 
@@ -203,6 +223,37 @@ describe('RFC 012 verifier contract', () => {
       expect(() => new Verifier({ ...base, jwksUrl, allowedJwksOrigins: ['https://keys.example'] })).toThrow();
     }
     expect(() => new Verifier({ ...base, jwksUrl: baseURL, allowedJwksOrigins: [new URL(baseURL).origin] })).toThrow();
+  });
+
+  it.each([
+    '::ffff:127.0.0.1',
+    '::ffff:7f00:1',
+    '::ffff:10.0.0.1',
+    '::ffff:172.16.0.1',
+    '::ffff:192.168.1.1',
+    '::ffff:169.254.1.1',
+  ])('normalizes and rejects mapped blocked IPv4 address %s', async (address) => {
+    const verifier = verifierForJwks(`https://[${address}]/jwks`);
+    await expectRejectCode(verifier.verify(await sign()), 'token_invalid_signature');
+  });
+
+  it.each([
+    [{ address: '203.0.113.10', family: 4 as const }, { address: '::ffff:127.0.0.1', family: 6 as const }],
+    [{ address: '2001:db8::10', family: 6 as const }, { address: '10.1.2.3', family: 4 as const }],
+    [{ address: '198.51.100.20', family: 4 as const }, { address: 'fe80::1', family: 6 as const }],
+  ])('rejects mixed public and blocked DNS answers %#', async (...records) => {
+    lookupMock.mockResolvedValueOnce(records);
+    const verifier = verifierForJwks('https://jwks-mixed.example/jwks');
+    await expectRejectCode(verifier.verify(await sign()), 'token_invalid_signature');
+  });
+
+  it.each([
+    [{ address: '::ffff:127.0.0.1', family: 6 as const }],
+    [{ address: '127.0.0.1', family: 4 as const }, { address: '203.0.113.10', family: 4 as const }],
+  ])('keeps localhost development narrow for adversarial DNS answers %#', async (...records) => {
+    lookupMock.mockResolvedValueOnce(records);
+    const verifier = verifierForJwks('http://localhost/jwks', true);
+    await expectRejectCode(verifier.verify(await sign()), 'token_invalid_signature');
   });
 
   it('coalesces concurrent unknown-kid refresh and negative-caches misses', async () => {

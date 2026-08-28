@@ -167,22 +167,99 @@ function buildAllowedOrigins(cfg: Config): Set<string> {
   for (const raw of cfg.allowedJwksOrigins ?? []) { const u = validateUrl(raw, dev); if (u.pathname !== '/') throw new Error('allowed JWKS origins must not contain paths'); origins.add(u.origin); }
   return origins;
 }
-function isLocalhost(host: string): boolean { return host === 'localhost' || host.endsWith('.localhost') || host === '127.0.0.1' || host === '::1'; }
-function forbiddenAddress(address: string): boolean {
-  if (isLocalhost(address)) return true;
-  if (address.includes(':')) return address.startsWith('fc') || address.startsWith('fd') || address.startsWith('fe8') || address.startsWith('fe9') || address.startsWith('fea') || address.startsWith('feb') || address.startsWith('ff') || address === '::';
-  const p = address.split('.').map(Number); if (p.length !== 4) return true;
-  const [a = -1, b = -1] = p;
-  return a === 0 || a === 10 || a === 127 || a >= 224 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
+function bareHostname(host: string): string { return host.startsWith('[') && host.endsWith(']') ? host.slice(1, -1) : host; }
+function isLocalhost(host: string): boolean { const bare = bareHostname(host).toLowerCase(); return bare === 'localhost' || bare.endsWith('.localhost') || bare === '127.0.0.1' || bare === '::1'; }
+
+type ParsedAddress = { address: string; family: 4 | 6; bytes: number[]; mapped: boolean };
+
+function parseIPv4(address: string): number[] | null {
+  if (isIP(address) !== 4) return null;
+  const bytes = address.split('.').map(Number);
+  return bytes.length === 4 ? bytes : null;
+}
+
+function parseIPv6(address: string): number[] | null {
+  if (isIP(address) !== 6) return null;
+  const sides = address.split('::');
+  if (sides.length > 2) return null;
+  const parseSide = (side: string): number[] | null => {
+    if (!side) return [];
+    const words: number[] = [];
+    for (const part of side.split(':')) {
+      const ipv4 = parseIPv4(part);
+      if (ipv4) {
+        words.push((ipv4[0]! << 8) | ipv4[1]!, (ipv4[2]! << 8) | ipv4[3]!);
+      } else if (/^[0-9a-f]{1,4}$/i.test(part)) {
+        words.push(Number.parseInt(part, 16));
+      } else {
+        return null;
+      }
+    }
+    return words;
+  };
+  const left = parseSide(sides[0] ?? '');
+  const right = parseSide(sides[1] ?? '');
+  if (!left || !right) return null;
+  const omitted = 8 - left.length - right.length;
+  if ((sides.length === 1 && omitted !== 0) || (sides.length === 2 && omitted < 1)) return null;
+  const words = [...left, ...Array.from({ length: omitted }, () => 0), ...right];
+  if (words.length !== 8) return null;
+  return words.flatMap((word) => [word >>> 8, word & 0xff]);
+}
+
+function parseAddress(rawAddress: string): ParsedAddress | null {
+  const address = bareHostname(rawAddress);
+  const ipv4 = parseIPv4(address);
+  if (ipv4) return { address, family: 4, bytes: ipv4, mapped: false };
+  const ipv6 = parseIPv6(address);
+  if (!ipv6) return null;
+  const mapped = ipv6.slice(0, 10).every((byte) => byte === 0) && ipv6[10] === 0xff && ipv6[11] === 0xff;
+  if (!mapped) return { address, family: 6, bytes: ipv6, mapped: false };
+  const bytes = ipv6.slice(12);
+  return { address: bytes.join('.'), family: 4, bytes, mapped: true };
+}
+
+function loopbackAddress(address: ParsedAddress): boolean {
+  return address.family === 4 ? address.bytes[0] === 127 : address.bytes.slice(0, 15).every((byte) => byte === 0) && address.bytes[15] === 1;
+}
+
+function forbiddenAddress(address: ParsedAddress): boolean {
+  if (loopbackAddress(address)) return true;
+  if (address.family === 6) {
+    const [a = -1, b = -1] = address.bytes;
+    return address.bytes.every((byte) => byte === 0) || (a & 0xfe) === 0xfc || (a === 0xfe && (b & 0xc0) === 0x80) || a === 0xff;
+  }
+  const [a = -1, b = -1] = address.bytes;
+  return a === 0 || a === 10 || a >= 224 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
 }
 async function resolveSafeAddress(url: URL, dev: boolean): Promise<{ address: string; family: number }> {
-  const records = isIP(url.hostname) ? [{ address: url.hostname, family: isIP(url.hostname) }] : await lookup(url.hostname, { all: true, verbatim: true });
-  if (!records.length || records.some(({ address }) => forbiddenAddress(address) && !(dev && isLocalhost(url.hostname)))) throw new Error('JWKS host resolves to a blocked address');
-  return records[0]!;
+  const hostname = bareHostname(url.hostname);
+  const literalFamily = isIP(hostname);
+  const records = literalFamily ? [{ address: hostname, family: literalFamily }] : await lookup(hostname, { all: true, verbatim: true });
+  const parsed = records.map(({ address }) => parseAddress(address));
+  if (!parsed.length || parsed.some((address) => !address)) throw new Error('JWKS host returned an invalid address');
+  const addresses = parsed as ParsedAddress[];
+  const localDevelopment = dev && isLocalhost(hostname);
+  if (localDevelopment) {
+    // Local development is deliberately narrow: native loopback answers only.
+    // Mapped loopback and mixed loopback/public DNS answers remain blocked.
+    if (addresses.some((address) => address.mapped || !loopbackAddress(address))) throw new Error('JWKS localhost returned a non-loopback or mapped address');
+  } else {
+    const blocked = addresses.map(forbiddenAddress);
+    if (blocked.some(Boolean)) {
+      if (blocked.some((value) => !value)) throw new Error('JWKS host returned mixed public and blocked addresses');
+      throw new Error('JWKS host resolves to a blocked address');
+    }
+  }
+  const pinned = addresses[0]!;
+  return { address: pinned.address, family: pinned.family };
 }
 async function fetchBounded(url: URL, dev: boolean, timeoutMs: number, limit: number): Promise<Uint8Array> {
   const pinned = await resolveSafeAddress(url, dev);
   return new Promise((resolve, reject) => {
+    // Keep the original URL as the request target so HTTPS still validates SNI
+    // and the certificate against the logical hostname. Override only lookup to
+    // pin the socket to the address set that was validated above.
     const request = (url.protocol === 'https:' ? httpsRequest : httpRequest)(url, {
       method: 'GET', headers: { accept: 'application/json' },
       lookup: (_host, _options, callback) => callback(null, pinned.address, pinned.family),
