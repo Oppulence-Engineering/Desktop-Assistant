@@ -98,7 +98,7 @@ func (s *LifecycleService) CheckEntitlement(ctx context.Context, owner *ent.User
 // PersistRefresh commits a rotated credential only while the exact generation,
 // active status, immutable organization, and owner still match. The refresh and
 // its durable lifecycle audit share one transaction.
-func (s *LifecycleService) PersistRefresh(ctx context.Context, owner *ent.User, previous *ent.MCPConnection, tok *oryToken) (*ent.MCPConnection, error) {
+func (s *LifecycleService) PersistRefresh(ctx context.Context, owner *ent.User, previous *ent.MCPConnection, tok *oryToken, cleanupID uuid.UUID) (*ent.MCPConnection, error) {
 	if s == nil || s.client == nil || s.sealer == nil || owner == nil || previous == nil || tok == nil {
 		return nil, errors.New("connector lifecycle refresh is not configured")
 	}
@@ -134,6 +134,11 @@ func (s *LifecycleService) PersistRefresh(ctx context.Context, owner *ent.User, 
 			return nil, errConnectorCredentialSuperseded
 		}
 		return nil, fmt.Errorf("persist rotated connector refresh token: %w", err)
+	}
+	if cleanupID != uuid.Nil {
+		if err := tx.ConnectorCredentialCleanupJob.DeleteOneID(cleanupID).Exec(auth.WithInternal(ctx)); err != nil {
+			return nil, fmt.Errorf("adopt rotated connector credential: %w", err)
+		}
 	}
 	if err := persistAuditTransitionWithClient(ctx, tx.Client(), owner, auditRecord{
 		EventType: "token_refresh_committed",

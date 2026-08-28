@@ -3983,6 +3983,87 @@
         ],
         "type": "object"
       },
+      "ConnectorCredentialCleanupJob": {
+        "properties": {
+          "attempts": {
+            "type": "integer"
+          },
+          "claim_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "claimed_until": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "completed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "connection_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "connector": {
+            "description": "Connector slug.",
+            "example": "canvas",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "expected_credential_generation": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "last_error_code": {
+            "type": "string"
+          },
+          "next_attempt_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "refresh_token_encrypted": {
+            "description": "Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.",
+            "format": "byte",
+            "type": "string",
+            "writeOnly": true
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "connection_id",
+          "connector",
+          "expected_credential_generation",
+          "refresh_token_encrypted",
+          "status",
+          "attempts",
+          "next_attempt_at"
+        ],
+        "type": "object"
+      },
       "ConnectorRevocationJob": {
         "properties": {
           "attempts": {

@@ -73,7 +73,7 @@ func (h *Handler) BrokerJWKS(w http.ResponseWriter, _ *http.Request) {
 // SetRefreshDedup enables sealed result caching and cross-replica locking for
 // Ory's rotating, one-use connector refresh tokens.
 func (h *Handler) SetRefreshDedup(cache RefreshCache, sealer *crypto.Sealer) {
-	h.refresh.configure(cache, sealer, h.log)
+	h.refresh.configure(cache, sealer, h.client, h.log)
 }
 
 // New builds the connectors handler.
@@ -1069,7 +1069,7 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	refreshContext := newConnectorRefreshContext(name, mc.ID.String(), mc.OrganizationID, mc.CredentialGeneration, mc.Audience, mc.Scopes)
-	persistRefresh := func(pctx context.Context, tok *oryToken) (int64, error) {
+	persistRefresh := func(pctx context.Context, tok *oryToken, cleanupID uuid.UUID) (int64, error) {
 		tx, txErr := h.client.Tx(auth.WithUser(pctx, u))
 		if txErr != nil {
 			return 0, fmt.Errorf("begin connector refresh transaction: %w", txErr)
@@ -1102,6 +1102,11 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 				return 0, errConnectorCredentialSuperseded
 			}
 			return 0, fmt.Errorf("persist rotated connector refresh token: %w", saveErr)
+		}
+		if cleanupID != uuid.Nil {
+			if deleteErr := tx.ConnectorCredentialCleanupJob.DeleteOneID(cleanupID).Exec(auth.WithInternal(pctx)); deleteErr != nil {
+				return 0, fmt.Errorf("adopt rotated connector credential: %w", deleteErr)
+			}
 		}
 		if auditErr := h.persistAuditTransitionWithClient(pctx, tx.Client(), u, auditRecord{
 			EventType: "token_refresh_committed",

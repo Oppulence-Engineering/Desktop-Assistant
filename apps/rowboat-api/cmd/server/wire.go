@@ -353,6 +353,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	connectorsH.SetOutboundPolicy(vendorPolicy)
 	connectorsH.SetRefreshDedup(refreshCache, sealer)
 	go connectorsH.RunRevocationWorker(ctx)
+	go connectorsH.RunCredentialCleanupWorker(ctx)
 	hubspotClient := hubspotapi.New(client, sealer, vendorPolicy)
 	hubspotH := hubspotapi.NewHandler(hubspotClient)
 

@@ -27,6 +27,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
@@ -17093,6 +17094,630 @@ func (i *CommitmentEventWhereInput) P() (predicate.CommitmentEvent, error) {
 		return predicates[0], nil
 	default:
 		return commitmentevent.And(predicates...), nil
+	}
+}
+
+// ConnectorCredentialCleanupJobWhereInput represents a where input for filtering ConnectorCredentialCleanupJob queries.
+type ConnectorCredentialCleanupJobWhereInput struct {
+	Predicates []predicate.ConnectorCredentialCleanupJob  `json:"-"`
+	Not        *ConnectorCredentialCleanupJobWhereInput   `json:"not,omitempty"`
+	Or         []*ConnectorCredentialCleanupJobWhereInput `json:"or,omitempty"`
+	And        []*ConnectorCredentialCleanupJobWhereInput `json:"and,omitempty"`
+
+	// "id" field predicates.
+	ID      *uuid.UUID  `json:"id,omitempty"`
+	IDNEQ   *uuid.UUID  `json:"idNEQ,omitempty"`
+	IDIn    []uuid.UUID `json:"idIn,omitempty"`
+	IDNotIn []uuid.UUID `json:"idNotIn,omitempty"`
+	IDGT    *uuid.UUID  `json:"idGT,omitempty"`
+	IDGTE   *uuid.UUID  `json:"idGTE,omitempty"`
+	IDLT    *uuid.UUID  `json:"idLT,omitempty"`
+	IDLTE   *uuid.UUID  `json:"idLTE,omitempty"`
+
+	// "created_at" field predicates.
+	CreatedAt      *time.Time  `json:"createdAt,omitempty"`
+	CreatedAtNEQ   *time.Time  `json:"createdAtNEQ,omitempty"`
+	CreatedAtIn    []time.Time `json:"createdAtIn,omitempty"`
+	CreatedAtNotIn []time.Time `json:"createdAtNotIn,omitempty"`
+	CreatedAtGT    *time.Time  `json:"createdAtGT,omitempty"`
+	CreatedAtGTE   *time.Time  `json:"createdAtGTE,omitempty"`
+	CreatedAtLT    *time.Time  `json:"createdAtLT,omitempty"`
+	CreatedAtLTE   *time.Time  `json:"createdAtLTE,omitempty"`
+
+	// "updated_at" field predicates.
+	UpdatedAt      *time.Time  `json:"updatedAt,omitempty"`
+	UpdatedAtNEQ   *time.Time  `json:"updatedAtNEQ,omitempty"`
+	UpdatedAtIn    []time.Time `json:"updatedAtIn,omitempty"`
+	UpdatedAtNotIn []time.Time `json:"updatedAtNotIn,omitempty"`
+	UpdatedAtGT    *time.Time  `json:"updatedAtGT,omitempty"`
+	UpdatedAtGTE   *time.Time  `json:"updatedAtGTE,omitempty"`
+	UpdatedAtLT    *time.Time  `json:"updatedAtLT,omitempty"`
+	UpdatedAtLTE   *time.Time  `json:"updatedAtLTE,omitempty"`
+
+	// "connection_id" field predicates.
+	ConnectionID      *uuid.UUID  `json:"connectionID,omitempty"`
+	ConnectionIDNEQ   *uuid.UUID  `json:"connectionIDNEQ,omitempty"`
+	ConnectionIDIn    []uuid.UUID `json:"connectionIDIn,omitempty"`
+	ConnectionIDNotIn []uuid.UUID `json:"connectionIDNotIn,omitempty"`
+	ConnectionIDGT    *uuid.UUID  `json:"connectionIDGT,omitempty"`
+	ConnectionIDGTE   *uuid.UUID  `json:"connectionIDGTE,omitempty"`
+	ConnectionIDLT    *uuid.UUID  `json:"connectionIDLT,omitempty"`
+	ConnectionIDLTE   *uuid.UUID  `json:"connectionIDLTE,omitempty"`
+
+	// "connector" field predicates.
+	Connector             *string  `json:"connector,omitempty"`
+	ConnectorNEQ          *string  `json:"connectorNEQ,omitempty"`
+	ConnectorIn           []string `json:"connectorIn,omitempty"`
+	ConnectorNotIn        []string `json:"connectorNotIn,omitempty"`
+	ConnectorGT           *string  `json:"connectorGT,omitempty"`
+	ConnectorGTE          *string  `json:"connectorGTE,omitempty"`
+	ConnectorLT           *string  `json:"connectorLT,omitempty"`
+	ConnectorLTE          *string  `json:"connectorLTE,omitempty"`
+	ConnectorContains     *string  `json:"connectorContains,omitempty"`
+	ConnectorHasPrefix    *string  `json:"connectorHasPrefix,omitempty"`
+	ConnectorHasSuffix    *string  `json:"connectorHasSuffix,omitempty"`
+	ConnectorEqualFold    *string  `json:"connectorEqualFold,omitempty"`
+	ConnectorContainsFold *string  `json:"connectorContainsFold,omitempty"`
+
+	// "expected_credential_generation" field predicates.
+	ExpectedCredentialGeneration      *int64  `json:"expectedCredentialGeneration,omitempty"`
+	ExpectedCredentialGenerationNEQ   *int64  `json:"expectedCredentialGenerationNEQ,omitempty"`
+	ExpectedCredentialGenerationIn    []int64 `json:"expectedCredentialGenerationIn,omitempty"`
+	ExpectedCredentialGenerationNotIn []int64 `json:"expectedCredentialGenerationNotIn,omitempty"`
+	ExpectedCredentialGenerationGT    *int64  `json:"expectedCredentialGenerationGT,omitempty"`
+	ExpectedCredentialGenerationGTE   *int64  `json:"expectedCredentialGenerationGTE,omitempty"`
+	ExpectedCredentialGenerationLT    *int64  `json:"expectedCredentialGenerationLT,omitempty"`
+	ExpectedCredentialGenerationLTE   *int64  `json:"expectedCredentialGenerationLTE,omitempty"`
+
+	// "status" field predicates.
+	Status             *string  `json:"status,omitempty"`
+	StatusNEQ          *string  `json:"statusNEQ,omitempty"`
+	StatusIn           []string `json:"statusIn,omitempty"`
+	StatusNotIn        []string `json:"statusNotIn,omitempty"`
+	StatusGT           *string  `json:"statusGT,omitempty"`
+	StatusGTE          *string  `json:"statusGTE,omitempty"`
+	StatusLT           *string  `json:"statusLT,omitempty"`
+	StatusLTE          *string  `json:"statusLTE,omitempty"`
+	StatusContains     *string  `json:"statusContains,omitempty"`
+	StatusHasPrefix    *string  `json:"statusHasPrefix,omitempty"`
+	StatusHasSuffix    *string  `json:"statusHasSuffix,omitempty"`
+	StatusEqualFold    *string  `json:"statusEqualFold,omitempty"`
+	StatusContainsFold *string  `json:"statusContainsFold,omitempty"`
+
+	// "attempts" field predicates.
+	Attempts      *int  `json:"attempts,omitempty"`
+	AttemptsNEQ   *int  `json:"attemptsNEQ,omitempty"`
+	AttemptsIn    []int `json:"attemptsIn,omitempty"`
+	AttemptsNotIn []int `json:"attemptsNotIn,omitempty"`
+	AttemptsGT    *int  `json:"attemptsGT,omitempty"`
+	AttemptsGTE   *int  `json:"attemptsGTE,omitempty"`
+	AttemptsLT    *int  `json:"attemptsLT,omitempty"`
+	AttemptsLTE   *int  `json:"attemptsLTE,omitempty"`
+
+	// "next_attempt_at" field predicates.
+	NextAttemptAt      *time.Time  `json:"nextAttemptAt,omitempty"`
+	NextAttemptAtNEQ   *time.Time  `json:"nextAttemptAtNEQ,omitempty"`
+	NextAttemptAtIn    []time.Time `json:"nextAttemptAtIn,omitempty"`
+	NextAttemptAtNotIn []time.Time `json:"nextAttemptAtNotIn,omitempty"`
+	NextAttemptAtGT    *time.Time  `json:"nextAttemptAtGT,omitempty"`
+	NextAttemptAtGTE   *time.Time  `json:"nextAttemptAtGTE,omitempty"`
+	NextAttemptAtLT    *time.Time  `json:"nextAttemptAtLT,omitempty"`
+	NextAttemptAtLTE   *time.Time  `json:"nextAttemptAtLTE,omitempty"`
+
+	// "claim_id" field predicates.
+	ClaimID       *uuid.UUID  `json:"claimID,omitempty"`
+	ClaimIDNEQ    *uuid.UUID  `json:"claimIDNEQ,omitempty"`
+	ClaimIDIn     []uuid.UUID `json:"claimIDIn,omitempty"`
+	ClaimIDNotIn  []uuid.UUID `json:"claimIDNotIn,omitempty"`
+	ClaimIDGT     *uuid.UUID  `json:"claimIDGT,omitempty"`
+	ClaimIDGTE    *uuid.UUID  `json:"claimIDGTE,omitempty"`
+	ClaimIDLT     *uuid.UUID  `json:"claimIDLT,omitempty"`
+	ClaimIDLTE    *uuid.UUID  `json:"claimIDLTE,omitempty"`
+	ClaimIDIsNil  bool        `json:"claimIDIsNil,omitempty"`
+	ClaimIDNotNil bool        `json:"claimIDNotNil,omitempty"`
+
+	// "claimed_until" field predicates.
+	ClaimedUntil       *time.Time  `json:"claimedUntil,omitempty"`
+	ClaimedUntilNEQ    *time.Time  `json:"claimedUntilNEQ,omitempty"`
+	ClaimedUntilIn     []time.Time `json:"claimedUntilIn,omitempty"`
+	ClaimedUntilNotIn  []time.Time `json:"claimedUntilNotIn,omitempty"`
+	ClaimedUntilGT     *time.Time  `json:"claimedUntilGT,omitempty"`
+	ClaimedUntilGTE    *time.Time  `json:"claimedUntilGTE,omitempty"`
+	ClaimedUntilLT     *time.Time  `json:"claimedUntilLT,omitempty"`
+	ClaimedUntilLTE    *time.Time  `json:"claimedUntilLTE,omitempty"`
+	ClaimedUntilIsNil  bool        `json:"claimedUntilIsNil,omitempty"`
+	ClaimedUntilNotNil bool        `json:"claimedUntilNotNil,omitempty"`
+
+	// "last_error_code" field predicates.
+	LastErrorCode             *string  `json:"lastErrorCode,omitempty"`
+	LastErrorCodeNEQ          *string  `json:"lastErrorCodeNEQ,omitempty"`
+	LastErrorCodeIn           []string `json:"lastErrorCodeIn,omitempty"`
+	LastErrorCodeNotIn        []string `json:"lastErrorCodeNotIn,omitempty"`
+	LastErrorCodeGT           *string  `json:"lastErrorCodeGT,omitempty"`
+	LastErrorCodeGTE          *string  `json:"lastErrorCodeGTE,omitempty"`
+	LastErrorCodeLT           *string  `json:"lastErrorCodeLT,omitempty"`
+	LastErrorCodeLTE          *string  `json:"lastErrorCodeLTE,omitempty"`
+	LastErrorCodeContains     *string  `json:"lastErrorCodeContains,omitempty"`
+	LastErrorCodeHasPrefix    *string  `json:"lastErrorCodeHasPrefix,omitempty"`
+	LastErrorCodeHasSuffix    *string  `json:"lastErrorCodeHasSuffix,omitempty"`
+	LastErrorCodeIsNil        bool     `json:"lastErrorCodeIsNil,omitempty"`
+	LastErrorCodeNotNil       bool     `json:"lastErrorCodeNotNil,omitempty"`
+	LastErrorCodeEqualFold    *string  `json:"lastErrorCodeEqualFold,omitempty"`
+	LastErrorCodeContainsFold *string  `json:"lastErrorCodeContainsFold,omitempty"`
+
+	// "completed_at" field predicates.
+	CompletedAt       *time.Time  `json:"completedAt,omitempty"`
+	CompletedAtNEQ    *time.Time  `json:"completedAtNEQ,omitempty"`
+	CompletedAtIn     []time.Time `json:"completedAtIn,omitempty"`
+	CompletedAtNotIn  []time.Time `json:"completedAtNotIn,omitempty"`
+	CompletedAtGT     *time.Time  `json:"completedAtGT,omitempty"`
+	CompletedAtGTE    *time.Time  `json:"completedAtGTE,omitempty"`
+	CompletedAtLT     *time.Time  `json:"completedAtLT,omitempty"`
+	CompletedAtLTE    *time.Time  `json:"completedAtLTE,omitempty"`
+	CompletedAtIsNil  bool        `json:"completedAtIsNil,omitempty"`
+	CompletedAtNotNil bool        `json:"completedAtNotNil,omitempty"`
+}
+
+// AddPredicates adds custom predicates to the where input to be used during the filtering phase.
+func (i *ConnectorCredentialCleanupJobWhereInput) AddPredicates(predicates ...predicate.ConnectorCredentialCleanupJob) {
+	i.Predicates = append(i.Predicates, predicates...)
+}
+
+// Filter applies the ConnectorCredentialCleanupJobWhereInput filter on the ConnectorCredentialCleanupJobQuery builder.
+func (i *ConnectorCredentialCleanupJobWhereInput) Filter(q *ConnectorCredentialCleanupJobQuery) (*ConnectorCredentialCleanupJobQuery, error) {
+	if i == nil {
+		return q, nil
+	}
+	p, err := i.P()
+	if err != nil {
+		if err == ErrEmptyConnectorCredentialCleanupJobWhereInput {
+			return q, nil
+		}
+		return nil, err
+	}
+	return q.Where(p), nil
+}
+
+// ErrEmptyConnectorCredentialCleanupJobWhereInput is returned in case the ConnectorCredentialCleanupJobWhereInput is empty.
+var ErrEmptyConnectorCredentialCleanupJobWhereInput = errors.New("ent: empty predicate ConnectorCredentialCleanupJobWhereInput")
+
+// P returns a predicate for filtering connectorcredentialcleanupjobs.
+// An error is returned if the input is empty or invalid.
+func (i *ConnectorCredentialCleanupJobWhereInput) P() (predicate.ConnectorCredentialCleanupJob, error) {
+	var predicates []predicate.ConnectorCredentialCleanupJob
+	if i.Not != nil {
+		p, err := i.Not.P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'not'", err)
+		}
+		predicates = append(predicates, connectorcredentialcleanupjob.Not(p))
+	}
+	switch n := len(i.Or); {
+	case n == 1:
+		p, err := i.Or[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'or'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		or := make([]predicate.ConnectorCredentialCleanupJob, 0, n)
+		for _, w := range i.Or {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'or'", err)
+			}
+			or = append(or, p)
+		}
+		predicates = append(predicates, connectorcredentialcleanupjob.Or(or...))
+	}
+	switch n := len(i.And); {
+	case n == 1:
+		p, err := i.And[0].P()
+		if err != nil {
+			return nil, fmt.Errorf("%w: field 'and'", err)
+		}
+		predicates = append(predicates, p)
+	case n > 1:
+		and := make([]predicate.ConnectorCredentialCleanupJob, 0, n)
+		for _, w := range i.And {
+			p, err := w.P()
+			if err != nil {
+				return nil, fmt.Errorf("%w: field 'and'", err)
+			}
+			and = append(and, p)
+		}
+		predicates = append(predicates, connectorcredentialcleanupjob.And(and...))
+	}
+	predicates = append(predicates, i.Predicates...)
+	if i.ID != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.IDEQ(*i.ID))
+	}
+	if i.IDNEQ != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.IDNEQ(*i.IDNEQ))
+	}
+	if len(i.IDIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.IDIn(i.IDIn...))
+	}
+	if len(i.IDNotIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.IDNotIn(i.IDNotIn...))
+	}
+	if i.IDGT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.IDGT(*i.IDGT))
+	}
+	if i.IDGTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.IDGTE(*i.IDGTE))
+	}
+	if i.IDLT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.IDLT(*i.IDLT))
+	}
+	if i.IDLTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.IDLTE(*i.IDLTE))
+	}
+	if i.CreatedAt != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CreatedAtEQ(*i.CreatedAt))
+	}
+	if i.CreatedAtNEQ != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CreatedAtNEQ(*i.CreatedAtNEQ))
+	}
+	if len(i.CreatedAtIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.CreatedAtIn(i.CreatedAtIn...))
+	}
+	if len(i.CreatedAtNotIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.CreatedAtNotIn(i.CreatedAtNotIn...))
+	}
+	if i.CreatedAtGT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CreatedAtGT(*i.CreatedAtGT))
+	}
+	if i.CreatedAtGTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CreatedAtGTE(*i.CreatedAtGTE))
+	}
+	if i.CreatedAtLT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CreatedAtLT(*i.CreatedAtLT))
+	}
+	if i.CreatedAtLTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CreatedAtLTE(*i.CreatedAtLTE))
+	}
+	if i.UpdatedAt != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.UpdatedAtEQ(*i.UpdatedAt))
+	}
+	if i.UpdatedAtNEQ != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.UpdatedAtNEQ(*i.UpdatedAtNEQ))
+	}
+	if len(i.UpdatedAtIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.UpdatedAtIn(i.UpdatedAtIn...))
+	}
+	if len(i.UpdatedAtNotIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.UpdatedAtNotIn(i.UpdatedAtNotIn...))
+	}
+	if i.UpdatedAtGT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.UpdatedAtGT(*i.UpdatedAtGT))
+	}
+	if i.UpdatedAtGTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.UpdatedAtGTE(*i.UpdatedAtGTE))
+	}
+	if i.UpdatedAtLT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.UpdatedAtLT(*i.UpdatedAtLT))
+	}
+	if i.UpdatedAtLTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.UpdatedAtLTE(*i.UpdatedAtLTE))
+	}
+	if i.ConnectionID != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectionIDEQ(*i.ConnectionID))
+	}
+	if i.ConnectionIDNEQ != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectionIDNEQ(*i.ConnectionIDNEQ))
+	}
+	if len(i.ConnectionIDIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectionIDIn(i.ConnectionIDIn...))
+	}
+	if len(i.ConnectionIDNotIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectionIDNotIn(i.ConnectionIDNotIn...))
+	}
+	if i.ConnectionIDGT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectionIDGT(*i.ConnectionIDGT))
+	}
+	if i.ConnectionIDGTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectionIDGTE(*i.ConnectionIDGTE))
+	}
+	if i.ConnectionIDLT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectionIDLT(*i.ConnectionIDLT))
+	}
+	if i.ConnectionIDLTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectionIDLTE(*i.ConnectionIDLTE))
+	}
+	if i.Connector != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectorEQ(*i.Connector))
+	}
+	if i.ConnectorNEQ != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectorNEQ(*i.ConnectorNEQ))
+	}
+	if len(i.ConnectorIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectorIn(i.ConnectorIn...))
+	}
+	if len(i.ConnectorNotIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectorNotIn(i.ConnectorNotIn...))
+	}
+	if i.ConnectorGT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectorGT(*i.ConnectorGT))
+	}
+	if i.ConnectorGTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectorGTE(*i.ConnectorGTE))
+	}
+	if i.ConnectorLT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectorLT(*i.ConnectorLT))
+	}
+	if i.ConnectorLTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectorLTE(*i.ConnectorLTE))
+	}
+	if i.ConnectorContains != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectorContains(*i.ConnectorContains))
+	}
+	if i.ConnectorHasPrefix != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectorHasPrefix(*i.ConnectorHasPrefix))
+	}
+	if i.ConnectorHasSuffix != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectorHasSuffix(*i.ConnectorHasSuffix))
+	}
+	if i.ConnectorEqualFold != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectorEqualFold(*i.ConnectorEqualFold))
+	}
+	if i.ConnectorContainsFold != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ConnectorContainsFold(*i.ConnectorContainsFold))
+	}
+	if i.ExpectedCredentialGeneration != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ExpectedCredentialGenerationEQ(*i.ExpectedCredentialGeneration))
+	}
+	if i.ExpectedCredentialGenerationNEQ != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ExpectedCredentialGenerationNEQ(*i.ExpectedCredentialGenerationNEQ))
+	}
+	if len(i.ExpectedCredentialGenerationIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.ExpectedCredentialGenerationIn(i.ExpectedCredentialGenerationIn...))
+	}
+	if len(i.ExpectedCredentialGenerationNotIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.ExpectedCredentialGenerationNotIn(i.ExpectedCredentialGenerationNotIn...))
+	}
+	if i.ExpectedCredentialGenerationGT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ExpectedCredentialGenerationGT(*i.ExpectedCredentialGenerationGT))
+	}
+	if i.ExpectedCredentialGenerationGTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ExpectedCredentialGenerationGTE(*i.ExpectedCredentialGenerationGTE))
+	}
+	if i.ExpectedCredentialGenerationLT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ExpectedCredentialGenerationLT(*i.ExpectedCredentialGenerationLT))
+	}
+	if i.ExpectedCredentialGenerationLTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ExpectedCredentialGenerationLTE(*i.ExpectedCredentialGenerationLTE))
+	}
+	if i.Status != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.StatusEQ(*i.Status))
+	}
+	if i.StatusNEQ != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.StatusNEQ(*i.StatusNEQ))
+	}
+	if len(i.StatusIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.StatusIn(i.StatusIn...))
+	}
+	if len(i.StatusNotIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.StatusNotIn(i.StatusNotIn...))
+	}
+	if i.StatusGT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.StatusGT(*i.StatusGT))
+	}
+	if i.StatusGTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.StatusGTE(*i.StatusGTE))
+	}
+	if i.StatusLT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.StatusLT(*i.StatusLT))
+	}
+	if i.StatusLTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.StatusLTE(*i.StatusLTE))
+	}
+	if i.StatusContains != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.StatusContains(*i.StatusContains))
+	}
+	if i.StatusHasPrefix != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.StatusHasPrefix(*i.StatusHasPrefix))
+	}
+	if i.StatusHasSuffix != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.StatusHasSuffix(*i.StatusHasSuffix))
+	}
+	if i.StatusEqualFold != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.StatusEqualFold(*i.StatusEqualFold))
+	}
+	if i.StatusContainsFold != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.StatusContainsFold(*i.StatusContainsFold))
+	}
+	if i.Attempts != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.AttemptsEQ(*i.Attempts))
+	}
+	if i.AttemptsNEQ != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.AttemptsNEQ(*i.AttemptsNEQ))
+	}
+	if len(i.AttemptsIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.AttemptsIn(i.AttemptsIn...))
+	}
+	if len(i.AttemptsNotIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.AttemptsNotIn(i.AttemptsNotIn...))
+	}
+	if i.AttemptsGT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.AttemptsGT(*i.AttemptsGT))
+	}
+	if i.AttemptsGTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.AttemptsGTE(*i.AttemptsGTE))
+	}
+	if i.AttemptsLT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.AttemptsLT(*i.AttemptsLT))
+	}
+	if i.AttemptsLTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.AttemptsLTE(*i.AttemptsLTE))
+	}
+	if i.NextAttemptAt != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.NextAttemptAtEQ(*i.NextAttemptAt))
+	}
+	if i.NextAttemptAtNEQ != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.NextAttemptAtNEQ(*i.NextAttemptAtNEQ))
+	}
+	if len(i.NextAttemptAtIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.NextAttemptAtIn(i.NextAttemptAtIn...))
+	}
+	if len(i.NextAttemptAtNotIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.NextAttemptAtNotIn(i.NextAttemptAtNotIn...))
+	}
+	if i.NextAttemptAtGT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.NextAttemptAtGT(*i.NextAttemptAtGT))
+	}
+	if i.NextAttemptAtGTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.NextAttemptAtGTE(*i.NextAttemptAtGTE))
+	}
+	if i.NextAttemptAtLT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.NextAttemptAtLT(*i.NextAttemptAtLT))
+	}
+	if i.NextAttemptAtLTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.NextAttemptAtLTE(*i.NextAttemptAtLTE))
+	}
+	if i.ClaimID != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimIDEQ(*i.ClaimID))
+	}
+	if i.ClaimIDNEQ != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimIDNEQ(*i.ClaimIDNEQ))
+	}
+	if len(i.ClaimIDIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimIDIn(i.ClaimIDIn...))
+	}
+	if len(i.ClaimIDNotIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimIDNotIn(i.ClaimIDNotIn...))
+	}
+	if i.ClaimIDGT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimIDGT(*i.ClaimIDGT))
+	}
+	if i.ClaimIDGTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimIDGTE(*i.ClaimIDGTE))
+	}
+	if i.ClaimIDLT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimIDLT(*i.ClaimIDLT))
+	}
+	if i.ClaimIDLTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimIDLTE(*i.ClaimIDLTE))
+	}
+	if i.ClaimIDIsNil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimIDIsNil())
+	}
+	if i.ClaimIDNotNil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimIDNotNil())
+	}
+	if i.ClaimedUntil != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimedUntilEQ(*i.ClaimedUntil))
+	}
+	if i.ClaimedUntilNEQ != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimedUntilNEQ(*i.ClaimedUntilNEQ))
+	}
+	if len(i.ClaimedUntilIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimedUntilIn(i.ClaimedUntilIn...))
+	}
+	if len(i.ClaimedUntilNotIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimedUntilNotIn(i.ClaimedUntilNotIn...))
+	}
+	if i.ClaimedUntilGT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimedUntilGT(*i.ClaimedUntilGT))
+	}
+	if i.ClaimedUntilGTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimedUntilGTE(*i.ClaimedUntilGTE))
+	}
+	if i.ClaimedUntilLT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimedUntilLT(*i.ClaimedUntilLT))
+	}
+	if i.ClaimedUntilLTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimedUntilLTE(*i.ClaimedUntilLTE))
+	}
+	if i.ClaimedUntilIsNil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimedUntilIsNil())
+	}
+	if i.ClaimedUntilNotNil {
+		predicates = append(predicates, connectorcredentialcleanupjob.ClaimedUntilNotNil())
+	}
+	if i.LastErrorCode != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeEQ(*i.LastErrorCode))
+	}
+	if i.LastErrorCodeNEQ != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeNEQ(*i.LastErrorCodeNEQ))
+	}
+	if len(i.LastErrorCodeIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeIn(i.LastErrorCodeIn...))
+	}
+	if len(i.LastErrorCodeNotIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeNotIn(i.LastErrorCodeNotIn...))
+	}
+	if i.LastErrorCodeGT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeGT(*i.LastErrorCodeGT))
+	}
+	if i.LastErrorCodeGTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeGTE(*i.LastErrorCodeGTE))
+	}
+	if i.LastErrorCodeLT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeLT(*i.LastErrorCodeLT))
+	}
+	if i.LastErrorCodeLTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeLTE(*i.LastErrorCodeLTE))
+	}
+	if i.LastErrorCodeContains != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeContains(*i.LastErrorCodeContains))
+	}
+	if i.LastErrorCodeHasPrefix != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeHasPrefix(*i.LastErrorCodeHasPrefix))
+	}
+	if i.LastErrorCodeHasSuffix != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeHasSuffix(*i.LastErrorCodeHasSuffix))
+	}
+	if i.LastErrorCodeIsNil {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeIsNil())
+	}
+	if i.LastErrorCodeNotNil {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeNotNil())
+	}
+	if i.LastErrorCodeEqualFold != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeEqualFold(*i.LastErrorCodeEqualFold))
+	}
+	if i.LastErrorCodeContainsFold != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.LastErrorCodeContainsFold(*i.LastErrorCodeContainsFold))
+	}
+	if i.CompletedAt != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CompletedAtEQ(*i.CompletedAt))
+	}
+	if i.CompletedAtNEQ != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CompletedAtNEQ(*i.CompletedAtNEQ))
+	}
+	if len(i.CompletedAtIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.CompletedAtIn(i.CompletedAtIn...))
+	}
+	if len(i.CompletedAtNotIn) > 0 {
+		predicates = append(predicates, connectorcredentialcleanupjob.CompletedAtNotIn(i.CompletedAtNotIn...))
+	}
+	if i.CompletedAtGT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CompletedAtGT(*i.CompletedAtGT))
+	}
+	if i.CompletedAtGTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CompletedAtGTE(*i.CompletedAtGTE))
+	}
+	if i.CompletedAtLT != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CompletedAtLT(*i.CompletedAtLT))
+	}
+	if i.CompletedAtLTE != nil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CompletedAtLTE(*i.CompletedAtLTE))
+	}
+	if i.CompletedAtIsNil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CompletedAtIsNil())
+	}
+	if i.CompletedAtNotNil {
+		predicates = append(predicates, connectorcredentialcleanupjob.CompletedAtNotNil())
+	}
+
+	switch len(predicates) {
+	case 0:
+		return nil, ErrEmptyConnectorCredentialCleanupJobWhereInput
+	case 1:
+		return predicates[0], nil
+	default:
+		return connectorcredentialcleanupjob.And(predicates...), nil
 	}
 }
 

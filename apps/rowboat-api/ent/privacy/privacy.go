@@ -639,6 +639,30 @@ func (f ConnectorAuditEventMutationRuleFunc) EvalMutation(ctx context.Context, m
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ConnectorAuditEventMutation", m)
 }
 
+// The ConnectorCredentialCleanupJobQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ConnectorCredentialCleanupJobQueryRuleFunc func(context.Context, *ent.ConnectorCredentialCleanupJobQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ConnectorCredentialCleanupJobQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConnectorCredentialCleanupJobQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ConnectorCredentialCleanupJobQuery", q)
+}
+
+// The ConnectorCredentialCleanupJobMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ConnectorCredentialCleanupJobMutationRuleFunc func(context.Context, *ent.ConnectorCredentialCleanupJobMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ConnectorCredentialCleanupJobMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ConnectorCredentialCleanupJobMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ConnectorCredentialCleanupJobMutation", m)
+}
+
 // The ConnectorRevocationJobQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type ConnectorRevocationJobQueryRuleFunc func(context.Context, *ent.ConnectorRevocationJobQuery) error
@@ -2038,6 +2062,8 @@ func queryFilter(q ent.Query) (Filter, error) {
 		return q.Filter(), nil
 	case *ent.ConnectorAuditEventQuery:
 		return q.Filter(), nil
+	case *ent.ConnectorCredentialCleanupJobQuery:
+		return q.Filter(), nil
 	case *ent.ConnectorRevocationJobQuery:
 		return q.Filter(), nil
 	case *ent.ConversationIntelligenceArtifactQuery:
@@ -2198,6 +2224,8 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 	case *ent.CommitmentEventMutation:
 		return m.Filter(), nil
 	case *ent.ConnectorAuditEventMutation:
+		return m.Filter(), nil
+	case *ent.ConnectorCredentialCleanupJobMutation:
 		return m.Filter(), nil
 	case *ent.ConnectorRevocationJobMutation:
 		return m.Filter(), nil

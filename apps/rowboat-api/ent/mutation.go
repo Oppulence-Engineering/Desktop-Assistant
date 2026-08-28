@@ -33,6 +33,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
@@ -124,6 +125,7 @@ const (
 	TypeCommitmentDependency              = "CommitmentDependency"
 	TypeCommitmentEvent                   = "CommitmentEvent"
 	TypeConnectorAuditEvent               = "ConnectorAuditEvent"
+	TypeConnectorCredentialCleanupJob     = "ConnectorCredentialCleanupJob"
 	TypeConnectorRevocationJob            = "ConnectorRevocationJob"
 	TypeConversationIntelligenceArtifact  = "ConversationIntelligenceArtifact"
 	TypeCreditLedger                      = "CreditLedger"
@@ -31592,6 +31594,1134 @@ func (m *ConnectorAuditEventMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown ConnectorAuditEvent edge %s", name)
+}
+
+// ConnectorCredentialCleanupJobMutation represents an operation that mutates the ConnectorCredentialCleanupJob nodes in the graph.
+type ConnectorCredentialCleanupJobMutation struct {
+	config
+	op                                Op
+	typ                               string
+	id                                *uuid.UUID
+	created_at                        *time.Time
+	updated_at                        *time.Time
+	connection_id                     *uuid.UUID
+	connector                         *string
+	expected_credential_generation    *int64
+	addexpected_credential_generation *int64
+	refresh_token_encrypted           *[]byte
+	status                            *string
+	attempts                          *int
+	addattempts                       *int
+	next_attempt_at                   *time.Time
+	claim_id                          *uuid.UUID
+	claimed_until                     *time.Time
+	last_error_code                   *string
+	completed_at                      *time.Time
+	clearedFields                     map[string]struct{}
+	done                              bool
+	oldValue                          func(context.Context) (*ConnectorCredentialCleanupJob, error)
+	predicates                        []predicate.ConnectorCredentialCleanupJob
+}
+
+var _ ent.Mutation = (*ConnectorCredentialCleanupJobMutation)(nil)
+
+// connectorcredentialcleanupjobOption allows management of the mutation configuration using functional options.
+type connectorcredentialcleanupjobOption func(*ConnectorCredentialCleanupJobMutation)
+
+// newConnectorCredentialCleanupJobMutation creates new mutation for the ConnectorCredentialCleanupJob entity.
+func newConnectorCredentialCleanupJobMutation(c config, op Op, opts ...connectorcredentialcleanupjobOption) *ConnectorCredentialCleanupJobMutation {
+	m := &ConnectorCredentialCleanupJobMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeConnectorCredentialCleanupJob,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withConnectorCredentialCleanupJobID sets the ID field of the mutation.
+func withConnectorCredentialCleanupJobID(id uuid.UUID) connectorcredentialcleanupjobOption {
+	return func(m *ConnectorCredentialCleanupJobMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ConnectorCredentialCleanupJob
+		)
+		m.oldValue = func(ctx context.Context) (*ConnectorCredentialCleanupJob, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ConnectorCredentialCleanupJob.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withConnectorCredentialCleanupJob sets the old ConnectorCredentialCleanupJob of the mutation.
+func withConnectorCredentialCleanupJob(node *ConnectorCredentialCleanupJob) connectorcredentialcleanupjobOption {
+	return func(m *ConnectorCredentialCleanupJobMutation) {
+		m.oldValue = func(context.Context) (*ConnectorCredentialCleanupJob, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ConnectorCredentialCleanupJobMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ConnectorCredentialCleanupJobMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ConnectorCredentialCleanupJob entities.
+func (m *ConnectorCredentialCleanupJobMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ConnectorCredentialCleanupJobMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ConnectorCredentialCleanupJob.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ConnectorCredentialCleanupJobMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ConnectorCredentialCleanupJob entity.
+// If the ConnectorCredentialCleanupJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialCleanupJobMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ConnectorCredentialCleanupJobMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ConnectorCredentialCleanupJobMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ConnectorCredentialCleanupJob entity.
+// If the ConnectorCredentialCleanupJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialCleanupJobMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ConnectorCredentialCleanupJobMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetConnectionID sets the "connection_id" field.
+func (m *ConnectorCredentialCleanupJobMutation) SetConnectionID(u uuid.UUID) {
+	m.connection_id = &u
+}
+
+// ConnectionID returns the value of the "connection_id" field in the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) ConnectionID() (r uuid.UUID, exists bool) {
+	v := m.connection_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConnectionID returns the old "connection_id" field's value of the ConnectorCredentialCleanupJob entity.
+// If the ConnectorCredentialCleanupJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialCleanupJobMutation) OldConnectionID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConnectionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConnectionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConnectionID: %w", err)
+	}
+	return oldValue.ConnectionID, nil
+}
+
+// ResetConnectionID resets all changes to the "connection_id" field.
+func (m *ConnectorCredentialCleanupJobMutation) ResetConnectionID() {
+	m.connection_id = nil
+}
+
+// SetConnector sets the "connector" field.
+func (m *ConnectorCredentialCleanupJobMutation) SetConnector(s string) {
+	m.connector = &s
+}
+
+// Connector returns the value of the "connector" field in the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) Connector() (r string, exists bool) {
+	v := m.connector
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConnector returns the old "connector" field's value of the ConnectorCredentialCleanupJob entity.
+// If the ConnectorCredentialCleanupJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialCleanupJobMutation) OldConnector(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConnector is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConnector requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConnector: %w", err)
+	}
+	return oldValue.Connector, nil
+}
+
+// ResetConnector resets all changes to the "connector" field.
+func (m *ConnectorCredentialCleanupJobMutation) ResetConnector() {
+	m.connector = nil
+}
+
+// SetExpectedCredentialGeneration sets the "expected_credential_generation" field.
+func (m *ConnectorCredentialCleanupJobMutation) SetExpectedCredentialGeneration(i int64) {
+	m.expected_credential_generation = &i
+	m.addexpected_credential_generation = nil
+}
+
+// ExpectedCredentialGeneration returns the value of the "expected_credential_generation" field in the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) ExpectedCredentialGeneration() (r int64, exists bool) {
+	v := m.expected_credential_generation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpectedCredentialGeneration returns the old "expected_credential_generation" field's value of the ConnectorCredentialCleanupJob entity.
+// If the ConnectorCredentialCleanupJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialCleanupJobMutation) OldExpectedCredentialGeneration(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpectedCredentialGeneration is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpectedCredentialGeneration requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpectedCredentialGeneration: %w", err)
+	}
+	return oldValue.ExpectedCredentialGeneration, nil
+}
+
+// AddExpectedCredentialGeneration adds i to the "expected_credential_generation" field.
+func (m *ConnectorCredentialCleanupJobMutation) AddExpectedCredentialGeneration(i int64) {
+	if m.addexpected_credential_generation != nil {
+		*m.addexpected_credential_generation += i
+	} else {
+		m.addexpected_credential_generation = &i
+	}
+}
+
+// AddedExpectedCredentialGeneration returns the value that was added to the "expected_credential_generation" field in this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) AddedExpectedCredentialGeneration() (r int64, exists bool) {
+	v := m.addexpected_credential_generation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetExpectedCredentialGeneration resets all changes to the "expected_credential_generation" field.
+func (m *ConnectorCredentialCleanupJobMutation) ResetExpectedCredentialGeneration() {
+	m.expected_credential_generation = nil
+	m.addexpected_credential_generation = nil
+}
+
+// SetRefreshTokenEncrypted sets the "refresh_token_encrypted" field.
+func (m *ConnectorCredentialCleanupJobMutation) SetRefreshTokenEncrypted(b []byte) {
+	m.refresh_token_encrypted = &b
+}
+
+// RefreshTokenEncrypted returns the value of the "refresh_token_encrypted" field in the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) RefreshTokenEncrypted() (r []byte, exists bool) {
+	v := m.refresh_token_encrypted
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRefreshTokenEncrypted returns the old "refresh_token_encrypted" field's value of the ConnectorCredentialCleanupJob entity.
+// If the ConnectorCredentialCleanupJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialCleanupJobMutation) OldRefreshTokenEncrypted(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRefreshTokenEncrypted is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRefreshTokenEncrypted requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRefreshTokenEncrypted: %w", err)
+	}
+	return oldValue.RefreshTokenEncrypted, nil
+}
+
+// ResetRefreshTokenEncrypted resets all changes to the "refresh_token_encrypted" field.
+func (m *ConnectorCredentialCleanupJobMutation) ResetRefreshTokenEncrypted() {
+	m.refresh_token_encrypted = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *ConnectorCredentialCleanupJobMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the ConnectorCredentialCleanupJob entity.
+// If the ConnectorCredentialCleanupJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialCleanupJobMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *ConnectorCredentialCleanupJobMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetAttempts sets the "attempts" field.
+func (m *ConnectorCredentialCleanupJobMutation) SetAttempts(i int) {
+	m.attempts = &i
+	m.addattempts = nil
+}
+
+// Attempts returns the value of the "attempts" field in the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) Attempts() (r int, exists bool) {
+	v := m.attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAttempts returns the old "attempts" field's value of the ConnectorCredentialCleanupJob entity.
+// If the ConnectorCredentialCleanupJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialCleanupJobMutation) OldAttempts(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAttempts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAttempts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAttempts: %w", err)
+	}
+	return oldValue.Attempts, nil
+}
+
+// AddAttempts adds i to the "attempts" field.
+func (m *ConnectorCredentialCleanupJobMutation) AddAttempts(i int) {
+	if m.addattempts != nil {
+		*m.addattempts += i
+	} else {
+		m.addattempts = &i
+	}
+}
+
+// AddedAttempts returns the value that was added to the "attempts" field in this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) AddedAttempts() (r int, exists bool) {
+	v := m.addattempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAttempts resets all changes to the "attempts" field.
+func (m *ConnectorCredentialCleanupJobMutation) ResetAttempts() {
+	m.attempts = nil
+	m.addattempts = nil
+}
+
+// SetNextAttemptAt sets the "next_attempt_at" field.
+func (m *ConnectorCredentialCleanupJobMutation) SetNextAttemptAt(t time.Time) {
+	m.next_attempt_at = &t
+}
+
+// NextAttemptAt returns the value of the "next_attempt_at" field in the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) NextAttemptAt() (r time.Time, exists bool) {
+	v := m.next_attempt_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNextAttemptAt returns the old "next_attempt_at" field's value of the ConnectorCredentialCleanupJob entity.
+// If the ConnectorCredentialCleanupJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialCleanupJobMutation) OldNextAttemptAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNextAttemptAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNextAttemptAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNextAttemptAt: %w", err)
+	}
+	return oldValue.NextAttemptAt, nil
+}
+
+// ResetNextAttemptAt resets all changes to the "next_attempt_at" field.
+func (m *ConnectorCredentialCleanupJobMutation) ResetNextAttemptAt() {
+	m.next_attempt_at = nil
+}
+
+// SetClaimID sets the "claim_id" field.
+func (m *ConnectorCredentialCleanupJobMutation) SetClaimID(u uuid.UUID) {
+	m.claim_id = &u
+}
+
+// ClaimID returns the value of the "claim_id" field in the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) ClaimID() (r uuid.UUID, exists bool) {
+	v := m.claim_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldClaimID returns the old "claim_id" field's value of the ConnectorCredentialCleanupJob entity.
+// If the ConnectorCredentialCleanupJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialCleanupJobMutation) OldClaimID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldClaimID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldClaimID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClaimID: %w", err)
+	}
+	return oldValue.ClaimID, nil
+}
+
+// ClearClaimID clears the value of the "claim_id" field.
+func (m *ConnectorCredentialCleanupJobMutation) ClearClaimID() {
+	m.claim_id = nil
+	m.clearedFields[connectorcredentialcleanupjob.FieldClaimID] = struct{}{}
+}
+
+// ClaimIDCleared returns if the "claim_id" field was cleared in this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) ClaimIDCleared() bool {
+	_, ok := m.clearedFields[connectorcredentialcleanupjob.FieldClaimID]
+	return ok
+}
+
+// ResetClaimID resets all changes to the "claim_id" field.
+func (m *ConnectorCredentialCleanupJobMutation) ResetClaimID() {
+	m.claim_id = nil
+	delete(m.clearedFields, connectorcredentialcleanupjob.FieldClaimID)
+}
+
+// SetClaimedUntil sets the "claimed_until" field.
+func (m *ConnectorCredentialCleanupJobMutation) SetClaimedUntil(t time.Time) {
+	m.claimed_until = &t
+}
+
+// ClaimedUntil returns the value of the "claimed_until" field in the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) ClaimedUntil() (r time.Time, exists bool) {
+	v := m.claimed_until
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldClaimedUntil returns the old "claimed_until" field's value of the ConnectorCredentialCleanupJob entity.
+// If the ConnectorCredentialCleanupJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialCleanupJobMutation) OldClaimedUntil(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldClaimedUntil is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldClaimedUntil requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClaimedUntil: %w", err)
+	}
+	return oldValue.ClaimedUntil, nil
+}
+
+// ClearClaimedUntil clears the value of the "claimed_until" field.
+func (m *ConnectorCredentialCleanupJobMutation) ClearClaimedUntil() {
+	m.claimed_until = nil
+	m.clearedFields[connectorcredentialcleanupjob.FieldClaimedUntil] = struct{}{}
+}
+
+// ClaimedUntilCleared returns if the "claimed_until" field was cleared in this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) ClaimedUntilCleared() bool {
+	_, ok := m.clearedFields[connectorcredentialcleanupjob.FieldClaimedUntil]
+	return ok
+}
+
+// ResetClaimedUntil resets all changes to the "claimed_until" field.
+func (m *ConnectorCredentialCleanupJobMutation) ResetClaimedUntil() {
+	m.claimed_until = nil
+	delete(m.clearedFields, connectorcredentialcleanupjob.FieldClaimedUntil)
+}
+
+// SetLastErrorCode sets the "last_error_code" field.
+func (m *ConnectorCredentialCleanupJobMutation) SetLastErrorCode(s string) {
+	m.last_error_code = &s
+}
+
+// LastErrorCode returns the value of the "last_error_code" field in the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) LastErrorCode() (r string, exists bool) {
+	v := m.last_error_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastErrorCode returns the old "last_error_code" field's value of the ConnectorCredentialCleanupJob entity.
+// If the ConnectorCredentialCleanupJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialCleanupJobMutation) OldLastErrorCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastErrorCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastErrorCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastErrorCode: %w", err)
+	}
+	return oldValue.LastErrorCode, nil
+}
+
+// ClearLastErrorCode clears the value of the "last_error_code" field.
+func (m *ConnectorCredentialCleanupJobMutation) ClearLastErrorCode() {
+	m.last_error_code = nil
+	m.clearedFields[connectorcredentialcleanupjob.FieldLastErrorCode] = struct{}{}
+}
+
+// LastErrorCodeCleared returns if the "last_error_code" field was cleared in this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) LastErrorCodeCleared() bool {
+	_, ok := m.clearedFields[connectorcredentialcleanupjob.FieldLastErrorCode]
+	return ok
+}
+
+// ResetLastErrorCode resets all changes to the "last_error_code" field.
+func (m *ConnectorCredentialCleanupJobMutation) ResetLastErrorCode() {
+	m.last_error_code = nil
+	delete(m.clearedFields, connectorcredentialcleanupjob.FieldLastErrorCode)
+}
+
+// SetCompletedAt sets the "completed_at" field.
+func (m *ConnectorCredentialCleanupJobMutation) SetCompletedAt(t time.Time) {
+	m.completed_at = &t
+}
+
+// CompletedAt returns the value of the "completed_at" field in the mutation.
+func (m *ConnectorCredentialCleanupJobMutation) CompletedAt() (r time.Time, exists bool) {
+	v := m.completed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompletedAt returns the old "completed_at" field's value of the ConnectorCredentialCleanupJob entity.
+// If the ConnectorCredentialCleanupJob object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialCleanupJobMutation) OldCompletedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompletedAt: %w", err)
+	}
+	return oldValue.CompletedAt, nil
+}
+
+// ClearCompletedAt clears the value of the "completed_at" field.
+func (m *ConnectorCredentialCleanupJobMutation) ClearCompletedAt() {
+	m.completed_at = nil
+	m.clearedFields[connectorcredentialcleanupjob.FieldCompletedAt] = struct{}{}
+}
+
+// CompletedAtCleared returns if the "completed_at" field was cleared in this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) CompletedAtCleared() bool {
+	_, ok := m.clearedFields[connectorcredentialcleanupjob.FieldCompletedAt]
+	return ok
+}
+
+// ResetCompletedAt resets all changes to the "completed_at" field.
+func (m *ConnectorCredentialCleanupJobMutation) ResetCompletedAt() {
+	m.completed_at = nil
+	delete(m.clearedFields, connectorcredentialcleanupjob.FieldCompletedAt)
+}
+
+// Where appends a list predicates to the ConnectorCredentialCleanupJobMutation builder.
+func (m *ConnectorCredentialCleanupJobMutation) Where(ps ...predicate.ConnectorCredentialCleanupJob) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ConnectorCredentialCleanupJobMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ConnectorCredentialCleanupJobMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ConnectorCredentialCleanupJob, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ConnectorCredentialCleanupJobMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ConnectorCredentialCleanupJobMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ConnectorCredentialCleanupJob).
+func (m *ConnectorCredentialCleanupJobMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ConnectorCredentialCleanupJobMutation) Fields() []string {
+	fields := make([]string, 0, 13)
+	if m.created_at != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldUpdatedAt)
+	}
+	if m.connection_id != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldConnectionID)
+	}
+	if m.connector != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldConnector)
+	}
+	if m.expected_credential_generation != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldExpectedCredentialGeneration)
+	}
+	if m.refresh_token_encrypted != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldRefreshTokenEncrypted)
+	}
+	if m.status != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldStatus)
+	}
+	if m.attempts != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldAttempts)
+	}
+	if m.next_attempt_at != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldNextAttemptAt)
+	}
+	if m.claim_id != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldClaimID)
+	}
+	if m.claimed_until != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldClaimedUntil)
+	}
+	if m.last_error_code != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldLastErrorCode)
+	}
+	if m.completed_at != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldCompletedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ConnectorCredentialCleanupJobMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case connectorcredentialcleanupjob.FieldCreatedAt:
+		return m.CreatedAt()
+	case connectorcredentialcleanupjob.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case connectorcredentialcleanupjob.FieldConnectionID:
+		return m.ConnectionID()
+	case connectorcredentialcleanupjob.FieldConnector:
+		return m.Connector()
+	case connectorcredentialcleanupjob.FieldExpectedCredentialGeneration:
+		return m.ExpectedCredentialGeneration()
+	case connectorcredentialcleanupjob.FieldRefreshTokenEncrypted:
+		return m.RefreshTokenEncrypted()
+	case connectorcredentialcleanupjob.FieldStatus:
+		return m.Status()
+	case connectorcredentialcleanupjob.FieldAttempts:
+		return m.Attempts()
+	case connectorcredentialcleanupjob.FieldNextAttemptAt:
+		return m.NextAttemptAt()
+	case connectorcredentialcleanupjob.FieldClaimID:
+		return m.ClaimID()
+	case connectorcredentialcleanupjob.FieldClaimedUntil:
+		return m.ClaimedUntil()
+	case connectorcredentialcleanupjob.FieldLastErrorCode:
+		return m.LastErrorCode()
+	case connectorcredentialcleanupjob.FieldCompletedAt:
+		return m.CompletedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ConnectorCredentialCleanupJobMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case connectorcredentialcleanupjob.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case connectorcredentialcleanupjob.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case connectorcredentialcleanupjob.FieldConnectionID:
+		return m.OldConnectionID(ctx)
+	case connectorcredentialcleanupjob.FieldConnector:
+		return m.OldConnector(ctx)
+	case connectorcredentialcleanupjob.FieldExpectedCredentialGeneration:
+		return m.OldExpectedCredentialGeneration(ctx)
+	case connectorcredentialcleanupjob.FieldRefreshTokenEncrypted:
+		return m.OldRefreshTokenEncrypted(ctx)
+	case connectorcredentialcleanupjob.FieldStatus:
+		return m.OldStatus(ctx)
+	case connectorcredentialcleanupjob.FieldAttempts:
+		return m.OldAttempts(ctx)
+	case connectorcredentialcleanupjob.FieldNextAttemptAt:
+		return m.OldNextAttemptAt(ctx)
+	case connectorcredentialcleanupjob.FieldClaimID:
+		return m.OldClaimID(ctx)
+	case connectorcredentialcleanupjob.FieldClaimedUntil:
+		return m.OldClaimedUntil(ctx)
+	case connectorcredentialcleanupjob.FieldLastErrorCode:
+		return m.OldLastErrorCode(ctx)
+	case connectorcredentialcleanupjob.FieldCompletedAt:
+		return m.OldCompletedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown ConnectorCredentialCleanupJob field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConnectorCredentialCleanupJobMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case connectorcredentialcleanupjob.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case connectorcredentialcleanupjob.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case connectorcredentialcleanupjob.FieldConnectionID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConnectionID(v)
+		return nil
+	case connectorcredentialcleanupjob.FieldConnector:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConnector(v)
+		return nil
+	case connectorcredentialcleanupjob.FieldExpectedCredentialGeneration:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpectedCredentialGeneration(v)
+		return nil
+	case connectorcredentialcleanupjob.FieldRefreshTokenEncrypted:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRefreshTokenEncrypted(v)
+		return nil
+	case connectorcredentialcleanupjob.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case connectorcredentialcleanupjob.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAttempts(v)
+		return nil
+	case connectorcredentialcleanupjob.FieldNextAttemptAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNextAttemptAt(v)
+		return nil
+	case connectorcredentialcleanupjob.FieldClaimID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetClaimID(v)
+		return nil
+	case connectorcredentialcleanupjob.FieldClaimedUntil:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetClaimedUntil(v)
+		return nil
+	case connectorcredentialcleanupjob.FieldLastErrorCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastErrorCode(v)
+		return nil
+	case connectorcredentialcleanupjob.FieldCompletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompletedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ConnectorCredentialCleanupJob field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) AddedFields() []string {
+	var fields []string
+	if m.addexpected_credential_generation != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldExpectedCredentialGeneration)
+	}
+	if m.addattempts != nil {
+		fields = append(fields, connectorcredentialcleanupjob.FieldAttempts)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ConnectorCredentialCleanupJobMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case connectorcredentialcleanupjob.FieldExpectedCredentialGeneration:
+		return m.AddedExpectedCredentialGeneration()
+	case connectorcredentialcleanupjob.FieldAttempts:
+		return m.AddedAttempts()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConnectorCredentialCleanupJobMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case connectorcredentialcleanupjob.FieldExpectedCredentialGeneration:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddExpectedCredentialGeneration(v)
+		return nil
+	case connectorcredentialcleanupjob.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAttempts(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ConnectorCredentialCleanupJob numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ConnectorCredentialCleanupJobMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(connectorcredentialcleanupjob.FieldClaimID) {
+		fields = append(fields, connectorcredentialcleanupjob.FieldClaimID)
+	}
+	if m.FieldCleared(connectorcredentialcleanupjob.FieldClaimedUntil) {
+		fields = append(fields, connectorcredentialcleanupjob.FieldClaimedUntil)
+	}
+	if m.FieldCleared(connectorcredentialcleanupjob.FieldLastErrorCode) {
+		fields = append(fields, connectorcredentialcleanupjob.FieldLastErrorCode)
+	}
+	if m.FieldCleared(connectorcredentialcleanupjob.FieldCompletedAt) {
+		fields = append(fields, connectorcredentialcleanupjob.FieldCompletedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ConnectorCredentialCleanupJobMutation) ClearField(name string) error {
+	switch name {
+	case connectorcredentialcleanupjob.FieldClaimID:
+		m.ClearClaimID()
+		return nil
+	case connectorcredentialcleanupjob.FieldClaimedUntil:
+		m.ClearClaimedUntil()
+		return nil
+	case connectorcredentialcleanupjob.FieldLastErrorCode:
+		m.ClearLastErrorCode()
+		return nil
+	case connectorcredentialcleanupjob.FieldCompletedAt:
+		m.ClearCompletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ConnectorCredentialCleanupJob nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ConnectorCredentialCleanupJobMutation) ResetField(name string) error {
+	switch name {
+	case connectorcredentialcleanupjob.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case connectorcredentialcleanupjob.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case connectorcredentialcleanupjob.FieldConnectionID:
+		m.ResetConnectionID()
+		return nil
+	case connectorcredentialcleanupjob.FieldConnector:
+		m.ResetConnector()
+		return nil
+	case connectorcredentialcleanupjob.FieldExpectedCredentialGeneration:
+		m.ResetExpectedCredentialGeneration()
+		return nil
+	case connectorcredentialcleanupjob.FieldRefreshTokenEncrypted:
+		m.ResetRefreshTokenEncrypted()
+		return nil
+	case connectorcredentialcleanupjob.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case connectorcredentialcleanupjob.FieldAttempts:
+		m.ResetAttempts()
+		return nil
+	case connectorcredentialcleanupjob.FieldNextAttemptAt:
+		m.ResetNextAttemptAt()
+		return nil
+	case connectorcredentialcleanupjob.FieldClaimID:
+		m.ResetClaimID()
+		return nil
+	case connectorcredentialcleanupjob.FieldClaimedUntil:
+		m.ResetClaimedUntil()
+		return nil
+	case connectorcredentialcleanupjob.FieldLastErrorCode:
+		m.ResetLastErrorCode()
+		return nil
+	case connectorcredentialcleanupjob.FieldCompletedAt:
+		m.ResetCompletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ConnectorCredentialCleanupJob field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ConnectorCredentialCleanupJobMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ConnectorCredentialCleanupJobMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown ConnectorCredentialCleanupJob unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ConnectorCredentialCleanupJobMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown ConnectorCredentialCleanupJob edge %s", name)
 }
 
 // ConnectorRevocationJobMutation represents an operation that mutates the ConnectorRevocationJob nodes in the graph.

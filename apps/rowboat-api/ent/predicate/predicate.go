@@ -72,6 +72,9 @@ type CommitmentEvent func(*sql.Selector)
 // ConnectorAuditEvent is the predicate function for connectorauditevent builders.
 type ConnectorAuditEvent func(*sql.Selector)
 
+// ConnectorCredentialCleanupJob is the predicate function for connectorcredentialcleanupjob builders.
+type ConnectorCredentialCleanupJob func(*sql.Selector)
+
 // ConnectorRevocationJob is the predicate function for connectorrevocationjob builders.
 type ConnectorRevocationJob func(*sql.Selector)
 

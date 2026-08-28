@@ -39,6 +39,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
@@ -145,6 +146,8 @@ type Client struct {
 	CommitmentEvent *CommitmentEventClient
 	// ConnectorAuditEvent is the client for interacting with the ConnectorAuditEvent builders.
 	ConnectorAuditEvent *ConnectorAuditEventClient
+	// ConnectorCredentialCleanupJob is the client for interacting with the ConnectorCredentialCleanupJob builders.
+	ConnectorCredentialCleanupJob *ConnectorCredentialCleanupJobClient
 	// ConnectorRevocationJob is the client for interacting with the ConnectorRevocationJob builders.
 	ConnectorRevocationJob *ConnectorRevocationJobClient
 	// ConversationIntelligenceArtifact is the client for interacting with the ConversationIntelligenceArtifact builders.
@@ -293,6 +296,7 @@ func (c *Client) init() {
 	c.CommitmentDependency = NewCommitmentDependencyClient(c.config)
 	c.CommitmentEvent = NewCommitmentEventClient(c.config)
 	c.ConnectorAuditEvent = NewConnectorAuditEventClient(c.config)
+	c.ConnectorCredentialCleanupJob = NewConnectorCredentialCleanupJobClient(c.config)
 	c.ConnectorRevocationJob = NewConnectorRevocationJobClient(c.config)
 	c.ConversationIntelligenceArtifact = NewConversationIntelligenceArtifactClient(c.config)
 	c.CreditLedger = NewCreditLedgerClient(c.config)
@@ -500,6 +504,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		CommitmentDependency:              NewCommitmentDependencyClient(cfg),
 		CommitmentEvent:                   NewCommitmentEventClient(cfg),
 		ConnectorAuditEvent:               NewConnectorAuditEventClient(cfg),
+		ConnectorCredentialCleanupJob:     NewConnectorCredentialCleanupJobClient(cfg),
 		ConnectorRevocationJob:            NewConnectorRevocationJobClient(cfg),
 		ConversationIntelligenceArtifact:  NewConversationIntelligenceArtifactClient(cfg),
 		CreditLedger:                      NewCreditLedgerClient(cfg),
@@ -596,6 +601,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		CommitmentDependency:              NewCommitmentDependencyClient(cfg),
 		CommitmentEvent:                   NewCommitmentEventClient(cfg),
 		ConnectorAuditEvent:               NewConnectorAuditEventClient(cfg),
+		ConnectorCredentialCleanupJob:     NewConnectorCredentialCleanupJobClient(cfg),
 		ConnectorRevocationJob:            NewConnectorRevocationJobClient(cfg),
 		ConversationIntelligenceArtifact:  NewConversationIntelligenceArtifactClient(cfg),
 		CreditLedger:                      NewCreditLedgerClient(cfg),
@@ -686,8 +692,9 @@ func (c *Client) Use(hooks ...Hook) {
 		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
 		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
 		c.CommitmentDependency, c.CommitmentEvent, c.ConnectorAuditEvent,
-		c.ConnectorRevocationJob, c.ConversationIntelligenceArtifact, c.CreditLedger,
-		c.Entity, c.EntityIdentifier, c.EntityResourceRef, c.GoogleWatch, c.LLMUsage,
+		c.ConnectorCredentialCleanupJob, c.ConnectorRevocationJob,
+		c.ConversationIntelligenceArtifact, c.CreditLedger, c.Entity,
+		c.EntityIdentifier, c.EntityResourceRef, c.GoogleWatch, c.LLMUsage,
 		c.LLMUsageHistory, c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache,
 		c.MailMessageMeta, c.MailSignal, c.MailThread, c.MeetingMinuteUsage,
 		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending, c.Person,
@@ -719,8 +726,9 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
 		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
 		c.CommitmentDependency, c.CommitmentEvent, c.ConnectorAuditEvent,
-		c.ConnectorRevocationJob, c.ConversationIntelligenceArtifact, c.CreditLedger,
-		c.Entity, c.EntityIdentifier, c.EntityResourceRef, c.GoogleWatch, c.LLMUsage,
+		c.ConnectorCredentialCleanupJob, c.ConnectorRevocationJob,
+		c.ConversationIntelligenceArtifact, c.CreditLedger, c.Entity,
+		c.EntityIdentifier, c.EntityResourceRef, c.GoogleWatch, c.LLMUsage,
 		c.LLMUsageHistory, c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache,
 		c.MailMessageMeta, c.MailSignal, c.MailThread, c.MeetingMinuteUsage,
 		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending, c.Person,
@@ -789,6 +797,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.CommitmentEvent.mutate(ctx, m)
 	case *ConnectorAuditEventMutation:
 		return c.ConnectorAuditEvent.mutate(ctx, m)
+	case *ConnectorCredentialCleanupJobMutation:
+		return c.ConnectorCredentialCleanupJob.mutate(ctx, m)
 	case *ConnectorRevocationJobMutation:
 		return c.ConnectorRevocationJob.mutate(ctx, m)
 	case *ConversationIntelligenceArtifactMutation:
@@ -4777,6 +4787,139 @@ func (c *ConnectorAuditEventClient) mutate(ctx context.Context, m *ConnectorAudi
 		return (&ConnectorAuditEventDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown ConnectorAuditEvent mutation op: %q", m.Op())
+	}
+}
+
+// ConnectorCredentialCleanupJobClient is a client for the ConnectorCredentialCleanupJob schema.
+type ConnectorCredentialCleanupJobClient struct {
+	config
+}
+
+// NewConnectorCredentialCleanupJobClient returns a client for the ConnectorCredentialCleanupJob from the given config.
+func NewConnectorCredentialCleanupJobClient(c config) *ConnectorCredentialCleanupJobClient {
+	return &ConnectorCredentialCleanupJobClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `connectorcredentialcleanupjob.Hooks(f(g(h())))`.
+func (c *ConnectorCredentialCleanupJobClient) Use(hooks ...Hook) {
+	c.hooks.ConnectorCredentialCleanupJob = append(c.hooks.ConnectorCredentialCleanupJob, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `connectorcredentialcleanupjob.Intercept(f(g(h())))`.
+func (c *ConnectorCredentialCleanupJobClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ConnectorCredentialCleanupJob = append(c.inters.ConnectorCredentialCleanupJob, interceptors...)
+}
+
+// Create returns a builder for creating a ConnectorCredentialCleanupJob entity.
+func (c *ConnectorCredentialCleanupJobClient) Create() *ConnectorCredentialCleanupJobCreate {
+	mutation := newConnectorCredentialCleanupJobMutation(c.config, OpCreate)
+	return &ConnectorCredentialCleanupJobCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ConnectorCredentialCleanupJob entities.
+func (c *ConnectorCredentialCleanupJobClient) CreateBulk(builders ...*ConnectorCredentialCleanupJobCreate) *ConnectorCredentialCleanupJobCreateBulk {
+	return &ConnectorCredentialCleanupJobCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ConnectorCredentialCleanupJobClient) MapCreateBulk(slice any, setFunc func(*ConnectorCredentialCleanupJobCreate, int)) *ConnectorCredentialCleanupJobCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ConnectorCredentialCleanupJobCreateBulk{err: fmt.Errorf("calling to ConnectorCredentialCleanupJobClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ConnectorCredentialCleanupJobCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ConnectorCredentialCleanupJobCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ConnectorCredentialCleanupJob.
+func (c *ConnectorCredentialCleanupJobClient) Update() *ConnectorCredentialCleanupJobUpdate {
+	mutation := newConnectorCredentialCleanupJobMutation(c.config, OpUpdate)
+	return &ConnectorCredentialCleanupJobUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ConnectorCredentialCleanupJobClient) UpdateOne(_m *ConnectorCredentialCleanupJob) *ConnectorCredentialCleanupJobUpdateOne {
+	mutation := newConnectorCredentialCleanupJobMutation(c.config, OpUpdateOne, withConnectorCredentialCleanupJob(_m))
+	return &ConnectorCredentialCleanupJobUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ConnectorCredentialCleanupJobClient) UpdateOneID(id uuid.UUID) *ConnectorCredentialCleanupJobUpdateOne {
+	mutation := newConnectorCredentialCleanupJobMutation(c.config, OpUpdateOne, withConnectorCredentialCleanupJobID(id))
+	return &ConnectorCredentialCleanupJobUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ConnectorCredentialCleanupJob.
+func (c *ConnectorCredentialCleanupJobClient) Delete() *ConnectorCredentialCleanupJobDelete {
+	mutation := newConnectorCredentialCleanupJobMutation(c.config, OpDelete)
+	return &ConnectorCredentialCleanupJobDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ConnectorCredentialCleanupJobClient) DeleteOne(_m *ConnectorCredentialCleanupJob) *ConnectorCredentialCleanupJobDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ConnectorCredentialCleanupJobClient) DeleteOneID(id uuid.UUID) *ConnectorCredentialCleanupJobDeleteOne {
+	builder := c.Delete().Where(connectorcredentialcleanupjob.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ConnectorCredentialCleanupJobDeleteOne{builder}
+}
+
+// Query returns a query builder for ConnectorCredentialCleanupJob.
+func (c *ConnectorCredentialCleanupJobClient) Query() *ConnectorCredentialCleanupJobQuery {
+	return &ConnectorCredentialCleanupJobQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeConnectorCredentialCleanupJob},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ConnectorCredentialCleanupJob entity by its id.
+func (c *ConnectorCredentialCleanupJobClient) Get(ctx context.Context, id uuid.UUID) (*ConnectorCredentialCleanupJob, error) {
+	return c.Query().Where(connectorcredentialcleanupjob.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ConnectorCredentialCleanupJobClient) GetX(ctx context.Context, id uuid.UUID) *ConnectorCredentialCleanupJob {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *ConnectorCredentialCleanupJobClient) Hooks() []Hook {
+	return c.hooks.ConnectorCredentialCleanupJob
+}
+
+// Interceptors returns the client interceptors.
+func (c *ConnectorCredentialCleanupJobClient) Interceptors() []Interceptor {
+	return c.inters.ConnectorCredentialCleanupJob
+}
+
+func (c *ConnectorCredentialCleanupJobClient) mutate(ctx context.Context, m *ConnectorCredentialCleanupJobMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ConnectorCredentialCleanupJobCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ConnectorCredentialCleanupJobUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ConnectorCredentialCleanupJobUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ConnectorCredentialCleanupJobDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ConnectorCredentialCleanupJob mutation op: %q", m.Op())
 	}
 }
 
@@ -16219,22 +16362,22 @@ type (
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
 		CommitmentDependency, CommitmentEvent, ConnectorAuditEvent,
-		ConnectorRevocationJob, ConversationIntelligenceArtifact, CreditLedger, Entity,
-		EntityIdentifier, EntityResourceRef, GoogleWatch, LLMUsage, LLMUsageHistory,
-		MCPConnection, MCPConnectionHistory, MailBodyCache, MailMessageMeta,
-		MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
-		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
-		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,
-		RelationshipAttentionItem, RelationshipIdentity, RelationshipIdentityCandidate,
-		RelationshipIdentityDecision, RelationshipLineageEvent,
-		RelationshipObservation, RelationshipParticipant, RelationshipProjectionJob,
-		RelationshipReviewAcknowledgement, RelationshipSourceStatus,
-		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
-		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
-		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		TenantEvidenceKey, User, UserHistory, VoiceAPIKey, VoiceSyncItem,
-		WorkspaceFeatureControl []ent.Hook
+		ConnectorCredentialCleanupJob, ConnectorRevocationJob,
+		ConversationIntelligenceArtifact, CreditLedger, Entity, EntityIdentifier,
+		EntityResourceRef, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
+		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailSignal, MailThread,
+		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		Person, PersonAttribute, PersonIdentity, PersonInteractionStat,
+		PersonMergeCandidate, PersonSuppression, PolicyDecisionSnapshot, Relationship,
+		RelationshipAssertion, RelationshipAttentionItem, RelationshipIdentity,
+		RelationshipIdentityCandidate, RelationshipIdentityDecision,
+		RelationshipLineageEvent, RelationshipObservation, RelationshipParticipant,
+		RelationshipProjectionJob, RelationshipReviewAcknowledgement,
+		RelationshipSourceStatus, RelationshipStateSnapshot, RevenueAction,
+		RevenueActionRevision, RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent,
+		RevenueTrustEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
+		SubscriptionHistory, TenantEvidenceKey, User, UserHistory, VoiceAPIKey,
+		VoiceSyncItem, WorkspaceFeatureControl []ent.Hook
 	}
 	inters struct {
 		ActionOutcome, ActionProposal, AgentApproval, AgentDefinition,
@@ -16243,21 +16386,21 @@ type (
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
 		CommitmentDependency, CommitmentEvent, ConnectorAuditEvent,
-		ConnectorRevocationJob, ConversationIntelligenceArtifact, CreditLedger, Entity,
-		EntityIdentifier, EntityResourceRef, GoogleWatch, LLMUsage, LLMUsageHistory,
-		MCPConnection, MCPConnectionHistory, MailBodyCache, MailMessageMeta,
-		MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
-		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
-		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,
-		RelationshipAttentionItem, RelationshipIdentity, RelationshipIdentityCandidate,
-		RelationshipIdentityDecision, RelationshipLineageEvent,
-		RelationshipObservation, RelationshipParticipant, RelationshipProjectionJob,
-		RelationshipReviewAcknowledgement, RelationshipSourceStatus,
-		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
-		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
-		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		TenantEvidenceKey, User, UserHistory, VoiceAPIKey, VoiceSyncItem,
-		WorkspaceFeatureControl []ent.Interceptor
+		ConnectorCredentialCleanupJob, ConnectorRevocationJob,
+		ConversationIntelligenceArtifact, CreditLedger, Entity, EntityIdentifier,
+		EntityResourceRef, GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection,
+		MCPConnectionHistory, MailBodyCache, MailMessageMeta, MailSignal, MailThread,
+		MeetingMinuteUsage, OAuthConnection, OAuthConnectionHistory, OAuthPending,
+		Person, PersonAttribute, PersonIdentity, PersonInteractionStat,
+		PersonMergeCandidate, PersonSuppression, PolicyDecisionSnapshot, Relationship,
+		RelationshipAssertion, RelationshipAttentionItem, RelationshipIdentity,
+		RelationshipIdentityCandidate, RelationshipIdentityDecision,
+		RelationshipLineageEvent, RelationshipObservation, RelationshipParticipant,
+		RelationshipProjectionJob, RelationshipReviewAcknowledgement,
+		RelationshipSourceStatus, RelationshipStateSnapshot, RevenueAction,
+		RevenueActionRevision, RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent,
+		RevenueTrustEvent, RevenueWorkspace, RevenueWorkspaceMember, Subscription,
+		SubscriptionHistory, TenantEvidenceKey, User, UserHistory, VoiceAPIKey,
+		VoiceSyncItem, WorkspaceFeatureControl []ent.Interceptor
 	}
 )

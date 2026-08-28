@@ -10,7 +10,9 @@ import (
 	"slices"
 	"time"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 )
@@ -98,13 +100,15 @@ func (r *connectorRefreshResult) validFor(expected connectorRefreshContext) bool
 type refreshDeduper struct {
 	cache  RefreshCache
 	sealer *crypto.Sealer
+	client *ent.Client
 	log    *zap.Logger
 	sf     singleflight.Group
 }
 
-func (d *refreshDeduper) configure(cache RefreshCache, sealer *crypto.Sealer, log *zap.Logger) {
+func (d *refreshDeduper) configure(cache RefreshCache, sealer *crypto.Sealer, client *ent.Client, log *zap.Logger) {
 	d.cache = cache
 	d.sealer = sealer
+	d.client = client
 	d.log = log
 }
 
@@ -113,7 +117,7 @@ func (d *refreshDeduper) refresh(
 	bound connectorRefreshContext,
 	ory *oryClient,
 	oldRefresh string,
-	persist func(context.Context, *oryToken) (int64, error),
+	persist func(context.Context, *oryToken, uuid.UUID) (int64, error),
 ) (*connectorRefreshResult, error) {
 	if d.cache == nil || d.sealer == nil {
 		return nil, errors.New("connector refresh dedup is not configured")
@@ -184,23 +188,33 @@ func (d *refreshDeduper) refresh(
 			return nil, err
 		}
 
-		if persist == nil {
+		if persist == nil || d.client == nil {
 			return nil, errors.New("connector refresh persistence is not configured")
 		}
+		cleanupID := uuid.Nil
+		if tok.RefreshToken != "" {
+			escrowCtx, escrowCancel := context.WithTimeout(context.WithoutCancel(detached), 5*time.Second)
+			cleanupID, err = d.enqueueCredentialCleanup(escrowCtx, bound, tok.RefreshToken)
+			escrowCancel()
+			if err != nil {
+				// A provider-issued rotating credential must never exist without a
+				// durable owner. If escrow fails, synchronously revoke before returning.
+				if revokeErr := revokeCredentialBounded(context.WithoutCancel(detached), ory, tok.RefreshToken); revokeErr != nil {
+					return nil, fmt.Errorf("durably escrow rotated connector credential: %w (provider revoke unconfirmed)", err)
+				}
+				return nil, fmt.Errorf("durably escrow rotated connector credential: %w", err)
+			}
+		}
 		if err := requireConnectorRefreshOwnership(detached, d.cache, lockKey, owner); err != nil {
+			d.compensateCredential(context.WithoutCancel(detached), ory, cleanupID, tok.RefreshToken, "lease_lost_before_persist")
 			return nil, err
 		}
-		currentGeneration, err := persist(detached, tok)
+		currentGeneration, err := persist(detached, tok, cleanupID)
 		if err != nil {
 			// The one-use upstream token may already be consumed. Keep the lock
 			// until its TTL rather than immediately allowing a second rotation.
 			unlock = false
-			if errors.Is(err, errConnectorCredentialSuperseded) && tok.RefreshToken != "" {
-				// A disconnect/reconnect fence won after the provider rotated the
-				// one-use credential. Revoke the newly issued generation so an
-				// orphan grant cannot outlive a successful disconnect.
-				_ = ory.revoke(context.WithoutCancel(detached), tok.RefreshToken)
-			}
+			d.compensateCredential(context.WithoutCancel(detached), ory, cleanupID, tok.RefreshToken, "persistence_declined")
 			return nil, err
 		}
 		result := &connectorRefreshResult{
@@ -210,9 +224,7 @@ func (d *refreshDeduper) refresh(
 		}
 		if !result.validFor(bound) {
 			unlock = false
-			if tok.RefreshToken != "" {
-				_ = ory.revoke(context.WithoutCancel(detached), tok.RefreshToken)
-			}
+			d.compensateCredential(context.WithoutCancel(detached), ory, cleanupID, tok.RefreshToken, "generation_mismatch")
 			return nil, errors.New("connector refresh persistence returned an unexpected credential generation")
 		}
 		if err := requireConnectorRefreshOwnership(detached, d.cache, lockKey, owner); err != nil {

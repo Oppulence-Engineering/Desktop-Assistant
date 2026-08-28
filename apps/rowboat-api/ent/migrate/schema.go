@@ -1190,6 +1190,41 @@ var (
 			},
 		},
 	}
+	// ConnectorCredentialCleanupJobsColumns holds the columns for the "connector_credential_cleanup_jobs" table.
+	ConnectorCredentialCleanupJobsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "connection_id", Type: field.TypeUUID},
+		{Name: "connector", Type: field.TypeString},
+		{Name: "expected_credential_generation", Type: field.TypeInt64},
+		{Name: "refresh_token_encrypted", Type: field.TypeBytes},
+		{Name: "status", Type: field.TypeString, Default: "pending"},
+		{Name: "attempts", Type: field.TypeInt, Default: 0},
+		{Name: "next_attempt_at", Type: field.TypeTime},
+		{Name: "claim_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "claimed_until", Type: field.TypeTime, Nullable: true},
+		{Name: "last_error_code", Type: field.TypeString, Nullable: true},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true},
+	}
+	// ConnectorCredentialCleanupJobsTable holds the schema information for the "connector_credential_cleanup_jobs" table.
+	ConnectorCredentialCleanupJobsTable = &schema.Table{
+		Name:       "connector_credential_cleanup_jobs",
+		Columns:    ConnectorCredentialCleanupJobsColumns,
+		PrimaryKey: []*schema.Column{ConnectorCredentialCleanupJobsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "connectorcredentialcleanupjob_status_next_attempt_at",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectorCredentialCleanupJobsColumns[7], ConnectorCredentialCleanupJobsColumns[9]},
+			},
+			{
+				Name:    "connectorcredentialcleanupjob_connection_id_expected_credential_generation",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectorCredentialCleanupJobsColumns[3], ConnectorCredentialCleanupJobsColumns[5]},
+			},
+		},
+	}
 	// ConnectorRevocationJobsColumns holds the columns for the "connector_revocation_jobs" table.
 	ConnectorRevocationJobsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -4027,6 +4062,7 @@ var (
 		CommitmentDependenciesTable,
 		CommitmentEventsTable,
 		ConnectorAuditEventsTable,
+		ConnectorCredentialCleanupJobsTable,
 		ConnectorRevocationJobsTable,
 		ConversationIntelligenceArtifactsTable,
 		CreditLedgersTable,

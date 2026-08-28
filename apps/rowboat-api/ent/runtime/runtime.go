@@ -28,6 +28,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
@@ -1366,6 +1367,37 @@ func init() {
 	connectorauditeventDescID := connectorauditeventMixinFields0[0].Descriptor()
 	// connectorauditevent.DefaultID holds the default value on creation for the id field.
 	connectorauditevent.DefaultID = connectorauditeventDescID.Default.(func() uuid.UUID)
+	connectorcredentialcleanupjobMixin := schema.ConnectorCredentialCleanupJob{}.Mixin()
+	connectorcredentialcleanupjobMixinFields0 := connectorcredentialcleanupjobMixin[0].Fields()
+	_ = connectorcredentialcleanupjobMixinFields0
+	connectorcredentialcleanupjobFields := schema.ConnectorCredentialCleanupJob{}.Fields()
+	_ = connectorcredentialcleanupjobFields
+	// connectorcredentialcleanupjobDescCreatedAt is the schema descriptor for created_at field.
+	connectorcredentialcleanupjobDescCreatedAt := connectorcredentialcleanupjobMixinFields0[1].Descriptor()
+	// connectorcredentialcleanupjob.DefaultCreatedAt holds the default value on creation for the created_at field.
+	connectorcredentialcleanupjob.DefaultCreatedAt = connectorcredentialcleanupjobDescCreatedAt.Default.(func() time.Time)
+	// connectorcredentialcleanupjobDescUpdatedAt is the schema descriptor for updated_at field.
+	connectorcredentialcleanupjobDescUpdatedAt := connectorcredentialcleanupjobMixinFields0[2].Descriptor()
+	// connectorcredentialcleanupjob.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	connectorcredentialcleanupjob.DefaultUpdatedAt = connectorcredentialcleanupjobDescUpdatedAt.Default.(func() time.Time)
+	// connectorcredentialcleanupjob.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	connectorcredentialcleanupjob.UpdateDefaultUpdatedAt = connectorcredentialcleanupjobDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// connectorcredentialcleanupjobDescExpectedCredentialGeneration is the schema descriptor for expected_credential_generation field.
+	connectorcredentialcleanupjobDescExpectedCredentialGeneration := connectorcredentialcleanupjobFields[2].Descriptor()
+	// connectorcredentialcleanupjob.ExpectedCredentialGenerationValidator is a validator for the "expected_credential_generation" field. It is called by the builders before save.
+	connectorcredentialcleanupjob.ExpectedCredentialGenerationValidator = connectorcredentialcleanupjobDescExpectedCredentialGeneration.Validators[0].(func(int64) error)
+	// connectorcredentialcleanupjobDescStatus is the schema descriptor for status field.
+	connectorcredentialcleanupjobDescStatus := connectorcredentialcleanupjobFields[4].Descriptor()
+	// connectorcredentialcleanupjob.DefaultStatus holds the default value on creation for the status field.
+	connectorcredentialcleanupjob.DefaultStatus = connectorcredentialcleanupjobDescStatus.Default.(string)
+	// connectorcredentialcleanupjobDescAttempts is the schema descriptor for attempts field.
+	connectorcredentialcleanupjobDescAttempts := connectorcredentialcleanupjobFields[5].Descriptor()
+	// connectorcredentialcleanupjob.DefaultAttempts holds the default value on creation for the attempts field.
+	connectorcredentialcleanupjob.DefaultAttempts = connectorcredentialcleanupjobDescAttempts.Default.(int)
+	// connectorcredentialcleanupjobDescID is the schema descriptor for id field.
+	connectorcredentialcleanupjobDescID := connectorcredentialcleanupjobMixinFields0[0].Descriptor()
+	// connectorcredentialcleanupjob.DefaultID holds the default value on creation for the id field.
+	connectorcredentialcleanupjob.DefaultID = connectorcredentialcleanupjobDescID.Default.(func() uuid.UUID)
 	connectorrevocationjobMixin := schema.ConnectorRevocationJob{}.Mixin()
 	connectorrevocationjobMixinFields0 := connectorrevocationjobMixin[0].Fields()
 	_ = connectorrevocationjobMixinFields0

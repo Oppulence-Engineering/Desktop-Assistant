@@ -34,7 +34,7 @@ func (r *MCPRuntimeResolver) SetRefreshDedup(cache RefreshCache, sealer *crypto.
 	if r == nil {
 		return
 	}
-	r.refresh.configure(cache, sealer, log)
+	r.refresh.configure(cache, sealer, r.client, log)
 	if r.lifecycle != nil {
 		r.lifecycle.SetLogger(log)
 	}
@@ -119,8 +119,8 @@ func (r *MCPRuntimeResolver) ResolveMCP(ctx context.Context, userID, connectorNa
 		bound := newConnectorRefreshContext(
 			connectorName, mc.ID.String(), mc.OrganizationID, mc.CredentialGeneration, mc.Audience, mc.Scopes,
 		)
-		persist := func(pctx context.Context, tok *oryToken) (int64, error) {
-			updated, saveErr := r.lifecycle.PersistRefresh(pctx, owner, mc, tok)
+		persist := func(pctx context.Context, tok *oryToken, cleanupID uuid.UUID) (int64, error) {
+			updated, saveErr := r.lifecycle.PersistRefresh(pctx, owner, mc, tok, cleanupID)
 			if saveErr == nil {
 				mc = updated
 				return updated.CredentialGeneration, nil
