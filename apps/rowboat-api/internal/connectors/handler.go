@@ -100,8 +100,10 @@ func New(client *ent.Client, sealer *crypto.Sealer, registry *Registry, cfg Conf
 	return h
 }
 
+// CredentialCustodyReady reports whether the bounded credential custody supervisor can accept work.
 func (h *Handler) CredentialCustodyReady(context.Context) error { return h.custody.ready() }
 
+// CloseCredentialCustody drains and closes the bounded credential custody supervisor.
 func (h *Handler) CloseCredentialCustody() error {
 	h.custody.close()
 	return nil

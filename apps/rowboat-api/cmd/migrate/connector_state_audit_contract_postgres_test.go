@@ -20,7 +20,7 @@ func TestConnectorStateAuditContractPopulatedPostgres(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	ctx := context.Background()
 	schema := "connector_contract_" + strings.ReplaceAll(uuid.NewString(), "-", "")
 	if _, err := db.ExecContext(ctx, `CREATE SCHEMA `+schema); err != nil {
