@@ -106,6 +106,7 @@ describe("MCP one-shot approval request binding", () => {
   it.each([
     ["origin", "https://attacker.example/mcp", headers],
     ["path", "https://product.example/other", headers],
+    ["query", "https://product.example/mcp?tenant=other", headers],
     ["authorization", endpoint, { ...headers, Authorization: "Bearer swapped" }],
     ["session", endpoint, { ...headers, "Mcp-Session-Id": "session-2" }],
     ["header", endpoint, { ...headers, "X-Policy": "changed" }],
@@ -125,6 +126,15 @@ describe("MCP one-shot approval request binding", () => {
       ),
     ).rejects.toThrow(/changed/);
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("canonicalizes query ordering while preserving exact query semantics", () => {
+    expect(
+      normalizeMcpEndpoint("https://product.example/mcp?tenant=one&action=release"),
+    ).toEqual(normalizeMcpEndpoint("https://product.example/mcp?action=release&tenant=one"));
+    expect(
+      normalizeMcpEndpoint("https://product.example/mcp?action=release&tenant=one"),
+    ).not.toEqual(normalizeMcpEndpoint("https://product.example/mcp?action=refund&tenant=one"));
   });
 
   it("fails closed on a concurrent config-generation mutation before token injection", async () => {

@@ -4,6 +4,7 @@ import type { FetchLike } from "@modelcontextprotocol/sdk/shared/transport.js";
 export interface NormalizedMcpEndpoint {
   origin: string;
   path: string;
+  query: string;
 }
 
 export interface McpConfigApprovalSnapshot {
@@ -52,14 +53,19 @@ function normalizedHeaderEntries(headersInit?: HeadersInit): Array<[string, stri
 
 export function normalizeMcpEndpoint(value: string | URL): NormalizedMcpEndpoint {
   const url = value instanceof URL ? new URL(value.href) : new URL(value);
-  return Object.freeze({ origin: url.origin, path: url.pathname || "/" });
+  url.searchParams.sort();
+  return Object.freeze({
+    origin: url.origin,
+    path: url.pathname || "/",
+    query: url.searchParams.toString(),
+  });
 }
 
 export function sameMcpEndpoint(
   left: NormalizedMcpEndpoint,
   right: NormalizedMcpEndpoint,
 ): boolean {
-  return left.origin === right.origin && left.path === right.path;
+  return left.origin === right.origin && left.path === right.path && left.query === right.query;
 }
 
 export function mcpHeadersDigest(headersInit?: HeadersInit): string {
