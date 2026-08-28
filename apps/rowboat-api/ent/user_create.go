@@ -32,8 +32,12 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
@@ -300,6 +304,21 @@ func (_c *UserCreate) AddMcpConnections(v ...*MCPConnection) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddMcpConnectionIDs(ids...)
+}
+
+// AddConnectorAuditEventIDs adds the "connector_audit_events" edge to the ConnectorAuditEvent entity by IDs.
+func (_c *UserCreate) AddConnectorAuditEventIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddConnectorAuditEventIDs(ids...)
+	return _c
+}
+
+// AddConnectorAuditEvents adds the "connector_audit_events" edges to the ConnectorAuditEvent entity.
+func (_c *UserCreate) AddConnectorAuditEvents(v ...*ConnectorAuditEvent) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddConnectorAuditEventIDs(ids...)
 }
 
 // AddBackgroundTaskIDs adds the "background_tasks" edge to the BackgroundTask entity by IDs.
@@ -1082,6 +1101,51 @@ func (_c *UserCreate) AddRelationshipSourceStatuses(v ...*RelationshipSourceStat
 	return _c.AddRelationshipSourceStatusIDs(ids...)
 }
 
+// AddEntityIDs adds the "entities" edge to the Entity entity by IDs.
+func (_c *UserCreate) AddEntityIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddEntityIDs(ids...)
+	return _c
+}
+
+// AddEntities adds the "entities" edges to the Entity entity.
+func (_c *UserCreate) AddEntities(v ...*Entity) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddEntityIDs(ids...)
+}
+
+// AddEntityResourceRefIDs adds the "entity_resource_refs" edge to the EntityResourceRef entity by IDs.
+func (_c *UserCreate) AddEntityResourceRefIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddEntityResourceRefIDs(ids...)
+	return _c
+}
+
+// AddEntityResourceRefs adds the "entity_resource_refs" edges to the EntityResourceRef entity.
+func (_c *UserCreate) AddEntityResourceRefs(v ...*EntityResourceRef) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddEntityResourceRefIDs(ids...)
+}
+
+// AddEntityIdentifierIDs adds the "entity_identifiers" edge to the EntityIdentifier entity by IDs.
+func (_c *UserCreate) AddEntityIdentifierIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddEntityIdentifierIDs(ids...)
+	return _c
+}
+
+// AddEntityIdentifiers adds the "entity_identifiers" edges to the EntityIdentifier entity.
+func (_c *UserCreate) AddEntityIdentifiers(v ...*EntityIdentifier) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddEntityIdentifierIDs(ids...)
+}
+
 // AddActionProposalIDs adds the "action_proposals" edge to the ActionProposal entity by IDs.
 func (_c *UserCreate) AddActionProposalIDs(ids ...uuid.UUID) *UserCreate {
 	_c.mutation.AddActionProposalIDs(ids...)
@@ -1370,6 +1434,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mcpconnection.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ConnectorAuditEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConnectorAuditEventsTable,
+			Columns: []string{user.ConnectorAuditEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(connectorauditevent.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -2202,6 +2282,54 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(relationshipsourcestatus.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EntitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntitiesTable,
+			Columns: []string{user.EntitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EntityResourceRefsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityResourceRefsTable,
+			Columns: []string{user.EntityResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.EntityIdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.EntityIdentifiersTable,
+			Columns: []string{user.EntityIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

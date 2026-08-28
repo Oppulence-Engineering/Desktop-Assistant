@@ -266,15 +266,16 @@ func (h *Handler) refreshDeduped(w http.ResponseWriter, r *http.Request, refresh
 		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 		defer cancel()
 
-		locked, err := h.cache.TryLock(ctx, lockKey, refreshLockTTL)
+		owner, locked, err := h.cache.TryLock(ctx, lockKey, refreshLockTTL)
 		if err != nil {
 			h.log.Warn("workos refresh lock unavailable; proceeding uncoordinated", zap.Error(err))
-			locked = true // fail open: dedup degrades, refresh still works
 		} else if locked {
-			defer func() { _ = h.cache.Unlock(context.Background(), lockKey) }()
+			stopRenewal := keepRefreshLease(ctx, cancel, h.cache, lockKey, owner, refreshLockTTL, h.log)
+			defer stopRenewal()
+			defer func() { _ = h.cache.Unlock(context.Background(), lockKey, owner) }()
 		}
 
-		if !locked {
+		if err == nil && !locked {
 			// Another replica is refreshing this token: wait for its result.
 			deadline := time.Now().Add(refreshPollWait)
 			for time.Now().Before(deadline) {
@@ -301,8 +302,14 @@ func (h *Handler) refreshDeduped(w http.ResponseWriter, r *http.Request, refresh
 		if h.cachedInvalid(ctx, invalidKey) {
 			return refreshResult{ae: &authError{kind: authErrInvalidGrant}}, nil
 		}
+		if locked && !h.refreshLeaseOwned(ctx, lockKey, owner) {
+			return refreshResult{inProgress: true}, nil
+		}
 
 		bundle, ae := h.callWorkOS(ctx, payload)
+		if locked && !h.refreshLeaseOwned(ctx, lockKey, owner) {
+			return refreshResult{inProgress: true}, nil
+		}
 		switch {
 		case ae == nil:
 			h.storeBundle(ctx, resultKey, bundle)
@@ -329,6 +336,44 @@ func (h *Handler) refreshDeduped(w http.ResponseWriter, r *http.Request, refresh
 		h.writeAuthError(w, res.ae)
 	default:
 		httpx.WriteJSON(w, http.StatusOK, *res.bundle)
+	}
+}
+
+func (h *Handler) refreshLeaseOwned(ctx context.Context, key, owner string) bool {
+	owned, err := h.cache.Renew(ctx, key, owner, refreshLockTTL)
+	if err != nil || !owned {
+		h.log.Warn("workos refresh lock ownership lost", zap.Bool("still_owner", owned), zap.Error(err))
+		return false
+	}
+	return true
+}
+
+func keepRefreshLease(ctx context.Context, cancel context.CancelFunc, cache RefreshCache, key, owner string, ttl time.Duration, log *zap.Logger) func() {
+	stop := make(chan struct{})
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		ticker := time.NewTicker(ttl / 3)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-stop:
+				return
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				owned, err := cache.Renew(ctx, key, owner, ttl)
+				if err != nil || !owned {
+					log.Warn("workos refresh lock renewal failed", zap.Bool("still_owner", owned), zap.Error(err))
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+	return func() {
+		close(stop)
+		<-done
 	}
 }
 

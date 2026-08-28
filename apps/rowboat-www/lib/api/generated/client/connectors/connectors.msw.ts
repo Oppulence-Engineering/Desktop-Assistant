@@ -12,27 +12,58 @@ import type {
   ConnectionConnectedResponse,
   ConnectionStartResponse,
   ConnectorsResponse,
+  GetConnectorBrokerJWKS200,
   HubSpotSearchResponse,
   MCPTokenResponse,
 } from "../model";
 
 import {
   getClaimConnectionResponseMock,
+  getCreateConnectorResourceTokenResponseMock,
   getCreateMCPTokenResponseMock,
+  getGetConnectorBrokerJWKSResponseMock,
   getListConnectorsResponseMock,
   getSearchHubSpotResponseMock,
   getSetConnectionAPIKeyResponseMock,
   getStartConnectionResponseMock,
+  getStartConnectorResponseMock,
 } from "./connectors.faker";
 
 export {
+  getGetConnectorBrokerJWKSResponseMock,
   getSetConnectionAPIKeyResponseMock,
   getClaimConnectionResponseMock,
   getCreateMCPTokenResponseMock,
   getStartConnectionResponseMock,
   getListConnectorsResponseMock,
+  getCreateConnectorResourceTokenResponseMock,
+  getStartConnectorResponseMock,
   getSearchHubSpotResponseMock,
 } from "./connectors.faker";
+
+export const getGetConnectorBrokerJWKSMockHandler = (
+  overrideResponse?:
+    | GetConnectorBrokerJWKS200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetConnectorBrokerJWKS200> | GetConnectorBrokerJWKS200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/.well-known/connector-jwks.json",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetConnectorBrokerJWKSResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 
 export const getDeleteConnectionMockHandler = (
   overrideResponse?:
@@ -190,6 +221,90 @@ export const getListConnectorsMockHandler = (
   );
 };
 
+export const getHandleConnectorCallbackMockHandler = (
+  overrideResponse?:
+    unknown | ((info: Parameters<Parameters<typeof http.get>[1]>[0]) => Promise<unknown> | unknown),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/connectors/:name/callback",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      if (typeof overrideResponse === "function") {
+        await overrideResponse(info);
+      }
+
+      return new HttpResponse(null, { status: 200 });
+    },
+    options,
+  );
+};
+
+export const getDeleteConnectorConnectionMockHandler = (
+  overrideResponse?:
+    void | ((info: Parameters<Parameters<typeof http.delete>[1]>[0]) => Promise<void> | void),
+  options?: RequestHandlerOptions,
+) => {
+  return http.delete(
+    "*/v1/connectors/:name/connections/:connectionID",
+    async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+      if (typeof overrideResponse === "function") {
+        await overrideResponse(info);
+      }
+
+      return new HttpResponse(null, { status: 204 });
+    },
+    options,
+  );
+};
+
+export const getCreateConnectorResourceTokenMockHandler = (
+  overrideResponse?:
+    | MCPTokenResponse
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<MCPTokenResponse> | MCPTokenResponse),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/connectors/:name/resource-token",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getCreateConnectorResourceTokenResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getStartConnectorMockHandler = (
+  overrideResponse?:
+    | ConnectionStartResponse
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<ConnectionStartResponse> | ConnectionStartResponse),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/connectors/:name/start",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getStartConnectorResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
 export const getSearchHubSpotMockHandler = (
   overrideResponse?:
     | HubSpotSearchResponse
@@ -214,6 +329,7 @@ export const getSearchHubSpotMockHandler = (
   );
 };
 export const getConnectorsMock = () => [
+  getGetConnectorBrokerJWKSMockHandler(),
   getDeleteConnectionMockHandler(),
   getSetConnectionAPIKeyMockHandler(),
   getHandleConnectionCallbackMockHandler(),
@@ -221,5 +337,9 @@ export const getConnectorsMock = () => [
   getCreateMCPTokenMockHandler(),
   getStartConnectionMockHandler(),
   getListConnectorsMockHandler(),
+  getHandleConnectorCallbackMockHandler(),
+  getDeleteConnectorConnectionMockHandler(),
+  getCreateConnectorResourceTokenMockHandler(),
+  getStartConnectorMockHandler(),
   getSearchHubSpotMockHandler(),
 ];

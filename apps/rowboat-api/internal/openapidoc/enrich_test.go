@@ -85,8 +85,12 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/relationship-sources/status",
 		"/v1/relationship-recommendations/{actionId}/approve",
 		"/v1/relationship-recommendations/{actionId}/reject",
+		"/v1/entities",
+		"/v1/entities/{id}",
+		"/v1/entities/merge",
 		"/oauth-hooks/pre-consent",
 		"/v1/internal/connections/invalidate",
+		"/v1/internal/connections/status",
 		"/graphql",
 	} {
 		if paths[path] == nil {
@@ -95,6 +99,39 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 	}
 	if paths["/credit-ledgers"] != nil {
 		t.Fatal("unmounted generated entity CRUD path should not be documented")
+	}
+}
+
+func TestEnrichRejectsInternalCredentialCustodyFromPublicSchemas(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{
+		"ConnectorRevocationJob":        obj{"type": "object"},
+		"ConnectorCredentialCleanupJob": obj{"type": "object"},
+		"ConnectorCredentialRecovery":   obj{"type": "object"},
+		"MCPConnection": obj{
+			"type":       "object",
+			"properties": obj{"connector": obj{"type": "string"}, "refresh_token_encrypted": obj{"type": "string"}, "api_key_encrypted": obj{"type": "string"}},
+			"required":   []any{"connector", "refresh_token_encrypted", "api_key_encrypted"},
+		},
+	}}}
+
+	Enrich(spec)
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	for _, internal := range []string{"ConnectorRevocationJob", "ConnectorCredentialCleanupJob", "ConnectorCredentialRecovery"} {
+		if schemas[internal] != nil {
+			t.Fatalf("internal custody schema %s leaked into public OpenAPI", internal)
+		}
+	}
+	connection := asObj(schemas["MCPConnection"])
+	properties := asObj(connection["properties"])
+	for _, secret := range []string{"refresh_token_encrypted", "api_key_encrypted"} {
+		if properties[secret] != nil {
+			t.Fatalf("encrypted credential field %s leaked into public OpenAPI", secret)
+		}
+	}
+	for _, field := range connection["required"].([]any) {
+		if field == "refresh_token_encrypted" || field == "api_key_encrypted" {
+			t.Fatalf("encrypted credential field %s remained required", field)
+		}
 	}
 }
 
@@ -178,6 +215,24 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if confidence["minimum"] != 0 || confidence["maximum"] != 1 {
 		t.Fatalf("observation assertion confidence bounds are invalid: %#v", confidence)
 	}
+	entityProjection := asObj(schemas["EntityProjection"])
+	entityProperties := asObj(entityProjection["properties"])
+	identifierItems := asObj(asObj(asObj(entityProperties["identifiers"])["additionalProperties"])["items"])
+	if identifierItems["pattern"] != "^sha256:v1:[0-9a-f]{64}$" {
+		t.Fatalf("entity identifier contract must reject raw PII: %#v", identifierItems)
+	}
+	resourceRefItems := asObj(asObj(entityProperties["resourceRefs"])["items"])
+	if resourceRefItems["pattern"] == nil || asObj(entityProperties["resourceRefs"])["maxItems"] != 100 {
+		t.Fatalf("entity resourceRef contract is unbounded: %#v", entityProperties["resourceRefs"])
+	}
+	entityID := asObj(entityProperties["id"])
+	if entityID["description"] != "Optional body copy of the path ULID." || entityID["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
+		t.Fatalf("entity projection ULID metadata was overwritten: %#v", entityID)
+	}
+	entityStatus := asObj(asObj(asObj(schemas["EntitySpine"])["properties"])["status"])
+	if entityStatus["description"] != "Lifecycle status." {
+		t.Fatalf("entity lifecycle metadata was overwritten: %#v", entityStatus)
+	}
 }
 
 func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
@@ -190,15 +245,18 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 		t.Fatalf("parse checked-in openapi json: %v", err)
 	}
 	paths := asObj(spec["paths"])
-	if paths["/v1/me"] == nil || paths["/v1/background-task-templates"] == nil || paths["/v1/background-tasks"] == nil || paths["/v1/background-tasks/first-party/ensure"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events/stream"] == nil || paths["/v1/llm/chat/completions"] == nil || paths["/v1/connectors"] == nil || paths["/v1/connections/{name}/api-key"] == nil || paths["/v1/slack-oauth/workspaces"] == nil || paths["/v1/slack-oauth/thread/read"] == nil {
+	if paths["/v1/me"] == nil || paths["/v1/background-task-templates"] == nil || paths["/v1/background-tasks"] == nil || paths["/v1/background-tasks/first-party/ensure"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events"] == nil || paths["/v1/background-tasks/{slug}/runs/{runId}/events/stream"] == nil || paths["/v1/llm/chat/completions"] == nil || paths["/v1/connectors"] == nil || paths["/v1/connections/{name}/api-key"] == nil || paths["/v1/slack-oauth/workspaces"] == nil || paths["/v1/slack-oauth/thread/read"] == nil || paths["/v1/entities"] == nil || paths["/v1/entities/{id}"] == nil || paths["/v1/entities/merge"] == nil {
 		t.Fatal("checked-in openapi json is missing mounted runtime API paths")
 	}
 	if paths["/credit-ledgers"] != nil {
 		t.Fatal("checked-in openapi json still contains unmounted ent CRUD paths")
 	}
 	schemas := asObj(asObj(spec["components"])["schemas"])
-	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil || schemas["IntegrationTemplateBlock"] == nil || schemas["SlackWorkspacesResponse"] == nil || schemas["SlackThreadReadResponse"] == nil {
+	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil || schemas["IntegrationTemplateBlock"] == nil || schemas["SlackWorkspacesResponse"] == nil || schemas["SlackThreadReadResponse"] == nil || schemas["EntityProjection"] == nil || schemas["EntitySpine"] == nil {
 		t.Fatal("checked-in openapi json is missing enriched runtime schemas")
+	}
+	if schemas["ConnectorCredentialCleanupJob"] != nil || schemas["ConnectorCredentialRecovery"] != nil {
+		t.Fatal("checked-in openapi json exposes internal credential cleanup or recovery state")
 	}
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
@@ -206,5 +264,38 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	}
 	if value := asObj(evidenceProperties["value"]); value["oneOf"] == nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.value is invalid: %#v", value)
+	}
+	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
+	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
+		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
+	}
+}
+
+func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	paths := asObj(spec["paths"])
+	for _, path := range []string{"/v1/connections/{name}/start", "/v1/connectors/{name}/start", "/v1/connections/{name}/callback", "/v1/connectors/{name}/callback", "/v1/connections/{name}/mcp-token", "/v1/connectors/{name}/resource-token", "/v1/connections/{name}", "/v1/connectors/{name}/connections/{connectionID}"} {
+		item := asObj(paths[path])
+		var operation obj
+		for _, method := range []string{"get", "post", "delete"} {
+			if candidate := asObj(item[method]); candidate != nil {
+				operation = candidate
+				break
+			}
+		}
+		responses := asObj(operation["responses"])
+		if responses["429"] == nil {
+			t.Fatalf("%s does not document 429", path)
+		}
+	}
+	token := asObj(asObj(paths["/v1/connections/{name}/mcp-token"])["post"])
+	if required, ok := asObj(token["requestBody"])["required"].(bool); !ok || required {
+		t.Fatalf("MCP token body must be optional: %#v", token["requestBody"])
+	}
+	for _, status := range []string{"403", "409", "410", "429"} {
+		if asObj(token["responses"])[status] == nil {
+			t.Fatalf("MCP token missing %s", status)
+		}
 	}
 }

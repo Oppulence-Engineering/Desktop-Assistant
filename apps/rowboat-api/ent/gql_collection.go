@@ -28,6 +28,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/googlewatch"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/llmusage"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailbodycache"
@@ -3594,6 +3597,386 @@ func newCreditLedgerPaginateArgs(rv map[string]any) *creditledgerPaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *EntityQuery) CollectFields(ctx context.Context, satisfies ...string) (*EntityQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *EntityQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(entity.Columns))
+		selectedFields = []string{entity.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+
+		case "normalizedResourceRefs":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&EntityResourceRefClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, entityresourcerefImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedNormalizedResourceRefs(alias, func(wq *EntityResourceRefQuery) {
+				*wq = *query
+			})
+
+		case "normalizedIdentifiers":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&EntityIdentifierClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, entityidentifierImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedNormalizedIdentifiers(alias, func(wq *EntityIdentifierQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[entity.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, entity.FieldCreatedAt)
+				fieldSeen[entity.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[entity.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, entity.FieldUpdatedAt)
+				fieldSeen[entity.FieldUpdatedAt] = struct{}{}
+			}
+		case "entityID":
+			if _, ok := fieldSeen[entity.FieldEntityID]; !ok {
+				selectedFields = append(selectedFields, entity.FieldEntityID)
+				fieldSeen[entity.FieldEntityID] = struct{}{}
+			}
+		case "kind":
+			if _, ok := fieldSeen[entity.FieldKind]; !ok {
+				selectedFields = append(selectedFields, entity.FieldKind)
+				fieldSeen[entity.FieldKind] = struct{}{}
+			}
+		case "displayName":
+			if _, ok := fieldSeen[entity.FieldDisplayName]; !ok {
+				selectedFields = append(selectedFields, entity.FieldDisplayName)
+				fieldSeen[entity.FieldDisplayName] = struct{}{}
+			}
+		case "resourceRefs":
+			if _, ok := fieldSeen[entity.FieldResourceRefs]; !ok {
+				selectedFields = append(selectedFields, entity.FieldResourceRefs)
+				fieldSeen[entity.FieldResourceRefs] = struct{}{}
+			}
+		case "oneLineSummary":
+			if _, ok := fieldSeen[entity.FieldOneLineSummary]; !ok {
+				selectedFields = append(selectedFields, entity.FieldOneLineSummary)
+				fieldSeen[entity.FieldOneLineSummary] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[entity.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, entity.FieldStatus)
+				fieldSeen[entity.FieldStatus] = struct{}{}
+			}
+		case "canonicalEntityID":
+			if _, ok := fieldSeen[entity.FieldCanonicalEntityID]; !ok {
+				selectedFields = append(selectedFields, entity.FieldCanonicalEntityID)
+				fieldSeen[entity.FieldCanonicalEntityID] = struct{}{}
+			}
+		case "version":
+			if _, ok := fieldSeen[entity.FieldVersion]; !ok {
+				selectedFields = append(selectedFields, entity.FieldVersion)
+				fieldSeen[entity.FieldVersion] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type entityPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []EntityPaginateOption
+}
+
+func newEntityPaginateArgs(rv map[string]any) *entityPaginateArgs {
+	args := &entityPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*EntityWhereInput); ok {
+		args.opts = append(args.opts, WithEntityFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *EntityIdentifierQuery) CollectFields(ctx context.Context, satisfies ...string) (*EntityIdentifierQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *EntityIdentifierQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(entityidentifier.Columns))
+		selectedFields = []string{entityidentifier.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+
+		case "entity":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&EntityClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, entityImplementors)...); err != nil {
+				return err
+			}
+			_q.withEntity = query
+		case "createdAt":
+			if _, ok := fieldSeen[entityidentifier.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, entityidentifier.FieldCreatedAt)
+				fieldSeen[entityidentifier.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[entityidentifier.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, entityidentifier.FieldUpdatedAt)
+				fieldSeen[entityidentifier.FieldUpdatedAt] = struct{}{}
+			}
+		case "key":
+			if _, ok := fieldSeen[entityidentifier.FieldKey]; !ok {
+				selectedFields = append(selectedFields, entityidentifier.FieldKey)
+				fieldSeen[entityidentifier.FieldKey] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type entityidentifierPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []EntityIdentifierPaginateOption
+}
+
+func newEntityIdentifierPaginateArgs(rv map[string]any) *entityidentifierPaginateArgs {
+	args := &entityidentifierPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*EntityIdentifierWhereInput); ok {
+		args.opts = append(args.opts, WithEntityIdentifierFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *EntityResourceRefQuery) CollectFields(ctx context.Context, satisfies ...string) (*EntityResourceRefQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *EntityResourceRefQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(entityresourceref.Columns))
+		selectedFields = []string{entityresourceref.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "user":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withUser = query
+
+		case "entity":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&EntityClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, entityImplementors)...); err != nil {
+				return err
+			}
+			_q.withEntity = query
+		case "createdAt":
+			if _, ok := fieldSeen[entityresourceref.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, entityresourceref.FieldCreatedAt)
+				fieldSeen[entityresourceref.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[entityresourceref.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, entityresourceref.FieldUpdatedAt)
+				fieldSeen[entityresourceref.FieldUpdatedAt] = struct{}{}
+			}
+		case "ref":
+			if _, ok := fieldSeen[entityresourceref.FieldRef]; !ok {
+				selectedFields = append(selectedFields, entityresourceref.FieldRef)
+				fieldSeen[entityresourceref.FieldRef] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type entityresourcerefPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []EntityResourceRefPaginateOption
+}
+
+func newEntityResourceRefPaginateArgs(rv map[string]any) *entityresourcerefPaginateArgs {
+	args := &entityresourcerefPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*EntityResourceRefWhereInput); ok {
+		args.opts = append(args.opts, WithEntityResourceRefFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *GoogleWatchQuery) CollectFields(ctx context.Context, satisfies ...string) (*GoogleWatchQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -3886,10 +4269,35 @@ func (_q *MCPConnectionQuery) collectField(ctx context.Context, oneNode bool, op
 				selectedFields = append(selectedFields, mcpconnection.FieldAudience)
 				fieldSeen[mcpconnection.FieldAudience] = struct{}{}
 			}
+		case "organizationID":
+			if _, ok := fieldSeen[mcpconnection.FieldOrganizationID]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldOrganizationID)
+				fieldSeen[mcpconnection.FieldOrganizationID] = struct{}{}
+			}
 		case "scopes":
 			if _, ok := fieldSeen[mcpconnection.FieldScopes]; !ok {
 				selectedFields = append(selectedFields, mcpconnection.FieldScopes)
 				fieldSeen[mcpconnection.FieldScopes] = struct{}{}
+			}
+		case "refreshTokenPresent":
+			if _, ok := fieldSeen[mcpconnection.FieldRefreshTokenPresent]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldRefreshTokenPresent)
+				fieldSeen[mcpconnection.FieldRefreshTokenPresent] = struct{}{}
+			}
+		case "apiKeyPresent":
+			if _, ok := fieldSeen[mcpconnection.FieldAPIKeyPresent]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldAPIKeyPresent)
+				fieldSeen[mcpconnection.FieldAPIKeyPresent] = struct{}{}
+			}
+		case "credentialGeneration":
+			if _, ok := fieldSeen[mcpconnection.FieldCredentialGeneration]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldCredentialGeneration)
+				fieldSeen[mcpconnection.FieldCredentialGeneration] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[mcpconnection.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldStatus)
+				fieldSeen[mcpconnection.FieldStatus] = struct{}{}
 			}
 		case "connectedAt":
 			if _, ok := fieldSeen[mcpconnection.FieldConnectedAt]; !ok {
@@ -3905,6 +4313,31 @@ func (_q *MCPConnectionQuery) collectField(ctx context.Context, oneNode bool, op
 			if _, ok := fieldSeen[mcpconnection.FieldExpiresAt]; !ok {
 				selectedFields = append(selectedFields, mcpconnection.FieldExpiresAt)
 				fieldSeen[mcpconnection.FieldExpiresAt] = struct{}{}
+			}
+		case "revokedAt":
+			if _, ok := fieldSeen[mcpconnection.FieldRevokedAt]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldRevokedAt)
+				fieldSeen[mcpconnection.FieldRevokedAt] = struct{}{}
+			}
+		case "revokedReason":
+			if _, ok := fieldSeen[mcpconnection.FieldRevokedReason]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldRevokedReason)
+				fieldSeen[mcpconnection.FieldRevokedReason] = struct{}{}
+			}
+		case "revokedBy":
+			if _, ok := fieldSeen[mcpconnection.FieldRevokedBy]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldRevokedBy)
+				fieldSeen[mcpconnection.FieldRevokedBy] = struct{}{}
+			}
+		case "revocationAttemptedAt":
+			if _, ok := fieldSeen[mcpconnection.FieldRevocationAttemptedAt]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldRevocationAttemptedAt)
+				fieldSeen[mcpconnection.FieldRevocationAttemptedAt] = struct{}{}
+			}
+		case "revocationSucceeded":
+			if _, ok := fieldSeen[mcpconnection.FieldRevocationSucceeded]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldRevocationSucceeded)
+				fieldSeen[mcpconnection.FieldRevocationSucceeded] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -4591,6 +5024,16 @@ func (_q *OAuthConnectionQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, oauthconnection.FieldProvider)
 				fieldSeen[oauthconnection.FieldProvider] = struct{}{}
 			}
+		case "refreshTokenPresent":
+			if _, ok := fieldSeen[oauthconnection.FieldRefreshTokenPresent]; !ok {
+				selectedFields = append(selectedFields, oauthconnection.FieldRefreshTokenPresent)
+				fieldSeen[oauthconnection.FieldRefreshTokenPresent] = struct{}{}
+			}
+		case "credentialGeneration":
+			if _, ok := fieldSeen[oauthconnection.FieldCredentialGeneration]; !ok {
+				selectedFields = append(selectedFields, oauthconnection.FieldCredentialGeneration)
+				fieldSeen[oauthconnection.FieldCredentialGeneration] = struct{}{}
+			}
 		case "scopes":
 			if _, ok := fieldSeen[oauthconnection.FieldScopes]; !ok {
 				selectedFields = append(selectedFields, oauthconnection.FieldScopes)
@@ -4678,6 +5121,11 @@ func (_q *OAuthPendingQuery) collectField(ctx context.Context, oneNode bool, opC
 				selectedFields = append(selectedFields, oauthpending.FieldState)
 				fieldSeen[oauthpending.FieldState] = struct{}{}
 			}
+		case "stateHash":
+			if _, ok := fieldSeen[oauthpending.FieldStateHash]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldStateHash)
+				fieldSeen[oauthpending.FieldStateHash] = struct{}{}
+			}
 		case "provider":
 			if _, ok := fieldSeen[oauthpending.FieldProvider]; !ok {
 				selectedFields = append(selectedFields, oauthpending.FieldProvider)
@@ -4687,6 +5135,76 @@ func (_q *OAuthPendingQuery) collectField(ctx context.Context, oneNode bool, opC
 			if _, ok := fieldSeen[oauthpending.FieldExpiresAt]; !ok {
 				selectedFields = append(selectedFields, oauthpending.FieldExpiresAt)
 				fieldSeen[oauthpending.FieldExpiresAt] = struct{}{}
+			}
+		case "lifecycleStatus":
+			if _, ok := fieldSeen[oauthpending.FieldLifecycleStatus]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldLifecycleStatus)
+				fieldSeen[oauthpending.FieldLifecycleStatus] = struct{}{}
+			}
+		case "ownerWorkosUserID":
+			if _, ok := fieldSeen[oauthpending.FieldOwnerWorkosUserID]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldOwnerWorkosUserID)
+				fieldSeen[oauthpending.FieldOwnerWorkosUserID] = struct{}{}
+			}
+		case "ownerOrgID":
+			if _, ok := fieldSeen[oauthpending.FieldOwnerOrgID]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldOwnerOrgID)
+				fieldSeen[oauthpending.FieldOwnerOrgID] = struct{}{}
+			}
+		case "requestedScopes":
+			if _, ok := fieldSeen[oauthpending.FieldRequestedScopes]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldRequestedScopes)
+				fieldSeen[oauthpending.FieldRequestedScopes] = struct{}{}
+			}
+		case "redirectTarget":
+			if _, ok := fieldSeen[oauthpending.FieldRedirectTarget]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldRedirectTarget)
+				fieldSeen[oauthpending.FieldRedirectTarget] = struct{}{}
+			}
+		case "consentChallenge":
+			if _, ok := fieldSeen[oauthpending.FieldConsentChallenge]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldConsentChallenge)
+				fieldSeen[oauthpending.FieldConsentChallenge] = struct{}{}
+			}
+		case "contextRequestID":
+			if _, ok := fieldSeen[oauthpending.FieldContextRequestID]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldContextRequestID)
+				fieldSeen[oauthpending.FieldContextRequestID] = struct{}{}
+			}
+		case "hydraClientID":
+			if _, ok := fieldSeen[oauthpending.FieldHydraClientID]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldHydraClientID)
+				fieldSeen[oauthpending.FieldHydraClientID] = struct{}{}
+			}
+		case "callbackAt":
+			if _, ok := fieldSeen[oauthpending.FieldCallbackAt]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldCallbackAt)
+				fieldSeen[oauthpending.FieldCallbackAt] = struct{}{}
+			}
+		case "callbackClaimID":
+			if _, ok := fieldSeen[oauthpending.FieldCallbackClaimID]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldCallbackClaimID)
+				fieldSeen[oauthpending.FieldCallbackClaimID] = struct{}{}
+			}
+		case "callbackClaimedUntil":
+			if _, ok := fieldSeen[oauthpending.FieldCallbackClaimedUntil]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldCallbackClaimedUntil)
+				fieldSeen[oauthpending.FieldCallbackClaimedUntil] = struct{}{}
+			}
+		case "callbackAttempts":
+			if _, ok := fieldSeen[oauthpending.FieldCallbackAttempts]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldCallbackAttempts)
+				fieldSeen[oauthpending.FieldCallbackAttempts] = struct{}{}
+			}
+		case "claimedAt":
+			if _, ok := fieldSeen[oauthpending.FieldClaimedAt]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldClaimedAt)
+				fieldSeen[oauthpending.FieldClaimedAt] = struct{}{}
+			}
+		case "failureReason":
+			if _, ok := fieldSeen[oauthpending.FieldFailureReason]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldFailureReason)
+				fieldSeen[oauthpending.FieldFailureReason] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -9987,6 +10505,45 @@ func (_q *RevenueWorkspaceQuery) collectField(ctx context.Context, oneNode bool,
 				return err
 			}
 			_q.WithNamedRelationshipPersons(alias, func(wq *PersonQuery) {
+				*wq = *query
+			})
+
+		case "entities":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&EntityClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, entityImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedEntities(alias, func(wq *EntityQuery) {
+				*wq = *query
+			})
+
+		case "entityResourceRefs":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&EntityResourceRefClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, entityresourcerefImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedEntityResourceRefs(alias, func(wq *EntityResourceRefQuery) {
+				*wq = *query
+			})
+
+		case "entityIdentifiers":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&EntityIdentifierClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, entityidentifierImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedEntityIdentifiers(alias, func(wq *EntityIdentifierQuery) {
 				*wq = *query
 			})
 

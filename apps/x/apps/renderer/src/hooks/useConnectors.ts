@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { setGoogleCredentials, clearGoogleCredentials } from "@/lib/google-credentials-store";
 import { toast } from "sonner";
-import {
-  PRODUCT_NAME,
-  getProductProviderState,
-  isProductProvider,
-} from "@x/shared/branding";
+import { PRODUCT_NAME, getProductProviderState, isProductProvider } from "@x/shared/branding";
+import type {
+  ConnectorEntitlement,
+  ConnectorLifecycleState,
+  ConnectorScope,
+} from "@x/shared/connectors";
+import { connectorLifecycleAction } from "@x/shared/connectors";
 
 export interface ProviderState {
   isConnected: boolean;
@@ -37,9 +39,21 @@ export interface IntegrationConnector {
   transport?: "mcp" | "native";
   authType: "oauth" | "api_key";
   scopes?: string[];
+  grantedScopes?: ConnectorScope[];
+  availableScopes?: ConnectorScope[];
+  connectionHealth?: ConnectorLifecycleState;
+  connectionHealthMessage?: string;
+  entitlement?: ConnectorEntitlement;
+  status?: string;
+  lastUsedAt?: string;
   iconUrl?: string;
   templateBlocks?: IntegrationTemplateBlock[];
   nativeTools?: Array<{ name: string; trustTier?: "read" | "write" | "act" | "money-moving" }>;
+  mcpTools?: Array<{
+    name: string;
+    trustTier?: "read" | "write" | "act" | "money-moving";
+    requiredScopes?: string[];
+  }>;
   connected: boolean;
   connectedAt?: string;
 }
@@ -252,7 +266,13 @@ export function useConnectors(active: boolean) {
 
   const handleConnectIntegration = useCallback(
     async (connector: IntegrationConnector) => {
-      if (connector.connected) return;
+      const lifecycleAction = connectorLifecycleAction(connector);
+      if (
+        lifecycleAction === "disconnect" ||
+        lifecycleAction === "wait" ||
+        lifecycleAction === "unavailable"
+      )
+        return;
       if (connector.authType === "api_key") {
         setIntegrationApiKeyTarget(connector);
         setIntegrationApiKeyOpen(true);
@@ -270,6 +290,11 @@ export function useConnectors(active: boolean) {
       try {
         const result = await window.ipc.invoke("connectors:connect", {
           connector: connector.name,
+          requestedScopes: connector.availableScopes?.map((scope) => scope.name),
+          // The broker parks the provider grant until Electron redeems the
+          // one-time session through the authenticated claim endpoint. This
+          // exact URI is handled by main, not by renderer navigation.
+          redirectAfter: "solomon-ai://connection-complete",
         });
         if (!result.success) {
           clearIntegrationConnectTimeout(connector.name);
@@ -329,6 +354,27 @@ export function useConnectors(active: boolean) {
       } catch (error) {
         console.error("Failed to disconnect integration:", error);
         toast.error(`Failed to disconnect ${connector.displayName}`);
+      } finally {
+        setIntegrationConnecting((prev) => ({ ...prev, [connector.name]: false }));
+      }
+    },
+    [refreshIntegrations],
+  );
+
+  const handleAuthorizeIntegrationScopes = useCallback(
+    async (connector: IntegrationConnector, scopes: string[]) => {
+      try {
+        setIntegrationConnecting((prev) => ({ ...prev, [connector.name]: true }));
+        const result = await window.ipc.invoke("connectors:authorizeScopes", {
+          connector: connector.name,
+          scopes,
+        });
+        if (!result.success) {
+          toast.error(result.error || `Authorization failed for ${connector.displayName}`);
+          return;
+        }
+        toast.success(`Authorized protected access for ${connector.displayName}`);
+        await refreshIntegrations();
       } finally {
         setIntegrationConnecting((prev) => ({ ...prev, [connector.name]: false }));
       }
@@ -548,12 +594,7 @@ export function useConnectors(active: boolean) {
     }
 
     setProviderStates(newStates);
-  }, [
-    providers,
-    refreshGranolaConfig,
-    refreshIntegrations,
-    refreshSlackConfig,
-  ]);
+  }, [providers, refreshGranolaConfig, refreshIntegrations, refreshSlackConfig]);
 
   // Refresh when active or providers change
   useEffect(() => {
@@ -648,6 +689,7 @@ export function useConnectors(active: boolean) {
     handleConnectIntegration,
     handleIntegrationApiKeySubmit,
     handleDisconnectIntegration,
+    handleAuthorizeIntegrationScopes,
     refreshIntegrations,
 
     // Granola

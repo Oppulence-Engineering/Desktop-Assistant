@@ -1,0 +1,387 @@
+{
+  "generatedBy": "charts/hydra/generate_clients.py",
+  "registry": "apps/rowboat-api/internal/connectors/default_connectors.json",
+  "productionApprovalManifestDigest": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "environments": {
+    "production": {
+      "issuer": "https://api.oppulence.io",
+      "jwksUrl": "https://api.oppulence.io/.well-known/connector-jwks.json",
+      "allowedAlgorithms": [
+        "RS256"
+      ],
+      "products": [
+        {
+          "connector": "canvas",
+          "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
+          "audience": "mcp:canvas",
+          "scopes": [
+            "canvas:invoices.read",
+            "canvas:customers.read",
+            "canvas:transactions.read"
+          ],
+          "requiredScopes": [
+            "canvas:invoices.read",
+            "canvas:customers.read"
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
+          }
+        },
+        {
+          "connector": "corinthian",
+          "mcpUrl": "https://mcp.corinthian.solomon-ai.co/mcp",
+          "audience": "mcp:corinthian",
+          "scopes": [
+            "corinthian:ar.read",
+            "corinthian:collections.read"
+          ],
+          "requiredScopes": [
+            "corinthian:ar.read"
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
+          }
+        },
+        {
+          "connector": "cadence",
+          "mcpUrl": "https://mcp.cadence.solomon-ai.co/mcp",
+          "audience": "mcp:cadence",
+          "scopes": [
+            "cadence:payment_runs.read"
+          ],
+          "requiredScopes": [
+            "cadence:payment_runs.read"
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
+          }
+        },
+        {
+          "connector": "conduit",
+          "mcpUrl": "https://mcp.conduit.solomon-ai.co/mcp",
+          "audience": "mcp:conduit",
+          "scopes": [
+            "conduit:pipelines.read",
+            "conduit:pipelines.write"
+          ],
+          "requiredScopes": [
+            "conduit:pipelines.read"
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
+          }
+        },
+        {
+          "connector": "eigen",
+          "mcpUrl": "https://mcp.eigen.solomon-ai.co/mcp",
+          "audience": "mcp:eigen",
+          "scopes": [
+            "eigen:knowledge.read"
+          ],
+          "requiredScopes": [
+            "eigen:knowledge.read"
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
+          }
+        }
+      ]
+    },
+    "staging": {
+      "issuer": "https://api.x.staging.oppulence.io",
+      "jwksUrl": "https://api.x.staging.oppulence.io/.well-known/connector-jwks.json",
+      "allowedAlgorithms": [
+        "RS256"
+      ],
+      "products": [
+        {
+          "connector": "canvas",
+          "mcpUrl": "https://api.canvas.staging.solomon-ai.co/v1/mcp",
+          "audience": "mcp:canvas-staging",
+          "scopes": [
+            "canvas:invoices.read",
+            "canvas:customers.read",
+            "canvas:transactions.read"
+          ],
+          "requiredScopes": [
+            "canvas:invoices.read",
+            "canvas:customers.read"
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.x.staging.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
+          }
+        },
+        {
+          "connector": "corinthian",
+          "mcpUrl": "https://mcp.corinthian.staging.solomon-ai.co/mcp",
+          "audience": "mcp:corinthian-staging",
+          "scopes": [
+            "corinthian:ar.read",
+            "corinthian:collections.read"
+          ],
+          "requiredScopes": [
+            "corinthian:ar.read"
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.x.staging.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
+          }
+        },
+        {
+          "connector": "cadence",
+          "mcpUrl": "https://mcp.cadence.staging.solomon-ai.co/mcp",
+          "audience": "mcp:cadence-staging",
+          "scopes": [
+            "cadence:payment_runs.read",
+            "cadence:payments.execute"
+          ],
+          "requiredScopes": [
+            "cadence:payment_runs.read"
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.x.staging.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
+          }
+        },
+        {
+          "connector": "conduit",
+          "mcpUrl": "https://mcp.conduit.staging.solomon-ai.co/mcp",
+          "audience": "mcp:conduit-staging",
+          "scopes": [
+            "conduit:pipelines.read",
+            "conduit:pipelines.write"
+          ],
+          "requiredScopes": [
+            "conduit:pipelines.read"
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.x.staging.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
+          }
+        },
+        {
+          "connector": "eigen",
+          "mcpUrl": "https://mcp.eigen.staging.solomon-ai.co/mcp",
+          "audience": "mcp:eigen-staging",
+          "scopes": [
+            "eigen:knowledge.read",
+            "eigen:actions.execute"
+          ],
+          "requiredScopes": [
+            "eigen:knowledge.read"
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.x.staging.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

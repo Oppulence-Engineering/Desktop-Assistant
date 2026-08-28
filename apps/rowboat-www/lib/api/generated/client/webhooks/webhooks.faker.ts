@@ -7,18 +7,71 @@
  */
 import { faker } from "@faker-js/faker";
 
-import type { PreConsentResponse } from "../model";
+import type {
+  ConnectorConsentContext200,
+  ConsentAuditResponse,
+  PreConsentResponse,
+} from "../model";
+
+export const getAppendConnectorConsentAuditResponseMock = (
+  overrideResponse: Partial<Extract<ConsentAuditResponse, object>> = {},
+): ConsentAuditResponse => ({ accepted: faker.datatype.boolean(), ...overrideResponse });
+
+export const getConnectorConsentContextResponseMock = (): ConnectorConsentContext200 => ({});
 
 export const getPreConsentResponseMock = (
   overrideResponse: Partial<Extract<PreConsentResponse, object>> = {},
 ): PreConsentResponse => ({
-  allow: faker.datatype.boolean(),
-  upsell: faker.helpers.arrayElement([
-    {
-      message: faker.string.alpha({ length: { min: 10, max: 20 } }),
-      requiredPlan: faker.helpers.arrayElement(["starter", "pro"] as const),
-    },
-    undefined,
-  ]),
+  client: {
+    display_name: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    id: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  },
+  connector: {
+    audience: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    display_name: faker.string.alpha({ length: { min: 10, max: 20 } }),
+    id: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  },
+  entitlement: {
+    allowed: faker.datatype.boolean(),
+    message: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+      undefined,
+    ]),
+    reason: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([
+        faker.helpers.arrayElement([
+          "llm_call",
+          "llm_call_reserve",
+          "llm_settle",
+          "voice_tts",
+          "exa_search",
+          "grant",
+          "refund",
+        ] as const),
+        null,
+      ]),
+      undefined,
+    ]),
+    required_plan: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+      undefined,
+    ]),
+    upgrade_url: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.string.alpha({ length: { min: 10, max: 20 } }), null]),
+      undefined,
+    ]),
+  },
+  request_id: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  scopes: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
+      description: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      display_name: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      name: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      required: faker.datatype.boolean(),
+      requires_step_up: faker.datatype.boolean(),
+      tier: faker.helpers.arrayElement(["low", "medium", "high", "money-moving"] as const),
+    }),
+  ),
+  subject: faker.string.alpha({ length: { min: 10, max: 20 } }),
   ...overrideResponse,
 });

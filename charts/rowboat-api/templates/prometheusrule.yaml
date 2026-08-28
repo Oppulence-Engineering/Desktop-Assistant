@@ -14,7 +14,7 @@ spec:
       rules:
         - alert: RowboatAPIWorkflowTargetMissing
           expr: |
-            absent(up{namespace="{{ .Release.Namespace }}",service="{{ include "rowboat-api.fullname" . }}"})
+            absent(up{namespace="{{ .Release.Namespace }}",service="{{ include "rowboat-api.fullname" . }}-metrics"})
             or absent(up{namespace="{{ .Release.Namespace }}",service="{{ include "rowboat-api.fullname" . }}-worker"})
             or absent(up{namespace="{{ .Release.Namespace }}",service="{{ include "rowboat-api.fullname" . }}-scheduler"})
           for: 5m
@@ -63,4 +63,22 @@ spec:
           annotations:
             summary: Relationship workflow backlog is growing
             description: A durable attention or connector-repair queue has remained above 500 items.
+    - name: rowboat-api.connector-credential-custody
+      rules:
+        - alert: RowboatConnectorCredentialCustodyUnresolved
+          expr: max_over_time(connector_credential_custody_in_flight[5m]) > 0
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: A provider credential has no acknowledged custody outcome
+            description: Page immediately. The affected API pod is not ready and must not be voluntarily disrupted until PostgreSQL custody persistence or provider revocation succeeds.
+        - alert: RowboatConnectorCredentialCustodyShutdownBlocked
+          expr: max_over_time(connector_credential_custody_shutdown_unresolved[5m]) > 0
+          for: 0m
+          labels:
+            severity: critical
+          annotations:
+            summary: API shutdown is blocked on unresolved credential custody
+            description: Restore PostgreSQL or provider revocation before the pod termination grace expires. Do not treat this rollout as clean if the process exits non-zero.
 {{- end }}

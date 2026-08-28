@@ -8,7 +8,9 @@
 #
 # The `hydra` Postgres database lives in the managed Postgres instance; the DSN
 # and secrets are supplied via the existing Secret `hydra-secrets` with keys:
-#   dsn, secretsSystem, secretsCookie
+#   dsn, secretsSystem, secretsCookie. During rotation, secretsSystem and
+# secretsCookie are comma-separated current,previous values. Remove the previous
+# value only after the maximum refresh/session TTL and a successful canary.
 
 hydra:
   existingSecret: hydra-secrets
@@ -31,7 +33,8 @@ hydra:
         supported_types:
           - public
     ttl:
-      access_token: 1h
+      # RFC 012 product resource tokens are deliberately short lived.
+      access_token: 5m
       refresh_token: 720h
       id_token: 1h
       auth_code: 10m
@@ -44,8 +47,22 @@ hydra:
 
   dangerousForceHttp: false
 
+# Pin the runtime independently of the pinned upstream chart version used by
+# the release contract. Renovation requires the real-Hydra render/boot profile.
+image:
+  repository: oryd/hydra
+  tag: v2.3.0
+  pullPolicy: IfNotPresent
+
 deployment:
   replicaCount: 2
+  podMetadata:
+    labels:
+      networking.rowboat.dev/network-policy: hydra
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   resources:
     requests:
       cpu: 100m
@@ -72,3 +89,8 @@ ingress:
   # Admin API stays cluster-internal (never exposed publicly).
   admin:
     enabled: false
+
+serviceMonitor:
+  # The admin port is intentionally reachable only by oauth-consent and labeled
+  # reconciliation jobs. Do not create a monitor that cannot reach port 4445.
+  enabled: false

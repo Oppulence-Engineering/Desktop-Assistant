@@ -111,6 +111,11 @@ import {
   RelationshipEvidenceSettings,
 } from "./transcription.js";
 import * as meetings from "./meetings.js";
+import {
+  ConnectorEntitlementSchema,
+  ConnectorLifecycleStateSchema,
+  ConnectorScopeSchema,
+} from "./connectors.js";
 
 // ============================================================================
 // Runtime Validation Schemas (Single Source of Truth)
@@ -133,6 +138,7 @@ const ConnectorTemplateBlockSchema = z.object({
 const ConnectorMCPToolPolicySchema = z.object({
   name: z.string(),
   trustTier: ConnectorTrustTierSchema.optional(),
+  requiredScopes: z.array(z.string()).optional(),
 });
 
 const ConnectorViewSchema = z.object({
@@ -143,6 +149,13 @@ const ConnectorViewSchema = z.object({
   transport: z.enum(["mcp", "native"]).optional(),
   authType: z.enum(["oauth", "api_key"]),
   scopes: z.array(z.string()).optional(),
+  grantedScopes: z.array(ConnectorScopeSchema).optional(),
+  availableScopes: z.array(ConnectorScopeSchema).optional(),
+  connectionHealth: ConnectorLifecycleStateSchema.optional(),
+  connectionHealthMessage: z.string().optional(),
+  entitlement: ConnectorEntitlementSchema.optional(),
+  status: z.string().optional(),
+  lastUsedAt: z.string().optional(),
   iconUrl: z.string().optional(),
   mcpTools: z.array(ConnectorMCPToolPolicySchema).optional(),
   nativeTools: z.array(ConnectorMCPToolPolicySchema).optional(),
@@ -661,6 +674,8 @@ const ipcSchemas = {
   "connectors:connect": {
     req: z.object({
       connector: z.string(),
+      requestedScopes: z.array(z.string()).optional(),
+      redirectAfter: z.string().optional(),
     }),
     res: z.object({
       success: z.boolean(),
@@ -678,6 +693,16 @@ const ipcSchemas = {
     req: z.object({
       connector: z.string(),
       apiKey: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+    }),
+  },
+  "connectors:authorizeScopes": {
+    req: z.object({
+      connector: z.string(),
+      scopes: z.array(z.string()).min(1),
     }),
     res: z.object({
       success: z.boolean(),
@@ -2716,6 +2741,50 @@ const ipcSchemas = {
   "relationships:reject": {
     req: z.object({ actionId: z.string(), reason: z.string().min(1) }),
     res: RelationshipActionSchema,
+  },
+  "entities:listLinkSuggestions": {
+    req: z.object({}),
+    res: z.array(
+      z.object({
+        id: z.string(),
+        entityId: z.string(),
+        notePath: z.string(),
+        product: z.string(),
+        recordType: z.string(),
+        candidateRefs: z.array(z.string()),
+        matchedIdentifiers: z.array(z.string()),
+        status: z.enum(["pending", "accepted", "rejected"]),
+        createdAt: z.string(),
+      }),
+    ),
+  },
+  "entities:getSpineHealth": {
+    req: z.object({}),
+    res: z.object({
+      status: z.enum(["healthy", "degraded"]),
+      remaining: z.number().int().nonnegative(),
+      deadLetters: z.number().int().nonnegative(),
+      lastAttemptAt: z.string(),
+      lastError: z.string().optional(),
+    }),
+  },
+  "entities:reviewLinkSuggestion": {
+    req: z.object({
+      suggestionId: z.string(),
+      decision: z.enum(["accept", "reject"]),
+      chosenRef: z.string().optional(),
+    }),
+    res: z.object({
+      id: z.string(),
+      entityId: z.string(),
+      notePath: z.string(),
+      product: z.string(),
+      recordType: z.string(),
+      candidateRefs: z.array(z.string()),
+      matchedIdentifiers: z.array(z.string()),
+      status: z.enum(["pending", "accepted", "rejected"]),
+      createdAt: z.string(),
+    }),
   },
   // Feedback (relayed to Plain via the backend; signed-in only)
   "feedback:submit": {

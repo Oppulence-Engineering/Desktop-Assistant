@@ -3,6 +3,7 @@ package connectors
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -11,6 +12,33 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 )
+
+type oauthEndpointError struct {
+	StatusCode  int
+	Code        string
+	Description string
+}
+
+func isRefreshFamilyInvalidation(err error) bool {
+	var endpointErr *oauthEndpointError
+	if !errors.As(err, &endpointErr) || endpointErr.Code != "invalid_grant" {
+		return false
+	}
+	d := strings.ToLower(endpointErr.Description)
+	return strings.Contains(d, "reuse") || strings.Contains(d, "replayed") || strings.Contains(d, "token family") || strings.Contains(d, "family invalid")
+}
+
+func (e *oauthEndpointError) Error() string {
+	if e.Code == "" {
+		return fmt.Sprintf("oauth token endpoint returned %d", e.StatusCode)
+	}
+	return fmt.Sprintf("oauth token endpoint returned %d: %s", e.StatusCode, e.Code)
+}
+
+func isOAuthErrorCode(err error, code string) bool {
+	var endpointErr *oauthEndpointError
+	return errors.As(err, &endpointErr) && endpointErr.Code == code
+}
 
 // oryClient is a thin OAuth 2.0 client for brokering connector tokens against
 // Ory Hydra (authorization-code + PKCE, refresh, revoke).
@@ -107,10 +135,7 @@ func (c *oryClient) tokenRequest(ctx context.Context, form url.Values) (*oryToke
 			Description string `json:"error_description"`
 		}
 		_ = json.Unmarshal(body, &oerr)
-		if oerr.Error != "" {
-			return nil, fmt.Errorf("ory token endpoint returned %d: %s", resp.StatusCode, oerr.Error)
-		}
-		return nil, fmt.Errorf("ory token endpoint returned %d", resp.StatusCode)
+		return nil, &oauthEndpointError{StatusCode: resp.StatusCode, Code: oerr.Error, Description: oerr.Description}
 	}
 	var tok oryToken
 	if err := json.Unmarshal(body, &tok); err != nil {

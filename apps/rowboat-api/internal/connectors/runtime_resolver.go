@@ -2,8 +2,8 @@ package connectors
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
@@ -19,27 +19,64 @@ import (
 // execution. It is explicit-user scoped: callers pass the run owner's user id,
 // and the DB query applies that id directly under an internal context.
 type MCPRuntimeResolver struct {
-	client   *ent.Client
-	sealer   *crypto.Sealer
-	registry *Registry
-	ory      *oryClient
-	refresh  refreshDeduper
+	client    *ent.Client
+	sealer    *crypto.Sealer
+	registry  *Registry
+	ory       *oryClient
+	refresh   refreshDeduper
+	custody   *credentialCustodySupervisor
+	issuer    ResourceTokenIssuer
+	lifecycle *LifecycleService
 }
 
 // SetRefreshDedup enables the same rotation-safe refresh path used by the HTTP
 // connector token endpoint.
 func (r *MCPRuntimeResolver) SetRefreshDedup(cache RefreshCache, sealer *crypto.Sealer, log *zap.Logger) {
-	r.refresh.configure(cache, sealer, log)
+	if r == nil {
+		return
+	}
+	r.refresh.configure(cache, sealer, r.client, log)
+	if r.custody == nil {
+		r.custody = newCredentialCustodySupervisor(log, 4, 64)
+	}
+	r.refresh.custody = r.custody
+	if r.lifecycle != nil {
+		r.lifecycle.SetLogger(log)
+	}
+}
+
+// CredentialCustodyReady reports whether worker-side provider refreshes can
+// reserve hard custody capacity before contacting the provider.
+func (r *MCPRuntimeResolver) CredentialCustodyReady(context.Context) error {
+	if r == nil || r.custody == nil {
+		return errors.New("connector credential custody is not configured")
+	}
+	return r.custody.ready()
+}
+
+// BeginCredentialCustodyShutdown closes worker readiness before Temporal starts
+// draining activities while preserving reservations already accepted.
+func (r *MCPRuntimeResolver) BeginCredentialCustodyShutdown() {
+	if r != nil && r.custody != nil {
+		r.custody.beginShutdown()
+	}
+}
+
+// CloseCredentialCustody accounts for every worker-side provider reservation
+// before process termination or returns an explicit bounded-shutdown error.
+func (r *MCPRuntimeResolver) CloseCredentialCustody(ctx context.Context) error {
+	if r == nil || r.custody == nil {
+		return nil
+	}
+	return r.custody.closeContext(ctx)
 }
 
 // NewMCPRuntimeResolver builds a worker-side resolver for connector MCP access.
 func NewMCPRuntimeResolver(client *ent.Client, sealer *crypto.Sealer, registry *Registry, cfg Config) *MCPRuntimeResolver {
-	return &MCPRuntimeResolver{
-		client:   client,
-		sealer:   sealer,
-		registry: registry,
-		ory:      newOryClient(cfg.OryPublicURL, cfg.OryBrokerClientID, cfg.OryBrokerClientSecret),
-	}
+	ory := newOryClient(cfg.OryPublicURL, cfg.OryBrokerClientID, cfg.OryBrokerClientSecret)
+	r := &MCPRuntimeResolver{client: client, sealer: sealer, registry: registry, ory: ory}
+	r.lifecycle = NewLifecycleService(client, sealer, registry, ory)
+	return r
 }
 
 // SetOutboundPolicy applies the shared outbound vendor policy to Ory calls.
@@ -50,11 +87,24 @@ func (r *MCPRuntimeResolver) SetOutboundPolicy(policy outbound.Policy) {
 	r.ory.setOutboundPolicy(policy)
 }
 
+// SetResourceTokenIssuer configures the same audience-bound product token
+// issuer used by the public resource-token endpoint. Worker-side tools must not
+// pass provider access tokens or API keys to product MCP servers.
+func (r *MCPRuntimeResolver) SetResourceTokenIssuer(issuer ResourceTokenIssuer) {
+	if r == nil {
+		return
+	}
+	r.issuer = issuer
+	if r.lifecycle != nil {
+		r.lifecycle.SetIssuer(issuer)
+	}
+}
+
 // ResolveMCP returns the MCP endpoint, token type, and bearer/API token for a
 // connected user's connector. The token is intended for immediate server-side
 // use only; cloud task tools must not surface it to the model.
 func (r *MCPRuntimeResolver) ResolveMCP(ctx context.Context, userID, connectorName string) (mcpURL, tokenType, accessToken string, err error) {
-	if r == nil || r.client == nil || r.sealer == nil || r.registry == nil {
+	if r == nil || r.client == nil || r.sealer == nil || r.registry == nil || r.lifecycle == nil {
 		return "", "", "", fmt.Errorf("connector resolver not configured")
 	}
 	uid, err := uuid.Parse(userID)
@@ -65,34 +115,82 @@ func (r *MCPRuntimeResolver) ResolveMCP(ctx context.Context, userID, connectorNa
 	if !ok {
 		return "", "", "", fmt.Errorf("unknown connector %q", connectorName)
 	}
-	mc, err := r.client.MCPConnection.Query().
-		Where(
-			mcpconnection.ConnectorEQ(connectorName),
-			mcpconnection.HasUserWith(user.IDEQ(uid)),
-		).
-		Only(auth.WithInternal(ctx))
+	if !r.registry.Enabled(connectorName) {
+		return "", "", "", fmt.Errorf("connector %q entitlement denied: connector_disabled", connectorName)
+	}
+	owner, err := r.client.User.Get(auth.WithInternal(ctx), uid)
+	if err != nil {
+		return "", "", "", fmt.Errorf("load connector owner: %w", err)
+	}
+	mc, err := r.client.MCPConnection.Query().Where(
+		mcpconnection.ConnectorEQ(connectorName),
+		mcpconnection.StatusEQ("active"),
+		mcpconnection.OrganizationIDEQ(connectorOrganizationID(owner)),
+		mcpconnection.HasUserWith(user.IDEQ(uid)),
+	).WithUser().Only(auth.WithInternal(ctx))
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return "", "", "", fmt.Errorf("connector %q is not connected", connectorName)
 		}
 		return "", "", "", fmt.Errorf("load connector %q: %w", connectorName, err)
 	}
-	if c.AuthType == "api_key" {
-		key, err := r.sealer.OpenString(mc.APIKeyEncrypted)
-		if err != nil {
-			return "", "", "", fmt.Errorf("open connector %q api key: %w", connectorName, err)
-		}
-		_ = mc.Update().SetLastUsedAt(time.Now()).Exec(auth.WithInternal(ctx))
-		return c.MCPURL, "Bearer", key, nil
+	if r.issuer == nil {
+		return "", "", "", fmt.Errorf("connector resource token issuer not configured")
 	}
 
-	refresh, err := r.sealer.OpenString(mc.RefreshTokenEncrypted)
-	if err != nil {
-		return "", "", "", fmt.Errorf("open connector %q refresh token: %w", connectorName, err)
+	if c.AuthType == "api_key" {
+		if _, err := r.sealer.OpenString(mc.APIKeyEncrypted); err != nil {
+			return "", "", "", fmt.Errorf("open connector %q api key: %w", connectorName, err)
+		}
+	} else {
+		refresh, err := r.sealer.OpenString(mc.RefreshTokenEncrypted)
+		if err != nil {
+			return "", "", "", fmt.Errorf("open connector %q refresh token: %w", connectorName, err)
+		}
+		bound := newConnectorRefreshContext(
+			connectorName, mc.ID.String(), mc.OrganizationID, mc.CredentialGeneration, mc.Audience, mc.Scopes,
+		)
+		persist := func(pctx context.Context, tok *oryToken, cleanupID uuid.UUID) (int64, error) {
+			updated, saveErr := r.lifecycle.PersistRefresh(pctx, owner, mc, tok, cleanupID)
+			if saveErr == nil {
+				mc = updated
+				return updated.CredentialGeneration, nil
+			}
+			return 0, saveErr
+		}
+		result, refreshErr := r.refresh.refresh(auth.WithInternal(ctx), bound, r.ory, refresh, persist)
+		if refreshErr != nil {
+			if !errors.Is(refreshErr, errConnectorRefreshInProgress) && !errors.Is(refreshErr, errConnectorCredentialSuperseded) {
+				transitionErr := r.lifecycle.HandleRefreshFailure(context.WithoutCancel(ctx), owner, mc, refreshErr)
+				if transitionErr != nil && !errors.Is(transitionErr, errConnectorCredentialSuperseded) {
+					return "", "", "", fmt.Errorf("record connector %q refresh failure: %w", connectorName, transitionErr)
+				}
+			}
+			return "", "", "", fmt.Errorf("refresh connector %q token: %w", connectorName, refreshErr)
+		}
+
+		// Cached results from another replica do not invoke this resolver's
+		// persistence callback. Reload the winning generation before minting.
+		current, currentErr := r.client.MCPConnection.Query().Where(
+			mcpconnection.IDEQ(mc.ID),
+			mcpconnection.ConnectorEQ(connectorName),
+			mcpconnection.OrganizationIDEQ(bound.OrganizationID),
+			mcpconnection.StatusEQ("active"),
+			mcpconnection.CredentialGenerationEQ(result.CurrentCredentialGeneration),
+			mcpconnection.HasUserWith(user.IDEQ(owner.ID)),
+		).Only(auth.WithInternal(ctx))
+		if currentErr != nil {
+			return "", "", "", fmt.Errorf("connector %q lifecycle changed during refresh: %w", connectorName, errConnectorCredentialSuperseded)
+		}
+		mc = current
+		if result == nil || !providerGrantMatches(r.registry, connectorName, mc.Scopes, result.Token.Scope) {
+			return "", "", "", fmt.Errorf("connector %q provider scope mismatch", connectorName)
+		}
 	}
-	tok, err := r.refresh.refresh(auth.WithInternal(ctx), connectorName, mc, r.ory, refresh)
+
+	token, err := r.lifecycle.Mint(auth.WithInternal(ctx), owner, c, mc, mc.Scopes)
 	if err != nil {
-		return "", "", "", fmt.Errorf("refresh connector %q token: %w", connectorName, err)
+		return "", "", "", err
 	}
-	return c.MCPURL, defaultStr(tok.TokenType, "Bearer"), tok.AccessToken, nil
+	return c.MCPURL, "Bearer", token, nil
 }

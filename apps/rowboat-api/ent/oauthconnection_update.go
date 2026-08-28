@@ -55,6 +55,41 @@ func (_u *OAuthConnectionUpdate) SetRefreshTokenEncrypted(v []byte) *OAuthConnec
 	return _u
 }
 
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (_u *OAuthConnectionUpdate) SetRefreshTokenPresent(v bool) *OAuthConnectionUpdate {
+	_u.mutation.SetRefreshTokenPresent(v)
+	return _u
+}
+
+// SetNillableRefreshTokenPresent sets the "refresh_token_present" field if the given value is not nil.
+func (_u *OAuthConnectionUpdate) SetNillableRefreshTokenPresent(v *bool) *OAuthConnectionUpdate {
+	if v != nil {
+		_u.SetRefreshTokenPresent(*v)
+	}
+	return _u
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (_u *OAuthConnectionUpdate) SetCredentialGeneration(v int64) *OAuthConnectionUpdate {
+	_u.mutation.ResetCredentialGeneration()
+	_u.mutation.SetCredentialGeneration(v)
+	return _u
+}
+
+// SetNillableCredentialGeneration sets the "credential_generation" field if the given value is not nil.
+func (_u *OAuthConnectionUpdate) SetNillableCredentialGeneration(v *int64) *OAuthConnectionUpdate {
+	if v != nil {
+		_u.SetCredentialGeneration(*v)
+	}
+	return _u
+}
+
+// AddCredentialGeneration adds value to the "credential_generation" field.
+func (_u *OAuthConnectionUpdate) AddCredentialGeneration(v int64) *OAuthConnectionUpdate {
+	_u.mutation.AddCredentialGeneration(v)
+	return _u
+}
+
 // SetScopes sets the "scopes" field.
 func (_u *OAuthConnectionUpdate) SetScopes(v []string) *OAuthConnectionUpdate {
 	_u.mutation.SetScopes(v)
@@ -142,6 +177,11 @@ func (_u *OAuthConnectionUpdate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *OAuthConnectionUpdate) check() error {
+	if v, ok := _u.mutation.CredentialGeneration(); ok {
+		if err := oauthconnection.CredentialGenerationValidator(v); err != nil {
+			return &ValidationError{Name: "credential_generation", err: fmt.Errorf(`ent: validator failed for field "OAuthConnection.credential_generation": %w`, err)}
+		}
+	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "OAuthConnection.user"`)
 	}
@@ -168,6 +208,15 @@ func (_u *OAuthConnectionUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if value, ok := _u.mutation.RefreshTokenEncrypted(); ok {
 		_spec.SetField(oauthconnection.FieldRefreshTokenEncrypted, field.TypeBytes, value)
+	}
+	if value, ok := _u.mutation.RefreshTokenPresent(); ok {
+		_spec.SetField(oauthconnection.FieldRefreshTokenPresent, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.CredentialGeneration(); ok {
+		_spec.SetField(oauthconnection.FieldCredentialGeneration, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedCredentialGeneration(); ok {
+		_spec.AddField(oauthconnection.FieldCredentialGeneration, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.Scopes(); ok {
 		_spec.SetField(oauthconnection.FieldScopes, field.TypeJSON, value)
@@ -229,6 +278,41 @@ func (_u *OAuthConnectionUpdateOne) SetNillableProvider(v *string) *OAuthConnect
 // SetRefreshTokenEncrypted sets the "refresh_token_encrypted" field.
 func (_u *OAuthConnectionUpdateOne) SetRefreshTokenEncrypted(v []byte) *OAuthConnectionUpdateOne {
 	_u.mutation.SetRefreshTokenEncrypted(v)
+	return _u
+}
+
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (_u *OAuthConnectionUpdateOne) SetRefreshTokenPresent(v bool) *OAuthConnectionUpdateOne {
+	_u.mutation.SetRefreshTokenPresent(v)
+	return _u
+}
+
+// SetNillableRefreshTokenPresent sets the "refresh_token_present" field if the given value is not nil.
+func (_u *OAuthConnectionUpdateOne) SetNillableRefreshTokenPresent(v *bool) *OAuthConnectionUpdateOne {
+	if v != nil {
+		_u.SetRefreshTokenPresent(*v)
+	}
+	return _u
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (_u *OAuthConnectionUpdateOne) SetCredentialGeneration(v int64) *OAuthConnectionUpdateOne {
+	_u.mutation.ResetCredentialGeneration()
+	_u.mutation.SetCredentialGeneration(v)
+	return _u
+}
+
+// SetNillableCredentialGeneration sets the "credential_generation" field if the given value is not nil.
+func (_u *OAuthConnectionUpdateOne) SetNillableCredentialGeneration(v *int64) *OAuthConnectionUpdateOne {
+	if v != nil {
+		_u.SetCredentialGeneration(*v)
+	}
+	return _u
+}
+
+// AddCredentialGeneration adds value to the "credential_generation" field.
+func (_u *OAuthConnectionUpdateOne) AddCredentialGeneration(v int64) *OAuthConnectionUpdateOne {
+	_u.mutation.AddCredentialGeneration(v)
 	return _u
 }
 
@@ -332,6 +416,11 @@ func (_u *OAuthConnectionUpdateOne) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *OAuthConnectionUpdateOne) check() error {
+	if v, ok := _u.mutation.CredentialGeneration(); ok {
+		if err := oauthconnection.CredentialGenerationValidator(v); err != nil {
+			return &ValidationError{Name: "credential_generation", err: fmt.Errorf(`ent: validator failed for field "OAuthConnection.credential_generation": %w`, err)}
+		}
+	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "OAuthConnection.user"`)
 	}
@@ -375,6 +464,15 @@ func (_u *OAuthConnectionUpdateOne) sqlSave(ctx context.Context) (_node *OAuthCo
 	}
 	if value, ok := _u.mutation.RefreshTokenEncrypted(); ok {
 		_spec.SetField(oauthconnection.FieldRefreshTokenEncrypted, field.TypeBytes, value)
+	}
+	if value, ok := _u.mutation.RefreshTokenPresent(); ok {
+		_spec.SetField(oauthconnection.FieldRefreshTokenPresent, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.CredentialGeneration(); ok {
+		_spec.SetField(oauthconnection.FieldCredentialGeneration, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedCredentialGeneration(); ok {
+		_spec.AddField(oauthconnection.FieldCredentialGeneration, field.TypeInt64, value)
 	}
 	if value, ok := _u.mutation.Scopes(); ok {
 		_spec.SetField(oauthconnection.FieldScopes, field.TypeJSON, value)

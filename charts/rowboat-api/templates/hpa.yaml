@@ -12,6 +12,9 @@ spec:
     name: {{ include "rowboat-api.fullname" . }}
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  behavior:
+    scaleDown:
+      selectPolicy: {{ .Values.autoscaling.scaleDown.selectPolicy }}
   metrics:
     - type: Resource
       resource:

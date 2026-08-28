@@ -6,7 +6,8 @@ metadata:
   labels:
     {{- include "rowboat-api.labels" . | nindent 4 }}
 spec:
-  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable | quote }}
+  unhealthyPodEvictionPolicy: {{ .Values.podDisruptionBudget.unhealthyPodEvictionPolicy }}
   selector:
     matchLabels:
       {{- include "rowboat-api.selectorLabels" . | nindent 6 }}
@@ -20,7 +21,8 @@ metadata:
     {{- include "rowboat-api.labels" . | nindent 4 }}
     app.kubernetes.io/component: worker
 spec:
-  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.podDisruptionBudget.workerMinAvailable | quote }}
+  unhealthyPodEvictionPolicy: {{ .Values.podDisruptionBudget.unhealthyPodEvictionPolicy }}
   selector:
     matchLabels:
       {{- include "rowboat-api.workerSelectorLabels" . | nindent 6 }}

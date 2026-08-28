@@ -9,11 +9,15 @@ import type {
   ConnectionAPIKeyRequest,
   ConnectionClaimRequest,
   ConnectionConnectedResponse,
+  ConnectionStartRequest,
   ConnectionStartResponse,
   ConnectorsResponse,
+  GetConnectorBrokerJWKS200,
   HandleConnectionCallbackParams,
+  HandleConnectorCallbackParams,
   HubSpotSearchRequest,
   HubSpotSearchResponse,
+  MCPTokenRequest,
   MCPTokenResponse,
   N400Response,
   N401Response,
@@ -21,10 +25,53 @@ import type {
   N404Response,
   N409Response,
   N410Response,
+  N429Response,
   N500Response,
   N502Response,
   N503Response,
 } from "../model";
+
+export type getConnectorBrokerJWKSResponse200 = {
+  data: GetConnectorBrokerJWKS200;
+  status: 200;
+};
+
+export type getConnectorBrokerJWKSResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type getConnectorBrokerJWKSResponseSuccess = getConnectorBrokerJWKSResponse200 & {
+  headers: Headers;
+};
+export type getConnectorBrokerJWKSResponseError = getConnectorBrokerJWKSResponse503 & {
+  headers: Headers;
+};
+
+export type getConnectorBrokerJWKSResponse =
+  getConnectorBrokerJWKSResponseSuccess | getConnectorBrokerJWKSResponseError;
+
+export const getGetConnectorBrokerJWKSUrl = () => {
+  return `/.well-known/connector-jwks.json`;
+};
+
+/**
+ * Public RS256 keys used by product MCP resource servers to verify short-lived RFC 012 connector tokens.
+ * @summary Get connector broker JWKS
+ */
+export const getConnectorBrokerJWKS = async (
+  options?: RequestInit,
+): Promise<getConnectorBrokerJWKSResponse> => {
+  const res = await fetch(getGetConnectorBrokerJWKSUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getConnectorBrokerJWKSResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as getConnectorBrokerJWKSResponse;
+};
 
 export type deleteConnectionResponse204 = {
   data: void;
@@ -34,6 +81,11 @@ export type deleteConnectionResponse204 = {
 export type deleteConnectionResponse401 = {
   data: N401Response;
   status: 401;
+};
+
+export type deleteConnectionResponse429 = {
+  data: N429Response;
+  status: 429;
 };
 
 export type deleteConnectionResponse500 = {
@@ -50,7 +102,10 @@ export type deleteConnectionResponseSuccess = deleteConnectionResponse204 & {
   headers: Headers;
 };
 export type deleteConnectionResponseError = (
-  deleteConnectionResponse401 | deleteConnectionResponse500 | deleteConnectionResponse503
+  | deleteConnectionResponse401
+  | deleteConnectionResponse429
+  | deleteConnectionResponse500
+  | deleteConnectionResponse503
 ) & {
   headers: Headers;
 };
@@ -63,7 +118,7 @@ export const getDeleteConnectionUrl = (name: string) => {
 };
 
 /**
- * Idempotently disconnects a connector for the authenticated user. If a refresh token exists, rowboat-api attempts to revoke it at Ory before deleting the local connection.
+ * Idempotently revokes upstream where possible, clears local credentials, and retains a revoked audit tombstone.
  * @summary Disconnect connector
  */
 export const deleteConnection = async (
@@ -96,9 +151,24 @@ export type setConnectionAPIKeyResponse401 = {
   status: 401;
 };
 
+export type setConnectionAPIKeyResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
 export type setConnectionAPIKeyResponse404 = {
   data: N404Response;
   status: 404;
+};
+
+export type setConnectionAPIKeyResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type setConnectionAPIKeyResponse429 = {
+  data: N429Response;
+  status: 429;
 };
 
 export type setConnectionAPIKeyResponse500 = {
@@ -117,7 +187,10 @@ export type setConnectionAPIKeyResponseSuccess = setConnectionAPIKeyResponse200 
 export type setConnectionAPIKeyResponseError = (
   | setConnectionAPIKeyResponse400
   | setConnectionAPIKeyResponse401
+  | setConnectionAPIKeyResponse403
   | setConnectionAPIKeyResponse404
+  | setConnectionAPIKeyResponse409
+  | setConnectionAPIKeyResponse429
   | setConnectionAPIKeyResponse500
   | setConnectionAPIKeyResponse503
 ) & {
@@ -132,7 +205,7 @@ export const getSetConnectionAPIKeyUrl = (name: string) => {
 };
 
 /**
- * Stores a vendor-issued API key for an api_key connector. The key is sealed at rest and later minted back only through the connector MCP token endpoint.
+ * Stores a vendor-issued API key for an api_key connector. The key remains sealed and server-side; product calls receive only short-lived broker tokens.
  * @summary Connect API-key connector
  */
 export const setConnectionAPIKey = async (
@@ -163,6 +236,16 @@ export type handleConnectionCallbackResponse400 = {
   status: 400;
 };
 
+export type handleConnectionCallbackResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type handleConnectionCallbackResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
 export type handleConnectionCallbackResponse500 = {
   data: N500Response;
   status: 500;
@@ -171,6 +254,8 @@ export type handleConnectionCallbackResponse500 = {
 export type handleConnectionCallbackResponseError = (
   | handleConnectionCallbackResponse302
   | handleConnectionCallbackResponse400
+  | handleConnectionCallbackResponse409
+  | handleConnectionCallbackResponse429
   | handleConnectionCallbackResponse500
 ) & {
   headers: Headers;
@@ -252,6 +337,11 @@ export type claimConnectionResponse410 = {
   status: 410;
 };
 
+export type claimConnectionResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
 export type claimConnectionResponse500 = {
   data: N500Response;
   status: 500;
@@ -272,6 +362,7 @@ export type claimConnectionResponseError = (
   | claimConnectionResponse404
   | claimConnectionResponse409
   | claimConnectionResponse410
+  | claimConnectionResponse429
   | claimConnectionResponse500
   | claimConnectionResponse503
 ) & {
@@ -321,9 +412,29 @@ export type createMCPTokenResponse401 = {
   status: 401;
 };
 
+export type createMCPTokenResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
 export type createMCPTokenResponse404 = {
   data: N404Response;
   status: 404;
+};
+
+export type createMCPTokenResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type createMCPTokenResponse410 = {
+  data: N410Response;
+  status: 410;
+};
+
+export type createMCPTokenResponse429 = {
+  data: N429Response;
+  status: 429;
 };
 
 export type createMCPTokenResponse500 = {
@@ -347,7 +458,11 @@ export type createMCPTokenResponseSuccess = createMCPTokenResponse200 & {
 export type createMCPTokenResponseError = (
   | createMCPTokenResponse400
   | createMCPTokenResponse401
+  | createMCPTokenResponse403
   | createMCPTokenResponse404
+  | createMCPTokenResponse409
+  | createMCPTokenResponse410
+  | createMCPTokenResponse429
   | createMCPTokenResponse500
   | createMCPTokenResponse502
   | createMCPTokenResponse503
@@ -362,16 +477,19 @@ export const getCreateMCPTokenUrl = (name: string) => {
 };
 
 /**
- * Returns a short-lived MCP access token and target MCP URL for a connected connector. OAuth connectors refresh through Ory; api_key connectors return the sealed vendor key directly.
+ * Validates an active non-revoked connection, exact audience, granted scope subset, current catalog availability, and current entitlement. OAuth credentials are refreshed and rotated server-side, then rowboat-api returns an RS256 product token carrying bounded actor claims. Provider tokens and API keys are never returned.
  * @summary Mint connector MCP token
  */
 export const createMCPToken = async (
   name: string,
+  mCPTokenRequest?: MCPTokenRequest,
   options?: RequestInit,
 ): Promise<createMCPTokenResponse> => {
   const res = await fetch(getCreateMCPTokenUrl(name), {
     ...options,
     method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(mCPTokenRequest),
   });
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
@@ -395,9 +513,24 @@ export type startConnectionResponse401 = {
   status: 401;
 };
 
+export type startConnectionResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
 export type startConnectionResponse404 = {
   data: N404Response;
   status: 404;
+};
+
+export type startConnectionResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type startConnectionResponse429 = {
+  data: N429Response;
+  status: 429;
 };
 
 export type startConnectionResponse500 = {
@@ -416,7 +549,10 @@ export type startConnectionResponseSuccess = startConnectionResponse200 & {
 export type startConnectionResponseError = (
   | startConnectionResponse400
   | startConnectionResponse401
+  | startConnectionResponse403
   | startConnectionResponse404
+  | startConnectionResponse409
+  | startConnectionResponse429
   | startConnectionResponse500
   | startConnectionResponse503
 ) & {
@@ -430,16 +566,19 @@ export const getStartConnectionUrl = (name: string) => {
 };
 
 /**
- * Creates a sealed pending connection ticket, builds the Ory authorize URL with PKCE, and returns it for the desktop to open in a browser.
+ * Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.
  * @summary Start connector OAuth flow
  */
 export const startConnection = async (
   name: string,
+  connectionStartRequest: ConnectionStartRequest,
   options?: RequestInit,
 ): Promise<startConnectionResponse> => {
   const res = await fetch(getStartConnectionUrl(name), {
     ...options,
     method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(connectionStartRequest),
   });
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
@@ -458,6 +597,11 @@ export type listConnectorsResponse401 = {
   status: 401;
 };
 
+export type listConnectorsResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
 export type listConnectorsResponse500 = {
   data: N500Response;
   status: 500;
@@ -472,7 +616,10 @@ export type listConnectorsResponseSuccess = listConnectorsResponse200 & {
   headers: Headers;
 };
 export type listConnectorsResponseError = (
-  listConnectorsResponse401 | listConnectorsResponse500 | listConnectorsResponse503
+  | listConnectorsResponse401
+  | listConnectorsResponse429
+  | listConnectorsResponse500
+  | listConnectorsResponse503
 ) & {
   headers: Headers;
 };
@@ -497,6 +644,338 @@ export const listConnectors = async (options?: RequestInit): Promise<listConnect
 
   const data: listConnectorsResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as listConnectorsResponse;
+};
+
+export type handleConnectorCallbackResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type handleConnectorCallbackResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type handleConnectorCallbackResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type handleConnectorCallbackResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
+export type handleConnectorCallbackResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type handleConnectorCallbackResponseError = (
+  | handleConnectorCallbackResponse302
+  | handleConnectorCallbackResponse400
+  | handleConnectorCallbackResponse409
+  | handleConnectorCallbackResponse429
+  | handleConnectorCallbackResponse500
+) & {
+  headers: Headers;
+};
+
+export type handleConnectorCallbackResponse = handleConnectorCallbackResponseError;
+
+export const getHandleConnectorCallbackUrl = (
+  name: string,
+  params: HandleConnectorCallbackParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/connectors/${name}/callback?${stringifiedParams}`
+    : `/v1/connectors/${name}/callback`;
+};
+
+/**
+ * Browser redirect target from Ory. The user is resolved from the sealed pending ticket, not from a bearer token. On success or failure it redirects to the desktop deep link.
+ * @summary Handle connector OAuth callback
+ */
+export const handleConnectorCallback = async (
+  name: string,
+  params: HandleConnectorCallbackParams,
+  options?: RequestInit,
+): Promise<handleConnectorCallbackResponse> => {
+  const res = await fetch(getHandleConnectorCallbackUrl(name, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: handleConnectorCallbackResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as handleConnectorCallbackResponse;
+};
+
+export type deleteConnectorConnectionResponse204 = {
+  data: void;
+  status: 204;
+};
+
+export type deleteConnectorConnectionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type deleteConnectorConnectionResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
+export type deleteConnectorConnectionResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type deleteConnectorConnectionResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type deleteConnectorConnectionResponseSuccess = deleteConnectorConnectionResponse204 & {
+  headers: Headers;
+};
+export type deleteConnectorConnectionResponseError = (
+  | deleteConnectorConnectionResponse401
+  | deleteConnectorConnectionResponse429
+  | deleteConnectorConnectionResponse500
+  | deleteConnectorConnectionResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteConnectorConnectionResponse =
+  deleteConnectorConnectionResponseSuccess | deleteConnectorConnectionResponseError;
+
+export const getDeleteConnectorConnectionUrl = (name: string, connectionID: string) => {
+  return `/v1/connectors/${name}/connections/${connectionID}`;
+};
+
+/**
+ * Canonical RFC 012 disconnect path. It transitions the matching user-owned connection through revoking, clears credentials, and retains an audit tombstone.
+ * @summary Disconnect connector connection
+ */
+export const deleteConnectorConnection = async (
+  name: string,
+  connectionID: string,
+  options?: RequestInit,
+): Promise<deleteConnectorConnectionResponse> => {
+  const res = await fetch(getDeleteConnectorConnectionUrl(name, connectionID), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteConnectorConnectionResponse["data"] = body ? JSON.parse(body) : undefined;
+  return { data, status: res.status, headers: res.headers } as deleteConnectorConnectionResponse;
+};
+
+export type createConnectorResourceTokenResponse200 = {
+  data: MCPTokenResponse;
+  status: 200;
+};
+
+export type createConnectorResourceTokenResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type createConnectorResourceTokenResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type createConnectorResourceTokenResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type createConnectorResourceTokenResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type createConnectorResourceTokenResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type createConnectorResourceTokenResponse410 = {
+  data: N410Response;
+  status: 410;
+};
+
+export type createConnectorResourceTokenResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
+export type createConnectorResourceTokenResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type createConnectorResourceTokenResponse502 = {
+  data: N502Response;
+  status: 502;
+};
+
+export type createConnectorResourceTokenResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type createConnectorResourceTokenResponseSuccess =
+  createConnectorResourceTokenResponse200 & {
+    headers: Headers;
+  };
+export type createConnectorResourceTokenResponseError = (
+  | createConnectorResourceTokenResponse400
+  | createConnectorResourceTokenResponse401
+  | createConnectorResourceTokenResponse403
+  | createConnectorResourceTokenResponse404
+  | createConnectorResourceTokenResponse409
+  | createConnectorResourceTokenResponse410
+  | createConnectorResourceTokenResponse429
+  | createConnectorResourceTokenResponse500
+  | createConnectorResourceTokenResponse502
+  | createConnectorResourceTokenResponse503
+) & {
+  headers: Headers;
+};
+
+export type createConnectorResourceTokenResponse =
+  createConnectorResourceTokenResponseSuccess | createConnectorResourceTokenResponseError;
+
+export const getCreateConnectorResourceTokenUrl = (name: string) => {
+  return `/v1/connectors/${name}/resource-token`;
+};
+
+/**
+ * Validates an active non-revoked connection, exact audience, granted scope subset, current catalog availability, and current entitlement. OAuth credentials are refreshed and rotated server-side, then rowboat-api returns an RS256 product token carrying bounded actor claims. Provider tokens and API keys are never returned.
+ * @summary Mint connector MCP token
+ */
+export const createConnectorResourceToken = async (
+  name: string,
+  mCPTokenRequest?: MCPTokenRequest,
+  options?: RequestInit,
+): Promise<createConnectorResourceTokenResponse> => {
+  const res = await fetch(getCreateConnectorResourceTokenUrl(name), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(mCPTokenRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createConnectorResourceTokenResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as createConnectorResourceTokenResponse;
+};
+
+export type startConnectorResponse200 = {
+  data: ConnectionStartResponse;
+  status: 200;
+};
+
+export type startConnectorResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type startConnectorResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type startConnectorResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type startConnectorResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type startConnectorResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type startConnectorResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
+export type startConnectorResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type startConnectorResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type startConnectorResponseSuccess = startConnectorResponse200 & {
+  headers: Headers;
+};
+export type startConnectorResponseError = (
+  | startConnectorResponse400
+  | startConnectorResponse401
+  | startConnectorResponse403
+  | startConnectorResponse404
+  | startConnectorResponse409
+  | startConnectorResponse429
+  | startConnectorResponse500
+  | startConnectorResponse503
+) & {
+  headers: Headers;
+};
+
+export type startConnectorResponse = startConnectorResponseSuccess | startConnectorResponseError;
+
+export const getStartConnectorUrl = (name: string) => {
+  return `/v1/connectors/${name}/start`;
+};
+
+/**
+ * Validates entitlement, required/optional scope policy, implications/conflicts, and an allowlisted deep link before storing only SHA-256(state) plus sealed PKCE metadata.
+ * @summary Start connector OAuth flow
+ */
+export const startConnector = async (
+  name: string,
+  connectionStartRequest: ConnectionStartRequest,
+  options?: RequestInit,
+): Promise<startConnectorResponse> => {
+  const res = await fetch(getStartConnectorUrl(name), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(connectionStartRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: startConnectorResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as startConnectorResponse;
 };
 
 export type searchHubSpotResponse200 = {

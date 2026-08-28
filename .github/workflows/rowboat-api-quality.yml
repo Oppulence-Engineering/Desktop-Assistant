@@ -4,8 +4,10 @@ on:
   pull_request:
     paths:
       - "apps/rowboat-api/**"
+      - "apps/oauth-consent/**"
       - "charts/rowboat-api/**"
       - "packages/rowboat-api-client-ts/**"
+      - "apps/rowboat-www/lib/api/generated/**"
       - "docs/trustworthy-first-account-beta/**"
       - "scripts/rowboat-api-kind.sh"
       - ".gitleaks.toml"
@@ -17,8 +19,10 @@ on:
     branches: [develop, main]
     paths:
       - "apps/rowboat-api/**"
+      - "apps/oauth-consent/**"
       - "charts/rowboat-api/**"
       - "packages/rowboat-api-client-ts/**"
+      - "apps/rowboat-www/lib/api/generated/**"
       - "docs/trustworthy-first-account-beta/**"
       - "scripts/rowboat-api-kind.sh"
       - ".gitleaks.toml"
@@ -87,6 +91,34 @@ jobs:
         env:
           ROWBOAT_TEST_PG_DSN: postgres://rowboat:rowboat@localhost:5432/rowboat_test?sslmode=disable
 
+  rfc012-acceptance:
+    name: RFC 012 production-shaped acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/rowboat-api/go.mod
+          cache-dependency-path: apps/rowboat-api/go.sum
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/oauth-consent/package-lock.json
+      - name: Run required RFC 012 PostgreSQL acceptance topology
+        run: ./integration/rfc012/postgres16.sh
+        working-directory: apps/rowboat-api
+        env:
+          JCODE_SCRATCH_DIR: ${{ github.workspace }}/.artifacts/rfc012
+      - name: Upload RFC 012 service logs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: rfc012-acceptance-${{ github.run_id }}
+          path: .artifacts/rfc012
+          if-no-files-found: warn
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -112,7 +144,9 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: packages/rowboat-api-client-ts/package-lock.json
+          cache-dependency-path: |
+            packages/rowboat-api-client-ts/package-lock.json
+            apps/rowboat-www/package-lock.json
       - name: Install protoc
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
       - name: Install generation tools
@@ -121,8 +155,11 @@ jobs:
       - name: Generate API and SDK artifacts
         run: make generate
         working-directory: apps/rowboat-api
+      - name: Install and verify rowboat-www generated contract
+        run: npm ci --ignore-scripts && npm run contracts:check
+        working-directory: apps/rowboat-www
       - name: Check generated drift
-        run: git diff --exit-code -- apps/rowboat-api packages/rowboat-api-client-ts
+        run: git diff --exit-code -- apps/rowboat-api packages/rowboat-api-client-ts apps/rowboat-www/lib/api/generated
 
   helm:
     runs-on: ubuntu-latest

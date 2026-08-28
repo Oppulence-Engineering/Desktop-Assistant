@@ -3,6 +3,16 @@
 #     -f charts/rowboat-api/values-production.yaml -n rowboat
 replicaCount: 3
 
+terminationGracePeriodSeconds: 65
+
+deploymentStrategy:
+  maxUnavailable: 0
+  maxSurge: 1
+
+podDisruptionBudget:
+  maxUnavailable: 1
+  unhealthyPodEvictionPolicy: IfHealthyBudget
+
 image:
   repository: ghcr.io/oppulence-engineering/desktop-assistant-rowboat-api
   tag: "" # set by CI to the released git SHA / tag
@@ -23,6 +33,56 @@ autoscaling:
 
 serviceMonitor:
   enabled: true
+  interval: 5s
+
+# Production trust boundary. Public traffic is admitted only from the ingress
+# controller. External HTTPS, managed PostgreSQL, Redis, and provider traffic
+# must traverse the selected transparent egress gateway. Hydra Admin remains a
+# narrowly selected in-cluster destination.
+networkPolicy:
+  enabled: true
+  ingress:
+    from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: ingress-nginx
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: ingress-nginx
+  egress:
+    enabled: true
+    rules:
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: kube-system
+            podSelector:
+              matchLabels:
+                k8s-app: kube-dns
+        ports:
+          - { protocol: UDP, port: 53 }
+          - { protocol: TCP, port: 53 }
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ory
+            podSelector:
+              matchLabels:
+                app.kubernetes.io/name: hydra
+                app.kubernetes.io/instance: hydra
+        ports:
+          - { protocol: TCP, port: 4445 }
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: egress-system
+            podSelector:
+              matchLabels:
+                app.kubernetes.io/name: rowboat-egress-gateway
+        ports:
+          - { protocol: TCP, port: 443 }
+          - { protocol: TCP, port: 5432 }
+          - { protocol: TCP, port: 6379 }
 
 observability:
   prometheusRule:
@@ -30,7 +90,11 @@ observability:
   grafanaDashboard:
     enabled: true
 
+connectorBroker:
+  productionApprovalManifestDigest: sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
+
 config:
+  SHUTDOWN_TIMEOUT: 25s
   ENVIRONMENT: production
   LOG_LEVEL: info
   AUTO_MIGRATE: "false"
@@ -50,6 +114,27 @@ config:
   JWKS_URL: ""
   OTEL_EXPORTER_OTLP_ENDPOINT: ""
   PUBLIC_BASE_URL: https://api.oppulence.io
+  # rowboat-api, not Hydra, mints the short-lived tokens accepted by product MCPs.
+  # Product verifiers use this issuer plus
+  # https://api.oppulence.io/.well-known/connector-jwks.json.
+  BROKER_TOKEN_ISSUER: https://api.oppulence.io
+  # RFC 012 broker endpoints. Keep all URLs, clients, catalogs, and audiences
+  # environment-local. Secret values remain in rowboat-api-secrets.
+  ORY_PUBLIC_URL: https://oauth.solomon-ai.co
+  ORY_ADMIN_URL: http://hydra-admin.ory.svc.cluster.local:4445
+  ORY_BROKER_CLIENT_ID: solomon-connector-broker
+  # Exact broker completion endpoints only. The hosted BFF keeps the eventual
+  # user-facing settings route in its signed state and performs the claim here.
+  CONNECTOR_REDIRECT_ALLOWLIST: solomon-ai://connection-complete,https://oppulence.io/api/connectors/oauth/callback
+  # Comma-separated incident kill switch. See docs/runbooks/connectors.md.
+  CONNECTOR_EMERGENCY_DISABLED: ""
+  # RFC 012 closure steady state. All hash-aware replicas and the pending-state
+  # TTL have drained, so raw bearer state must never be written again.
+  CONNECTOR_OAUTH_LEGACY_STATE_WRITE: "false"
+  # Product-owned entitlement endpoints are non-secret. Each request is signed
+  # with the matching product-scoped key from CONNECTOR_ENTITLEMENT_HMAC_KEYS_JSON
+  # in rowboat-api-secrets. Never reuse a key across products.
+  CONNECTOR_ENTITLEMENT_URLS_JSON: '{"canvas":"https://api.canvas.solomon-ai.co/v1/internal/entitlements","corinthian":"https://mcp.corinthian.solomon-ai.co/v1/internal/entitlements","cadence":"https://mcp.cadence.solomon-ai.co/v1/internal/entitlements","conduit":"https://mcp.conduit.solomon-ai.co/v1/internal/entitlements","eigen":"https://mcp.eigen.solomon-ai.co/v1/internal/entitlements","wispr":"https://mcp.wispr.solomon-ai.co/v1/internal/entitlements"}'
   WEBSOCKET_API_URL: wss://api.oppulence.io
   # Google OAuth broker callback — the API host serving /oauth/google/callback (NOT
   # APP_URL, which the default would use). Register this exact URI in Google Cloud.

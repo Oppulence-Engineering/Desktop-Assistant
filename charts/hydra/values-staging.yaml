@@ -8,11 +8,11 @@ hydra:
   config:
     urls:
       self:
-        issuer: https://oauth.staging.solomon-ai.co
-        public: https://oauth.staging.solomon-ai.co
-      login: https://consent.staging.solomon-ai.co/login
-      consent: https://consent.staging.solomon-ai.co/consent
-      logout: https://consent.staging.solomon-ai.co/logout
+        issuer: https://oauth.staging.oppulence.io
+        public: https://oauth.staging.oppulence.io
+      login: https://consent.staging.oppulence.io/login
+      consent: https://consent.staging.oppulence.io/consent
+      logout: https://consent.staging.oppulence.io/logout
     strategies:
       access_token: jwt
     oidc:
@@ -20,8 +20,12 @@ hydra:
         supported_types:
           - public
     ttl:
-      access_token: 1h
+      access_token: 5m
       refresh_token: 720h
+      id_token: 1h
+      auth_code: 10m
+    oauth2:
+      expose_internal_errors: false
 
   automigration:
     enabled: true
@@ -29,8 +33,18 @@ hydra:
 
   dangerousForceHttp: false
 
+# Keep staging runtime and automigration on the same image promoted to
+# production. Reconciler Jobs are pinned to this version as well.
+image:
+  repository: oryd/hydra
+  tag: v2.3.0
+  pullPolicy: IfNotPresent
+
 deployment:
   replicaCount: 1
+  podMetadata:
+    labels:
+      networking.rowboat.dev/network-policy: hydra
 
 ingress:
   public:
@@ -39,13 +53,17 @@ ingress:
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-staging
     hosts:
-      - host: oauth.staging.solomon-ai.co
+      - host: oauth.staging.oppulence.io
         paths:
           - path: /
             pathType: Prefix
     tls:
       - secretName: hydra-public-tls
         hosts:
-          - oauth.staging.solomon-ai.co
+          - oauth.staging.oppulence.io
   admin:
     enabled: false
+
+serviceMonitor:
+  # Hydra Admin 4445 is not exposed to the monitoring namespace.
+  enabled: false

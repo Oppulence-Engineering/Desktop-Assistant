@@ -93,9 +93,31 @@ func (_c *OAuthConnectionHistoryCreate) SetProvider(v string) *OAuthConnectionHi
 	return _c
 }
 
-// SetRefreshTokenEncrypted sets the "refresh_token_encrypted" field.
-func (_c *OAuthConnectionHistoryCreate) SetRefreshTokenEncrypted(v []byte) *OAuthConnectionHistoryCreate {
-	_c.mutation.SetRefreshTokenEncrypted(v)
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (_c *OAuthConnectionHistoryCreate) SetRefreshTokenPresent(v bool) *OAuthConnectionHistoryCreate {
+	_c.mutation.SetRefreshTokenPresent(v)
+	return _c
+}
+
+// SetNillableRefreshTokenPresent sets the "refresh_token_present" field if the given value is not nil.
+func (_c *OAuthConnectionHistoryCreate) SetNillableRefreshTokenPresent(v *bool) *OAuthConnectionHistoryCreate {
+	if v != nil {
+		_c.SetRefreshTokenPresent(*v)
+	}
+	return _c
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (_c *OAuthConnectionHistoryCreate) SetCredentialGeneration(v int64) *OAuthConnectionHistoryCreate {
+	_c.mutation.SetCredentialGeneration(v)
+	return _c
+}
+
+// SetNillableCredentialGeneration sets the "credential_generation" field if the given value is not nil.
+func (_c *OAuthConnectionHistoryCreate) SetNillableCredentialGeneration(v *int64) *OAuthConnectionHistoryCreate {
+	if v != nil {
+		_c.SetCredentialGeneration(*v)
+	}
 	return _c
 }
 
@@ -191,6 +213,14 @@ func (_c *OAuthConnectionHistoryCreate) defaults() error {
 		v := oauthconnectionhistory.DefaultHistoryTime()
 		_c.mutation.SetHistoryTime(v)
 	}
+	if _, ok := _c.mutation.RefreshTokenPresent(); !ok {
+		v := oauthconnectionhistory.DefaultRefreshTokenPresent
+		_c.mutation.SetRefreshTokenPresent(v)
+	}
+	if _, ok := _c.mutation.CredentialGeneration(); !ok {
+		v := oauthconnectionhistory.DefaultCredentialGeneration
+		_c.mutation.SetCredentialGeneration(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		if oauthconnectionhistory.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized oauthconnectionhistory.DefaultID (forgotten import ent/runtime?)")
@@ -223,8 +253,11 @@ func (_c *OAuthConnectionHistoryCreate) check() error {
 	if _, ok := _c.mutation.Provider(); !ok {
 		return &ValidationError{Name: "provider", err: errors.New(`ent: missing required field "OAuthConnectionHistory.provider"`)}
 	}
-	if _, ok := _c.mutation.RefreshTokenEncrypted(); !ok {
-		return &ValidationError{Name: "refresh_token_encrypted", err: errors.New(`ent: missing required field "OAuthConnectionHistory.refresh_token_encrypted"`)}
+	if _, ok := _c.mutation.RefreshTokenPresent(); !ok {
+		return &ValidationError{Name: "refresh_token_present", err: errors.New(`ent: missing required field "OAuthConnectionHistory.refresh_token_present"`)}
+	}
+	if _, ok := _c.mutation.CredentialGeneration(); !ok {
+		return &ValidationError{Name: "credential_generation", err: errors.New(`ent: missing required field "OAuthConnectionHistory.credential_generation"`)}
 	}
 	return nil
 }
@@ -286,9 +319,13 @@ func (_c *OAuthConnectionHistoryCreate) createSpec() (*OAuthConnectionHistory, *
 		_spec.SetField(oauthconnectionhistory.FieldProvider, field.TypeString, value)
 		_node.Provider = value
 	}
-	if value, ok := _c.mutation.RefreshTokenEncrypted(); ok {
-		_spec.SetField(oauthconnectionhistory.FieldRefreshTokenEncrypted, field.TypeBytes, value)
-		_node.RefreshTokenEncrypted = value
+	if value, ok := _c.mutation.RefreshTokenPresent(); ok {
+		_spec.SetField(oauthconnectionhistory.FieldRefreshTokenPresent, field.TypeBool, value)
+		_node.RefreshTokenPresent = value
+	}
+	if value, ok := _c.mutation.CredentialGeneration(); ok {
+		_spec.SetField(oauthconnectionhistory.FieldCredentialGeneration, field.TypeInt64, value)
+		_node.CredentialGeneration = value
 	}
 	if value, ok := _c.mutation.Scopes(); ok {
 		_spec.SetField(oauthconnectionhistory.FieldScopes, field.TypeJSON, value)
@@ -394,8 +431,11 @@ func (u *OAuthConnectionHistoryUpsertOne) UpdateNewValues() *OAuthConnectionHist
 		if _, exists := u.create.mutation.Provider(); exists {
 			s.SetIgnore(oauthconnectionhistory.FieldProvider)
 		}
-		if _, exists := u.create.mutation.RefreshTokenEncrypted(); exists {
-			s.SetIgnore(oauthconnectionhistory.FieldRefreshTokenEncrypted)
+		if _, exists := u.create.mutation.RefreshTokenPresent(); exists {
+			s.SetIgnore(oauthconnectionhistory.FieldRefreshTokenPresent)
+		}
+		if _, exists := u.create.mutation.CredentialGeneration(); exists {
+			s.SetIgnore(oauthconnectionhistory.FieldCredentialGeneration)
 		}
 		if _, exists := u.create.mutation.Scopes(); exists {
 			s.SetIgnore(oauthconnectionhistory.FieldScopes)
@@ -646,8 +686,11 @@ func (u *OAuthConnectionHistoryUpsertBulk) UpdateNewValues() *OAuthConnectionHis
 			if _, exists := b.mutation.Provider(); exists {
 				s.SetIgnore(oauthconnectionhistory.FieldProvider)
 			}
-			if _, exists := b.mutation.RefreshTokenEncrypted(); exists {
-				s.SetIgnore(oauthconnectionhistory.FieldRefreshTokenEncrypted)
+			if _, exists := b.mutation.RefreshTokenPresent(); exists {
+				s.SetIgnore(oauthconnectionhistory.FieldRefreshTokenPresent)
+			}
+			if _, exists := b.mutation.CredentialGeneration(); exists {
+				s.SetIgnore(oauthconnectionhistory.FieldCredentialGeneration)
 			}
 			if _, exists := b.mutation.Scopes(); exists {
 				s.SetIgnore(oauthconnectionhistory.FieldScopes)

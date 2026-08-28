@@ -16,6 +16,9 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/person"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personattribute"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personidentity"
@@ -668,6 +671,51 @@ func (_u *RevenueWorkspaceUpdate) AddRelationshipPersons(v ...*Person) *RevenueW
 		ids[i] = v[i].ID
 	}
 	return _u.AddRelationshipPersonIDs(ids...)
+}
+
+// AddEntityIDs adds the "entities" edge to the Entity entity by IDs.
+func (_u *RevenueWorkspaceUpdate) AddEntityIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.AddEntityIDs(ids...)
+	return _u
+}
+
+// AddEntities adds the "entities" edges to the Entity entity.
+func (_u *RevenueWorkspaceUpdate) AddEntities(v ...*Entity) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityIDs(ids...)
+}
+
+// AddEntityResourceRefIDs adds the "entity_resource_refs" edge to the EntityResourceRef entity by IDs.
+func (_u *RevenueWorkspaceUpdate) AddEntityResourceRefIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.AddEntityResourceRefIDs(ids...)
+	return _u
+}
+
+// AddEntityResourceRefs adds the "entity_resource_refs" edges to the EntityResourceRef entity.
+func (_u *RevenueWorkspaceUpdate) AddEntityResourceRefs(v ...*EntityResourceRef) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityResourceRefIDs(ids...)
+}
+
+// AddEntityIdentifierIDs adds the "entity_identifiers" edge to the EntityIdentifier entity by IDs.
+func (_u *RevenueWorkspaceUpdate) AddEntityIdentifierIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.AddEntityIdentifierIDs(ids...)
+	return _u
+}
+
+// AddEntityIdentifiers adds the "entity_identifiers" edges to the EntityIdentifier entity.
+func (_u *RevenueWorkspaceUpdate) AddEntityIdentifiers(v ...*EntityIdentifier) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityIdentifierIDs(ids...)
 }
 
 // AddPersonIdentityIDs adds the "person_identities" edge to the PersonIdentity entity by IDs.
@@ -1336,6 +1384,69 @@ func (_u *RevenueWorkspaceUpdate) RemoveRelationshipPersons(v ...*Person) *Reven
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRelationshipPersonIDs(ids...)
+}
+
+// ClearEntities clears all "entities" edges to the Entity entity.
+func (_u *RevenueWorkspaceUpdate) ClearEntities() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearEntities()
+	return _u
+}
+
+// RemoveEntityIDs removes the "entities" edge to Entity entities by IDs.
+func (_u *RevenueWorkspaceUpdate) RemoveEntityIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.RemoveEntityIDs(ids...)
+	return _u
+}
+
+// RemoveEntities removes "entities" edges to Entity entities.
+func (_u *RevenueWorkspaceUpdate) RemoveEntities(v ...*Entity) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityIDs(ids...)
+}
+
+// ClearEntityResourceRefs clears all "entity_resource_refs" edges to the EntityResourceRef entity.
+func (_u *RevenueWorkspaceUpdate) ClearEntityResourceRefs() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearEntityResourceRefs()
+	return _u
+}
+
+// RemoveEntityResourceRefIDs removes the "entity_resource_refs" edge to EntityResourceRef entities by IDs.
+func (_u *RevenueWorkspaceUpdate) RemoveEntityResourceRefIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.RemoveEntityResourceRefIDs(ids...)
+	return _u
+}
+
+// RemoveEntityResourceRefs removes "entity_resource_refs" edges to EntityResourceRef entities.
+func (_u *RevenueWorkspaceUpdate) RemoveEntityResourceRefs(v ...*EntityResourceRef) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityResourceRefIDs(ids...)
+}
+
+// ClearEntityIdentifiers clears all "entity_identifiers" edges to the EntityIdentifier entity.
+func (_u *RevenueWorkspaceUpdate) ClearEntityIdentifiers() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearEntityIdentifiers()
+	return _u
+}
+
+// RemoveEntityIdentifierIDs removes the "entity_identifiers" edge to EntityIdentifier entities by IDs.
+func (_u *RevenueWorkspaceUpdate) RemoveEntityIdentifierIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.RemoveEntityIdentifierIDs(ids...)
+	return _u
+}
+
+// RemoveEntityIdentifiers removes "entity_identifiers" edges to EntityIdentifier entities.
+func (_u *RevenueWorkspaceUpdate) RemoveEntityIdentifiers(v ...*EntityIdentifier) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityIdentifierIDs(ids...)
 }
 
 // ClearPersonIdentities clears all "person_identities" edges to the PersonIdentity entity.
@@ -2829,6 +2940,141 @@ func (_u *RevenueWorkspaceUpdate) sqlSave(ctx context.Context) (_node int, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.EntitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntitiesTable,
+			Columns: []string{revenueworkspace.EntitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntitiesIDs(); len(nodes) > 0 && !_u.mutation.EntitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntitiesTable,
+			Columns: []string{revenueworkspace.EntitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntitiesTable,
+			Columns: []string{revenueworkspace.EntitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EntityResourceRefsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntityResourceRefsTable,
+			Columns: []string{revenueworkspace.EntityResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntityResourceRefsIDs(); len(nodes) > 0 && !_u.mutation.EntityResourceRefsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntityResourceRefsTable,
+			Columns: []string{revenueworkspace.EntityResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntityResourceRefsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntityResourceRefsTable,
+			Columns: []string{revenueworkspace.EntityResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EntityIdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntityIdentifiersTable,
+			Columns: []string{revenueworkspace.EntityIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntityIdentifiersIDs(); len(nodes) > 0 && !_u.mutation.EntityIdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntityIdentifiersTable,
+			Columns: []string{revenueworkspace.EntityIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntityIdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntityIdentifiersTable,
+			Columns: []string{revenueworkspace.EntityIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.PersonIdentitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -3682,6 +3928,51 @@ func (_u *RevenueWorkspaceUpdateOne) AddRelationshipPersons(v ...*Person) *Reven
 	return _u.AddRelationshipPersonIDs(ids...)
 }
 
+// AddEntityIDs adds the "entities" edge to the Entity entity by IDs.
+func (_u *RevenueWorkspaceUpdateOne) AddEntityIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.AddEntityIDs(ids...)
+	return _u
+}
+
+// AddEntities adds the "entities" edges to the Entity entity.
+func (_u *RevenueWorkspaceUpdateOne) AddEntities(v ...*Entity) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityIDs(ids...)
+}
+
+// AddEntityResourceRefIDs adds the "entity_resource_refs" edge to the EntityResourceRef entity by IDs.
+func (_u *RevenueWorkspaceUpdateOne) AddEntityResourceRefIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.AddEntityResourceRefIDs(ids...)
+	return _u
+}
+
+// AddEntityResourceRefs adds the "entity_resource_refs" edges to the EntityResourceRef entity.
+func (_u *RevenueWorkspaceUpdateOne) AddEntityResourceRefs(v ...*EntityResourceRef) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityResourceRefIDs(ids...)
+}
+
+// AddEntityIdentifierIDs adds the "entity_identifiers" edge to the EntityIdentifier entity by IDs.
+func (_u *RevenueWorkspaceUpdateOne) AddEntityIdentifierIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.AddEntityIdentifierIDs(ids...)
+	return _u
+}
+
+// AddEntityIdentifiers adds the "entity_identifiers" edges to the EntityIdentifier entity.
+func (_u *RevenueWorkspaceUpdateOne) AddEntityIdentifiers(v ...*EntityIdentifier) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddEntityIdentifierIDs(ids...)
+}
+
 // AddPersonIdentityIDs adds the "person_identities" edge to the PersonIdentity entity by IDs.
 func (_u *RevenueWorkspaceUpdateOne) AddPersonIdentityIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
 	_u.mutation.AddPersonIdentityIDs(ids...)
@@ -4348,6 +4639,69 @@ func (_u *RevenueWorkspaceUpdateOne) RemoveRelationshipPersons(v ...*Person) *Re
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRelationshipPersonIDs(ids...)
+}
+
+// ClearEntities clears all "entities" edges to the Entity entity.
+func (_u *RevenueWorkspaceUpdateOne) ClearEntities() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearEntities()
+	return _u
+}
+
+// RemoveEntityIDs removes the "entities" edge to Entity entities by IDs.
+func (_u *RevenueWorkspaceUpdateOne) RemoveEntityIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.RemoveEntityIDs(ids...)
+	return _u
+}
+
+// RemoveEntities removes "entities" edges to Entity entities.
+func (_u *RevenueWorkspaceUpdateOne) RemoveEntities(v ...*Entity) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityIDs(ids...)
+}
+
+// ClearEntityResourceRefs clears all "entity_resource_refs" edges to the EntityResourceRef entity.
+func (_u *RevenueWorkspaceUpdateOne) ClearEntityResourceRefs() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearEntityResourceRefs()
+	return _u
+}
+
+// RemoveEntityResourceRefIDs removes the "entity_resource_refs" edge to EntityResourceRef entities by IDs.
+func (_u *RevenueWorkspaceUpdateOne) RemoveEntityResourceRefIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.RemoveEntityResourceRefIDs(ids...)
+	return _u
+}
+
+// RemoveEntityResourceRefs removes "entity_resource_refs" edges to EntityResourceRef entities.
+func (_u *RevenueWorkspaceUpdateOne) RemoveEntityResourceRefs(v ...*EntityResourceRef) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityResourceRefIDs(ids...)
+}
+
+// ClearEntityIdentifiers clears all "entity_identifiers" edges to the EntityIdentifier entity.
+func (_u *RevenueWorkspaceUpdateOne) ClearEntityIdentifiers() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearEntityIdentifiers()
+	return _u
+}
+
+// RemoveEntityIdentifierIDs removes the "entity_identifiers" edge to EntityIdentifier entities by IDs.
+func (_u *RevenueWorkspaceUpdateOne) RemoveEntityIdentifierIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.RemoveEntityIdentifierIDs(ids...)
+	return _u
+}
+
+// RemoveEntityIdentifiers removes "entity_identifiers" edges to EntityIdentifier entities.
+func (_u *RevenueWorkspaceUpdateOne) RemoveEntityIdentifiers(v ...*EntityIdentifier) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveEntityIdentifierIDs(ids...)
 }
 
 // ClearPersonIdentities clears all "person_identities" edges to the PersonIdentity entity.
@@ -5864,6 +6218,141 @@ func (_u *RevenueWorkspaceUpdateOne) sqlSave(ctx context.Context) (_node *Revenu
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(person.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EntitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntitiesTable,
+			Columns: []string{revenueworkspace.EntitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntitiesIDs(); len(nodes) > 0 && !_u.mutation.EntitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntitiesTable,
+			Columns: []string{revenueworkspace.EntitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntitiesTable,
+			Columns: []string{revenueworkspace.EntitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entity.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EntityResourceRefsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntityResourceRefsTable,
+			Columns: []string{revenueworkspace.EntityResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntityResourceRefsIDs(); len(nodes) > 0 && !_u.mutation.EntityResourceRefsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntityResourceRefsTable,
+			Columns: []string{revenueworkspace.EntityResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntityResourceRefsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntityResourceRefsTable,
+			Columns: []string{revenueworkspace.EntityResourceRefsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityresourceref.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.EntityIdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntityIdentifiersTable,
+			Columns: []string{revenueworkspace.EntityIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedEntityIdentifiersIDs(); len(nodes) > 0 && !_u.mutation.EntityIdentifiersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntityIdentifiersTable,
+			Columns: []string{revenueworkspace.EntityIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.EntityIdentifiersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.EntityIdentifiersTable,
+			Columns: []string{revenueworkspace.EntityIdentifiersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(entityidentifier.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -615,6 +615,102 @@ func (f CommitmentEventMutationRuleFunc) EvalMutation(ctx context.Context, m ent
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.CommitmentEventMutation", m)
 }
 
+// The ConnectorAuditEventQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ConnectorAuditEventQueryRuleFunc func(context.Context, *ent.ConnectorAuditEventQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ConnectorAuditEventQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConnectorAuditEventQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ConnectorAuditEventQuery", q)
+}
+
+// The ConnectorAuditEventMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ConnectorAuditEventMutationRuleFunc func(context.Context, *ent.ConnectorAuditEventMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ConnectorAuditEventMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ConnectorAuditEventMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ConnectorAuditEventMutation", m)
+}
+
+// The ConnectorCredentialCleanupJobQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ConnectorCredentialCleanupJobQueryRuleFunc func(context.Context, *ent.ConnectorCredentialCleanupJobQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ConnectorCredentialCleanupJobQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConnectorCredentialCleanupJobQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ConnectorCredentialCleanupJobQuery", q)
+}
+
+// The ConnectorCredentialCleanupJobMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ConnectorCredentialCleanupJobMutationRuleFunc func(context.Context, *ent.ConnectorCredentialCleanupJobMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ConnectorCredentialCleanupJobMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ConnectorCredentialCleanupJobMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ConnectorCredentialCleanupJobMutation", m)
+}
+
+// The ConnectorCredentialRecoveryQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ConnectorCredentialRecoveryQueryRuleFunc func(context.Context, *ent.ConnectorCredentialRecoveryQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ConnectorCredentialRecoveryQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConnectorCredentialRecoveryQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ConnectorCredentialRecoveryQuery", q)
+}
+
+// The ConnectorCredentialRecoveryMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ConnectorCredentialRecoveryMutationRuleFunc func(context.Context, *ent.ConnectorCredentialRecoveryMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ConnectorCredentialRecoveryMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ConnectorCredentialRecoveryMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ConnectorCredentialRecoveryMutation", m)
+}
+
+// The ConnectorRevocationJobQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ConnectorRevocationJobQueryRuleFunc func(context.Context, *ent.ConnectorRevocationJobQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ConnectorRevocationJobQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConnectorRevocationJobQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ConnectorRevocationJobQuery", q)
+}
+
+// The ConnectorRevocationJobMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ConnectorRevocationJobMutationRuleFunc func(context.Context, *ent.ConnectorRevocationJobMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ConnectorRevocationJobMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ConnectorRevocationJobMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ConnectorRevocationJobMutation", m)
+}
+
 // The ConversationIntelligenceArtifactQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type ConversationIntelligenceArtifactQueryRuleFunc func(context.Context, *ent.ConversationIntelligenceArtifactQuery) error
@@ -661,6 +757,78 @@ func (f CreditLedgerMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mu
 		return f(ctx, m)
 	}
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.CreditLedgerMutation", m)
+}
+
+// The EntityQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type EntityQueryRuleFunc func(context.Context, *ent.EntityQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f EntityQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.EntityQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.EntityQuery", q)
+}
+
+// The EntityMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type EntityMutationRuleFunc func(context.Context, *ent.EntityMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f EntityMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.EntityMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.EntityMutation", m)
+}
+
+// The EntityIdentifierQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type EntityIdentifierQueryRuleFunc func(context.Context, *ent.EntityIdentifierQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f EntityIdentifierQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.EntityIdentifierQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.EntityIdentifierQuery", q)
+}
+
+// The EntityIdentifierMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type EntityIdentifierMutationRuleFunc func(context.Context, *ent.EntityIdentifierMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f EntityIdentifierMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.EntityIdentifierMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.EntityIdentifierMutation", m)
+}
+
+// The EntityResourceRefQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type EntityResourceRefQueryRuleFunc func(context.Context, *ent.EntityResourceRefQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f EntityResourceRefQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.EntityResourceRefQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.EntityResourceRefQuery", q)
+}
+
+// The EntityResourceRefMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type EntityResourceRefMutationRuleFunc func(context.Context, *ent.EntityResourceRefMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f EntityResourceRefMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.EntityResourceRefMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.EntityResourceRefMutation", m)
 }
 
 // The GoogleWatchQueryRuleFunc type is an adapter to allow the use of ordinary
@@ -1916,9 +2084,23 @@ func queryFilter(q ent.Query) (Filter, error) {
 		return q.Filter(), nil
 	case *ent.CommitmentEventQuery:
 		return q.Filter(), nil
+	case *ent.ConnectorAuditEventQuery:
+		return q.Filter(), nil
+	case *ent.ConnectorCredentialCleanupJobQuery:
+		return q.Filter(), nil
+	case *ent.ConnectorCredentialRecoveryQuery:
+		return q.Filter(), nil
+	case *ent.ConnectorRevocationJobQuery:
+		return q.Filter(), nil
 	case *ent.ConversationIntelligenceArtifactQuery:
 		return q.Filter(), nil
 	case *ent.CreditLedgerQuery:
+		return q.Filter(), nil
+	case *ent.EntityQuery:
+		return q.Filter(), nil
+	case *ent.EntityIdentifierQuery:
+		return q.Filter(), nil
+	case *ent.EntityResourceRefQuery:
 		return q.Filter(), nil
 	case *ent.GoogleWatchQuery:
 		return q.Filter(), nil
@@ -2067,9 +2249,23 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 		return m.Filter(), nil
 	case *ent.CommitmentEventMutation:
 		return m.Filter(), nil
+	case *ent.ConnectorAuditEventMutation:
+		return m.Filter(), nil
+	case *ent.ConnectorCredentialCleanupJobMutation:
+		return m.Filter(), nil
+	case *ent.ConnectorCredentialRecoveryMutation:
+		return m.Filter(), nil
+	case *ent.ConnectorRevocationJobMutation:
+		return m.Filter(), nil
 	case *ent.ConversationIntelligenceArtifactMutation:
 		return m.Filter(), nil
 	case *ent.CreditLedgerMutation:
+		return m.Filter(), nil
+	case *ent.EntityMutation:
+		return m.Filter(), nil
+	case *ent.EntityIdentifierMutation:
+		return m.Filter(), nil
+	case *ent.EntityResourceRefMutation:
 		return m.Filter(), nil
 	case *ent.GoogleWatchMutation:
 		return m.Filter(), nil

@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/server"
@@ -52,7 +53,10 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 		return err
 	}
 	defer func() {
-		shCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
+		// HTTP/gRPC and resource custody each receive their own ShutdownTimeout
+		// phase. Keep the final telemetry flush short so the complete process
+		// lifecycle remains inside the chart's termination grace period.
+		shCtx, cancel := context.WithTimeout(context.Background(), min(cfg.ShutdownTimeout, 5*time.Second))
 		defer cancel()
 		_ = shutdownTracer(shCtx)
 	}()

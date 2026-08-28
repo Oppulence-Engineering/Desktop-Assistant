@@ -1,6 +1,8 @@
 package appconfig
 
 import (
+	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -8,27 +10,228 @@ import (
 
 func validProductionSecurityConfig() Config {
 	return Config{
-		Environment:                   "production",
-		AppURL:                        "https://app.example.com",
-		PublicBaseURL:                 "https://api.example.com",
-		GoogleRedirectURI:             "https://api.example.com/oauth/google/callback",
-		DatabaseURL:                   "postgres://db.example.com/rowboat",
-		RedisURL:                      "redis://redis.example.com:6379",
-		DBEncryptionKey:               strings.Repeat("e", 32),
-		TokenIssuer:                   "https://auth.example.com",
-		WorkOSAPIKey:                  "sk_test",
-		WorkOSClientID:                "client_test",
-		HookHMACSecret:                strings.Repeat("h", 32),
-		InternalAPISecret:             strings.Repeat("i", 32),
-		CORSOrigins:                   []string{"https://app.example.com"},
-		DailyCreditLimit:              100,
-		MonthlyCreditLimit:            1000,
-		OpenAIAPIKey:                  "openai",
-		ElevenLabsAPIKey:              "eleven",
-		ExaAPIKey:                     "exa",
-		GoogleOAuthClientID:           "google-client",
-		GoogleOAuthClientSecret:       "google-secret",
-		AgentRequireMFAForMoneyMoving: true,
+		Environment:                         "production",
+		AppURL:                              "https://app.example.com",
+		PublicBaseURL:                       "https://api.example.com",
+		GoogleRedirectURI:                   "https://api.example.com/oauth/google/callback",
+		DatabaseURL:                         "postgres://db.example.com/rowboat",
+		RedisURL:                            "redis://redis.example.com:6379",
+		DBEncryptionKey:                     strings.Repeat("e", 32),
+		DBEncryptionPrimaryKeyID:            legacyDBEncryptionKeyID,
+		TokenIssuer:                         "https://auth.example.com",
+		WorkOSAPIKey:                        "sk_test",
+		WorkOSClientID:                      "client_test",
+		HookHMACSecret:                      strings.Repeat("h", 32),
+		InternalAPISecret:                   strings.Repeat("i", 32),
+		ConnectorInvalidationPrincipalsJSON: `[{"principal":"canvas-service","connectors":["canvas"],"selector_classes":["connection","user","organization"],"hmac_secret":"` + strings.Repeat("c", 32) + `"}]`,
+		CORSOrigins:                         []string{"https://app.example.com"},
+		DailyCreditLimit:                    100,
+		MonthlyCreditLimit:                  1000,
+		OpenAIAPIKey:                        "openai",
+		ElevenLabsAPIKey:                    "eleven",
+		ExaAPIKey:                           "exa",
+		GoogleOAuthClientID:                 "google-client",
+		GoogleOAuthClientSecret:             "google-secret",
+		AgentRequireMFAForMoneyMoving:       true,
+	}
+}
+
+func TestLoadDBEncryptionKeyringSeedsLegacyKey(t *testing.T) {
+	legacyKey := strings.Repeat("l", 32)
+	t.Setenv("DB_ENCRYPTION_KEY", legacyKey)
+	t.Setenv("DB_ENCRYPTION_KEYRING_JSON", "")
+	previousPrimary, hadPrimary := os.LookupEnv("DB_ENCRYPTION_PRIMARY_KEY_ID")
+	if err := os.Unsetenv("DB_ENCRYPTION_PRIMARY_KEY_ID"); err != nil {
+		t.Fatalf("unset DB_ENCRYPTION_PRIMARY_KEY_ID: %v", err)
+	}
+	t.Cleanup(func() {
+		if hadPrimary {
+			_ = os.Setenv("DB_ENCRYPTION_PRIMARY_KEY_ID", previousPrimary)
+		} else {
+			_ = os.Unsetenv("DB_ENCRYPTION_PRIMARY_KEY_ID")
+		}
+	})
+
+	cfg := Load()
+	primaryKeyID, keyring, err := cfg.DBEncryptionKeyring()
+	if err != nil {
+		t.Fatalf("resolve legacy keyring: %v", err)
+	}
+	if primaryKeyID != legacyDBEncryptionKeyID {
+		t.Fatalf("primary key ID = %q, want %q", primaryKeyID, legacyDBEncryptionKeyID)
+	}
+	if len(keyring) != 1 || keyring[legacyDBEncryptionKeyID] != legacyKey {
+		t.Fatalf("legacy keyring = %#v, want one stable legacy entry", keyring)
+	}
+}
+
+func TestLoadConnectorOAuthLegacyStateWriteDefaultsSecureAndRequiresOptIn(t *testing.T) {
+	t.Setenv("CONNECTOR_OAUTH_LEGACY_STATE_WRITE", "")
+	if Load().ConnectorOAuthLegacyStateWrite {
+		t.Fatal("legacy OAuth state write must default off")
+	}
+	t.Setenv("CONNECTOR_OAUTH_LEGACY_STATE_WRITE", "true")
+	if !Load().ConnectorOAuthLegacyStateWrite {
+		t.Fatal("legacy OAuth state write opt-in was not loaded")
+	}
+}
+
+func TestDBEncryptionKeyringParsesExplicitRotationRing(t *testing.T) {
+	cfg := Config{
+		DBEncryptionPrimaryKeyID:   "2026-08",
+		DBEncryptionKeyringJSON:    `{"legacy-db-encryption-key":"old-secret","2026-08":"new-secret"}`,
+		DBEncryptionRetiringKeyIDs: []string{"legacy-db-encryption-key"},
+	}
+
+	primaryKeyID, keyring, err := cfg.DBEncryptionKeyring()
+	if err != nil {
+		t.Fatalf("resolve explicit keyring: %v", err)
+	}
+	if primaryKeyID != "2026-08" || keyring[legacyDBEncryptionKeyID] != "old-secret" || keyring["2026-08"] != "new-secret" {
+		t.Fatalf("resolved primary/keyring = %q/%#v", primaryKeyID, keyring)
+	}
+}
+
+func TestDBEncryptionKeyringRejectsUnsafeRetirementDeclaration(t *testing.T) {
+	base := Config{
+		DBEncryptionPrimaryKeyID: "new",
+		DBEncryptionKeyringJSON:  `{"old":"old-secret","new":"new-secret"}`,
+	}
+	for _, tc := range []struct {
+		name string
+		ids  []string
+		want string
+	}{
+		{name: "active primary", ids: []string{"new"}, want: "active primary"},
+		{name: "already removed", ids: []string{"missing"}, want: "must remain"},
+		{name: "duplicate", ids: []string{"old", "old"}, want: "duplicate"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := base
+			cfg.DBEncryptionRetiringKeyIDs = tc.ids
+			if _, _, err := cfg.DBEncryptionKeyring(); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("DBEncryptionKeyring error = %v, want containing %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestDBEncryptionKeyringRejectsInvalidOrUnboundedConfiguration(t *testing.T) {
+	tooManyEntries := make([]string, 0, maxDBEncryptionKeyringEntries+1)
+	for i := 0; i <= maxDBEncryptionKeyringEntries; i++ {
+		tooManyEntries = append(tooManyEntries, `"key-`+strconv.Itoa(i)+`":"`+strings.Repeat("k", 32)+`"`)
+	}
+
+	for _, tc := range []struct {
+		name string
+		cfg  Config
+		want string
+	}{
+		{
+			name: "missing primary",
+			cfg: Config{
+				DBEncryptionKeyringJSON: `{"current":"secret"}`,
+			},
+			want: "must not be empty",
+		},
+		{
+			name: "primary absent from ring",
+			cfg: Config{
+				DBEncryptionPrimaryKeyID: "current",
+				DBEncryptionKeyringJSON:  `{"old":"secret"}`,
+			},
+			want: "is not present",
+		},
+		{
+			name: "duplicate key id",
+			cfg: Config{
+				DBEncryptionPrimaryKeyID: "current",
+				DBEncryptionKeyringJSON:  `{"current":"first","current":"second"}`,
+			},
+			want: "duplicate key ID",
+		},
+		{
+			name: "non object",
+			cfg: Config{
+				DBEncryptionPrimaryKeyID: "current",
+				DBEncryptionKeyringJSON:  `["secret"]`,
+			},
+			want: "must be a JSON object",
+		},
+		{
+			name: "too many entries",
+			cfg: Config{
+				DBEncryptionPrimaryKeyID: "key-0",
+				DBEncryptionKeyringJSON:  `{` + strings.Join(tooManyEntries, ",") + `}`,
+			},
+			want: "more than 32 keys",
+		},
+		{
+			name: "oversized document",
+			cfg: Config{
+				DBEncryptionPrimaryKeyID: legacyDBEncryptionKeyID,
+				DBEncryptionKeyringJSON:  strings.Repeat(" ", maxDBEncryptionKeyringBytes+1),
+			},
+			want: "exceeds 65536 bytes",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, _, err := tc.cfg.DBEncryptionKeyring(); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("DBEncryptionKeyring error = %v, want containing %q", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestValidateProductionAcceptsExplicitKeyringWithoutLegacyEnv(t *testing.T) {
+	cfg := validProductionSecurityConfig()
+	cfg.DBEncryptionKey = ""
+	cfg.DBEncryptionPrimaryKeyID = "2026-08"
+	cfg.DBEncryptionKeyringJSON = `{"legacy-db-encryption-key":"` + strings.Repeat("o", 32) + `","2026-08":"` + strings.Repeat("n", 32) + `"}`
+	if err := cfg.validateProduction(); err != nil {
+		t.Fatalf("valid explicit production keyring rejected: %v", err)
+	}
+}
+
+func TestValidateProductionRejectsMissingOrWeakPrimaryKey(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		mutate func(*Config)
+		want   string
+	}{
+		{
+			name: "missing primary id",
+			mutate: func(c *Config) {
+				c.DBEncryptionPrimaryKeyID = ""
+				c.DBEncryptionKeyringJSON = `{"current":"` + strings.Repeat("k", 32) + `"}`
+			},
+			want: "DB_ENCRYPTION_PRIMARY_KEY_ID must not be empty",
+		},
+		{
+			name: "primary absent",
+			mutate: func(c *Config) {
+				c.DBEncryptionPrimaryKeyID = "current"
+				c.DBEncryptionKeyringJSON = `{"old":"` + strings.Repeat("k", 32) + `"}`
+			},
+			want: "is not present",
+		},
+		{
+			name: "weak primary material",
+			mutate: func(c *Config) {
+				c.DBEncryptionKey = ""
+				c.DBEncryptionPrimaryKeyID = "current"
+				c.DBEncryptionKeyringJSON = `{"current":"short"}`
+			},
+			want: "non-dev secret of at least 32 bytes",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := validProductionSecurityConfig()
+			tc.mutate(&cfg)
+			if err := cfg.validateProduction(); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("validateProduction error = %v, want containing %q", err, tc.want)
+			}
+		})
 	}
 }
 
@@ -44,8 +247,10 @@ func TestValidateProductionRejectsUnsafeSecurityConfiguration(t *testing.T) {
 		{name: "CORS origin with userinfo", mutate: func(c *Config) { c.CORSOrigins = []string{"https://user@app.example.com"} }, want: "invalid production origin"},
 		{name: "weak internal secret", mutate: func(c *Config) { c.InternalAPISecret = "short" }, want: "at least 32 bytes"},
 		{name: "weak hook secret", mutate: func(c *Config) { c.HookHMACSecret = "short" }, want: "at least 32 bytes"},
+		{name: "missing invalidation principals", mutate: func(c *Config) { c.ConnectorInvalidationPrincipalsJSON = "" }, want: "CONNECTOR_INVALIDATION_PRINCIPALS_JSON"},
 		{name: "insecure public URL", mutate: func(c *Config) { c.PublicBaseURL = "http://api.example.com" }, want: "absolute HTTPS URL"},
 		{name: "MFA disabled", mutate: func(c *Config) { c.AgentRequireMFAForMoneyMoving = false }, want: "must be true"},
+		{name: "local entitlement override", mutate: func(c *Config) { c.ConnectorAllowLocalEntitlementDevelopment = true }, want: "must be false"},
 		{name: "weak Google webhook token", mutate: func(c *Config) {
 			c.GoogleWatchEnabled = true
 			c.GoogleWebhookToken = "short"
@@ -77,6 +282,40 @@ func TestValidateProductionRejectsUnsafeSecurityConfiguration(t *testing.T) {
 	}
 	if err := validProductionSecurityConfig().validateProduction(); err != nil {
 		t.Fatalf("valid production security config rejected: %v", err)
+	}
+}
+
+func TestValidateConnectorInvalidationJWTConfigurationIsAllOrNothing(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		mutate func(*Config)
+		valid  bool
+	}{
+		{name: "unset", mutate: func(*Config) {}, valid: true},
+		{name: "complete", mutate: func(c *Config) {
+			c.ConnectorInvalidationJWTIssuer = "https://service.example.com"
+			c.ConnectorInvalidationJWTAudience = "connector-invalidation"
+			c.ConnectorInvalidationJWTJWKSURL = "https://service.example.com/.well-known/jwks.json"
+		}, valid: true},
+		{name: "issuer only", mutate: func(c *Config) {
+			c.ConnectorInvalidationJWTIssuer = "https://service.example.com"
+		}},
+		{name: "missing audience", mutate: func(c *Config) {
+			c.ConnectorInvalidationJWTIssuer = "https://service.example.com"
+			c.ConnectorInvalidationJWTJWKSURL = "https://service.example.com/.well-known/jwks.json"
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := baseConfig()
+			tc.mutate(&cfg)
+			err := cfg.Validate()
+			if tc.valid && err != nil {
+				t.Fatalf("valid config rejected: %v", err)
+			}
+			if !tc.valid && (err == nil || !strings.Contains(err.Error(), "must be configured together")) {
+				t.Fatalf("partial JWT config error = %v", err)
+			}
+		})
 	}
 }
 

@@ -31,3 +31,23 @@ spec:
       {{- with .Values.service.nodePorts.metrics }}
       nodePort: {{ . }}
       {{- end }}
+---
+# Readiness must remove a custody-risk pod from application traffic immediately,
+# but Prometheus still needs to scrape its unresolved shutdown gauge. Keep metrics
+# on a dedicated Service that publishes not-ready pod addresses.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "rowboat-api.fullname" . }}-metrics
+  labels:
+    {{- include "rowboat-api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: metrics
+spec:
+  type: ClusterIP
+  publishNotReadyAddresses: true
+  selector:
+    {{- include "rowboat-api.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: metrics
+      port: {{ .Values.ports.metrics }}
+      targetPort: metrics

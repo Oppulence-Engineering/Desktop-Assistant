@@ -14,6 +14,17 @@ export const ClaimsSchema = z.object({
   scopes: z.array(z.string()),
   /** Expiry as epoch seconds. */
   expiresAt: z.number(),
+  /** Not-before and issued-at timestamps as epoch seconds when present. */
+  notBefore: z.number().optional(),
+  issuedAt: z.number().optional(),
+  /** RFC 012 connector actor fields. */
+  userId: z.string(),
+  organizationId: z.string().optional(),
+  connectionId: z.string().optional(),
+  connectorId: z.string().optional(),
+  credentialGeneration: z.number().int().positive().optional(),
+  tokenId: z.string().optional(),
+  trustTier: z.string().optional(),
   workosUserId: z.string().optional(),
   workosOrgId: z.string().optional(),
   email: z.string().optional(),
@@ -47,17 +58,43 @@ function firstString(...vals: unknown[]): string | undefined {
 /** Normalizes a verified JWT payload into Claims. */
 export function claimsFromPayload(p: JWTPayload): Claims {
   const ext = (p.ext as Record<string, unknown> | undefined) ?? undefined;
+  const record = p as Record<string, unknown>;
+  const userId = firstString(ext?.user_id, record.user_id, ext?.workos_user_id, record.workos_user_id, p.sub) ?? '';
+  const organizationId = firstString(
+    ext?.organization_id,
+    record.organization_id,
+    ext?.org_id,
+    record.org_id,
+    ext?.workos_org_id,
+    record.workos_org_id,
+  );
   return {
     subject: typeof p.sub === 'string' ? p.sub : '',
     issuer: typeof p.iss === 'string' ? p.iss : '',
     audience: toStringArray(p.aud),
     scopes: extractScopes(p),
     expiresAt: typeof p.exp === 'number' ? p.exp : 0,
-    workosUserId: firstString(ext?.workos_user_id, (p as Record<string, unknown>).workos_user_id, p.sub),
-    workosOrgId: firstString(ext?.workos_org_id, (p as Record<string, unknown>).workos_org_id, (p as Record<string, unknown>).org_id),
-    email: firstString(ext?.email, (p as Record<string, unknown>).email),
+    notBefore: typeof p.nbf === 'number' ? p.nbf : undefined,
+    issuedAt: typeof p.iat === 'number' ? p.iat : undefined,
+    userId,
+    organizationId,
+    connectionId: firstString(ext?.connection_id, record.connection_id),
+    connectorId: firstString(ext?.connector_id, record.connector_id),
+    credentialGeneration: firstPositiveInteger(ext?.credential_generation, record.credential_generation),
+    tokenId: firstString(p.jti, ext?.token_id, record.token_id),
+    trustTier: firstString(ext?.trust_tier, record.trust_tier),
+    workosUserId: firstString(ext?.workos_user_id, record.workos_user_id, userId),
+    workosOrgId: firstString(ext?.workos_org_id, record.workos_org_id, organizationId),
+    email: firstString(ext?.email, record.email),
     raw: p,
   };
+}
+
+function firstPositiveInteger(...values: unknown[]): number | undefined {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) return value;
+  }
+  return undefined;
 }
 
 export function hasScope(c: Claims, scope: string): boolean {

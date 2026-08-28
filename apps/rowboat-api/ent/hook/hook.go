@@ -261,6 +261,54 @@ func (f CommitmentEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommitmentEventMutation", m)
 }
 
+// The ConnectorAuditEventFunc type is an adapter to allow the use of ordinary
+// function as ConnectorAuditEvent mutator.
+type ConnectorAuditEventFunc func(context.Context, *ent.ConnectorAuditEventMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConnectorAuditEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConnectorAuditEventMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConnectorAuditEventMutation", m)
+}
+
+// The ConnectorCredentialCleanupJobFunc type is an adapter to allow the use of ordinary
+// function as ConnectorCredentialCleanupJob mutator.
+type ConnectorCredentialCleanupJobFunc func(context.Context, *ent.ConnectorCredentialCleanupJobMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConnectorCredentialCleanupJobFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConnectorCredentialCleanupJobMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConnectorCredentialCleanupJobMutation", m)
+}
+
+// The ConnectorCredentialRecoveryFunc type is an adapter to allow the use of ordinary
+// function as ConnectorCredentialRecovery mutator.
+type ConnectorCredentialRecoveryFunc func(context.Context, *ent.ConnectorCredentialRecoveryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConnectorCredentialRecoveryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConnectorCredentialRecoveryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConnectorCredentialRecoveryMutation", m)
+}
+
+// The ConnectorRevocationJobFunc type is an adapter to allow the use of ordinary
+// function as ConnectorRevocationJob mutator.
+type ConnectorRevocationJobFunc func(context.Context, *ent.ConnectorRevocationJobMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConnectorRevocationJobFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConnectorRevocationJobMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConnectorRevocationJobMutation", m)
+}
+
 // The ConversationIntelligenceArtifactFunc type is an adapter to allow the use of ordinary
 // function as ConversationIntelligenceArtifact mutator.
 type ConversationIntelligenceArtifactFunc func(context.Context, *ent.ConversationIntelligenceArtifactMutation) (ent.Value, error)
@@ -283,6 +331,42 @@ func (f CreditLedgerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CreditLedgerMutation", m)
+}
+
+// The EntityFunc type is an adapter to allow the use of ordinary
+// function as Entity mutator.
+type EntityFunc func(context.Context, *ent.EntityMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EntityFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EntityMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EntityMutation", m)
+}
+
+// The EntityIdentifierFunc type is an adapter to allow the use of ordinary
+// function as EntityIdentifier mutator.
+type EntityIdentifierFunc func(context.Context, *ent.EntityIdentifierMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EntityIdentifierFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EntityIdentifierMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EntityIdentifierMutation", m)
+}
+
+// The EntityResourceRefFunc type is an adapter to allow the use of ordinary
+// function as EntityResourceRef mutator.
+type EntityResourceRefFunc func(context.Context, *ent.EntityResourceRefMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f EntityResourceRefFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.EntityResourceRefMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.EntityResourceRefMutation", m)
 }
 
 // The GoogleWatchFunc type is an adapter to allow the use of ordinary

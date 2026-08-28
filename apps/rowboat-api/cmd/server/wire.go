@@ -32,6 +32,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/docs"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/embeddings"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/entities"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/feedback"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/google"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
@@ -98,7 +99,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}
 
 	// --- Column encryption --------------------------------------------------
-	sealer, err := crypto.NewSealer(cfg.DBEncryptionKey)
+	sealer, err := newColumnSealer(cfg)
 	if err != nil {
 		return err
 	}
@@ -119,11 +120,12 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// background JWKS refresh goroutine, which must outlive boot so the verifier
 	// can pick up the IdP's rotated signing keys. oauthrs.New bounds its own
 	// boot-time HTTP fetches internally, so this won't hang startup.
-	v, verr := oauthrs.New(ctx, oauthrs.Config{
-		IssuerURL:      cfg.TokenIssuer,
-		Audience:       cfg.TokenAudience,
-		JWKSURL:        cfg.JWKSURL,
-		AcceptableSkew: 60 * time.Second,
+	v, verr := oauthrs.NewGeneric(ctx, oauthrs.GenericConfig{
+		IssuerURL:                 cfg.TokenIssuer,
+		Audience:                  cfg.TokenAudience,
+		JWKSURL:                   cfg.JWKSURL,
+		AcceptableSkew:            60 * time.Second,
+		AllowLocalhostDevelopment: !cfg.IsProduction(),
 	})
 	if verr != nil {
 		log.Warn("auth verifier unavailable; authed routes will return 503 until JWKS is reachable", zap.Error(verr))
@@ -304,7 +306,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		WebhookSigningSecret: cfg.WebhookSigningSecret,
 	}, log)
 	if strings.TrimSpace(cfg.GoogleWebhookOIDCAudience) != "" {
-		googlePushVerifier, err := oauthrs.New(ctx, oauthrs.Config{
+		googlePushVerifier, err := oauthrs.NewGeneric(ctx, oauthrs.GenericConfig{
 			IssuerURL:      "https://accounts.google.com",
 			Audience:       cfg.GoogleWebhookOIDCAudience,
 			JWKSURL:        "https://www.googleapis.com/oauth2/v3/certs",
@@ -317,9 +319,12 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		cloudEventsH.SetGooglePushVerifier(googlePushVerifier, cfg.GoogleWebhookOIDCEmail)
 	}
 
-	registry, err := connectors.LoadRegistry([]byte(cfg.ConnectorsJSON))
+	registry, err := connectors.LoadRegistryForEnvironment([]byte(cfg.ConnectorsJSON), cfg.Environment, cfg.ConnectorEmergencyDisabled)
 	if err != nil {
 		return err
+	}
+	if err := registry.ConfigureProductEntitlementsJSON(cfg.ConnectorEntitlementURLsJSON, cfg.ConnectorEntitlementHMACKeysJSON); err != nil {
+		return fmt.Errorf("configure connector product entitlements: %w", err)
 	}
 	connectorsH := connectors.New(client, sealer, registry, connectors.Config{
 		OryPublicURL:          cfg.OryPublicURL,
@@ -327,9 +332,32 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		OryBrokerClientSecret: cfg.OryBrokerClientSecret,
 		PublicBaseURL:         cfg.PublicBaseURL,
 		DeepLinkScheme:        cfg.DesktopDeepLinkScheme,
+		RedirectAllowlist:     cfg.ConnectorRedirectAllowlist,
+		OAuthLegacyStateWrite: cfg.ConnectorOAuthLegacyStateWrite,
 	}, log)
+	if strings.TrimSpace(cfg.BrokerTokenPrivateKey) != "" {
+		resourceTokenIssuer, issuerErr := connectors.NewRSAResourceTokenIssuer(
+			[]byte(cfg.BrokerTokenPrivateKey),
+			cfg.BrokerTokenKeyID,
+			cfg.BrokerTokenIssuer,
+			cfg.BrokerTokenTTL,
+			[]byte(cfg.BrokerTokenKeyringJSON),
+		)
+		if issuerErr != nil {
+			return fmt.Errorf("configure connector resource-token issuer: %w", issuerErr)
+		}
+		connectorsH.SetResourceTokenIssuer(resourceTokenIssuer)
+	} else if cfg.IsProduction() {
+		return fmt.Errorf("BROKER_TOKEN_PRIVATE_KEY_PEM is required in production")
+	}
 	connectorsH.SetOutboundPolicy(vendorPolicy)
 	connectorsH.SetRefreshDedup(refreshCache, sealer)
+	srv.AddReadyCheck("connector_credential_custody", connectorsH.CredentialCustodyReady)
+	srv.AddReadyCheck("connector_refresh_failure_persistence", connectorsH.RefreshFailurePersistenceReady)
+	srv.AddShutdownHook("connector_credential_custody", connectorsH.BeginCredentialCustodyShutdown)
+	srv.AddContextCloser("connector_credential_custody", connectorsH.CloseCredentialCustody)
+	go connectorsH.RunRevocationWorker(ctx)
+	go connectorsH.RunCredentialCleanupWorker(ctx)
 	hubspotClient := hubspotapi.New(client, sealer, vendorPolicy)
 	hubspotH := hubspotapi.NewHandler(hubspotClient)
 
@@ -483,6 +511,33 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		_ = revenue.NewResearchTriggerRunner(revenueSvc, 24*time.Hour, 200, log).Run(ctx)
 	}()
 	revenueH := revenue.NewHandler(revenueSvc, log)
+	entitySvc := entities.New(client, func(ctx context.Context) (entities.Scope, error) {
+		u, ok := auth.UserFromCtx(ctx)
+		if !ok {
+			return entities.Scope{}, entities.ErrForbidden
+		}
+		actor, ok := auth.ActorFromCtx(ctx)
+		if !ok || actor.Kind != auth.KindUser || actor.UserID != u.ID || strings.TrimSpace(actor.WorkOSOrgID) == "" {
+			return entities.Scope{}, entities.ErrForbidden
+		}
+		ws, err := revenueSvc.CurrentWorkspaceForOrg(ctx, u, actor.WorkOSOrgID)
+		if err != nil {
+			return entities.Scope{}, entities.ErrForbidden
+		}
+		return entities.Scope{Workspace: ws, User: u}, nil
+	}, func(ctx context.Context, scope entities.Scope, operation entities.Operation) error {
+		actor, ok := auth.ActorFromCtx(ctx)
+		if !ok || actor.Kind != auth.KindUser || actor.UserID != scope.User.ID || actor.WorkOSOrgID == "" || actor.WorkOSOrgID != scope.Workspace.WorkosOrgID {
+			return entities.ErrForbidden
+		}
+		capability := revenue.WorkspaceView
+		if operation == entities.OperationWrite {
+			capability = revenue.WorkspaceContribute
+		}
+		_, err := revenueSvc.RequireWorkspaceCapability(ctx, scope.User, scope.Workspace, capability)
+		return err
+	})
+	entitiesH := entities.NewHandler(entitySvc)
 	// RFC 031 Layer-1 push sync: keep the mail index live from Gmail pushes.
 	// Ships dark behind REVENUE_MAIL_PUSH_SYNC_ENABLED.
 	if cfg.RevenueMailPushSyncEnabled {
@@ -561,7 +616,13 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	})
 	// OAuth callback is a browser redirect from Ory (no bearer); the user is
 	// resolved from the sealed pending ticket inside the handler.
-	r.Get("/v1/connections/{name}/callback", connectorsH.Callback)
+	r.With(rl.PerUserWindow(ratelimit.GroupConnectorCallbacks, 30, time.Minute), rl.PerUserWindow(ratelimit.GroupConnectorCallbacks+":burst", 8, 10*time.Second)).
+		Get("/v1/connections/{name}/callback", connectorsH.Callback)
+	r.With(rl.PerUserWindow(ratelimit.GroupConnectorCallbacks, 30, time.Minute), rl.PerUserWindow(ratelimit.GroupConnectorCallbacks+":burst", 8, 10*time.Second)).
+		Get("/v1/connectors/{name}/callback", connectorsH.Callback)
+	// Product resource servers verify short-lived, audience-bound connector
+	// tokens against this public key set. It contains public key material only.
+	r.Get("/.well-known/connector-jwks.json", connectorsH.BrokerJWKS)
 
 	// Provider callbacks are browser-facing and carry state minted by the
 	// authenticated /v1/*-oauth/start endpoints below.
@@ -596,13 +657,50 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			Post("/v1/agent-channels/slack/interactivity", agentChannelsH.SlackInteractivity)
 	}
 
-	// Ory pre-consent webhook (shared-secret HMAC, not a user bearer).
-	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret)).
+	// Ory pre-consent webhook (shared-secret HMAC, not a user bearer). PostgreSQL
+	// provides one replay reservation namespace shared by every API replica.
+	var hookNonces auth.HookNonceStore = auth.NewMemoryHookNonceStore()
+	if database.Dialect == "postgres" {
+		hookNonces = auth.NewPostgresHookNonceStore(database.SQLDB())
+	}
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret, hookNonces)).
 		Post("/oauth-hooks/pre-consent", connectorsH.PreConsent)
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret, hookNonces)).
+		Post("/oauth-hooks/consent-context", connectorsH.ConsentContext)
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireHookHMAC(cfg.HookHMACSecret, hookNonces)).
+		Post("/oauth-hooks/consent-audit", connectorsH.AppendConsentAudit)
 
-	// Server-to-server internal API (static shared secret).
-	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
+	// Product connector invalidation is not part of the global internal-secret
+	// trust domain. Each product/service authenticates as its own HMAC- or
+	// JWT-backed principal and is bounded to configured connector and selector
+	// classes. Global controls require an explicit platform_admin principal.
+	var invalidationJWTVerifier *oauthrs.Verifier
+	if strings.TrimSpace(cfg.ConnectorInvalidationJWTIssuer) != "" {
+		invalidationJWTVerifier, err = oauthrs.NewGeneric(ctx, oauthrs.GenericConfig{
+			IssuerURL:                 cfg.ConnectorInvalidationJWTIssuer,
+			Audience:                  cfg.ConnectorInvalidationJWTAudience,
+			JWKSURL:                   cfg.ConnectorInvalidationJWTJWKSURL,
+			AcceptableSkew:            time.Minute,
+			ValidMethods:              []string{"RS256"},
+			AllowLocalhostDevelopment: !cfg.IsProduction(),
+		})
+		if err != nil {
+			return fmt.Errorf("configure connector invalidation service JWT verifier: %w", err)
+		}
+	}
+	invalidationAuth, err := auth.NewConnectorInvalidationAuth(
+		cfg.ConnectorInvalidationPrincipalsJSON, invalidationJWTVerifier, hookNonces,
+	)
+	if err != nil {
+		return fmt.Errorf("configure connector invalidation principals: %w", err)
+	}
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), invalidationAuth.Require).
 		Post("/v1/internal/connections/invalidate", connectorsH.Invalidate)
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 600, time.Minute), invalidationAuth.RequireConnectionStatus).
+		Post("/v1/internal/connections/status", connectorsH.ConnectionStatus)
+
+	// Other server-to-server APIs retain the separately scoped global internal
+	// capability. Possession of this secret no longer grants product invalidation.
 	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), auth.RequireInternalSecret(cfg.InternalAPISecret)).
 		Post("/v1/internal/events", cloudEventsH.IngestInternal)
 	if agentChannelsH != nil {
@@ -634,6 +732,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.RequireJWT)
 		r.Use(rl.PerUser(ratelimit.GroupDefault, 600)) // sanity bucket
+		entitiesH.Mount(r)
 
 		r.Get("/v1/me", billingH.Me)
 		// Shape adapter for the upstream renderer's Better Auth useSession hook.
@@ -807,7 +906,16 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			})
 		}
 
-		r.Get("/v1/connectors", connectorsH.List)
+		r.With(rl.PerUser(ratelimit.GroupConnections, 30), rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second)).
+			Get("/v1/connectors", connectorsH.List)
+		// Canonical RFC 012 paths. The /v1/connections aliases below remain for
+		// shipped desktop clients and RFC 020 compatibility.
+		r.With(rl.PerUser(ratelimit.GroupConnections, 30), rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second)).
+			Post("/v1/connectors/{name}/start", connectorsH.Start)
+		r.With(rl.PerUser(ratelimit.GroupConnections, 30), rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second)).
+			Post("/v1/connectors/{name}/resource-token", connectorsH.MCPToken)
+		r.With(rl.PerUser(ratelimit.GroupConnections, 30), rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second)).
+			Delete("/v1/connectors/{name}/connections/{connectionID}", connectorsH.Delete)
 		r.With(rl.PerUserWindow(ratelimit.GroupConnections, 60, time.Minute)).
 			Post("/v1/hubspot/search", hubspotH.Search)
 		r.Route("/v1/connections", func(r chi.Router) {
@@ -816,12 +924,28 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Post("/{name}/start", connectorsH.Start)
 			r.Post("/{name}/claim", connectorsH.Claim)
 			r.Post("/{name}/api-key", connectorsH.SetAPIKey)
+			r.Post("/{name}/authorization-grant", connectorsH.AuthorizeAPIKeyGrant)
 			r.Post("/{name}/mcp-token", connectorsH.MCPToken)
 			r.Delete("/{name}", connectorsH.Delete)
 		})
 	})
 
 	return nil
+}
+
+// newColumnSealer is kept separate from the full composition root so keyring
+// parsing, legacy compatibility, and fail-closed startup behavior can be tested
+// without opening a database or binding listeners.
+func newColumnSealer(cfg appconfig.Config) (*crypto.Sealer, error) {
+	primaryKeyID, keyring, err := cfg.DBEncryptionKeyring()
+	if err != nil {
+		return nil, fmt.Errorf("column encryption configuration: %w", err)
+	}
+	sealer, err := crypto.NewKeyringSealer(primaryKeyID, keyring)
+	if err != nil {
+		return nil, fmt.Errorf("build column encryption keyring: %w", err)
+	}
+	return sealer, nil
 }
 
 // dialTemporalWithRetry connects to Temporal, retrying for up to ~2 minutes.

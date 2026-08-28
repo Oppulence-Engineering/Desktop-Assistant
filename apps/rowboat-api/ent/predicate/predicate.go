@@ -69,11 +69,32 @@ type CommitmentDependency func(*sql.Selector)
 // CommitmentEvent is the predicate function for commitmentevent builders.
 type CommitmentEvent func(*sql.Selector)
 
+// ConnectorAuditEvent is the predicate function for connectorauditevent builders.
+type ConnectorAuditEvent func(*sql.Selector)
+
+// ConnectorCredentialCleanupJob is the predicate function for connectorcredentialcleanupjob builders.
+type ConnectorCredentialCleanupJob func(*sql.Selector)
+
+// ConnectorCredentialRecovery is the predicate function for connectorcredentialrecovery builders.
+type ConnectorCredentialRecovery func(*sql.Selector)
+
+// ConnectorRevocationJob is the predicate function for connectorrevocationjob builders.
+type ConnectorRevocationJob func(*sql.Selector)
+
 // ConversationIntelligenceArtifact is the predicate function for conversationintelligenceartifact builders.
 type ConversationIntelligenceArtifact func(*sql.Selector)
 
 // CreditLedger is the predicate function for creditledger builders.
 type CreditLedger func(*sql.Selector)
+
+// Entity is the predicate function for entity builders.
+type Entity func(*sql.Selector)
+
+// EntityIdentifier is the predicate function for entityidentifier builders.
+type EntityIdentifier func(*sql.Selector)
+
+// EntityResourceRef is the predicate function for entityresourceref builders.
+type EntityResourceRef func(*sql.Selector)
 
 // GoogleWatch is the predicate function for googlewatch builders.
 type GoogleWatch func(*sql.Selector)

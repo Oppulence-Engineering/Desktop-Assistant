@@ -5,13 +5,23 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { Upsell } from "./upsell";
+import type { ConsentClientIdentity } from "./consentClientIdentity";
+import type { ConsentConnectorIdentity } from "./consentConnectorIdentity";
+import type { ConsentEntitlement } from "./consentEntitlement";
+import type { ConsentScopeDefinition } from "./consentScopeDefinition";
 
 /**
- * Connector entitlement decision.
+ * Strict structured consent context. It contains no state, PKCE verifier, provider credential, or raw owner metadata.
  */
 export interface PreConsentResponse {
-  /** Whether Ory should continue the consent flow. */
-  allow: boolean;
-  upsell?: Upsell;
+  client: ConsentClientIdentity;
+  /** Connector slug. */
+  connector: ConsentConnectorIdentity;
+  entitlement: ConsentEntitlement;
+  /** Idempotency and trace anchor for a metered request. */
+  request_id: string;
+  /** OAuth scopes granted or requested. */
+  scopes: ConsentScopeDefinition[];
+  /** WorkOS subject bound to the pending flow. */
+  subject: string;
 }

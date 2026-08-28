@@ -34,19 +34,35 @@ type MCPConnectionHistory struct {
 	Connector string `json:"connector,omitempty"`
 	// Audience holds the value of the "audience" field.
 	Audience string `json:"audience,omitempty"`
+	// OrganizationID holds the value of the "organization_id" field.
+	OrganizationID string `json:"organization_id,omitempty"`
 	// Scopes holds the value of the "scopes" field.
 	Scopes []string `json:"scopes,omitempty"`
-	// RefreshTokenEncrypted holds the value of the "refresh_token_encrypted" field.
-	RefreshTokenEncrypted []byte `json:"-"`
-	// APIKeyEncrypted holds the value of the "api_key_encrypted" field.
-	APIKeyEncrypted []byte `json:"-"`
+	// RefreshTokenPresent holds the value of the "refresh_token_present" field.
+	RefreshTokenPresent bool `json:"refresh_token_present,omitempty"`
+	// APIKeyPresent holds the value of the "api_key_present" field.
+	APIKeyPresent bool `json:"api_key_present,omitempty"`
+	// CredentialGeneration holds the value of the "credential_generation" field.
+	CredentialGeneration int64 `json:"credential_generation,omitempty"`
+	// Status holds the value of the "status" field.
+	Status string `json:"status,omitempty"`
 	// ConnectedAt holds the value of the "connected_at" field.
 	ConnectedAt time.Time `json:"connected_at,omitempty"`
 	// LastUsedAt holds the value of the "last_used_at" field.
 	LastUsedAt time.Time `json:"last_used_at,omitempty"`
 	// ExpiresAt holds the value of the "expires_at" field.
-	ExpiresAt    time.Time `json:"expires_at,omitempty"`
-	selectValues sql.SelectValues
+	ExpiresAt time.Time `json:"expires_at,omitempty"`
+	// RevokedAt holds the value of the "revoked_at" field.
+	RevokedAt time.Time `json:"revoked_at,omitempty"`
+	// RevokedReason holds the value of the "revoked_reason" field.
+	RevokedReason string `json:"revoked_reason,omitempty"`
+	// RevokedBy holds the value of the "revoked_by" field.
+	RevokedBy string `json:"revoked_by,omitempty"`
+	// RevocationAttemptedAt holds the value of the "revocation_attempted_at" field.
+	RevocationAttemptedAt time.Time `json:"revocation_attempted_at,omitempty"`
+	// RevocationSucceeded holds the value of the "revocation_succeeded" field.
+	RevocationSucceeded bool `json:"revocation_succeeded,omitempty"`
+	selectValues        sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -54,11 +70,15 @@ func (*MCPConnectionHistory) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case mcpconnectionhistory.FieldScopes, mcpconnectionhistory.FieldRefreshTokenEncrypted, mcpconnectionhistory.FieldAPIKeyEncrypted:
+		case mcpconnectionhistory.FieldScopes:
 			values[i] = new([]byte)
-		case mcpconnectionhistory.FieldOperation, mcpconnectionhistory.FieldConnector, mcpconnectionhistory.FieldAudience:
+		case mcpconnectionhistory.FieldRefreshTokenPresent, mcpconnectionhistory.FieldAPIKeyPresent, mcpconnectionhistory.FieldRevocationSucceeded:
+			values[i] = new(sql.NullBool)
+		case mcpconnectionhistory.FieldCredentialGeneration:
+			values[i] = new(sql.NullInt64)
+		case mcpconnectionhistory.FieldOperation, mcpconnectionhistory.FieldConnector, mcpconnectionhistory.FieldAudience, mcpconnectionhistory.FieldOrganizationID, mcpconnectionhistory.FieldStatus, mcpconnectionhistory.FieldRevokedReason, mcpconnectionhistory.FieldRevokedBy:
 			values[i] = new(sql.NullString)
-		case mcpconnectionhistory.FieldCreatedAt, mcpconnectionhistory.FieldUpdatedAt, mcpconnectionhistory.FieldHistoryTime, mcpconnectionhistory.FieldConnectedAt, mcpconnectionhistory.FieldLastUsedAt, mcpconnectionhistory.FieldExpiresAt:
+		case mcpconnectionhistory.FieldCreatedAt, mcpconnectionhistory.FieldUpdatedAt, mcpconnectionhistory.FieldHistoryTime, mcpconnectionhistory.FieldConnectedAt, mcpconnectionhistory.FieldLastUsedAt, mcpconnectionhistory.FieldExpiresAt, mcpconnectionhistory.FieldRevokedAt, mcpconnectionhistory.FieldRevocationAttemptedAt:
 			values[i] = new(sql.NullTime)
 		case mcpconnectionhistory.FieldID, mcpconnectionhistory.FieldRef:
 			values[i] = new(uuid.UUID)
@@ -125,6 +145,12 @@ func (_m *MCPConnectionHistory) assignValues(columns []string, values []any) err
 			} else if value.Valid {
 				_m.Audience = value.String
 			}
+		case mcpconnectionhistory.FieldOrganizationID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
+			} else if value.Valid {
+				_m.OrganizationID = value.String
+			}
 		case mcpconnectionhistory.FieldScopes:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field scopes", values[i])
@@ -133,17 +159,29 @@ func (_m *MCPConnectionHistory) assignValues(columns []string, values []any) err
 					return fmt.Errorf("unmarshal field scopes: %w", err)
 				}
 			}
-		case mcpconnectionhistory.FieldRefreshTokenEncrypted:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field refresh_token_encrypted", values[i])
-			} else if value != nil {
-				_m.RefreshTokenEncrypted = *value
+		case mcpconnectionhistory.FieldRefreshTokenPresent:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field refresh_token_present", values[i])
+			} else if value.Valid {
+				_m.RefreshTokenPresent = value.Bool
 			}
-		case mcpconnectionhistory.FieldAPIKeyEncrypted:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field api_key_encrypted", values[i])
-			} else if value != nil {
-				_m.APIKeyEncrypted = *value
+		case mcpconnectionhistory.FieldAPIKeyPresent:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field api_key_present", values[i])
+			} else if value.Valid {
+				_m.APIKeyPresent = value.Bool
+			}
+		case mcpconnectionhistory.FieldCredentialGeneration:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field credential_generation", values[i])
+			} else if value.Valid {
+				_m.CredentialGeneration = value.Int64
+			}
+		case mcpconnectionhistory.FieldStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field status", values[i])
+			} else if value.Valid {
+				_m.Status = value.String
 			}
 		case mcpconnectionhistory.FieldConnectedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -162,6 +200,36 @@ func (_m *MCPConnectionHistory) assignValues(columns []string, values []any) err
 				return fmt.Errorf("unexpected type %T for field expires_at", values[i])
 			} else if value.Valid {
 				_m.ExpiresAt = value.Time
+			}
+		case mcpconnectionhistory.FieldRevokedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field revoked_at", values[i])
+			} else if value.Valid {
+				_m.RevokedAt = value.Time
+			}
+		case mcpconnectionhistory.FieldRevokedReason:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field revoked_reason", values[i])
+			} else if value.Valid {
+				_m.RevokedReason = value.String
+			}
+		case mcpconnectionhistory.FieldRevokedBy:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field revoked_by", values[i])
+			} else if value.Valid {
+				_m.RevokedBy = value.String
+			}
+		case mcpconnectionhistory.FieldRevocationAttemptedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field revocation_attempted_at", values[i])
+			} else if value.Valid {
+				_m.RevocationAttemptedAt = value.Time
+			}
+		case mcpconnectionhistory.FieldRevocationSucceeded:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field revocation_succeeded", values[i])
+			} else if value.Valid {
+				_m.RevocationSucceeded = value.Bool
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -220,12 +288,23 @@ func (_m *MCPConnectionHistory) String() string {
 	builder.WriteString("audience=")
 	builder.WriteString(_m.Audience)
 	builder.WriteString(", ")
+	builder.WriteString("organization_id=")
+	builder.WriteString(_m.OrganizationID)
+	builder.WriteString(", ")
 	builder.WriteString("scopes=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Scopes))
 	builder.WriteString(", ")
-	builder.WriteString("refresh_token_encrypted=<sensitive>")
+	builder.WriteString("refresh_token_present=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RefreshTokenPresent))
 	builder.WriteString(", ")
-	builder.WriteString("api_key_encrypted=<sensitive>")
+	builder.WriteString("api_key_present=")
+	builder.WriteString(fmt.Sprintf("%v", _m.APIKeyPresent))
+	builder.WriteString(", ")
+	builder.WriteString("credential_generation=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CredentialGeneration))
+	builder.WriteString(", ")
+	builder.WriteString("status=")
+	builder.WriteString(_m.Status)
 	builder.WriteString(", ")
 	builder.WriteString("connected_at=")
 	builder.WriteString(_m.ConnectedAt.Format(time.ANSIC))
@@ -235,6 +314,21 @@ func (_m *MCPConnectionHistory) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("expires_at=")
 	builder.WriteString(_m.ExpiresAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("revoked_at=")
+	builder.WriteString(_m.RevokedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("revoked_reason=")
+	builder.WriteString(_m.RevokedReason)
+	builder.WriteString(", ")
+	builder.WriteString("revoked_by=")
+	builder.WriteString(_m.RevokedBy)
+	builder.WriteString(", ")
+	builder.WriteString("revocation_attempted_at=")
+	builder.WriteString(_m.RevocationAttemptedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("revocation_succeeded=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RevocationSucceeded))
 	builder.WriteByte(')')
 	return builder.String()
 }

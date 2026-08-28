@@ -2,7 +2,8 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
     "app/**/*.{ts,tsx}",
-    "scripts/**/*.{ts,mts}",
+    "scripts/**/*.{ts,mts,mjs}",
+    "e2e/fake-rowboat-api.mjs",
     "quality/**/*.{ts,tsx}",
     "*.config.{ts,mjs}",
     "config/**/*.{ts,mts}",

@@ -65,6 +65,20 @@ func (_c *MCPConnectionCreate) SetAudience(v string) *MCPConnectionCreate {
 	return _c
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (_c *MCPConnectionCreate) SetOrganizationID(v string) *MCPConnectionCreate {
+	_c.mutation.SetOrganizationID(v)
+	return _c
+}
+
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableOrganizationID(v *string) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetOrganizationID(*v)
+	}
+	return _c
+}
+
 // SetScopes sets the "scopes" field.
 func (_c *MCPConnectionCreate) SetScopes(v []string) *MCPConnectionCreate {
 	_c.mutation.SetScopes(v)
@@ -80,6 +94,62 @@ func (_c *MCPConnectionCreate) SetRefreshTokenEncrypted(v []byte) *MCPConnection
 // SetAPIKeyEncrypted sets the "api_key_encrypted" field.
 func (_c *MCPConnectionCreate) SetAPIKeyEncrypted(v []byte) *MCPConnectionCreate {
 	_c.mutation.SetAPIKeyEncrypted(v)
+	return _c
+}
+
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (_c *MCPConnectionCreate) SetRefreshTokenPresent(v bool) *MCPConnectionCreate {
+	_c.mutation.SetRefreshTokenPresent(v)
+	return _c
+}
+
+// SetNillableRefreshTokenPresent sets the "refresh_token_present" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableRefreshTokenPresent(v *bool) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetRefreshTokenPresent(*v)
+	}
+	return _c
+}
+
+// SetAPIKeyPresent sets the "api_key_present" field.
+func (_c *MCPConnectionCreate) SetAPIKeyPresent(v bool) *MCPConnectionCreate {
+	_c.mutation.SetAPIKeyPresent(v)
+	return _c
+}
+
+// SetNillableAPIKeyPresent sets the "api_key_present" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableAPIKeyPresent(v *bool) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetAPIKeyPresent(*v)
+	}
+	return _c
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (_c *MCPConnectionCreate) SetCredentialGeneration(v int64) *MCPConnectionCreate {
+	_c.mutation.SetCredentialGeneration(v)
+	return _c
+}
+
+// SetNillableCredentialGeneration sets the "credential_generation" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableCredentialGeneration(v *int64) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetCredentialGeneration(*v)
+	}
+	return _c
+}
+
+// SetStatus sets the "status" field.
+func (_c *MCPConnectionCreate) SetStatus(v string) *MCPConnectionCreate {
+	_c.mutation.SetStatus(v)
+	return _c
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableStatus(v *string) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetStatus(*v)
+	}
 	return _c
 }
 
@@ -121,6 +191,76 @@ func (_c *MCPConnectionCreate) SetExpiresAt(v time.Time) *MCPConnectionCreate {
 func (_c *MCPConnectionCreate) SetNillableExpiresAt(v *time.Time) *MCPConnectionCreate {
 	if v != nil {
 		_c.SetExpiresAt(*v)
+	}
+	return _c
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (_c *MCPConnectionCreate) SetRevokedAt(v time.Time) *MCPConnectionCreate {
+	_c.mutation.SetRevokedAt(v)
+	return _c
+}
+
+// SetNillableRevokedAt sets the "revoked_at" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableRevokedAt(v *time.Time) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetRevokedAt(*v)
+	}
+	return _c
+}
+
+// SetRevokedReason sets the "revoked_reason" field.
+func (_c *MCPConnectionCreate) SetRevokedReason(v string) *MCPConnectionCreate {
+	_c.mutation.SetRevokedReason(v)
+	return _c
+}
+
+// SetNillableRevokedReason sets the "revoked_reason" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableRevokedReason(v *string) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetRevokedReason(*v)
+	}
+	return _c
+}
+
+// SetRevokedBy sets the "revoked_by" field.
+func (_c *MCPConnectionCreate) SetRevokedBy(v string) *MCPConnectionCreate {
+	_c.mutation.SetRevokedBy(v)
+	return _c
+}
+
+// SetNillableRevokedBy sets the "revoked_by" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableRevokedBy(v *string) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetRevokedBy(*v)
+	}
+	return _c
+}
+
+// SetRevocationAttemptedAt sets the "revocation_attempted_at" field.
+func (_c *MCPConnectionCreate) SetRevocationAttemptedAt(v time.Time) *MCPConnectionCreate {
+	_c.mutation.SetRevocationAttemptedAt(v)
+	return _c
+}
+
+// SetNillableRevocationAttemptedAt sets the "revocation_attempted_at" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableRevocationAttemptedAt(v *time.Time) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetRevocationAttemptedAt(*v)
+	}
+	return _c
+}
+
+// SetRevocationSucceeded sets the "revocation_succeeded" field.
+func (_c *MCPConnectionCreate) SetRevocationSucceeded(v bool) *MCPConnectionCreate {
+	_c.mutation.SetRevocationSucceeded(v)
+	return _c
+}
+
+// SetNillableRevocationSucceeded sets the "revocation_succeeded" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableRevocationSucceeded(v *bool) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetRevocationSucceeded(*v)
 	}
 	return _c
 }
@@ -201,6 +341,22 @@ func (_c *MCPConnectionCreate) defaults() error {
 		v := mcpconnection.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.RefreshTokenPresent(); !ok {
+		v := mcpconnection.DefaultRefreshTokenPresent
+		_c.mutation.SetRefreshTokenPresent(v)
+	}
+	if _, ok := _c.mutation.APIKeyPresent(); !ok {
+		v := mcpconnection.DefaultAPIKeyPresent
+		_c.mutation.SetAPIKeyPresent(v)
+	}
+	if _, ok := _c.mutation.CredentialGeneration(); !ok {
+		v := mcpconnection.DefaultCredentialGeneration
+		_c.mutation.SetCredentialGeneration(v)
+	}
+	if _, ok := _c.mutation.Status(); !ok {
+		v := mcpconnection.DefaultStatus
+		_c.mutation.SetStatus(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		if mcpconnection.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized mcpconnection.DefaultID (forgotten import ent/runtime?)")
@@ -224,6 +380,28 @@ func (_c *MCPConnectionCreate) check() error {
 	}
 	if _, ok := _c.mutation.Audience(); !ok {
 		return &ValidationError{Name: "audience", err: errors.New(`ent: missing required field "MCPConnection.audience"`)}
+	}
+	if _, ok := _c.mutation.RefreshTokenPresent(); !ok {
+		return &ValidationError{Name: "refresh_token_present", err: errors.New(`ent: missing required field "MCPConnection.refresh_token_present"`)}
+	}
+	if _, ok := _c.mutation.APIKeyPresent(); !ok {
+		return &ValidationError{Name: "api_key_present", err: errors.New(`ent: missing required field "MCPConnection.api_key_present"`)}
+	}
+	if _, ok := _c.mutation.CredentialGeneration(); !ok {
+		return &ValidationError{Name: "credential_generation", err: errors.New(`ent: missing required field "MCPConnection.credential_generation"`)}
+	}
+	if v, ok := _c.mutation.CredentialGeneration(); ok {
+		if err := mcpconnection.CredentialGenerationValidator(v); err != nil {
+			return &ValidationError{Name: "credential_generation", err: fmt.Errorf(`ent: validator failed for field "MCPConnection.credential_generation": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "MCPConnection.status"`)}
+	}
+	if v, ok := _c.mutation.Status(); ok {
+		if err := mcpconnection.StatusValidator(v); err != nil {
+			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "MCPConnection.status": %w`, err)}
+		}
 	}
 	if len(_c.mutation.UserIDs()) == 0 {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "MCPConnection.user"`)}
@@ -280,6 +458,10 @@ func (_c *MCPConnectionCreate) createSpec() (*MCPConnection, *sqlgraph.CreateSpe
 		_spec.SetField(mcpconnection.FieldAudience, field.TypeString, value)
 		_node.Audience = value
 	}
+	if value, ok := _c.mutation.OrganizationID(); ok {
+		_spec.SetField(mcpconnection.FieldOrganizationID, field.TypeString, value)
+		_node.OrganizationID = value
+	}
 	if value, ok := _c.mutation.Scopes(); ok {
 		_spec.SetField(mcpconnection.FieldScopes, field.TypeJSON, value)
 		_node.Scopes = value
@@ -292,6 +474,22 @@ func (_c *MCPConnectionCreate) createSpec() (*MCPConnection, *sqlgraph.CreateSpe
 		_spec.SetField(mcpconnection.FieldAPIKeyEncrypted, field.TypeBytes, value)
 		_node.APIKeyEncrypted = value
 	}
+	if value, ok := _c.mutation.RefreshTokenPresent(); ok {
+		_spec.SetField(mcpconnection.FieldRefreshTokenPresent, field.TypeBool, value)
+		_node.RefreshTokenPresent = value
+	}
+	if value, ok := _c.mutation.APIKeyPresent(); ok {
+		_spec.SetField(mcpconnection.FieldAPIKeyPresent, field.TypeBool, value)
+		_node.APIKeyPresent = value
+	}
+	if value, ok := _c.mutation.CredentialGeneration(); ok {
+		_spec.SetField(mcpconnection.FieldCredentialGeneration, field.TypeInt64, value)
+		_node.CredentialGeneration = value
+	}
+	if value, ok := _c.mutation.Status(); ok {
+		_spec.SetField(mcpconnection.FieldStatus, field.TypeString, value)
+		_node.Status = value
+	}
 	if value, ok := _c.mutation.ConnectedAt(); ok {
 		_spec.SetField(mcpconnection.FieldConnectedAt, field.TypeTime, value)
 		_node.ConnectedAt = value
@@ -303,6 +501,26 @@ func (_c *MCPConnectionCreate) createSpec() (*MCPConnection, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.ExpiresAt(); ok {
 		_spec.SetField(mcpconnection.FieldExpiresAt, field.TypeTime, value)
 		_node.ExpiresAt = value
+	}
+	if value, ok := _c.mutation.RevokedAt(); ok {
+		_spec.SetField(mcpconnection.FieldRevokedAt, field.TypeTime, value)
+		_node.RevokedAt = value
+	}
+	if value, ok := _c.mutation.RevokedReason(); ok {
+		_spec.SetField(mcpconnection.FieldRevokedReason, field.TypeString, value)
+		_node.RevokedReason = value
+	}
+	if value, ok := _c.mutation.RevokedBy(); ok {
+		_spec.SetField(mcpconnection.FieldRevokedBy, field.TypeString, value)
+		_node.RevokedBy = value
+	}
+	if value, ok := _c.mutation.RevocationAttemptedAt(); ok {
+		_spec.SetField(mcpconnection.FieldRevocationAttemptedAt, field.TypeTime, value)
+		_node.RevocationAttemptedAt = value
+	}
+	if value, ok := _c.mutation.RevocationSucceeded(); ok {
+		_spec.SetField(mcpconnection.FieldRevocationSucceeded, field.TypeBool, value)
+		_node.RevocationSucceeded = value
 	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -463,6 +681,60 @@ func (u *MCPConnectionUpsert) ClearAPIKeyEncrypted() *MCPConnectionUpsert {
 	return u
 }
 
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (u *MCPConnectionUpsert) SetRefreshTokenPresent(v bool) *MCPConnectionUpsert {
+	u.Set(mcpconnection.FieldRefreshTokenPresent, v)
+	return u
+}
+
+// UpdateRefreshTokenPresent sets the "refresh_token_present" field to the value that was provided on create.
+func (u *MCPConnectionUpsert) UpdateRefreshTokenPresent() *MCPConnectionUpsert {
+	u.SetExcluded(mcpconnection.FieldRefreshTokenPresent)
+	return u
+}
+
+// SetAPIKeyPresent sets the "api_key_present" field.
+func (u *MCPConnectionUpsert) SetAPIKeyPresent(v bool) *MCPConnectionUpsert {
+	u.Set(mcpconnection.FieldAPIKeyPresent, v)
+	return u
+}
+
+// UpdateAPIKeyPresent sets the "api_key_present" field to the value that was provided on create.
+func (u *MCPConnectionUpsert) UpdateAPIKeyPresent() *MCPConnectionUpsert {
+	u.SetExcluded(mcpconnection.FieldAPIKeyPresent)
+	return u
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (u *MCPConnectionUpsert) SetCredentialGeneration(v int64) *MCPConnectionUpsert {
+	u.Set(mcpconnection.FieldCredentialGeneration, v)
+	return u
+}
+
+// UpdateCredentialGeneration sets the "credential_generation" field to the value that was provided on create.
+func (u *MCPConnectionUpsert) UpdateCredentialGeneration() *MCPConnectionUpsert {
+	u.SetExcluded(mcpconnection.FieldCredentialGeneration)
+	return u
+}
+
+// AddCredentialGeneration adds v to the "credential_generation" field.
+func (u *MCPConnectionUpsert) AddCredentialGeneration(v int64) *MCPConnectionUpsert {
+	u.Add(mcpconnection.FieldCredentialGeneration, v)
+	return u
+}
+
+// SetStatus sets the "status" field.
+func (u *MCPConnectionUpsert) SetStatus(v string) *MCPConnectionUpsert {
+	u.Set(mcpconnection.FieldStatus, v)
+	return u
+}
+
+// UpdateStatus sets the "status" field to the value that was provided on create.
+func (u *MCPConnectionUpsert) UpdateStatus() *MCPConnectionUpsert {
+	u.SetExcluded(mcpconnection.FieldStatus)
+	return u
+}
+
 // SetConnectedAt sets the "connected_at" field.
 func (u *MCPConnectionUpsert) SetConnectedAt(v time.Time) *MCPConnectionUpsert {
 	u.Set(mcpconnection.FieldConnectedAt, v)
@@ -517,6 +789,96 @@ func (u *MCPConnectionUpsert) ClearExpiresAt() *MCPConnectionUpsert {
 	return u
 }
 
+// SetRevokedAt sets the "revoked_at" field.
+func (u *MCPConnectionUpsert) SetRevokedAt(v time.Time) *MCPConnectionUpsert {
+	u.Set(mcpconnection.FieldRevokedAt, v)
+	return u
+}
+
+// UpdateRevokedAt sets the "revoked_at" field to the value that was provided on create.
+func (u *MCPConnectionUpsert) UpdateRevokedAt() *MCPConnectionUpsert {
+	u.SetExcluded(mcpconnection.FieldRevokedAt)
+	return u
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (u *MCPConnectionUpsert) ClearRevokedAt() *MCPConnectionUpsert {
+	u.SetNull(mcpconnection.FieldRevokedAt)
+	return u
+}
+
+// SetRevokedReason sets the "revoked_reason" field.
+func (u *MCPConnectionUpsert) SetRevokedReason(v string) *MCPConnectionUpsert {
+	u.Set(mcpconnection.FieldRevokedReason, v)
+	return u
+}
+
+// UpdateRevokedReason sets the "revoked_reason" field to the value that was provided on create.
+func (u *MCPConnectionUpsert) UpdateRevokedReason() *MCPConnectionUpsert {
+	u.SetExcluded(mcpconnection.FieldRevokedReason)
+	return u
+}
+
+// ClearRevokedReason clears the value of the "revoked_reason" field.
+func (u *MCPConnectionUpsert) ClearRevokedReason() *MCPConnectionUpsert {
+	u.SetNull(mcpconnection.FieldRevokedReason)
+	return u
+}
+
+// SetRevokedBy sets the "revoked_by" field.
+func (u *MCPConnectionUpsert) SetRevokedBy(v string) *MCPConnectionUpsert {
+	u.Set(mcpconnection.FieldRevokedBy, v)
+	return u
+}
+
+// UpdateRevokedBy sets the "revoked_by" field to the value that was provided on create.
+func (u *MCPConnectionUpsert) UpdateRevokedBy() *MCPConnectionUpsert {
+	u.SetExcluded(mcpconnection.FieldRevokedBy)
+	return u
+}
+
+// ClearRevokedBy clears the value of the "revoked_by" field.
+func (u *MCPConnectionUpsert) ClearRevokedBy() *MCPConnectionUpsert {
+	u.SetNull(mcpconnection.FieldRevokedBy)
+	return u
+}
+
+// SetRevocationAttemptedAt sets the "revocation_attempted_at" field.
+func (u *MCPConnectionUpsert) SetRevocationAttemptedAt(v time.Time) *MCPConnectionUpsert {
+	u.Set(mcpconnection.FieldRevocationAttemptedAt, v)
+	return u
+}
+
+// UpdateRevocationAttemptedAt sets the "revocation_attempted_at" field to the value that was provided on create.
+func (u *MCPConnectionUpsert) UpdateRevocationAttemptedAt() *MCPConnectionUpsert {
+	u.SetExcluded(mcpconnection.FieldRevocationAttemptedAt)
+	return u
+}
+
+// ClearRevocationAttemptedAt clears the value of the "revocation_attempted_at" field.
+func (u *MCPConnectionUpsert) ClearRevocationAttemptedAt() *MCPConnectionUpsert {
+	u.SetNull(mcpconnection.FieldRevocationAttemptedAt)
+	return u
+}
+
+// SetRevocationSucceeded sets the "revocation_succeeded" field.
+func (u *MCPConnectionUpsert) SetRevocationSucceeded(v bool) *MCPConnectionUpsert {
+	u.Set(mcpconnection.FieldRevocationSucceeded, v)
+	return u
+}
+
+// UpdateRevocationSucceeded sets the "revocation_succeeded" field to the value that was provided on create.
+func (u *MCPConnectionUpsert) UpdateRevocationSucceeded() *MCPConnectionUpsert {
+	u.SetExcluded(mcpconnection.FieldRevocationSucceeded)
+	return u
+}
+
+// ClearRevocationSucceeded clears the value of the "revocation_succeeded" field.
+func (u *MCPConnectionUpsert) ClearRevocationSucceeded() *MCPConnectionUpsert {
+	u.SetNull(mcpconnection.FieldRevocationSucceeded)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -536,6 +898,9 @@ func (u *MCPConnectionUpsertOne) UpdateNewValues() *MCPConnectionUpsertOne {
 		}
 		if _, exists := u.create.mutation.CreatedAt(); exists {
 			s.SetIgnore(mcpconnection.FieldCreatedAt)
+		}
+		if _, exists := u.create.mutation.OrganizationID(); exists {
+			s.SetIgnore(mcpconnection.FieldOrganizationID)
 		}
 	}))
 	return u
@@ -673,6 +1038,69 @@ func (u *MCPConnectionUpsertOne) ClearAPIKeyEncrypted() *MCPConnectionUpsertOne 
 	})
 }
 
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (u *MCPConnectionUpsertOne) SetRefreshTokenPresent(v bool) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRefreshTokenPresent(v)
+	})
+}
+
+// UpdateRefreshTokenPresent sets the "refresh_token_present" field to the value that was provided on create.
+func (u *MCPConnectionUpsertOne) UpdateRefreshTokenPresent() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRefreshTokenPresent()
+	})
+}
+
+// SetAPIKeyPresent sets the "api_key_present" field.
+func (u *MCPConnectionUpsertOne) SetAPIKeyPresent(v bool) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetAPIKeyPresent(v)
+	})
+}
+
+// UpdateAPIKeyPresent sets the "api_key_present" field to the value that was provided on create.
+func (u *MCPConnectionUpsertOne) UpdateAPIKeyPresent() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateAPIKeyPresent()
+	})
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (u *MCPConnectionUpsertOne) SetCredentialGeneration(v int64) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetCredentialGeneration(v)
+	})
+}
+
+// AddCredentialGeneration adds v to the "credential_generation" field.
+func (u *MCPConnectionUpsertOne) AddCredentialGeneration(v int64) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.AddCredentialGeneration(v)
+	})
+}
+
+// UpdateCredentialGeneration sets the "credential_generation" field to the value that was provided on create.
+func (u *MCPConnectionUpsertOne) UpdateCredentialGeneration() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateCredentialGeneration()
+	})
+}
+
+// SetStatus sets the "status" field.
+func (u *MCPConnectionUpsertOne) SetStatus(v string) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetStatus(v)
+	})
+}
+
+// UpdateStatus sets the "status" field to the value that was provided on create.
+func (u *MCPConnectionUpsertOne) UpdateStatus() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateStatus()
+	})
+}
+
 // SetConnectedAt sets the "connected_at" field.
 func (u *MCPConnectionUpsertOne) SetConnectedAt(v time.Time) *MCPConnectionUpsertOne {
 	return u.Update(func(s *MCPConnectionUpsert) {
@@ -733,6 +1161,111 @@ func (u *MCPConnectionUpsertOne) UpdateExpiresAt() *MCPConnectionUpsertOne {
 func (u *MCPConnectionUpsertOne) ClearExpiresAt() *MCPConnectionUpsertOne {
 	return u.Update(func(s *MCPConnectionUpsert) {
 		s.ClearExpiresAt()
+	})
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (u *MCPConnectionUpsertOne) SetRevokedAt(v time.Time) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRevokedAt(v)
+	})
+}
+
+// UpdateRevokedAt sets the "revoked_at" field to the value that was provided on create.
+func (u *MCPConnectionUpsertOne) UpdateRevokedAt() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRevokedAt()
+	})
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (u *MCPConnectionUpsertOne) ClearRevokedAt() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.ClearRevokedAt()
+	})
+}
+
+// SetRevokedReason sets the "revoked_reason" field.
+func (u *MCPConnectionUpsertOne) SetRevokedReason(v string) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRevokedReason(v)
+	})
+}
+
+// UpdateRevokedReason sets the "revoked_reason" field to the value that was provided on create.
+func (u *MCPConnectionUpsertOne) UpdateRevokedReason() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRevokedReason()
+	})
+}
+
+// ClearRevokedReason clears the value of the "revoked_reason" field.
+func (u *MCPConnectionUpsertOne) ClearRevokedReason() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.ClearRevokedReason()
+	})
+}
+
+// SetRevokedBy sets the "revoked_by" field.
+func (u *MCPConnectionUpsertOne) SetRevokedBy(v string) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRevokedBy(v)
+	})
+}
+
+// UpdateRevokedBy sets the "revoked_by" field to the value that was provided on create.
+func (u *MCPConnectionUpsertOne) UpdateRevokedBy() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRevokedBy()
+	})
+}
+
+// ClearRevokedBy clears the value of the "revoked_by" field.
+func (u *MCPConnectionUpsertOne) ClearRevokedBy() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.ClearRevokedBy()
+	})
+}
+
+// SetRevocationAttemptedAt sets the "revocation_attempted_at" field.
+func (u *MCPConnectionUpsertOne) SetRevocationAttemptedAt(v time.Time) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRevocationAttemptedAt(v)
+	})
+}
+
+// UpdateRevocationAttemptedAt sets the "revocation_attempted_at" field to the value that was provided on create.
+func (u *MCPConnectionUpsertOne) UpdateRevocationAttemptedAt() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRevocationAttemptedAt()
+	})
+}
+
+// ClearRevocationAttemptedAt clears the value of the "revocation_attempted_at" field.
+func (u *MCPConnectionUpsertOne) ClearRevocationAttemptedAt() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.ClearRevocationAttemptedAt()
+	})
+}
+
+// SetRevocationSucceeded sets the "revocation_succeeded" field.
+func (u *MCPConnectionUpsertOne) SetRevocationSucceeded(v bool) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRevocationSucceeded(v)
+	})
+}
+
+// UpdateRevocationSucceeded sets the "revocation_succeeded" field to the value that was provided on create.
+func (u *MCPConnectionUpsertOne) UpdateRevocationSucceeded() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRevocationSucceeded()
+	})
+}
+
+// ClearRevocationSucceeded clears the value of the "revocation_succeeded" field.
+func (u *MCPConnectionUpsertOne) ClearRevocationSucceeded() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.ClearRevocationSucceeded()
 	})
 }
 
@@ -922,6 +1455,9 @@ func (u *MCPConnectionUpsertBulk) UpdateNewValues() *MCPConnectionUpsertBulk {
 			if _, exists := b.mutation.CreatedAt(); exists {
 				s.SetIgnore(mcpconnection.FieldCreatedAt)
 			}
+			if _, exists := b.mutation.OrganizationID(); exists {
+				s.SetIgnore(mcpconnection.FieldOrganizationID)
+			}
 		}
 	}))
 	return u
@@ -1059,6 +1595,69 @@ func (u *MCPConnectionUpsertBulk) ClearAPIKeyEncrypted() *MCPConnectionUpsertBul
 	})
 }
 
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (u *MCPConnectionUpsertBulk) SetRefreshTokenPresent(v bool) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRefreshTokenPresent(v)
+	})
+}
+
+// UpdateRefreshTokenPresent sets the "refresh_token_present" field to the value that was provided on create.
+func (u *MCPConnectionUpsertBulk) UpdateRefreshTokenPresent() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRefreshTokenPresent()
+	})
+}
+
+// SetAPIKeyPresent sets the "api_key_present" field.
+func (u *MCPConnectionUpsertBulk) SetAPIKeyPresent(v bool) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetAPIKeyPresent(v)
+	})
+}
+
+// UpdateAPIKeyPresent sets the "api_key_present" field to the value that was provided on create.
+func (u *MCPConnectionUpsertBulk) UpdateAPIKeyPresent() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateAPIKeyPresent()
+	})
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (u *MCPConnectionUpsertBulk) SetCredentialGeneration(v int64) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetCredentialGeneration(v)
+	})
+}
+
+// AddCredentialGeneration adds v to the "credential_generation" field.
+func (u *MCPConnectionUpsertBulk) AddCredentialGeneration(v int64) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.AddCredentialGeneration(v)
+	})
+}
+
+// UpdateCredentialGeneration sets the "credential_generation" field to the value that was provided on create.
+func (u *MCPConnectionUpsertBulk) UpdateCredentialGeneration() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateCredentialGeneration()
+	})
+}
+
+// SetStatus sets the "status" field.
+func (u *MCPConnectionUpsertBulk) SetStatus(v string) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetStatus(v)
+	})
+}
+
+// UpdateStatus sets the "status" field to the value that was provided on create.
+func (u *MCPConnectionUpsertBulk) UpdateStatus() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateStatus()
+	})
+}
+
 // SetConnectedAt sets the "connected_at" field.
 func (u *MCPConnectionUpsertBulk) SetConnectedAt(v time.Time) *MCPConnectionUpsertBulk {
 	return u.Update(func(s *MCPConnectionUpsert) {
@@ -1119,6 +1718,111 @@ func (u *MCPConnectionUpsertBulk) UpdateExpiresAt() *MCPConnectionUpsertBulk {
 func (u *MCPConnectionUpsertBulk) ClearExpiresAt() *MCPConnectionUpsertBulk {
 	return u.Update(func(s *MCPConnectionUpsert) {
 		s.ClearExpiresAt()
+	})
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (u *MCPConnectionUpsertBulk) SetRevokedAt(v time.Time) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRevokedAt(v)
+	})
+}
+
+// UpdateRevokedAt sets the "revoked_at" field to the value that was provided on create.
+func (u *MCPConnectionUpsertBulk) UpdateRevokedAt() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRevokedAt()
+	})
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (u *MCPConnectionUpsertBulk) ClearRevokedAt() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.ClearRevokedAt()
+	})
+}
+
+// SetRevokedReason sets the "revoked_reason" field.
+func (u *MCPConnectionUpsertBulk) SetRevokedReason(v string) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRevokedReason(v)
+	})
+}
+
+// UpdateRevokedReason sets the "revoked_reason" field to the value that was provided on create.
+func (u *MCPConnectionUpsertBulk) UpdateRevokedReason() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRevokedReason()
+	})
+}
+
+// ClearRevokedReason clears the value of the "revoked_reason" field.
+func (u *MCPConnectionUpsertBulk) ClearRevokedReason() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.ClearRevokedReason()
+	})
+}
+
+// SetRevokedBy sets the "revoked_by" field.
+func (u *MCPConnectionUpsertBulk) SetRevokedBy(v string) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRevokedBy(v)
+	})
+}
+
+// UpdateRevokedBy sets the "revoked_by" field to the value that was provided on create.
+func (u *MCPConnectionUpsertBulk) UpdateRevokedBy() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRevokedBy()
+	})
+}
+
+// ClearRevokedBy clears the value of the "revoked_by" field.
+func (u *MCPConnectionUpsertBulk) ClearRevokedBy() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.ClearRevokedBy()
+	})
+}
+
+// SetRevocationAttemptedAt sets the "revocation_attempted_at" field.
+func (u *MCPConnectionUpsertBulk) SetRevocationAttemptedAt(v time.Time) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRevocationAttemptedAt(v)
+	})
+}
+
+// UpdateRevocationAttemptedAt sets the "revocation_attempted_at" field to the value that was provided on create.
+func (u *MCPConnectionUpsertBulk) UpdateRevocationAttemptedAt() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRevocationAttemptedAt()
+	})
+}
+
+// ClearRevocationAttemptedAt clears the value of the "revocation_attempted_at" field.
+func (u *MCPConnectionUpsertBulk) ClearRevocationAttemptedAt() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.ClearRevocationAttemptedAt()
+	})
+}
+
+// SetRevocationSucceeded sets the "revocation_succeeded" field.
+func (u *MCPConnectionUpsertBulk) SetRevocationSucceeded(v bool) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRevocationSucceeded(v)
+	})
+}
+
+// UpdateRevocationSucceeded sets the "revocation_succeeded" field to the value that was provided on create.
+func (u *MCPConnectionUpsertBulk) UpdateRevocationSucceeded() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRevocationSucceeded()
+	})
+}
+
+// ClearRevocationSucceeded clears the value of the "revocation_succeeded" field.
+func (u *MCPConnectionUpsertBulk) ClearRevocationSucceeded() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.ClearRevocationSucceeded()
 	})
 }
 

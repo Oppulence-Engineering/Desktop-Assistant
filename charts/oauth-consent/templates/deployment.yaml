@@ -6,6 +6,11 @@ metadata:
     {{- include "oauth-consent.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       {{- include "oauth-consent.selectorLabels" . | nindent 6 }}
@@ -18,13 +23,36 @@ spec:
         {{- end }}
       labels:
         {{- include "oauth-consent.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: oauth-consent
+        networking.rowboat.dev/hydra-admin-access: "true"
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
+      terminationGracePeriodSeconds: {{ .Values.shutdown.terminationGracePeriodSeconds }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      automountServiceAccountToken: false
+      initContainers:
+        - name: migrate
+          image: {{ include "oauth-consent.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["npm", "run", "migrate"]
+          envFrom:
+            - secretRef:
+                name: {{ .Values.existingSecret }}
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: {{ .Values.database.urlSecretKey }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
       containers:
         - name: oauth-consent
           image: {{ include "oauth-consent.image" . }}
@@ -37,6 +65,13 @@ spec:
           env:
             - name: PORT
               value: {{ .Values.port | quote }}
+            - name: SHUTDOWN_DEADLINE_MS
+              value: {{ mul .Values.shutdown.applicationDeadlineSeconds 1000 | quote }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.existingSecret }}
+                  key: {{ .Values.database.urlSecretKey }}
           envFrom:
             - configMapRef:
                 name: {{ include "oauth-consent.fullname" . }}-config
@@ -50,10 +85,21 @@ spec:
             periodSeconds: 10
           readinessProbe:
             httpGet:
-              path: /healthz
+              path: /readyz
               port: http
             initialDelaySeconds: 5
-            periodSeconds: 10
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 1
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - >-
+                    node -e "fetch('http://127.0.0.1:' + process.env.PORT + '/drainz', {method: 'POST'}).then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"
+                    && sleep {{ .Values.shutdown.preStopDelaySeconds }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- with .Values.nodeSelector }}

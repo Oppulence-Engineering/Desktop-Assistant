@@ -54,10 +54,24 @@ type Tx struct {
 	CommitmentDependency *CommitmentDependencyClient
 	// CommitmentEvent is the client for interacting with the CommitmentEvent builders.
 	CommitmentEvent *CommitmentEventClient
+	// ConnectorAuditEvent is the client for interacting with the ConnectorAuditEvent builders.
+	ConnectorAuditEvent *ConnectorAuditEventClient
+	// ConnectorCredentialCleanupJob is the client for interacting with the ConnectorCredentialCleanupJob builders.
+	ConnectorCredentialCleanupJob *ConnectorCredentialCleanupJobClient
+	// ConnectorCredentialRecovery is the client for interacting with the ConnectorCredentialRecovery builders.
+	ConnectorCredentialRecovery *ConnectorCredentialRecoveryClient
+	// ConnectorRevocationJob is the client for interacting with the ConnectorRevocationJob builders.
+	ConnectorRevocationJob *ConnectorRevocationJobClient
 	// ConversationIntelligenceArtifact is the client for interacting with the ConversationIntelligenceArtifact builders.
 	ConversationIntelligenceArtifact *ConversationIntelligenceArtifactClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
+	// Entity is the client for interacting with the Entity builders.
+	Entity *EntityClient
+	// EntityIdentifier is the client for interacting with the EntityIdentifier builders.
+	EntityIdentifier *EntityIdentifierClient
+	// EntityResourceRef is the client for interacting with the EntityResourceRef builders.
+	EntityResourceRef *EntityResourceRefClient
 	// GoogleWatch is the client for interacting with the GoogleWatch builders.
 	GoogleWatch *GoogleWatchClient
 	// LLMUsage is the client for interacting with the LLMUsage builders.
@@ -308,8 +322,15 @@ func (tx *Tx) init() {
 	tx.Commitment = NewCommitmentClient(tx.config)
 	tx.CommitmentDependency = NewCommitmentDependencyClient(tx.config)
 	tx.CommitmentEvent = NewCommitmentEventClient(tx.config)
+	tx.ConnectorAuditEvent = NewConnectorAuditEventClient(tx.config)
+	tx.ConnectorCredentialCleanupJob = NewConnectorCredentialCleanupJobClient(tx.config)
+	tx.ConnectorCredentialRecovery = NewConnectorCredentialRecoveryClient(tx.config)
+	tx.ConnectorRevocationJob = NewConnectorRevocationJobClient(tx.config)
 	tx.ConversationIntelligenceArtifact = NewConversationIntelligenceArtifactClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)
+	tx.Entity = NewEntityClient(tx.config)
+	tx.EntityIdentifier = NewEntityIdentifierClient(tx.config)
+	tx.EntityResourceRef = NewEntityResourceRefClient(tx.config)
 	tx.GoogleWatch = NewGoogleWatchClient(tx.config)
 	tx.LLMUsage = NewLLMUsageClient(tx.config)
 	tx.LLMUsageHistory = NewLLMUsageHistoryClient(tx.config)

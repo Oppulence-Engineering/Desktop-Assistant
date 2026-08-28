@@ -8,11 +8,17 @@
 import type {
   CloudEventIngestResponse,
   InternalCloudEventIngestRequest,
+  InternalConnectionStatusRequest,
+  InternalConnectionStatusResponse,
   InternalInvalidateRequest,
   InternalInvalidateResponse,
   N400Response,
   N401Response,
+  N403Response,
+  N409Response,
+  N429Response,
   N500Response,
+  N503Response,
 } from "../model";
 
 export type invalidateConnectionResponse200 = {
@@ -30,9 +36,24 @@ export type invalidateConnectionResponse401 = {
   status: 401;
 };
 
+export type invalidateConnectionResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type invalidateConnectionResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
 export type invalidateConnectionResponse500 = {
   data: N500Response;
   status: 500;
+};
+
+export type invalidateConnectionResponse503 = {
+  data: N503Response;
+  status: 503;
 };
 
 export type invalidateConnectionResponseSuccess = invalidateConnectionResponse200 & {
@@ -41,7 +62,10 @@ export type invalidateConnectionResponseSuccess = invalidateConnectionResponse20
 export type invalidateConnectionResponseError = (
   | invalidateConnectionResponse400
   | invalidateConnectionResponse401
+  | invalidateConnectionResponse403
+  | invalidateConnectionResponse409
   | invalidateConnectionResponse500
+  | invalidateConnectionResponse503
 ) & {
   headers: Headers;
 };
@@ -54,8 +78,8 @@ export const getInvalidateConnectionUrl = () => {
 };
 
 /**
- * Server-to-server endpoint for products to invalidate a user's connector connection. Unknown users are treated as successful no-ops.
- * @summary Force-disconnect a connector
+ * Server-to-server endpoint supporting exact connection, user, immutable credential-org, connector, or combined targets. Product/service principals are bound to configured connector(s) and selector classes. Global control requires an explicit platform_admin principal. Matches become invalidated tombstones; credentials are cleared and upstream revocation is attempted.
+ * @summary Force-invalidate connector connections
  */
 export const invalidateConnection = async (
   internalInvalidateRequest: InternalInvalidateRequest,
@@ -72,6 +96,88 @@ export const invalidateConnection = async (
 
   const data: invalidateConnectionResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as invalidateConnectionResponse;
+};
+
+export type introspectConnectorConnectionResponse200 = {
+  data: InternalConnectionStatusResponse;
+  status: 200;
+};
+
+export type introspectConnectorConnectionResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type introspectConnectorConnectionResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type introspectConnectorConnectionResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type introspectConnectorConnectionResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type introspectConnectorConnectionResponse429 = {
+  data: N429Response;
+  status: 429;
+};
+
+export type introspectConnectorConnectionResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type introspectConnectorConnectionResponseSuccess =
+  introspectConnectorConnectionResponse200 & {
+    headers: Headers;
+  };
+export type introspectConnectorConnectionResponseError = (
+  | introspectConnectorConnectionResponse400
+  | introspectConnectorConnectionResponse401
+  | introspectConnectorConnectionResponse403
+  | introspectConnectorConnectionResponse409
+  | introspectConnectorConnectionResponse429
+  | introspectConnectorConnectionResponse503
+) & {
+  headers: Headers;
+};
+
+export type introspectConnectorConnectionResponse =
+  introspectConnectorConnectionResponseSuccess | introspectConnectorConnectionResponseError;
+
+export const getIntrospectConnectorConnectionUrl = () => {
+  return `/v1/internal/connections/status`;
+};
+
+/**
+ * Every-request fail-closed validation for product resource servers. The authenticated product principal must be allowed for the token connector. The broker binds the jti issuance record, connection, user, immutable organization, connector, credential generation, audience, active lifecycle state, and current product entitlement. Stale tokens return active=false.
+ * @summary Introspect live connector token status
+ */
+export const introspectConnectorConnection = async (
+  internalConnectionStatusRequest: InternalConnectionStatusRequest,
+  options?: RequestInit,
+): Promise<introspectConnectorConnectionResponse> => {
+  const res = await fetch(getIntrospectConnectorConnectionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(internalConnectionStatusRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: introspectConnectorConnectionResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as introspectConnectorConnectionResponse;
 };
 
 export type ingestInternalCloudEventResponse200 = {

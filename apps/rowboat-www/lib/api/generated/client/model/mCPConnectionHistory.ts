@@ -11,8 +11,7 @@ import type { MCPConnectionHistoryOperation } from "./mCPConnectionHistoryOperat
  * Audit history for MCPConnection rows.
  */
 export interface MCPConnectionHistory {
-  /** Sealed vendor API key. Sensitive internal storage field; never returned by desktop endpoints. */
-  api_key_encrypted?: string;
+  api_key_present: boolean;
   /** OAuth token audience for the connector. */
   audience: string;
   /** Timestamp when the connector was connected. */
@@ -21,6 +20,7 @@ export interface MCPConnectionHistory {
   connector: string;
   /** Row creation timestamp. */
   created_at: string;
+  credential_generation: number;
   /** Credential or one-time ticket expiry timestamp. */
   expires_at?: string;
   /** Timestamp when this history record was written. */
@@ -31,12 +31,19 @@ export interface MCPConnectionHistory {
   last_used_at?: string;
   /** Mutation operation that produced this history row. */
   operation: MCPConnectionHistoryOperation;
+  organization_id?: string;
   /** UUID of the source row represented by a history row. */
   ref?: string;
-  /** Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints. */
-  refresh_token_encrypted?: string;
+  refresh_token_present: boolean;
+  revocation_attempted_at?: string;
+  revocation_succeeded?: boolean;
+  revoked_at?: string;
+  revoked_by?: string;
+  revoked_reason?: string;
   /** OAuth scopes granted or requested. */
   scopes?: string[];
+  /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
+  status: string;
   /** Last row update timestamp. */
   updated_at: string;
 }

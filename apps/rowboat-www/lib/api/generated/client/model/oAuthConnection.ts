@@ -13,13 +13,13 @@ import type { User } from "./user";
 export interface OAuthConnection {
   /** Row creation timestamp. */
   created_at: string;
+  credential_generation: number;
   external_account_id?: string;
   /** Stable UUID primary key. */
   id: string;
   /** Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend. */
   provider: string;
-  /** Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints. */
-  refresh_token_encrypted: string;
+  refresh_token_present: boolean;
   /** OAuth scopes granted or requested. */
   scopes?: string[];
   /** Last row update timestamp. */

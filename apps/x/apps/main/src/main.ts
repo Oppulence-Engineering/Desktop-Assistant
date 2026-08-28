@@ -49,16 +49,10 @@ import { init as initEventProcessor, registerConsumer } from "@x/core/events/ini
 import { liveNoteEventConsumer } from "@x/core/knowledge/live-note/event-consumer";
 import { init as initBackgroundTaskScheduler } from "@x/core/background-tasks/scheduler";
 import { checkOfflineReturn } from "@x/core/background-tasks/cloud-runs-state";
-import {
-  getNotificationsConfig,
-  setNotificationsConfig,
-} from "@x/core/config/notifications";
+import { getNotificationsConfig, setNotificationsConfig } from "@x/core/config/notifications";
 import { listTasks } from "@x/core/background-tasks/fileops";
 import { backgroundTaskEventConsumer } from "@x/core/background-tasks/event-consumer";
-import {
-  init as initLocalSites,
-  shutdown as shutdownLocalSites,
-} from "@x/core/local-sites/server";
+import { init as initLocalSites, shutdown as shutdownLocalSites } from "@x/core/local-sites/server";
 import { shutdown as shutdownAnalytics, captureException } from "@x/core/analytics/posthog";
 import { identifyIfSignedIn } from "@x/core/analytics/identify";
 
@@ -78,11 +72,17 @@ import { setupBrowserEventForwarding } from "./browser/ipc.js";
 import { ElectronBrowserControlService } from "./browser/control-service.js";
 import { ElectronNotificationService } from "./notification/electron-notification-service.js";
 import { LifecycleRegistry } from "@x/core/services/lifecycle";
+import { createEntitySpineReplayService } from "@x/core/knowledge/entity-spine";
+import { WorkDir } from "@x/core/config/config";
 import { sendRendererEvent } from "./renderer-events.js";
 import { openTrustedExternal } from "./external-url.js";
+import { configureMcpApprovalUrlOpener } from "@x/core/mcp/product-approval";
+
+configureMcpApprovalUrlOpener((url) => openTrustedExternal(url));
 
 const notificationService = new ElectronNotificationService();
 const mainLifecycle = new LifecycleRegistry();
+mainLifecycle.register(createEntitySpineReplayService(WorkDir));
 mainLifecycle.register({
   name: "workspace-watcher",
   start: () => startWorkspaceWatcher(),
@@ -262,8 +262,7 @@ console.log("preloadPath", preloadPath);
 const rendererPath = app.isPackaged
   ? path.join(__dirname, "../renderer/dist") // Production
   : path.join(__dirname, "../../../renderer/dist"); // Development
-const useBuiltRenderer =
-  app.isPackaged || process.env.ROWBOAT_USE_BUILT_RENDERER === "true";
+const useBuiltRenderer = app.isPackaged || process.env.ROWBOAT_USE_BUILT_RENDERER === "true";
 console.log("rendererPath", rendererPath);
 
 // Register custom protocol for serving built renderer files in production
