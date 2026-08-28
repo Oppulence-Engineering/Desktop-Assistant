@@ -42,6 +42,9 @@ const (
 
 	// ConnectorInvalidationJWTRequiredScope is required on service JWT callers.
 	ConnectorInvalidationJWTRequiredScope = "connector:invalidate"
+	// ConnectorConnectionStatusJWTRequiredScope is required when a product
+	// resource server performs live connector-token introspection.
+	ConnectorConnectionStatusJWTRequiredScope = "connector:status"
 
 	maxConnectorInvalidationBody       = 1 << 16
 	connectorInvalidationSignatureSkew = 5 * time.Minute
@@ -181,9 +184,21 @@ func validConnectorInvalidationSelector(selector string) bool {
 // digest and reserves the nonce across replicas. JWT authentication requires
 // connector:invalidate and maps the verified sub to a configured principal.
 func (a *ConnectorInvalidationAuth) Require(next http.Handler) http.Handler {
+	return a.requireScope(ConnectorInvalidationJWTRequiredScope, "connector invalidation", next)
+}
+
+// RequireConnectionStatus authenticates the same individually configured
+// product principals while requiring a distinct JWT capability. HMAC callers
+// remain bound to their named principal, connector allowlist, exact endpoint,
+// request body, timestamp, and one-time nonce.
+func (a *ConnectorInvalidationAuth) RequireConnectionStatus(next http.Handler) http.Handler {
+	return a.requireScope(ConnectorConnectionStatusJWTRequiredScope, "connector status", next)
+}
+
+func (a *ConnectorInvalidationAuth) requireScope(requiredScope, purpose string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if a == nil || len(a.policies) == 0 {
-			httpx.Error(w, http.StatusServiceUnavailable, "connector invalidation authentication not configured", "auth_unavailable")
+			httpx.Error(w, http.StatusServiceUnavailable, purpose+" authentication not configured", "auth_unavailable")
 			return
 		}
 		var (
@@ -196,13 +211,13 @@ func (a *ConnectorInvalidationAuth) Require(next http.Handler) http.Handler {
 				return
 			}
 			claims, err := a.jwtVerifier.Verify(raw)
-			if err != nil || !claims.HasScope(ConnectorInvalidationJWTRequiredScope) {
-				httpx.Error(w, http.StatusUnauthorized, "invalid connector invalidation service token", "unauthorized")
+			if err != nil || !claims.HasScope(requiredScope) {
+				httpx.Error(w, http.StatusUnauthorized, "invalid "+purpose+" service token", "unauthorized")
 				return
 			}
 			policy, ok = a.policies[claims.Subject]
 			if !ok {
-				httpx.Error(w, http.StatusForbidden, "service principal is not authorized for connector invalidation", "forbidden")
+				httpx.Error(w, http.StatusForbidden, "service principal is not authorized for "+purpose, "forbidden")
 				return
 			}
 		} else {

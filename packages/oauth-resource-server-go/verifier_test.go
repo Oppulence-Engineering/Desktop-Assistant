@@ -70,7 +70,7 @@ func validClaims() jwt.MapClaims {
 		"sub": "usr_123", "iss": "https://oauth.solomon-ai.co", "aud": "rowboat-api",
 		"exp": time.Now().Add(time.Hour).Unix(), "iat": time.Now().Unix(), "nbf": time.Now().Add(-time.Second).Unix(),
 		"jti": "tok_123", "scope": "canvas.read canvas.watch",
-		"organization_id": "org_123", "connection_id": "conn_123", "connector_id": "canvas", "trust_tier": "act",
+		"organization_id": "org_123", "connection_id": "conn_123", "connector_id": "canvas", "credential_generation": 1, "trust_tier": "act",
 	}
 }
 
@@ -127,17 +127,18 @@ func TestVerifyValidToken(t *testing.T) {
 	v := newVerifier(t, srv.URL)
 
 	tokenStr := sign(t, key, jwt.MapClaims{
-		"sub":           "user_internal_id",
-		"iss":           "https://oauth.solomon-ai.co",
-		"aud":           "rowboat-api",
-		"exp":           time.Now().Add(time.Hour).Unix(),
-		"scope":         "invoices:read customers:read",
-		"iat":           time.Now().Unix(),
-		"nbf":           time.Now().Add(-time.Second).Unix(),
-		"jti":           "tok_abc",
-		"connection_id": "conn_abc",
-		"connector_id":  "canvas",
-		"trust_tier":    "read",
+		"sub":                   "user_internal_id",
+		"iss":                   "https://oauth.solomon-ai.co",
+		"aud":                   "rowboat-api",
+		"exp":                   time.Now().Add(time.Hour).Unix(),
+		"scope":                 "invoices:read customers:read",
+		"iat":                   time.Now().Unix(),
+		"nbf":                   time.Now().Add(-time.Second).Unix(),
+		"jti":                   "tok_abc",
+		"connection_id":         "conn_abc",
+		"connector_id":          "canvas",
+		"credential_generation": 1,
+		"trust_tier":            "read",
 		"ext": map[string]any{
 			"workos_user_id":  "user_abc123",
 			"organization_id": "org_abc",
@@ -406,6 +407,24 @@ func TestRFCVerifierRequiredOrganization(t *testing.T) {
 	claims["organization_id"] = "org_other"
 	if _, err := v.Verify(sign(t, key, claims)); err == nil {
 		t.Fatal("accepted token for the wrong required organization")
+	}
+}
+
+func TestRFCVerifierRequiresOrganizationIssuedAtAndNotBefore(t *testing.T) {
+	srv, key := jwksServer(t)
+	v, err := oauthrs.New(context.Background(), oauthrs.Config{
+		IssuerURL: "https://oauth.solomon-ai.co", Audience: "rowboat-api", JWKSURL: srv.URL,
+		AllowedJWKSOrigins: []string{srv.URL}, AllowLocalhostDevelopment: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, claim := range []string{"organization_id", "iat", "nbf"} {
+		claims := validClaims()
+		delete(claims, claim)
+		if _, err := v.Verify(sign(t, key, claims)); err == nil {
+			t.Fatalf("primary verifier accepted token missing %s", claim)
+		}
 	}
 }
 

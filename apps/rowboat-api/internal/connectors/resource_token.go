@@ -24,14 +24,15 @@ const (
 // ResourceTokenClaims binds a short-lived product token to its actor, tenant,
 // connection, connector, audience, scopes, and trust tier.
 type ResourceTokenClaims struct {
-	TokenID        string
-	UserID         string
-	OrganizationID string
-	ConnectionID   string
-	ConnectorID    string
-	Audience       string
-	Scopes         []string
-	TrustTier      string
+	TokenID              string
+	UserID               string
+	OrganizationID       string
+	ConnectionID         string
+	ConnectorID          string
+	CredentialGeneration int64
+	Audience             string
+	Scopes               []string
+	TrustTier            string
 }
 
 // ResourceTokenIssuer mints connector-bound resource tokens and publishes JWKS.
@@ -157,8 +158,8 @@ func (i *RSAResourceTokenIssuer) Mint(c ResourceTokenClaims) (string, time.Time,
 	if i == nil || i.privateKey == nil {
 		return "", time.Time{}, errors.New("connector resource token issuer is not configured")
 	}
-	if strings.TrimSpace(c.UserID) == "" || strings.TrimSpace(c.ConnectionID) == "" || strings.TrimSpace(c.ConnectorID) == "" || strings.TrimSpace(c.Audience) == "" {
-		return "", time.Time{}, errors.New("connector resource token actor, connection, connector, and audience are required")
+	if strings.TrimSpace(c.UserID) == "" || strings.TrimSpace(c.OrganizationID) == "" || strings.TrimSpace(c.ConnectionID) == "" || strings.TrimSpace(c.ConnectorID) == "" || strings.TrimSpace(c.Audience) == "" || c.CredentialGeneration <= 0 {
+		return "", time.Time{}, errors.New("connector resource token actor, organization, connection, connector, and audience are required")
 	}
 	now := time.Now().UTC()
 	expiresAt := now.Add(i.ttl)
@@ -167,12 +168,10 @@ func (i *RSAResourceTokenIssuer) Mint(c ResourceTokenClaims) (string, time.Time,
 		jti = uuid.NewString()
 	}
 	ext := map[string]any{
-		"user_id": c.UserID, "workos_user_id": c.UserID, "connection_id": c.ConnectionID,
-		"connector_id": c.ConnectorID, "token_id": jti, "trust_tier": c.TrustTier,
-	}
-	if c.OrganizationID != "" {
-		ext["organization_id"] = c.OrganizationID
-		ext["workos_org_id"] = c.OrganizationID
+		"user_id": c.UserID, "workos_user_id": c.UserID, "organization_id": c.OrganizationID,
+		"workos_org_id": c.OrganizationID, "connection_id": c.ConnectionID,
+		"connector_id": c.ConnectorID, "credential_generation": c.CredentialGeneration,
+		"token_id": jti, "trust_tier": c.TrustTier,
 	}
 	claims := jwt.MapClaims{
 		"iss": i.issuer, "aud": []string{c.Audience}, "sub": c.UserID,

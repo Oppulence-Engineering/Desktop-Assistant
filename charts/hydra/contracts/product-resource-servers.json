@@ -27,7 +27,24 @@
             "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
-            "disconnectEnforcement": "immediate"
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
           }
         },
         {
@@ -46,7 +63,24 @@
             "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
-            "disconnectEnforcement": "immediate"
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
           }
         },
         {
@@ -65,7 +99,24 @@
             "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
-            "disconnectEnforcement": "immediate"
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
           }
         },
         {
@@ -84,7 +135,24 @@
             "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
-            "disconnectEnforcement": "immediate"
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
           }
         },
         {
@@ -103,7 +171,24 @@
             "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
-            "disconnectEnforcement": "immediate"
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
           }
         }
       ]
@@ -133,7 +218,24 @@
             "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
-            "disconnectEnforcement": "immediate"
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
           }
         },
         {
@@ -152,7 +254,24 @@
             "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
-            "disconnectEnforcement": "immediate"
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
           }
         },
         {
@@ -171,7 +290,24 @@
             "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
-            "disconnectEnforcement": "immediate"
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
           }
         },
         {
@@ -190,7 +326,24 @@
             "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
-            "disconnectEnforcement": "immediate"
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
           }
         },
         {
@@ -209,7 +362,24 @@
             "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
-            "disconnectEnforcement": "immediate"
+            "disconnectEnforcement": "immediate",
+            "authentication": {
+              "methods": [
+                "scoped-service-jwt",
+                "signed-hmac-request"
+              ],
+              "requiredJwtScope": "connector:status",
+              "principalConnectorBound": true
+            },
+            "requiredBindings": [
+              "jti",
+              "connection_id",
+              "workos_user_id",
+              "organization_id",
+              "connector",
+              "credential_generation",
+              "audience"
+            ]
           }
         }
       ]

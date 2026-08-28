@@ -167,6 +167,15 @@ for environment in ("production", "staging"):
                 "checkTiming": "every-request",
                 "failurePolicy": "deny",
                 "disconnectEnforcement": "immediate",
+                "authentication": {
+                    "methods": ["scoped-service-jwt", "signed-hmac-request"],
+                    "requiredJwtScope": "connector:status",
+                    "principalConnectorBound": True,
+                },
+                "requiredBindings": [
+                    "jti", "connection_id", "workos_user_id", "organization_id",
+                    "connector", "credential_generation", "audience",
+                ],
             },
         })
         expected_callbacks.append(f"{public_base}/v1/connections/{connector['name']}/callback")

@@ -22,6 +22,7 @@ export const ClaimsSchema = z.object({
   organizationId: z.string().optional(),
   connectionId: z.string().optional(),
   connectorId: z.string().optional(),
+  credentialGeneration: z.number().int().positive().optional(),
   tokenId: z.string().optional(),
   trustTier: z.string().optional(),
   workosUserId: z.string().optional(),
@@ -79,6 +80,7 @@ export function claimsFromPayload(p: JWTPayload): Claims {
     organizationId,
     connectionId: firstString(ext?.connection_id, record.connection_id),
     connectorId: firstString(ext?.connector_id, record.connector_id),
+    credentialGeneration: firstPositiveInteger(ext?.credential_generation, record.credential_generation),
     tokenId: firstString(p.jti, ext?.token_id, record.token_id),
     trustTier: firstString(ext?.trust_tier, record.trust_tier),
     workosUserId: firstString(ext?.workos_user_id, record.workos_user_id, userId),
@@ -86,6 +88,13 @@ export function claimsFromPayload(p: JWTPayload): Claims {
     email: firstString(ext?.email, record.email),
     raw: p,
   };
+}
+
+function firstPositiveInteger(...values: unknown[]): number | undefined {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isSafeInteger(value) && value > 0) return value;
+  }
+  return undefined;
 }
 
 export function hasScope(c: Claims, scope: string): boolean {

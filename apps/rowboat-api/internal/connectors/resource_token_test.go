@@ -102,6 +102,19 @@ func TestRSAResourceTokenIssuerProducesVerifiableBoundedActorToken(t *testing.T)
 	}
 }
 
+func TestRSAResourceTokenIssuerRejectsMissingOrganization(t *testing.T) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	issuer := newTestIssuer(t, key, "kid-1", map[string]*rsa.PrivateKey{"kid-1": key})
+	if _, _, err := issuer.Mint(ResourceTokenClaims{
+		UserID: "user_1", ConnectionID: "conn_1", ConnectorID: "canvas", Audience: "mcp:canvas",
+	}); err == nil {
+		t.Fatal("issuer accepted connector resource token without organization")
+	}
+}
+
 func TestRSAResourceTokenIssuerStagedRotationAndUnknownKidRefetch(t *testing.T) {
 	oldKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {

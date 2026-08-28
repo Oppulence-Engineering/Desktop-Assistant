@@ -66,6 +66,7 @@ function baseClaims(): Record<string, unknown> {
     organization_id: 'org_123',
     connection_id: 'conn_123',
     connector_id: 'canvas',
+    credential_generation: 1,
     trust_tier: 'act',
   };
 }
@@ -91,6 +92,26 @@ function newVerifier(): Verifier {
     allowLocalhostDevelopment: true,
   });
 }
+
+describe('mandatory connector claims', () => {
+  for (const claim of ['organization_id', 'iat', 'nbf']) {
+    it(`rejects a primary token missing ${claim}`, async () => {
+      const claims = baseClaims();
+      claims[claim] = undefined;
+      await expectRejectCode(newVerifier().verify(await sign(claims)), 'token_invalid_signature');
+    });
+  }
+
+  it('preserves explicitly generic verification without connector claims', async () => {
+    const claims = baseClaims();
+    for (const claim of ['organization_id', 'iat', 'nbf', 'connection_id', 'connector_id', 'credential_generation', 'jti']) delete claims[claim];
+    const generic = new GenericVerifier({
+      issuerUrl: ISSUER, audience: AUDIENCE, jwksUrl: baseURL,
+      allowedJwksOrigins: [new URL(baseURL).origin], allowLocalhostDevelopment: true,
+    });
+    await expect(generic.verify(await sign(claims))).resolves.toBeDefined();
+  });
+});
 
 function expectCode(error: unknown, code: AuthorizationError['code']): void {
   expect(error).toBeInstanceOf(AuthorizationError);
@@ -335,14 +356,15 @@ describe('RFC 012 middleware parity', () => {
     };
     await expect(runMiddleware(offline, undefined, bounded)).resolves.toMatchObject({ next: true });
 
-    for (const [options, token] of [
+    for (const [options, token, expectedStatus, expectedCode] of [
       [{ connectionValidationMode: 'offline-development' }, bounded],
       [{ connectionValidationMode: 'offline-development', offlineMaxTokenTtlSeconds: 301 }, bounded],
       [offline, await sign({}, { expSec: 3600 })],
-      [offline, await sign({ iat: undefined }, { expSec: 120 })],
-    ] as Array<[MCPTokenOptions, string]>) {
+    ].map(([options, token]) => [options, token, 403, 'connection_revoked']).concat([
+      [offline, await sign({ iat: undefined }, { expSec: 120 }), 401, 'token_invalid_signature'],
+    ]) as Array<[MCPTokenOptions, string, number, string]>) {
       const denied = await runMiddleware(options, undefined, token);
-      expect(denied.res).toMatchObject({ statusCode: 403, body: { code: 'connection_revoked' } });
+      expect(denied.res).toMatchObject({ statusCode: expectedStatus, body: { code: expectedCode } });
     }
   });
 

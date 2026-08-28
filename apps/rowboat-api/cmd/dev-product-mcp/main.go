@@ -5,6 +5,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
@@ -18,6 +19,7 @@ import (
 	"net/url"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,6 +30,10 @@ import (
 type server struct {
 	db                  *sql.DB
 	entitlementVerifier *oauthrs.EntitlementRequestVerifier
+	connectionStatusURL string
+	statusPrincipal     string
+	statusSecret        string
+	httpClient          *http.Client
 }
 
 const (
@@ -79,11 +85,18 @@ func main() {
 		log.Printf("entitlement verifier: %v", err)
 		return
 	}
-	s := &server{db: db, entitlementVerifier: entitlementVerifier}
+	s := &server{
+		db: db, entitlementVerifier: entitlementVerifier,
+		connectionStatusURL: required("PRODUCT_CONNECTION_STATUS_URL"),
+		statusPrincipal:     required("PRODUCT_CONNECTION_STATUS_PRINCIPAL"),
+		statusSecret:        required("PRODUCT_CONNECTION_STATUS_HMAC_SECRET"),
+		httpClient:          &http.Client{Timeout: 5 * time.Second},
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, 200, map[string]any{"ok": true}) })
 	mux.HandleFunc("POST /v1/entitlements", s.entitlement)
 	mux.HandleFunc("POST /fixture/entitlements", s.setEntitlement)
+	mux.HandleFunc("POST /fixture/connections", s.setConnection)
 	mux.HandleFunc("POST /v1/approvals", s.issueApproval)
 	mux.Handle("POST /v1/approvals/redeem", verifier.RequireMCPToken(oauthrs.MCPTokenOptions{
 		Audience: audience, RequiredScopes: []string{"dev:payments.execute"}, ConnectionValidator: s.active,
@@ -577,7 +590,76 @@ func (s *server) active(ctx context.Context, c *oauthrs.Claims) (bool, error) {
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}
-	return active, err
+	if err != nil || !active {
+		return active, err
+	}
+	audience := ""
+	if len(c.Audience) == 1 {
+		audience = c.Audience[0]
+	}
+	body, err := json.Marshal(map[string]any{
+		"jti": c.TokenID, "connection_id": c.ConnectionID, "workos_user_id": c.UserID,
+		"organization_id": c.OrganizationID, "connector": c.ConnectorID,
+		"credential_generation": c.CredentialGeneration, "audience": audience,
+	})
+	if err != nil {
+		return false, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.connectionStatusURL, bytes.NewReader(body))
+	if err != nil {
+		return false, err
+	}
+	timestamp := time.Now().UTC().UnixMilli()
+	nonce := opaque(24)
+	bodyHash := sha256.Sum256(body)
+	canonical := strings.Join([]string{"v1", http.MethodPost, req.URL.EscapedPath(), s.statusPrincipal, strconv.FormatInt(timestamp, 10), nonce, hex.EncodeToString(bodyHash[:])}, "\n")
+	mac := hmac.New(sha256.New, []byte(s.statusSecret))
+	_, _ = mac.Write([]byte(canonical))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Connector-Principal", s.statusPrincipal)
+	req.Header.Set("X-Connector-Timestamp", strconv.FormatInt(timestamp, 10))
+	req.Header.Set("X-Connector-Nonce", nonce)
+	req.Header.Set("X-Connector-Signature", "sha256="+hex.EncodeToString(mac.Sum(nil)))
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return false, nil
+	}
+	var decision struct {
+		Active bool `json:"active"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<16)).Decode(&decision); err != nil {
+		return false, err
+	}
+	return decision.Active, nil
+}
+
+func (s *server) setConnection(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("X-Fixture-Secret") != os.Getenv("PRODUCT_MCP_FIXTURE_SECRET") {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"code": "unauthorized"})
+		return
+	}
+	var body struct {
+		ConnectionID string `json:"connection_id"`
+		TenantID     string `json:"tenant_id"`
+		Active       bool   `json:"active"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&body); err != nil || strings.TrimSpace(body.ConnectionID) == "" || strings.TrimSpace(body.TenantID) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"code": "bad_request"})
+		return
+	}
+	_, err := s.db.ExecContext(r.Context(), `INSERT INTO dev_product_connections(connection_id,tenant_id,active,revoked_at)
+		VALUES($1,$2,$3,CASE WHEN $3 THEN NULL ELSE now() END)
+		ON CONFLICT(connection_id) DO UPDATE SET tenant_id=excluded.tenant_id,active=excluded.active,
+		revoked_at=CASE WHEN excluded.active THEN NULL ELSE now() END`, body.ConnectionID, body.TenantID, body.Active)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"code": "internal_error"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"updated": true, "active": body.Active})
 }
 
 func (s *server) approve(r *http.Request, raw string, c *oauthrs.Claims) (bool, error) {

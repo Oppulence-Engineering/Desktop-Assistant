@@ -5,6 +5,7 @@ package integration
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/tls"
@@ -21,6 +22,7 @@ import (
 	"os"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -184,8 +186,7 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.Equal(t, "rfc012-broker-key", jwtKeyID(t, mt.AccessToken))
 		require.Equal(t, "rfc012-broker-next", jwtKeyID(t, mt2.AccessToken))
 		tenantID := mustEnv(t, "RFC012_TENANT_A_ORG_ID")
-		_, err = db.Exec(`INSERT INTO dev_product_connections(connection_id,tenant_id,active) VALUES($1,$2,true) ON CONFLICT(connection_id) DO UPDATE SET tenant_id=$2,active=true`, connectionID, tenantID)
-		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/connections", "", map[string]any{"connection_id": connectionID, "tenant_id": tenantID, "active": true}, "X-Fixture-Secret", fixtureSecret).status)
 		oldSigner := c.json("POST", product+"/v1/mcp/read", mt.AccessToken, nil)
 		require.Equal(t, 200, oldSigner.status, "old signer token rejected during overlap: %s", oldSigner.body)
 		newSigner := c.json("POST", product+"/v1/mcp/read", mt2.AccessToken, nil)
@@ -197,8 +198,7 @@ func TestRFC012PublicContract(t *testing.T) {
 		wrongAudience := fixtureResourceToken(t, connectionID, tenantID, "wrong-audience", []string{"dev:records.read"}, time.Now().Add(5*time.Minute))
 		expired := fixtureResourceToken(t, connectionID, tenantID, "dev-product-api", []string{"dev:records.read"}, time.Now().Add(-time.Minute))
 		missingScope := fixtureResourceToken(t, connectionID, tenantID, "dev-product-api", []string{"dev:payments.execute"}, time.Now().Add(5*time.Minute))
-		_, err := db.Exec(`INSERT INTO dev_product_connections(connection_id,tenant_id,active) VALUES($1,$2,true) ON CONFLICT(connection_id) DO UPDATE SET tenant_id=$2,active=true`, connectionID, tenantID)
-		require.NoError(t, err)
+		require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/connections", "", map[string]any{"connection_id": connectionID, "tenant_id": tenantID, "active": true}, "X-Fixture-Secret", fixtureSecret).status)
 		require.Equal(t, 401, c.json("POST", product+"/v1/mcp/read", wrongAudience, nil).status)
 		require.Equal(t, 401, c.json("POST", product+"/v1/mcp/read", expired, nil).status)
 		require.Equal(t, 403, c.json("POST", product+"/v1/mcp/read", missingScope, nil).status)
@@ -324,6 +324,45 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.Equal(t, http.StatusPreconditionRequired, ambiguousPayReplay.status, "ambiguously committed approval bearer was reusable")
 	})
 
+	t.Run("already-issued tokens fail closed across live lifecycle changes", func(t *testing.T) {
+		tenantID := mustEnv(t, "RFC012_TENANT_A_ORG_ID")
+		// Product-side disconnect is enforced before the product invokes the broker.
+		require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/connections", "", map[string]any{"connection_id": connectionID, "tenant_id": tenantID, "active": false}, "X-Fixture-Secret", fixtureSecret).status)
+		require.Equal(t, http.StatusForbidden, c.json("POST", product+"/v1/mcp/read", resourceToken, nil).status)
+		require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/connections", "", map[string]any{"connection_id": connectionID, "tenant_id": tenantID, "active": true}, "X-Fixture-Secret", fixtureSecret).status)
+
+		// A new product entitlement generation denies the already-issued token on
+		// the next request without waiting for token expiry or another broker mint.
+		require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/entitlements", "", map[string]any{"user_id": "user_rfc012_a", "allowed": false, "reason": "subscription_generation_changed"}, "X-Fixture-Secret", fixtureSecret).status)
+		require.Equal(t, http.StatusForbidden, c.json("POST", product+"/v1/mcp/read", resourceToken, nil).status)
+		require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/entitlements", "", map[string]any{"user_id": "user_rfc012_a", "allowed": true}, "X-Fixture-Secret", fixtureSecret).status)
+
+		// Re-consent replaces the credential generation. The original token remains
+		// cryptographically valid but its live generation binding is stale.
+		start := c.json("POST", api+"/v1/connections/"+connector+"/start", tokenA, map[string]any{"requestedScopes": []string{"dev:records.read", "dev:payments.execute"}})
+		require.Equal(t, http.StatusOK, start.status, start.body)
+		var started struct {
+			AuthorizeURL string `json:"authorize_url"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(start.body), &started))
+		callback := completeConsent(t, started.AuthorizeURL, []string{"dev:records.read", "dev:payments.execute"})
+		claim := c.json("POST", api+"/v1/connections/"+connector+"/claim", tokenA, map[string]string{"state": queryFromLocation(t, callback.header.Get("Location"), "session")})
+		require.Equal(t, http.StatusOK, claim.status, claim.body)
+		require.Equal(t, http.StatusForbidden, c.json("POST", product+"/v1/mcp/read", resourceToken, nil).status)
+		mint := c.json("POST", api+"/v1/connections/"+connector+"/mcp-token", tokenA, nil)
+		require.Equal(t, http.StatusOK, mint.status, mint.body)
+		var minted struct {
+			AccessToken string `json:"access_token"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(mint.body), &minted))
+		resourceToken = minted.AccessToken
+
+		// Product-scoped organization invalidation immediately denies the new token.
+		invalidated := signedProductRequest(t, c, api+"/v1/internal/connections/invalidate", map[string]any{"org_id": tenantID, "connector": connector, "reason": "organization_membership_removed"})
+		require.Equal(t, http.StatusOK, invalidated.status, invalidated.body)
+		require.Equal(t, http.StatusForbidden, c.json("POST", product+"/v1/mcp/read", resourceToken, nil).status)
+	})
+
 	t.Run("entitlement downgrade denies mint", func(t *testing.T) {
 		// The public connection routes intentionally enforce an eight-request burst
 		// window. Earlier subtests exercise concurrent claims and mints against that
@@ -358,6 +397,15 @@ func TestRFC012PublicContract(t *testing.T) {
 		claimTicket := queryFromLocation(t, callback.header.Get("Location"), "session")
 		claim := c.json("POST", api+"/v1/connections/"+connector+"/claim", tokenA, map[string]string{"state": claimTicket})
 		require.Equal(t, http.StatusOK, claim.status, claim.body)
+		mint := c.json("POST", api+"/v1/connections/"+connector+"/mcp-token", tokenA, nil)
+		require.Equal(t, http.StatusOK, mint.status, mint.body)
+		var fresh struct {
+			AccessToken string `json:"access_token"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(mint.body), &fresh))
+		resourceToken = fresh.AccessToken
+		require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/connections", "", map[string]any{"connection_id": connectionID, "tenant_id": mustEnv(t, "RFC012_TENANT_A_ORG_ID"), "active": true}, "X-Fixture-Secret", fixtureSecret).status)
+		require.Equal(t, http.StatusOK, c.json("POST", product+"/v1/mcp/read", resourceToken, nil).status)
 
 		d := c.json("DELETE", mustEnv(t, "RFC012_API2_URL")+"/v1/connections/"+connector, tokenA, nil)
 		require.Contains(t, []int{200, 204}, d.status, d.body)
@@ -371,8 +419,6 @@ func TestRFC012PublicContract(t *testing.T) {
 		var audits int
 		require.NoError(t, db.QueryRow(`SELECT count(*) FROM connector_audit_events WHERE connection_id=$1 AND event_type='token.revoked'`, connectionID).Scan(&audits))
 		require.Positive(t, audits, "semantic token.revoked audit event missing")
-		_, err := db.Exec(`UPDATE dev_product_connections SET active=false,revoked_at=now() WHERE connection_id=$1`, connectionID)
-		require.NoError(t, err)
 		denied := c.json("POST", product+"/v1/mcp/read", resourceToken, nil)
 		require.Equal(t, 403, denied.status)
 		require.Equal(t, "connection_revoked", denied.code())
@@ -397,6 +443,27 @@ func jwtKeyID(t *testing.T, raw string) string {
 	kid, _ := tok.Header["kid"].(string)
 	require.NotEmpty(t, kid)
 	return kid
+}
+
+func signedProductRequest(t *testing.T, c *client, endpoint string, body any) response {
+	t.Helper()
+	raw, err := json.Marshal(body)
+	require.NoError(t, err)
+	u, err := url.Parse(endpoint)
+	require.NoError(t, err)
+	principal := mustEnv(t, "RFC012_PRODUCT_SERVICE_PRINCIPAL")
+	secret := mustEnv(t, "RFC012_PRODUCT_SERVICE_HMAC_SECRET")
+	timestamp := strconv.FormatInt(time.Now().UTC().UnixMilli(), 10)
+	nonceBytes := sha256.Sum256([]byte(timestamp + endpoint + fmt.Sprint(time.Now().UnixNano())))
+	nonce := base64.RawURLEncoding.EncodeToString(nonceBytes[:24])
+	bodyHash := sha256.Sum256(raw)
+	canonical := strings.Join([]string{"v1", http.MethodPost, u.EscapedPath(), principal, timestamp, nonce, fmt.Sprintf("%x", bodyHash)}, "\n")
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte(canonical))
+	return c.jsonHeaders("POST", endpoint, "", body, map[string]string{
+		"X-Connector-Principal": principal, "X-Connector-Timestamp": timestamp,
+		"X-Connector-Nonce": nonce, "X-Connector-Signature": "sha256=" + fmt.Sprintf("%x", mac.Sum(nil)),
+	})
 }
 
 func mapsClone(input map[string]any) map[string]any {
@@ -490,7 +557,7 @@ func fixtureResourceTokenForUser(t *testing.T, userID, connectionID, organizatio
 		"iss": mustEnv(t, "RFC012_BROKER_TOKEN_ISSUER"), "aud": []string{audience}, "sub": userID,
 		"iat": now.Unix(), "nbf": now.Add(-time.Minute).Unix(), "exp": expiresAt.Unix(), "jti": "fixture-" + fmt.Sprint(now.UnixNano()),
 		"scope": strings.Join(scopes, " "),
-		"ext":   map[string]any{"user_id": userID, "organization_id": organizationID, "connection_id": connectionID, "connector_id": getenv("RFC012_CONNECTOR", "dev-product"), "trust_tier": "low"},
+		"ext":   map[string]any{"user_id": userID, "organization_id": organizationID, "connection_id": connectionID, "connector_id": getenv("RFC012_CONNECTOR", "dev-product"), "credential_generation": 1, "trust_tier": "low"},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	token.Header["kid"] = mustEnv(t, "RFC012_BROKER_TOKEN_KEY_ID")

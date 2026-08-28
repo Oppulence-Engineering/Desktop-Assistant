@@ -94,6 +94,8 @@ cat > "$SCRATCH/connectors.json" <<JSON
 JSON
 CONNECTORS_JSON=$(tr -d '\n' < "$SCRATCH/connectors.json")
 ENTITLEMENT_HMAC_KEY=rfc012-product-entitlement-key-at-least-32-bytes
+PRODUCT_STATUS_HMAC_KEY=rfc012-product-status-key-at-least-32-bytes
+PRODUCT_PRINCIPALS_JSON="[{\"principal\":\"dev-product-service\",\"connectors\":[\"dev\"],\"selector_classes\":[\"connection\",\"user\",\"organization\"],\"hmac_secret\":\"${PRODUCT_STATUS_HMAC_KEY}\"}]"
 
 echo 'JCODE_CHECKPOINT {"message":"Starting disposable PostgreSQL 16"}'
 docker run -d --rm --name "$PG_NAME" -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=rowboat_rfc012 -p "127.0.0.1:${PG_PORT}:5432" postgres:16-alpine >/dev/null
@@ -146,7 +148,8 @@ start_api() {
   CONNECTOR_ENTITLEMENT_HMAC_KEYS_JSON="{\"dev\":\"${ENTITLEMENT_HMAC_KEY}\"}" \
   BROKER_TOKEN_ISSUER="$API_URL" BROKER_TOKEN_PRIVATE_KEY_PEM="$signing_key" BROKER_TOKEN_KEY_ID="$key_id" BROKER_TOKEN_TTL=5m \
   BROKER_TOKEN_KEYRING_JSON="$BROKER_KEYRING" \
-  HOOK_HMAC_SECRET=rfc012-hook-secret-at-least-32-bytes INTERNAL_API_SECRET=rfc012-internal-secret \
+	  HOOK_HMAC_SECRET=rfc012-hook-secret-at-least-32-bytes INTERNAL_API_SECRET=rfc012-internal-secret \
+	  CONNECTOR_INVALIDATION_PRINCIPALS_JSON="$PRODUCT_PRINCIPALS_JSON" \
   "$SCRATCH/bin/rowboat-api" >"$log" 2>&1 & PIDS+=("$!")
 }
 echo 'JCODE_CHECKPOINT {"message":"Starting two real rowboat-api instances with migrated shared PostgreSQL"}'
@@ -160,7 +163,9 @@ DATABASE_URL="$DATABASE_URL" PRODUCT_MCP_ADDR="127.0.0.1:${PRODUCT_PORT}" \
   PRODUCT_MCP_AUDIENCE=dev-product-api PRODUCT_MCP_ISSUER="$API_URL" PRODUCT_MCP_JWKS_URL="$API_URL/.well-known/connector-jwks.json" \
   PRODUCT_MCP_FIXTURE_SECRET=rfc012-fixture-secret \
   PRODUCT_MCP_TLS_CERT="$SCRATCH/fixture-tls.crt" PRODUCT_MCP_TLS_KEY="$SCRATCH/fixture-tls.key" \
-  PRODUCT_ENTITLEMENT_HMAC_KEY="$ENTITLEMENT_HMAC_KEY" \
+	  PRODUCT_ENTITLEMENT_HMAC_KEY="$ENTITLEMENT_HMAC_KEY" \
+	  PRODUCT_CONNECTION_STATUS_URL="$API_URL/v1/internal/connections/status" \
+	  PRODUCT_CONNECTION_STATUS_PRINCIPAL=dev-product-service PRODUCT_CONNECTION_STATUS_HMAC_SECRET="$PRODUCT_STATUS_HMAC_KEY" \
   "$SCRATCH/bin/dev-product-mcp" >"$SCRATCH/product.log" 2>&1 & PIDS+=("$!")
 wait_http "$PRODUCT_URL/healthz"
 
@@ -192,7 +197,8 @@ echo 'JCODE_CHECKPOINT {"message":"Running authenticated public RFC 012 acceptan
 env \
   RFC012_API_URL="$API_URL" RFC012_PRODUCT_MCP_URL="$PRODUCT_URL" \
   RFC012_API2_URL="$API2_URL" RFC012_CONSENT_URL="$CONSENT_URL" RFC012_CONSENT2_URL="$CONSENT2_URL" \
-  RFC012_FIXTURE_SECRET=rfc012-fixture-secret RFC012_HOOK_SECRET=rfc012-hook-secret-at-least-32-bytes \
+	  RFC012_FIXTURE_SECRET=rfc012-fixture-secret RFC012_HOOK_SECRET=rfc012-hook-secret-at-least-32-bytes \
+	  RFC012_PRODUCT_SERVICE_PRINCIPAL=dev-product-service RFC012_PRODUCT_SERVICE_HMAC_SECRET="$PRODUCT_STATUS_HMAC_KEY" \
   RFC012_TENANT_A_JWT="$TOKEN_A" RFC012_TENANT_B_JWT="$TOKEN_B" RFC012_UNENTITLED_JWT="$TOKEN_U" \
   RFC012_TENANT_A_ORG_ID=org_rfc012_a RFC012_CONNECTOR=dev \
   RFC012_BROKER_PRIVATE_KEY_PEM="$BROKER_KEY" RFC012_BROKER_TOKEN_ISSUER="$API_URL" RFC012_BROKER_TOKEN_KEY_ID=rfc012-broker-key \

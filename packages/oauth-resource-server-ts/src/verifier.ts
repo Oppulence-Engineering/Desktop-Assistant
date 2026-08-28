@@ -76,12 +76,13 @@ export class Verifier {
       const header = decodeHeader(token);
       const key = await this.keyFor(header.kid);
       const tolerance = this.cfg.clockToleranceSec ?? 60;
-      const { payload } = await jwtVerify(token, key, { issuer: this.cfg.issuerUrl, audience: this.cfg.audience, clockTolerance: tolerance, algorithms: this.cfg.algorithms ?? DEFAULT_ALGS, requiredClaims: ['exp'] });
+      const requiredClaims = this.requireActor ? ['exp', 'iat', 'nbf'] : ['exp'];
+      const { payload } = await jwtVerify(token, key, { issuer: this.cfg.issuerUrl, audience: this.cfg.audience, clockTolerance: tolerance, algorithms: this.cfg.algorithms ?? DEFAULT_ALGS, requiredClaims });
       const now = Math.floor(Date.now() / 1000);
       if (typeof payload.iat === 'number' && payload.iat > now + tolerance) throw new Error('"iat" claim timestamp check failed');
       const claims = claimsFromPayload(payload);
       if (this.requireActor) {
-        if (!claims.subject || !claims.userId || !claims.connectionId || !claims.connectorId || !claims.tokenId) throw new Error('required RFC 012 actor claim missing');
+        if (!claims.subject || !claims.userId || !claims.organizationId || !claims.connectionId || !claims.connectorId || !claims.credentialGeneration || !claims.tokenId || claims.issuedAt === undefined || claims.notBefore === undefined) throw new Error('required RFC 012 connector claim missing');
         if (this.cfg.requiredOrganizationId && claims.organizationId !== this.cfg.requiredOrganizationId) throw new Error('required organization claim missing or mismatched');
       }
       return claims;

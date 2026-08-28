@@ -154,8 +154,8 @@ func (v *Verifier) Verify(tokenString string) (*Claims, error) {
 	}
 	claims := claimsFromMap(mc)
 	if v.requireActor {
-		if claims.Subject == "" || claims.UserID == "" || claims.ConnectionID == "" || claims.ConnectorID == "" || claims.TokenID == "" {
-			return nil, classifyTokenError(errors.New("required RFC 012 actor claim missing"))
+		if claims.Subject == "" || claims.UserID == "" || claims.OrganizationID == "" || claims.ConnectionID == "" || claims.ConnectorID == "" || claims.CredentialGeneration <= 0 || claims.TokenID == "" || claims.IssuedAt.IsZero() || claims.NotBefore.IsZero() {
+			return nil, classifyTokenError(errors.New("required RFC 012 connector claim missing"))
 		}
 		if v.cfg.RequiredOrganizationID != "" && claims.OrganizationID != v.cfg.RequiredOrganizationID {
 			return nil, classifyTokenError(errors.New("required organization claim missing or mismatched"))

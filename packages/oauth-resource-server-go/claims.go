@@ -13,12 +13,13 @@ type Claims struct {
 	IssuedAt  time.Time
 
 	// RFC 012 connector actor fields.
-	UserID         string
-	OrganizationID string
-	ConnectionID   string
-	ConnectorID    string
-	TokenID        string
-	TrustTier      string
+	UserID               string
+	OrganizationID       string
+	ConnectionID         string
+	ConnectorID          string
+	CredentialGeneration int64
+	TokenID              string
+	TrustTier            string
 
 	// Identity enrichment commonly carried by WorkOS/Ory tokens.
 	// Deprecated: use UserID and OrganizationID for connector authorization.

@@ -1,6 +1,7 @@
 package oauthrs
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -31,12 +32,33 @@ func claimsFromMap(m jwt.MapClaims) *Claims {
 	c.OrganizationID = firstString(get(ext, "organization_id"), m["organization_id"], get(ext, "org_id"), m["org_id"], get(ext, "workos_org_id"), m["workos_org_id"])
 	c.ConnectionID = firstString(get(ext, "connection_id"), m["connection_id"])
 	c.ConnectorID = firstString(get(ext, "connector_id"), m["connector_id"])
+	c.CredentialGeneration = firstInt64(get(ext, "credential_generation"), m["credential_generation"])
 	c.TokenID = firstString(m["jti"], get(ext, "token_id"), m["token_id"])
 	c.TrustTier = firstString(get(ext, "trust_tier"), m["trust_tier"])
 	c.WorkOSUserID = firstString(get(ext, "workos_user_id"), m["workos_user_id"], c.UserID)
 	c.WorkOSOrgID = firstString(get(ext, "workos_org_id"), m["workos_org_id"], c.OrganizationID)
 	c.Email = firstString(get(ext, "email"), m["email"])
 	return c
+}
+
+func firstInt64(values ...any) int64 {
+	for _, value := range values {
+		switch n := value.(type) {
+		case float64:
+			if n > 0 && n == float64(int64(n)) {
+				return int64(n)
+			}
+		case int64:
+			if n > 0 {
+				return n
+			}
+		case json.Number:
+			if parsed, err := n.Int64(); err == nil && parsed > 0 {
+				return parsed
+			}
+		}
+	}
+	return 0
 }
 
 func get(m map[string]any, key string) any {
