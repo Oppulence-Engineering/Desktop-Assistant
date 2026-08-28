@@ -129,9 +129,9 @@ describe("MCP one-shot approval request binding", () => {
   });
 
   it("canonicalizes query ordering while preserving exact query semantics", () => {
-    expect(
-      normalizeMcpEndpoint("https://product.example/mcp?tenant=one&action=release"),
-    ).toEqual(normalizeMcpEndpoint("https://product.example/mcp?action=release&tenant=one"));
+    expect(normalizeMcpEndpoint("https://product.example/mcp?tenant=one&action=release")).toEqual(
+      normalizeMcpEndpoint("https://product.example/mcp?action=release&tenant=one"),
+    );
     expect(
       normalizeMcpEndpoint("https://product.example/mcp?action=release&tenant=one"),
     ).not.toEqual(normalizeMcpEndpoint("https://product.example/mcp?action=refund&tenant=one"));

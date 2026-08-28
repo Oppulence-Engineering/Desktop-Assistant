@@ -57,3 +57,8 @@ ad4ea23d79a1a5788233ae8eb3e84e60632bd3b1:apps/copilot/README.md:curl-auth-header
 8bf9e7cd7d8bea1ee9e9e5d00a296dbafc458c4a:apps/rowboat-api/migrations/postgres/atlas.sum:generic-api-key:15
 8bf9e7cd7d8bea1ee9e9e5d00a296dbafc458c4a:apps/rowboat-api/migrations/postgres/atlas.sum:generic-api-key:16
 c8c6a346895eb5b30532916c8a6667f288cf4b3a:apps/rowboat-api/migrations/postgres/atlas.sum:generic-api-key:15
+# RFC 012 deterministic local fixture secrets and UUID-shaped OpenAPI examples.
+3fa41ce2189deb01b856f8e4cbf5eb2e7c083ce5:apps/rowboat-api/integration/rfc012/postgres16.sh:generic-api-key:151
+3fa41ce2189deb01b856f8e4cbf5eb2e7c083ce5:apps/rowboat-api/integration/rfc012/postgres16.sh:generic-api-key:200
+7a41de51e1e1b0b64ac1aa729ea2515a3d59d5e2:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:878
+7a41de51e1e1b0b64ac1aa729ea2515a3d59d5e2:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:879
