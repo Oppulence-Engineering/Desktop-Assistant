@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
@@ -43,6 +44,61 @@ func openCredentialCustodyPostgres(t *testing.T) *db.DB {
 
 func TestCredentialAdoptionAmbiguousCommitsPostgres(t *testing.T) {
 	runAmbiguousCommitScenario(t, openCredentialCustodyPostgres(t))
+}
+
+func TestReconnectSupersededGrantEscrowIsAtomicPostgres(t *testing.T) {
+	database := openCredentialCustodyPostgres(t)
+	client := database.Client
+	suffix := uuid.NewString()
+	owner := client.User.Create().SetEmail("reconnect-pg-" + suffix + "@example.invalid").SetWorkosUserID("reconnect-pg-" + suffix).SetWorkosOrgID("reconnect-pg-org-" + suffix).SaveX(t.Context())
+	ctx := auth.WithUser(t.Context(), owner)
+	sealer, err := crypto.NewSealer("reconnect-postgres-atomic")
+	if err != nil {
+		t.Fatal(err)
+	}
+	connector := DefaultRegistry().connectors["canvas"]
+	h := New(client, sealer, DefaultRegistry(), Config{}, zap.NewNop())
+	oldSealed, err := sealer.SealString("refresh-old-" + suffix)
+	if err != nil {
+		t.Fatal(err)
+	}
+	connection := client.MCPConnection.Create().SetUser(owner).SetConnector(connector.Name).SetAudience(connector.Audience).SetOrganizationID(connectorOrganizationID(owner)).SetScopes([]string{"canvas:invoices.read"}).SetRefreshTokenEncrypted(oldSealed).SetStatus("active").SetConnectedAt(time.Now()).SaveX(ctx)
+
+	rollbackTx, err := client.Tx(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := h.upsertConnectionWithClient(ctx, rollbackTx.Client(), owner, connector, "refresh-rolled-back-"+suffix, []string{"canvas:invoices.read"}, time.Now().Add(-time.Second)); err != nil {
+		t.Fatal(err)
+	}
+	if err := rollbackTx.Rollback(); err != nil {
+		t.Fatal(err)
+	}
+	if got := client.ConnectorCredentialCleanupJob.Query().Where(connectorcredentialcleanupjob.ConnectionIDEQ(connection.ID)).CountX(auth.WithInternal(t.Context())); got != 0 {
+		t.Fatalf("rollback left %d superseded credential escrows", got)
+	}
+
+	commitTx, err := client.Tx(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated, cleanupID, err := h.upsertConnectionWithClient(ctx, commitTx.Client(), owner, connector, "refresh-current-"+suffix, []string{"canvas:invoices.read"}, time.Now().Add(-time.Second))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := commitTx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	job := client.ConnectorCredentialCleanupJob.GetX(auth.WithInternal(t.Context()), cleanupID)
+	escrowed, err := sealer.OpenString(job.RefreshTokenEncrypted)
+	if err != nil || escrowed != "refresh-old-"+suffix {
+		t.Fatalf("escrowed superseded grant = %q, %v", escrowed, err)
+	}
+	current := client.MCPConnection.GetX(ctx, updated.ID)
+	currentPlain, err := sealer.OpenString(current.RefreshTokenEncrypted)
+	if err != nil || currentPlain != "refresh-current-"+suffix {
+		t.Fatalf("installed current grant = %q, %v", currentPlain, err)
+	}
 }
 
 func TestCredentialRecoveryPostgresRedisRestart(t *testing.T) {
