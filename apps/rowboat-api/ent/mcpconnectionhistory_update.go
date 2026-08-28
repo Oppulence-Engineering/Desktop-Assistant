@@ -102,12 +102,6 @@ func (_u *MCPConnectionHistoryUpdate) sqlSave(ctx context.Context) (_node int, e
 	if _u.mutation.ScopesCleared() {
 		_spec.ClearField(mcpconnectionhistory.FieldScopes, field.TypeJSON)
 	}
-	if _u.mutation.RefreshTokenEncryptedCleared() {
-		_spec.ClearField(mcpconnectionhistory.FieldRefreshTokenEncrypted, field.TypeBytes)
-	}
-	if _u.mutation.APIKeyEncryptedCleared() {
-		_spec.ClearField(mcpconnectionhistory.FieldAPIKeyEncrypted, field.TypeBytes)
-	}
 	if _u.mutation.ConnectedAtCleared() {
 		_spec.ClearField(mcpconnectionhistory.FieldConnectedAt, field.TypeTime)
 	}
@@ -255,12 +249,6 @@ func (_u *MCPConnectionHistoryUpdateOne) sqlSave(ctx context.Context) (_node *MC
 	}
 	if _u.mutation.ScopesCleared() {
 		_spec.ClearField(mcpconnectionhistory.FieldScopes, field.TypeJSON)
-	}
-	if _u.mutation.RefreshTokenEncryptedCleared() {
-		_spec.ClearField(mcpconnectionhistory.FieldRefreshTokenEncrypted, field.TypeBytes)
-	}
-	if _u.mutation.APIKeyEncryptedCleared() {
-		_spec.ClearField(mcpconnectionhistory.FieldAPIKeyEncrypted, field.TypeBytes)
 	}
 	if _u.mutation.ConnectedAtCleared() {
 		_spec.ClearField(mcpconnectionhistory.FieldConnectedAt, field.TypeTime)

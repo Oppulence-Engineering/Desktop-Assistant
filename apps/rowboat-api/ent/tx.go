@@ -58,6 +58,8 @@ type Tx struct {
 	ConnectorAuditEvent *ConnectorAuditEventClient
 	// ConnectorCredentialCleanupJob is the client for interacting with the ConnectorCredentialCleanupJob builders.
 	ConnectorCredentialCleanupJob *ConnectorCredentialCleanupJobClient
+	// ConnectorCredentialRecovery is the client for interacting with the ConnectorCredentialRecovery builders.
+	ConnectorCredentialRecovery *ConnectorCredentialRecoveryClient
 	// ConnectorRevocationJob is the client for interacting with the ConnectorRevocationJob builders.
 	ConnectorRevocationJob *ConnectorRevocationJobClient
 	// ConversationIntelligenceArtifact is the client for interacting with the ConversationIntelligenceArtifact builders.
@@ -322,6 +324,7 @@ func (tx *Tx) init() {
 	tx.CommitmentEvent = NewCommitmentEventClient(tx.config)
 	tx.ConnectorAuditEvent = NewConnectorAuditEventClient(tx.config)
 	tx.ConnectorCredentialCleanupJob = NewConnectorCredentialCleanupJobClient(tx.config)
+	tx.ConnectorCredentialRecovery = NewConnectorCredentialRecoveryClient(tx.config)
 	tx.ConnectorRevocationJob = NewConnectorRevocationJobClient(tx.config)
 	tx.ConversationIntelligenceArtifact = NewConversationIntelligenceArtifactClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)

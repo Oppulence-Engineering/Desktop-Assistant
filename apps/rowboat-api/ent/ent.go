@@ -35,6 +35,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
@@ -173,6 +174,7 @@ func checkColumn(t, c string) error {
 			commitmentevent.Table:                   commitmentevent.ValidColumn,
 			connectorauditevent.Table:               connectorauditevent.ValidColumn,
 			connectorcredentialcleanupjob.Table:     connectorcredentialcleanupjob.ValidColumn,
+			connectorcredentialrecovery.Table:       connectorcredentialrecovery.ValidColumn,
 			connectorrevocationjob.Table:            connectorrevocationjob.ValidColumn,
 			conversationintelligenceartifact.Table:  conversationintelligenceartifact.ValidColumn,
 			creditledger.Table:                      creditledger.ValidColumn,

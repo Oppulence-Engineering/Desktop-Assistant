@@ -97,6 +97,34 @@ func (_c *MCPConnectionCreate) SetAPIKeyEncrypted(v []byte) *MCPConnectionCreate
 	return _c
 }
 
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (_c *MCPConnectionCreate) SetRefreshTokenPresent(v bool) *MCPConnectionCreate {
+	_c.mutation.SetRefreshTokenPresent(v)
+	return _c
+}
+
+// SetNillableRefreshTokenPresent sets the "refresh_token_present" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableRefreshTokenPresent(v *bool) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetRefreshTokenPresent(*v)
+	}
+	return _c
+}
+
+// SetAPIKeyPresent sets the "api_key_present" field.
+func (_c *MCPConnectionCreate) SetAPIKeyPresent(v bool) *MCPConnectionCreate {
+	_c.mutation.SetAPIKeyPresent(v)
+	return _c
+}
+
+// SetNillableAPIKeyPresent sets the "api_key_present" field if the given value is not nil.
+func (_c *MCPConnectionCreate) SetNillableAPIKeyPresent(v *bool) *MCPConnectionCreate {
+	if v != nil {
+		_c.SetAPIKeyPresent(*v)
+	}
+	return _c
+}
+
 // SetCredentialGeneration sets the "credential_generation" field.
 func (_c *MCPConnectionCreate) SetCredentialGeneration(v int64) *MCPConnectionCreate {
 	_c.mutation.SetCredentialGeneration(v)
@@ -313,6 +341,14 @@ func (_c *MCPConnectionCreate) defaults() error {
 		v := mcpconnection.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.RefreshTokenPresent(); !ok {
+		v := mcpconnection.DefaultRefreshTokenPresent
+		_c.mutation.SetRefreshTokenPresent(v)
+	}
+	if _, ok := _c.mutation.APIKeyPresent(); !ok {
+		v := mcpconnection.DefaultAPIKeyPresent
+		_c.mutation.SetAPIKeyPresent(v)
+	}
 	if _, ok := _c.mutation.CredentialGeneration(); !ok {
 		v := mcpconnection.DefaultCredentialGeneration
 		_c.mutation.SetCredentialGeneration(v)
@@ -344,6 +380,12 @@ func (_c *MCPConnectionCreate) check() error {
 	}
 	if _, ok := _c.mutation.Audience(); !ok {
 		return &ValidationError{Name: "audience", err: errors.New(`ent: missing required field "MCPConnection.audience"`)}
+	}
+	if _, ok := _c.mutation.RefreshTokenPresent(); !ok {
+		return &ValidationError{Name: "refresh_token_present", err: errors.New(`ent: missing required field "MCPConnection.refresh_token_present"`)}
+	}
+	if _, ok := _c.mutation.APIKeyPresent(); !ok {
+		return &ValidationError{Name: "api_key_present", err: errors.New(`ent: missing required field "MCPConnection.api_key_present"`)}
 	}
 	if _, ok := _c.mutation.CredentialGeneration(); !ok {
 		return &ValidationError{Name: "credential_generation", err: errors.New(`ent: missing required field "MCPConnection.credential_generation"`)}
@@ -431,6 +473,14 @@ func (_c *MCPConnectionCreate) createSpec() (*MCPConnection, *sqlgraph.CreateSpe
 	if value, ok := _c.mutation.APIKeyEncrypted(); ok {
 		_spec.SetField(mcpconnection.FieldAPIKeyEncrypted, field.TypeBytes, value)
 		_node.APIKeyEncrypted = value
+	}
+	if value, ok := _c.mutation.RefreshTokenPresent(); ok {
+		_spec.SetField(mcpconnection.FieldRefreshTokenPresent, field.TypeBool, value)
+		_node.RefreshTokenPresent = value
+	}
+	if value, ok := _c.mutation.APIKeyPresent(); ok {
+		_spec.SetField(mcpconnection.FieldAPIKeyPresent, field.TypeBool, value)
+		_node.APIKeyPresent = value
 	}
 	if value, ok := _c.mutation.CredentialGeneration(); ok {
 		_spec.SetField(mcpconnection.FieldCredentialGeneration, field.TypeInt64, value)
@@ -628,6 +678,30 @@ func (u *MCPConnectionUpsert) UpdateAPIKeyEncrypted() *MCPConnectionUpsert {
 // ClearAPIKeyEncrypted clears the value of the "api_key_encrypted" field.
 func (u *MCPConnectionUpsert) ClearAPIKeyEncrypted() *MCPConnectionUpsert {
 	u.SetNull(mcpconnection.FieldAPIKeyEncrypted)
+	return u
+}
+
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (u *MCPConnectionUpsert) SetRefreshTokenPresent(v bool) *MCPConnectionUpsert {
+	u.Set(mcpconnection.FieldRefreshTokenPresent, v)
+	return u
+}
+
+// UpdateRefreshTokenPresent sets the "refresh_token_present" field to the value that was provided on create.
+func (u *MCPConnectionUpsert) UpdateRefreshTokenPresent() *MCPConnectionUpsert {
+	u.SetExcluded(mcpconnection.FieldRefreshTokenPresent)
+	return u
+}
+
+// SetAPIKeyPresent sets the "api_key_present" field.
+func (u *MCPConnectionUpsert) SetAPIKeyPresent(v bool) *MCPConnectionUpsert {
+	u.Set(mcpconnection.FieldAPIKeyPresent, v)
+	return u
+}
+
+// UpdateAPIKeyPresent sets the "api_key_present" field to the value that was provided on create.
+func (u *MCPConnectionUpsert) UpdateAPIKeyPresent() *MCPConnectionUpsert {
+	u.SetExcluded(mcpconnection.FieldAPIKeyPresent)
 	return u
 }
 
@@ -961,6 +1035,34 @@ func (u *MCPConnectionUpsertOne) UpdateAPIKeyEncrypted() *MCPConnectionUpsertOne
 func (u *MCPConnectionUpsertOne) ClearAPIKeyEncrypted() *MCPConnectionUpsertOne {
 	return u.Update(func(s *MCPConnectionUpsert) {
 		s.ClearAPIKeyEncrypted()
+	})
+}
+
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (u *MCPConnectionUpsertOne) SetRefreshTokenPresent(v bool) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRefreshTokenPresent(v)
+	})
+}
+
+// UpdateRefreshTokenPresent sets the "refresh_token_present" field to the value that was provided on create.
+func (u *MCPConnectionUpsertOne) UpdateRefreshTokenPresent() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRefreshTokenPresent()
+	})
+}
+
+// SetAPIKeyPresent sets the "api_key_present" field.
+func (u *MCPConnectionUpsertOne) SetAPIKeyPresent(v bool) *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetAPIKeyPresent(v)
+	})
+}
+
+// UpdateAPIKeyPresent sets the "api_key_present" field to the value that was provided on create.
+func (u *MCPConnectionUpsertOne) UpdateAPIKeyPresent() *MCPConnectionUpsertOne {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateAPIKeyPresent()
 	})
 }
 
@@ -1490,6 +1592,34 @@ func (u *MCPConnectionUpsertBulk) UpdateAPIKeyEncrypted() *MCPConnectionUpsertBu
 func (u *MCPConnectionUpsertBulk) ClearAPIKeyEncrypted() *MCPConnectionUpsertBulk {
 	return u.Update(func(s *MCPConnectionUpsert) {
 		s.ClearAPIKeyEncrypted()
+	})
+}
+
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (u *MCPConnectionUpsertBulk) SetRefreshTokenPresent(v bool) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetRefreshTokenPresent(v)
+	})
+}
+
+// UpdateRefreshTokenPresent sets the "refresh_token_present" field to the value that was provided on create.
+func (u *MCPConnectionUpsertBulk) UpdateRefreshTokenPresent() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateRefreshTokenPresent()
+	})
+}
+
+// SetAPIKeyPresent sets the "api_key_present" field.
+func (u *MCPConnectionUpsertBulk) SetAPIKeyPresent(v bool) *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.SetAPIKeyPresent(v)
+	})
+}
+
+// UpdateAPIKeyPresent sets the "api_key_present" field to the value that was provided on create.
+func (u *MCPConnectionUpsertBulk) UpdateAPIKeyPresent() *MCPConnectionUpsertBulk {
+	return u.Update(func(s *MCPConnectionUpsert) {
+		s.UpdateAPIKeyPresent()
 	})
 }
 

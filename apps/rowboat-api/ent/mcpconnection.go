@@ -36,6 +36,10 @@ type MCPConnection struct {
 	RefreshTokenEncrypted []byte `json:"-"`
 	// APIKeyEncrypted holds the value of the "api_key_encrypted" field.
 	APIKeyEncrypted []byte `json:"-"`
+	// RefreshTokenPresent holds the value of the "refresh_token_present" field.
+	RefreshTokenPresent bool `json:"refresh_token_present,omitempty"`
+	// APIKeyPresent holds the value of the "api_key_present" field.
+	APIKeyPresent bool `json:"api_key_present,omitempty"`
 	// CredentialGeneration holds the value of the "credential_generation" field.
 	CredentialGeneration int64 `json:"credential_generation,omitempty"`
 	// Status holds the value of the "status" field.
@@ -92,7 +96,7 @@ func (*MCPConnection) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case mcpconnection.FieldScopes, mcpconnection.FieldRefreshTokenEncrypted, mcpconnection.FieldAPIKeyEncrypted:
 			values[i] = new([]byte)
-		case mcpconnection.FieldRevocationSucceeded:
+		case mcpconnection.FieldRefreshTokenPresent, mcpconnection.FieldAPIKeyPresent, mcpconnection.FieldRevocationSucceeded:
 			values[i] = new(sql.NullBool)
 		case mcpconnection.FieldCredentialGeneration:
 			values[i] = new(sql.NullInt64)
@@ -174,6 +178,18 @@ func (_m *MCPConnection) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field api_key_encrypted", values[i])
 			} else if value != nil {
 				_m.APIKeyEncrypted = *value
+			}
+		case mcpconnection.FieldRefreshTokenPresent:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field refresh_token_present", values[i])
+			} else if value.Valid {
+				_m.RefreshTokenPresent = value.Bool
+			}
+		case mcpconnection.FieldAPIKeyPresent:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field api_key_present", values[i])
+			} else if value.Valid {
+				_m.APIKeyPresent = value.Bool
 			}
 		case mcpconnection.FieldCredentialGeneration:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -304,6 +320,12 @@ func (_m *MCPConnection) String() string {
 	builder.WriteString("refresh_token_encrypted=<sensitive>")
 	builder.WriteString(", ")
 	builder.WriteString("api_key_encrypted=<sensitive>")
+	builder.WriteString(", ")
+	builder.WriteString("refresh_token_present=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RefreshTokenPresent))
+	builder.WriteString(", ")
+	builder.WriteString("api_key_present=")
+	builder.WriteString(fmt.Sprintf("%v", _m.APIKeyPresent))
 	builder.WriteString(", ")
 	builder.WriteString("credential_generation=")
 	builder.WriteString(fmt.Sprintf("%v", _m.CredentialGeneration))

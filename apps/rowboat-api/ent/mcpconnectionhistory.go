@@ -38,10 +38,10 @@ type MCPConnectionHistory struct {
 	OrganizationID string `json:"organization_id,omitempty"`
 	// Scopes holds the value of the "scopes" field.
 	Scopes []string `json:"scopes,omitempty"`
-	// RefreshTokenEncrypted holds the value of the "refresh_token_encrypted" field.
-	RefreshTokenEncrypted []byte `json:"-"`
-	// APIKeyEncrypted holds the value of the "api_key_encrypted" field.
-	APIKeyEncrypted []byte `json:"-"`
+	// RefreshTokenPresent holds the value of the "refresh_token_present" field.
+	RefreshTokenPresent bool `json:"refresh_token_present,omitempty"`
+	// APIKeyPresent holds the value of the "api_key_present" field.
+	APIKeyPresent bool `json:"api_key_present,omitempty"`
 	// CredentialGeneration holds the value of the "credential_generation" field.
 	CredentialGeneration int64 `json:"credential_generation,omitempty"`
 	// Status holds the value of the "status" field.
@@ -70,9 +70,9 @@ func (*MCPConnectionHistory) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case mcpconnectionhistory.FieldScopes, mcpconnectionhistory.FieldRefreshTokenEncrypted, mcpconnectionhistory.FieldAPIKeyEncrypted:
+		case mcpconnectionhistory.FieldScopes:
 			values[i] = new([]byte)
-		case mcpconnectionhistory.FieldRevocationSucceeded:
+		case mcpconnectionhistory.FieldRefreshTokenPresent, mcpconnectionhistory.FieldAPIKeyPresent, mcpconnectionhistory.FieldRevocationSucceeded:
 			values[i] = new(sql.NullBool)
 		case mcpconnectionhistory.FieldCredentialGeneration:
 			values[i] = new(sql.NullInt64)
@@ -159,17 +159,17 @@ func (_m *MCPConnectionHistory) assignValues(columns []string, values []any) err
 					return fmt.Errorf("unmarshal field scopes: %w", err)
 				}
 			}
-		case mcpconnectionhistory.FieldRefreshTokenEncrypted:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field refresh_token_encrypted", values[i])
-			} else if value != nil {
-				_m.RefreshTokenEncrypted = *value
+		case mcpconnectionhistory.FieldRefreshTokenPresent:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field refresh_token_present", values[i])
+			} else if value.Valid {
+				_m.RefreshTokenPresent = value.Bool
 			}
-		case mcpconnectionhistory.FieldAPIKeyEncrypted:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field api_key_encrypted", values[i])
-			} else if value != nil {
-				_m.APIKeyEncrypted = *value
+		case mcpconnectionhistory.FieldAPIKeyPresent:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field api_key_present", values[i])
+			} else if value.Valid {
+				_m.APIKeyPresent = value.Bool
 			}
 		case mcpconnectionhistory.FieldCredentialGeneration:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -294,9 +294,11 @@ func (_m *MCPConnectionHistory) String() string {
 	builder.WriteString("scopes=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Scopes))
 	builder.WriteString(", ")
-	builder.WriteString("refresh_token_encrypted=<sensitive>")
+	builder.WriteString("refresh_token_present=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RefreshTokenPresent))
 	builder.WriteString(", ")
-	builder.WriteString("api_key_encrypted=<sensitive>")
+	builder.WriteString("api_key_present=")
+	builder.WriteString(fmt.Sprintf("%v", _m.APIKeyPresent))
 	builder.WriteString(", ")
 	builder.WriteString("credential_generation=")
 	builder.WriteString(fmt.Sprintf("%v", _m.CredentialGeneration))

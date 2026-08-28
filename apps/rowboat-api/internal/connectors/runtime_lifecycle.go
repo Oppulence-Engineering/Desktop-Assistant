@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
@@ -136,8 +137,15 @@ func (s *LifecycleService) PersistRefresh(ctx context.Context, owner *ent.User, 
 		return nil, fmt.Errorf("persist rotated connector refresh token: %w", err)
 	}
 	if cleanupID != uuid.Nil {
-		if err := tx.ConnectorCredentialCleanupJob.DeleteOneID(cleanupID).Exec(auth.WithInternal(ctx)); err != nil {
+		deleted, err := tx.ConnectorCredentialCleanupJob.Delete().Where(
+			connectorcredentialcleanupjob.IDEQ(cleanupID),
+			connectorcredentialcleanupjob.StatusEQ("pending"),
+		).Exec(auth.WithInternal(ctx))
+		if err != nil {
 			return nil, fmt.Errorf("adopt rotated connector credential: %w", err)
+		}
+		if deleted != 1 {
+			return nil, errConnectorCredentialSuperseded
 		}
 	}
 	if err := persistAuditTransitionWithClient(ctx, tx.Client(), owner, auditRecord{

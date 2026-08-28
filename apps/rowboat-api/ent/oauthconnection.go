@@ -28,6 +28,10 @@ type OAuthConnection struct {
 	Provider string `json:"provider,omitempty"`
 	// RefreshTokenEncrypted holds the value of the "refresh_token_encrypted" field.
 	RefreshTokenEncrypted []byte `json:"-"`
+	// RefreshTokenPresent holds the value of the "refresh_token_present" field.
+	RefreshTokenPresent bool `json:"refresh_token_present,omitempty"`
+	// CredentialGeneration holds the value of the "credential_generation" field.
+	CredentialGeneration int64 `json:"credential_generation,omitempty"`
 	// Scopes holds the value of the "scopes" field.
 	Scopes []string `json:"scopes,omitempty"`
 	// ExternalAccountID holds the value of the "external_account_id" field.
@@ -68,6 +72,10 @@ func (*OAuthConnection) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case oauthconnection.FieldRefreshTokenEncrypted, oauthconnection.FieldScopes:
 			values[i] = new([]byte)
+		case oauthconnection.FieldRefreshTokenPresent:
+			values[i] = new(sql.NullBool)
+		case oauthconnection.FieldCredentialGeneration:
+			values[i] = new(sql.NullInt64)
 		case oauthconnection.FieldProvider, oauthconnection.FieldExternalAccountID:
 			values[i] = new(sql.NullString)
 		case oauthconnection.FieldCreatedAt, oauthconnection.FieldUpdatedAt:
@@ -120,6 +128,18 @@ func (_m *OAuthConnection) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field refresh_token_encrypted", values[i])
 			} else if value != nil {
 				_m.RefreshTokenEncrypted = *value
+			}
+		case oauthconnection.FieldRefreshTokenPresent:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field refresh_token_present", values[i])
+			} else if value.Valid {
+				_m.RefreshTokenPresent = value.Bool
+			}
+		case oauthconnection.FieldCredentialGeneration:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field credential_generation", values[i])
+			} else if value.Valid {
+				_m.CredentialGeneration = value.Int64
 			}
 		case oauthconnection.FieldScopes:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -193,6 +213,12 @@ func (_m *OAuthConnection) String() string {
 	builder.WriteString(_m.Provider)
 	builder.WriteString(", ")
 	builder.WriteString("refresh_token_encrypted=<sensitive>")
+	builder.WriteString(", ")
+	builder.WriteString("refresh_token_present=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RefreshTokenPresent))
+	builder.WriteString(", ")
+	builder.WriteString("credential_generation=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CredentialGeneration))
 	builder.WriteString(", ")
 	builder.WriteString("scopes=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Scopes))

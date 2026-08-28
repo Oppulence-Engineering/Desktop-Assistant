@@ -205,8 +205,8 @@ func (_m *MCPConnectionHistory) Restore(ctx context.Context) (*MCPConnection, er
 		SetConnector(_m.Connector).
 		SetAudience(_m.Audience).
 		SetScopes(_m.Scopes).
-		SetRefreshTokenEncrypted(_m.RefreshTokenEncrypted).
-		SetAPIKeyEncrypted(_m.APIKeyEncrypted).
+		SetRefreshTokenPresent(_m.RefreshTokenPresent).
+		SetAPIKeyPresent(_m.APIKeyPresent).
 		SetCredentialGeneration(_m.CredentialGeneration).
 		SetStatus(_m.Status).
 		SetConnectedAt(_m.ConnectedAt).
@@ -272,7 +272,8 @@ func (_m *OAuthConnectionHistory) Restore(ctx context.Context) (*OAuthConnection
 		UpdateOneID(_m.Ref).
 		SetUpdatedAt(_m.UpdatedAt).
 		SetProvider(_m.Provider).
-		SetRefreshTokenEncrypted(_m.RefreshTokenEncrypted).
+		SetRefreshTokenPresent(_m.RefreshTokenPresent).
+		SetCredentialGeneration(_m.CredentialGeneration).
 		SetScopes(_m.Scopes).
 		SetExternalAccountID(_m.ExternalAccountID).
 		Save(ctx)

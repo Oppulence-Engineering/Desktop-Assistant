@@ -34,6 +34,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
@@ -126,6 +127,7 @@ const (
 	TypeCommitmentEvent                   = "CommitmentEvent"
 	TypeConnectorAuditEvent               = "ConnectorAuditEvent"
 	TypeConnectorCredentialCleanupJob     = "ConnectorCredentialCleanupJob"
+	TypeConnectorCredentialRecovery       = "ConnectorCredentialRecovery"
 	TypeConnectorRevocationJob            = "ConnectorRevocationJob"
 	TypeConversationIntelligenceArtifact  = "ConversationIntelligenceArtifact"
 	TypeCreditLedger                      = "CreditLedger"
@@ -32724,6 +32726,1028 @@ func (m *ConnectorCredentialCleanupJobMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown ConnectorCredentialCleanupJob edge %s", name)
 }
 
+// ConnectorCredentialRecoveryMutation represents an operation that mutates the ConnectorCredentialRecovery nodes in the graph.
+type ConnectorCredentialRecoveryMutation struct {
+	config
+	op                      Op
+	typ                     string
+	id                      *uuid.UUID
+	created_at              *time.Time
+	updated_at              *time.Time
+	connector               *string
+	owner_kind              *string
+	owner_id                *string
+	refresh_token_encrypted *[]byte
+	status                  *string
+	attempts                *int
+	addattempts             *int
+	next_attempt_at         *time.Time
+	claim_id                *uuid.UUID
+	claimed_until           *time.Time
+	last_error_code         *string
+	clearedFields           map[string]struct{}
+	done                    bool
+	oldValue                func(context.Context) (*ConnectorCredentialRecovery, error)
+	predicates              []predicate.ConnectorCredentialRecovery
+}
+
+var _ ent.Mutation = (*ConnectorCredentialRecoveryMutation)(nil)
+
+// connectorcredentialrecoveryOption allows management of the mutation configuration using functional options.
+type connectorcredentialrecoveryOption func(*ConnectorCredentialRecoveryMutation)
+
+// newConnectorCredentialRecoveryMutation creates new mutation for the ConnectorCredentialRecovery entity.
+func newConnectorCredentialRecoveryMutation(c config, op Op, opts ...connectorcredentialrecoveryOption) *ConnectorCredentialRecoveryMutation {
+	m := &ConnectorCredentialRecoveryMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeConnectorCredentialRecovery,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withConnectorCredentialRecoveryID sets the ID field of the mutation.
+func withConnectorCredentialRecoveryID(id uuid.UUID) connectorcredentialrecoveryOption {
+	return func(m *ConnectorCredentialRecoveryMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ConnectorCredentialRecovery
+		)
+		m.oldValue = func(ctx context.Context) (*ConnectorCredentialRecovery, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ConnectorCredentialRecovery.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withConnectorCredentialRecovery sets the old ConnectorCredentialRecovery of the mutation.
+func withConnectorCredentialRecovery(node *ConnectorCredentialRecovery) connectorcredentialrecoveryOption {
+	return func(m *ConnectorCredentialRecoveryMutation) {
+		m.oldValue = func(context.Context) (*ConnectorCredentialRecovery, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ConnectorCredentialRecoveryMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ConnectorCredentialRecoveryMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ConnectorCredentialRecovery entities.
+func (m *ConnectorCredentialRecoveryMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ConnectorCredentialRecoveryMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ConnectorCredentialRecoveryMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ConnectorCredentialRecovery.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ConnectorCredentialRecoveryMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ConnectorCredentialRecoveryMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ConnectorCredentialRecovery entity.
+// If the ConnectorCredentialRecovery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialRecoveryMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ConnectorCredentialRecoveryMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ConnectorCredentialRecoveryMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ConnectorCredentialRecoveryMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ConnectorCredentialRecovery entity.
+// If the ConnectorCredentialRecovery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialRecoveryMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ConnectorCredentialRecoveryMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetConnector sets the "connector" field.
+func (m *ConnectorCredentialRecoveryMutation) SetConnector(s string) {
+	m.connector = &s
+}
+
+// Connector returns the value of the "connector" field in the mutation.
+func (m *ConnectorCredentialRecoveryMutation) Connector() (r string, exists bool) {
+	v := m.connector
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConnector returns the old "connector" field's value of the ConnectorCredentialRecovery entity.
+// If the ConnectorCredentialRecovery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialRecoveryMutation) OldConnector(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConnector is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConnector requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConnector: %w", err)
+	}
+	return oldValue.Connector, nil
+}
+
+// ResetConnector resets all changes to the "connector" field.
+func (m *ConnectorCredentialRecoveryMutation) ResetConnector() {
+	m.connector = nil
+}
+
+// SetOwnerKind sets the "owner_kind" field.
+func (m *ConnectorCredentialRecoveryMutation) SetOwnerKind(s string) {
+	m.owner_kind = &s
+}
+
+// OwnerKind returns the value of the "owner_kind" field in the mutation.
+func (m *ConnectorCredentialRecoveryMutation) OwnerKind() (r string, exists bool) {
+	v := m.owner_kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOwnerKind returns the old "owner_kind" field's value of the ConnectorCredentialRecovery entity.
+// If the ConnectorCredentialRecovery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialRecoveryMutation) OldOwnerKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOwnerKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOwnerKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOwnerKind: %w", err)
+	}
+	return oldValue.OwnerKind, nil
+}
+
+// ResetOwnerKind resets all changes to the "owner_kind" field.
+func (m *ConnectorCredentialRecoveryMutation) ResetOwnerKind() {
+	m.owner_kind = nil
+}
+
+// SetOwnerID sets the "owner_id" field.
+func (m *ConnectorCredentialRecoveryMutation) SetOwnerID(s string) {
+	m.owner_id = &s
+}
+
+// OwnerID returns the value of the "owner_id" field in the mutation.
+func (m *ConnectorCredentialRecoveryMutation) OwnerID() (r string, exists bool) {
+	v := m.owner_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOwnerID returns the old "owner_id" field's value of the ConnectorCredentialRecovery entity.
+// If the ConnectorCredentialRecovery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialRecoveryMutation) OldOwnerID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOwnerID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOwnerID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOwnerID: %w", err)
+	}
+	return oldValue.OwnerID, nil
+}
+
+// ResetOwnerID resets all changes to the "owner_id" field.
+func (m *ConnectorCredentialRecoveryMutation) ResetOwnerID() {
+	m.owner_id = nil
+}
+
+// SetRefreshTokenEncrypted sets the "refresh_token_encrypted" field.
+func (m *ConnectorCredentialRecoveryMutation) SetRefreshTokenEncrypted(b []byte) {
+	m.refresh_token_encrypted = &b
+}
+
+// RefreshTokenEncrypted returns the value of the "refresh_token_encrypted" field in the mutation.
+func (m *ConnectorCredentialRecoveryMutation) RefreshTokenEncrypted() (r []byte, exists bool) {
+	v := m.refresh_token_encrypted
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRefreshTokenEncrypted returns the old "refresh_token_encrypted" field's value of the ConnectorCredentialRecovery entity.
+// If the ConnectorCredentialRecovery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialRecoveryMutation) OldRefreshTokenEncrypted(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRefreshTokenEncrypted is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRefreshTokenEncrypted requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRefreshTokenEncrypted: %w", err)
+	}
+	return oldValue.RefreshTokenEncrypted, nil
+}
+
+// ResetRefreshTokenEncrypted resets all changes to the "refresh_token_encrypted" field.
+func (m *ConnectorCredentialRecoveryMutation) ResetRefreshTokenEncrypted() {
+	m.refresh_token_encrypted = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *ConnectorCredentialRecoveryMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *ConnectorCredentialRecoveryMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the ConnectorCredentialRecovery entity.
+// If the ConnectorCredentialRecovery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialRecoveryMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *ConnectorCredentialRecoveryMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetAttempts sets the "attempts" field.
+func (m *ConnectorCredentialRecoveryMutation) SetAttempts(i int) {
+	m.attempts = &i
+	m.addattempts = nil
+}
+
+// Attempts returns the value of the "attempts" field in the mutation.
+func (m *ConnectorCredentialRecoveryMutation) Attempts() (r int, exists bool) {
+	v := m.attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAttempts returns the old "attempts" field's value of the ConnectorCredentialRecovery entity.
+// If the ConnectorCredentialRecovery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialRecoveryMutation) OldAttempts(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAttempts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAttempts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAttempts: %w", err)
+	}
+	return oldValue.Attempts, nil
+}
+
+// AddAttempts adds i to the "attempts" field.
+func (m *ConnectorCredentialRecoveryMutation) AddAttempts(i int) {
+	if m.addattempts != nil {
+		*m.addattempts += i
+	} else {
+		m.addattempts = &i
+	}
+}
+
+// AddedAttempts returns the value that was added to the "attempts" field in this mutation.
+func (m *ConnectorCredentialRecoveryMutation) AddedAttempts() (r int, exists bool) {
+	v := m.addattempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAttempts resets all changes to the "attempts" field.
+func (m *ConnectorCredentialRecoveryMutation) ResetAttempts() {
+	m.attempts = nil
+	m.addattempts = nil
+}
+
+// SetNextAttemptAt sets the "next_attempt_at" field.
+func (m *ConnectorCredentialRecoveryMutation) SetNextAttemptAt(t time.Time) {
+	m.next_attempt_at = &t
+}
+
+// NextAttemptAt returns the value of the "next_attempt_at" field in the mutation.
+func (m *ConnectorCredentialRecoveryMutation) NextAttemptAt() (r time.Time, exists bool) {
+	v := m.next_attempt_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNextAttemptAt returns the old "next_attempt_at" field's value of the ConnectorCredentialRecovery entity.
+// If the ConnectorCredentialRecovery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialRecoveryMutation) OldNextAttemptAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNextAttemptAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNextAttemptAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNextAttemptAt: %w", err)
+	}
+	return oldValue.NextAttemptAt, nil
+}
+
+// ResetNextAttemptAt resets all changes to the "next_attempt_at" field.
+func (m *ConnectorCredentialRecoveryMutation) ResetNextAttemptAt() {
+	m.next_attempt_at = nil
+}
+
+// SetClaimID sets the "claim_id" field.
+func (m *ConnectorCredentialRecoveryMutation) SetClaimID(u uuid.UUID) {
+	m.claim_id = &u
+}
+
+// ClaimID returns the value of the "claim_id" field in the mutation.
+func (m *ConnectorCredentialRecoveryMutation) ClaimID() (r uuid.UUID, exists bool) {
+	v := m.claim_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldClaimID returns the old "claim_id" field's value of the ConnectorCredentialRecovery entity.
+// If the ConnectorCredentialRecovery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialRecoveryMutation) OldClaimID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldClaimID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldClaimID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClaimID: %w", err)
+	}
+	return oldValue.ClaimID, nil
+}
+
+// ClearClaimID clears the value of the "claim_id" field.
+func (m *ConnectorCredentialRecoveryMutation) ClearClaimID() {
+	m.claim_id = nil
+	m.clearedFields[connectorcredentialrecovery.FieldClaimID] = struct{}{}
+}
+
+// ClaimIDCleared returns if the "claim_id" field was cleared in this mutation.
+func (m *ConnectorCredentialRecoveryMutation) ClaimIDCleared() bool {
+	_, ok := m.clearedFields[connectorcredentialrecovery.FieldClaimID]
+	return ok
+}
+
+// ResetClaimID resets all changes to the "claim_id" field.
+func (m *ConnectorCredentialRecoveryMutation) ResetClaimID() {
+	m.claim_id = nil
+	delete(m.clearedFields, connectorcredentialrecovery.FieldClaimID)
+}
+
+// SetClaimedUntil sets the "claimed_until" field.
+func (m *ConnectorCredentialRecoveryMutation) SetClaimedUntil(t time.Time) {
+	m.claimed_until = &t
+}
+
+// ClaimedUntil returns the value of the "claimed_until" field in the mutation.
+func (m *ConnectorCredentialRecoveryMutation) ClaimedUntil() (r time.Time, exists bool) {
+	v := m.claimed_until
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldClaimedUntil returns the old "claimed_until" field's value of the ConnectorCredentialRecovery entity.
+// If the ConnectorCredentialRecovery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialRecoveryMutation) OldClaimedUntil(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldClaimedUntil is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldClaimedUntil requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClaimedUntil: %w", err)
+	}
+	return oldValue.ClaimedUntil, nil
+}
+
+// ClearClaimedUntil clears the value of the "claimed_until" field.
+func (m *ConnectorCredentialRecoveryMutation) ClearClaimedUntil() {
+	m.claimed_until = nil
+	m.clearedFields[connectorcredentialrecovery.FieldClaimedUntil] = struct{}{}
+}
+
+// ClaimedUntilCleared returns if the "claimed_until" field was cleared in this mutation.
+func (m *ConnectorCredentialRecoveryMutation) ClaimedUntilCleared() bool {
+	_, ok := m.clearedFields[connectorcredentialrecovery.FieldClaimedUntil]
+	return ok
+}
+
+// ResetClaimedUntil resets all changes to the "claimed_until" field.
+func (m *ConnectorCredentialRecoveryMutation) ResetClaimedUntil() {
+	m.claimed_until = nil
+	delete(m.clearedFields, connectorcredentialrecovery.FieldClaimedUntil)
+}
+
+// SetLastErrorCode sets the "last_error_code" field.
+func (m *ConnectorCredentialRecoveryMutation) SetLastErrorCode(s string) {
+	m.last_error_code = &s
+}
+
+// LastErrorCode returns the value of the "last_error_code" field in the mutation.
+func (m *ConnectorCredentialRecoveryMutation) LastErrorCode() (r string, exists bool) {
+	v := m.last_error_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastErrorCode returns the old "last_error_code" field's value of the ConnectorCredentialRecovery entity.
+// If the ConnectorCredentialRecovery object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConnectorCredentialRecoveryMutation) OldLastErrorCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastErrorCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastErrorCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastErrorCode: %w", err)
+	}
+	return oldValue.LastErrorCode, nil
+}
+
+// ClearLastErrorCode clears the value of the "last_error_code" field.
+func (m *ConnectorCredentialRecoveryMutation) ClearLastErrorCode() {
+	m.last_error_code = nil
+	m.clearedFields[connectorcredentialrecovery.FieldLastErrorCode] = struct{}{}
+}
+
+// LastErrorCodeCleared returns if the "last_error_code" field was cleared in this mutation.
+func (m *ConnectorCredentialRecoveryMutation) LastErrorCodeCleared() bool {
+	_, ok := m.clearedFields[connectorcredentialrecovery.FieldLastErrorCode]
+	return ok
+}
+
+// ResetLastErrorCode resets all changes to the "last_error_code" field.
+func (m *ConnectorCredentialRecoveryMutation) ResetLastErrorCode() {
+	m.last_error_code = nil
+	delete(m.clearedFields, connectorcredentialrecovery.FieldLastErrorCode)
+}
+
+// Where appends a list predicates to the ConnectorCredentialRecoveryMutation builder.
+func (m *ConnectorCredentialRecoveryMutation) Where(ps ...predicate.ConnectorCredentialRecovery) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ConnectorCredentialRecoveryMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ConnectorCredentialRecoveryMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ConnectorCredentialRecovery, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ConnectorCredentialRecoveryMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ConnectorCredentialRecoveryMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ConnectorCredentialRecovery).
+func (m *ConnectorCredentialRecoveryMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ConnectorCredentialRecoveryMutation) Fields() []string {
+	fields := make([]string, 0, 12)
+	if m.created_at != nil {
+		fields = append(fields, connectorcredentialrecovery.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, connectorcredentialrecovery.FieldUpdatedAt)
+	}
+	if m.connector != nil {
+		fields = append(fields, connectorcredentialrecovery.FieldConnector)
+	}
+	if m.owner_kind != nil {
+		fields = append(fields, connectorcredentialrecovery.FieldOwnerKind)
+	}
+	if m.owner_id != nil {
+		fields = append(fields, connectorcredentialrecovery.FieldOwnerID)
+	}
+	if m.refresh_token_encrypted != nil {
+		fields = append(fields, connectorcredentialrecovery.FieldRefreshTokenEncrypted)
+	}
+	if m.status != nil {
+		fields = append(fields, connectorcredentialrecovery.FieldStatus)
+	}
+	if m.attempts != nil {
+		fields = append(fields, connectorcredentialrecovery.FieldAttempts)
+	}
+	if m.next_attempt_at != nil {
+		fields = append(fields, connectorcredentialrecovery.FieldNextAttemptAt)
+	}
+	if m.claim_id != nil {
+		fields = append(fields, connectorcredentialrecovery.FieldClaimID)
+	}
+	if m.claimed_until != nil {
+		fields = append(fields, connectorcredentialrecovery.FieldClaimedUntil)
+	}
+	if m.last_error_code != nil {
+		fields = append(fields, connectorcredentialrecovery.FieldLastErrorCode)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ConnectorCredentialRecoveryMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case connectorcredentialrecovery.FieldCreatedAt:
+		return m.CreatedAt()
+	case connectorcredentialrecovery.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case connectorcredentialrecovery.FieldConnector:
+		return m.Connector()
+	case connectorcredentialrecovery.FieldOwnerKind:
+		return m.OwnerKind()
+	case connectorcredentialrecovery.FieldOwnerID:
+		return m.OwnerID()
+	case connectorcredentialrecovery.FieldRefreshTokenEncrypted:
+		return m.RefreshTokenEncrypted()
+	case connectorcredentialrecovery.FieldStatus:
+		return m.Status()
+	case connectorcredentialrecovery.FieldAttempts:
+		return m.Attempts()
+	case connectorcredentialrecovery.FieldNextAttemptAt:
+		return m.NextAttemptAt()
+	case connectorcredentialrecovery.FieldClaimID:
+		return m.ClaimID()
+	case connectorcredentialrecovery.FieldClaimedUntil:
+		return m.ClaimedUntil()
+	case connectorcredentialrecovery.FieldLastErrorCode:
+		return m.LastErrorCode()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ConnectorCredentialRecoveryMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case connectorcredentialrecovery.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case connectorcredentialrecovery.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case connectorcredentialrecovery.FieldConnector:
+		return m.OldConnector(ctx)
+	case connectorcredentialrecovery.FieldOwnerKind:
+		return m.OldOwnerKind(ctx)
+	case connectorcredentialrecovery.FieldOwnerID:
+		return m.OldOwnerID(ctx)
+	case connectorcredentialrecovery.FieldRefreshTokenEncrypted:
+		return m.OldRefreshTokenEncrypted(ctx)
+	case connectorcredentialrecovery.FieldStatus:
+		return m.OldStatus(ctx)
+	case connectorcredentialrecovery.FieldAttempts:
+		return m.OldAttempts(ctx)
+	case connectorcredentialrecovery.FieldNextAttemptAt:
+		return m.OldNextAttemptAt(ctx)
+	case connectorcredentialrecovery.FieldClaimID:
+		return m.OldClaimID(ctx)
+	case connectorcredentialrecovery.FieldClaimedUntil:
+		return m.OldClaimedUntil(ctx)
+	case connectorcredentialrecovery.FieldLastErrorCode:
+		return m.OldLastErrorCode(ctx)
+	}
+	return nil, fmt.Errorf("unknown ConnectorCredentialRecovery field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConnectorCredentialRecoveryMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case connectorcredentialrecovery.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case connectorcredentialrecovery.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case connectorcredentialrecovery.FieldConnector:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConnector(v)
+		return nil
+	case connectorcredentialrecovery.FieldOwnerKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOwnerKind(v)
+		return nil
+	case connectorcredentialrecovery.FieldOwnerID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOwnerID(v)
+		return nil
+	case connectorcredentialrecovery.FieldRefreshTokenEncrypted:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRefreshTokenEncrypted(v)
+		return nil
+	case connectorcredentialrecovery.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case connectorcredentialrecovery.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAttempts(v)
+		return nil
+	case connectorcredentialrecovery.FieldNextAttemptAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNextAttemptAt(v)
+		return nil
+	case connectorcredentialrecovery.FieldClaimID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetClaimID(v)
+		return nil
+	case connectorcredentialrecovery.FieldClaimedUntil:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetClaimedUntil(v)
+		return nil
+	case connectorcredentialrecovery.FieldLastErrorCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastErrorCode(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ConnectorCredentialRecovery field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ConnectorCredentialRecoveryMutation) AddedFields() []string {
+	var fields []string
+	if m.addattempts != nil {
+		fields = append(fields, connectorcredentialrecovery.FieldAttempts)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ConnectorCredentialRecoveryMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case connectorcredentialrecovery.FieldAttempts:
+		return m.AddedAttempts()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConnectorCredentialRecoveryMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case connectorcredentialrecovery.FieldAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAttempts(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ConnectorCredentialRecovery numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ConnectorCredentialRecoveryMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(connectorcredentialrecovery.FieldClaimID) {
+		fields = append(fields, connectorcredentialrecovery.FieldClaimID)
+	}
+	if m.FieldCleared(connectorcredentialrecovery.FieldClaimedUntil) {
+		fields = append(fields, connectorcredentialrecovery.FieldClaimedUntil)
+	}
+	if m.FieldCleared(connectorcredentialrecovery.FieldLastErrorCode) {
+		fields = append(fields, connectorcredentialrecovery.FieldLastErrorCode)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ConnectorCredentialRecoveryMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ConnectorCredentialRecoveryMutation) ClearField(name string) error {
+	switch name {
+	case connectorcredentialrecovery.FieldClaimID:
+		m.ClearClaimID()
+		return nil
+	case connectorcredentialrecovery.FieldClaimedUntil:
+		m.ClearClaimedUntil()
+		return nil
+	case connectorcredentialrecovery.FieldLastErrorCode:
+		m.ClearLastErrorCode()
+		return nil
+	}
+	return fmt.Errorf("unknown ConnectorCredentialRecovery nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ConnectorCredentialRecoveryMutation) ResetField(name string) error {
+	switch name {
+	case connectorcredentialrecovery.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case connectorcredentialrecovery.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case connectorcredentialrecovery.FieldConnector:
+		m.ResetConnector()
+		return nil
+	case connectorcredentialrecovery.FieldOwnerKind:
+		m.ResetOwnerKind()
+		return nil
+	case connectorcredentialrecovery.FieldOwnerID:
+		m.ResetOwnerID()
+		return nil
+	case connectorcredentialrecovery.FieldRefreshTokenEncrypted:
+		m.ResetRefreshTokenEncrypted()
+		return nil
+	case connectorcredentialrecovery.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case connectorcredentialrecovery.FieldAttempts:
+		m.ResetAttempts()
+		return nil
+	case connectorcredentialrecovery.FieldNextAttemptAt:
+		m.ResetNextAttemptAt()
+		return nil
+	case connectorcredentialrecovery.FieldClaimID:
+		m.ResetClaimID()
+		return nil
+	case connectorcredentialrecovery.FieldClaimedUntil:
+		m.ResetClaimedUntil()
+		return nil
+	case connectorcredentialrecovery.FieldLastErrorCode:
+		m.ResetLastErrorCode()
+		return nil
+	}
+	return fmt.Errorf("unknown ConnectorCredentialRecovery field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ConnectorCredentialRecoveryMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ConnectorCredentialRecoveryMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ConnectorCredentialRecoveryMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ConnectorCredentialRecoveryMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ConnectorCredentialRecoveryMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ConnectorCredentialRecoveryMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ConnectorCredentialRecoveryMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown ConnectorCredentialRecovery unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ConnectorCredentialRecoveryMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown ConnectorCredentialRecovery edge %s", name)
+}
+
 // ConnectorRevocationJobMutation represents an operation that mutates the ConnectorRevocationJob nodes in the graph.
 type ConnectorRevocationJobMutation struct {
 	config
@@ -41495,6 +42519,8 @@ type MCPConnectionMutation struct {
 	appendscopes             []string
 	refresh_token_encrypted  *[]byte
 	api_key_encrypted        *[]byte
+	refresh_token_present    *bool
+	api_key_present          *bool
 	credential_generation    *int64
 	addcredential_generation *int64
 	status                   *string
@@ -41972,6 +42998,78 @@ func (m *MCPConnectionMutation) APIKeyEncryptedCleared() bool {
 func (m *MCPConnectionMutation) ResetAPIKeyEncrypted() {
 	m.api_key_encrypted = nil
 	delete(m.clearedFields, mcpconnection.FieldAPIKeyEncrypted)
+}
+
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (m *MCPConnectionMutation) SetRefreshTokenPresent(b bool) {
+	m.refresh_token_present = &b
+}
+
+// RefreshTokenPresent returns the value of the "refresh_token_present" field in the mutation.
+func (m *MCPConnectionMutation) RefreshTokenPresent() (r bool, exists bool) {
+	v := m.refresh_token_present
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRefreshTokenPresent returns the old "refresh_token_present" field's value of the MCPConnection entity.
+// If the MCPConnection object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPConnectionMutation) OldRefreshTokenPresent(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRefreshTokenPresent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRefreshTokenPresent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRefreshTokenPresent: %w", err)
+	}
+	return oldValue.RefreshTokenPresent, nil
+}
+
+// ResetRefreshTokenPresent resets all changes to the "refresh_token_present" field.
+func (m *MCPConnectionMutation) ResetRefreshTokenPresent() {
+	m.refresh_token_present = nil
+}
+
+// SetAPIKeyPresent sets the "api_key_present" field.
+func (m *MCPConnectionMutation) SetAPIKeyPresent(b bool) {
+	m.api_key_present = &b
+}
+
+// APIKeyPresent returns the value of the "api_key_present" field in the mutation.
+func (m *MCPConnectionMutation) APIKeyPresent() (r bool, exists bool) {
+	v := m.api_key_present
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAPIKeyPresent returns the old "api_key_present" field's value of the MCPConnection entity.
+// If the MCPConnection object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MCPConnectionMutation) OldAPIKeyPresent(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAPIKeyPresent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAPIKeyPresent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAPIKeyPresent: %w", err)
+	}
+	return oldValue.APIKeyPresent, nil
+}
+
+// ResetAPIKeyPresent resets all changes to the "api_key_present" field.
+func (m *MCPConnectionMutation) ResetAPIKeyPresent() {
+	m.api_key_present = nil
 }
 
 // SetCredentialGeneration sets the "credential_generation" field.
@@ -42531,7 +43629,7 @@ func (m *MCPConnectionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MCPConnectionMutation) Fields() []string {
-	fields := make([]string, 0, 18)
+	fields := make([]string, 0, 20)
 	if m.created_at != nil {
 		fields = append(fields, mcpconnection.FieldCreatedAt)
 	}
@@ -42555,6 +43653,12 @@ func (m *MCPConnectionMutation) Fields() []string {
 	}
 	if m.api_key_encrypted != nil {
 		fields = append(fields, mcpconnection.FieldAPIKeyEncrypted)
+	}
+	if m.refresh_token_present != nil {
+		fields = append(fields, mcpconnection.FieldRefreshTokenPresent)
+	}
+	if m.api_key_present != nil {
+		fields = append(fields, mcpconnection.FieldAPIKeyPresent)
 	}
 	if m.credential_generation != nil {
 		fields = append(fields, mcpconnection.FieldCredentialGeneration)
@@ -42610,6 +43714,10 @@ func (m *MCPConnectionMutation) Field(name string) (ent.Value, bool) {
 		return m.RefreshTokenEncrypted()
 	case mcpconnection.FieldAPIKeyEncrypted:
 		return m.APIKeyEncrypted()
+	case mcpconnection.FieldRefreshTokenPresent:
+		return m.RefreshTokenPresent()
+	case mcpconnection.FieldAPIKeyPresent:
+		return m.APIKeyPresent()
 	case mcpconnection.FieldCredentialGeneration:
 		return m.CredentialGeneration()
 	case mcpconnection.FieldStatus:
@@ -42655,6 +43763,10 @@ func (m *MCPConnectionMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldRefreshTokenEncrypted(ctx)
 	case mcpconnection.FieldAPIKeyEncrypted:
 		return m.OldAPIKeyEncrypted(ctx)
+	case mcpconnection.FieldRefreshTokenPresent:
+		return m.OldRefreshTokenPresent(ctx)
+	case mcpconnection.FieldAPIKeyPresent:
+		return m.OldAPIKeyPresent(ctx)
 	case mcpconnection.FieldCredentialGeneration:
 		return m.OldCredentialGeneration(ctx)
 	case mcpconnection.FieldStatus:
@@ -42739,6 +43851,20 @@ func (m *MCPConnectionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetAPIKeyEncrypted(v)
+		return nil
+	case mcpconnection.FieldRefreshTokenPresent:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRefreshTokenPresent(v)
+		return nil
+	case mcpconnection.FieldAPIKeyPresent:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAPIKeyPresent(v)
 		return nil
 	case mcpconnection.FieldCredentialGeneration:
 		v, ok := value.(int64)
@@ -42973,6 +44099,12 @@ func (m *MCPConnectionMutation) ResetField(name string) error {
 	case mcpconnection.FieldAPIKeyEncrypted:
 		m.ResetAPIKeyEncrypted()
 		return nil
+	case mcpconnection.FieldRefreshTokenPresent:
+		m.ResetRefreshTokenPresent()
+		return nil
+	case mcpconnection.FieldAPIKeyPresent:
+		m.ResetAPIKeyPresent()
+		return nil
 	case mcpconnection.FieldCredentialGeneration:
 		m.ResetCredentialGeneration()
 		return nil
@@ -43097,8 +44229,8 @@ type MCPConnectionHistoryMutation struct {
 	organization_id          *string
 	scopes                   *[]string
 	appendscopes             []string
-	refresh_token_encrypted  *[]byte
-	api_key_encrypted        *[]byte
+	refresh_token_present    *bool
+	api_key_present          *bool
 	credential_generation    *int64
 	addcredential_generation *int64
 	status                   *string
@@ -43599,102 +44731,76 @@ func (m *MCPConnectionHistoryMutation) ResetScopes() {
 	delete(m.clearedFields, mcpconnectionhistory.FieldScopes)
 }
 
-// SetRefreshTokenEncrypted sets the "refresh_token_encrypted" field.
-func (m *MCPConnectionHistoryMutation) SetRefreshTokenEncrypted(b []byte) {
-	m.refresh_token_encrypted = &b
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (m *MCPConnectionHistoryMutation) SetRefreshTokenPresent(b bool) {
+	m.refresh_token_present = &b
 }
 
-// RefreshTokenEncrypted returns the value of the "refresh_token_encrypted" field in the mutation.
-func (m *MCPConnectionHistoryMutation) RefreshTokenEncrypted() (r []byte, exists bool) {
-	v := m.refresh_token_encrypted
+// RefreshTokenPresent returns the value of the "refresh_token_present" field in the mutation.
+func (m *MCPConnectionHistoryMutation) RefreshTokenPresent() (r bool, exists bool) {
+	v := m.refresh_token_present
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldRefreshTokenEncrypted returns the old "refresh_token_encrypted" field's value of the MCPConnectionHistory entity.
+// OldRefreshTokenPresent returns the old "refresh_token_present" field's value of the MCPConnectionHistory entity.
 // If the MCPConnectionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MCPConnectionHistoryMutation) OldRefreshTokenEncrypted(ctx context.Context) (v []byte, err error) {
+func (m *MCPConnectionHistoryMutation) OldRefreshTokenPresent(ctx context.Context) (v bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRefreshTokenEncrypted is only allowed on UpdateOne operations")
+		return v, errors.New("OldRefreshTokenPresent is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRefreshTokenEncrypted requires an ID field in the mutation")
+		return v, errors.New("OldRefreshTokenPresent requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRefreshTokenEncrypted: %w", err)
+		return v, fmt.Errorf("querying old value for OldRefreshTokenPresent: %w", err)
 	}
-	return oldValue.RefreshTokenEncrypted, nil
+	return oldValue.RefreshTokenPresent, nil
 }
 
-// ClearRefreshTokenEncrypted clears the value of the "refresh_token_encrypted" field.
-func (m *MCPConnectionHistoryMutation) ClearRefreshTokenEncrypted() {
-	m.refresh_token_encrypted = nil
-	m.clearedFields[mcpconnectionhistory.FieldRefreshTokenEncrypted] = struct{}{}
+// ResetRefreshTokenPresent resets all changes to the "refresh_token_present" field.
+func (m *MCPConnectionHistoryMutation) ResetRefreshTokenPresent() {
+	m.refresh_token_present = nil
 }
 
-// RefreshTokenEncryptedCleared returns if the "refresh_token_encrypted" field was cleared in this mutation.
-func (m *MCPConnectionHistoryMutation) RefreshTokenEncryptedCleared() bool {
-	_, ok := m.clearedFields[mcpconnectionhistory.FieldRefreshTokenEncrypted]
-	return ok
+// SetAPIKeyPresent sets the "api_key_present" field.
+func (m *MCPConnectionHistoryMutation) SetAPIKeyPresent(b bool) {
+	m.api_key_present = &b
 }
 
-// ResetRefreshTokenEncrypted resets all changes to the "refresh_token_encrypted" field.
-func (m *MCPConnectionHistoryMutation) ResetRefreshTokenEncrypted() {
-	m.refresh_token_encrypted = nil
-	delete(m.clearedFields, mcpconnectionhistory.FieldRefreshTokenEncrypted)
-}
-
-// SetAPIKeyEncrypted sets the "api_key_encrypted" field.
-func (m *MCPConnectionHistoryMutation) SetAPIKeyEncrypted(b []byte) {
-	m.api_key_encrypted = &b
-}
-
-// APIKeyEncrypted returns the value of the "api_key_encrypted" field in the mutation.
-func (m *MCPConnectionHistoryMutation) APIKeyEncrypted() (r []byte, exists bool) {
-	v := m.api_key_encrypted
+// APIKeyPresent returns the value of the "api_key_present" field in the mutation.
+func (m *MCPConnectionHistoryMutation) APIKeyPresent() (r bool, exists bool) {
+	v := m.api_key_present
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldAPIKeyEncrypted returns the old "api_key_encrypted" field's value of the MCPConnectionHistory entity.
+// OldAPIKeyPresent returns the old "api_key_present" field's value of the MCPConnectionHistory entity.
 // If the MCPConnectionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MCPConnectionHistoryMutation) OldAPIKeyEncrypted(ctx context.Context) (v []byte, err error) {
+func (m *MCPConnectionHistoryMutation) OldAPIKeyPresent(ctx context.Context) (v bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldAPIKeyEncrypted is only allowed on UpdateOne operations")
+		return v, errors.New("OldAPIKeyPresent is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldAPIKeyEncrypted requires an ID field in the mutation")
+		return v, errors.New("OldAPIKeyPresent requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldAPIKeyEncrypted: %w", err)
+		return v, fmt.Errorf("querying old value for OldAPIKeyPresent: %w", err)
 	}
-	return oldValue.APIKeyEncrypted, nil
+	return oldValue.APIKeyPresent, nil
 }
 
-// ClearAPIKeyEncrypted clears the value of the "api_key_encrypted" field.
-func (m *MCPConnectionHistoryMutation) ClearAPIKeyEncrypted() {
-	m.api_key_encrypted = nil
-	m.clearedFields[mcpconnectionhistory.FieldAPIKeyEncrypted] = struct{}{}
-}
-
-// APIKeyEncryptedCleared returns if the "api_key_encrypted" field was cleared in this mutation.
-func (m *MCPConnectionHistoryMutation) APIKeyEncryptedCleared() bool {
-	_, ok := m.clearedFields[mcpconnectionhistory.FieldAPIKeyEncrypted]
-	return ok
-}
-
-// ResetAPIKeyEncrypted resets all changes to the "api_key_encrypted" field.
-func (m *MCPConnectionHistoryMutation) ResetAPIKeyEncrypted() {
-	m.api_key_encrypted = nil
-	delete(m.clearedFields, mcpconnectionhistory.FieldAPIKeyEncrypted)
+// ResetAPIKeyPresent resets all changes to the "api_key_present" field.
+func (m *MCPConnectionHistoryMutation) ResetAPIKeyPresent() {
+	m.api_key_present = nil
 }
 
 // SetCredentialGeneration sets the "credential_generation" field.
@@ -44243,11 +45349,11 @@ func (m *MCPConnectionHistoryMutation) Fields() []string {
 	if m.scopes != nil {
 		fields = append(fields, mcpconnectionhistory.FieldScopes)
 	}
-	if m.refresh_token_encrypted != nil {
-		fields = append(fields, mcpconnectionhistory.FieldRefreshTokenEncrypted)
+	if m.refresh_token_present != nil {
+		fields = append(fields, mcpconnectionhistory.FieldRefreshTokenPresent)
 	}
-	if m.api_key_encrypted != nil {
-		fields = append(fields, mcpconnectionhistory.FieldAPIKeyEncrypted)
+	if m.api_key_present != nil {
+		fields = append(fields, mcpconnectionhistory.FieldAPIKeyPresent)
 	}
 	if m.credential_generation != nil {
 		fields = append(fields, mcpconnectionhistory.FieldCredentialGeneration)
@@ -44305,10 +45411,10 @@ func (m *MCPConnectionHistoryMutation) Field(name string) (ent.Value, bool) {
 		return m.OrganizationID()
 	case mcpconnectionhistory.FieldScopes:
 		return m.Scopes()
-	case mcpconnectionhistory.FieldRefreshTokenEncrypted:
-		return m.RefreshTokenEncrypted()
-	case mcpconnectionhistory.FieldAPIKeyEncrypted:
-		return m.APIKeyEncrypted()
+	case mcpconnectionhistory.FieldRefreshTokenPresent:
+		return m.RefreshTokenPresent()
+	case mcpconnectionhistory.FieldAPIKeyPresent:
+		return m.APIKeyPresent()
 	case mcpconnectionhistory.FieldCredentialGeneration:
 		return m.CredentialGeneration()
 	case mcpconnectionhistory.FieldStatus:
@@ -44356,10 +45462,10 @@ func (m *MCPConnectionHistoryMutation) OldField(ctx context.Context, name string
 		return m.OldOrganizationID(ctx)
 	case mcpconnectionhistory.FieldScopes:
 		return m.OldScopes(ctx)
-	case mcpconnectionhistory.FieldRefreshTokenEncrypted:
-		return m.OldRefreshTokenEncrypted(ctx)
-	case mcpconnectionhistory.FieldAPIKeyEncrypted:
-		return m.OldAPIKeyEncrypted(ctx)
+	case mcpconnectionhistory.FieldRefreshTokenPresent:
+		return m.OldRefreshTokenPresent(ctx)
+	case mcpconnectionhistory.FieldAPIKeyPresent:
+		return m.OldAPIKeyPresent(ctx)
 	case mcpconnectionhistory.FieldCredentialGeneration:
 		return m.OldCredentialGeneration(ctx)
 	case mcpconnectionhistory.FieldStatus:
@@ -44452,19 +45558,19 @@ func (m *MCPConnectionHistoryMutation) SetField(name string, value ent.Value) er
 		}
 		m.SetScopes(v)
 		return nil
-	case mcpconnectionhistory.FieldRefreshTokenEncrypted:
-		v, ok := value.([]byte)
+	case mcpconnectionhistory.FieldRefreshTokenPresent:
+		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetRefreshTokenEncrypted(v)
+		m.SetRefreshTokenPresent(v)
 		return nil
-	case mcpconnectionhistory.FieldAPIKeyEncrypted:
-		v, ok := value.([]byte)
+	case mcpconnectionhistory.FieldAPIKeyPresent:
+		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetAPIKeyEncrypted(v)
+		m.SetAPIKeyPresent(v)
 		return nil
 	case mcpconnectionhistory.FieldCredentialGeneration:
 		v, ok := value.(int64)
@@ -44590,12 +45696,6 @@ func (m *MCPConnectionHistoryMutation) ClearedFields() []string {
 	if m.FieldCleared(mcpconnectionhistory.FieldScopes) {
 		fields = append(fields, mcpconnectionhistory.FieldScopes)
 	}
-	if m.FieldCleared(mcpconnectionhistory.FieldRefreshTokenEncrypted) {
-		fields = append(fields, mcpconnectionhistory.FieldRefreshTokenEncrypted)
-	}
-	if m.FieldCleared(mcpconnectionhistory.FieldAPIKeyEncrypted) {
-		fields = append(fields, mcpconnectionhistory.FieldAPIKeyEncrypted)
-	}
 	if m.FieldCleared(mcpconnectionhistory.FieldConnectedAt) {
 		fields = append(fields, mcpconnectionhistory.FieldConnectedAt)
 	}
@@ -44642,12 +45742,6 @@ func (m *MCPConnectionHistoryMutation) ClearField(name string) error {
 		return nil
 	case mcpconnectionhistory.FieldScopes:
 		m.ClearScopes()
-		return nil
-	case mcpconnectionhistory.FieldRefreshTokenEncrypted:
-		m.ClearRefreshTokenEncrypted()
-		return nil
-	case mcpconnectionhistory.FieldAPIKeyEncrypted:
-		m.ClearAPIKeyEncrypted()
 		return nil
 	case mcpconnectionhistory.FieldConnectedAt:
 		m.ClearConnectedAt()
@@ -44708,11 +45802,11 @@ func (m *MCPConnectionHistoryMutation) ResetField(name string) error {
 	case mcpconnectionhistory.FieldScopes:
 		m.ResetScopes()
 		return nil
-	case mcpconnectionhistory.FieldRefreshTokenEncrypted:
-		m.ResetRefreshTokenEncrypted()
+	case mcpconnectionhistory.FieldRefreshTokenPresent:
+		m.ResetRefreshTokenPresent()
 		return nil
-	case mcpconnectionhistory.FieldAPIKeyEncrypted:
-		m.ResetAPIKeyEncrypted()
+	case mcpconnectionhistory.FieldAPIKeyPresent:
+		m.ResetAPIKeyPresent()
 		return nil
 	case mcpconnectionhistory.FieldCredentialGeneration:
 		m.ResetCredentialGeneration()
@@ -49480,22 +50574,25 @@ func (m *MeetingMinuteUsageMutation) ResetEdge(name string) error {
 // OAuthConnectionMutation represents an operation that mutates the OAuthConnection nodes in the graph.
 type OAuthConnectionMutation struct {
 	config
-	op                      Op
-	typ                     string
-	id                      *uuid.UUID
-	created_at              *time.Time
-	updated_at              *time.Time
-	provider                *string
-	refresh_token_encrypted *[]byte
-	scopes                  *[]string
-	appendscopes            []string
-	external_account_id     *string
-	clearedFields           map[string]struct{}
-	user                    *uuid.UUID
-	cleareduser             bool
-	done                    bool
-	oldValue                func(context.Context) (*OAuthConnection, error)
-	predicates              []predicate.OAuthConnection
+	op                       Op
+	typ                      string
+	id                       *uuid.UUID
+	created_at               *time.Time
+	updated_at               *time.Time
+	provider                 *string
+	refresh_token_encrypted  *[]byte
+	refresh_token_present    *bool
+	credential_generation    *int64
+	addcredential_generation *int64
+	scopes                   *[]string
+	appendscopes             []string
+	external_account_id      *string
+	clearedFields            map[string]struct{}
+	user                     *uuid.UUID
+	cleareduser              bool
+	done                     bool
+	oldValue                 func(context.Context) (*OAuthConnection, error)
+	predicates               []predicate.OAuthConnection
 }
 
 var _ ent.Mutation = (*OAuthConnectionMutation)(nil)
@@ -49746,6 +50843,98 @@ func (m *OAuthConnectionMutation) ResetRefreshTokenEncrypted() {
 	m.refresh_token_encrypted = nil
 }
 
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (m *OAuthConnectionMutation) SetRefreshTokenPresent(b bool) {
+	m.refresh_token_present = &b
+}
+
+// RefreshTokenPresent returns the value of the "refresh_token_present" field in the mutation.
+func (m *OAuthConnectionMutation) RefreshTokenPresent() (r bool, exists bool) {
+	v := m.refresh_token_present
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRefreshTokenPresent returns the old "refresh_token_present" field's value of the OAuthConnection entity.
+// If the OAuthConnection object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OAuthConnectionMutation) OldRefreshTokenPresent(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRefreshTokenPresent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRefreshTokenPresent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRefreshTokenPresent: %w", err)
+	}
+	return oldValue.RefreshTokenPresent, nil
+}
+
+// ResetRefreshTokenPresent resets all changes to the "refresh_token_present" field.
+func (m *OAuthConnectionMutation) ResetRefreshTokenPresent() {
+	m.refresh_token_present = nil
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (m *OAuthConnectionMutation) SetCredentialGeneration(i int64) {
+	m.credential_generation = &i
+	m.addcredential_generation = nil
+}
+
+// CredentialGeneration returns the value of the "credential_generation" field in the mutation.
+func (m *OAuthConnectionMutation) CredentialGeneration() (r int64, exists bool) {
+	v := m.credential_generation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCredentialGeneration returns the old "credential_generation" field's value of the OAuthConnection entity.
+// If the OAuthConnection object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OAuthConnectionMutation) OldCredentialGeneration(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCredentialGeneration is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCredentialGeneration requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCredentialGeneration: %w", err)
+	}
+	return oldValue.CredentialGeneration, nil
+}
+
+// AddCredentialGeneration adds i to the "credential_generation" field.
+func (m *OAuthConnectionMutation) AddCredentialGeneration(i int64) {
+	if m.addcredential_generation != nil {
+		*m.addcredential_generation += i
+	} else {
+		m.addcredential_generation = &i
+	}
+}
+
+// AddedCredentialGeneration returns the value that was added to the "credential_generation" field in this mutation.
+func (m *OAuthConnectionMutation) AddedCredentialGeneration() (r int64, exists bool) {
+	v := m.addcredential_generation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCredentialGeneration resets all changes to the "credential_generation" field.
+func (m *OAuthConnectionMutation) ResetCredentialGeneration() {
+	m.credential_generation = nil
+	m.addcredential_generation = nil
+}
+
 // SetScopes sets the "scopes" field.
 func (m *OAuthConnectionMutation) SetScopes(s []string) {
 	m.scopes = &s
@@ -49933,7 +51122,7 @@ func (m *OAuthConnectionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OAuthConnectionMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 8)
 	if m.created_at != nil {
 		fields = append(fields, oauthconnection.FieldCreatedAt)
 	}
@@ -49945,6 +51134,12 @@ func (m *OAuthConnectionMutation) Fields() []string {
 	}
 	if m.refresh_token_encrypted != nil {
 		fields = append(fields, oauthconnection.FieldRefreshTokenEncrypted)
+	}
+	if m.refresh_token_present != nil {
+		fields = append(fields, oauthconnection.FieldRefreshTokenPresent)
+	}
+	if m.credential_generation != nil {
+		fields = append(fields, oauthconnection.FieldCredentialGeneration)
 	}
 	if m.scopes != nil {
 		fields = append(fields, oauthconnection.FieldScopes)
@@ -49968,6 +51163,10 @@ func (m *OAuthConnectionMutation) Field(name string) (ent.Value, bool) {
 		return m.Provider()
 	case oauthconnection.FieldRefreshTokenEncrypted:
 		return m.RefreshTokenEncrypted()
+	case oauthconnection.FieldRefreshTokenPresent:
+		return m.RefreshTokenPresent()
+	case oauthconnection.FieldCredentialGeneration:
+		return m.CredentialGeneration()
 	case oauthconnection.FieldScopes:
 		return m.Scopes()
 	case oauthconnection.FieldExternalAccountID:
@@ -49989,6 +51188,10 @@ func (m *OAuthConnectionMutation) OldField(ctx context.Context, name string) (en
 		return m.OldProvider(ctx)
 	case oauthconnection.FieldRefreshTokenEncrypted:
 		return m.OldRefreshTokenEncrypted(ctx)
+	case oauthconnection.FieldRefreshTokenPresent:
+		return m.OldRefreshTokenPresent(ctx)
+	case oauthconnection.FieldCredentialGeneration:
+		return m.OldCredentialGeneration(ctx)
 	case oauthconnection.FieldScopes:
 		return m.OldScopes(ctx)
 	case oauthconnection.FieldExternalAccountID:
@@ -50030,6 +51233,20 @@ func (m *OAuthConnectionMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRefreshTokenEncrypted(v)
 		return nil
+	case oauthconnection.FieldRefreshTokenPresent:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRefreshTokenPresent(v)
+		return nil
+	case oauthconnection.FieldCredentialGeneration:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCredentialGeneration(v)
+		return nil
 	case oauthconnection.FieldScopes:
 		v, ok := value.([]string)
 		if !ok {
@@ -50051,13 +51268,21 @@ func (m *OAuthConnectionMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *OAuthConnectionMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addcredential_generation != nil {
+		fields = append(fields, oauthconnection.FieldCredentialGeneration)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *OAuthConnectionMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case oauthconnection.FieldCredentialGeneration:
+		return m.AddedCredentialGeneration()
+	}
 	return nil, false
 }
 
@@ -50066,6 +51291,13 @@ func (m *OAuthConnectionMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *OAuthConnectionMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case oauthconnection.FieldCredentialGeneration:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCredentialGeneration(v)
+		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnection numeric field %s", name)
 }
@@ -50119,6 +51351,12 @@ func (m *OAuthConnectionMutation) ResetField(name string) error {
 		return nil
 	case oauthconnection.FieldRefreshTokenEncrypted:
 		m.ResetRefreshTokenEncrypted()
+		return nil
+	case oauthconnection.FieldRefreshTokenPresent:
+		m.ResetRefreshTokenPresent()
+		return nil
+	case oauthconnection.FieldCredentialGeneration:
+		m.ResetCredentialGeneration()
 		return nil
 	case oauthconnection.FieldScopes:
 		m.ResetScopes()
@@ -50207,23 +51445,25 @@ func (m *OAuthConnectionMutation) ResetEdge(name string) error {
 // OAuthConnectionHistoryMutation represents an operation that mutates the OAuthConnectionHistory nodes in the graph.
 type OAuthConnectionHistoryMutation struct {
 	config
-	op                      Op
-	typ                     string
-	id                      *uuid.UUID
-	created_at              *time.Time
-	updated_at              *time.Time
-	history_time            *time.Time
-	operation               *enthistory.OpType
-	ref                     *uuid.UUID
-	provider                *string
-	refresh_token_encrypted *[]byte
-	scopes                  *[]string
-	appendscopes            []string
-	external_account_id     *string
-	clearedFields           map[string]struct{}
-	done                    bool
-	oldValue                func(context.Context) (*OAuthConnectionHistory, error)
-	predicates              []predicate.OAuthConnectionHistory
+	op                       Op
+	typ                      string
+	id                       *uuid.UUID
+	created_at               *time.Time
+	updated_at               *time.Time
+	history_time             *time.Time
+	operation                *enthistory.OpType
+	ref                      *uuid.UUID
+	provider                 *string
+	refresh_token_present    *bool
+	credential_generation    *int64
+	addcredential_generation *int64
+	scopes                   *[]string
+	appendscopes             []string
+	external_account_id      *string
+	clearedFields            map[string]struct{}
+	done                     bool
+	oldValue                 func(context.Context) (*OAuthConnectionHistory, error)
+	predicates               []predicate.OAuthConnectionHistory
 }
 
 var _ ent.Mutation = (*OAuthConnectionHistoryMutation)(nil)
@@ -50559,40 +51799,96 @@ func (m *OAuthConnectionHistoryMutation) ResetProvider() {
 	m.provider = nil
 }
 
-// SetRefreshTokenEncrypted sets the "refresh_token_encrypted" field.
-func (m *OAuthConnectionHistoryMutation) SetRefreshTokenEncrypted(b []byte) {
-	m.refresh_token_encrypted = &b
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (m *OAuthConnectionHistoryMutation) SetRefreshTokenPresent(b bool) {
+	m.refresh_token_present = &b
 }
 
-// RefreshTokenEncrypted returns the value of the "refresh_token_encrypted" field in the mutation.
-func (m *OAuthConnectionHistoryMutation) RefreshTokenEncrypted() (r []byte, exists bool) {
-	v := m.refresh_token_encrypted
+// RefreshTokenPresent returns the value of the "refresh_token_present" field in the mutation.
+func (m *OAuthConnectionHistoryMutation) RefreshTokenPresent() (r bool, exists bool) {
+	v := m.refresh_token_present
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldRefreshTokenEncrypted returns the old "refresh_token_encrypted" field's value of the OAuthConnectionHistory entity.
+// OldRefreshTokenPresent returns the old "refresh_token_present" field's value of the OAuthConnectionHistory entity.
 // If the OAuthConnectionHistory object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *OAuthConnectionHistoryMutation) OldRefreshTokenEncrypted(ctx context.Context) (v []byte, err error) {
+func (m *OAuthConnectionHistoryMutation) OldRefreshTokenPresent(ctx context.Context) (v bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldRefreshTokenEncrypted is only allowed on UpdateOne operations")
+		return v, errors.New("OldRefreshTokenPresent is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldRefreshTokenEncrypted requires an ID field in the mutation")
+		return v, errors.New("OldRefreshTokenPresent requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldRefreshTokenEncrypted: %w", err)
+		return v, fmt.Errorf("querying old value for OldRefreshTokenPresent: %w", err)
 	}
-	return oldValue.RefreshTokenEncrypted, nil
+	return oldValue.RefreshTokenPresent, nil
 }
 
-// ResetRefreshTokenEncrypted resets all changes to the "refresh_token_encrypted" field.
-func (m *OAuthConnectionHistoryMutation) ResetRefreshTokenEncrypted() {
-	m.refresh_token_encrypted = nil
+// ResetRefreshTokenPresent resets all changes to the "refresh_token_present" field.
+func (m *OAuthConnectionHistoryMutation) ResetRefreshTokenPresent() {
+	m.refresh_token_present = nil
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (m *OAuthConnectionHistoryMutation) SetCredentialGeneration(i int64) {
+	m.credential_generation = &i
+	m.addcredential_generation = nil
+}
+
+// CredentialGeneration returns the value of the "credential_generation" field in the mutation.
+func (m *OAuthConnectionHistoryMutation) CredentialGeneration() (r int64, exists bool) {
+	v := m.credential_generation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCredentialGeneration returns the old "credential_generation" field's value of the OAuthConnectionHistory entity.
+// If the OAuthConnectionHistory object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OAuthConnectionHistoryMutation) OldCredentialGeneration(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCredentialGeneration is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCredentialGeneration requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCredentialGeneration: %w", err)
+	}
+	return oldValue.CredentialGeneration, nil
+}
+
+// AddCredentialGeneration adds i to the "credential_generation" field.
+func (m *OAuthConnectionHistoryMutation) AddCredentialGeneration(i int64) {
+	if m.addcredential_generation != nil {
+		*m.addcredential_generation += i
+	} else {
+		m.addcredential_generation = &i
+	}
+}
+
+// AddedCredentialGeneration returns the value that was added to the "credential_generation" field in this mutation.
+func (m *OAuthConnectionHistoryMutation) AddedCredentialGeneration() (r int64, exists bool) {
+	v := m.addcredential_generation
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCredentialGeneration resets all changes to the "credential_generation" field.
+func (m *OAuthConnectionHistoryMutation) ResetCredentialGeneration() {
+	m.credential_generation = nil
+	m.addcredential_generation = nil
 }
 
 // SetScopes sets the "scopes" field.
@@ -50743,7 +52039,7 @@ func (m *OAuthConnectionHistoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OAuthConnectionHistoryMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.created_at != nil {
 		fields = append(fields, oauthconnectionhistory.FieldCreatedAt)
 	}
@@ -50762,8 +52058,11 @@ func (m *OAuthConnectionHistoryMutation) Fields() []string {
 	if m.provider != nil {
 		fields = append(fields, oauthconnectionhistory.FieldProvider)
 	}
-	if m.refresh_token_encrypted != nil {
-		fields = append(fields, oauthconnectionhistory.FieldRefreshTokenEncrypted)
+	if m.refresh_token_present != nil {
+		fields = append(fields, oauthconnectionhistory.FieldRefreshTokenPresent)
+	}
+	if m.credential_generation != nil {
+		fields = append(fields, oauthconnectionhistory.FieldCredentialGeneration)
 	}
 	if m.scopes != nil {
 		fields = append(fields, oauthconnectionhistory.FieldScopes)
@@ -50791,8 +52090,10 @@ func (m *OAuthConnectionHistoryMutation) Field(name string) (ent.Value, bool) {
 		return m.Ref()
 	case oauthconnectionhistory.FieldProvider:
 		return m.Provider()
-	case oauthconnectionhistory.FieldRefreshTokenEncrypted:
-		return m.RefreshTokenEncrypted()
+	case oauthconnectionhistory.FieldRefreshTokenPresent:
+		return m.RefreshTokenPresent()
+	case oauthconnectionhistory.FieldCredentialGeneration:
+		return m.CredentialGeneration()
 	case oauthconnectionhistory.FieldScopes:
 		return m.Scopes()
 	case oauthconnectionhistory.FieldExternalAccountID:
@@ -50818,8 +52119,10 @@ func (m *OAuthConnectionHistoryMutation) OldField(ctx context.Context, name stri
 		return m.OldRef(ctx)
 	case oauthconnectionhistory.FieldProvider:
 		return m.OldProvider(ctx)
-	case oauthconnectionhistory.FieldRefreshTokenEncrypted:
-		return m.OldRefreshTokenEncrypted(ctx)
+	case oauthconnectionhistory.FieldRefreshTokenPresent:
+		return m.OldRefreshTokenPresent(ctx)
+	case oauthconnectionhistory.FieldCredentialGeneration:
+		return m.OldCredentialGeneration(ctx)
 	case oauthconnectionhistory.FieldScopes:
 		return m.OldScopes(ctx)
 	case oauthconnectionhistory.FieldExternalAccountID:
@@ -50875,12 +52178,19 @@ func (m *OAuthConnectionHistoryMutation) SetField(name string, value ent.Value) 
 		}
 		m.SetProvider(v)
 		return nil
-	case oauthconnectionhistory.FieldRefreshTokenEncrypted:
-		v, ok := value.([]byte)
+	case oauthconnectionhistory.FieldRefreshTokenPresent:
+		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetRefreshTokenEncrypted(v)
+		m.SetRefreshTokenPresent(v)
+		return nil
+	case oauthconnectionhistory.FieldCredentialGeneration:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCredentialGeneration(v)
 		return nil
 	case oauthconnectionhistory.FieldScopes:
 		v, ok := value.([]string)
@@ -50903,13 +52213,21 @@ func (m *OAuthConnectionHistoryMutation) SetField(name string, value ent.Value) 
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *OAuthConnectionHistoryMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addcredential_generation != nil {
+		fields = append(fields, oauthconnectionhistory.FieldCredentialGeneration)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *OAuthConnectionHistoryMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case oauthconnectionhistory.FieldCredentialGeneration:
+		return m.AddedCredentialGeneration()
+	}
 	return nil, false
 }
 
@@ -50918,6 +52236,13 @@ func (m *OAuthConnectionHistoryMutation) AddedField(name string) (ent.Value, boo
 // type.
 func (m *OAuthConnectionHistoryMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case oauthconnectionhistory.FieldCredentialGeneration:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCredentialGeneration(v)
+		return nil
 	}
 	return fmt.Errorf("unknown OAuthConnectionHistory numeric field %s", name)
 }
@@ -50984,8 +52309,11 @@ func (m *OAuthConnectionHistoryMutation) ResetField(name string) error {
 	case oauthconnectionhistory.FieldProvider:
 		m.ResetProvider()
 		return nil
-	case oauthconnectionhistory.FieldRefreshTokenEncrypted:
-		m.ResetRefreshTokenEncrypted()
+	case oauthconnectionhistory.FieldRefreshTokenPresent:
+		m.ResetRefreshTokenPresent()
+		return nil
+	case oauthconnectionhistory.FieldCredentialGeneration:
+		m.ResetCredentialGeneration()
 		return nil
 	case oauthconnectionhistory.FieldScopes:
 		m.ResetScopes()

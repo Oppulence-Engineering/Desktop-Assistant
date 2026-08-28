@@ -1225,6 +1225,40 @@ var (
 			},
 		},
 	}
+	// ConnectorCredentialRecoveriesColumns holds the columns for the "connector_credential_recoveries" table.
+	ConnectorCredentialRecoveriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "connector", Type: field.TypeString},
+		{Name: "owner_kind", Type: field.TypeString},
+		{Name: "owner_id", Type: field.TypeString},
+		{Name: "refresh_token_encrypted", Type: field.TypeBytes},
+		{Name: "status", Type: field.TypeString, Default: "pending"},
+		{Name: "attempts", Type: field.TypeInt, Default: 0},
+		{Name: "next_attempt_at", Type: field.TypeTime},
+		{Name: "claim_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "claimed_until", Type: field.TypeTime, Nullable: true},
+		{Name: "last_error_code", Type: field.TypeString, Nullable: true},
+	}
+	// ConnectorCredentialRecoveriesTable holds the schema information for the "connector_credential_recoveries" table.
+	ConnectorCredentialRecoveriesTable = &schema.Table{
+		Name:       "connector_credential_recoveries",
+		Columns:    ConnectorCredentialRecoveriesColumns,
+		PrimaryKey: []*schema.Column{ConnectorCredentialRecoveriesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "connectorcredentialrecovery_status_next_attempt_at",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectorCredentialRecoveriesColumns[7], ConnectorCredentialRecoveriesColumns[9]},
+			},
+			{
+				Name:    "connectorcredentialrecovery_owner_kind_owner_id",
+				Unique:  false,
+				Columns: []*schema.Column{ConnectorCredentialRecoveriesColumns[4], ConnectorCredentialRecoveriesColumns[5]},
+			},
+		},
+	}
 	// ConnectorRevocationJobsColumns holds the columns for the "connector_revocation_jobs" table.
 	ConnectorRevocationJobsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -1632,6 +1666,8 @@ var (
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "refresh_token_encrypted", Type: field.TypeBytes, Nullable: true},
 		{Name: "api_key_encrypted", Type: field.TypeBytes, Nullable: true},
+		{Name: "refresh_token_present", Type: field.TypeBool, Default: false},
+		{Name: "api_key_present", Type: field.TypeBool, Default: false},
 		{Name: "credential_generation", Type: field.TypeInt64, Default: 1},
 		{Name: "status", Type: field.TypeString, Default: "active"},
 		{Name: "connected_at", Type: field.TypeTime, Nullable: true},
@@ -1652,7 +1688,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "mcp_connections_users_mcp_connections",
-				Columns:    []*schema.Column{McpConnectionsColumns[19]},
+				Columns:    []*schema.Column{McpConnectionsColumns[21]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1661,17 +1697,17 @@ var (
 			{
 				Name:    "mcpconnection_connector_organization_id_user_mcp_connections",
 				Unique:  true,
-				Columns: []*schema.Column{McpConnectionsColumns[3], McpConnectionsColumns[5], McpConnectionsColumns[19]},
+				Columns: []*schema.Column{McpConnectionsColumns[3], McpConnectionsColumns[5], McpConnectionsColumns[21]},
 			},
 			{
 				Name:    "mcpconnection_status",
 				Unique:  false,
-				Columns: []*schema.Column{McpConnectionsColumns[10]},
+				Columns: []*schema.Column{McpConnectionsColumns[12]},
 			},
 			{
 				Name:    "mcpconnection_organization_id_connector_status",
 				Unique:  false,
-				Columns: []*schema.Column{McpConnectionsColumns[5], McpConnectionsColumns[3], McpConnectionsColumns[10]},
+				Columns: []*schema.Column{McpConnectionsColumns[5], McpConnectionsColumns[3], McpConnectionsColumns[12]},
 			},
 		},
 	}
@@ -1687,8 +1723,8 @@ var (
 		{Name: "audience", Type: field.TypeString},
 		{Name: "organization_id", Type: field.TypeString, Nullable: true},
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
-		{Name: "refresh_token_encrypted", Type: field.TypeBytes, Nullable: true},
-		{Name: "api_key_encrypted", Type: field.TypeBytes, Nullable: true},
+		{Name: "refresh_token_present", Type: field.TypeBool, Default: false},
+		{Name: "api_key_present", Type: field.TypeBool, Default: false},
 		{Name: "credential_generation", Type: field.TypeInt64, Default: 1},
 		{Name: "status", Type: field.TypeString, Default: "active"},
 		{Name: "connected_at", Type: field.TypeTime, Nullable: true},
@@ -1927,6 +1963,8 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "provider", Type: field.TypeString},
 		{Name: "refresh_token_encrypted", Type: field.TypeBytes},
+		{Name: "refresh_token_present", Type: field.TypeBool, Default: false},
+		{Name: "credential_generation", Type: field.TypeInt64, Default: 1},
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "external_account_id", Type: field.TypeString, Nullable: true},
 		{Name: "user_oauth_connections", Type: field.TypeUUID},
@@ -1939,7 +1977,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "oauth_connections_users_oauth_connections",
-				Columns:    []*schema.Column{OauthConnectionsColumns[7]},
+				Columns:    []*schema.Column{OauthConnectionsColumns[9]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1948,7 +1986,7 @@ var (
 			{
 				Name:    "oauthconnection_provider_external_account_id",
 				Unique:  true,
-				Columns: []*schema.Column{OauthConnectionsColumns[3], OauthConnectionsColumns[6]},
+				Columns: []*schema.Column{OauthConnectionsColumns[3], OauthConnectionsColumns[8]},
 			},
 		},
 	}
@@ -1961,7 +1999,8 @@ var (
 		{Name: "operation", Type: field.TypeEnum, Enums: []string{"INSERT", "UPDATE", "DELETE"}},
 		{Name: "ref", Type: field.TypeUUID, Nullable: true},
 		{Name: "provider", Type: field.TypeString},
-		{Name: "refresh_token_encrypted", Type: field.TypeBytes},
+		{Name: "refresh_token_present", Type: field.TypeBool, Default: false},
+		{Name: "credential_generation", Type: field.TypeInt64, Default: 1},
 		{Name: "scopes", Type: field.TypeJSON, Nullable: true},
 		{Name: "external_account_id", Type: field.TypeString, Nullable: true},
 	}
@@ -4063,6 +4102,7 @@ var (
 		CommitmentEventsTable,
 		ConnectorAuditEventsTable,
 		ConnectorCredentialCleanupJobsTable,
+		ConnectorCredentialRecoveriesTable,
 		ConnectorRevocationJobsTable,
 		ConversationIntelligenceArtifactsTable,
 		CreditLedgersTable,

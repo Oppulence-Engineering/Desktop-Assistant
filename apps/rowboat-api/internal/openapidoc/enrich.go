@@ -91,6 +91,7 @@ func Enrich(spec obj) {
 
 func removeInternalSchemas(schemas obj) {
 	delete(schemas, "ConnectorCredentialCleanupJob")
+	delete(schemas, "ConnectorCredentialRecovery")
 }
 
 func addSecuritySchemes(schemes obj) {

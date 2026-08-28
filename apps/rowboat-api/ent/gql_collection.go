@@ -4422,6 +4422,16 @@ func (_q *MCPConnectionQuery) collectField(ctx context.Context, oneNode bool, op
 				selectedFields = append(selectedFields, mcpconnection.FieldScopes)
 				fieldSeen[mcpconnection.FieldScopes] = struct{}{}
 			}
+		case "refreshTokenPresent":
+			if _, ok := fieldSeen[mcpconnection.FieldRefreshTokenPresent]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldRefreshTokenPresent)
+				fieldSeen[mcpconnection.FieldRefreshTokenPresent] = struct{}{}
+			}
+		case "apiKeyPresent":
+			if _, ok := fieldSeen[mcpconnection.FieldAPIKeyPresent]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldAPIKeyPresent)
+				fieldSeen[mcpconnection.FieldAPIKeyPresent] = struct{}{}
+			}
 		case "credentialGeneration":
 			if _, ok := fieldSeen[mcpconnection.FieldCredentialGeneration]; !ok {
 				selectedFields = append(selectedFields, mcpconnection.FieldCredentialGeneration)
@@ -5156,6 +5166,16 @@ func (_q *OAuthConnectionQuery) collectField(ctx context.Context, oneNode bool, 
 			if _, ok := fieldSeen[oauthconnection.FieldProvider]; !ok {
 				selectedFields = append(selectedFields, oauthconnection.FieldProvider)
 				fieldSeen[oauthconnection.FieldProvider] = struct{}{}
+			}
+		case "refreshTokenPresent":
+			if _, ok := fieldSeen[oauthconnection.FieldRefreshTokenPresent]; !ok {
+				selectedFields = append(selectedFields, oauthconnection.FieldRefreshTokenPresent)
+				fieldSeen[oauthconnection.FieldRefreshTokenPresent] = struct{}{}
+			}
+		case "credentialGeneration":
+			if _, ok := fieldSeen[oauthconnection.FieldCredentialGeneration]; !ok {
+				selectedFields = append(selectedFields, oauthconnection.FieldCredentialGeneration)
+				fieldSeen[oauthconnection.FieldCredentialGeneration] = struct{}{}
 			}
 		case "scopes":
 			if _, ok := fieldSeen[oauthconnection.FieldScopes]; !ok {

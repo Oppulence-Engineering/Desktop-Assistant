@@ -285,6 +285,18 @@ func (f ConnectorCredentialCleanupJobFunc) Mutate(ctx context.Context, m ent.Mut
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConnectorCredentialCleanupJobMutation", m)
 }
 
+// The ConnectorCredentialRecoveryFunc type is an adapter to allow the use of ordinary
+// function as ConnectorCredentialRecovery mutator.
+type ConnectorCredentialRecoveryFunc func(context.Context, *ent.ConnectorCredentialRecoveryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConnectorCredentialRecoveryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConnectorCredentialRecoveryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConnectorCredentialRecoveryMutation", m)
+}
+
 // The ConnectorRevocationJobFunc type is an adapter to allow the use of ordinary
 // function as ConnectorRevocationJob mutator.
 type ConnectorRevocationJobFunc func(context.Context, *ent.ConnectorRevocationJobMutation) (ent.Value, error)

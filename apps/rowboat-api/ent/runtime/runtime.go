@@ -29,6 +29,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
@@ -1398,6 +1399,33 @@ func init() {
 	connectorcredentialcleanupjobDescID := connectorcredentialcleanupjobMixinFields0[0].Descriptor()
 	// connectorcredentialcleanupjob.DefaultID holds the default value on creation for the id field.
 	connectorcredentialcleanupjob.DefaultID = connectorcredentialcleanupjobDescID.Default.(func() uuid.UUID)
+	connectorcredentialrecoveryMixin := schema.ConnectorCredentialRecovery{}.Mixin()
+	connectorcredentialrecoveryMixinFields0 := connectorcredentialrecoveryMixin[0].Fields()
+	_ = connectorcredentialrecoveryMixinFields0
+	connectorcredentialrecoveryFields := schema.ConnectorCredentialRecovery{}.Fields()
+	_ = connectorcredentialrecoveryFields
+	// connectorcredentialrecoveryDescCreatedAt is the schema descriptor for created_at field.
+	connectorcredentialrecoveryDescCreatedAt := connectorcredentialrecoveryMixinFields0[1].Descriptor()
+	// connectorcredentialrecovery.DefaultCreatedAt holds the default value on creation for the created_at field.
+	connectorcredentialrecovery.DefaultCreatedAt = connectorcredentialrecoveryDescCreatedAt.Default.(func() time.Time)
+	// connectorcredentialrecoveryDescUpdatedAt is the schema descriptor for updated_at field.
+	connectorcredentialrecoveryDescUpdatedAt := connectorcredentialrecoveryMixinFields0[2].Descriptor()
+	// connectorcredentialrecovery.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	connectorcredentialrecovery.DefaultUpdatedAt = connectorcredentialrecoveryDescUpdatedAt.Default.(func() time.Time)
+	// connectorcredentialrecovery.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	connectorcredentialrecovery.UpdateDefaultUpdatedAt = connectorcredentialrecoveryDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// connectorcredentialrecoveryDescStatus is the schema descriptor for status field.
+	connectorcredentialrecoveryDescStatus := connectorcredentialrecoveryFields[4].Descriptor()
+	// connectorcredentialrecovery.DefaultStatus holds the default value on creation for the status field.
+	connectorcredentialrecovery.DefaultStatus = connectorcredentialrecoveryDescStatus.Default.(string)
+	// connectorcredentialrecoveryDescAttempts is the schema descriptor for attempts field.
+	connectorcredentialrecoveryDescAttempts := connectorcredentialrecoveryFields[5].Descriptor()
+	// connectorcredentialrecovery.DefaultAttempts holds the default value on creation for the attempts field.
+	connectorcredentialrecovery.DefaultAttempts = connectorcredentialrecoveryDescAttempts.Default.(int)
+	// connectorcredentialrecoveryDescID is the schema descriptor for id field.
+	connectorcredentialrecoveryDescID := connectorcredentialrecoveryMixinFields0[0].Descriptor()
+	// connectorcredentialrecovery.DefaultID holds the default value on creation for the id field.
+	connectorcredentialrecovery.DefaultID = connectorcredentialrecoveryDescID.Default.(func() uuid.UUID)
 	connectorrevocationjobMixin := schema.ConnectorRevocationJob{}.Mixin()
 	connectorrevocationjobMixinFields0 := connectorrevocationjobMixin[0].Fields()
 	_ = connectorrevocationjobMixinFields0
@@ -1829,6 +1857,9 @@ func init() {
 			return next.Mutate(ctx, m)
 		})
 	}
+	mcpconnectionHooks := schema.MCPConnection{}.Hooks()
+
+	mcpconnection.Hooks[1] = mcpconnectionHooks[0]
 	mcpconnectionMixinFields0 := mcpconnectionMixin[0].Fields()
 	_ = mcpconnectionMixinFields0
 	mcpconnectionFields := schema.MCPConnection{}.Fields()
@@ -1843,14 +1874,22 @@ func init() {
 	mcpconnection.DefaultUpdatedAt = mcpconnectionDescUpdatedAt.Default.(func() time.Time)
 	// mcpconnection.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	mcpconnection.UpdateDefaultUpdatedAt = mcpconnectionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// mcpconnectionDescRefreshTokenPresent is the schema descriptor for refresh_token_present field.
+	mcpconnectionDescRefreshTokenPresent := mcpconnectionFields[6].Descriptor()
+	// mcpconnection.DefaultRefreshTokenPresent holds the default value on creation for the refresh_token_present field.
+	mcpconnection.DefaultRefreshTokenPresent = mcpconnectionDescRefreshTokenPresent.Default.(bool)
+	// mcpconnectionDescAPIKeyPresent is the schema descriptor for api_key_present field.
+	mcpconnectionDescAPIKeyPresent := mcpconnectionFields[7].Descriptor()
+	// mcpconnection.DefaultAPIKeyPresent holds the default value on creation for the api_key_present field.
+	mcpconnection.DefaultAPIKeyPresent = mcpconnectionDescAPIKeyPresent.Default.(bool)
 	// mcpconnectionDescCredentialGeneration is the schema descriptor for credential_generation field.
-	mcpconnectionDescCredentialGeneration := mcpconnectionFields[6].Descriptor()
+	mcpconnectionDescCredentialGeneration := mcpconnectionFields[8].Descriptor()
 	// mcpconnection.DefaultCredentialGeneration holds the default value on creation for the credential_generation field.
 	mcpconnection.DefaultCredentialGeneration = mcpconnectionDescCredentialGeneration.Default.(int64)
 	// mcpconnection.CredentialGenerationValidator is a validator for the "credential_generation" field. It is called by the builders before save.
 	mcpconnection.CredentialGenerationValidator = mcpconnectionDescCredentialGeneration.Validators[0].(func(int64) error)
 	// mcpconnectionDescStatus is the schema descriptor for status field.
-	mcpconnectionDescStatus := mcpconnectionFields[7].Descriptor()
+	mcpconnectionDescStatus := mcpconnectionFields[9].Descriptor()
 	// mcpconnection.DefaultStatus holds the default value on creation for the status field.
 	mcpconnection.DefaultStatus = mcpconnectionDescStatus.Default.(string)
 	// mcpconnection.StatusValidator is a validator for the "status" field. It is called by the builders before save.
@@ -1887,6 +1926,14 @@ func init() {
 	mcpconnectionhistoryDescHistoryTime := mcpconnectionhistoryFields[1].Descriptor()
 	// mcpconnectionhistory.DefaultHistoryTime holds the default value on creation for the history_time field.
 	mcpconnectionhistory.DefaultHistoryTime = mcpconnectionhistoryDescHistoryTime.Default.(func() time.Time)
+	// mcpconnectionhistoryDescRefreshTokenPresent is the schema descriptor for refresh_token_present field.
+	mcpconnectionhistoryDescRefreshTokenPresent := mcpconnectionhistoryFields[8].Descriptor()
+	// mcpconnectionhistory.DefaultRefreshTokenPresent holds the default value on creation for the refresh_token_present field.
+	mcpconnectionhistory.DefaultRefreshTokenPresent = mcpconnectionhistoryDescRefreshTokenPresent.Default.(bool)
+	// mcpconnectionhistoryDescAPIKeyPresent is the schema descriptor for api_key_present field.
+	mcpconnectionhistoryDescAPIKeyPresent := mcpconnectionhistoryFields[9].Descriptor()
+	// mcpconnectionhistory.DefaultAPIKeyPresent holds the default value on creation for the api_key_present field.
+	mcpconnectionhistory.DefaultAPIKeyPresent = mcpconnectionhistoryDescAPIKeyPresent.Default.(bool)
 	// mcpconnectionhistoryDescCredentialGeneration is the schema descriptor for credential_generation field.
 	mcpconnectionhistoryDescCredentialGeneration := mcpconnectionhistoryFields[10].Descriptor()
 	// mcpconnectionhistory.DefaultCredentialGeneration holds the default value on creation for the credential_generation field.
@@ -2131,6 +2178,9 @@ func init() {
 			return next.Mutate(ctx, m)
 		})
 	}
+	oauthconnectionHooks := schema.OAuthConnection{}.Hooks()
+
+	oauthconnection.Hooks[1] = oauthconnectionHooks[0]
 	oauthconnectionMixinFields0 := oauthconnectionMixin[0].Fields()
 	_ = oauthconnectionMixinFields0
 	oauthconnectionFields := schema.OAuthConnection{}.Fields()
@@ -2145,6 +2195,16 @@ func init() {
 	oauthconnection.DefaultUpdatedAt = oauthconnectionDescUpdatedAt.Default.(func() time.Time)
 	// oauthconnection.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	oauthconnection.UpdateDefaultUpdatedAt = oauthconnectionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// oauthconnectionDescRefreshTokenPresent is the schema descriptor for refresh_token_present field.
+	oauthconnectionDescRefreshTokenPresent := oauthconnectionFields[2].Descriptor()
+	// oauthconnection.DefaultRefreshTokenPresent holds the default value on creation for the refresh_token_present field.
+	oauthconnection.DefaultRefreshTokenPresent = oauthconnectionDescRefreshTokenPresent.Default.(bool)
+	// oauthconnectionDescCredentialGeneration is the schema descriptor for credential_generation field.
+	oauthconnectionDescCredentialGeneration := oauthconnectionFields[3].Descriptor()
+	// oauthconnection.DefaultCredentialGeneration holds the default value on creation for the credential_generation field.
+	oauthconnection.DefaultCredentialGeneration = oauthconnectionDescCredentialGeneration.Default.(int64)
+	// oauthconnection.CredentialGenerationValidator is a validator for the "credential_generation" field. It is called by the builders before save.
+	oauthconnection.CredentialGenerationValidator = oauthconnectionDescCredentialGeneration.Validators[0].(func(int64) error)
 	// oauthconnectionDescID is the schema descriptor for id field.
 	oauthconnectionDescID := oauthconnectionMixinFields0[0].Descriptor()
 	// oauthconnection.DefaultID holds the default value on creation for the id field.
@@ -2177,6 +2237,14 @@ func init() {
 	oauthconnectionhistoryDescHistoryTime := oauthconnectionhistoryFields[1].Descriptor()
 	// oauthconnectionhistory.DefaultHistoryTime holds the default value on creation for the history_time field.
 	oauthconnectionhistory.DefaultHistoryTime = oauthconnectionhistoryDescHistoryTime.Default.(func() time.Time)
+	// oauthconnectionhistoryDescRefreshTokenPresent is the schema descriptor for refresh_token_present field.
+	oauthconnectionhistoryDescRefreshTokenPresent := oauthconnectionhistoryFields[5].Descriptor()
+	// oauthconnectionhistory.DefaultRefreshTokenPresent holds the default value on creation for the refresh_token_present field.
+	oauthconnectionhistory.DefaultRefreshTokenPresent = oauthconnectionhistoryDescRefreshTokenPresent.Default.(bool)
+	// oauthconnectionhistoryDescCredentialGeneration is the schema descriptor for credential_generation field.
+	oauthconnectionhistoryDescCredentialGeneration := oauthconnectionhistoryFields[6].Descriptor()
+	// oauthconnectionhistory.DefaultCredentialGeneration holds the default value on creation for the credential_generation field.
+	oauthconnectionhistory.DefaultCredentialGeneration = oauthconnectionhistoryDescCredentialGeneration.Default.(int64)
 	// oauthconnectionhistoryDescID is the schema descriptor for id field.
 	oauthconnectionhistoryDescID := oauthconnectionhistoryFields[0].Descriptor()
 	// oauthconnectionhistory.DefaultID holds the default value on creation for the id field.

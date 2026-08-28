@@ -682,6 +682,7 @@ type ComplexityRoot struct {
 	}
 
 	MCPConnection struct {
+		APIKeyPresent         func(childComplexity int) int
 		Audience              func(childComplexity int) int
 		ConnectedAt           func(childComplexity int) int
 		Connector             func(childComplexity int) int
@@ -691,6 +692,7 @@ type ComplexityRoot struct {
 		ID                    func(childComplexity int) int
 		LastUsedAt            func(childComplexity int) int
 		OrganizationID        func(childComplexity int) int
+		RefreshTokenPresent   func(childComplexity int) int
 		RevocationAttemptedAt func(childComplexity int) int
 		RevocationSucceeded   func(childComplexity int) int
 		RevokedAt             func(childComplexity int) int
@@ -779,13 +781,15 @@ type ComplexityRoot struct {
 	}
 
 	OAuthConnection struct {
-		CreatedAt         func(childComplexity int) int
-		ExternalAccountID func(childComplexity int) int
-		ID                func(childComplexity int) int
-		Provider          func(childComplexity int) int
-		Scopes            func(childComplexity int) int
-		UpdatedAt         func(childComplexity int) int
-		User              func(childComplexity int) int
+		CreatedAt            func(childComplexity int) int
+		CredentialGeneration func(childComplexity int) int
+		ExternalAccountID    func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		Provider             func(childComplexity int) int
+		RefreshTokenPresent  func(childComplexity int) int
+		Scopes               func(childComplexity int) int
+		UpdatedAt            func(childComplexity int) int
+		User                 func(childComplexity int) int
 	}
 
 	OAuthPending struct {
@@ -4681,6 +4685,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.LLMUsageEdge.Node(childComplexity), true
 
+	case "MCPConnection.apiKeyPresent":
+		if e.ComplexityRoot.MCPConnection.APIKeyPresent == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MCPConnection.APIKeyPresent(childComplexity), true
 	case "MCPConnection.audience":
 		if e.ComplexityRoot.MCPConnection.Audience == nil {
 			break
@@ -4735,6 +4745,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.MCPConnection.OrganizationID(childComplexity), true
+	case "MCPConnection.refreshTokenPresent":
+		if e.ComplexityRoot.MCPConnection.RefreshTokenPresent == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MCPConnection.RefreshTokenPresent(childComplexity), true
 	case "MCPConnection.revocationAttemptedAt":
 		if e.ComplexityRoot.MCPConnection.RevocationAttemptedAt == nil {
 			break
@@ -5133,6 +5149,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.OAuthConnection.CreatedAt(childComplexity), true
+	case "OAuthConnection.credentialGeneration":
+		if e.ComplexityRoot.OAuthConnection.CredentialGeneration == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthConnection.CredentialGeneration(childComplexity), true
 	case "OAuthConnection.externalAccountID":
 		if e.ComplexityRoot.OAuthConnection.ExternalAccountID == nil {
 			break
@@ -5151,6 +5173,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.OAuthConnection.Provider(childComplexity), true
+	case "OAuthConnection.refreshTokenPresent":
+		if e.ComplexityRoot.OAuthConnection.RefreshTokenPresent == nil {
+			break
+		}
+
+		return e.ComplexityRoot.OAuthConnection.RefreshTokenPresent(childComplexity), true
 	case "OAuthConnection.scopes":
 		if e.ComplexityRoot.OAuthConnection.Scopes == nil {
 			break
@@ -10904,6 +10932,10 @@ func (ec *executionContext) childFields_MCPConnection(ctx context.Context, field
 		return ec.fieldContext_MCPConnection_organizationID(ctx, field)
 	case "scopes":
 		return ec.fieldContext_MCPConnection_scopes(ctx, field)
+	case "refreshTokenPresent":
+		return ec.fieldContext_MCPConnection_refreshTokenPresent(ctx, field)
+	case "apiKeyPresent":
+		return ec.fieldContext_MCPConnection_apiKeyPresent(ctx, field)
 	case "credentialGeneration":
 		return ec.fieldContext_MCPConnection_credentialGeneration(ctx, field)
 	case "status":
@@ -11092,6 +11124,10 @@ func (ec *executionContext) childFields_OAuthConnection(ctx context.Context, fie
 		return ec.fieldContext_OAuthConnection_updatedAt(ctx, field)
 	case "provider":
 		return ec.fieldContext_OAuthConnection_provider(ctx, field)
+	case "refreshTokenPresent":
+		return ec.fieldContext_OAuthConnection_refreshTokenPresent(ctx, field)
+	case "credentialGeneration":
+		return ec.fieldContext_OAuthConnection_credentialGeneration(ctx, field)
 	case "scopes":
 		return ec.fieldContext_OAuthConnection_scopes(ctx, field)
 	case "externalAccountID":
@@ -25930,6 +25966,52 @@ func (ec *executionContext) fieldContext_MCPConnection_scopes(_ context.Context,
 	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
+func (ec *executionContext) _MCPConnection_refreshTokenPresent(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MCPConnection_refreshTokenPresent(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RefreshTokenPresent, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MCPConnection_refreshTokenPresent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _MCPConnection_apiKeyPresent(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_MCPConnection_apiKeyPresent(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.APIKeyPresent, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_MCPConnection_apiKeyPresent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("MCPConnection", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
 func (ec *executionContext) _MCPConnection_credentialGeneration(ctx context.Context, field graphql.CollectedField, obj *ent.MCPConnection) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -27664,6 +27746,52 @@ func (ec *executionContext) _OAuthConnection_provider(ctx context.Context, field
 }
 func (ec *executionContext) fieldContext_OAuthConnection_provider(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("OAuthConnection", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthConnection_refreshTokenPresent(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthConnection_refreshTokenPresent(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.RefreshTokenPresent, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v bool) graphql.Marshaler {
+			return ec.marshalNBoolean2bool(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthConnection_refreshTokenPresent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthConnection", field, false, false, errors.New("field of type Boolean does not have child fields"))
+}
+
+func (ec *executionContext) _OAuthConnection_credentialGeneration(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthConnection) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_OAuthConnection_credentialGeneration(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CredentialGeneration, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int64) graphql.Marshaler {
+			return ec.marshalNInt2int64(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_OAuthConnection_credentialGeneration(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("OAuthConnection", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
 func (ec *executionContext) _OAuthConnection_scopes(ctx context.Context, field graphql.CollectedField, obj *ent.OAuthConnection) (ret graphql.Marshaler) {
@@ -78706,7 +78834,7 @@ func (ec *executionContext) unmarshalInputMCPConnectionWhereInput(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "connector", "connectorNEQ", "connectorIn", "connectorNotIn", "connectorGT", "connectorGTE", "connectorLT", "connectorLTE", "connectorContains", "connectorHasPrefix", "connectorHasSuffix", "connectorEqualFold", "connectorContainsFold", "audience", "audienceNEQ", "audienceIn", "audienceNotIn", "audienceGT", "audienceGTE", "audienceLT", "audienceLTE", "audienceContains", "audienceHasPrefix", "audienceHasSuffix", "audienceEqualFold", "audienceContainsFold", "organizationID", "organizationIDNEQ", "organizationIDIn", "organizationIDNotIn", "organizationIDGT", "organizationIDGTE", "organizationIDLT", "organizationIDLTE", "organizationIDContains", "organizationIDHasPrefix", "organizationIDHasSuffix", "organizationIDIsNil", "organizationIDNotNil", "organizationIDEqualFold", "organizationIDContainsFold", "credentialGeneration", "credentialGenerationNEQ", "credentialGenerationIn", "credentialGenerationNotIn", "credentialGenerationGT", "credentialGenerationGTE", "credentialGenerationLT", "credentialGenerationLTE", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "connectedAt", "connectedAtNEQ", "connectedAtIn", "connectedAtNotIn", "connectedAtGT", "connectedAtGTE", "connectedAtLT", "connectedAtLTE", "connectedAtIsNil", "connectedAtNotNil", "lastUsedAt", "lastUsedAtNEQ", "lastUsedAtIn", "lastUsedAtNotIn", "lastUsedAtGT", "lastUsedAtGTE", "lastUsedAtLT", "lastUsedAtLTE", "lastUsedAtIsNil", "lastUsedAtNotNil", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "expiresAtIsNil", "expiresAtNotNil", "revokedAt", "revokedAtNEQ", "revokedAtIn", "revokedAtNotIn", "revokedAtGT", "revokedAtGTE", "revokedAtLT", "revokedAtLTE", "revokedAtIsNil", "revokedAtNotNil", "revokedReason", "revokedReasonNEQ", "revokedReasonIn", "revokedReasonNotIn", "revokedReasonGT", "revokedReasonGTE", "revokedReasonLT", "revokedReasonLTE", "revokedReasonContains", "revokedReasonHasPrefix", "revokedReasonHasSuffix", "revokedReasonIsNil", "revokedReasonNotNil", "revokedReasonEqualFold", "revokedReasonContainsFold", "revokedBy", "revokedByNEQ", "revokedByIn", "revokedByNotIn", "revokedByGT", "revokedByGTE", "revokedByLT", "revokedByLTE", "revokedByContains", "revokedByHasPrefix", "revokedByHasSuffix", "revokedByIsNil", "revokedByNotNil", "revokedByEqualFold", "revokedByContainsFold", "revocationAttemptedAt", "revocationAttemptedAtNEQ", "revocationAttemptedAtIn", "revocationAttemptedAtNotIn", "revocationAttemptedAtGT", "revocationAttemptedAtGTE", "revocationAttemptedAtLT", "revocationAttemptedAtLTE", "revocationAttemptedAtIsNil", "revocationAttemptedAtNotNil", "revocationSucceeded", "revocationSucceededNEQ", "revocationSucceededIsNil", "revocationSucceededNotNil", "hasUser", "hasUserWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "connector", "connectorNEQ", "connectorIn", "connectorNotIn", "connectorGT", "connectorGTE", "connectorLT", "connectorLTE", "connectorContains", "connectorHasPrefix", "connectorHasSuffix", "connectorEqualFold", "connectorContainsFold", "audience", "audienceNEQ", "audienceIn", "audienceNotIn", "audienceGT", "audienceGTE", "audienceLT", "audienceLTE", "audienceContains", "audienceHasPrefix", "audienceHasSuffix", "audienceEqualFold", "audienceContainsFold", "organizationID", "organizationIDNEQ", "organizationIDIn", "organizationIDNotIn", "organizationIDGT", "organizationIDGTE", "organizationIDLT", "organizationIDLTE", "organizationIDContains", "organizationIDHasPrefix", "organizationIDHasSuffix", "organizationIDIsNil", "organizationIDNotNil", "organizationIDEqualFold", "organizationIDContainsFold", "refreshTokenPresent", "refreshTokenPresentNEQ", "apiKeyPresent", "apiKeyPresentNEQ", "credentialGeneration", "credentialGenerationNEQ", "credentialGenerationIn", "credentialGenerationNotIn", "credentialGenerationGT", "credentialGenerationGTE", "credentialGenerationLT", "credentialGenerationLTE", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "connectedAt", "connectedAtNEQ", "connectedAtIn", "connectedAtNotIn", "connectedAtGT", "connectedAtGTE", "connectedAtLT", "connectedAtLTE", "connectedAtIsNil", "connectedAtNotNil", "lastUsedAt", "lastUsedAtNEQ", "lastUsedAtIn", "lastUsedAtNotIn", "lastUsedAtGT", "lastUsedAtGTE", "lastUsedAtLT", "lastUsedAtLTE", "lastUsedAtIsNil", "lastUsedAtNotNil", "expiresAt", "expiresAtNEQ", "expiresAtIn", "expiresAtNotIn", "expiresAtGT", "expiresAtGTE", "expiresAtLT", "expiresAtLTE", "expiresAtIsNil", "expiresAtNotNil", "revokedAt", "revokedAtNEQ", "revokedAtIn", "revokedAtNotIn", "revokedAtGT", "revokedAtGTE", "revokedAtLT", "revokedAtLTE", "revokedAtIsNil", "revokedAtNotNil", "revokedReason", "revokedReasonNEQ", "revokedReasonIn", "revokedReasonNotIn", "revokedReasonGT", "revokedReasonGTE", "revokedReasonLT", "revokedReasonLTE", "revokedReasonContains", "revokedReasonHasPrefix", "revokedReasonHasSuffix", "revokedReasonIsNil", "revokedReasonNotNil", "revokedReasonEqualFold", "revokedReasonContainsFold", "revokedBy", "revokedByNEQ", "revokedByIn", "revokedByNotIn", "revokedByGT", "revokedByGTE", "revokedByLT", "revokedByLTE", "revokedByContains", "revokedByHasPrefix", "revokedByHasSuffix", "revokedByIsNil", "revokedByNotNil", "revokedByEqualFold", "revokedByContainsFold", "revocationAttemptedAt", "revocationAttemptedAtNEQ", "revocationAttemptedAtIn", "revocationAttemptedAtNotIn", "revocationAttemptedAtGT", "revocationAttemptedAtGTE", "revocationAttemptedAtLT", "revocationAttemptedAtLTE", "revocationAttemptedAtIsNil", "revocationAttemptedAtNotNil", "revocationSucceeded", "revocationSucceededNEQ", "revocationSucceededIsNil", "revocationSucceededNotNil", "hasUser", "hasUserWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -79189,6 +79317,34 @@ func (ec *executionContext) unmarshalInputMCPConnectionWhereInput(ctx context.Co
 				return it, err
 			}
 			it.OrganizationIDContainsFold = data
+		case "refreshTokenPresent":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("refreshTokenPresent"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RefreshTokenPresent = data
+		case "refreshTokenPresentNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("refreshTokenPresentNEQ"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RefreshTokenPresentNEQ = data
+		case "apiKeyPresent":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiKeyPresent"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIKeyPresent = data
+		case "apiKeyPresentNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("apiKeyPresentNEQ"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.APIKeyPresentNEQ = data
 		case "credentialGeneration":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGeneration"))
 			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
@@ -83016,7 +83172,7 @@ func (ec *executionContext) unmarshalInputOAuthConnectionWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerEqualFold", "providerContainsFold", "externalAccountID", "externalAccountIDNEQ", "externalAccountIDIn", "externalAccountIDNotIn", "externalAccountIDGT", "externalAccountIDGTE", "externalAccountIDLT", "externalAccountIDLTE", "externalAccountIDContains", "externalAccountIDHasPrefix", "externalAccountIDHasSuffix", "externalAccountIDIsNil", "externalAccountIDNotNil", "externalAccountIDEqualFold", "externalAccountIDContainsFold", "hasUser", "hasUserWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "provider", "providerNEQ", "providerIn", "providerNotIn", "providerGT", "providerGTE", "providerLT", "providerLTE", "providerContains", "providerHasPrefix", "providerHasSuffix", "providerEqualFold", "providerContainsFold", "refreshTokenPresent", "refreshTokenPresentNEQ", "credentialGeneration", "credentialGenerationNEQ", "credentialGenerationIn", "credentialGenerationNotIn", "credentialGenerationGT", "credentialGenerationGTE", "credentialGenerationLT", "credentialGenerationLTE", "externalAccountID", "externalAccountIDNEQ", "externalAccountIDIn", "externalAccountIDNotIn", "externalAccountIDGT", "externalAccountIDGTE", "externalAccountIDLT", "externalAccountIDLTE", "externalAccountIDContains", "externalAccountIDHasPrefix", "externalAccountIDHasSuffix", "externalAccountIDIsNil", "externalAccountIDNotNil", "externalAccountIDEqualFold", "externalAccountIDContainsFold", "hasUser", "hasUserWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -83303,6 +83459,76 @@ func (ec *executionContext) unmarshalInputOAuthConnectionWhereInput(ctx context.
 				return it, err
 			}
 			it.ProviderContainsFold = data
+		case "refreshTokenPresent":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("refreshTokenPresent"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RefreshTokenPresent = data
+		case "refreshTokenPresentNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("refreshTokenPresentNEQ"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RefreshTokenPresentNEQ = data
+		case "credentialGeneration":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGeneration"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGeneration = data
+		case "credentialGenerationNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationNEQ = data
+		case "credentialGenerationIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationIn = data
+		case "credentialGenerationNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationNotIn"))
+			data, err := ec.unmarshalOInt2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationNotIn = data
+		case "credentialGenerationGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationGT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationGT = data
+		case "credentialGenerationGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationGTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationGTE = data
+		case "credentialGenerationLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationLT"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationLT = data
+		case "credentialGenerationLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("credentialGenerationLTE"))
+			data, err := ec.unmarshalOInt2ᚖint64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CredentialGenerationLTE = data
 		case "externalAccountID":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalAccountID"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -127774,6 +128000,16 @@ func (ec *executionContext) _MCPConnection(ctx context.Context, sel ast.Selectio
 			out.Values[i] = ec._MCPConnection_organizationID(ctx, field, obj)
 		case "scopes":
 			out.Values[i] = ec._MCPConnection_scopes(ctx, field, obj)
+		case "refreshTokenPresent":
+			out.Values[i] = ec._MCPConnection_refreshTokenPresent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "apiKeyPresent":
+			out.Values[i] = ec._MCPConnection_apiKeyPresent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "credentialGeneration":
 			out.Values[i] = ec._MCPConnection_credentialGeneration(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -128677,6 +128913,16 @@ func (ec *executionContext) _OAuthConnection(ctx context.Context, sel ast.Select
 			}
 		case "provider":
 			out.Values[i] = ec._OAuthConnection_provider(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "refreshTokenPresent":
+			out.Values[i] = ec._OAuthConnection_refreshTokenPresent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "credentialGeneration":
+			out.Values[i] = ec._OAuthConnection_credentialGeneration(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

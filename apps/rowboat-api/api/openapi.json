@@ -6225,6 +6225,9 @@
             "type": "string",
             "writeOnly": true
           },
+          "api_key_present": {
+            "type": "boolean"
+          },
           "audience": {
             "description": "OAuth token audience for the connector.",
             "example": "canvas-api",
@@ -6278,6 +6281,9 @@
             "type": "string",
             "writeOnly": true
           },
+          "refresh_token_present": {
+            "type": "boolean"
+          },
           "revocation_attempted_at": {
             "format": "date-time",
             "type": "string"
@@ -6325,6 +6331,8 @@
           "updated_at",
           "connector",
           "audience",
+          "refresh_token_present",
+          "api_key_present",
           "credential_generation",
           "status",
           "user"
@@ -6334,11 +6342,8 @@
       "MCPConnectionHistory": {
         "description": "Audit history for MCPConnection rows.",
         "properties": {
-          "api_key_encrypted": {
-            "description": "Sealed vendor API key. Sensitive internal storage field; never returned by desktop endpoints.",
-            "format": "byte",
-            "type": "string",
-            "writeOnly": true
+          "api_key_present": {
+            "type": "boolean"
           },
           "audience": {
             "description": "OAuth token audience for the connector.",
@@ -6405,11 +6410,8 @@
             "format": "uuid",
             "type": "string"
           },
-          "refresh_token_encrypted": {
-            "description": "Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.",
-            "format": "byte",
-            "type": "string",
-            "writeOnly": true
+          "refresh_token_present": {
+            "type": "boolean"
           },
           "revocation_attempted_at": {
             "format": "date-time",
@@ -6456,6 +6458,8 @@
           "operation",
           "connector",
           "audience",
+          "refresh_token_present",
+          "api_key_present",
           "credential_generation",
           "status"
         ],
@@ -7210,6 +7214,10 @@
             "format": "date-time",
             "type": "string"
           },
+          "credential_generation": {
+            "format": "int64",
+            "type": "integer"
+          },
           "external_account_id": {
             "type": "string"
           },
@@ -7229,6 +7237,9 @@
             "format": "byte",
             "type": "string",
             "writeOnly": true
+          },
+          "refresh_token_present": {
+            "type": "boolean"
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
@@ -7255,6 +7266,8 @@
           "updated_at",
           "provider",
           "refresh_token_encrypted",
+          "refresh_token_present",
+          "credential_generation",
           "user"
         ],
         "type": "object"
@@ -7267,6 +7280,10 @@
             "example": "2026-06-04T20:38:00Z",
             "format": "date-time",
             "type": "string"
+          },
+          "credential_generation": {
+            "format": "int64",
+            "type": "integer"
           },
           "external_account_id": {
             "type": "string"
@@ -7300,11 +7317,8 @@
             "format": "uuid",
             "type": "string"
           },
-          "refresh_token_encrypted": {
-            "description": "Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.",
-            "format": "byte",
-            "type": "string",
-            "writeOnly": true
+          "refresh_token_present": {
+            "type": "boolean"
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
@@ -7328,7 +7342,8 @@
           "history_time",
           "operation",
           "provider",
-          "refresh_token_encrypted"
+          "refresh_token_present",
+          "credential_generation"
         ],
         "type": "object"
       },

@@ -6667,6 +6667,8 @@ type MCPConnection implements Node {
   audience: String!
   organizationID: String
   scopes: [String!]
+  refreshTokenPresent: Boolean!
+  apiKeyPresent: Boolean!
   credentialGeneration: Int!
   status: String!
   connectedAt: Time
@@ -6800,6 +6802,16 @@ input MCPConnectionWhereInput {
   organizationIDNotNil: Boolean
   organizationIDEqualFold: String
   organizationIDContainsFold: String
+  """
+  refresh_token_present field predicates
+  """
+  refreshTokenPresent: Boolean
+  refreshTokenPresentNEQ: Boolean
+  """
+  api_key_present field predicates
+  """
+  apiKeyPresent: Boolean
+  apiKeyPresentNEQ: Boolean
   """
   credential_generation field predicates
   """
@@ -7611,6 +7623,8 @@ type OAuthConnection implements Node {
   createdAt: Time!
   updatedAt: Time!
   provider: String!
+  refreshTokenPresent: Boolean!
+  credentialGeneration: Int!
   scopes: [String!]
   externalAccountID: String
   user: User!
@@ -7672,6 +7686,22 @@ input OAuthConnectionWhereInput {
   providerHasSuffix: String
   providerEqualFold: String
   providerContainsFold: String
+  """
+  refresh_token_present field predicates
+  """
+  refreshTokenPresent: Boolean
+  refreshTokenPresentNEQ: Boolean
+  """
+  credential_generation field predicates
+  """
+  credentialGeneration: Int
+  credentialGenerationNEQ: Int
+  credentialGenerationIn: [Int!]
+  credentialGenerationNotIn: [Int!]
+  credentialGenerationGT: Int
+  credentialGenerationGTE: Int
+  credentialGenerationLT: Int
+  credentialGenerationLTE: Int
   """
   external_account_id field predicates
   """

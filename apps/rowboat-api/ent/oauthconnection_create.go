@@ -65,6 +65,34 @@ func (_c *OAuthConnectionCreate) SetRefreshTokenEncrypted(v []byte) *OAuthConnec
 	return _c
 }
 
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (_c *OAuthConnectionCreate) SetRefreshTokenPresent(v bool) *OAuthConnectionCreate {
+	_c.mutation.SetRefreshTokenPresent(v)
+	return _c
+}
+
+// SetNillableRefreshTokenPresent sets the "refresh_token_present" field if the given value is not nil.
+func (_c *OAuthConnectionCreate) SetNillableRefreshTokenPresent(v *bool) *OAuthConnectionCreate {
+	if v != nil {
+		_c.SetRefreshTokenPresent(*v)
+	}
+	return _c
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (_c *OAuthConnectionCreate) SetCredentialGeneration(v int64) *OAuthConnectionCreate {
+	_c.mutation.SetCredentialGeneration(v)
+	return _c
+}
+
+// SetNillableCredentialGeneration sets the "credential_generation" field if the given value is not nil.
+func (_c *OAuthConnectionCreate) SetNillableCredentialGeneration(v *int64) *OAuthConnectionCreate {
+	if v != nil {
+		_c.SetCredentialGeneration(*v)
+	}
+	return _c
+}
+
 // SetScopes sets the "scopes" field.
 func (_c *OAuthConnectionCreate) SetScopes(v []string) *OAuthConnectionCreate {
 	_c.mutation.SetScopes(v)
@@ -161,6 +189,14 @@ func (_c *OAuthConnectionCreate) defaults() error {
 		v := oauthconnection.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.RefreshTokenPresent(); !ok {
+		v := oauthconnection.DefaultRefreshTokenPresent
+		_c.mutation.SetRefreshTokenPresent(v)
+	}
+	if _, ok := _c.mutation.CredentialGeneration(); !ok {
+		v := oauthconnection.DefaultCredentialGeneration
+		_c.mutation.SetCredentialGeneration(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		if oauthconnection.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized oauthconnection.DefaultID (forgotten import ent/runtime?)")
@@ -184,6 +220,17 @@ func (_c *OAuthConnectionCreate) check() error {
 	}
 	if _, ok := _c.mutation.RefreshTokenEncrypted(); !ok {
 		return &ValidationError{Name: "refresh_token_encrypted", err: errors.New(`ent: missing required field "OAuthConnection.refresh_token_encrypted"`)}
+	}
+	if _, ok := _c.mutation.RefreshTokenPresent(); !ok {
+		return &ValidationError{Name: "refresh_token_present", err: errors.New(`ent: missing required field "OAuthConnection.refresh_token_present"`)}
+	}
+	if _, ok := _c.mutation.CredentialGeneration(); !ok {
+		return &ValidationError{Name: "credential_generation", err: errors.New(`ent: missing required field "OAuthConnection.credential_generation"`)}
+	}
+	if v, ok := _c.mutation.CredentialGeneration(); ok {
+		if err := oauthconnection.CredentialGenerationValidator(v); err != nil {
+			return &ValidationError{Name: "credential_generation", err: fmt.Errorf(`ent: validator failed for field "OAuthConnection.credential_generation": %w`, err)}
+		}
 	}
 	if len(_c.mutation.UserIDs()) == 0 {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "OAuthConnection.user"`)}
@@ -239,6 +286,14 @@ func (_c *OAuthConnectionCreate) createSpec() (*OAuthConnection, *sqlgraph.Creat
 	if value, ok := _c.mutation.RefreshTokenEncrypted(); ok {
 		_spec.SetField(oauthconnection.FieldRefreshTokenEncrypted, field.TypeBytes, value)
 		_node.RefreshTokenEncrypted = value
+	}
+	if value, ok := _c.mutation.RefreshTokenPresent(); ok {
+		_spec.SetField(oauthconnection.FieldRefreshTokenPresent, field.TypeBool, value)
+		_node.RefreshTokenPresent = value
+	}
+	if value, ok := _c.mutation.CredentialGeneration(); ok {
+		_spec.SetField(oauthconnection.FieldCredentialGeneration, field.TypeInt64, value)
+		_node.CredentialGeneration = value
 	}
 	if value, ok := _c.mutation.Scopes(); ok {
 		_spec.SetField(oauthconnection.FieldScopes, field.TypeJSON, value)
@@ -350,6 +405,36 @@ func (u *OAuthConnectionUpsert) SetRefreshTokenEncrypted(v []byte) *OAuthConnect
 // UpdateRefreshTokenEncrypted sets the "refresh_token_encrypted" field to the value that was provided on create.
 func (u *OAuthConnectionUpsert) UpdateRefreshTokenEncrypted() *OAuthConnectionUpsert {
 	u.SetExcluded(oauthconnection.FieldRefreshTokenEncrypted)
+	return u
+}
+
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (u *OAuthConnectionUpsert) SetRefreshTokenPresent(v bool) *OAuthConnectionUpsert {
+	u.Set(oauthconnection.FieldRefreshTokenPresent, v)
+	return u
+}
+
+// UpdateRefreshTokenPresent sets the "refresh_token_present" field to the value that was provided on create.
+func (u *OAuthConnectionUpsert) UpdateRefreshTokenPresent() *OAuthConnectionUpsert {
+	u.SetExcluded(oauthconnection.FieldRefreshTokenPresent)
+	return u
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (u *OAuthConnectionUpsert) SetCredentialGeneration(v int64) *OAuthConnectionUpsert {
+	u.Set(oauthconnection.FieldCredentialGeneration, v)
+	return u
+}
+
+// UpdateCredentialGeneration sets the "credential_generation" field to the value that was provided on create.
+func (u *OAuthConnectionUpsert) UpdateCredentialGeneration() *OAuthConnectionUpsert {
+	u.SetExcluded(oauthconnection.FieldCredentialGeneration)
+	return u
+}
+
+// AddCredentialGeneration adds v to the "credential_generation" field.
+func (u *OAuthConnectionUpsert) AddCredentialGeneration(v int64) *OAuthConnectionUpsert {
+	u.Add(oauthconnection.FieldCredentialGeneration, v)
 	return u
 }
 
@@ -479,6 +564,41 @@ func (u *OAuthConnectionUpsertOne) SetRefreshTokenEncrypted(v []byte) *OAuthConn
 func (u *OAuthConnectionUpsertOne) UpdateRefreshTokenEncrypted() *OAuthConnectionUpsertOne {
 	return u.Update(func(s *OAuthConnectionUpsert) {
 		s.UpdateRefreshTokenEncrypted()
+	})
+}
+
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (u *OAuthConnectionUpsertOne) SetRefreshTokenPresent(v bool) *OAuthConnectionUpsertOne {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.SetRefreshTokenPresent(v)
+	})
+}
+
+// UpdateRefreshTokenPresent sets the "refresh_token_present" field to the value that was provided on create.
+func (u *OAuthConnectionUpsertOne) UpdateRefreshTokenPresent() *OAuthConnectionUpsertOne {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.UpdateRefreshTokenPresent()
+	})
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (u *OAuthConnectionUpsertOne) SetCredentialGeneration(v int64) *OAuthConnectionUpsertOne {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.SetCredentialGeneration(v)
+	})
+}
+
+// AddCredentialGeneration adds v to the "credential_generation" field.
+func (u *OAuthConnectionUpsertOne) AddCredentialGeneration(v int64) *OAuthConnectionUpsertOne {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.AddCredentialGeneration(v)
+	})
+}
+
+// UpdateCredentialGeneration sets the "credential_generation" field to the value that was provided on create.
+func (u *OAuthConnectionUpsertOne) UpdateCredentialGeneration() *OAuthConnectionUpsertOne {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.UpdateCredentialGeneration()
 	})
 }
 
@@ -781,6 +901,41 @@ func (u *OAuthConnectionUpsertBulk) SetRefreshTokenEncrypted(v []byte) *OAuthCon
 func (u *OAuthConnectionUpsertBulk) UpdateRefreshTokenEncrypted() *OAuthConnectionUpsertBulk {
 	return u.Update(func(s *OAuthConnectionUpsert) {
 		s.UpdateRefreshTokenEncrypted()
+	})
+}
+
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (u *OAuthConnectionUpsertBulk) SetRefreshTokenPresent(v bool) *OAuthConnectionUpsertBulk {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.SetRefreshTokenPresent(v)
+	})
+}
+
+// UpdateRefreshTokenPresent sets the "refresh_token_present" field to the value that was provided on create.
+func (u *OAuthConnectionUpsertBulk) UpdateRefreshTokenPresent() *OAuthConnectionUpsertBulk {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.UpdateRefreshTokenPresent()
+	})
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (u *OAuthConnectionUpsertBulk) SetCredentialGeneration(v int64) *OAuthConnectionUpsertBulk {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.SetCredentialGeneration(v)
+	})
+}
+
+// AddCredentialGeneration adds v to the "credential_generation" field.
+func (u *OAuthConnectionUpsertBulk) AddCredentialGeneration(v int64) *OAuthConnectionUpsertBulk {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.AddCredentialGeneration(v)
+	})
+}
+
+// UpdateCredentialGeneration sets the "credential_generation" field to the value that was provided on create.
+func (u *OAuthConnectionUpsertBulk) UpdateCredentialGeneration() *OAuthConnectionUpsertBulk {
+	return u.Update(func(s *OAuthConnectionUpsert) {
+		s.UpdateCredentialGeneration()
 	})
 }
 

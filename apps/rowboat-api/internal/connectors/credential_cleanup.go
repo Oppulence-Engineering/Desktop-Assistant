@@ -3,17 +3,25 @@ package connectors
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 const credentialCleanupClaimTTL = 2 * time.Minute
 const credentialCleanupAdoptionGrace = time.Minute
+
+const (
+	credentialRecoveryOwnerCallback = "oauth_callback"
+	credentialRecoveryOwnerRotation = "refresh_rotation_fallback"
+)
 
 func (d *refreshDeduper) enqueueCredentialCleanup(ctx context.Context, bound connectorRefreshContext, refreshToken string) (uuid.UUID, error) {
 	connectionID, err := uuid.Parse(bound.ConnectionID)
@@ -63,6 +71,132 @@ func revokeCredentialBounded(parent context.Context, ory *oryClient, refreshToke
 		}
 	}
 	return lastErr
+}
+
+// persistCredentialRecovery writes the independent recovery journal. The
+// caller supplies a stable id for callback grants, making retries idempotent.
+// A duplicate is accepted only when it names the same durable owner.
+func persistCredentialRecovery(
+	ctx context.Context,
+	client *ent.Client,
+	sealer *crypto.Sealer,
+	id uuid.UUID,
+	connector, ownerKind, ownerID, refreshToken string,
+	nextAttemptAt time.Time,
+) (uuid.UUID, error) {
+	if client == nil || sealer == nil || id == uuid.Nil || connector == "" || ownerKind == "" || ownerID == "" || refreshToken == "" {
+		return uuid.Nil, errors.New("connector credential recovery input is incomplete")
+	}
+	sealed, err := sealer.SealString(refreshToken)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	_, err = client.ConnectorCredentialRecovery.Create().
+		SetID(id).
+		SetConnector(connector).
+		SetOwnerKind(ownerKind).
+		SetOwnerID(ownerID).
+		SetRefreshTokenEncrypted(sealed).
+		SetStatus("pending").
+		SetNextAttemptAt(nextAttemptAt.UTC()).
+		Save(auth.WithInternal(ctx))
+	if err == nil {
+		return id, nil
+	}
+	existing, queryErr := client.ConnectorCredentialRecovery.Query().Where(
+		connectorcredentialrecovery.IDEQ(id),
+		connectorcredentialrecovery.OwnerKindEQ(ownerKind),
+		connectorcredentialrecovery.OwnerIDEQ(ownerID),
+	).Only(auth.WithInternal(ctx))
+	if queryErr != nil {
+		return uuid.Nil, err
+	}
+	plain, openErr := sealer.OpenString(existing.RefreshTokenEncrypted)
+	if openErr != nil || plain != refreshToken {
+		return uuid.Nil, fmt.Errorf("credential recovery id collision for %s/%s", ownerKind, ownerID)
+	}
+	return existing.ID, nil
+}
+
+// establishCredentialRecovery cannot return a live provider credential with no
+// durable encrypted owner. If PostgreSQL and provider revocation both fail, it
+// keeps alternating the two independent closure paths until one is confirmed.
+// A process death before either acknowledgement remains the irreducible window
+// for providers that offer neither idempotent exchange nor token introspection.
+func establishCredentialRecovery(
+	ctx context.Context,
+	client *ent.Client,
+	sealer *crypto.Sealer,
+	ory *oryClient,
+	log *zap.Logger,
+	id uuid.UUID,
+	connector, ownerKind, ownerID, refreshToken string,
+	nextAttemptAt time.Time,
+) (uuid.UUID, bool, error) {
+	if refreshToken == "" {
+		return uuid.Nil, false, nil
+	}
+	detached := context.WithoutCancel(ctx)
+	for attempt := 0; ; attempt++ {
+		writeCtx, cancel := context.WithTimeout(detached, 5*time.Second)
+		recoveryID, err := persistCredentialRecovery(writeCtx, client, sealer, id, connector, ownerKind, ownerID, refreshToken, nextAttemptAt)
+		cancel()
+		if err == nil {
+			return recoveryID, false, nil
+		}
+		persistErr := err
+		revokeErr := revokeCredentialBounded(detached, ory, refreshToken)
+		if revokeErr == nil {
+			return uuid.Nil, true, fmt.Errorf("durably journal connector credential: %w; provider revocation confirmed", persistErr)
+		}
+		delay := time.Duration(min(attempt+1, 5)) * 200 * time.Millisecond
+		timer := time.NewTimer(delay)
+		<-timer.C
+		if attempt > 0 && attempt%5 == 0 {
+			if log != nil {
+				log.Error("connector credential has no acknowledged custody path; retrying without returning",
+					zap.String("connector", connector), zap.String("owner_kind", ownerKind), zap.String("owner_id", ownerID),
+					zap.Error(persistErr), zap.NamedError("provider_revoke_error", revokeErr))
+			}
+		}
+	}
+}
+
+func compensateCredentialRecovery(ctx context.Context, client *ent.Client, sealer *crypto.Sealer, ory *oryClient, log *zap.Logger, recoveryID uuid.UUID, reason string) {
+	if recoveryID == uuid.Nil {
+		return
+	}
+	claimID := uuid.New()
+	now := time.Now().UTC()
+	claimed, err := client.ConnectorCredentialRecovery.UpdateOneID(recoveryID).
+		Where(connectorcredentialrecovery.StatusEQ("pending")).
+		SetStatus("processing").SetClaimID(claimID).SetClaimedUntil(now.Add(credentialCleanupClaimTTL)).
+		Save(auth.WithInternal(ctx))
+	if err != nil || claimed.ClaimID != claimID {
+		// A committed claim transaction deleted the journal atomically with
+		// MCPConnection adoption. Never revoke when ownership is ambiguous.
+		return
+	}
+	plain, err := sealer.OpenString(claimed.RefreshTokenEncrypted)
+	if err == nil {
+		err = revokeCredentialBounded(ctx, ory, plain)
+	}
+	if err != nil {
+		_ = client.ConnectorCredentialRecovery.UpdateOneID(recoveryID).
+			Where(connectorcredentialrecovery.ClaimIDEQ(claimID), connectorcredentialrecovery.StatusEQ("processing")).
+			SetStatus("pending").ClearClaimID().ClearClaimedUntil().AddAttempts(1).
+			SetLastErrorCode("provider_revoke_unconfirmed").SetNextAttemptAt(now).
+			Exec(auth.WithInternal(ctx))
+		if log != nil {
+			log.Warn("connector credential recovery deferred", zap.String("reason", reason), zap.String("recovery_id", recoveryID.String()))
+		}
+		return
+	}
+	_, _ = client.ConnectorCredentialRecovery.Delete().Where(
+		connectorcredentialrecovery.IDEQ(recoveryID),
+		connectorcredentialrecovery.ClaimIDEQ(claimID),
+		connectorcredentialrecovery.StatusEQ("processing"),
+	).Exec(auth.WithInternal(ctx))
 }
 
 func (d *refreshDeduper) compensateCredential(ctx context.Context, ory *oryClient, cleanupID uuid.UUID, refreshToken, reason string) {
@@ -147,6 +281,49 @@ func (h *Handler) ProcessCredentialCleanupJobs(ctx context.Context, limit int) (
 		}
 		completed++
 		h.log.Info("connector orphan credential cleanup completed", zap.String("cleanup_job_id", claimed.ID.String()), zap.String("connector", claimed.Connector))
+	}
+	recoveries, err := h.client.ConnectorCredentialRecovery.Query().Where(
+		connectorcredentialrecovery.Or(
+			connectorcredentialrecovery.And(connectorcredentialrecovery.StatusEQ("pending"), connectorcredentialrecovery.NextAttemptAtLTE(now)),
+			connectorcredentialrecovery.And(connectorcredentialrecovery.StatusEQ("processing"), connectorcredentialrecovery.ClaimedUntilLTE(now)),
+		),
+	).Order(ent.Asc(connectorcredentialrecovery.FieldNextAttemptAt)).Limit(limit).All(auth.WithInternal(ctx))
+	if err != nil {
+		return completed, err
+	}
+	for _, recovery := range recoveries {
+		claimID := uuid.New()
+		claimed, claimErr := recovery.Update().Where(
+			connectorcredentialrecovery.Or(
+				connectorcredentialrecovery.And(connectorcredentialrecovery.StatusEQ("pending"), connectorcredentialrecovery.NextAttemptAtLTE(now)),
+				connectorcredentialrecovery.And(connectorcredentialrecovery.StatusEQ("processing"), connectorcredentialrecovery.ClaimedUntilLTE(now)),
+			),
+		).SetStatus("processing").SetClaimID(claimID).SetClaimedUntil(now.Add(credentialCleanupClaimTTL)).Save(auth.WithInternal(ctx))
+		if claimErr != nil || claimed.ClaimID != claimID {
+			continue
+		}
+		plain, openErr := h.sealer.OpenString(claimed.RefreshTokenEncrypted)
+		if openErr != nil {
+			_ = claimed.Update().Where(connectorcredentialrecovery.ClaimIDEQ(claimID)).SetStatus("pending").ClearClaimID().ClearClaimedUntil().AddAttempts(1).SetLastErrorCode("credential_open_failed").SetNextAttemptAt(now.Add(time.Minute)).Exec(auth.WithInternal(ctx))
+			continue
+		}
+		if revokeErr := revokeCredentialBounded(ctx, h.ory, plain); revokeErr != nil {
+			delay := time.Duration(min(claimed.Attempts+1, 8)) * time.Minute
+			_ = claimed.Update().Where(connectorcredentialrecovery.ClaimIDEQ(claimID)).SetStatus("pending").ClearClaimID().ClearClaimedUntil().AddAttempts(1).SetLastErrorCode("provider_revoke_unconfirmed").SetNextAttemptAt(now.Add(delay)).Exec(auth.WithInternal(ctx))
+			continue
+		}
+		deleted, deleteErr := h.client.ConnectorCredentialRecovery.Delete().Where(
+			connectorcredentialrecovery.IDEQ(claimed.ID),
+			connectorcredentialrecovery.ClaimIDEQ(claimID),
+			connectorcredentialrecovery.StatusEQ("processing"),
+		).Exec(auth.WithInternal(ctx))
+		if deleteErr != nil {
+			return completed, deleteErr
+		}
+		if deleted == 1 {
+			completed++
+			h.log.Info("connector credential recovery completed", zap.String("recovery_id", claimed.ID.String()), zap.String("connector", claimed.Connector))
+		}
 	}
 	return completed, nil
 }

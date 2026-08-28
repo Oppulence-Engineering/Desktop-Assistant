@@ -91,6 +91,16 @@ func APIKeyEncrypted(v []byte) predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldEQ(FieldAPIKeyEncrypted, v))
 }
 
+// RefreshTokenPresent applies equality check predicate on the "refresh_token_present" field. It's identical to RefreshTokenPresentEQ.
+func RefreshTokenPresent(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRefreshTokenPresent, v))
+}
+
+// APIKeyPresent applies equality check predicate on the "api_key_present" field. It's identical to APIKeyPresentEQ.
+func APIKeyPresent(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldAPIKeyPresent, v))
+}
+
 // CredentialGeneration applies equality check predicate on the "credential_generation" field. It's identical to CredentialGenerationEQ.
 func CredentialGeneration(v int64) predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldEQ(FieldCredentialGeneration, v))
@@ -534,6 +544,26 @@ func APIKeyEncryptedIsNil() predicate.MCPConnection {
 // APIKeyEncryptedNotNil applies the NotNil predicate on the "api_key_encrypted" field.
 func APIKeyEncryptedNotNil() predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldNotNull(FieldAPIKeyEncrypted))
+}
+
+// RefreshTokenPresentEQ applies the EQ predicate on the "refresh_token_present" field.
+func RefreshTokenPresentEQ(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRefreshTokenPresent, v))
+}
+
+// RefreshTokenPresentNEQ applies the NEQ predicate on the "refresh_token_present" field.
+func RefreshTokenPresentNEQ(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNEQ(FieldRefreshTokenPresent, v))
+}
+
+// APIKeyPresentEQ applies the EQ predicate on the "api_key_present" field.
+func APIKeyPresentEQ(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldAPIKeyPresent, v))
+}
+
+// APIKeyPresentNEQ applies the NEQ predicate on the "api_key_present" field.
+func APIKeyPresentNEQ(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNEQ(FieldAPIKeyPresent, v))
 }
 
 // CredentialGenerationEQ applies the EQ predicate on the "credential_generation" field.

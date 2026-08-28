@@ -31,6 +31,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
@@ -764,6 +765,33 @@ func (f TraverseConnectorCredentialCleanupJob) Traverse(ctx context.Context, q e
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.ConnectorCredentialCleanupJobQuery", q)
+}
+
+// The ConnectorCredentialRecoveryFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ConnectorCredentialRecoveryFunc func(context.Context, *ent.ConnectorCredentialRecoveryQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ConnectorCredentialRecoveryFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ConnectorCredentialRecoveryQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ConnectorCredentialRecoveryQuery", q)
+}
+
+// The TraverseConnectorCredentialRecovery type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseConnectorCredentialRecovery func(context.Context, *ent.ConnectorCredentialRecoveryQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseConnectorCredentialRecovery) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseConnectorCredentialRecovery) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConnectorCredentialRecoveryQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ConnectorCredentialRecoveryQuery", q)
 }
 
 // The ConnectorRevocationJobFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -2300,6 +2328,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.ConnectorAuditEventQuery, predicate.ConnectorAuditEvent, connectorauditevent.OrderOption]{typ: ent.TypeConnectorAuditEvent, tq: q}, nil
 	case *ent.ConnectorCredentialCleanupJobQuery:
 		return &query[*ent.ConnectorCredentialCleanupJobQuery, predicate.ConnectorCredentialCleanupJob, connectorcredentialcleanupjob.OrderOption]{typ: ent.TypeConnectorCredentialCleanupJob, tq: q}, nil
+	case *ent.ConnectorCredentialRecoveryQuery:
+		return &query[*ent.ConnectorCredentialRecoveryQuery, predicate.ConnectorCredentialRecovery, connectorcredentialrecovery.OrderOption]{typ: ent.TypeConnectorCredentialRecovery, tq: q}, nil
 	case *ent.ConnectorRevocationJobQuery:
 		return &query[*ent.ConnectorRevocationJobQuery, predicate.ConnectorRevocationJob, connectorrevocationjob.OrderOption]{typ: ent.TypeConnectorRevocationJob, tq: q}, nil
 	case *ent.ConversationIntelligenceArtifactQuery:

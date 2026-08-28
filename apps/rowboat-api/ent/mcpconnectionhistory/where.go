@@ -91,14 +91,14 @@ func OrganizationID(v string) predicate.MCPConnectionHistory {
 	return predicate.MCPConnectionHistory(sql.FieldEQ(FieldOrganizationID, v))
 }
 
-// RefreshTokenEncrypted applies equality check predicate on the "refresh_token_encrypted" field. It's identical to RefreshTokenEncryptedEQ.
-func RefreshTokenEncrypted(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldEQ(FieldRefreshTokenEncrypted, v))
+// RefreshTokenPresent applies equality check predicate on the "refresh_token_present" field. It's identical to RefreshTokenPresentEQ.
+func RefreshTokenPresent(v bool) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldEQ(FieldRefreshTokenPresent, v))
 }
 
-// APIKeyEncrypted applies equality check predicate on the "api_key_encrypted" field. It's identical to APIKeyEncryptedEQ.
-func APIKeyEncrypted(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldEQ(FieldAPIKeyEncrypted, v))
+// APIKeyPresent applies equality check predicate on the "api_key_present" field. It's identical to APIKeyPresentEQ.
+func APIKeyPresent(v bool) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldEQ(FieldAPIKeyPresent, v))
 }
 
 // CredentialGeneration applies equality check predicate on the "credential_generation" field. It's identical to CredentialGenerationEQ.
@@ -556,104 +556,24 @@ func ScopesNotNil() predicate.MCPConnectionHistory {
 	return predicate.MCPConnectionHistory(sql.FieldNotNull(FieldScopes))
 }
 
-// RefreshTokenEncryptedEQ applies the EQ predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedEQ(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldEQ(FieldRefreshTokenEncrypted, v))
+// RefreshTokenPresentEQ applies the EQ predicate on the "refresh_token_present" field.
+func RefreshTokenPresentEQ(v bool) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldEQ(FieldRefreshTokenPresent, v))
 }
 
-// RefreshTokenEncryptedNEQ applies the NEQ predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedNEQ(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldNEQ(FieldRefreshTokenEncrypted, v))
+// RefreshTokenPresentNEQ applies the NEQ predicate on the "refresh_token_present" field.
+func RefreshTokenPresentNEQ(v bool) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldNEQ(FieldRefreshTokenPresent, v))
 }
 
-// RefreshTokenEncryptedIn applies the In predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedIn(vs ...[]byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldIn(FieldRefreshTokenEncrypted, vs...))
+// APIKeyPresentEQ applies the EQ predicate on the "api_key_present" field.
+func APIKeyPresentEQ(v bool) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldEQ(FieldAPIKeyPresent, v))
 }
 
-// RefreshTokenEncryptedNotIn applies the NotIn predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedNotIn(vs ...[]byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldNotIn(FieldRefreshTokenEncrypted, vs...))
-}
-
-// RefreshTokenEncryptedGT applies the GT predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedGT(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldGT(FieldRefreshTokenEncrypted, v))
-}
-
-// RefreshTokenEncryptedGTE applies the GTE predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedGTE(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldGTE(FieldRefreshTokenEncrypted, v))
-}
-
-// RefreshTokenEncryptedLT applies the LT predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedLT(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldLT(FieldRefreshTokenEncrypted, v))
-}
-
-// RefreshTokenEncryptedLTE applies the LTE predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedLTE(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldLTE(FieldRefreshTokenEncrypted, v))
-}
-
-// RefreshTokenEncryptedIsNil applies the IsNil predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedIsNil() predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldIsNull(FieldRefreshTokenEncrypted))
-}
-
-// RefreshTokenEncryptedNotNil applies the NotNil predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedNotNil() predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldNotNull(FieldRefreshTokenEncrypted))
-}
-
-// APIKeyEncryptedEQ applies the EQ predicate on the "api_key_encrypted" field.
-func APIKeyEncryptedEQ(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldEQ(FieldAPIKeyEncrypted, v))
-}
-
-// APIKeyEncryptedNEQ applies the NEQ predicate on the "api_key_encrypted" field.
-func APIKeyEncryptedNEQ(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldNEQ(FieldAPIKeyEncrypted, v))
-}
-
-// APIKeyEncryptedIn applies the In predicate on the "api_key_encrypted" field.
-func APIKeyEncryptedIn(vs ...[]byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldIn(FieldAPIKeyEncrypted, vs...))
-}
-
-// APIKeyEncryptedNotIn applies the NotIn predicate on the "api_key_encrypted" field.
-func APIKeyEncryptedNotIn(vs ...[]byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldNotIn(FieldAPIKeyEncrypted, vs...))
-}
-
-// APIKeyEncryptedGT applies the GT predicate on the "api_key_encrypted" field.
-func APIKeyEncryptedGT(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldGT(FieldAPIKeyEncrypted, v))
-}
-
-// APIKeyEncryptedGTE applies the GTE predicate on the "api_key_encrypted" field.
-func APIKeyEncryptedGTE(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldGTE(FieldAPIKeyEncrypted, v))
-}
-
-// APIKeyEncryptedLT applies the LT predicate on the "api_key_encrypted" field.
-func APIKeyEncryptedLT(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldLT(FieldAPIKeyEncrypted, v))
-}
-
-// APIKeyEncryptedLTE applies the LTE predicate on the "api_key_encrypted" field.
-func APIKeyEncryptedLTE(v []byte) predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldLTE(FieldAPIKeyEncrypted, v))
-}
-
-// APIKeyEncryptedIsNil applies the IsNil predicate on the "api_key_encrypted" field.
-func APIKeyEncryptedIsNil() predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldIsNull(FieldAPIKeyEncrypted))
-}
-
-// APIKeyEncryptedNotNil applies the NotNil predicate on the "api_key_encrypted" field.
-func APIKeyEncryptedNotNil() predicate.MCPConnectionHistory {
-	return predicate.MCPConnectionHistory(sql.FieldNotNull(FieldAPIKeyEncrypted))
+// APIKeyPresentNEQ applies the NEQ predicate on the "api_key_present" field.
+func APIKeyPresentNEQ(v bool) predicate.MCPConnectionHistory {
+	return predicate.MCPConnectionHistory(sql.FieldNEQ(FieldAPIKeyPresent, v))
 }
 
 // CredentialGenerationEQ applies the EQ predicate on the "credential_generation" field.

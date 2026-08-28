@@ -105,6 +105,34 @@ func (_u *MCPConnectionUpdate) ClearAPIKeyEncrypted() *MCPConnectionUpdate {
 	return _u
 }
 
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (_u *MCPConnectionUpdate) SetRefreshTokenPresent(v bool) *MCPConnectionUpdate {
+	_u.mutation.SetRefreshTokenPresent(v)
+	return _u
+}
+
+// SetNillableRefreshTokenPresent sets the "refresh_token_present" field if the given value is not nil.
+func (_u *MCPConnectionUpdate) SetNillableRefreshTokenPresent(v *bool) *MCPConnectionUpdate {
+	if v != nil {
+		_u.SetRefreshTokenPresent(*v)
+	}
+	return _u
+}
+
+// SetAPIKeyPresent sets the "api_key_present" field.
+func (_u *MCPConnectionUpdate) SetAPIKeyPresent(v bool) *MCPConnectionUpdate {
+	_u.mutation.SetAPIKeyPresent(v)
+	return _u
+}
+
+// SetNillableAPIKeyPresent sets the "api_key_present" field if the given value is not nil.
+func (_u *MCPConnectionUpdate) SetNillableAPIKeyPresent(v *bool) *MCPConnectionUpdate {
+	if v != nil {
+		_u.SetAPIKeyPresent(*v)
+	}
+	return _u
+}
+
 // SetCredentialGeneration sets the "credential_generation" field.
 func (_u *MCPConnectionUpdate) SetCredentialGeneration(v int64) *MCPConnectionUpdate {
 	_u.mutation.ResetCredentialGeneration()
@@ -412,6 +440,12 @@ func (_u *MCPConnectionUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	if _u.mutation.APIKeyEncryptedCleared() {
 		_spec.ClearField(mcpconnection.FieldAPIKeyEncrypted, field.TypeBytes)
 	}
+	if value, ok := _u.mutation.RefreshTokenPresent(); ok {
+		_spec.SetField(mcpconnection.FieldRefreshTokenPresent, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.APIKeyPresent(); ok {
+		_spec.SetField(mcpconnection.FieldAPIKeyPresent, field.TypeBool, value)
+	}
 	if value, ok := _u.mutation.CredentialGeneration(); ok {
 		_spec.SetField(mcpconnection.FieldCredentialGeneration, field.TypeInt64, value)
 	}
@@ -562,6 +596,34 @@ func (_u *MCPConnectionUpdateOne) SetAPIKeyEncrypted(v []byte) *MCPConnectionUpd
 // ClearAPIKeyEncrypted clears the value of the "api_key_encrypted" field.
 func (_u *MCPConnectionUpdateOne) ClearAPIKeyEncrypted() *MCPConnectionUpdateOne {
 	_u.mutation.ClearAPIKeyEncrypted()
+	return _u
+}
+
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (_u *MCPConnectionUpdateOne) SetRefreshTokenPresent(v bool) *MCPConnectionUpdateOne {
+	_u.mutation.SetRefreshTokenPresent(v)
+	return _u
+}
+
+// SetNillableRefreshTokenPresent sets the "refresh_token_present" field if the given value is not nil.
+func (_u *MCPConnectionUpdateOne) SetNillableRefreshTokenPresent(v *bool) *MCPConnectionUpdateOne {
+	if v != nil {
+		_u.SetRefreshTokenPresent(*v)
+	}
+	return _u
+}
+
+// SetAPIKeyPresent sets the "api_key_present" field.
+func (_u *MCPConnectionUpdateOne) SetAPIKeyPresent(v bool) *MCPConnectionUpdateOne {
+	_u.mutation.SetAPIKeyPresent(v)
+	return _u
+}
+
+// SetNillableAPIKeyPresent sets the "api_key_present" field if the given value is not nil.
+func (_u *MCPConnectionUpdateOne) SetNillableAPIKeyPresent(v *bool) *MCPConnectionUpdateOne {
+	if v != nil {
+		_u.SetAPIKeyPresent(*v)
+	}
 	return _u
 }
 
@@ -901,6 +963,12 @@ func (_u *MCPConnectionUpdateOne) sqlSave(ctx context.Context) (_node *MCPConnec
 	}
 	if _u.mutation.APIKeyEncryptedCleared() {
 		_spec.ClearField(mcpconnection.FieldAPIKeyEncrypted, field.TypeBytes)
+	}
+	if value, ok := _u.mutation.RefreshTokenPresent(); ok {
+		_spec.SetField(mcpconnection.FieldRefreshTokenPresent, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.APIKeyPresent(); ok {
+		_spec.SetField(mcpconnection.FieldAPIKeyPresent, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.CredentialGeneration(); ok {
 		_spec.SetField(mcpconnection.FieldCredentialGeneration, field.TypeInt64, value)

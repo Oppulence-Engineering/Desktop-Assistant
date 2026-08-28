@@ -631,12 +631,12 @@ func (m *MCPConnectionMutation) CreateHistoryFromCreate(ctx context.Context) err
 		create = create.SetScopes(scopes)
 	}
 
-	if refreshTokenEncrypted, exists := m.RefreshTokenEncrypted(); exists {
-		create = create.SetRefreshTokenEncrypted(refreshTokenEncrypted)
+	if refreshTokenPresent, exists := m.RefreshTokenPresent(); exists {
+		create = create.SetRefreshTokenPresent(refreshTokenPresent)
 	}
 
-	if apiKeyEncrypted, exists := m.APIKeyEncrypted(); exists {
-		create = create.SetAPIKeyEncrypted(apiKeyEncrypted)
+	if apiKeyPresent, exists := m.APIKeyPresent(); exists {
+		create = create.SetAPIKeyPresent(apiKeyPresent)
 	}
 
 	if credentialGeneration, exists := m.CredentialGeneration(); exists {
@@ -750,16 +750,16 @@ func (m *MCPConnectionMutation) CreateHistoryFromUpdate(ctx context.Context) err
 			create = create.SetScopes(mcpconnection.Scopes)
 		}
 
-		if refreshTokenEncrypted, exists := m.RefreshTokenEncrypted(); exists {
-			create = create.SetRefreshTokenEncrypted(refreshTokenEncrypted)
+		if refreshTokenPresent, exists := m.RefreshTokenPresent(); exists {
+			create = create.SetRefreshTokenPresent(refreshTokenPresent)
 		} else {
-			create = create.SetRefreshTokenEncrypted(mcpconnection.RefreshTokenEncrypted)
+			create = create.SetRefreshTokenPresent(mcpconnection.RefreshTokenPresent)
 		}
 
-		if apiKeyEncrypted, exists := m.APIKeyEncrypted(); exists {
-			create = create.SetAPIKeyEncrypted(apiKeyEncrypted)
+		if apiKeyPresent, exists := m.APIKeyPresent(); exists {
+			create = create.SetAPIKeyPresent(apiKeyPresent)
 		} else {
-			create = create.SetAPIKeyEncrypted(mcpconnection.APIKeyEncrypted)
+			create = create.SetAPIKeyPresent(mcpconnection.APIKeyPresent)
 		}
 
 		if credentialGeneration, exists := m.CredentialGeneration(); exists {
@@ -864,8 +864,8 @@ func (m *MCPConnectionMutation) CreateHistoryFromDelete(ctx context.Context) err
 			SetAudience(mcpconnection.Audience).
 			SetOrganizationID(mcpconnection.OrganizationID).
 			SetScopes(mcpconnection.Scopes).
-			SetRefreshTokenEncrypted(mcpconnection.RefreshTokenEncrypted).
-			SetAPIKeyEncrypted(mcpconnection.APIKeyEncrypted).
+			SetRefreshTokenPresent(mcpconnection.RefreshTokenPresent).
+			SetAPIKeyPresent(mcpconnection.APIKeyPresent).
 			SetCredentialGeneration(mcpconnection.CredentialGeneration).
 			SetStatus(mcpconnection.Status).
 			SetConnectedAt(mcpconnection.ConnectedAt).
@@ -919,8 +919,12 @@ func (m *OAuthConnectionMutation) CreateHistoryFromCreate(ctx context.Context) e
 		create = create.SetProvider(provider)
 	}
 
-	if refreshTokenEncrypted, exists := m.RefreshTokenEncrypted(); exists {
-		create = create.SetRefreshTokenEncrypted(refreshTokenEncrypted)
+	if refreshTokenPresent, exists := m.RefreshTokenPresent(); exists {
+		create = create.SetRefreshTokenPresent(refreshTokenPresent)
+	}
+
+	if credentialGeneration, exists := m.CredentialGeneration(); exists {
+		create = create.SetCredentialGeneration(credentialGeneration)
 	}
 
 	if scopes, exists := m.Scopes(); exists {
@@ -984,10 +988,16 @@ func (m *OAuthConnectionMutation) CreateHistoryFromUpdate(ctx context.Context) e
 			create = create.SetProvider(oauthconnection.Provider)
 		}
 
-		if refreshTokenEncrypted, exists := m.RefreshTokenEncrypted(); exists {
-			create = create.SetRefreshTokenEncrypted(refreshTokenEncrypted)
+		if refreshTokenPresent, exists := m.RefreshTokenPresent(); exists {
+			create = create.SetRefreshTokenPresent(refreshTokenPresent)
 		} else {
-			create = create.SetRefreshTokenEncrypted(oauthconnection.RefreshTokenEncrypted)
+			create = create.SetRefreshTokenPresent(oauthconnection.RefreshTokenPresent)
+		}
+
+		if credentialGeneration, exists := m.CredentialGeneration(); exists {
+			create = create.SetCredentialGeneration(credentialGeneration)
+		} else {
+			create = create.SetCredentialGeneration(oauthconnection.CredentialGeneration)
 		}
 
 		if scopes, exists := m.Scopes(); exists {
@@ -1041,7 +1051,8 @@ func (m *OAuthConnectionMutation) CreateHistoryFromDelete(ctx context.Context) e
 			SetCreatedAt(oauthconnection.CreatedAt).
 			SetUpdatedAt(oauthconnection.UpdatedAt).
 			SetProvider(oauthconnection.Provider).
-			SetRefreshTokenEncrypted(oauthconnection.RefreshTokenEncrypted).
+			SetRefreshTokenPresent(oauthconnection.RefreshTokenPresent).
+			SetCredentialGeneration(oauthconnection.CredentialGeneration).
 			SetScopes(oauthconnection.Scopes).
 			SetExternalAccountID(oauthconnection.ExternalAccountID).
 			Save(ctx)

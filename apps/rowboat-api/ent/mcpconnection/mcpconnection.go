@@ -32,6 +32,10 @@ const (
 	FieldRefreshTokenEncrypted = "refresh_token_encrypted"
 	// FieldAPIKeyEncrypted holds the string denoting the api_key_encrypted field in the database.
 	FieldAPIKeyEncrypted = "api_key_encrypted"
+	// FieldRefreshTokenPresent holds the string denoting the refresh_token_present field in the database.
+	FieldRefreshTokenPresent = "refresh_token_present"
+	// FieldAPIKeyPresent holds the string denoting the api_key_present field in the database.
+	FieldAPIKeyPresent = "api_key_present"
 	// FieldCredentialGeneration holds the string denoting the credential_generation field in the database.
 	FieldCredentialGeneration = "credential_generation"
 	// FieldStatus holds the string denoting the status field in the database.
@@ -76,6 +80,8 @@ var Columns = []string{
 	FieldScopes,
 	FieldRefreshTokenEncrypted,
 	FieldAPIKeyEncrypted,
+	FieldRefreshTokenPresent,
+	FieldAPIKeyPresent,
 	FieldCredentialGeneration,
 	FieldStatus,
 	FieldConnectedAt,
@@ -115,7 +121,7 @@ func ValidColumn(column string) bool {
 //
 //	import _ "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/runtime"
 var (
-	Hooks  [1]ent.Hook
+	Hooks  [2]ent.Hook
 	Policy ent.Policy
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
@@ -123,6 +129,10 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// DefaultRefreshTokenPresent holds the default value on creation for the "refresh_token_present" field.
+	DefaultRefreshTokenPresent bool
+	// DefaultAPIKeyPresent holds the default value on creation for the "api_key_present" field.
+	DefaultAPIKeyPresent bool
 	// DefaultCredentialGeneration holds the default value on creation for the "credential_generation" field.
 	DefaultCredentialGeneration int64
 	// CredentialGenerationValidator is a validator for the "credential_generation" field. It is called by the builders before save.
@@ -166,6 +176,16 @@ func ByAudience(opts ...sql.OrderTermOption) OrderOption {
 // ByOrganizationID orders the results by the organization_id field.
 func ByOrganizationID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOrganizationID, opts...).ToFunc()
+}
+
+// ByRefreshTokenPresent orders the results by the refresh_token_present field.
+func ByRefreshTokenPresent(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRefreshTokenPresent, opts...).ToFunc()
+}
+
+// ByAPIKeyPresent orders the results by the api_key_present field.
+func ByAPIKeyPresent(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAPIKeyPresent, opts...).ToFunc()
 }
 
 // ByCredentialGeneration orders the results by the credential_generation field.

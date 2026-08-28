@@ -81,9 +81,14 @@ func Provider(v string) predicate.OAuthConnectionHistory {
 	return predicate.OAuthConnectionHistory(sql.FieldEQ(FieldProvider, v))
 }
 
-// RefreshTokenEncrypted applies equality check predicate on the "refresh_token_encrypted" field. It's identical to RefreshTokenEncryptedEQ.
-func RefreshTokenEncrypted(v []byte) predicate.OAuthConnectionHistory {
-	return predicate.OAuthConnectionHistory(sql.FieldEQ(FieldRefreshTokenEncrypted, v))
+// RefreshTokenPresent applies equality check predicate on the "refresh_token_present" field. It's identical to RefreshTokenPresentEQ.
+func RefreshTokenPresent(v bool) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldEQ(FieldRefreshTokenPresent, v))
+}
+
+// CredentialGeneration applies equality check predicate on the "credential_generation" field. It's identical to CredentialGenerationEQ.
+func CredentialGeneration(v int64) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldEQ(FieldCredentialGeneration, v))
 }
 
 // ExternalAccountID applies equality check predicate on the "external_account_id" field. It's identical to ExternalAccountIDEQ.
@@ -346,44 +351,54 @@ func ProviderContainsFold(v string) predicate.OAuthConnectionHistory {
 	return predicate.OAuthConnectionHistory(sql.FieldContainsFold(FieldProvider, v))
 }
 
-// RefreshTokenEncryptedEQ applies the EQ predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedEQ(v []byte) predicate.OAuthConnectionHistory {
-	return predicate.OAuthConnectionHistory(sql.FieldEQ(FieldRefreshTokenEncrypted, v))
+// RefreshTokenPresentEQ applies the EQ predicate on the "refresh_token_present" field.
+func RefreshTokenPresentEQ(v bool) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldEQ(FieldRefreshTokenPresent, v))
 }
 
-// RefreshTokenEncryptedNEQ applies the NEQ predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedNEQ(v []byte) predicate.OAuthConnectionHistory {
-	return predicate.OAuthConnectionHistory(sql.FieldNEQ(FieldRefreshTokenEncrypted, v))
+// RefreshTokenPresentNEQ applies the NEQ predicate on the "refresh_token_present" field.
+func RefreshTokenPresentNEQ(v bool) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldNEQ(FieldRefreshTokenPresent, v))
 }
 
-// RefreshTokenEncryptedIn applies the In predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedIn(vs ...[]byte) predicate.OAuthConnectionHistory {
-	return predicate.OAuthConnectionHistory(sql.FieldIn(FieldRefreshTokenEncrypted, vs...))
+// CredentialGenerationEQ applies the EQ predicate on the "credential_generation" field.
+func CredentialGenerationEQ(v int64) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldEQ(FieldCredentialGeneration, v))
 }
 
-// RefreshTokenEncryptedNotIn applies the NotIn predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedNotIn(vs ...[]byte) predicate.OAuthConnectionHistory {
-	return predicate.OAuthConnectionHistory(sql.FieldNotIn(FieldRefreshTokenEncrypted, vs...))
+// CredentialGenerationNEQ applies the NEQ predicate on the "credential_generation" field.
+func CredentialGenerationNEQ(v int64) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldNEQ(FieldCredentialGeneration, v))
 }
 
-// RefreshTokenEncryptedGT applies the GT predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedGT(v []byte) predicate.OAuthConnectionHistory {
-	return predicate.OAuthConnectionHistory(sql.FieldGT(FieldRefreshTokenEncrypted, v))
+// CredentialGenerationIn applies the In predicate on the "credential_generation" field.
+func CredentialGenerationIn(vs ...int64) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldIn(FieldCredentialGeneration, vs...))
 }
 
-// RefreshTokenEncryptedGTE applies the GTE predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedGTE(v []byte) predicate.OAuthConnectionHistory {
-	return predicate.OAuthConnectionHistory(sql.FieldGTE(FieldRefreshTokenEncrypted, v))
+// CredentialGenerationNotIn applies the NotIn predicate on the "credential_generation" field.
+func CredentialGenerationNotIn(vs ...int64) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldNotIn(FieldCredentialGeneration, vs...))
 }
 
-// RefreshTokenEncryptedLT applies the LT predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedLT(v []byte) predicate.OAuthConnectionHistory {
-	return predicate.OAuthConnectionHistory(sql.FieldLT(FieldRefreshTokenEncrypted, v))
+// CredentialGenerationGT applies the GT predicate on the "credential_generation" field.
+func CredentialGenerationGT(v int64) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldGT(FieldCredentialGeneration, v))
 }
 
-// RefreshTokenEncryptedLTE applies the LTE predicate on the "refresh_token_encrypted" field.
-func RefreshTokenEncryptedLTE(v []byte) predicate.OAuthConnectionHistory {
-	return predicate.OAuthConnectionHistory(sql.FieldLTE(FieldRefreshTokenEncrypted, v))
+// CredentialGenerationGTE applies the GTE predicate on the "credential_generation" field.
+func CredentialGenerationGTE(v int64) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldGTE(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationLT applies the LT predicate on the "credential_generation" field.
+func CredentialGenerationLT(v int64) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldLT(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationLTE applies the LTE predicate on the "credential_generation" field.
+func CredentialGenerationLTE(v int64) predicate.OAuthConnectionHistory {
+	return predicate.OAuthConnectionHistory(sql.FieldLTE(FieldCredentialGeneration, v))
 }
 
 // ScopesIsNil applies the IsNil predicate on the "scopes" field.

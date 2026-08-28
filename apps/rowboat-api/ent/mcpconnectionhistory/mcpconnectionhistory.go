@@ -36,10 +36,10 @@ const (
 	FieldOrganizationID = "organization_id"
 	// FieldScopes holds the string denoting the scopes field in the database.
 	FieldScopes = "scopes"
-	// FieldRefreshTokenEncrypted holds the string denoting the refresh_token_encrypted field in the database.
-	FieldRefreshTokenEncrypted = "refresh_token_encrypted"
-	// FieldAPIKeyEncrypted holds the string denoting the api_key_encrypted field in the database.
-	FieldAPIKeyEncrypted = "api_key_encrypted"
+	// FieldRefreshTokenPresent holds the string denoting the refresh_token_present field in the database.
+	FieldRefreshTokenPresent = "refresh_token_present"
+	// FieldAPIKeyPresent holds the string denoting the api_key_present field in the database.
+	FieldAPIKeyPresent = "api_key_present"
 	// FieldCredentialGeneration holds the string denoting the credential_generation field in the database.
 	FieldCredentialGeneration = "credential_generation"
 	// FieldStatus holds the string denoting the status field in the database.
@@ -76,8 +76,8 @@ var Columns = []string{
 	FieldAudience,
 	FieldOrganizationID,
 	FieldScopes,
-	FieldRefreshTokenEncrypted,
-	FieldAPIKeyEncrypted,
+	FieldRefreshTokenPresent,
+	FieldAPIKeyPresent,
 	FieldCredentialGeneration,
 	FieldStatus,
 	FieldConnectedAt,
@@ -116,6 +116,10 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultHistoryTime holds the default value on creation for the "history_time" field.
 	DefaultHistoryTime func() time.Time
+	// DefaultRefreshTokenPresent holds the default value on creation for the "refresh_token_present" field.
+	DefaultRefreshTokenPresent bool
+	// DefaultAPIKeyPresent holds the default value on creation for the "api_key_present" field.
+	DefaultAPIKeyPresent bool
 	// DefaultCredentialGeneration holds the default value on creation for the "credential_generation" field.
 	DefaultCredentialGeneration int64
 	// DefaultStatus holds the default value on creation for the "status" field.
@@ -180,6 +184,16 @@ func ByAudience(opts ...sql.OrderTermOption) OrderOption {
 // ByOrganizationID orders the results by the organization_id field.
 func ByOrganizationID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOrganizationID, opts...).ToFunc()
+}
+
+// ByRefreshTokenPresent orders the results by the refresh_token_present field.
+func ByRefreshTokenPresent(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRefreshTokenPresent, opts...).ToFunc()
+}
+
+// ByAPIKeyPresent orders the results by the api_key_present field.
+func ByAPIKeyPresent(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAPIKeyPresent, opts...).ToFunc()
 }
 
 // ByCredentialGeneration orders the results by the credential_generation field.

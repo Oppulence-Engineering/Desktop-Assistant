@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
@@ -45,14 +47,16 @@ type Config struct {
 
 // Handler serves the connector + connection endpoints.
 type Handler struct {
-	client         *ent.Client
-	sealer         *crypto.Sealer
-	registry       *Registry
-	resourceTokens ResourceTokenIssuer
-	ory            *oryClient
-	cfg            Config
-	log            *zap.Logger
-	refresh        refreshDeduper
+	client                *ent.Client
+	sealer                *crypto.Sealer
+	registry              *Registry
+	resourceTokens        ResourceTokenIssuer
+	ory                   *oryClient
+	cfg                   Config
+	log                   *zap.Logger
+	refresh               refreshDeduper
+	commitCallbackForTest func(*ent.Tx) error
+	commitClaimForTest    func(*ent.Tx) error
 }
 
 // SetResourceTokenIssuer configures the RS256 broker key used for short-lived
@@ -101,6 +105,20 @@ func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
 	h.ory.setOutboundPolicy(policy)
 }
 
+func (h *Handler) commitCallback(tx *ent.Tx) error {
+	if h.commitCallbackForTest != nil {
+		return h.commitCallbackForTest(tx)
+	}
+	return tx.Commit()
+}
+
+func (h *Handler) commitClaim(tx *ent.Tx) error {
+	if h.commitClaimForTest != nil {
+		return h.commitClaimForTest(tx)
+	}
+	return tx.Commit()
+}
+
 // connectPending is sealed into OAuthPending during /start. The token fields are
 // populated by Callback after a successful code exchange and consumed by the
 // authenticated Claim step.
@@ -113,6 +131,10 @@ type connectPending struct {
 	RequestedScopes []string `json:"requested_scopes"`
 	RefreshToken    string   `json:"refresh_token,omitempty"`
 	GrantedScopes   []string `json:"granted_scopes,omitempty"`
+	// ClaimedConnectionID is written only after the claim transaction adopts the
+	// grant and scrubs RefreshToken. It makes an ambiguous commit and client retry
+	// converge without retaining provider credential material in the ticket.
+	ClaimedConnectionID string `json:"claimed_connection_id,omitempty"`
 }
 
 func connectorOrganizationID(u *ent.User) string {
@@ -485,7 +507,35 @@ func (h *Handler) finishCallback(ctx context.Context, pending *ent.OAuthPending,
 		_ = tx.Rollback()
 		return err
 	}
-	return tx.Commit()
+	return h.commitCallback(tx)
+}
+
+// callbackParkingCommitted resolves a Commit error through durable state. A
+// callback_completed ticket containing the exact provider credential proves the
+// server committed, so revocation would corrupt the parked grant. A ticket that
+// remains owned by the same callback_processing lease proves rollback. Database
+// uncertainty is intentionally reported as unknown and leaves recovery escrow
+// intact for a later retry or worker.
+func (h *Handler) callbackParkingCommitted(ctx context.Context, pendingID, claimID uuid.UUID, refreshToken string) (committed, known bool) {
+	stored, err := h.client.OAuthPending.Query().Where(oauthpending.IDEQ(pendingID)).Only(auth.WithInternal(ctx))
+	if err != nil {
+		return false, false
+	}
+	if stored.LifecycleStatus == "callback_processing" && stored.CallbackClaimID == claimID {
+		return false, true
+	}
+	if stored.LifecycleStatus != "callback_completed" {
+		return false, false
+	}
+	plain, err := h.sealer.Open(stored.PayloadEncrypted)
+	if err != nil {
+		return false, false
+	}
+	var parked connectPending
+	if json.Unmarshal(plain, &parked) != nil || parked.RefreshToken == "" || parked.RefreshToken != refreshToken {
+		return false, false
+	}
+	return true, true
 }
 
 func (h *Handler) validateRedirectTarget(raw string) (string, error) {
@@ -549,6 +599,14 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "oauth owner no longer exists", "internal_error")
 		return
 	}
+	if pending.LifecycleStatus == "callback_completed" || pending.LifecycleStatus == "claimed" {
+		// The provider may replay the redirect after the callback transaction
+		// committed but its acknowledgement was lost. The durable ticket is the
+		// reconciliation authority, so do not exchange or revoke again.
+		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "reconciled").Inc()
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "success", state)
+		return
+	}
 	if pending.LifecycleStatus != "started" && pending.LifecycleStatus != "callback_processing" {
 		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "replay").Inc()
 		h.appendAudit(ctx, owner, auditRecord{EventType: "oauth_callback_rejected", Connector: name, Requested: cp.RequestedScopes, Reason: "replay"})
@@ -602,11 +660,28 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		h.deepLinkTo(w, r, cp.RedirectTarget, name, "restart_required", "")
 		return
 	}
+	// Provider protocols expose the refresh credential only in the exchange
+	// response. For providers without idempotent exchange or token introspection,
+	// a process kill between response receipt and this first durable write is
+	// irreducible. From this point forward the handler cannot return a live grant
+	// without either this encrypted journal row or confirmed provider revocation.
+	recoveryID, revoked, recoveryErr := establishCredentialRecovery(
+		context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, pending.ID,
+		name, credentialRecoveryOwnerCallback, pending.ID.String(), tok.RefreshToken,
+		pending.ExpiresAt.UTC().Add(credentialCleanupAdoptionGrace),
+	)
+	if recoveryErr != nil {
+		_ = h.finishCallback(ctx, pending, owner, cp, claimID, "restart_required", "credential_custody_failed", nil, nil)
+		result := "error"
+		if revoked {
+			result = "restart_required"
+		}
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, result, "")
+		return
+	}
 	granted, err := h.grantedScopes(name, cp.RequestedScopes, tok.Scope)
 	if err != nil {
-		if tok.RefreshToken != "" {
-			_ = h.ory.revoke(ctx, tok.RefreshToken)
-		}
+		compensateCredentialRecovery(context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, recoveryID, "scope_escalation")
 		_ = h.finishCallback(ctx, pending, owner, cp, claimID, "restart_required", "scope_escalation", nil, nil)
 		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "scope_escalation").Inc()
 		h.deepLinkTo(w, r, cp.RedirectTarget, name, "restart_required", "")
@@ -618,24 +693,60 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	cp.GrantedScopes = granted
 	resealed, mErr := json.Marshal(cp)
 	if mErr != nil {
+		compensateCredentialRecovery(context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, recoveryID, "callback_payload_marshal_failed")
 		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
 		return
 	}
 	sealed, sErr := h.sealer.Seal(resealed)
 	if sErr != nil {
+		compensateCredentialRecovery(context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, recoveryID, "callback_payload_seal_failed")
 		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
 		return
 	}
 	if uErr := h.finishCallback(ctx, pending, owner, cp, claimID, "callback_completed", "", sealed, granted); uErr != nil {
 		h.log.Error("park connector grant", zap.Error(uErr))
-		if tok.RefreshToken != "" {
-			_ = h.ory.revoke(context.WithoutCancel(ctx), tok.RefreshToken)
+		committed, known := h.callbackParkingCommitted(context.WithoutCancel(ctx), pending.ID, claimID, tok.RefreshToken)
+		if committed {
+			connectormetrics.Lifecycle.WithLabelValues(name, "callback", "reconciled").Inc()
+			h.deepLinkTo(w, r, cp.RedirectTarget, name, "success", state)
+			return
+		}
+		if known {
+			compensateCredentialRecovery(context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, recoveryID, "callback_parking_not_committed")
 		}
 		h.deepLinkTo(w, r, cp.RedirectTarget, name, "error", state)
 		return
 	}
 	connectormetrics.Lifecycle.WithLabelValues(name, "callback", "success").Inc()
 	h.deepLinkTo(w, r, cp.RedirectTarget, name, "success", state)
+}
+
+func (h *Handler) reconciledClaimConnection(ctx context.Context, u *ent.User, c Connector, pending *ent.OAuthPending, cp connectPending) (*ent.MCPConnection, bool) {
+	if pending.LifecycleStatus != "claimed" || cp.ClaimedConnectionID == "" || cp.RefreshToken != "" {
+		return nil, false
+	}
+	connectionID, err := uuid.Parse(cp.ClaimedConnectionID)
+	if err != nil {
+		return nil, false
+	}
+	connection, err := h.client.MCPConnection.Query().Where(
+		mcpconnection.IDEQ(connectionID),
+		mcpconnection.ConnectorEQ(c.Name),
+		mcpconnection.OrganizationIDEQ(connectorOrganizationID(u)),
+		mcpconnection.StatusEQ("active"),
+		mcpconnection.HasUserWith(user.IDEQ(u.ID)),
+	).Only(auth.WithUser(ctx, u))
+	return connection, err == nil
+}
+
+func writeClaimSuccess(w http.ResponseWriter, connection *ent.MCPConnection, c Connector, scopes []string) {
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{
+		"connected":    true,
+		"connectionId": connection.ID.String(),
+		"connector":    c.Name,
+		"audience":     c.Audience,
+		"scopes":       scopes,
+	})
 }
 
 // Claim handles POST /v1/connections/{name}/claim. The desktop calls it (with
@@ -690,6 +801,11 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "state/connector mismatch", "bad_request")
 		return
 	}
+	if connection, reconciled := h.reconciledClaimConnection(ctx, u, c, pending, cp); reconciled {
+		connectormetrics.Lifecycle.WithLabelValues(name, "claim", "reconciled").Inc()
+		writeClaimSuccess(w, connection, c, cp.GrantedScopes)
+		return
+	}
 	if pending.LifecycleStatus != "callback_completed" {
 		if pending.LifecycleStatus == "started" || pending.LifecycleStatus == "callback_processing" {
 			httpx.Error(w, http.StatusConflict, "connection not ready", "not_ready")
@@ -706,34 +822,47 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusForbidden, "ticket does not belong to this user", "forbidden")
 		return
 	}
-	if cp.OrgID == "" || cp.OrgID != connectorOrganizationID(u) || pending.OwnerOrgID != cp.OrgID {
-		if cp.RefreshToken != "" {
-			_ = h.ory.revoke(context.WithoutCancel(ctx), cp.RefreshToken)
-		}
-		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("organization_mismatch").Exec(auth.WithInternal(ctx))
-		httpx.Error(w, http.StatusForbidden, "ticket does not belong to this organization", "organization_mismatch")
-		return
-	}
 	if cp.RefreshToken == "" {
 		// The browser flow hasn't completed yet (Callback hasn't parked a grant);
 		// keep the ticket so the desktop can retry once it finishes.
 		httpx.Error(w, http.StatusConflict, "connection not ready", "not_ready")
 		return
 	}
+	recoveryID, revoked, recoveryErr := establishCredentialRecovery(
+		context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, pending.ID,
+		name, credentialRecoveryOwnerCallback, pending.ID.String(), cp.RefreshToken,
+		pending.ExpiresAt.UTC().Add(credentialCleanupAdoptionGrace),
+	)
+	if recoveryErr != nil {
+		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("credential_custody_failed").Exec(auth.WithInternal(ctx))
+		code := "internal_error"
+		if revoked {
+			code = "authorization_restart_required"
+		}
+		httpx.Error(w, http.StatusInternalServerError, "could not establish credential custody", code)
+		return
+	}
+	if cp.OrgID == "" || cp.OrgID != connectorOrganizationID(u) || pending.OwnerOrgID != cp.OrgID {
+		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("organization_mismatch").Exec(auth.WithInternal(ctx))
+		compensateCredentialRecovery(context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, recoveryID, "organization_mismatch")
+		httpx.Error(w, http.StatusForbidden, "ticket does not belong to this organization", "organization_mismatch")
+		return
+	}
 	if !h.registry.Enabled(name) {
-		_ = h.ory.revoke(ctx, cp.RefreshToken)
+		compensateCredentialRecovery(context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, recoveryID, "connector_disabled")
 		httpx.Error(w, http.StatusServiceUnavailable, "connector is disabled", "connector_disabled")
 		return
 	}
 	if allowed, reason := h.isEntitled(ctx, u, c, cp.GrantedScopes); !allowed {
-		_ = h.ory.revoke(ctx, cp.RefreshToken)
 		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason(reason).Exec(ctx)
+		compensateCredentialRecovery(context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, recoveryID, reason)
 		h.appendAudit(ctx, u, auditRecord{EventType: "oauth_claim_rejected", Connector: name, Requested: cp.RequestedScopes, Granted: cp.GrantedScopes, Reason: reason})
 		httpx.Error(w, http.StatusForbidden, "connector entitlement denied", reason)
 		return
 	}
 	if !isSubset(cp.GrantedScopes, cp.RequestedScopes) {
 		_ = pending.Update().SetLifecycleStatus("failed").SetFailureReason("scope_escalation").Exec(ctx)
+		compensateCredentialRecovery(context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, recoveryID, "scope_escalation")
 		h.appendAudit(ctx, u, auditRecord{EventType: "oauth_claim_rejected", Connector: name, Requested: cp.RequestedScopes, Granted: cp.GrantedScopes, Reason: "scope_escalation"})
 		httpx.Error(w, http.StatusBadRequest, "granted scopes exceed requested scopes", "scope_escalation")
 		return
@@ -758,18 +887,9 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusConflict, "ticket already consumed", "replay")
 		return
 	}
-	if err := txp.Update().Where(oauthpending.LifecycleStatusEQ("callback_completed")).SetLifecycleStatus("claimed").SetClaimedAt(time.Now().UTC()).Exec(auth.WithInternal(ctx)); err != nil {
-		// The conditional update losing a race does not own the provider grant.
-		// The transaction winner is responsible for its lifecycle.
-		connectormetrics.Lifecycle.WithLabelValues(name, "claim", "replay").Inc()
-		httpx.Error(w, http.StatusConflict, "ticket already consumed", "replay")
-		return
-	}
-
 	connection, replacedGrant, err := h.upsertConnectionWithClient(auth.WithUser(ctx, u), tx.Client(), u, c, cp.RefreshToken, cp.GrantedScopes, pending.CreatedAt)
 	if err != nil {
 		h.log.Error("persist connection", zap.Error(err))
-		_ = h.ory.revoke(context.WithoutCancel(ctx), cp.RefreshToken)
 		if errors.Is(err, errConnectorCredentialSuperseded) {
 			httpx.Error(w, http.StatusConflict, "connection was disconnected while authorization was in progress; restart authorization", "authorization_restart_required")
 			return
@@ -777,35 +897,77 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusInternalServerError, "could not persist connection", "internal_error")
 		return
 	}
+	deletedRecovery, err := tx.ConnectorCredentialRecovery.Delete().Where(
+		connectorcredentialrecovery.IDEQ(recoveryID),
+		connectorcredentialrecovery.StatusEQ("pending"),
+	).Exec(auth.WithInternal(ctx))
+	if err != nil || deletedRecovery != 1 {
+		// A cleanup worker that already claimed the journal owns revocation. The
+		// connection write must roll back rather than race that worker.
+		httpx.Error(w, http.StatusConflict, "credential adoption is no longer available; restart authorization", "authorization_restart_required")
+		return
+	}
+	claimedPayload := cp
+	claimedPayload.RefreshToken = ""
+	claimedPayload.Verifier = ""
+	claimedPayload.ClaimedConnectionID = connection.ID.String()
+	claimedJSON, err := json.Marshal(claimedPayload)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "could not finalize connection", "internal_error")
+		return
+	}
+	claimedSealed, err := h.sealer.Seal(claimedJSON)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "could not finalize connection", "internal_error")
+		return
+	}
+	if err := txp.Update().Where(oauthpending.LifecycleStatusEQ("callback_completed")).
+		SetLifecycleStatus("claimed").SetClaimedAt(time.Now().UTC()).SetPayloadEncrypted(claimedSealed).
+		Exec(auth.WithInternal(ctx)); err != nil {
+		connectormetrics.Lifecycle.WithLabelValues(name, "claim", "replay").Inc()
+		httpx.Error(w, http.StatusConflict, "ticket already consumed", "replay")
+		return
+	}
 	if err := h.persistAuditTransitionWithClient(ctx, tx.Client(), u, auditRecord{
 		EventType: "oauth_claimed", EventID: deterministicAuditEventID("oauth_claimed", pending.ID.String(), connection.ID.String(), fmt.Sprint(connection.CredentialGeneration)),
 		Connector: name, ConnectionID: connection.ID, OrganizationID: connection.OrganizationID,
 		Audience: c.Audience, Requested: cp.RequestedScopes, Granted: cp.GrantedScopes,
 	}); err != nil {
-		_ = h.ory.revoke(context.WithoutCancel(ctx), cp.RefreshToken)
 		httpx.Error(w, http.StatusInternalServerError, "could not persist connection audit", "internal_error")
 		return
 	}
-	if err := tx.Commit(); err != nil {
-		_ = h.ory.revoke(context.WithoutCancel(ctx), cp.RefreshToken)
-		httpx.Error(w, http.StatusInternalServerError, "could not persist connection", "internal_error")
-		return
-	}
+	commitErr := h.commitClaim(tx)
 	rollback = false
+	if commitErr != nil {
+		// COMMIT acknowledgement loss is not proof of rollback. Re-read the
+		// scrubbed ticket and active connection before any compensation decision.
+		stored, queryErr := h.client.OAuthPending.Query().Where(oauthpending.IDEQ(pending.ID)).Only(auth.WithInternal(context.WithoutCancel(ctx)))
+		if queryErr != nil {
+			httpx.Error(w, http.StatusInternalServerError, "connection commit outcome is being reconciled; retry", "commit_outcome_unknown")
+			return
+		}
+		storedPayload, openErr := h.sealer.Open(stored.PayloadEncrypted)
+		var storedCP connectPending
+		if openErr != nil || json.Unmarshal(storedPayload, &storedCP) != nil {
+			httpx.Error(w, http.StatusInternalServerError, "connection commit outcome is being reconciled; retry", "commit_outcome_unknown")
+			return
+		}
+		reconciled, committed := h.reconciledClaimConnection(context.WithoutCancel(ctx), u, c, stored, storedCP)
+		if !committed {
+			httpx.Error(w, http.StatusInternalServerError, "could not persist connection; retry", "internal_error")
+			return
+		}
+		connection = reconciled
+		cp.GrantedScopes = storedCP.GrantedScopes
+		connectormetrics.Lifecycle.WithLabelValues(name, "claim", "reconciled").Inc()
+	}
 	if len(replacedGrant) > 0 {
 		if old, openErr := h.sealer.Open(replacedGrant); openErr == nil && string(old) != cp.RefreshToken {
 			_ = h.ory.revoke(context.WithoutCancel(ctx), string(old))
 		}
 	}
 	connectormetrics.Lifecycle.WithLabelValues(name, "claim", "success").Inc()
-	h.deleteTicket(ctx, pending)
-	httpx.WriteJSON(w, http.StatusOK, map[string]any{
-		"connected":    true,
-		"connectionId": connection.ID.String(),
-		"connector":    name,
-		"audience":     c.Audience,
-		"scopes":       cp.GrantedScopes,
-	})
+	writeClaimSuccess(w, connection, c, cp.GrantedScopes)
 }
 
 // SetAPIKey handles POST /v1/connections/{name}/api-key for connectors that
@@ -1104,8 +1266,15 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 			return 0, fmt.Errorf("persist rotated connector refresh token: %w", saveErr)
 		}
 		if cleanupID != uuid.Nil {
-			if deleteErr := tx.ConnectorCredentialCleanupJob.DeleteOneID(cleanupID).Exec(auth.WithInternal(pctx)); deleteErr != nil {
+			deleted, deleteErr := tx.ConnectorCredentialCleanupJob.Delete().Where(
+				connectorcredentialcleanupjob.IDEQ(cleanupID),
+				connectorcredentialcleanupjob.StatusEQ("pending"),
+			).Exec(auth.WithInternal(pctx))
+			if deleteErr != nil {
 				return 0, fmt.Errorf("adopt rotated connector credential: %w", deleteErr)
+			}
+			if deleted != 1 {
+				return 0, errConnectorCredentialSuperseded
 			}
 		}
 		if auditErr := h.persistAuditTransitionWithClient(pctx, tx.Client(), u, auditRecord{

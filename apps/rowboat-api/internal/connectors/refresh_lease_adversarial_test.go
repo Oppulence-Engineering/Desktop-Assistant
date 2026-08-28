@@ -6,8 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -241,5 +243,127 @@ func TestAdoptedCleanupIsNeverRevokedAfterAmbiguousPersistError(t *testing.T) {
 	d.compensateCredential(t.Context(), newOryClient(server.URL, "client", "secret"), jobID, "refresh-adopted", "ambiguous_commit")
 	if revokeCalls.Load() != 0 {
 		t.Fatalf("adopted credential was revoked %d times", revokeCalls.Load())
+	}
+}
+
+func TestCleanupInsertAndProviderRevokeFailureRetainsRecoveryAcrossRestart(t *testing.T) {
+	var revokeCalls atomic.Int64
+	var allowRevoke atomic.Bool
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/oauth2/revoke" {
+			revokeCalls.Add(1)
+			if !allowRevoke.Load() {
+				http.Error(w, "retry", http.StatusServiceUnavailable)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(oryToken{AccessToken: "access-new", RefreshToken: "refresh-recovery", ExpiresIn: 3600})
+	}))
+	t.Cleanup(server.Close)
+
+	databasePath := filepath.Join(t.TempDir(), "credential-recovery.db")
+	openClient := func() (*db.DB, *ent.Client) {
+		t.Helper()
+		database, err := db.Open(context.Background(), appconfig.Config{DatabaseURL: "file:" + databasePath + "?_pragma=foreign_keys(1)", AutoMigrate: true}, zap.NewNop())
+		if err != nil {
+			t.Fatal(err)
+		}
+		return database, database.Client
+	}
+	firstDB, client := openClient()
+	client.Use(func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, mutation ent.Mutation) (ent.Value, error) {
+			if _, ok := mutation.(*ent.ConnectorCredentialCleanupJobMutation); ok && mutation.Op().Is(ent.OpCreate) {
+				return nil, errors.New("injected cleanup insert failure")
+			}
+			return next.Mutate(ctx, mutation)
+		})
+	})
+	sealer, err := crypto.NewSealer("connector-recovery-restart-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := refreshDeduper{cache: workosauth.NewMemoryRefreshCache(), sealer: sealer, client: client, log: zap.NewNop()}
+	bound := newConnectorRefreshContext("canvas", uuid.NewString(), "org-1", 1, "mcp:canvas", []string{"read"})
+	var persists atomic.Int64
+	_, refreshErr := d.refresh(t.Context(), bound, newOryClient(server.URL, "client", "secret"), "refresh-old", func(context.Context, *oryToken, uuid.UUID) (int64, error) {
+		persists.Add(1)
+		return 2, nil
+	})
+	if refreshErr == nil || !strings.Contains(refreshErr.Error(), "encrypted recovery journal") {
+		t.Fatalf("refresh error = %v, want durable recovery journal", refreshErr)
+	}
+	if persists.Load() != 0 {
+		t.Fatalf("persist called %d times after unconfirmed revoke", persists.Load())
+	}
+	if revokeCalls.Load() != 3 {
+		t.Fatalf("bounded revoke calls = %d, want 3", revokeCalls.Load())
+	}
+	recovery := client.ConnectorCredentialRecovery.Query().OnlyX(auth.WithInternal(t.Context()))
+	plain, err := sealer.OpenString(recovery.RefreshTokenEncrypted)
+	if err != nil || plain != "refresh-recovery" {
+		t.Fatalf("recovery credential = %q, %v", plain, err)
+	}
+	if count := client.ConnectorCredentialCleanupJob.Query().CountX(auth.WithInternal(t.Context())); count != 0 {
+		t.Fatalf("primary cleanup rows = %d, want 0", count)
+	}
+	if err := firstDB.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	// A fresh database client and handler model a process restart. The encrypted
+	// journal, not process memory, supplies the credential for the retry.
+	secondDB, restartedClient := openClient()
+	t.Cleanup(func() { _ = secondDB.Close() })
+	allowRevoke.Store(true)
+	restarted := New(restartedClient, sealer, nil, Config{OryPublicURL: server.URL}, zap.NewNop())
+	completed, err := restarted.ProcessCredentialCleanupJobs(t.Context(), 25)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if completed != 1 {
+		t.Fatalf("completed recoveries = %d, want 1", completed)
+	}
+	if count := restartedClient.ConnectorCredentialRecovery.Query().CountX(auth.WithInternal(t.Context())); count != 0 {
+		t.Fatalf("recovery rows after restart cleanup = %d, want 0", count)
+	}
+}
+
+func TestProviderResponseCrashBoundaryPrecedesAllFallibleLocalWork(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(oryToken{AccessToken: "access", RefreshToken: "refresh-unavoidable-window", ExpiresIn: 3600})
+	}))
+	t.Cleanup(server.Close)
+	sealer, err := crypto.NewSealer("connector-provider-response-boundary")
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := refreshLeaseTestClient(t)
+	d := refreshDeduper{cache: workosauth.NewMemoryRefreshCache(), sealer: sealer, client: client, log: zap.NewNop()}
+	boundary := errors.New("simulated process termination immediately after provider response")
+	d.afterProviderResponseForTest = func() { panic(boundary) }
+	bound := newConnectorRefreshContext("canvas", uuid.NewString(), "org-1", 1, "mcp:canvas", []string{"read"})
+
+	func() {
+		defer func() {
+			recovered := recover()
+			if recovered == nil || !strings.Contains(fmt.Sprint(recovered), boundary.Error()) {
+				t.Fatalf("recovered %v, want exact provider-response boundary", recovered)
+			}
+		}()
+		_, _ = d.refresh(t.Context(), bound, newOryClient(server.URL, "client", "secret"), "refresh-old", func(context.Context, *oryToken, uuid.UUID) (int64, error) {
+			t.Fatal("persistence ran beyond simulated process termination")
+			return 0, nil
+		})
+	}()
+	if count := client.ConnectorCredentialCleanupJob.Query().CountX(auth.WithInternal(t.Context())); count != 0 {
+		t.Fatalf("cleanup rows at irreducible crash boundary = %d, want 0", count)
+	}
+	if count := client.ConnectorCredentialRecovery.Query().CountX(auth.WithInternal(t.Context())); count != 0 {
+		t.Fatalf("recovery rows at irreducible crash boundary = %d, want 0", count)
 	}
 }

@@ -24,6 +24,10 @@ const (
 	FieldProvider = "provider"
 	// FieldRefreshTokenEncrypted holds the string denoting the refresh_token_encrypted field in the database.
 	FieldRefreshTokenEncrypted = "refresh_token_encrypted"
+	// FieldRefreshTokenPresent holds the string denoting the refresh_token_present field in the database.
+	FieldRefreshTokenPresent = "refresh_token_present"
+	// FieldCredentialGeneration holds the string denoting the credential_generation field in the database.
+	FieldCredentialGeneration = "credential_generation"
 	// FieldScopes holds the string denoting the scopes field in the database.
 	FieldScopes = "scopes"
 	// FieldExternalAccountID holds the string denoting the external_account_id field in the database.
@@ -48,6 +52,8 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldProvider,
 	FieldRefreshTokenEncrypted,
+	FieldRefreshTokenPresent,
+	FieldCredentialGeneration,
 	FieldScopes,
 	FieldExternalAccountID,
 }
@@ -79,7 +85,7 @@ func ValidColumn(column string) bool {
 //
 //	import _ "github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/runtime"
 var (
-	Hooks  [1]ent.Hook
+	Hooks  [2]ent.Hook
 	Policy ent.Policy
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
@@ -87,6 +93,12 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// DefaultRefreshTokenPresent holds the default value on creation for the "refresh_token_present" field.
+	DefaultRefreshTokenPresent bool
+	// DefaultCredentialGeneration holds the default value on creation for the "credential_generation" field.
+	DefaultCredentialGeneration int64
+	// CredentialGenerationValidator is a validator for the "credential_generation" field. It is called by the builders before save.
+	CredentialGenerationValidator func(int64) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -112,6 +124,16 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByProvider orders the results by the provider field.
 func ByProvider(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProvider, opts...).ToFunc()
+}
+
+// ByRefreshTokenPresent orders the results by the refresh_token_present field.
+func ByRefreshTokenPresent(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRefreshTokenPresent, opts...).ToFunc()
+}
+
+// ByCredentialGeneration orders the results by the credential_generation field.
+func ByCredentialGeneration(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCredentialGeneration, opts...).ToFunc()
 }
 
 // ByExternalAccountID orders the results by the external_account_id field.

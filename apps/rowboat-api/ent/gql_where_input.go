@@ -21502,6 +21502,14 @@ type MCPConnectionWhereInput struct {
 	OrganizationIDEqualFold    *string  `json:"organizationIDEqualFold,omitempty"`
 	OrganizationIDContainsFold *string  `json:"organizationIDContainsFold,omitempty"`
 
+	// "refresh_token_present" field predicates.
+	RefreshTokenPresent    *bool `json:"refreshTokenPresent,omitempty"`
+	RefreshTokenPresentNEQ *bool `json:"refreshTokenPresentNEQ,omitempty"`
+
+	// "api_key_present" field predicates.
+	APIKeyPresent    *bool `json:"apiKeyPresent,omitempty"`
+	APIKeyPresentNEQ *bool `json:"apiKeyPresentNEQ,omitempty"`
+
 	// "credential_generation" field predicates.
 	CredentialGeneration      *int64  `json:"credentialGeneration,omitempty"`
 	CredentialGenerationNEQ   *int64  `json:"credentialGenerationNEQ,omitempty"`
@@ -21897,6 +21905,18 @@ func (i *MCPConnectionWhereInput) P() (predicate.MCPConnection, error) {
 	}
 	if i.OrganizationIDContainsFold != nil {
 		predicates = append(predicates, mcpconnection.OrganizationIDContainsFold(*i.OrganizationIDContainsFold))
+	}
+	if i.RefreshTokenPresent != nil {
+		predicates = append(predicates, mcpconnection.RefreshTokenPresentEQ(*i.RefreshTokenPresent))
+	}
+	if i.RefreshTokenPresentNEQ != nil {
+		predicates = append(predicates, mcpconnection.RefreshTokenPresentNEQ(*i.RefreshTokenPresentNEQ))
+	}
+	if i.APIKeyPresent != nil {
+		predicates = append(predicates, mcpconnection.APIKeyPresentEQ(*i.APIKeyPresent))
+	}
+	if i.APIKeyPresentNEQ != nil {
+		predicates = append(predicates, mcpconnection.APIKeyPresentNEQ(*i.APIKeyPresentNEQ))
 	}
 	if i.CredentialGeneration != nil {
 		predicates = append(predicates, mcpconnection.CredentialGenerationEQ(*i.CredentialGeneration))
@@ -24832,6 +24852,20 @@ type OAuthConnectionWhereInput struct {
 	ProviderEqualFold    *string  `json:"providerEqualFold,omitempty"`
 	ProviderContainsFold *string  `json:"providerContainsFold,omitempty"`
 
+	// "refresh_token_present" field predicates.
+	RefreshTokenPresent    *bool `json:"refreshTokenPresent,omitempty"`
+	RefreshTokenPresentNEQ *bool `json:"refreshTokenPresentNEQ,omitempty"`
+
+	// "credential_generation" field predicates.
+	CredentialGeneration      *int64  `json:"credentialGeneration,omitempty"`
+	CredentialGenerationNEQ   *int64  `json:"credentialGenerationNEQ,omitempty"`
+	CredentialGenerationIn    []int64 `json:"credentialGenerationIn,omitempty"`
+	CredentialGenerationNotIn []int64 `json:"credentialGenerationNotIn,omitempty"`
+	CredentialGenerationGT    *int64  `json:"credentialGenerationGT,omitempty"`
+	CredentialGenerationGTE   *int64  `json:"credentialGenerationGTE,omitempty"`
+	CredentialGenerationLT    *int64  `json:"credentialGenerationLT,omitempty"`
+	CredentialGenerationLTE   *int64  `json:"credentialGenerationLTE,omitempty"`
+
 	// "external_account_id" field predicates.
 	ExternalAccountID             *string  `json:"externalAccountID,omitempty"`
 	ExternalAccountIDNEQ          *string  `json:"externalAccountIDNEQ,omitempty"`
@@ -25035,6 +25069,36 @@ func (i *OAuthConnectionWhereInput) P() (predicate.OAuthConnection, error) {
 	}
 	if i.ProviderContainsFold != nil {
 		predicates = append(predicates, oauthconnection.ProviderContainsFold(*i.ProviderContainsFold))
+	}
+	if i.RefreshTokenPresent != nil {
+		predicates = append(predicates, oauthconnection.RefreshTokenPresentEQ(*i.RefreshTokenPresent))
+	}
+	if i.RefreshTokenPresentNEQ != nil {
+		predicates = append(predicates, oauthconnection.RefreshTokenPresentNEQ(*i.RefreshTokenPresentNEQ))
+	}
+	if i.CredentialGeneration != nil {
+		predicates = append(predicates, oauthconnection.CredentialGenerationEQ(*i.CredentialGeneration))
+	}
+	if i.CredentialGenerationNEQ != nil {
+		predicates = append(predicates, oauthconnection.CredentialGenerationNEQ(*i.CredentialGenerationNEQ))
+	}
+	if len(i.CredentialGenerationIn) > 0 {
+		predicates = append(predicates, oauthconnection.CredentialGenerationIn(i.CredentialGenerationIn...))
+	}
+	if len(i.CredentialGenerationNotIn) > 0 {
+		predicates = append(predicates, oauthconnection.CredentialGenerationNotIn(i.CredentialGenerationNotIn...))
+	}
+	if i.CredentialGenerationGT != nil {
+		predicates = append(predicates, oauthconnection.CredentialGenerationGT(*i.CredentialGenerationGT))
+	}
+	if i.CredentialGenerationGTE != nil {
+		predicates = append(predicates, oauthconnection.CredentialGenerationGTE(*i.CredentialGenerationGTE))
+	}
+	if i.CredentialGenerationLT != nil {
+		predicates = append(predicates, oauthconnection.CredentialGenerationLT(*i.CredentialGenerationLT))
+	}
+	if i.CredentialGenerationLTE != nil {
+		predicates = append(predicates, oauthconnection.CredentialGenerationLTE(*i.CredentialGenerationLTE))
 	}
 	if i.ExternalAccountID != nil {
 		predicates = append(predicates, oauthconnection.ExternalAccountIDEQ(*i.ExternalAccountID))

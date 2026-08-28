@@ -98,11 +98,12 @@ func (r *connectorRefreshResult) validFor(expected connectorRefreshContext) bool
 // within a process and across replicas. Successful results are sealed before
 // entering Redis because they contain live access and refresh credentials.
 type refreshDeduper struct {
-	cache  RefreshCache
-	sealer *crypto.Sealer
-	client *ent.Client
-	log    *zap.Logger
-	sf     singleflight.Group
+	cache                        RefreshCache
+	sealer                       *crypto.Sealer
+	client                       *ent.Client
+	log                          *zap.Logger
+	afterProviderResponseForTest func()
+	sf                           singleflight.Group
 }
 
 func (d *refreshDeduper) configure(cache RefreshCache, sealer *crypto.Sealer, client *ent.Client, log *zap.Logger) {
@@ -187,6 +188,12 @@ func (d *refreshDeduper) refresh(
 		if err != nil {
 			return nil, err
 		}
+		// This hook marks the exact irreducible crash boundary for tests. No
+		// production work may be inserted between provider response receipt and
+		// encrypted custody establishment below.
+		if d.afterProviderResponseForTest != nil {
+			d.afterProviderResponseForTest()
+		}
 
 		if persist == nil || d.client == nil {
 			return nil, errors.New("connector refresh persistence is not configured")
@@ -197,10 +204,25 @@ func (d *refreshDeduper) refresh(
 			cleanupID, err = d.enqueueCredentialCleanup(escrowCtx, bound, tok.RefreshToken)
 			escrowCancel()
 			if err != nil {
-				// A provider-issued rotating credential must never exist without a
-				// durable owner. If escrow fails, synchronously revoke before returning.
+				// The normal cleanup outbox and the recovery journal are distinct
+				// durable ownership paths. If the primary insert fails, first try to
+				// confirm revocation. When that is also unavailable, the encrypted
+				// credential must enter the independent journal before this call can
+				// return. No connection persistence is attempted after an unconfirmed
+				// revoke, because the provider may already have accepted it.
 				if revokeErr := revokeCredentialBounded(context.WithoutCancel(detached), ory, tok.RefreshToken); revokeErr != nil {
-					return nil, fmt.Errorf("durably escrow rotated connector credential: %w (provider revoke unconfirmed)", err)
+					recoveryID, revoked, recoveryErr := establishCredentialRecovery(
+						context.WithoutCancel(detached), d.client, d.sealer, ory, d.log, uuid.New(),
+						bound.Connector, credentialRecoveryOwnerRotation, bound.ConnectionID,
+						tok.RefreshToken, time.Now().UTC(),
+					)
+					if revoked {
+						return nil, fmt.Errorf("durably escrow rotated connector credential: %w; provider revocation confirmed during recovery", err)
+					}
+					if recoveryErr != nil {
+						return nil, fmt.Errorf("durably escrow rotated connector credential: %w; recovery: %v", err, recoveryErr)
+					}
+					return nil, fmt.Errorf("durably escrow rotated connector credential: %w; encrypted recovery journal %s retained", err, recoveryID)
 				}
 				return nil, fmt.Errorf("durably escrow rotated connector credential: %w", err)
 			}
