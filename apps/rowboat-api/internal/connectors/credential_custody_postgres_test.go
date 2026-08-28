@@ -143,7 +143,8 @@ func TestCredentialRecoveryPostgresRedisRestart(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(oryToken{AccessToken: "access", RefreshToken: "refresh-pg-redis-recovery", ExpiresIn: 3600})
 	}))
 	t.Cleanup(provider.Close)
-	deduper := refreshDeduper{cache: cache, sealer: sealer, client: client, log: zap.NewNop()}
+	supervisor := newCredentialCustodySupervisor(zap.NewNop(), 1, 1)
+	deduper := refreshDeduper{cache: cache, sealer: sealer, client: client, log: zap.NewNop(), custody: supervisor}
 	bound := newConnectorRefreshContext("canvas", uuid.NewString(), "org-pg-redis", 1, "mcp:canvas", []string{"read"})
 	_, refreshErr := deduper.refresh(t.Context(), bound, newOryClient(provider.URL, "client", "secret"), "refresh-old", func(context.Context, *oryToken, uuid.UUID) (int64, error) {
 		t.Fatal("unconfirmed provider revoke must not reach connection persistence")
@@ -151,6 +152,9 @@ func TestCredentialRecoveryPostgresRedisRestart(t *testing.T) {
 	})
 	if refreshErr == nil || !strings.Contains(refreshErr.Error(), "encrypted recovery journal") {
 		t.Fatalf("refresh error = %v", refreshErr)
+	}
+	if err := supervisor.closeContext(context.Background()); err != nil {
+		t.Fatalf("drain credential recovery custody: %v", err)
 	}
 	recovery := client.ConnectorCredentialRecovery.Query().Where(connectorcredentialrecovery.OwnerIDEQ(bound.ConnectionID)).OnlyX(auth.WithInternal(t.Context()))
 	plain, err := sealer.OpenString(recovery.RefreshTokenEncrypted)
