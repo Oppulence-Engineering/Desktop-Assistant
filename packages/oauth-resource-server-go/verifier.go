@@ -22,6 +22,7 @@ import (
 const (
 	defaultHTTPTimeout        = 10 * time.Second
 	defaultMaxJWKSBytes       = int64(1 << 20)
+	defaultJWKSCacheTTL       = 5 * time.Minute
 	defaultKidMissTTL         = 30 * time.Second
 	defaultKidRefreshCooldown = 30 * time.Second
 )
@@ -38,6 +39,7 @@ type Config struct {
 	AllowLocalhostDevelopment bool
 	HTTPTimeout               time.Duration
 	MaxJWKSResponseBytes      int64
+	JWKSCacheTTL              time.Duration
 	UnknownKIDCacheTTL        time.Duration
 	UnknownKIDRefreshCooldown time.Duration
 	// Now overrides the verifier clock. It is intended for deterministic tests.
@@ -55,10 +57,16 @@ type Verifier struct {
 	client         *http.Client
 	mu             sync.Mutex
 	keys           map[string]any
+	keysExpiresAt  time.Time
 	negative       map[string]time.Time
-	refreshing     chan struct{}
+	refreshing     *jwksRefresh
 	nextKidRefresh time.Time
 	now            func() time.Time
+}
+
+type jwksRefresh struct {
+	done chan struct{}
+	err  error
 }
 
 // New builds the primary RFC 012 verifier. It fails closed unless exact issuer
@@ -76,7 +84,7 @@ func newVerifier(ctx context.Context, cfg Config, requireActor bool) (*Verifier,
 	if strings.TrimSpace(cfg.IssuerURL) == "" || strings.TrimSpace(cfg.Audience) == "" {
 		return nil, errors.New("oauthrs: exact IssuerURL and Audience are required")
 	}
-	if cfg.AcceptableSkew < 0 || cfg.HTTPTimeout < 0 || cfg.MaxJWKSResponseBytes < 0 || cfg.UnknownKIDCacheTTL < 0 || cfg.UnknownKIDRefreshCooldown < 0 {
+	if cfg.AcceptableSkew < 0 || cfg.HTTPTimeout < 0 || cfg.MaxJWKSResponseBytes < 0 || cfg.JWKSCacheTTL < 0 || cfg.UnknownKIDCacheTTL < 0 || cfg.UnknownKIDRefreshCooldown < 0 {
 		return nil, errors.New("oauthrs: durations and response limits must not be negative")
 	}
 	if cfg.AcceptableSkew == 0 {
@@ -87,6 +95,9 @@ func newVerifier(ctx context.Context, cfg Config, requireActor bool) (*Verifier,
 	}
 	if cfg.MaxJWKSResponseBytes == 0 {
 		cfg.MaxJWKSResponseBytes = defaultMaxJWKSBytes
+	}
+	if cfg.JWKSCacheTTL == 0 {
+		cfg.JWKSCacheTTL = defaultJWKSCacheTTL
 	}
 	if cfg.UnknownKIDCacheTTL == 0 {
 		cfg.UnknownKIDCacheTTL = defaultKidMissTTL
@@ -171,49 +182,57 @@ func (v *Verifier) keyfunc(token *jwt.Token) (any, error) {
 	}
 	v.mu.Lock()
 	now := v.now()
-	if key := v.keys[kid]; key != nil {
+	cacheFresh := now.Before(v.keysExpiresAt)
+	if key := v.keys[kid]; cacheFresh && key != nil {
 		v.mu.Unlock()
 		return key, nil
 	}
-	if until := v.negative[kid]; now.Before(until) {
-		v.mu.Unlock()
-		return nil, errors.New("unknown kid (negative cached)")
-	}
-	if wait := v.refreshing; wait != nil {
-		v.mu.Unlock()
-		<-wait
-		v.mu.Lock()
-		key := v.keys[kid]
-		if key == nil {
-			v.negative[kid] = v.now().Add(v.cfg.UnknownKIDCacheTTL)
+	if cacheFresh {
+		if until := v.negative[kid]; now.Before(until) {
+			v.mu.Unlock()
+			return nil, errors.New("unknown kid (negative cached)")
 		}
-		v.mu.Unlock()
-		if key == nil {
-			return nil, errors.New("unknown kid")
+		if v.refreshing == nil && now.Before(v.nextKidRefresh) {
+			v.negative[kid] = now.Add(v.cfg.UnknownKIDCacheTTL)
+			v.mu.Unlock()
+			return nil, errors.New("unknown kid (refresh cooldown)")
 		}
-		return key, nil
 	}
-	if now.Before(v.nextKidRefresh) {
-		v.negative[kid] = now.Add(v.cfg.UnknownKIDCacheTTL)
+	if call := v.refreshing; call != nil {
 		v.mu.Unlock()
-		return nil, errors.New("unknown kid (refresh cooldown)")
+		<-call.done
+		if call.err != nil {
+			return nil, call.err
+		}
+		return v.keyAfterRefresh(kid)
 	}
-	wait := make(chan struct{})
-	v.refreshing = wait
-	v.nextKidRefresh = now.Add(v.cfg.UnknownKIDRefreshCooldown)
+	call := &jwksRefresh{done: make(chan struct{})}
+	v.refreshing = call
+	if cacheFresh {
+		v.nextKidRefresh = now.Add(v.cfg.UnknownKIDRefreshCooldown)
+	}
 	v.mu.Unlock()
 	err := v.refresh(context.Background())
+	v.mu.Lock()
+	call.err = err
+	if v.refreshing == call {
+		v.refreshing = nil
+	}
+	close(call.done)
+	v.mu.Unlock()
+	if err != nil {
+		return nil, err
+	}
+	return v.keyAfterRefresh(kid)
+}
+
+func (v *Verifier) keyAfterRefresh(kid string) (any, error) {
 	v.mu.Lock()
 	key := v.keys[kid]
 	if key == nil {
 		v.negative[kid] = v.now().Add(v.cfg.UnknownKIDCacheTTL)
 	}
-	v.refreshing = nil
-	close(wait)
 	v.mu.Unlock()
-	if err != nil {
-		return nil, err
-	}
 	if key == nil {
 		return nil, errors.New("unknown kid")
 	}
@@ -251,6 +270,7 @@ func (v *Verifier) refresh(ctx context.Context) error {
 	}
 	v.mu.Lock()
 	v.keys = keys
+	v.keysExpiresAt = v.now().Add(v.cfg.JWKSCacheTTL)
 	for kid := range keys {
 		delete(v.negative, kid)
 	}

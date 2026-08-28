@@ -10,6 +10,7 @@ import { AuthorizationError, classifyTokenError } from './errors.js';
 const DEFAULT_ALGS = ['RS256'];
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_BYTES = 1 << 20;
+const DEFAULT_JWKS_CACHE_TTL_MS = 5 * 60_000;
 const DEFAULT_UNKNOWN_KID_TTL_MS = 30_000;
 const DEFAULT_UNKNOWN_KID_REFRESH_COOLDOWN_MS = 30_000;
 
@@ -23,6 +24,7 @@ const BaseConfigSchema = z.object({
   allowLocalhostDevelopment: z.boolean().optional(),
   requestTimeoutMs: z.number().positive().optional(),
   maxJwksResponseBytes: z.number().int().positive().optional(),
+  jwksCacheTtlMs: z.number().positive().optional(),
   unknownKidCacheTtlMs: z.number().nonnegative().optional(),
   unknownKidRefreshCooldownMs: z.number().nonnegative().optional(),
   now: z.function().args().returns(z.number()).optional(),
@@ -46,6 +48,7 @@ type KeyMap = Map<string, KeyLike | Uint8Array>;
 /** Fail-closed RFC 012 verifier requiring connector actor claims. */
 export class Verifier {
   private keys: KeyMap = new Map();
+  private keysExpireAt = 0;
   private readonly negative = new Map<string, number>();
   private refreshPromise?: Promise<void>;
   private nextUnknownKidRefreshAt = 0;
@@ -77,9 +80,10 @@ export class Verifier {
       const key = await this.keyFor(header.kid);
       const tolerance = this.cfg.clockToleranceSec ?? 60;
       const requiredClaims = this.requireActor ? ['exp', 'iat', 'nbf'] : ['exp'];
-      const { payload } = await jwtVerify(token, key, { issuer: this.cfg.issuerUrl, audience: this.cfg.audience, clockTolerance: tolerance, algorithms: this.cfg.algorithms ?? DEFAULT_ALGS, requiredClaims });
-      const now = Math.floor(Date.now() / 1000);
-      if (typeof payload.iat === 'number' && payload.iat > now + tolerance) throw new Error('"iat" claim timestamp check failed');
+      const now = this.now();
+      const { payload } = await jwtVerify(token, key, { issuer: this.cfg.issuerUrl, audience: this.cfg.audience, clockTolerance: tolerance, algorithms: this.cfg.algorithms ?? DEFAULT_ALGS, requiredClaims, currentDate: new Date(now) });
+      const nowSec = Math.floor(now / 1000);
+      if (typeof payload.iat === 'number' && payload.iat > nowSec + tolerance) throw new Error('"iat" claim timestamp check failed');
       const claims = claimsFromPayload(payload);
       if (this.requireActor) {
         if (!claims.subject || !claims.userId || !claims.organizationId || !claims.connectionId || !claims.connectorId || !claims.credentialGeneration || !claims.tokenId || claims.issuedAt === undefined || claims.notBefore === undefined) throw new Error('required RFC 012 connector claim missing');
@@ -93,9 +97,15 @@ export class Verifier {
   }
 
   private async keyFor(kid: string): Promise<KeyLike | Uint8Array> {
-    if (!this.keys.size) await this.refresh();
-    const cached = this.keys.get(kid); if (cached) return cached;
     const now = this.now();
+    if (!this.keys.size) await this.refresh();
+    else if (now >= this.keysExpireAt) {
+      await this.refresh();
+      const refreshed = this.keys.get(kid);
+      if (!refreshed) { this.negative.set(kid, this.now() + (this.cfg.unknownKidCacheTtlMs ?? DEFAULT_UNKNOWN_KID_TTL_MS)); throw new Error('unknown kid'); }
+      return refreshed;
+    }
+    const cached = this.keys.get(kid); if (cached) return cached;
     if ((this.negative.get(kid) ?? 0) > now) throw new Error('unknown kid (negative cached)');
     if (!this.refreshPromise && now < this.nextUnknownKidRefreshAt) {
       this.negative.set(kid, now + (this.cfg.unknownKidCacheTtlMs ?? DEFAULT_UNKNOWN_KID_TTL_MS));
@@ -126,6 +136,7 @@ export class Verifier {
     }
     if (!next.size) throw new Error('JWKS contains no usable RSA signing keys');
     this.keys = next;
+    this.keysExpireAt = this.now() + (this.cfg.jwksCacheTtlMs ?? DEFAULT_JWKS_CACHE_TTL_MS);
     for (const kid of next.keys()) this.negative.delete(kid);
   }
 

@@ -62,12 +62,16 @@ and responses are bounded. Defaults are:
 
 - `requestTimeoutMs`: 10 seconds
 - `maxJwksResponseBytes`: 1 MiB
+- `jwksCacheTtlMs`: 5 minutes
 - `unknownKidCacheTtlMs`: 30 seconds
 - `unknownKidRefreshCooldownMs`: 30 seconds
 
-Concurrent unknown-`kid` misses share one refresh. An issuer-wide cooldown also
-prevents sequential distinct key IDs from forcing repeated refreshes. A
-still-unknown key is negative-cached for the configured TTL.
+Successfully cached keys are refreshed after the bounded positive-cache lifetime,
+so a key removed from JWKS stops being trusted by a long-lived verifier. Once that
+bound expires, verification fails closed during a JWKS outage rather than using
+stale keys. Concurrent refreshes, including unknown-`kid` misses, share one request.
+An issuer-wide cooldown also prevents sequential distinct key IDs from forcing
+repeated refreshes. A still-unknown key is negative-cached for the configured TTL.
 
 Local HTTP is available only with `allowLocalhostDevelopment: true`, and only for
 localhost/loopback. The option does not permit arbitrary private-network hosts.

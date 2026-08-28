@@ -549,6 +549,107 @@ func TestUnknownKIDRefreshCooldownLimitsDistinctKidsAndAllowsRotation(t *testing
 	}
 }
 
+func TestJWKSCacheBoundRetiresKnownKeyAndFailsClosedOnOutage(t *testing.T) {
+	oldKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	activeKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	jwk := func(key *rsa.PrivateKey, kid string) map[string]string {
+		return map[string]string{
+			"kty": "RSA", "use": "sig", "alg": "RS256", "kid": kid,
+			"n": base64.RawURLEncoding.EncodeToString(key.N.Bytes()),
+			"e": base64.RawURLEncoding.EncodeToString(big.NewInt(int64(key.E)).Bytes()),
+		}
+	}
+
+	var state atomic.Int32
+	var requests atomic.Int64
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests.Add(1)
+		switch state.Load() {
+		case 0:
+			_ = json.NewEncoder(w).Encode(map[string]any{"keys": []map[string]string{jwk(oldKey, "old")}})
+		case 1:
+			_ = json.NewEncoder(w).Encode(map[string]any{"keys": []map[string]string{jwk(oldKey, "old"), jwk(activeKey, "active")}})
+		case 2:
+			_ = json.NewEncoder(w).Encode(map[string]any{"keys": []map[string]string{jwk(activeKey, "active")}})
+		default:
+			http.Error(w, "unavailable", http.StatusServiceUnavailable)
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	var nowNanos atomic.Int64
+	nowNanos.Store(time.Date(2026, time.August, 28, 0, 0, 0, 0, time.UTC).UnixNano())
+	now := func() time.Time { return time.Unix(0, nowNanos.Load()) }
+	advance := func(d time.Duration) { nowNanos.Add(int64(d)) }
+	verifier, err := oauthrs.NewGeneric(context.Background(), oauthrs.GenericConfig{
+		IssuerURL: "https://oauth.solomon-ai.co", Audience: "rowboat-api", JWKSURL: srv.URL,
+		AllowedJWKSOrigins: []string{srv.URL}, AllowLocalhostDevelopment: true,
+		JWKSCacheTTL: time.Second, Now: now,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldToken := signWithMethod(t, jwt.SigningMethodRS256, oldKey, "old", validClaims())
+	activeToken := signWithMethod(t, jwt.SigningMethodRS256, activeKey, "active", validClaims())
+
+	if _, err := verifier.Verify(oldToken); err != nil {
+		t.Fatalf("initial old key rejected: %v", err)
+	}
+	state.Store(1)
+	advance(time.Second - time.Nanosecond)
+	if _, err := verifier.Verify(oldToken); err != nil {
+		t.Fatalf("fresh cached old key rejected before bound: %v", err)
+	}
+	if got := requests.Load(); got != 1 {
+		t.Fatalf("cache refreshed before configured bound: requests = %d", got)
+	}
+	advance(time.Nanosecond)
+	if _, err := verifier.Verify(activeToken); err != nil {
+		t.Fatalf("overlap refresh rejected active key: %v", err)
+	}
+	if _, err := verifier.Verify(oldToken); err != nil {
+		t.Fatalf("overlap refresh rejected old key: %v", err)
+	}
+
+	state.Store(2)
+	advance(time.Second - time.Nanosecond)
+	if _, err := verifier.Verify(oldToken); err != nil {
+		t.Fatalf("old key was retired before the positive cache bound: %v", err)
+	}
+	advance(time.Nanosecond)
+	if _, err := verifier.Verify(oldToken); err == nil {
+		t.Fatal("retired old key remained trusted after the positive cache bound")
+	}
+	if _, err := verifier.Verify(activeToken); err != nil {
+		t.Fatalf("active key rejected after retirement refresh: %v", err)
+	}
+	if got := requests.Load(); got != 3 {
+		t.Fatalf("requests after overlap and retirement = %d, want 3", got)
+	}
+
+	state.Store(3)
+	advance(time.Second)
+	if _, err := verifier.Verify(activeToken); err == nil {
+		t.Fatal("expired positive cache trusted the active key during JWKS outage")
+	}
+	if got := requests.Load(); got != 4 {
+		t.Fatalf("outage refresh requests = %d, want 4", got)
+	}
+	state.Store(2)
+	if _, err := verifier.Verify(activeToken); err != nil {
+		t.Fatalf("active key did not recover after JWKS outage: %v", err)
+	}
+	if got := requests.Load(); got != 5 {
+		t.Fatalf("recovery refresh requests = %d, want 5", got)
+	}
+}
+
 func TestRequireMiddleware(t *testing.T) {
 	srv, key := jwksServer(t)
 	v := newVerifier(t, srv.URL)

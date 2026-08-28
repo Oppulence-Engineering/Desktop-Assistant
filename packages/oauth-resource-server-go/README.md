@@ -72,13 +72,17 @@ The built-in client:
   preventing DNS rebinding between policy evaluation and dialing
 - disables proxy-side resolution and blocks redirects outside the allowlist
 - limits redirects, request duration, and response bytes
+- refreshes successfully cached keys after a bounded positive-cache lifetime so
+  removed keys stop being trusted by long-lived verifier instances
 - coalesces concurrent unknown-`kid` refreshes, applies an issuer-wide refresh
   cooldown across distinct misses, and negative-caches individual misses
 
-Defaults are a 10-second request timeout, 1 MiB response limit, and 30-second
-unknown-`kid` negative-cache TTL and refresh cooldown. Configure them with
-`HTTPTimeout`, `MaxJWKSResponseBytes`, `UnknownKIDCacheTTL`, and
-`UnknownKIDRefreshCooldown`.
+Defaults are a 10-second request timeout, 1 MiB response limit, five-minute JWKS
+positive-cache TTL, and 30-second unknown-`kid` negative-cache TTL and refresh
+cooldown. Configure them with `HTTPTimeout`, `MaxJWKSResponseBytes`,
+`JWKSCacheTTL`, `UnknownKIDCacheTTL`, and `UnknownKIDRefreshCooldown`. Once the
+positive cache expires, verification requires a successful JWKS refresh and fails
+closed during an outage rather than continuing to trust stale keys.
 
 Plain HTTP and loopback/private access are never enabled by URL alone. Local test
 servers require `AllowLocalhostDevelopment: true`; this option permits only HTTP

@@ -244,6 +244,36 @@ describe('RFC 012 verifier contract', () => {
     await expect(newVerifier().verify(await sign({ [claim]: now + 30 }))).resolves.toBeDefined();
   });
 
+  it('uses the configured clock consistently at iat, nbf, and exp tolerance boundaries', async () => {
+    const nowMs = Date.parse('2035-01-02T03:04:05Z');
+    const nowSec = Math.floor(nowMs / 1000);
+    const tolerance = 10;
+    const verifier = new Verifier({
+      issuerUrl: ISSUER,
+      audience: AUDIENCE,
+      jwksUrl: baseURL,
+      allowedJwksOrigins: [new URL(baseURL).origin],
+      allowLocalhostDevelopment: true,
+      clockToleranceSec: tolerance,
+      now: () => nowMs,
+    });
+    const timedToken = (iat: number, nbf: number, exp: number): Promise<string> => new SignJWT({
+      ...baseClaims(), iat, nbf,
+    })
+      .setProtectedHeader({ alg: 'RS256', kid: KID })
+      .setIssuer(ISSUER)
+      .setAudience(AUDIENCE)
+      .setExpirationTime(exp)
+      .sign(privateKey);
+
+    await expect(verifier.verify(await timedToken(nowSec + tolerance, nowSec, nowSec + 60))).resolves.toBeDefined();
+    await expectRejectCode(verifier.verify(await timedToken(nowSec + tolerance + 1, nowSec, nowSec + 60)), 'token_invalid_signature');
+    await expect(verifier.verify(await timedToken(nowSec, nowSec + tolerance, nowSec + 60))).resolves.toBeDefined();
+    await expectRejectCode(verifier.verify(await timedToken(nowSec, nowSec + tolerance + 1, nowSec + 60)), 'token_invalid_signature');
+    await expect(verifier.verify(await timedToken(nowSec, nowSec, nowSec - tolerance + 1))).resolves.toBeDefined();
+    await expectRejectCode(verifier.verify(await timedToken(nowSec, nowSec, nowSec - tolerance)), 'token_expired');
+  });
+
   it('rejects HS256 and other algorithms under the RS256-only default', async () => {
     const hmac = await new SignJWT(baseClaims())
       .setProtectedHeader({ alg: 'HS256', kid: KID })
@@ -273,7 +303,7 @@ describe('RFC 012 verifier contract', () => {
   });
 
   it('rate limits sequential distinct-kid misses issuer-wide and allows rotation after cooldown', async () => {
-    let now = Date.parse('2026-08-27T00:00:00Z');
+    let now = Date.now();
     const verifier = new GenericVerifier({
       issuerUrl: ISSUER,
       audience: AUDIENCE,
@@ -302,6 +332,76 @@ describe('RFC 012 verifier contract', () => {
     now += 8_000;
     await expect(verifier.verify(await sign({}, { kid: 'post-cooldown-rotation', key: rotation.privateKey }))).resolves.toBeDefined();
     expect(jwksRequests).toBe(initialRequests + 2);
+  });
+
+  it('bounds known-key trust across overlap, retirement, and JWKS outage on one verifier', async () => {
+    const oldPair = await generateKeyPair('RS256');
+    const activePair = await generateKeyPair('RS256');
+    const oldJwk = await exportJWK(oldPair.publicKey);
+    const activeJwk = await exportJWK(activePair.publicKey);
+    Object.assign(oldJwk, { kid: 'bounded-old', alg: 'RS256', use: 'sig' });
+    Object.assign(activeJwk, { kid: 'bounded-active', alg: 'RS256', use: 'sig' });
+
+    let state: 'old' | 'overlap' | 'active' | 'outage' = 'old';
+    let requests = 0;
+    const boundedServer = createServer((_req, res) => {
+      requests += 1;
+      if (state === 'outage') { res.statusCode = 503; res.end('unavailable'); return; }
+      const keys = state === 'old' ? [oldJwk] : state === 'overlap' ? [oldJwk, activeJwk] : [activeJwk];
+      res.setHeader('content-type', 'application/json');
+      res.end(JSON.stringify({ keys }));
+    });
+    await new Promise<void>((resolve) => boundedServer.listen(0, resolve));
+    const { port } = boundedServer.address() as AddressInfo;
+    const boundedURL = `http://127.0.0.1:${port}/jwks`;
+    let now = Date.parse('2035-01-02T03:04:05Z');
+    const nowSec = Math.floor(now / 1000);
+    const verifier = new GenericVerifier({
+      issuerUrl: ISSUER,
+      audience: AUDIENCE,
+      jwksUrl: boundedURL,
+      allowedJwksOrigins: [new URL(boundedURL).origin],
+      allowLocalhostDevelopment: true,
+      jwksCacheTtlMs: 1_000,
+      now: () => now,
+    });
+    const boundedToken = (kid: string, key: KeyLike): Promise<string> => new SignJWT({ iat: nowSec, nbf: nowSec - 1 })
+      .setProtectedHeader({ alg: 'RS256', kid })
+      .setIssuer(ISSUER)
+      .setAudience(AUDIENCE)
+      .setExpirationTime(nowSec + 3600)
+      .sign(key);
+    const oldToken = await boundedToken('bounded-old', oldPair.privateKey);
+    const activeToken = await boundedToken('bounded-active', activePair.privateKey);
+
+    try {
+      await expect(verifier.verify(oldToken)).resolves.toBeDefined();
+      state = 'overlap';
+      now += 999;
+      await expect(verifier.verify(oldToken)).resolves.toBeDefined();
+      expect(requests).toBe(1);
+      now += 1;
+      await expect(verifier.verify(activeToken)).resolves.toBeDefined();
+      await expect(verifier.verify(oldToken)).resolves.toBeDefined();
+
+      state = 'active';
+      now += 999;
+      await expect(verifier.verify(oldToken)).resolves.toBeDefined();
+      now += 1;
+      await expectRejectCode(verifier.verify(oldToken), 'token_invalid_signature');
+      await expect(verifier.verify(activeToken)).resolves.toBeDefined();
+      expect(requests).toBe(3);
+
+      state = 'outage';
+      now += 1_000;
+      await expectRejectCode(verifier.verify(activeToken), 'token_invalid_signature');
+      expect(requests).toBe(4);
+      state = 'active';
+      await expect(verifier.verify(activeToken)).resolves.toBeDefined();
+      expect(requests).toBe(5);
+    } finally {
+      await new Promise<void>((resolve, reject) => boundedServer.close((error) => error ? reject(error) : resolve()));
+    }
   });
 
 });
