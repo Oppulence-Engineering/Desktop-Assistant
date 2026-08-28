@@ -161,7 +161,7 @@ rowboat-api origin:
 | Environment | `BROKER_TOKEN_ISSUER` / verifier issuer | Verifier JWKS URL |
 |---|---|---|
 | Production | `https://api.oppulence.io` | `https://api.oppulence.io/.well-known/connector-jwks.json` |
-| Staging | `https://api.x.staging.solomon-ai.co` | `https://api.x.staging.solomon-ai.co/.well-known/connector-jwks.json` |
+| Staging | `https://api.x.staging.oppulence.io` | `https://api.x.staging.oppulence.io/.well-known/connector-jwks.json` |
 
 This contract is separate from Hydra. `ORY_PUBLIC_URL` points rowboat-api at
 Hydra's consent-plane OAuth endpoints. Hydra-issued access and refresh tokens

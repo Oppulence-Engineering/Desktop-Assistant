@@ -21,7 +21,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: reconcile-client
-          image: oryd/hydra:v2.2.0
+          image: oryd/hydra:v2.3.0
           env:
             - name: HYDRA_ADMIN_URL
               value: http://hydra-admin.ory.svc.cluster.local:4445

@@ -5,7 +5,11 @@ on:
     paths:
       - "charts/hydra/**"
       - "charts/rowboat-api/**"
+      - "charts/rowboat-www/**"
       - "charts/oauth-consent/**"
+      - "apps/rowboat-www/app/api/connectors/**"
+      - "apps/rowboat-www/lib/auth/origin.ts"
+      - "apps/rowboat-www/lib/connectors/hosted-oauth.ts"
       - "apps/rowboat-api/internal/connectors/default_connectors.json"
       - "apps/rowboat-api/internal/connectors/registry.go"
       - "apps/oauth-consent/**"
@@ -26,7 +30,11 @@ on:
     paths:
       - "charts/hydra/**"
       - "charts/rowboat-api/**"
+      - "charts/rowboat-www/**"
       - "charts/oauth-consent/**"
+      - "apps/rowboat-www/app/api/connectors/**"
+      - "apps/rowboat-www/lib/auth/origin.ts"
+      - "apps/rowboat-www/lib/connectors/hosted-oauth.ts"
       - "apps/rowboat-api/internal/connectors/default_connectors.json"
       - "apps/rowboat-api/internal/connectors/registry.go"
       - "apps/oauth-consent/**"

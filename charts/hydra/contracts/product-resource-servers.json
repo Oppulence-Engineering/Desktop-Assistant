@@ -194,8 +194,8 @@
       ]
     },
     "staging": {
-      "issuer": "https://api.x.staging.solomon-ai.co",
-      "jwksUrl": "https://api.x.staging.solomon-ai.co/.well-known/connector-jwks.json",
+      "issuer": "https://api.x.staging.oppulence.io",
+      "jwksUrl": "https://api.x.staging.oppulence.io/.well-known/connector-jwks.json",
       "allowedAlgorithms": [
         "RS256"
       ],
@@ -215,7 +215,7 @@
           ],
           "connectionStatusValidation": {
             "mode": "live",
-            "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
+            "endpoint": "https://api.x.staging.oppulence.io/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
             "disconnectEnforcement": "immediate",
@@ -251,7 +251,7 @@
           ],
           "connectionStatusValidation": {
             "mode": "live",
-            "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
+            "endpoint": "https://api.x.staging.oppulence.io/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
             "disconnectEnforcement": "immediate",
@@ -287,7 +287,7 @@
           ],
           "connectionStatusValidation": {
             "mode": "live",
-            "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
+            "endpoint": "https://api.x.staging.oppulence.io/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
             "disconnectEnforcement": "immediate",
@@ -323,7 +323,7 @@
           ],
           "connectionStatusValidation": {
             "mode": "live",
-            "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
+            "endpoint": "https://api.x.staging.oppulence.io/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
             "disconnectEnforcement": "immediate",
@@ -359,7 +359,7 @@
           ],
           "connectionStatusValidation": {
             "mode": "live",
-            "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
+            "endpoint": "https://api.x.staging.oppulence.io/v1/internal/connections/status",
             "checkTiming": "every-request",
             "failurePolicy": "deny",
             "disconnectEnforcement": "immediate",

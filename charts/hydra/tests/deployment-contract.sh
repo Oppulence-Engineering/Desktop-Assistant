@@ -61,6 +61,12 @@ for environment in production staging; do
     -f "$repo_root/charts/rowboat-api/values-$environment.yaml" \
     >"$tmp_dir/rowboat-api-$environment.yaml"
 
+  helm lint "$repo_root/charts/rowboat-www" \
+    -f "$repo_root/charts/rowboat-www/values-$environment.yaml" >/dev/null
+  helm template rowboat-www "$repo_root/charts/rowboat-www" \
+    -f "$repo_root/charts/rowboat-www/values-$environment.yaml" \
+    >"$tmp_dir/rowboat-www-$environment.yaml"
+
   helm lint "$repo_root/charts/oauth-consent" \
     -f "$repo_root/charts/oauth-consent/values-$environment.yaml" \
     --set-string "networkPolicy.postgresql.cidrs[0]=$consent_postgres_cidr" >/dev/null
@@ -95,7 +101,7 @@ import json
 import os
 import re
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 root = Path(os.environ["REPO_ROOT"])
 tmp = Path(os.environ["TMP_DIR"])
@@ -107,10 +113,50 @@ def rendered_value(path, key):
     assert len(matches) == 1, (path, key, matches)
     return matches[0].strip()
 
+def rendered_consistent_value(path, key):
+    matches = [
+        match.strip()
+        for match in re.findall(
+            rf'^\s*{re.escape(key)}:\s*["\']?([^"\'\n]+)["\']?\s*$',
+            path.read_text(),
+            re.M,
+        )
+        if match.strip().startswith("https://")
+    ]
+    assert matches and len(set(matches)) == 1, (path, key, matches)
+    return matches[0]
+
 def chart_value(path, key):
     matches = re.findall(rf'^\s*{re.escape(key)}:\s*([^#\n]+?)\s*$', path.read_text(), re.M)
     assert len(matches) == 1, (path, key, matches)
     return matches[0].strip().strip('"\'')
+
+def rendered_hosts(path):
+    hosts = {
+        match.strip()
+        for match in re.findall(r'^\s*(?:-\s*)?host:\s*["\']?([^"\'\s]+)', path.read_text(), re.M)
+    }
+    assert hosts, path
+    return hosts
+
+def rendered_ingress_origin(path):
+    hosts = rendered_hosts(path)
+    assert len(hosts) == 1, (path, hosts)
+    return "https://" + next(iter(hosts))
+
+def source_constant(path, name):
+    match = re.search(
+        rf'^export const {re.escape(name)}\s*=\s*["\']([^"\']+)["\'];$',
+        path.read_text(),
+        re.M,
+    )
+    assert match, (path, name)
+    return match.group(1)
+
+def origin_host(origin):
+    parsed = urlparse(origin)
+    assert parsed.scheme == "https" and parsed.hostname and not parsed.path.rstrip("/"), origin
+    return parsed.hostname
 
 def enabled(item, environment):
     return item.get("status", "enabled") != "disabled" and (
@@ -124,20 +170,76 @@ def binding(item, field, environment):
     assert isinstance(value, str) and value, (item.get("name"), field, environment)
     return value
 
+hosted_oauth_source = root / "apps/rowboat-www/lib/connectors/hosted-oauth.ts"
+hosted_start_route = root / "apps/rowboat-www/app/api/connectors/[name]/start/route.ts"
+hosted_callback_path = source_constant(hosted_oauth_source, "HOSTED_CONNECTOR_CALLBACK_PATH")
+assert "new URL(HOSTED_CONNECTOR_CALLBACK_PATH, origin).toString()" in hosted_start_route.read_text()
+expected_hydra_image = "oryd/hydra:v2.3.0"
+
 for environment in ("production", "staging"):
     values = root / f"charts/rowboat-api/values-{environment}.yaml"
     rendered = tmp / f"rowboat-api-{environment}.yaml"
+    web_rendered = tmp / f"rowboat-www-{environment}.yaml"
+    consent_rendered = tmp / f"oauth-consent-{environment}.yaml"
+    hydra_rendered = tmp / f"hydra-{environment}.yaml"
     public_base = chart_value(values, "PUBLIC_BASE_URL").rstrip("/")
     app_url = chart_value(values, "APP_URL").rstrip("/")
     client_id = chart_value(values, "ORY_BROKER_CLIENT_ID")
     assert rendered_value(rendered, "PUBLIC_BASE_URL") == public_base
+    assert rendered_value(rendered, "BROKER_TOKEN_ISSUER") == public_base
     assert rendered_value(rendered, "CONNECTOR_OAUTH_LEGACY_STATE_WRITE") == "false"
+
+    web_origin = rendered_value(web_rendered, "ROWBOAT_WWW_PUBLIC_APP_URL").rstrip("/")
+    web_api_base = rendered_value(web_rendered, "ROWBOAT_WWW_PUBLIC_API_BASE_URL").rstrip("/")
+    web_api_proxy = rendered_value(web_rendered, "ROWBOAT_WWW_API_PROXY_URL").rstrip("/")
+    api_ingress_origin = rendered_ingress_origin(rendered)
+    web_ingress_origin = rendered_ingress_origin(web_rendered)
+    assert web_origin == web_ingress_origin
+    assert app_url == web_origin
+    assert web_api_base == public_base
+    assert web_api_proxy == api_ingress_origin == public_base
+
+    # Mirror the start route's `new URL(HOSTED_CONNECTOR_CALLBACK_PATH, origin)`
+    # construction using the rendered canonical web origin and the checked-in
+    # callback-path constant. The broker must allow exactly this hosted callback.
+    hosted_callback = urljoin(web_origin + "/", hosted_callback_path)
     redirect_allowlist = rendered_value(rendered, "CONNECTOR_REDIRECT_ALLOWLIST").split(",")
     assert redirect_allowlist == [
         "solomon-ai://connection-complete",
-        app_url + "/api/connectors/oauth/callback",
+        hosted_callback,
     ], redirect_allowlist
-    assert app_url + "/settings/connectors" not in redirect_allowlist
+    assert web_origin + "/settings/connectors" not in redirect_allowlist
+
+    consent_origin = rendered_ingress_origin(consent_rendered)
+    assert rendered_value(consent_rendered, "WORKOS_REDIRECT_URI") == consent_origin + "/callback"
+    assert rendered_value(consent_rendered, "WORKOS_STEP_UP_REDIRECT_URI") == consent_origin + "/step-up/callback"
+    assert rendered_value(consent_rendered, "ROWBOAT_API_URL").rstrip("/") == public_base
+
+    hydra_origin = rendered_consistent_value(hydra_rendered, "issuer").rstrip("/")
+    assert rendered_consistent_value(hydra_rendered, "public").rstrip("/") == hydra_origin
+    assert rendered_hosts(hydra_rendered) == {origin_host(hydra_origin)}
+    assert rendered_value(rendered, "ORY_PUBLIC_URL").rstrip("/") == hydra_origin
+    assert rendered_consistent_value(hydra_rendered, "login") == consent_origin + "/login"
+    assert rendered_consistent_value(hydra_rendered, "consent") == consent_origin + "/consent"
+    assert rendered_consistent_value(hydra_rendered, "logout") == consent_origin + "/logout"
+
+    if environment == "staging":
+        assert rendered_value(rendered, "OIDC_ISSUER_URL").rstrip("/") == hydra_origin
+        assert rendered_value(rendered, "TOKEN_ISSUER").rstrip("/") == hydra_origin
+        assert rendered_value(rendered, "JWKS_URL") == hydra_origin + "/.well-known/jwks.json"
+        canonical_suffix = ".staging.oppulence.io"
+        public_origins = [
+            web_origin,
+            web_api_base,
+            web_api_proxy,
+            api_ingress_origin,
+            public_base,
+            hydra_origin,
+            consent_origin,
+            rendered_value(consent_rendered, "WORKOS_ISSUER").rstrip("/"),
+        ]
+        assert all(origin_host(origin).endswith(canonical_suffix) for origin in public_origins), public_origins
+
     contract = verifiers["environments"][environment]
     assert contract["issuer"] == public_base
     assert contract["jwksUrl"] == public_base + "/.well-known/connector-jwks.json"
@@ -193,9 +295,9 @@ for environment in ("production", "staging"):
     assert "app.kubernetes.io/component: hydra-client-reconciler" in manifest
     assert 'networking.rowboat.dev/hydra-admin-access: "true"' in manifest
 
-    consent = (tmp / f"oauth-consent-{environment}.yaml").read_text()
+    consent = consent_rendered.read_text()
     hydra_policy = (tmp / f"hydra-policy-{environment}.yaml").read_text()
-    hydra = (tmp / f"hydra-{environment}.yaml").read_text()
+    hydra = hydra_rendered.read_text()
     consent_namespace = "rowboat" if environment == "production" else "rowboat-staging"
     hydra_namespace = "ory" if environment == "production" else "ory-staging"
 
@@ -234,8 +336,9 @@ for environment in ("production", "staging"):
     assert "app.kubernetes.io/name: hydra" in hydra
     assert "app.kubernetes.io/instance: hydra" in hydra
     assert "kind: ServiceMonitor" not in hydra
-    if environment == "production":
-        assert "oryd/hydra:v2.3.0" in hydra
+    hydra_images = re.findall(r'^\s*image:\s*["\']?(oryd/hydra:[^"\'\s]+)', hydra, re.M)
+    assert len(hydra_images) >= 2, hydra_images
+    assert set(hydra_images) == {expected_hydra_image}, hydra_images
 
     rowboat = rendered.read_text()
     if environment == "production":
@@ -248,6 +351,15 @@ for environment in ("production", "staging"):
         assert "port: 5432" in rowboat
         assert "port: 6379" in rowboat
         assert "0.0.0.0/0" not in rowboat
+
+for client_manifest in (
+    root / "charts/hydra/clients/connector-broker-production.yaml",
+    root / "charts/hydra/clients/connector-broker-staging.yaml",
+    root / "charts/hydra/clients/rowboat-desktop.yaml",
+    root / "charts/hydra/clients/rowboat-desktop-staging.yaml",
+):
+    images = re.findall(r'^\s*image:\s*([^\s]+)', client_manifest.read_text(), re.M)
+    assert images == [expected_hydra_image], (client_manifest, images)
 
 # Keep the operator-facing verifier example tied to the checked-in generated contract.
 example = {}
@@ -297,6 +409,9 @@ fi
 if [[ "${SKIP_REAL_HYDRA_FIXTURE:-0}" != "1" ]]; then
   command -v docker >/dev/null || fail "docker is required for the real Hydra v2 fixture"
   docker info >/dev/null 2>&1 || fail "docker daemon is unavailable"
+  reconciler_image="$(awk '$1 == "image:" && $2 ~ /^oryd\/hydra:/ { print $2; exit }' \
+    "$repo_root/charts/hydra/clients/connector-broker-production.yaml")"
+  [[ -n "$reconciler_image" ]] || fail "rendered connector reconciler image is missing"
   if ! docker run -d --name "$hydra_container" \
     -p 127.0.0.1:4444:4444 \
     -p 127.0.0.1:4445:4445 \
@@ -306,7 +421,7 @@ if [[ "${SKIP_REAL_HYDRA_FIXTURE:-0}" != "1" ]]; then
     -e URLS_SELF_ISSUER=http://127.0.0.1:4444 \
     -e URLS_LOGIN=http://desktop.invalid/login \
     -e URLS_CONSENT=http://desktop.invalid/consent \
-    oryd/hydra:v2.3.0 serve all --dev >/dev/null; then
+    "$reconciler_image" serve all --dev >/dev/null; then
     fail "could not start Hydra fixture, ensure ports 4444 and 4445 are free"
   fi
   hydra_started=1

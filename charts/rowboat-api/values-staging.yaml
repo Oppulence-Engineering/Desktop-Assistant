@@ -4,7 +4,7 @@
 replicaCount: 1
 
 ingress:
-  host: api.x.staging.solomon-ai.co
+  host: api.x.staging.oppulence.io
 
 autoscaling:
   enabled: false
@@ -22,29 +22,29 @@ config:
   ENVIRONMENT: staging
   LOG_LEVEL: debug
   AUTO_MIGRATE: "true" # staging may auto-migrate for fast iteration
-  APP_URL: https://app.staging.solomon-ai.co
-  OIDC_ISSUER_URL: https://oauth.staging.solomon-ai.co
-  TOKEN_ISSUER: https://oauth.staging.solomon-ai.co
-  JWKS_URL: https://oauth.staging.solomon-ai.co/.well-known/jwks.json
-  ORY_PUBLIC_URL: https://oauth.staging.solomon-ai.co
+  APP_URL: https://x.staging.oppulence.io
+  OIDC_ISSUER_URL: https://oauth.staging.oppulence.io
+  TOKEN_ISSUER: https://oauth.staging.oppulence.io
+  JWKS_URL: https://oauth.staging.oppulence.io/.well-known/jwks.json
+  ORY_PUBLIC_URL: https://oauth.staging.oppulence.io
   ORY_ADMIN_URL: http://hydra-admin.ory-staging.svc.cluster.local:4445
   ORY_BROKER_CLIENT_ID: solomon-connector-broker-staging
   # Exact broker completion endpoints only. The hosted BFF keeps the eventual
   # user-facing settings route in its signed state and performs the claim here.
-  CONNECTOR_REDIRECT_ALLOWLIST: solomon-ai://connection-complete,https://app.staging.solomon-ai.co/api/connectors/oauth/callback
+  CONNECTOR_REDIRECT_ALLOWLIST: solomon-ai://connection-complete,https://x.staging.oppulence.io/api/connectors/oauth/callback
   CONNECTOR_EMERGENCY_DISABLED: ""
   # RFC 012 closure steady state. All hash-aware replicas and the pending-state
   # TTL have drained, so raw bearer state must never be written again.
   CONNECTOR_OAUTH_LEGACY_STATE_WRITE: "false"
   CONNECTOR_ENTITLEMENT_URLS_JSON: '{"canvas":"https://api.canvas.staging.solomon-ai.co/v1/internal/entitlements","corinthian":"https://mcp.corinthian.staging.solomon-ai.co/v1/internal/entitlements","cadence":"https://mcp.cadence.staging.solomon-ai.co/v1/internal/entitlements","conduit":"https://mcp.conduit.staging.solomon-ai.co/v1/internal/entitlements","eigen":"https://mcp.eigen.staging.solomon-ai.co/v1/internal/entitlements","wispr":"https://mcp.wispr.staging.solomon-ai.co/v1/internal/entitlements"}'
-  PUBLIC_BASE_URL: https://api.x.staging.solomon-ai.co
+  PUBLIC_BASE_URL: https://api.x.staging.oppulence.io
   # Staging product verifiers use this issuer and the connector JWKS endpoint on
   # the same rowboat-api origin, never the Hydra JWKS used by the consent flow.
-  BROKER_TOKEN_ISSUER: https://api.x.staging.solomon-ai.co
+  BROKER_TOKEN_ISSUER: https://api.x.staging.oppulence.io
   # Google OAuth broker callback. MUST be the API host (where /oauth/google/callback
   # is served), not APP_URL — the default falls back to APP_URL, which is the app
   # host in staging/prod. Register this exact URI in the Google Cloud OAuth client.
-  GOOGLE_REDIRECT_URI: https://api.x.staging.solomon-ai.co/oauth/google/callback
+  GOOGLE_REDIRECT_URI: https://api.x.staging.oppulence.io/oauth/google/callback
   INFISICAL_ENVIRONMENT: staging
   # Distinguish staging feedback in the shared Plain inbox via the title prefix.
   # There is one Plain workspace, so staging inherits PLAIN_LABEL_TYPE_IDS from

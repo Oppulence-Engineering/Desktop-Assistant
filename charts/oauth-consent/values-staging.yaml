@@ -13,7 +13,7 @@ networkPolicy:
     # CIDR(s) in a separate environment-owned values file.
     cidrs: []
 ingress:
-  host: consent.staging.solomon-ai.co
+  host: consent.staging.oppulence.io
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-staging
   tls:
@@ -21,12 +21,12 @@ ingress:
     secretName: oauth-consent-tls
 config:
   ORY_ADMIN_URL: http://hydra-admin.ory-staging.svc.cluster.local:4445
-  WORKOS_ISSUER: https://auth.staging.solomon-ai.co
-  WORKOS_REDIRECT_URI: https://consent.staging.solomon-ai.co/callback
-  WORKOS_STEP_UP_REDIRECT_URI: https://consent.staging.solomon-ai.co/step-up/callback
+  WORKOS_ISSUER: https://auth.staging.oppulence.io
+  WORKOS_REDIRECT_URI: https://consent.staging.oppulence.io/callback
+  WORKOS_STEP_UP_REDIRECT_URI: https://consent.staging.oppulence.io/step-up/callback
   WORKOS_STEP_UP_ACR: urn:rowboat:loa:money-moving
   WORKOS_STEP_UP_AMR: mfa
-  ROWBOAT_API_URL: https://api.x.staging.solomon-ai.co
+  ROWBOAT_API_URL: https://api.x.staging.oppulence.io
   CONSENT_CONTEXT_HOOK_PATH: /oauth-hooks/pre-consent
   CONSENT_AUDIT_HOOK_PATH: /oauth-hooks/consent-audit
   HOOK_SIGNATURE_MAX_AGE_MS: "300000"
