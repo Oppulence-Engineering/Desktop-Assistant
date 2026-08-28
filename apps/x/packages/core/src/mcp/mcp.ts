@@ -34,6 +34,7 @@ const clients: Record<string, mcpState> = {};
 
 type ClientApprovalContext = {
   config: Readonly<McpConfigApprovalSnapshot>;
+  repo: IMcpConfigRepo;
   observedToolCalls: Map<string, ObservedMcpToolCallRequest[]>;
 };
 
@@ -101,13 +102,13 @@ async function assertApprovalConfigCurrent(
 }
 
 async function redeemApprovalCode(
+  repo: IMcpConfigRepo,
   serverName: string,
   code: string,
   verifier: string,
   productOrigin: string,
   binding: Readonly<McpApprovalRequestBinding & { actor?: string; action?: string }>,
 ): Promise<{ approvalToken: string }> {
-  const repo = container.resolve<IMcpConfigRepo>("mcpConfigRepo");
   const { mcpServers } = await repo.getConfig();
   const config = mcpServers[serverName];
   if (!config || "command" in config)
@@ -141,7 +142,7 @@ function takeObservedToolCall(
   client: Client,
   toolName: string,
   input: Readonly<Record<string, unknown>>,
-): McpApprovalRequestBinding | undefined {
+): { binding: McpApprovalRequestBinding; repo: IMcpConfigRepo } | undefined {
   const context = clientApprovalContexts.get(client);
   if (!context) return undefined;
   const argumentsDigest = canonicalArgumentsDigest(input);
@@ -150,7 +151,7 @@ function takeObservedToolCall(
   const request = requests?.pop();
   if (!request) return undefined;
   if (!requests?.length) context.observedToolCalls.delete(key);
-  return Object.freeze({ ...context.config, ...request });
+  return { binding: Object.freeze({ ...context.config, ...request }), repo: context.repo };
 }
 
 async function createClient(
@@ -203,7 +204,7 @@ async function createClient(
             validateCurrent: () => assertApprovalConfigCurrent(repo, serverName, approval.binding),
           })
         : observedFetch;
-      clientApprovalContexts.set(client, { config: configSnapshot, observedToolCalls });
+      clientApprovalContexts.set(client, { config: configSnapshot, repo, observedToolCalls });
       const requestInit = Object.keys(headers).length ? { headers } : undefined;
       try {
         transport = new StreamableHTTPClientTransport(new URL(config.url), {
@@ -342,7 +343,8 @@ async function executeToolAttempt(
     return await client.callTool({ name: toolName, arguments: input });
   } catch (error) {
     if (approval) throw error;
-    const requestBinding = takeObservedToolCall(client, toolName, input);
+    const approvalContext = takeObservedToolCall(client, toolName, input);
+    const requestBinding = approvalContext?.binding;
     return await awaitApprovalAndRetry(
       serverName,
       toolName,
@@ -354,8 +356,18 @@ async function executeToolAttempt(
           token,
           binding,
         }),
-      (code, verifier, productOrigin, binding) =>
-        redeemApprovalCode(serverName, code, verifier, productOrigin, binding),
+      (code, verifier, productOrigin, binding) => {
+        if (!approvalContext)
+          throw new Error("The approval-required MCP request had no repository context.");
+        return redeemApprovalCode(
+          approvalContext.repo,
+          serverName,
+          code,
+          verifier,
+          productOrigin,
+          binding,
+        );
+      },
     );
   } finally {
     // One-time approval credentials must never remain on a pooled transport.
