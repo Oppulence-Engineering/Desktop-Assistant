@@ -103,10 +103,14 @@ func New(client *ent.Client, sealer *crypto.Sealer, registry *Registry, cfg Conf
 // CredentialCustodyReady reports whether the bounded credential custody supervisor can accept work.
 func (h *Handler) CredentialCustodyReady(context.Context) error { return h.custody.ready() }
 
-// CloseCredentialCustody drains and closes the bounded credential custody supervisor.
-func (h *Handler) CloseCredentialCustody() error {
-	h.custody.close()
-	return nil
+// BeginCredentialCustodyShutdown fails readiness before public listener drain,
+// while still allowing already accepted HTTP requests to submit custody work.
+func (h *Handler) BeginCredentialCustodyShutdown() { h.custody.beginShutdown() }
+
+// CloseCredentialCustody stops admission and drains admitted custody work until
+// the server's bounded resource-shutdown deadline.
+func (h *Handler) CloseCredentialCustody(ctx context.Context) error {
+	return h.custody.closeContext(ctx)
 }
 
 // SetOryBaseURL overrides the Ory public URL (tests).
