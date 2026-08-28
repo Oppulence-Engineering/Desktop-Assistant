@@ -1231,7 +1231,7 @@ export interface paths {
     put?: never;
     /**
      * Force-invalidate connector connections
-     * @description Server-to-server endpoint supporting exact connection, user, org, connector, or combined targets. Matches become invalidated tombstones; credentials are cleared and upstream revocation is attempted.
+     * @description Server-to-server endpoint supporting exact connection, user, immutable credential-org, connector, or combined targets. Product/service principals are bound to configured connector(s) and selector classes. Global control requires an explicit platform_admin principal. Matches become invalidated tombstones; credentials are cleared and upstream revocation is attempted.
      */
     post: operations["invalidateConnection"];
     delete?: never;
@@ -15032,7 +15032,10 @@ export interface operations {
       };
       400: components["responses"]["400"];
       401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      409: components["responses"]["409"];
       500: components["responses"]["500"];
+      503: components["responses"]["503"];
     };
   };
   ingestInternalCloudEvent: {

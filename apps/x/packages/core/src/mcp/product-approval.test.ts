@@ -57,16 +57,28 @@ describe("direct product MCP approval completion", () => {
   it("distinguishes authorization failures", () => {
     expect(classifyDirectProductMcpError({ status: 401 }).kind).toBe("authentication_required");
     expect(classifyDirectProductMcpError({ status: 403 }).kind).toBe("forbidden");
-    expect(classifyDirectProductMcpError({ status: 401, body: '{"code":"token_expired"}' }).kind).toBe("reauth_required");
+    expect(
+      classifyDirectProductMcpError({ status: 401, body: '{"code":"token_expired"}' }).kind,
+    ).toBe("reauth_required");
   });
 
   it("puts only an opaque code in the protocol URL and redeems before one-shot retry", async () => {
     let opened!: URL;
-    configureMcpApprovalUrlOpener(async (url) => { opened = new URL(url); });
+    configureMcpApprovalUrlOpener(async (url) => {
+      opened = new URL(url);
+    });
     const retry = vi.fn(async (token: string) => token);
     const redemption = redeem();
     const input = { amount: 1200, destination: "acct_7" };
-    const result = awaitApprovalAndRetry("product", "payment.execute", input, challengeError, binding("payment.execute", input), retry, redemption);
+    const result = awaitApprovalAndRetry(
+      "product",
+      "payment.execute",
+      input,
+      challengeError,
+      binding("payment.execute", input),
+      retry,
+      redemption,
+    );
     await vi.waitFor(() => expect(opened).toBeDefined());
 
     expect(opened.origin).toBe("https://product.example");
@@ -80,12 +92,25 @@ describe("direct product MCP approval completion", () => {
     callback.searchParams.set("code", "opaque-single-use-code");
     expect(callback.toString()).not.toMatch(/token|bearer/i);
     const parsed = parseMcpApprovalDeepLink(callback.toString());
-    expect(parsed).toEqual({ challengeId: expect.any(String), status: "approved", code: "opaque-single-use-code" });
+    expect(parsed).toEqual({
+      challengeId: expect.any(String),
+      status: "approved",
+      code: "opaque-single-use-code",
+    });
     expect(registerMcpApprovalResult(parsed!)).toBe(true);
     await expect(result).resolves.toBe("approval-bearer-secret");
-    expect(redemption).toHaveBeenCalledWith("opaque-single-use-code", expect.any(String), "https://product.example", expect.objectContaining({
-      connectionId: "connection-1", toolName: "payment.execute", argumentsDigest: canonicalArgumentsDigest(input), actor: "user_123", action: "payment.release",
-    }));
+    expect(redemption).toHaveBeenCalledWith(
+      "opaque-single-use-code",
+      expect.any(String),
+      "https://product.example",
+      expect.objectContaining({
+        connectionId: "connection-1",
+        toolName: "payment.execute",
+        argumentsDigest: canonicalArgumentsDigest(input),
+        actor: "user_123",
+        action: "payment.release",
+      }),
+    );
     expect(retry).toHaveBeenCalledOnce();
     expect(registerMcpApprovalResult(parsed!)).toBe(false);
   });
@@ -102,9 +127,21 @@ describe("direct product MCP approval completion", () => {
 
   it("does not expose a bearer in deep-link parse results, errors, or opener arguments", async () => {
     let opened = "";
-    configureMcpApprovalUrlOpener(async (url) => { opened = url; });
-    const redemption = vi.fn(async () => { throw new Error("Approval code redemption failed (400)."); });
-    const promise = awaitApprovalAndRetry("product", "payment.execute", {}, challengeError, binding("payment.execute", {}), vi.fn(), redemption);
+    configureMcpApprovalUrlOpener(async (url) => {
+      opened = url;
+    });
+    const redemption = vi.fn(async () => {
+      throw new Error("Approval code redemption failed (400).");
+    });
+    const promise = awaitApprovalAndRetry(
+      "product",
+      "payment.execute",
+      {},
+      challengeError,
+      binding("payment.execute", {}),
+      vi.fn(),
+      redemption,
+    );
     await vi.waitFor(() => expect(opened).not.toBe(""));
     const u = new URL("oppulence://mcp-approval");
     u.searchParams.set("challenge_id", new URL(opened).searchParams.get("desktop_challenge_id")!);
@@ -117,17 +154,41 @@ describe("direct product MCP approval completion", () => {
   it("rejects a wrong product origin before opening", async () => {
     const open = vi.fn();
     configureMcpApprovalUrlOpener(open);
-    await expect(awaitApprovalAndRetry("product", "tool", {}, { status: 428, body: '{"approvalChallengeUrl":"https://evil.example/approve"}' }, binding("tool", {}), vi.fn(), redeem())).rejects.toThrow(/exact product origin/);
+    await expect(
+      awaitApprovalAndRetry(
+        "product",
+        "tool",
+        {},
+        { status: 428, body: '{"approvalChallengeUrl":"https://evil.example/approve"}' },
+        binding("tool", {}),
+        vi.fn(),
+        redeem(),
+      ),
+    ).rejects.toThrow(/exact product origin/);
     expect(open).not.toHaveBeenCalled();
   });
 
   it("clears pending state before redemption so code replay cannot redeem twice", async () => {
     let opened!: URL;
-    configureMcpApprovalUrlOpener(async (url) => { opened = new URL(url); });
+    configureMcpApprovalUrlOpener(async (url) => {
+      opened = new URL(url);
+    });
     const redemption = redeem();
-    const promise = awaitApprovalAndRetry("product", "tool", {}, challengeError, binding("tool", {}), vi.fn(async () => "ok"), redemption);
+    const promise = awaitApprovalAndRetry(
+      "product",
+      "tool",
+      {},
+      challengeError,
+      binding("tool", {}),
+      vi.fn(async () => "ok"),
+      redemption,
+    );
     await vi.waitFor(() => expect(opened).toBeDefined());
-    const completion = { challengeId: opened.searchParams.get("desktop_challenge_id")!, status: "approved" as const, code: "single-use" };
+    const completion = {
+      challengeId: opened.searchParams.get("desktop_challenge_id")!,
+      status: "approved" as const,
+      code: "single-use",
+    };
     expect(registerMcpApprovalResult(completion)).toBe(true);
     expect(registerMcpApprovalResult(completion)).toBe(false);
     await expect(promise).resolves.toBe("ok");

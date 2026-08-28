@@ -110,7 +110,8 @@ async function redeemApprovalCode(
   const repo = container.resolve<IMcpConfigRepo>("mcpConfigRepo");
   const { mcpServers } = await repo.getConfig();
   const config = mcpServers[serverName];
-  if (!config || "command" in config) throw new Error("The approved product is no longer configured.");
+  if (!config || "command" in config)
+    throw new Error("The approved product is no longer configured.");
   await assertApprovalConfigCurrent(repo, serverName, binding);
   if (new URL(config.url).origin !== productOrigin || binding.endpoint.origin !== productOrigin)
     throw new Error("The approval redemption origin did not match the bound product origin.");
