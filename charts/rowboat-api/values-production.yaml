@@ -59,7 +59,9 @@ config:
   ORY_PUBLIC_URL: https://oauth.solomon-ai.co
   ORY_ADMIN_URL: http://hydra-admin.ory.svc.cluster.local:4445
   ORY_BROKER_CLIENT_ID: solomon-connector-broker
-  CONNECTOR_REDIRECT_ALLOWLIST: solomon-ai://settings/connectors,https://oppulence.io/settings/connectors
+  # Exact broker completion endpoints only. The hosted BFF keeps the eventual
+  # user-facing settings route in its signed state and performs the claim here.
+  CONNECTOR_REDIRECT_ALLOWLIST: solomon-ai://connection-complete,https://oppulence.io/api/connectors/oauth/callback
   # Comma-separated incident kill switch. See docs/runbooks/connectors.md.
   CONNECTOR_EMERGENCY_DISABLED: ""
   # RFC 012 closure steady state. All hash-aware replicas and the pending-state

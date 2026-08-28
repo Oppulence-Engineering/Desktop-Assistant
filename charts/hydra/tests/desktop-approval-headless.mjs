@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import http from "node:http";
+import { once } from "node:events";
+import { parseConnectorCompletion } from "../../../apps/x/packages/core/dist/connectors/connector-completion.js";
 import {
   awaitApprovalAndRetry,
   canonicalArgumentsDigest,
@@ -113,3 +117,94 @@ assert.deepEqual(await resultPromise, { resumed: true, arguments: originalArgume
 assert.equal(retries, 1);
 assert.equal(registerMcpApprovalResult(completion), false, "approval callback replay was accepted");
 console.log("packaged desktop approval/deep-link adapter passed");
+
+// Exercise the desktop connector custody handoff from the actual renderer
+// request contract through callback, deep-link parsing, authenticated claim,
+// connected state, and one-time replay denial.
+const rendererSource = await fs.readFile(
+  new URL("../../../apps/x/apps/renderer/src/hooks/useConnectors.ts", import.meta.url),
+  "utf8",
+);
+const redirectMatch = rendererSource.match(/redirectAfter:\s*"([^"]+)"/);
+assert.equal(redirectMatch?.[1], "solomon-ai://connection-complete");
+
+let connectorConnected = false;
+let ticketConsumed = false;
+const connectorServer = http.createServer(async (request, response) => {
+  const url = new URL(request.url ?? "/", "http://127.0.0.1");
+  if (url.pathname === "/v1/connections/google/start" && request.method === "POST") {
+    let body = "";
+    for await (const chunk of request) body += chunk;
+    const start = JSON.parse(body);
+    assert.equal(start.redirect_after, redirectMatch[1]);
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ authorization_url: "/provider/callback" }));
+    return;
+  }
+  if (url.pathname === "/provider/callback") {
+    response.writeHead(302, {
+      location:
+        "solomon-ai://connection-complete?connector=google&status=success&session=desktop-ticket-1",
+    });
+    response.end();
+    return;
+  }
+  if (url.pathname === "/v1/connections/google/claim" && request.method === "POST") {
+    assert.equal(request.headers.authorization, "Bearer packaged-desktop-session");
+    let body = "";
+    for await (const chunk of request) body += chunk;
+    assert.equal(JSON.parse(body).state, "desktop-ticket-1");
+    if (ticketConsumed) {
+      response.writeHead(409, { "content-type": "application/json" });
+      response.end(JSON.stringify({ code: "replay" }));
+      return;
+    }
+    ticketConsumed = true;
+    connectorConnected = true;
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ connected: true }));
+    return;
+  }
+  response.writeHead(404).end();
+});
+connectorServer.listen(0, "127.0.0.1");
+await once(connectorServer, "listening");
+const address = connectorServer.address();
+assert.ok(address && typeof address === "object");
+const brokerOrigin = `http://127.0.0.1:${address.port}`;
+try {
+  const startResponse = await fetch(`${brokerOrigin}/v1/connections/google/start`, {
+    method: "POST",
+    headers: {
+      authorization: "Bearer packaged-desktop-session",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ redirect_after: redirectMatch[1] }),
+  });
+  const start = await startResponse.json();
+  const callback = await fetch(new URL(start.authorization_url, brokerOrigin), {
+    redirect: "manual",
+  });
+  const completion = parseConnectorCompletion(callback.headers.get("location") ?? "");
+  assert.deepEqual(completion, {
+    connector: "google",
+    status: "success",
+    state: "desktop-ticket-1",
+  });
+  const claim = () =>
+    fetch(`${brokerOrigin}/v1/connections/${completion.connector}/claim`, {
+      method: "POST",
+      headers: {
+        authorization: "Bearer packaged-desktop-session",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ state: completion.state }),
+    });
+  assert.equal((await claim()).status, 200);
+  assert.equal(connectorConnected, true);
+  assert.equal((await claim()).status, 409);
+} finally {
+  connectorServer.close();
+  await once(connectorServer, "close");
+}
+console.log("packaged desktop connector callback/claim/replay adapter passed");

@@ -128,9 +128,16 @@ for environment in ("production", "staging"):
     values = root / f"charts/rowboat-api/values-{environment}.yaml"
     rendered = tmp / f"rowboat-api-{environment}.yaml"
     public_base = chart_value(values, "PUBLIC_BASE_URL").rstrip("/")
+    app_url = chart_value(values, "APP_URL").rstrip("/")
     client_id = chart_value(values, "ORY_BROKER_CLIENT_ID")
     assert rendered_value(rendered, "PUBLIC_BASE_URL") == public_base
     assert rendered_value(rendered, "CONNECTOR_OAUTH_LEGACY_STATE_WRITE") == "false"
+    redirect_allowlist = rendered_value(rendered, "CONNECTOR_REDIRECT_ALLOWLIST").split(",")
+    assert redirect_allowlist == [
+        "solomon-ai://connection-complete",
+        app_url + "/api/connectors/oauth/callback",
+    ], redirect_allowlist
+    assert app_url + "/settings/connectors" not in redirect_allowlist
     contract = verifiers["environments"][environment]
     assert contract["issuer"] == public_base
     assert contract["jwksUrl"] == public_base + "/.well-known/connector-jwks.json"
@@ -189,6 +196,12 @@ for environment in ("production", "staging"):
 
     # oauth-consent reaches Hydra Admin only through namespace AND pod selectors.
     assert consent.count("port: 4445") == 1
+    assert "kubernetes.io/metadata.name: ingress-nginx" in consent
+    assert "app.kubernetes.io/name: ingress-nginx" in consent
+    assert "kubernetes.io/metadata.name: kube-system" in consent
+    assert "k8s-app: kube-dns" in consent
+    assert "kubernetes.io/metadata.name: egress-system" in consent
+    assert "app.kubernetes.io/name: rowboat-egress-gateway" in consent
     assert f"kubernetes.io/metadata.name: {hydra_namespace}" in consent
     assert "app.kubernetes.io/name: hydra" in consent
     assert "app.kubernetes.io/instance: hydra" in consent
@@ -212,6 +225,20 @@ for environment in ("production", "staging"):
     assert "app.kubernetes.io/name: hydra" in hydra
     assert "app.kubernetes.io/instance: hydra" in hydra
     assert "kind: ServiceMonitor" not in hydra
+    if environment == "production":
+        assert "oryd/hydra:v2.3.0" in hydra
+
+    rowboat = rendered.read_text()
+    if environment == "production":
+        assert "kubernetes.io/metadata.name: ingress-nginx" in rowboat
+        assert "app.kubernetes.io/name: ingress-nginx" in rowboat
+        assert "kubernetes.io/metadata.name: egress-system" in rowboat
+        assert "app.kubernetes.io/name: rowboat-egress-gateway" in rowboat
+        assert "kubernetes.io/metadata.name: ory" in rowboat
+        assert "port: 4445" in rowboat
+        assert "port: 5432" in rowboat
+        assert "port: 6379" in rowboat
+        assert "0.0.0.0/0" not in rowboat
 
 # Keep the operator-facing verifier example tied to the checked-in generated contract.
 example = {}
@@ -270,7 +297,7 @@ if [[ "${SKIP_REAL_HYDRA_FIXTURE:-0}" != "1" ]]; then
     -e URLS_SELF_ISSUER=http://127.0.0.1:4444 \
     -e URLS_LOGIN=http://desktop.invalid/login \
     -e URLS_CONSENT=http://desktop.invalid/consent \
-    oryd/hydra:v2.2.0 serve all --dev >/dev/null; then
+    oryd/hydra:v2.3.0 serve all --dev >/dev/null; then
     fail "could not start Hydra fixture, ensure ports 4444 and 4445 are free"
   fi
   hydra_started=1

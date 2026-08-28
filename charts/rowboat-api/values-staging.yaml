@@ -29,7 +29,9 @@ config:
   ORY_PUBLIC_URL: https://oauth.staging.solomon-ai.co
   ORY_ADMIN_URL: http://hydra-admin.ory-staging.svc.cluster.local:4445
   ORY_BROKER_CLIENT_ID: solomon-connector-broker-staging
-  CONNECTOR_REDIRECT_ALLOWLIST: solomon-ai-staging://settings/connectors,https://app.staging.solomon-ai.co/settings/connectors
+  # Exact broker completion endpoints only. The hosted BFF keeps the eventual
+  # user-facing settings route in its signed state and performs the claim here.
+  CONNECTOR_REDIRECT_ALLOWLIST: solomon-ai://connection-complete,https://app.staging.solomon-ai.co/api/connectors/oauth/callback
   CONNECTOR_EMERGENCY_DISABLED: ""
   # RFC 012 closure steady state. All hash-aware replicas and the pending-state
   # TTL have drained, so raw bearer state must never be written again.

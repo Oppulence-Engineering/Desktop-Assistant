@@ -2,6 +2,7 @@ import { BrowserWindow } from "electron";
 import path from "node:path";
 import fs from "node:fs/promises";
 import { WorkDir } from "@x/core/config/config";
+import { parseConnectorCompletion } from "@x/core/connectors/connector-completion";
 import type { MeetingCalendarEvent } from "@x/shared/meetings";
 import { normalizeMeetingEvent } from "@x/shared/meetings";
 import { parseMcpApprovalDeepLink, registerMcpApprovalResult } from "@x/core/mcp/product-approval";
@@ -278,30 +279,6 @@ async function dispatchOAuthCompletion(url: string): Promise<void> {
 }
 
 // --- Connector completion (rowboat-api connector OAuth broker) ---
-
-interface ConnectorCompletion {
-  connector: string;
-  status: string;
-  state: string;
-}
-
-/**
- * Match solomon-ai://connection-complete?connector=<name>&status=<status>&session=<state>
- * — the api connector callback's deep link. Returns null unless both the
- * connector and the session (state) are present.
- */
-function parseConnectorCompletion(url: string): ConnectorCompletion | null {
-  const rest = getDeepLinkPayload(url);
-  if (rest === null) return null;
-  const queryIdx = rest.indexOf("?");
-  const host = (queryIdx >= 0 ? rest.slice(0, queryIdx) : rest).replace(/\/$/, "");
-  if (host !== "connection-complete") return null;
-  const params = new URLSearchParams(queryIdx >= 0 ? rest.slice(queryIdx + 1) : "");
-  const connector = params.get("connector");
-  const state = params.get("session");
-  if (!connector || !state) return null;
-  return { connector, status: params.get("status") ?? "", state };
-}
 
 async function dispatchConnectorCompletion(url: string): Promise<void> {
   const parsed = parseConnectorCompletion(url);

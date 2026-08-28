@@ -286,7 +286,10 @@ export function useConnectors(active: boolean) {
         const result = await window.ipc.invoke("connectors:connect", {
           connector: connector.name,
           requestedScopes: connector.availableScopes?.map((scope) => scope.name),
-          redirectAfter: "solomon-ai://settings/connectors",
+          // The broker parks the provider grant until Electron redeems the
+          // one-time session through the authenticated claim endpoint. This
+          // exact URI is handled by main, not by renderer navigation.
+          redirectAfter: "solomon-ai://connection-complete",
         });
         if (!result.success) {
           clearIntegrationConnectTimeout(connector.name);

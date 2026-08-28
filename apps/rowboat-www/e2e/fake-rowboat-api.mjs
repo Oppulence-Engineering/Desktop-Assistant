@@ -6,6 +6,7 @@ const state = {
   connected: false,
   consumedTickets: new Set(),
   lastStart: null,
+  lastClaimAuthorization: null,
   ticketCounter: 0,
 };
 
@@ -101,6 +102,7 @@ const server = http.createServer(async (request, response) => {
     state.connected = false;
     state.consumedTickets.clear();
     state.lastStart = null;
+    state.lastClaimAuthorization = null;
     state.ticketCounter = 0;
     return json(response, 200, { ok: true });
   }
@@ -109,6 +111,7 @@ const server = http.createServer(async (request, response) => {
       connected: state.connected,
       consumedTickets: [...state.consumedTickets],
       lastStart: state.lastStart,
+      lastClaimAuthorization: state.lastClaimAuthorization,
     });
   }
 
@@ -175,6 +178,7 @@ const server = http.createServer(async (request, response) => {
     return redirect(response, callback.toString());
   }
   if (url.pathname === "/v1/connections/google/claim" && request.method === "POST") {
+    state.lastClaimAuthorization = request.headers.authorization || null;
     const body = await readJSON(request);
     const claimFailures = {
       "entitlement-ticket": [403, "plan_required"],

@@ -41,6 +41,7 @@ test("settings Connect completes the authenticated hosted claim and shows active
     requestedScopes: ["google:email.read"],
   });
   expect(state.consumedTickets).toEqual(["ticket-1"]);
+  expect(state.lastClaimAuthorization).toMatch(/^Bearer /);
 });
 
 test("callback replay and restart outcomes fail safely without retaining the ticket", async ({
