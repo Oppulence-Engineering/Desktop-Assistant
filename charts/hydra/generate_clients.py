@@ -20,6 +20,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from product_approval import approval_manifest_digest, validate_production_approvals
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 REGISTRY_PATH = REPO_ROOT / "apps/rowboat-api/internal/connectors/default_connectors.json"
 ROWBOAT_VALUES = REPO_ROOT / "charts/rowboat-api"
@@ -290,6 +292,8 @@ spec:
 def generated_outputs() -> dict[Path, str]:
     registry = json.loads(REGISTRY_PATH.read_text())
     validate_registry_environment_isolation(registry)
+    approval_manifest = validate_production_approvals(registry)
+    approval_digest = approval_manifest_digest(approval_manifest)
     contracts = {
         environment: broker_contract(environment, registry)
         for environment in ENVIRONMENTS
@@ -301,6 +305,7 @@ def generated_outputs() -> dict[Path, str]:
     verifier = {
         "generatedBy": "charts/hydra/generate_clients.py",
         "registry": str(REGISTRY_PATH.relative_to(REPO_ROOT)),
+        "productionApprovalManifestDigest": approval_digest,
         "environments": {
             environment: {
                 "issuer": contract["issuer"],

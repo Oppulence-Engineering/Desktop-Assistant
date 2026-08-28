@@ -150,7 +150,8 @@
         "implies": ["cadence:payment_runs.read"],
         "stepUpRequired": true,
         "perInvocationApproval": true,
-        "requiredPlan": "intelligence"
+        "requiredPlan": "intelligence",
+        "environments": ["development", "staging"]
       }
     ],
     "mcpTools": [
@@ -251,7 +252,8 @@
         "grantTier": "optional",
         "risk": "high",
         "implies": ["eigen:knowledge.read"],
-        "stepUpRequired": true
+        "stepUpRequired": true,
+        "environments": ["development", "staging"]
       }
     ],
     "mcpTools": [
@@ -496,7 +498,8 @@
         "grantTier": "optional",
         "risk": "money-moving",
         "stepUpRequired": true,
-        "perInvocationApproval": true
+        "perInvocationApproval": true,
+        "environments": ["development", "staging"]
       }
     ],
     "mcpTools": [

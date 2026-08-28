@@ -298,13 +298,7 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
 
   app.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     const appError = normalizeError(error);
-    console.error(
-      JSON.stringify({
-        msg: 'oauth consent request failed',
-        code: appError.code,
-        status: appError.status,
-      }),
-    );
+    operationalDiagnostic('oauth consent request failed', { code: appError.code, status: appError.status });
     if (!res.headersSent)
       res.status(appError.status).type('html').send(errorPage(appError.publicMessage, appError.code));
   });
@@ -598,6 +592,11 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'decision_reconciliation_failed';
 }
 
+/**
+ * Delivers guaranteed semantic authorization audits. Delivery failure never
+ * downgrades an outbox record to a log line: retryAudit keeps it durable for a
+ * later worker attempt. Request/process logs are best-effort diagnostics only.
+ */
 export async function drainAuditOutbox(store: ConsentStateStore, hooks: RowboatHooks, limit = 25): Promise<number> {
   const items = await store.claimAudits(limit);
   await Promise.all(
@@ -611,6 +610,17 @@ export async function drainAuditOutbox(store: ConsentStateStore, hooks: RowboatH
     }),
   );
   return items.length;
+}
+
+function operationalDiagnostic(msg: string, fields: Record<string, unknown> = {}): void {
+  console.error(
+    JSON.stringify({
+      record_class: 'operational_diagnostic',
+      delivery_guarantee: 'best_effort',
+      msg,
+      ...fields,
+    }),
+  );
 }
 
 function validateContext(

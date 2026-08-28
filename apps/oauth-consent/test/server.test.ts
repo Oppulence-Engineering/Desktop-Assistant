@@ -5,8 +5,8 @@ import { exportJWK, generateKeyPair, SignJWT, type JWK, type JWTPayload, type Ke
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Config } from '../src/config.js';
 import { hookSignatureV1, safeEqual } from '../src/crypto.js';
-import type { ConsentContext } from '../src/rowboat.js';
-import { buildApp } from '../src/server.js';
+import { RowboatHooks, type ConsentContext } from '../src/rowboat.js';
+import { buildApp, drainAuditOutbox } from '../src/server.js';
 import { StateStore } from '../src/state.js';
 
 const HOOK_SECRET = 'hook-secret-that-is-at-least-thirty-two-bytes';
@@ -321,6 +321,7 @@ interface Harness {
   ory: OryMock;
   workos: WorkOSMock;
   rowboat: RowboatMock;
+  hooks: RowboatHooks;
   browser: BrowserClient;
   app: RunningServer;
   store: StateStore;
@@ -367,11 +368,13 @@ beforeEach(async () => {
     },
   };
   const store = new StateStore(cfg.sessionTtlMs);
-  const app = await listen(buildApp(cfg, { store }));
+  const hooks = new RowboatHooks(cfg.rowboatApi, cfg.upstreamTimeoutMs);
+  const app = await listen(buildApp(cfg, { store, hooks }));
   harness = {
     ory,
     workos,
     rowboat,
+    hooks,
     browser: new BrowserClient(),
     app,
     store,
@@ -475,6 +478,23 @@ describe('consent rendering and decisions', () => {
     expect(harness.ory.acceptedConsents).toHaveLength(0);
   });
 
+  it('retains the externally significant shown audit through a hook outage and retries the same event', async () => {
+    const challenge = 'consent_shown_audit_retry';
+    harness.ory.setConsent(challenge, [lowScope]);
+    harness.rowboat.failNextAudits = 1;
+
+    const shown = await harness.browser.get(harness.app.url, `/consent?consent_challenge=${challenge}`);
+    expect(shown.status).toBe(200);
+    const pending = await harness.store.claimAudits(10);
+    expect(pending).toEqual([expect.objectContaining({ id: expect.stringContaining(':shown') })]);
+    const eventId = harness.rowboat.audits.at(-1)?.event_id;
+
+    await drainAuditOutbox(harness.store, harness.hooks);
+
+    expect(harness.rowboat.audits.filter((audit) => audit.event_id === eventId)).toHaveLength(2);
+    expect(await harness.store.claimAudits(10)).toEqual([]);
+  });
+
   it('redirects after Hydra approval and retains a failed final audit for replay', async () => {
     const challenge = 'consent_audit_retry';
     harness.ory.setConsent(challenge, [lowScope]);
@@ -489,6 +509,12 @@ describe('consent rendering and decisions', () => {
     expect(harness.ory.acceptedConsents).toHaveLength(1);
     const pending = await harness.store.claimAudits(10);
     expect(pending).toEqual([expect.objectContaining({ id: expect.stringContaining(':final') })]);
+    const eventId = harness.rowboat.audits.at(-1)?.event_id;
+
+    await drainAuditOutbox(harness.store, harness.hooks);
+
+    expect(harness.rowboat.audits.filter((audit) => audit.event_id === eventId)).toHaveLength(2);
+    expect(await harness.store.claimAudits(10)).toEqual([]);
   });
 
   it('renders entitlement/upsell denial separately and cannot approve it', async () => {

@@ -4,6 +4,29 @@ These procedures implement RFC 012 operations. Preserve timestamps, connector/en
 
 ## Common controls
 
+### Audit evidence classes
+
+Connector authorization has two deliberately different evidence classes:
+
+- **Guaranteed semantic authorization audits** are immutable, deterministic
+  events such as `consent.shown`, `consent.granted`, `consent.denied`,
+  `entitlement.check`, `token.minted`, and `token.revoked`. The consent service
+  commits externally significant consent events to its PostgreSQL audit outbox
+  before acknowledgement, and retries signed delivery to rowboat-api until it
+  succeeds. Broker lifecycle events that share a state transition are written in
+  the same database transaction. Use these records for authorization evidence.
+- **Best-effort operational diagnostics** are process logs with
+  `record_class=operational_diagnostic` and
+  `delivery_guarantee=best_effort`. They help diagnose timeouts, dependency
+  failures, and worker health, but loss or duplication is possible. Never use a
+  log line as proof that an authorization decision or externally significant
+  consent transition occurred.
+
+During a rowboat-api or hook outage, verify the semantic outbox backlog remains
+durable, its attempt count increases with bounded backoff, and the same
+deterministic event ID is eventually acknowledged exactly once. Do not clear or
+relabel pending rows to make dashboards green.
+
 ```bash
 # Render before changing a release.
 helm template rowboat-api charts/rowboat-api -f charts/rowboat-api/values-production.yaml > /tmp/rowboat-api.yaml
@@ -23,6 +46,34 @@ The deployment gates resolve `mcpUrls` and `audiences` from the checked-in
 registry for each environment. Staging MCP hosts must be `.staging.`-qualified,
 production hosts must not be, and each product's staging audience must differ
 from its production audience.
+
+Production `high` and `money-moving` scopes are additionally fail-closed. A
+scope cannot include `production` unless its connector has a
+`productionApproval` record whose approved scopes exactly match the enabled
+high-impact scopes and whose policy hash binds the production endpoint,
+audience, scope controls, and action tools. The checked-in chart pins the digest
+of the complete approval manifest, so a catalog or approval change without a
+matching deployment evidence update fails the deployment contract.
+
+```bash
+# After the approval body exists, compute the policy hash to place in it.
+python3 charts/hydra/product_approval.py \
+  --registry apps/rowboat-api/internal/connectors/default_connectors.json \
+  --print-policy-hash cadence
+
+# Then compute the manifest digest to pin in values-production.yaml.
+python3 charts/hydra/product_approval.py \
+  --registry apps/rowboat-api/internal/connectors/default_connectors.json
+
+# Both reusable negative/positive conformance tests and chart gates must pass.
+python3 charts/hydra/tests/product-approval.test.py
+charts/rowboat-api/tests/deployment-contract.sh
+charts/hydra/tests/deployment-contract.sh
+```
+
+Do not invent approval metadata to make a render pass. Until a production
+approval artifact exists and is reviewed, leave the high-impact scope limited
+to development and staging.
 
 A disable must stop new consent starts and resource-token mints. Existing rows remain available for investigation and are shown as degraded unless the incident requires invalidation.
 

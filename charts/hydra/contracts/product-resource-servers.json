@@ -1,6 +1,7 @@
 {
   "generatedBy": "charts/hydra/generate_clients.py",
   "registry": "apps/rowboat-api/internal/connectors/default_connectors.json",
+  "productionApprovalManifestDigest": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
   "environments": {
     "production": {
       "issuer": "https://api.oppulence.io",
@@ -88,8 +89,7 @@
           "mcpUrl": "https://mcp.cadence.solomon-ai.co/mcp",
           "audience": "mcp:cadence",
           "scopes": [
-            "cadence:payment_runs.read",
-            "cadence:payments.execute"
+            "cadence:payment_runs.read"
           ],
           "requiredScopes": [
             "cadence:payment_runs.read"
@@ -160,8 +160,7 @@
           "mcpUrl": "https://mcp.eigen.solomon-ai.co/mcp",
           "audience": "mcp:eigen",
           "scopes": [
-            "eigen:knowledge.read",
-            "eigen:actions.execute"
+            "eigen:knowledge.read"
           ],
           "requiredScopes": [
             "eigen:knowledge.read"

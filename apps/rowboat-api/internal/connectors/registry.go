@@ -6,7 +6,9 @@ package connectors
 
 import (
 	"bytes"
+	"crypto/sha256"
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +16,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 )
 
 //go:embed default_connectors.json
@@ -43,8 +46,21 @@ type Connector struct {
 	MCPTools                         []MCPToolPolicy            `json:"mcpTools,omitempty"`       // explicit upstream MCP allowlist
 	NativeTools                      []MCPToolPolicy            `json:"nativeTools,omitempty"`    // server-side SDK capability allowlist
 	TemplateBlocks                   []IntegrationTemplateBlock `json:"templateBlocks,omitempty"` // onboarding capability blocks
+	ProductionApproval               *ProductionProductApproval `json:"productionApproval,omitempty"`
 	entitlementKey                   []byte
 	allowPrivateEntitlement          bool
+}
+
+// ProductionProductApproval is deployment evidence binding an explicit product
+// approval to the exact production endpoint, audience, and high-impact policy.
+// It is stripped from the public connector response after boot validation.
+type ProductionProductApproval struct {
+	Decision       string   `json:"decision"`
+	EvidenceID     string   `json:"evidenceId"`
+	Approver       string   `json:"approver"`
+	ApprovedAt     string   `json:"approvedAt"`
+	PolicyHash     string   `json:"policyHash"`
+	ApprovedScopes []string `json:"approvedScopes"`
 }
 
 // ProductEntitlementOptions controls the sole permitted local fallback. It is
@@ -282,11 +298,13 @@ func parseRegistry(data []byte, environment string) ([]Connector, error) {
 			return nil, err
 		}
 	}
-	if err := validateRegistry(list); err != nil {
+	if err := validateRegistry(list, environment); err != nil {
 		return nil, err
 	}
 	for i := range list {
 		list[i].Scopes = scopeNames(availableScopeDefinitions(list[i], environment))
+		// Approval evidence is a deployment control, not public product metadata.
+		list[i].ProductionApproval = nil
 	}
 	return list, nil
 }
@@ -391,7 +409,7 @@ func isStagingQualifiedHost(host string) bool {
 	return false
 }
 
-func validateRegistry(list []Connector) error {
+func validateRegistry(list []Connector, environment string) error {
 	seen := map[string]struct{}{}
 	audiences := map[string]string{}
 	for i, c := range list {
@@ -427,6 +445,9 @@ func validateRegistry(list []Connector) error {
 			return err
 		}
 		if err := validateScopeCatalog(c); err != nil {
+			return err
+		}
+		if err := validateProductionApproval(c, environment); err != nil {
 			return err
 		}
 		authType := strings.TrimSpace(c.AuthType)
@@ -479,6 +500,130 @@ func validateRegistry(list []Connector) error {
 		}
 	}
 	return nil
+}
+
+type productionApprovalScope struct {
+	Name                  string `json:"name"`
+	Risk                  string `json:"risk"`
+	GrantTier             string `json:"grantTier"`
+	StepUpRequired        bool   `json:"stepUpRequired"`
+	PerInvocationApproval bool   `json:"perInvocationApproval"`
+}
+
+type productionApprovalTool struct {
+	Name           string   `json:"name"`
+	TrustTier      string   `json:"trustTier"`
+	RequiredScopes []string `json:"requiredScopes"`
+}
+
+type productionApprovalPolicy struct {
+	Version   int                       `json:"version"`
+	Connector string                    `json:"connector"`
+	Transport string                    `json:"transport"`
+	Audience  string                    `json:"audience"`
+	MCPURL    string                    `json:"mcpUrl"`
+	Scopes    []productionApprovalScope `json:"scopes"`
+	Tools     []productionApprovalTool  `json:"tools"`
+}
+
+func validateProductionApproval(c Connector, environment string) error {
+	if environment != "production" || c.Status == "disabled" {
+		return nil
+	}
+	highImpact := highImpactScopeNames(c, environment)
+	if len(highImpact) == 0 {
+		if c.ProductionApproval != nil {
+			return fmt.Errorf("connector %q productionApproval must be absent when no production high-impact scope is enabled", c.Name)
+		}
+		return nil
+	}
+	approval := c.ProductionApproval
+	if approval == nil {
+		return fmt.Errorf("connector %q production high-impact scopes %v require productionApproval evidence", c.Name, highImpact)
+	}
+	if approval.Decision != "approved" {
+		return fmt.Errorf("connector %q productionApproval.decision must be approved", c.Name)
+	}
+	if strings.TrimSpace(approval.EvidenceID) == "" || len(approval.EvidenceID) > 256 {
+		return fmt.Errorf("connector %q productionApproval.evidenceId is required and must be at most 256 characters", c.Name)
+	}
+	if strings.TrimSpace(approval.Approver) == "" || len(approval.Approver) > 256 {
+		return fmt.Errorf("connector %q productionApproval.approver is required and must be at most 256 characters", c.Name)
+	}
+	if _, err := time.Parse(time.RFC3339, approval.ApprovedAt); err != nil {
+		return fmt.Errorf("connector %q productionApproval.approvedAt must be RFC3339: %w", c.Name, err)
+	}
+	approvedScopes := append([]string(nil), approval.ApprovedScopes...)
+	slices.Sort(approvedScopes)
+	if !slices.Equal(approvedScopes, highImpact) {
+		return fmt.Errorf("connector %q productionApproval.approvedScopes %v must exactly match enabled high-impact scopes %v", c.Name, approvedScopes, highImpact)
+	}
+	wantHash, err := productionApprovalPolicyHash(c)
+	if err != nil {
+		return fmt.Errorf("connector %q production approval policy: %w", c.Name, err)
+	}
+	if approval.PolicyHash != wantHash {
+		return fmt.Errorf("connector %q productionApproval.policyHash %q does not match current production policy %q", c.Name, approval.PolicyHash, wantHash)
+	}
+	return nil
+}
+
+func highImpactScopeNames(c Connector, environment string) []string {
+	var names []string
+	for _, scope := range availableScopeDefinitions(c, environment) {
+		if scope.Risk == "high" || scope.Risk == "money-moving" {
+			names = append(names, scope.Name)
+		}
+	}
+	slices.Sort(names)
+	return names
+}
+
+func productionApprovalPolicyHash(c Connector) (string, error) {
+	highImpactNames := highImpactScopeNames(c, "production")
+	highImpact := make(map[string]struct{}, len(highImpactNames))
+	for _, name := range highImpactNames {
+		highImpact[name] = struct{}{}
+	}
+
+	policy := productionApprovalPolicy{
+		Version: 1, Connector: c.Name, Transport: c.Transport, Audience: c.Audience, MCPURL: c.MCPURL,
+		Scopes: make([]productionApprovalScope, 0), Tools: make([]productionApprovalTool, 0),
+	}
+	for _, scope := range availableScopeDefinitions(c, "production") {
+		if _, ok := highImpact[scope.Name]; !ok {
+			continue
+		}
+		policy.Scopes = append(policy.Scopes, productionApprovalScope{
+			Name: scope.Name, Risk: scope.Risk, GrantTier: scope.GrantTier,
+			StepUpRequired: scope.StepUpRequired, PerInvocationApproval: scope.PerInvocationApproval,
+		})
+	}
+	slices.SortFunc(policy.Scopes, func(a, b productionApprovalScope) int { return strings.Compare(a.Name, b.Name) })
+	tools := c.MCPTools
+	if c.Transport == "native" {
+		tools = c.NativeTools
+	}
+	for _, tool := range tools {
+		include := tool.TrustTier == "act" || tool.TrustTier == "money-moving"
+		for _, scope := range tool.RequiredScopes {
+			_, includeScope := highImpact[scope]
+			include = include || includeScope
+		}
+		if !include {
+			continue
+		}
+		requiredScopes := append([]string(nil), tool.RequiredScopes...)
+		slices.Sort(requiredScopes)
+		policy.Tools = append(policy.Tools, productionApprovalTool{Name: tool.Name, TrustTier: tool.TrustTier, RequiredScopes: requiredScopes})
+	}
+	slices.SortFunc(policy.Tools, func(a, b productionApprovalTool) int { return strings.Compare(a.Name, b.Name) })
+	raw, err := json.Marshal(policy)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(raw)
+	return "sha256:" + hex.EncodeToString(sum[:]), nil
 }
 
 func validateScopeCatalog(c Connector) error {

@@ -15,7 +15,12 @@ const retryTimer = setInterval(
   () =>
     void drainAuditOutbox(store, hooks).catch((error) =>
       console.error(
-        JSON.stringify({ msg: 'audit outbox drain failed', error: error instanceof Error ? error.message : 'unknown' }),
+        JSON.stringify({
+          record_class: 'operational_diagnostic',
+          delivery_guarantee: 'best_effort',
+          msg: 'audit outbox drain failed',
+          error: error instanceof Error ? error.message : 'unknown',
+        }),
       ),
     ),
   cfg.auditRetryIntervalMs,
@@ -48,5 +53,12 @@ for (const sig of ['SIGINT', 'SIGTERM'] as const) {
 
 function logBackground(msg: string) {
   return (error: unknown) =>
-    console.error(JSON.stringify({ msg, error: error instanceof Error ? error.message : 'unknown' }));
+    console.error(
+      JSON.stringify({
+        record_class: 'operational_diagnostic',
+        delivery_guarantee: 'best_effort',
+        msg,
+        error: error instanceof Error ? error.message : 'unknown',
+      }),
+    );
 }

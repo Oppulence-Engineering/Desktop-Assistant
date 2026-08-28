@@ -190,6 +190,9 @@ serviceMesh:
 # issuer while still fetching rowboat-api's connector JWKS endpoint.
 connectorBroker:
   allowSeparateIssuer: false
+  # Digest of the canonical checked-in production product approval manifest.
+  # The deployment contract recomputes it from the connector registry.
+  productionApprovalManifestDigest: ""
 
 # Non-secret configuration, surfaced as env via a ConfigMap.
 config:

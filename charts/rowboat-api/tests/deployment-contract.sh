@@ -45,8 +45,30 @@ render_environment() {
 }
 
 helm lint "$chart" -f "$chart/values-production.yaml" >/dev/null
+python3 "$repo_root/charts/hydra/tests/product-approval.test.py"
+approval_digest="$(python3 "$repo_root/charts/hydra/product_approval.py" --registry "$registry")"
+configured_approval_digest="$(awk '$1 == "productionApprovalManifestDigest:" {print $2; exit}' "$chart/values-production.yaml")"
+assert_equal "$configured_approval_digest" "$approval_digest" "production approval manifest digest"
 render_environment production
 render_environment staging
+
+if helm template rowboat-api "$chart" \
+  -f "$chart/values-production.yaml" \
+  --set-string connectorBroker.productionApprovalManifestDigest= \
+  >"$tmp_dir/missing-approval.yaml" 2>"$tmp_dir/missing-approval.err"; then
+  fail "production render accepted a missing product approval manifest digest"
+fi
+grep -q 'production connectorBroker.productionApprovalManifestDigest is required' "$tmp_dir/missing-approval.err" ||
+  fail "missing product approval digest did not report the deployment-contract error"
+
+if helm template rowboat-api "$chart" \
+  -f "$chart/values-production.yaml" \
+  --set-string connectorBroker.productionApprovalManifestDigest=sha256:not-approved \
+  >"$tmp_dir/invalid-approval.yaml" 2>"$tmp_dir/invalid-approval.err"; then
+  fail "production render accepted a malformed product approval manifest digest"
+fi
+grep -q 'production connectorBroker.productionApprovalManifestDigest must be a sha256 digest' "$tmp_dir/invalid-approval.err" ||
+  fail "malformed product approval digest did not report the deployment-contract error"
 
 if helm template rowboat-api "$chart" \
   -f "$chart/values-production.yaml" \

@@ -133,6 +133,8 @@ export interface ConsentStateStore {
     claim: StepUpFlowClaim,
   ): Promise<BrowserFlow & { state: string }> | (BrowserFlow & { state: string });
   completeStepUpFlow(claim: StepUpFlowClaim): Promise<void> | void;
+  // Guaranteed semantic authorization audits. Production implementations must
+  // persist these before acknowledging the externally significant transition.
   enqueueAudit(id: string, payload: unknown): Promise<void> | void;
   claimAudits(limit: number): Promise<AuditOutboxItem[]> | AuditOutboxItem[];
   completeAudit(id: string): Promise<void> | void;

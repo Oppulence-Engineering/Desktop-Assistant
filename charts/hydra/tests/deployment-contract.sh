@@ -22,6 +22,13 @@ command -v helm >/dev/null || fail "helm is required"
 command -v python3 >/dev/null || fail "python3 is required"
 
 python3 "$repo_root/charts/hydra/generate_clients.py" --check
+python3 "$repo_root/charts/hydra/tests/product-approval.test.py"
+approval_digest="$(python3 "$repo_root/charts/hydra/product_approval.py" \
+  --registry "$repo_root/apps/rowboat-api/internal/connectors/default_connectors.json")"
+configured_approval_digest="$(awk '$1 == "productionApprovalManifestDigest:" {print $2; exit}' \
+  "$repo_root/charts/rowboat-api/values-production.yaml")"
+[[ "$configured_approval_digest" == "$approval_digest" ]] ||
+  fail "production approval manifest digest drift: configured $configured_approval_digest, computed $approval_digest"
 
 assert_render_fails() {
   local description=$1
@@ -43,6 +50,14 @@ assert_render_fails "oauth-consent production with placeholder PostgreSQL CIDR" 
 assert_render_fails "Hydra policy production without PostgreSQL CIDR" \
   helm template hydra-policy "$repo_root/charts/hydra/network-policy" \
     -f "$repo_root/charts/hydra/network-policy/values-production.yaml"
+assert_render_fails "rowboat-api production without approval evidence digest" \
+  helm template rowboat-api "$repo_root/charts/rowboat-api" \
+    -f "$repo_root/charts/rowboat-api/values-production.yaml" \
+    --set-string connectorBroker.productionApprovalManifestDigest=
+assert_render_fails "rowboat-api production with malformed approval evidence digest" \
+  helm template rowboat-api "$repo_root/charts/rowboat-api" \
+    -f "$repo_root/charts/rowboat-api/values-production.yaml" \
+    --set-string connectorBroker.productionApprovalManifestDigest=sha256:not-approved
 
 # Render every chart participating in the consent-broker deployment contract.
 for environment in production staging; do
@@ -96,7 +111,7 @@ helm template hydra ory/hydra --version 0.55.0 \
   -f "$repo_root/charts/hydra/values-staging.yaml" \
   >"$tmp_dir/hydra-staging.yaml"
 
-REPO_ROOT="$repo_root" TMP_DIR="$tmp_dir" python3 - <<'PY'
+REPO_ROOT="$repo_root" TMP_DIR="$tmp_dir" APPROVAL_DIGEST="$approval_digest" python3 - <<'PY'
 import json
 import os
 import re
@@ -107,6 +122,7 @@ root = Path(os.environ["REPO_ROOT"])
 tmp = Path(os.environ["TMP_DIR"])
 registry = json.loads((root / "apps/rowboat-api/internal/connectors/default_connectors.json").read_text())
 verifiers = json.loads((root / "charts/hydra/contracts/product-resource-servers.json").read_text())
+assert verifiers["productionApprovalManifestDigest"] == os.environ["APPROVAL_DIGEST"]
 
 def rendered_value(path, key):
     matches = re.findall(rf'^\s*{re.escape(key)}:\s*["\']?([^"\'\n]+)["\']?\s*$', path.read_text(), re.M)

@@ -86,5 +86,9 @@ be opted into explicitly with connectorBroker.allowSeparateIssuer.
 {{- fail (printf "production config.PUBLIC_BASE_URL (%s) must equal the externally reachable ingress origin (%s)" $publicOrigin $ingressOrigin) -}}
 {{- end -}}
 {{- end -}}
+{{- $approvalDigest := required "production connectorBroker.productionApprovalManifestDigest is required; compute it with charts/hydra/product_approval.py" .Values.connectorBroker.productionApprovalManifestDigest -}}
+{{- if not (regexMatch "^sha256:[0-9a-f]{64}$" $approvalDigest) -}}
+{{- fail "production connectorBroker.productionApprovalManifestDigest must be a sha256 digest" -}}
+{{- end -}}
 {{- end -}}
 {{- end -}}
