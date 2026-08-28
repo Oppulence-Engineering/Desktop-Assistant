@@ -25,10 +25,15 @@ Routes:
   single-use `X-Approval-Token`
 - `POST /v1/approvals` models the product approval UI completing with an opaque
   single-use code. The code is bound to product origin, approval, desktop
-  challenge, connection, exact action/input digest, approver, expiry, and an
+  challenge, connection, canonical tool identity, exact action/canonical input
+  digest, authenticated-resource session/configuration, approver, expiry, and an
   S256 verifier challenge. It never returns the approval bearer.
 - `POST /v1/approvals/redeem` requires the normal authenticated product resource
   token over TLS and returns the approval bearer only in the HTTPS response body.
-  Redemption is atomic and rejects replay or any binding mismatch.
+  Redemption atomically compares every binding, takes actor/session/configuration
+  authority from verified token claims, and converges exact retries to the same
+  bearer. This makes a lost PostgreSQL commit acknowledgement recoverable without
+  consuming an unrecoverable code or minting a second bearer. The resulting
+  approval bearer remains exact-bound and can authorize only one matching call.
 
 No provider API key is accepted, returned, or persisted.

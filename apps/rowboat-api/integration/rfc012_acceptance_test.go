@@ -20,6 +20,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -206,13 +207,15 @@ func TestRFC012PublicContract(t *testing.T) {
 		require.Equal(t, "approval_required", challenge.code())
 		verifier := "rfc012-desktop-pkce-verifier-with-sufficient-entropy"
 		sum := sha256.Sum256([]byte(verifier))
-		inputDigest := "digest-payrun-1"
+		inputDigest := approvalArgumentsDigest(t, map[string]any{"resource_id": "payrun-1"})
 		desktopChallenge := "desktop-challenge-rfc012"
 		actor := "user_rfc012_a"
+		productSessionID, productConfigDigest := approvalResourceBinding(t, resourceToken)
 		issueBody := map[string]any{
 			"product_origin": product, "approval_id": "payrun-1", "desktop_challenge_id": desktopChallenge,
-			"connection_id": connectionID, "action": "payment.release", "input_digest": inputDigest,
+			"connection_id": connectionID, "tool": "payments.execute", "action": "payment.release", "input_digest": inputDigest,
 			"approver": actor, "code_challenge": base64.RawURLEncoding.EncodeToString(sum[:]),
+			"product_session_id": productSessionID, "product_config_digest": productConfigDigest,
 		}
 		issued := c.jsonHeader("POST", product+"/v1/approvals", "", issueBody, "X-Fixture-Secret", fixtureSecret)
 		require.Equal(t, http.StatusCreated, issued.status, issued.body)
@@ -225,12 +228,19 @@ func TestRFC012PublicContract(t *testing.T) {
 		redeemBody := map[string]any{
 			"code": issuedBody.CompletionCode, "code_verifier": verifier, "desktop_challenge_id": desktopChallenge,
 			"connection_id": connectionID, "tool": "payments.execute", "arguments_digest": inputDigest,
-			"actor": actor, "action": "payment.release",
+			"actor": actor, "action": "payment.release", "product_session_id": productSessionID,
+			"product_config_digest": productConfigDigest,
 		}
 		for label, mutation := range map[string]map[string]any{
-			"wrong verifier": {"code_verifier": "wrong-verifier"},
-			"wrong session":  {"connection_id": "wrong-connection"},
-			"wrong action":   {"action": "payment.cancel"},
+			"wrong verifier":        {"code_verifier": "wrong-verifier"},
+			"wrong connection":      {"connection_id": "wrong-connection"},
+			"wrong tool":            {"tool": "payments.cancel"},
+			"empty tool":            {"tool": ""},
+			"wrong action":          {"action": "payment.cancel"},
+			"wrong arguments":       {"arguments_digest": approvalArgumentsDigest(t, map[string]any{"resource_id": "payrun-2"})},
+			"wrong actor assertion": {"actor": "user_rfc012_b"},
+			"wrong product session": {"product_session_id": "wrong-session"},
+			"wrong product config":  {"product_config_digest": approvalArgumentsDigest(t, map[string]any{"config": "wrong"})},
 		} {
 			attempt := mapsClone(redeemBody)
 			for key, value := range mutation {
@@ -240,19 +250,18 @@ func TestRFC012PublicContract(t *testing.T) {
 			require.Equal(t, http.StatusBadRequest, failed.status, label+": "+failed.body)
 			require.NotContains(t, failed.body, issuedBody.CompletionCode)
 		}
+		wrongActorToken := fixtureResourceTokenForUser(t, "user_rfc012_b", connectionID, tenantID, "dev-product-api", []string{"dev:payments.execute"}, time.Now().Add(5*time.Minute))
+		wrongActorRedeem := mapsClone(redeemBody)
+		wrongActorRedeem["actor"] = "user_rfc012_b"
+		wrongActorSession, wrongActorConfig := approvalResourceBinding(t, wrongActorToken)
+		wrongActorRedeem["product_session_id"] = wrongActorSession
+		wrongActorRedeem["product_config_digest"] = wrongActorConfig
+		require.Equal(t, http.StatusBadRequest, c.json("POST", product+"/v1/approvals/redeem", wrongActorToken, wrongActorRedeem).status, "authenticated wrong actor redeemed approval")
 		wrongOriginBody := mapsClone(issueBody)
 		wrongOriginBody["desktop_challenge_id"] = "wrong-origin-challenge"
 		wrongOriginBody["product_origin"] = "https://wrong-origin.example"
 		wrongOrigin := c.jsonHeader("POST", product+"/v1/approvals", "", wrongOriginBody, "X-Fixture-Secret", fixtureSecret)
-		require.Equal(t, http.StatusCreated, wrongOrigin.status)
-		var wrongOriginIssued struct {
-			CompletionCode string `json:"completion_code"`
-		}
-		require.NoError(t, json.Unmarshal([]byte(wrongOrigin.body), &wrongOriginIssued))
-		wrongOriginRedeem := mapsClone(redeemBody)
-		wrongOriginRedeem["code"] = wrongOriginIssued.CompletionCode
-		wrongOriginRedeem["desktop_challenge_id"] = "wrong-origin-challenge"
-		require.Equal(t, http.StatusBadRequest, c.json("POST", product+"/v1/approvals/redeem", resourceToken, wrongOriginRedeem).status)
+		require.Equal(t, http.StatusBadRequest, wrongOrigin.status, wrongOrigin.body)
 
 		redeemed := c.json("POST", product+"/v1/approvals/redeem", resourceToken, redeemBody)
 		require.Equal(t, http.StatusOK, redeemed.status, redeemed.body)
@@ -261,12 +270,58 @@ func TestRFC012PublicContract(t *testing.T) {
 		}
 		require.NoError(t, json.Unmarshal([]byte(redeemed.body), &redemption))
 		require.NotEmpty(t, redemption.ApprovalToken)
-		require.Equal(t, http.StatusBadRequest, c.json("POST", product+"/v1/approvals/redeem", resourceToken, redeemBody).status, "completion code was replayable")
+		idempotentReplay := c.json("POST", product+"/v1/approvals/redeem", resourceToken, redeemBody)
+		require.Equal(t, http.StatusOK, idempotentReplay.status, idempotentReplay.body)
+		var replayed struct {
+			ApprovalToken string `json:"approval_token"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(idempotentReplay.body), &replayed))
+		require.Equal(t, redemption.ApprovalToken, replayed.ApprovalToken, "completion replay minted a second bearer")
+		var approvalRows int
+		require.NoError(t, db.QueryRow(`SELECT count(*) FROM dev_product_approvals WHERE source_code_hash=encode(digest($1,'sha256'),'hex')`, issuedBody.CompletionCode).Scan(&approvalRows))
+		require.Equal(t, 1, approvalRows, "completion replay created duplicate bearer state")
 		approval := redemption.ApprovalToken
 		retry := c.jsonHeader("POST", product+"/v1/mcp/pay?resource_id=payrun-1", resourceToken, nil, "X-Approval-Token", approval)
 		require.Equal(t, 200, retry.status, retry.body)
 		reuse := c.jsonHeader("POST", product+"/v1/mcp/pay?resource_id=payrun-1", resourceToken, nil, "X-Approval-Token", approval)
 		require.Equal(t, 428, reuse.status, "approval token was reusable")
+
+		ambiguousIssueBody := mapsClone(issueBody)
+		ambiguousIssueBody["approval_id"] = "payrun-ambiguous"
+		ambiguousIssueBody["desktop_challenge_id"] = "desktop-challenge-ambiguous"
+		ambiguousIssueBody["input_digest"] = approvalArgumentsDigest(t, map[string]any{"resource_id": "payrun-ambiguous"})
+		ambiguousIssued := c.jsonHeader("POST", product+"/v1/approvals", "", ambiguousIssueBody, "X-Fixture-Secret", fixtureSecret)
+		require.Equal(t, http.StatusCreated, ambiguousIssued.status, ambiguousIssued.body)
+		var ambiguousCode struct {
+			CompletionCode string `json:"completion_code"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(ambiguousIssued.body), &ambiguousCode))
+		ambiguousRedeem := mapsClone(redeemBody)
+		ambiguousRedeem["code"] = ambiguousCode.CompletionCode
+		ambiguousRedeem["desktop_challenge_id"] = ambiguousIssueBody["desktop_challenge_id"]
+		ambiguousRedeem["arguments_digest"] = ambiguousIssueBody["input_digest"]
+		ambiguous := c.jsonHeaders("POST", product+"/v1/approvals/redeem", resourceToken, ambiguousRedeem, map[string]string{
+			"X-Fixture-Secret": fixtureSecret, "X-Fixture-Approval-Commit": "committed-without-ack",
+		})
+		require.Equal(t, http.StatusOK, ambiguous.status, ambiguous.body)
+		var ambiguousRedemption struct {
+			ApprovalToken string `json:"approval_token"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(ambiguous.body), &ambiguousRedemption))
+		require.NotEmpty(t, ambiguousRedemption.ApprovalToken)
+		ambiguousRetry := c.json("POST", product+"/v1/approvals/redeem", resourceToken, ambiguousRedeem)
+		require.Equal(t, http.StatusOK, ambiguousRetry.status, ambiguousRetry.body)
+		var ambiguousRetryBody struct {
+			ApprovalToken string `json:"approval_token"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(ambiguousRetry.body), &ambiguousRetryBody))
+		require.Equal(t, ambiguousRedemption.ApprovalToken, ambiguousRetryBody.ApprovalToken, "ambiguous commit retry minted a duplicate bearer")
+		require.NoError(t, db.QueryRow(`SELECT count(*) FROM dev_product_approvals WHERE source_code_hash=encode(digest($1,'sha256'),'hex')`, ambiguousCode.CompletionCode).Scan(&approvalRows))
+		require.Equal(t, 1, approvalRows, "ambiguous commit did not converge to one approval row")
+		ambiguousPay := c.jsonHeader("POST", product+"/v1/mcp/pay?resource_id=payrun-ambiguous", resourceToken, nil, "X-Approval-Token", ambiguousRedemption.ApprovalToken)
+		require.Equal(t, http.StatusOK, ambiguousPay.status, ambiguousPay.body)
+		ambiguousPayReplay := c.jsonHeader("POST", product+"/v1/mcp/pay?resource_id=payrun-ambiguous", resourceToken, nil, "X-Approval-Token", ambiguousRedemption.ApprovalToken)
+		require.Equal(t, http.StatusPreconditionRequired, ambiguousPayReplay.status, "ambiguously committed approval bearer was reusable")
 	})
 
 	t.Run("entitlement downgrade denies mint", func(t *testing.T) {
@@ -413,6 +468,10 @@ func completeConsent(t *testing.T, authorizeURL string, scopes []string) respons
 }
 
 func fixtureResourceToken(t *testing.T, connectionID, organizationID, audience string, scopes []string, expiresAt time.Time) string {
+	return fixtureResourceTokenForUser(t, "user_rfc012_a", connectionID, organizationID, audience, scopes, expiresAt)
+}
+
+func fixtureResourceTokenForUser(t *testing.T, userID, connectionID, organizationID, audience string, scopes []string, expiresAt time.Time) string {
 	t.Helper()
 	block, _ := pem.Decode([]byte(mustEnv(t, "RFC012_BROKER_PRIVATE_KEY_PEM")))
 	require.NotNil(t, block)
@@ -428,16 +487,115 @@ func fixtureResourceToken(t *testing.T, connectionID, organizationID, audience s
 	}
 	now := time.Now().UTC()
 	claims := jwt.MapClaims{
-		"iss": mustEnv(t, "RFC012_BROKER_TOKEN_ISSUER"), "aud": []string{audience}, "sub": "user_rfc012_a",
+		"iss": mustEnv(t, "RFC012_BROKER_TOKEN_ISSUER"), "aud": []string{audience}, "sub": userID,
 		"iat": now.Unix(), "nbf": now.Add(-time.Minute).Unix(), "exp": expiresAt.Unix(), "jti": "fixture-" + fmt.Sprint(now.UnixNano()),
 		"scope": strings.Join(scopes, " "),
-		"ext":   map[string]any{"user_id": "user_rfc012_a", "organization_id": organizationID, "connection_id": connectionID, "connector_id": getenv("RFC012_CONNECTOR", "dev-product"), "trust_tier": "low"},
+		"ext":   map[string]any{"user_id": userID, "organization_id": organizationID, "connection_id": connectionID, "connector_id": getenv("RFC012_CONNECTOR", "dev-product"), "trust_tier": "low"},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	token.Header["kid"] = mustEnv(t, "RFC012_BROKER_TOKEN_KEY_ID")
 	signed, err := token.SignedString(key)
 	require.NoError(t, err)
 	return signed
+}
+
+func approvalResourceBinding(t *testing.T, raw string) (string, string) {
+	t.Helper()
+	claims := jwt.MapClaims{}
+	_, _, err := new(jwt.Parser).ParseUnverified(raw, claims)
+	require.NoError(t, err)
+	sessionID, _ := claims["jti"].(string)
+	issuer, _ := claims["iss"].(string)
+	ext, _ := claims["ext"].(map[string]any)
+	connectorID, _ := ext["connector_id"].(string)
+	connectionID, _ := ext["connection_id"].(string)
+	audience := claimStrings(claims["aud"])
+	sort.Strings(audience)
+	require.NotEmpty(t, sessionID)
+	require.NotEmpty(t, connectionID)
+	return sessionID, approvalDigestParts("product-config-v1", issuer, strings.Join(audience, "\x00"), connectorID, connectionID)
+}
+
+func claimStrings(raw any) []string {
+	switch value := raw.(type) {
+	case string:
+		return []string{value}
+	case []string:
+		return append([]string(nil), value...)
+	case []any:
+		out := make([]string, 0, len(value))
+		for _, item := range value {
+			if text, ok := item.(string); ok {
+				out = append(out, text)
+			}
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
+func approvalArgumentsDigest(t *testing.T, value any) string {
+	t.Helper()
+	canonical, err := approvalCanonicalJSON(value)
+	require.NoError(t, err)
+	sum := sha256.Sum256([]byte(canonical))
+	return base64.RawURLEncoding.EncodeToString(sum[:])
+}
+
+func approvalCanonicalJSON(value any) (string, error) {
+	switch typed := value.(type) {
+	case nil, bool, string, float64, json.Number:
+		b, err := json.Marshal(typed)
+		return string(b), err
+	case []any:
+		parts := make([]string, len(typed))
+		for i, item := range typed {
+			part, err := approvalCanonicalJSON(item)
+			if err != nil {
+				return "", err
+			}
+			parts[i] = part
+		}
+		return "[" + strings.Join(parts, ",") + "]", nil
+	case map[string]any:
+		keys := make([]string, 0, len(typed))
+		for key := range typed {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		parts := make([]string, 0, len(keys))
+		for _, key := range keys {
+			keyJSON, _ := json.Marshal(key)
+			valueJSON, err := approvalCanonicalJSON(typed[key])
+			if err != nil {
+				return "", err
+			}
+			parts = append(parts, string(keyJSON)+":"+valueJSON)
+		}
+		return "{" + strings.Join(parts, ",") + "}", nil
+	default:
+		b, err := json.Marshal(value)
+		if err != nil {
+			return "", err
+		}
+		var normalized any
+		dec := json.NewDecoder(bytes.NewReader(b))
+		dec.UseNumber()
+		if err := dec.Decode(&normalized); err != nil {
+			return "", err
+		}
+		return approvalCanonicalJSON(normalized)
+	}
+}
+
+func approvalDigestParts(label string, parts ...string) string {
+	h := sha256.New()
+	_, _ = io.WriteString(h, label)
+	for _, part := range parts {
+		_, _ = io.WriteString(h, "\x00"+part)
+	}
+	return base64.RawURLEncoding.EncodeToString(h.Sum(nil))
 }
 
 type client struct {
@@ -461,6 +619,13 @@ func (c *client) json(method, endpoint, bearer string, body any) response {
 	return c.jsonHeader(method, endpoint, bearer, body, "", "")
 }
 func (c *client) jsonHeader(method, endpoint, bearer string, body any, hk, hv string) response {
+	headers := map[string]string{}
+	if hk != "" {
+		headers[hk] = hv
+	}
+	return c.jsonHeaders(method, endpoint, bearer, body, headers)
+}
+func (c *client) jsonHeaders(method, endpoint, bearer string, body any, headers map[string]string) response {
 	c.t.Helper()
 	var rd io.Reader
 	if body != nil {
@@ -476,8 +641,8 @@ func (c *client) jsonHeader(method, endpoint, bearer string, body any, hk, hv st
 	if bearer != "" {
 		req.Header.Set("Authorization", "Bearer "+bearer)
 	}
-	if hk != "" {
-		req.Header.Set(hk, hv)
+	for name, value := range headers {
+		req.Header.Set(name, value)
 	}
 	cl := *c.http
 	cl.CheckRedirect = func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
