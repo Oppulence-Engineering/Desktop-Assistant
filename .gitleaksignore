@@ -62,3 +62,4 @@ c8c6a346895eb5b30532916c8a6667f288cf4b3a:apps/rowboat-api/migrations/postgres/at
 3fa41ce2189deb01b856f8e4cbf5eb2e7c083ce5:apps/rowboat-api/integration/rfc012/postgres16.sh:generic-api-key:200
 7a41de51e1e1b0b64ac1aa729ea2515a3d59d5e2:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:878
 7a41de51e1e1b0b64ac1aa729ea2515a3d59d5e2:apps/rowboat-api/internal/openapidoc/enrich.go:generic-api-key:879
+095a65b20378206e6aba0b5f8451ff2ddba2c11a:apps/rowboat-api/integration/rfc012/postgres16.sh:generic-api-key:138
