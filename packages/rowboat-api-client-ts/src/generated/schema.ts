@@ -1240,6 +1240,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/internal/connections/status": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Introspect live connector token status
+     * @description Every-request fail-closed validation for product resource servers. The authenticated product principal must be allowed for the token connector. The broker binds the jti issuance record, connection, user, immutable organization, connector, credential generation, audience, active lifecycle state, and current product entitlement. Stale tokens return active=false.
+     */
+    post: operations["introspectConnectorConnection"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/internal/events": {
     parameters: {
       query?: never;
@@ -5336,60 +5356,6 @@ export interface components {
       /** @description User that owns this row. */
       user: components["schemas"]["User"];
     };
-    ConnectorRevocationJob: {
-      attempts: number;
-      /** Format: uuid */
-      claim_id?: string;
-      /** Format: date-time */
-      claimed_until?: string;
-      /** Format: date-time */
-      completed_at?: string;
-      /** Format: uuid */
-      connection_id: string;
-      /**
-       * @description Connector slug.
-       * @example canvas
-       */
-      connector: string;
-      /**
-       * Format: date-time
-       * @description Row creation timestamp.
-       * @example 2026-06-04T20:38:00Z
-       */
-      created_at: string;
-      /** Format: int64 */
-      credential_generation: number;
-      /**
-       * Format: uuid
-       * @description Stable UUID primary key.
-       * @example 123e4567-e89b-12d3-a456-426614174000
-       */
-      id: string;
-      last_error?: string;
-      /** Format: date-time */
-      next_attempt_at: string;
-      /** Format: uuid */
-      owner_id: string;
-      /**
-       * Format: byte
-       * @description Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.
-       */
-      refresh_token_encrypted?: string;
-      /**
-       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
-       * @example active
-       */
-      status: string;
-      terminal_actor: string;
-      terminal_reason: string;
-      terminal_status: string;
-      /**
-       * Format: date-time
-       * @description Last row update timestamp.
-       * @example 2026-06-04T20:39:00Z
-       */
-      updated_at: string;
-    };
     /** @description Canonical connector scope consent and risk policy. */
     ConnectorScope: {
       /** @description Scopes that cannot coexist in one grant. */
@@ -6590,6 +6556,52 @@ export interface components {
        */
       userId: string;
     };
+    /** @description Exact binding extracted from one verified connector resource token. Partial selectors are rejected. */
+    InternalConnectionStatusRequest: {
+      /**
+       * @description OAuth token audience for the connector.
+       * @example canvas-api
+       */
+      audience: string;
+      /**
+       * @description Immutable MCPConnection UUID from the token.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      connection_id: string;
+      /**
+       * @description Connector slug.
+       * @example canvas
+       */
+      connector: string;
+      /**
+       * @description Credential lifecycle generation minted into the token.
+       * @example 3
+       */
+      credential_generation: number;
+      /**
+       * @description JWT ID from the verified product token.
+       * @example 2ea124ab-866b-4c10-8e73-f0a6978f09ca
+       */
+      jti: string;
+      /**
+       * @description Immutable grant-time organization.
+       * @example org_01HABCDEF
+       */
+      organization_id: string;
+      /**
+       * @description WorkOS user id used to resolve bearer tokens into local users.
+       * @example user_01HABCDEF
+       */
+      workos_user_id: string;
+    };
+    /** @description Fail-closed live connector-token decision. */
+    InternalConnectionStatusResponse: {
+      /**
+       * @description True only when every token binding, issuance record, live connection state, generation, and entitlement still match.
+       * @example true
+       */
+      active: boolean;
+    };
     /** @description Server-to-server force disconnect request. */
     InternalInvalidateRequest: {
       /**
@@ -6917,11 +6929,7 @@ export interface components {
     };
     /** @description Per-user connector credential state for MCP products. Stores sealed OAuth refresh tokens or API keys. */
     MCPConnection: {
-      /**
-       * Format: byte
-       * @description Sealed vendor API key. Sensitive internal storage field; never returned by desktop endpoints.
-       */
-      api_key_encrypted?: string;
+      api_key_present: boolean;
       /**
        * @description OAuth token audience for the connector.
        * @example canvas-api
@@ -6965,11 +6973,7 @@ export interface components {
        */
       last_used_at?: string;
       organization_id?: string;
-      /**
-       * Format: byte
-       * @description Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.
-       */
-      refresh_token_encrypted?: string;
+      refresh_token_present: boolean;
       /** Format: date-time */
       revocation_attempted_at?: string;
       revocation_succeeded?: boolean;
@@ -7001,11 +7005,7 @@ export interface components {
     };
     /** @description Audit history for MCPConnection rows. */
     MCPConnectionHistory: {
-      /**
-       * Format: byte
-       * @description Sealed vendor API key. Sensitive internal storage field; never returned by desktop endpoints.
-       */
-      api_key_encrypted?: string;
+      api_key_present: boolean;
       /**
        * @description OAuth token audience for the connector.
        * @example canvas-api
@@ -7067,11 +7067,7 @@ export interface components {
        * @example 123e4567-e89b-12d3-a456-426614174000
        */
       ref?: string;
-      /**
-       * Format: byte
-       * @description Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.
-       */
-      refresh_token_encrypted?: string;
+      refresh_token_present: boolean;
       /** Format: date-time */
       revocation_attempted_at?: string;
       revocation_succeeded?: boolean;
@@ -7585,6 +7581,8 @@ export interface components {
        * @example 2026-06-04T20:38:00Z
        */
       created_at: string;
+      /** Format: int64 */
+      credential_generation: number;
       external_account_id?: string;
       /**
        * Format: uuid
@@ -7597,11 +7595,7 @@ export interface components {
        * @example openai
        */
       provider: string;
-      /**
-       * Format: byte
-       * @description Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.
-       */
-      refresh_token_encrypted: string;
+      refresh_token_present: boolean;
       /**
        * @description OAuth scopes granted or requested.
        * @example [
@@ -7627,6 +7621,8 @@ export interface components {
        * @example 2026-06-04T20:38:00Z
        */
       created_at: string;
+      /** Format: int64 */
+      credential_generation: number;
       external_account_id?: string;
       /**
        * Format: date-time
@@ -7657,11 +7653,7 @@ export interface components {
        * @example 123e4567-e89b-12d3-a456-426614174000
        */
       ref?: string;
-      /**
-       * Format: byte
-       * @description Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.
-       */
-      refresh_token_encrypted: string;
+      refresh_token_present: boolean;
       /**
        * @description OAuth scopes granted or requested.
        * @example [
@@ -15035,6 +15027,53 @@ export interface operations {
       403: components["responses"]["403"];
       409: components["responses"]["409"];
       500: components["responses"]["500"];
+      503: components["responses"]["503"];
+    };
+  };
+  introspectConnectorConnection: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Exact verified token binding. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "audience": "mcp:canvas",
+         *       "connection_id": "123e4567-e89b-12d3-a456-426614174000",
+         *       "connector": "canvas",
+         *       "credential_generation": 3,
+         *       "jti": "2ea124ab-866b-4c10-8e73-f0a6978f09ca",
+         *       "organization_id": "org_01HABCDEF",
+         *       "workos_user_id": "user_01HABCDEF"
+         *     }
+         */
+        "application/json": components["schemas"]["InternalConnectionStatusRequest"];
+      };
+    };
+    responses: {
+      /** @description Live token status. Any stale binding returns active=false. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "active": true
+           *     }
+           */
+          "application/json": components["schemas"]["InternalConnectionStatusResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      409: components["responses"]["409"];
+      429: components["responses"]["429"];
       503: components["responses"]["503"];
     };
   };

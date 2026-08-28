@@ -11,8 +11,6 @@ import type { User } from "./user";
  * Per-user connector credential state for MCP products. Stores sealed OAuth refresh tokens or API keys.
  */
 export interface MCPConnection {
-  /** Sealed vendor API key. Sensitive internal storage field; never returned by desktop endpoints. */
-  api_key_encrypted?: string;
   api_key_present: boolean;
   /** OAuth token audience for the connector. */
   audience: string;
@@ -30,8 +28,6 @@ export interface MCPConnection {
   /** Timestamp when the connector credential was last minted or used. */
   last_used_at?: string;
   organization_id?: string;
-  /** Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints. */
-  refresh_token_encrypted?: string;
   refresh_token_present: boolean;
   revocation_attempted_at?: string;
   revocation_succeeded?: boolean;

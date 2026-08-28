@@ -7,7 +7,11 @@
  */
 import { faker } from "@faker-js/faker";
 
-import type { CloudEventIngestResponse, InternalInvalidateResponse } from "../model";
+import type {
+  CloudEventIngestResponse,
+  InternalConnectionStatusResponse,
+  InternalInvalidateResponse,
+} from "../model";
 
 export const getInvalidateConnectionResponseMock = (
   overrideResponse: Partial<Extract<InternalInvalidateResponse, object>> = {},
@@ -18,6 +22,10 @@ export const getInvalidateConnectionResponseMock = (
   revoked: faker.helpers.arrayElement([faker.number.int(), undefined]),
   ...overrideResponse,
 });
+
+export const getIntrospectConnectorConnectionResponseMock = (
+  overrideResponse: Partial<Extract<InternalConnectionStatusResponse, object>> = {},
+): InternalConnectionStatusResponse => ({ active: faker.datatype.boolean(), ...overrideResponse });
 
 export const getIngestInternalCloudEventResponseMock = (
   overrideResponse: Partial<Extract<CloudEventIngestResponse, object>> = {},
