@@ -286,7 +286,9 @@ func TestCleanupInsertAndProviderRevokeFailureRetainsRecoveryAcrossRestart(t *te
 	if err != nil {
 		t.Fatal(err)
 	}
-	d := refreshDeduper{cache: workosauth.NewMemoryRefreshCache(), sealer: sealer, client: client, log: zap.NewNop()}
+	custody := newCredentialCustodySupervisor(zap.NewNop(), 1, 4)
+	t.Cleanup(custody.close)
+	d := refreshDeduper{cache: workosauth.NewMemoryRefreshCache(), sealer: sealer, client: client, log: zap.NewNop(), custody: custody}
 	bound := newConnectorRefreshContext("canvas", uuid.NewString(), "org-1", 1, "mcp:canvas", []string{"read"})
 	var persists atomic.Int64
 	_, refreshErr := d.refresh(t.Context(), bound, newOryClient(server.URL, "client", "secret"), "refresh-old", func(context.Context, *oryToken, uuid.UUID) (int64, error) {

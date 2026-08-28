@@ -121,7 +121,7 @@ func TestStripeAPIKeyMoneyMovingAuthorizationLifecycle(t *testing.T) {
 	if listHasRefund() {
 		t.Fatal("generation change did not clear refund grant")
 	}
-	conn := client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ("stripe"), mcpconnection.OrganizationIDEQ("org_1")).OnlyX(context.Background())
+	conn := client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ("stripe"), mcpconnection.OrganizationIDEQ("org_1")).OnlyX(ctx)
 	if slices.Contains(conn.Scopes, "stripe:refunds.create") {
 		t.Fatal("grant survived key replacement")
 	}

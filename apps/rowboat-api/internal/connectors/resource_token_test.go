@@ -56,7 +56,7 @@ func mintTestToken(t *testing.T, issuer *RSAResourceTokenIssuer) string {
 	t.Helper()
 	token, _, err := issuer.Mint(ResourceTokenClaims{
 		UserID: "user_1", OrganizationID: "org_1", ConnectionID: "conn_1",
-		ConnectorID: "canvas", Audience: "mcp:canvas",
+		ConnectorID: "canvas", Audience: "mcp:canvas", CredentialGeneration: 1,
 		Scopes: []string{"canvas:invoices.read"}, TrustTier: "low",
 	})
 	if err != nil {
@@ -84,7 +84,7 @@ func TestRSAResourceTokenIssuerProducesVerifiableBoundedActorToken(t *testing.T)
 	}
 	token, expiresAt, err := issuer.Mint(ResourceTokenClaims{
 		UserID: "user_1", OrganizationID: "org_1", ConnectionID: "conn_1",
-		ConnectorID: "canvas", Audience: "mcp:canvas",
+		ConnectorID: "canvas", Audience: "mcp:canvas", CredentialGeneration: 1,
 		Scopes: []string{"canvas:invoices.read"}, TrustTier: "low",
 	})
 	if err != nil {
@@ -109,7 +109,7 @@ func TestRSAResourceTokenIssuerRejectsMissingOrganization(t *testing.T) {
 	}
 	issuer := newTestIssuer(t, key, "kid-1", map[string]*rsa.PrivateKey{"kid-1": key})
 	if _, _, err := issuer.Mint(ResourceTokenClaims{
-		UserID: "user_1", ConnectionID: "conn_1", ConnectorID: "canvas", Audience: "mcp:canvas",
+		UserID: "user_1", ConnectionID: "conn_1", ConnectorID: "canvas", Audience: "mcp:canvas", CredentialGeneration: 1,
 	}); err == nil {
 		t.Fatal("issuer accepted connector resource token without organization")
 	}

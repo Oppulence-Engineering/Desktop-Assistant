@@ -39,7 +39,10 @@ func TestReconnectEscrowRollsBackWithReplacement(t *testing.T) {
 	client := database.Client
 	owner := client.User.Create().SetEmail("rollback@example.invalid").SetWorkosUserID("rollback-user").SetWorkosOrgID("rollback-org").SaveX(t.Context())
 	ctx := auth.WithUser(t.Context(), owner)
-	connector := DefaultRegistry().connectors["canvas"]
+	connector, ok := DefaultRegistry().Get("canvas")
+	if !ok {
+		t.Fatal("canvas connector missing")
+	}
 	h := New(client, sealer, DefaultRegistry(), Config{}, zap.NewNop())
 	oldSealed, _ := sealer.SealString("refresh-old")
 	connection := client.MCPConnection.Create().SetUser(owner).SetConnector(connector.Name).SetAudience(connector.Audience).SetOrganizationID(connectorOrganizationID(owner)).SetScopes([]string{"canvas:invoices.read"}).SetRefreshTokenEncrypted(oldSealed).SetStatus("active").SetConnectedAt(time.Now()).SaveX(ctx)
@@ -69,7 +72,10 @@ func TestReconnectCrashAfterCommitLeavesDurableSupersededGrant(t *testing.T) {
 	client := database.Client
 	owner := client.User.Create().SetEmail("crash@example.invalid").SetWorkosUserID("crash-user").SetWorkosOrgID("crash-org").SaveX(t.Context())
 	ctx := auth.WithUser(t.Context(), owner)
-	connector := DefaultRegistry().connectors["canvas"]
+	connector, ok := DefaultRegistry().Get("canvas")
+	if !ok {
+		t.Fatal("canvas connector missing")
+	}
 	var revoked atomic.Int64
 	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/oauth2/revoke" {
@@ -122,7 +128,10 @@ func TestReconnectAmbiguousRevokeRetainsRetryAndNeverRevokesCurrent(t *testing.T
 	client := database.Client
 	owner := client.User.Create().SetEmail("ambiguous-revoke@example.invalid").SetWorkosUserID("ambiguous-revoke-user").SetWorkosOrgID("ambiguous-revoke-org").SaveX(t.Context())
 	ctx := auth.WithUser(t.Context(), owner)
-	connector := DefaultRegistry().connectors["canvas"]
+	connector, ok := DefaultRegistry().Get("canvas")
+	if !ok {
+		t.Fatal("canvas connector missing")
+	}
 	var attempts atomic.Int64
 	var mu sync.Mutex
 	var tokens []string

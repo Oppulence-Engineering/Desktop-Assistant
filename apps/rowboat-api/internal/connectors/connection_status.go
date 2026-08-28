@@ -53,7 +53,8 @@ func (h *Handler) ConnectionStatus(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusForbidden, "product service principal is not authorized for connector status", "forbidden")
 		return
 	}
-	if _, ok := h.registry.Get(req.Connector); !ok {
+	connector, ok := h.registry.Get(req.Connector)
+	if !ok {
 		httpx.WriteJSON(w, http.StatusOK, map[string]any{"active": false})
 		return
 	}
@@ -101,8 +102,8 @@ func (h *Handler) ConnectionStatus(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusServiceUnavailable, "connection status unavailable", "status_unavailable")
 		return
 	}
-	decision, err := h.registry.CheckEntitlement(r.Context(), req.Connector, owner.WorkosUserID, connection.OrganizationID, connection.Scopes)
-	if err != nil || !decision.Allowed {
+	allowed, _ := NewEntitlementService(h.client, h.registry).Check(r.Context(), owner, connector, connection.Scopes)
+	if !allowed {
 		httpx.WriteJSON(w, http.StatusOK, map[string]any{"active": false})
 		return
 	}

@@ -88,7 +88,7 @@ func TestCachedRefreshResultIsFencedAcrossReplicas(t *testing.T) {
 				}
 				entitlementServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.Header().Set("Content-Type", "application/json")
-					if entitlementCalls.Add(1) >= 4 {
+					if entitlementCalls.Add(1) >= 5 {
 						_, _ = w.Write([]byte(`{"allowed":false,"reason":"user_banned"}`))
 						return
 					}
@@ -195,8 +195,8 @@ func TestCachedRefreshResultIsFencedAcrossReplicas(t *testing.T) {
 			}
 
 			if tc.denyFinalEntitle {
-				if got := entitlementCalls.Load(); got != 3 {
-					t.Fatalf("entitlement calls before cached result release = %d, want 3", got)
+				if got := entitlementCalls.Load(); got != 4 {
+					t.Fatalf("entitlement calls before cached result release = %d, want 4", got)
 				}
 			} else {
 				deleteRecorder := httptest.NewRecorder()
@@ -248,8 +248,8 @@ func TestCachedRefreshResultIsFencedAcrossReplicas(t *testing.T) {
 				t.Fatalf("token.minted audit count = %d, want only replica A mint", got)
 			}
 			if tc.denyFinalEntitle {
-				if got := entitlementCalls.Load(); got != 4 {
-					t.Fatalf("entitlement calls after cached result release = %d, want 4", got)
+				if got := entitlementCalls.Load(); got != 5 {
+					t.Fatalf("entitlement calls after cached result release = %d, want 5", got)
 				}
 				if current := client.MCPConnection.GetX(auth.WithInternal(context.Background()), connection.ID); current.Status != "invalidated" || current.CredentialGeneration != 3 {
 					t.Fatalf("authoritative denial did not invalidate current generation: status=%q generation=%d", current.Status, current.CredentialGeneration)
