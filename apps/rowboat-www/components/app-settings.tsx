@@ -22,6 +22,7 @@ import {
   type SettingsSection,
   type ThemePreference,
 } from "@/components/app-shell";
+import { ConnectorSettings } from "@/components/features/connectors/connector-settings";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import { Input } from "@oppulence/ui/components/input";
@@ -455,208 +456,6 @@ function ModelsSection() {
               </div>
             );
           })}
-        </div>
-      )}
-    </SettingsRow>
-  );
-}
-
-type ConnectorEntry = {
-  name: string;
-  description?: string;
-  authType?: "oauth" | "api_key";
-  connected: boolean;
-  connectedAt?: string | null;
-};
-
-function ConnectorRow({
-  connector,
-  onChanged,
-}: {
-  connector: ConnectorEntry;
-  onChanged: () => void;
-}) {
-  const [busy, setBusy] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [confirming, setConfirming] = React.useState(false);
-  const [keyOpen, setKeyOpen] = React.useState(false);
-  const [apiKey, setApiKey] = React.useState("");
-
-  const run = async (fn: () => Promise<void>) => {
-    setBusy(true);
-    setError(null);
-    try {
-      await fn();
-      onChanged();
-    } catch (err) {
-      setError((err as Error)?.message || "Request failed");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const connect = () =>
-    run(async () => {
-      const res = await dashboardFetch(
-        `/api/rowboat/v1/connections/${encodeURIComponent(connector.name)}/start`,
-        { method: "POST" },
-      );
-      if (!res.ok) throw new Error(`Connect failed (${res.status})`);
-      const data = await res.json();
-      if (typeof data?.authorize_url === "string") {
-        window.open(data.authorize_url, "_blank", "noopener");
-      }
-    });
-
-  const saveKey = () =>
-    run(async () => {
-      const res = await dashboardFetch(
-        `/api/rowboat/v1/connections/${encodeURIComponent(connector.name)}/api-key`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ apiKey }),
-        },
-      );
-      if (!res.ok) throw new Error(`Saving key failed (${res.status})`);
-      setApiKey("");
-      setKeyOpen(false);
-    });
-
-  const disconnect = () =>
-    run(async () => {
-      const res = await dashboardFetch(
-        `/api/rowboat/v1/connections/${encodeURIComponent(connector.name)}`,
-        { method: "DELETE" },
-      );
-      if (!res.ok) throw new Error(`Disconnect failed (${res.status})`);
-      setConfirming(false);
-    });
-
-  return (
-    <div className="flex flex-col gap-2 px-4 py-3">
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <span className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium capitalize text-primary">
-              {connector.name}
-            </span>
-            {connector.connected ? (
-              <Badge className="shrink-0 rounded-[2px] border-oppulence-green/40 text-oppulence-green">
-                Connected
-              </Badge>
-            ) : (
-              <Badge className="shrink-0 rounded-[2px] text-primary/50" variant="outline">
-                Not connected
-              </Badge>
-            )}
-          </span>
-          {connector.description ? (
-            <span className="block truncate text-xs text-muted-foreground">
-              {connector.description}
-            </span>
-          ) : null}
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {connector.connected ? (
-            confirming ? (
-              <>
-                <Button disabled={busy} onClick={disconnect} size="sm" variant="destructive">
-                  {busy ? "Disconnecting…" : "Confirm"}
-                </Button>
-                <Button
-                  disabled={busy}
-                  onClick={() => setConfirming(false)}
-                  size="sm"
-                  variant="ghost"
-                >
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <Button onClick={() => setConfirming(true)} size="sm" variant="outline">
-                Disconnect
-              </Button>
-            )
-          ) : connector.authType === "api_key" ? (
-            <Button
-              disabled={busy}
-              onClick={() => setKeyOpen((open) => !open)}
-              size="sm"
-              variant="outline"
-            >
-              {keyOpen ? "Cancel" : "Add API key"}
-            </Button>
-          ) : (
-            <Button disabled={busy} onClick={connect} size="sm">
-              {busy ? "Opening…" : "Connect"}
-            </Button>
-          )}
-        </div>
-      </div>
-      {keyOpen && !connector.connected ? (
-        <div className="flex items-center gap-2">
-          <Input
-            className="max-w-sm"
-            onChange={(event) => setApiKey(event.target.value)}
-            placeholder="Vendor API key"
-            type="password"
-            value={apiKey}
-          />
-          <Button disabled={!apiKey.trim() || busy} onClick={saveKey} size="sm">
-            {busy ? "Saving…" : "Save key"}
-          </Button>
-        </div>
-      ) : null}
-      {error ? <p className="font-mono text-xs text-destructive">{error}</p> : null}
-    </div>
-  );
-}
-
-function ConnectorsSection() {
-  const [refreshKey, setRefreshKey] = React.useState(0);
-  const { items, state } = useJsonList(`/api/rowboat/v1/connectors?r=${refreshKey}`, (data) => {
-    const record = (data ?? {}) as Record<string, unknown>;
-    if (Array.isArray(record.connectors)) return record.connectors;
-    return Array.isArray(data) ? (data as unknown[]) : [];
-  });
-
-  const connectors: ConnectorEntry[] = items.map((item) => {
-    const record = (typeof item === "object" && item ? item : {}) as Record<string, unknown>;
-    return {
-      name: nameOf(item),
-      description: typeof record.description === "string" ? record.description : undefined,
-      authType:
-        record.authType === "api_key"
-          ? "api_key"
-          : record.authType === "oauth"
-            ? "oauth"
-            : undefined,
-      connected: record.connected === true,
-      connectedAt: typeof record.connectedAt === "string" ? record.connectedAt : null,
-    };
-  });
-
-  return (
-    <SettingsRow
-      description="Managed connections your agents can use. OAuth connectors open a browser window; API-key connectors store the key sealed server-side."
-      title="Connectors"
-    >
-      {state === "loading" ? (
-        <EmptyCardState>Loading connectors…</EmptyCardState>
-      ) : state === "error" ? (
-        <EmptyCardState>Could not load connectors.</EmptyCardState>
-      ) : connectors.length === 0 ? (
-        <EmptyCardState>No connectors are available yet.</EmptyCardState>
-      ) : (
-        <div className="flex flex-col divide-y divide-primary/10">
-          {connectors.map((connector) => (
-            <ConnectorRow
-              connector={connector}
-              key={connector.name}
-              onChanged={() => setRefreshKey((k) => k + 1)}
-            />
-          ))}
         </div>
       )}
     </SettingsRow>
@@ -1467,13 +1266,13 @@ export function SettingsView({
         {section === "extensions" ? (
           <>
             <PageIntro description={current.description} title={current.label} />
-            <ConnectorsSection />
+            <ConnectorSettings />
           </>
         ) : null}
         {section === "connections" ? (
           <>
             <PageIntro description={current.description} title={current.label} />
-            <ConnectorsSection />
+            <ConnectorSettings />
           </>
         ) : null}
         {section === "transcription" ? (
@@ -1574,7 +1373,7 @@ export function SettingsView({
             <div className="settings-inline-notice">
               Connected to {session.user.organizationId || "your Oppulence organization"}.
             </div>
-            <ConnectorsSection />
+            <ConnectorSettings />
           </>
         ) : null}
         {section === "help" ? <HelpSection /> : null}
