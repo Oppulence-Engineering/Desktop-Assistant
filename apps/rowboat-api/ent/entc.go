@@ -13,7 +13,9 @@
 // Extensions:
 //   - enthistory: generates *_history tables for audited schemas. It runs in
 //     two phases — first it writes the History schemas (via schemast), then ent
-//     code-generates with the history extension. CreditLedger (already
+//     code-generates with the history extension. MCPConnection and
+//     OAuthConnection use hand-maintained history schemas so credential bytes
+//     can never be copied into immutable history. CreditLedger (already
 //     append-only) and OAuthPending (TTL'd, ephemeral) are intentionally not
 //     tracked.
 package main
@@ -45,8 +47,6 @@ func main() {
 	tracked := []ent.Interface{
 		schema.User{},
 		schema.Subscription{},
-		schema.OAuthConnection{},
-		schema.MCPConnection{},
 		schema.LLMUsage{},
 		// RFC 028: AgentDefinition history backs revision listing + rollback.
 		schema.AgentDefinition{},

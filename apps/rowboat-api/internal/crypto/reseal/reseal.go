@@ -22,17 +22,17 @@ type Source struct {
 	Column string `json:"-"`
 }
 
-// ConnectorSources is the complete inventory of connector-related encrypted
-// database payloads, including immutable history and durable revocation work.
+// ConnectorSources is the complete inventory of live connector-related
+// encrypted database payloads. Immutable connection history is deliberately
+// absent because it stores lifecycle metadata only and must never retain
+// credential ciphertext.
 var ConnectorSources = []Source{
 	{Name: "mcp_connection.refresh_token", Table: "mcp_connections", Column: "refresh_token_encrypted"},
 	{Name: "mcp_connection.api_key", Table: "mcp_connections", Column: "api_key_encrypted"},
-	{Name: "mcp_connection_history.refresh_token", Table: "mcp_connection_histories", Column: "refresh_token_encrypted"},
-	{Name: "mcp_connection_history.api_key", Table: "mcp_connection_histories", Column: "api_key_encrypted"},
 	{Name: "oauth_pending.payload", Table: "oauth_pendings", Column: "payload_encrypted"},
 	{Name: "connector_revocation_job.refresh_token", Table: "connector_revocation_jobs", Column: "refresh_token_encrypted"},
+	{Name: "connector_credential_cleanup_job.refresh_token", Table: "connector_credential_cleanup_jobs", Column: "refresh_token_encrypted"},
 	{Name: "oauth_connection.refresh_token", Table: "oauth_connections", Column: "refresh_token_encrypted"},
-	{Name: "oauth_connection_history.refresh_token", Table: "oauth_connection_histories", Column: "refresh_token_encrypted"},
 }
 
 // RefreshCachePrefix identifies encrypted cross-replica refresh results that

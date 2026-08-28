@@ -211,6 +211,7 @@ func TestOAuthConnectorFlow(t *testing.T) {
 	}
 
 	// 5. Delete revokes and retains an audit tombstone without credentials.
+	credentialBeforeDelete := bytes.Clone(client.MCPConnection.Query().OnlyX(authed).RefreshTokenEncrypted)
 	delRec := httptest.NewRecorder()
 	h.Delete(delRec, httptest.NewRequest(http.MethodDelete, "/v1/connections/canvas", nil).
 		WithContext(withParam(authed, "name", "canvas")))
@@ -227,6 +228,7 @@ func TestOAuthConnectorFlow(t *testing.T) {
 	if n := client.ConnectorAuditEvent.Query().CountX(authed); n == 0 {
 		t.Fatal("semantic connector audit events should be retained")
 	}
+	assertCredentialMaterialAbsent(t, client, pending.PayloadEncrypted, credentialBeforeDelete)
 }
 
 func TestOAuthStartLegacyStateWriteIsExplicit(t *testing.T) {
@@ -512,7 +514,7 @@ func TestInvalidate(t *testing.T) {
 	// Seed a connection directly.
 	client.MCPConnection.Create().SetUser(u).SetConnector("canvas").SetAudience("canvas-api").
 		SetOrganizationID("org_1").
-		SetRefreshTokenEncrypted([]byte("x")).SaveX(auth.WithUser(context.Background(), u))
+		SetAPIKeyEncrypted([]byte("x")).SaveX(auth.WithUser(context.Background(), u))
 
 	body := `{"workos_user_id":"user_1","connector":"canvas"}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/internal/connections/invalidate", strings.NewReader(body)).
@@ -526,7 +528,7 @@ func TestInvalidate(t *testing.T) {
 		t.Fatalf("connection tombstone should be retained, got %d", n)
 	}
 	tombstone := client.MCPConnection.Query().OnlyX(auth.WithInternal(context.Background()))
-	if tombstone.Status != "invalidated" || tombstone.RevokedAt.IsZero() || len(tombstone.RefreshTokenEncrypted) != 0 {
+	if tombstone.Status != "invalidated" || tombstone.RevokedAt.IsZero() || len(tombstone.APIKeyEncrypted) != 0 {
 		t.Fatalf("forced invalidation did not create a safe tombstone: %+v", tombstone)
 	}
 	if tombstone.RevokedBy != "canvas-api" {
@@ -536,6 +538,7 @@ func TestInvalidate(t *testing.T) {
 	if audit.ActorKind != string(auth.KindService) || !strings.Contains(audit.MetadataJSON, `"servicePrincipal":"canvas-api"`) {
 		t.Fatalf("invalidation audit lost service principal: %+v", audit)
 	}
+	assertCredentialMaterialAbsent(t, client, []byte("x"))
 }
 
 func TestInvalidateRejectsLegacyGlobalInternalPrincipal(t *testing.T) {
@@ -666,6 +669,7 @@ func TestRevocationRetryMarksTombstoneSucceeded(t *testing.T) {
 	if client.ConnectorRevocationJob.Query().CountX(auth.WithInternal(context.Background())) != 0 {
 		t.Fatal("completed revocation job was not retired")
 	}
+	assertCredentialMaterialAbsent(t, client, sealed)
 }
 
 func TestRevocationRetryDoesNotClearNewerGrant(t *testing.T) {

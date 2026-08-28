@@ -220,6 +220,30 @@ Entitlements are checked before consent and before each resource-token mint. Tre
 
 `DB_ENCRYPTION_KEY` protects stored refresh tokens. Do not replace it in place unless application-level re-encryption has completed. For compromise, disable affected connectors, revoke/invalidate grants, erase encrypted token material, rotate the key, and require reauthorization.
 
+Connection history is not credential storage. Migration
+`20260828014500_connection_history_secret_purge.sql` backfills safe
+credential-presence metadata, purges every existing MCP/OAuth history credential,
+and installs fail-closed PostgreSQL triggers plus `IS NULL` constraints so mixed
+version replicas cannot repopulate history ciphertext. The legacy history
+credential columns remain temporarily as write-only compatibility sinks and are
+absent from the Ent schema and reseal inventory. After all pre-migration binaries
+and rollback windows are retired, schedule a maintenance migration to physically
+drop those always-NULL columns. Verify the invariant after rollout:
+
+```sql
+SELECT count(*) AS retained_history_credentials
+FROM (
+  SELECT 1 FROM mcp_connection_histories
+  WHERE refresh_token_encrypted IS NOT NULL OR api_key_encrypted IS NOT NULL
+  UNION ALL
+  SELECT 1 FROM oauth_connection_histories
+  WHERE refresh_token_encrypted IS NOT NULL
+) AS retained;
+```
+
+The result must be zero before retiring an encryption key. Do not include history
+columns in ad hoc reseal jobs, exports, diagnostics, or logs.
+
 ## Product resource-server configuration
 
 Every product MCP must configure its RFC 012 middleware with the exact rowboat-api connector issuer, the rowboat-api connector JWKS URL, and one audience. Use `docs/deployment-examples/product-resource-server.env.example`. Do not configure the Hydra issuer or Hydra JWKS here. Required behavior:

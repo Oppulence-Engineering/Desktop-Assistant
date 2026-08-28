@@ -42,6 +42,11 @@ func (MCPConnection) Fields() []ent.Field {
 		field.Strings("scopes").Optional(),
 		field.Bytes("refresh_token_encrypted").Optional().Sensitive(), // Ory-issued, rotated on use
 		field.Bytes("api_key_encrypted").Optional().Sensitive(),       // vendor-issued (api_key connectors)
+		// Presence flags are safe lifecycle metadata copied into immutable
+		// history. A schema hook derives them from credential mutations so
+		// history never needs the credential ciphertext itself.
+		field.Bool("refresh_token_present").Default(false),
+		field.Bool("api_key_present").Default(false),
 		// credential_generation is advanced whenever a credential is replaced.
 		// Long-running refresh/revoke operations use it as a fencing token so an
 		// older operation cannot mutate a newly reconnected grant.
@@ -65,6 +70,9 @@ func (MCPConnection) Fields() []ent.Field {
 		field.Bool("revocation_succeeded").Optional(),
 	}
 }
+
+// Hooks derives safe credential metadata before enthistory observes a mutation.
+func (MCPConnection) Hooks() []ent.Hook { return []ent.Hook{connectorCredentialMetadataHook(false)} }
 
 // Edges of the MCPConnection.
 func (MCPConnection) Edges() []ent.Edge {

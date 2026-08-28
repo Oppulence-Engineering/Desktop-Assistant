@@ -53,12 +53,14 @@ Removing an old key before migration is deliberately not transparent. Versioned 
 
 ## Connector inventory, reseal, and retirement gate
 
-`cmd/connector-reencrypt` covers every connector encrypted database payload class,
-including active credentials, immutable histories, pending OAuth payloads, durable
-revocation work, legacy OAuth connection tables, and the shared Redis refresh
-result cache. Reports contain aggregate and per-source counts for each key ID and
-attribute legacy unversioned ciphertext to the key that successfully authenticated
-it. Plaintext and key material are never reported.
+`cmd/connector-reencrypt` covers every live connector encrypted database payload
+class, including active credentials, pending OAuth payloads, durable revocation
+and orphan-credential cleanup work, legacy OAuth connection tables, and the
+shared Redis refresh result cache. Immutable MCP/OAuth connection history is not
+inventory: those tables retain lifecycle metadata and credential-presence flags
+only. Reports contain aggregate and per-source counts for each key ID and
+attribute legacy unversioned ciphertext to the key that successfully
+authenticated it. Plaintext and key material are never reported.
 
 Run the command with the same `DATABASE_URL`, optional `REDIS_URL`, and encryption
 keyring configuration as the API:

@@ -53,6 +53,29 @@ type fakeCache struct {
 	values map[string][]byte
 }
 
+func TestConnectorSourcesContainOnlyLiveCredentialStores(t *testing.T) {
+	want := map[string]bool{
+		"mcp_connection.refresh_token":                   true,
+		"mcp_connection.api_key":                         true,
+		"oauth_pending.payload":                          true,
+		"connector_revocation_job.refresh_token":         true,
+		"connector_credential_cleanup_job.refresh_token": true,
+		"oauth_connection.refresh_token":                 true,
+	}
+	for _, source := range ConnectorSources {
+		if strings.Contains(source.Name, "history") || strings.Contains(source.Table, "histories") {
+			t.Fatalf("immutable history remains in live reseal inventory: %+v", source)
+		}
+		if !want[source.Name] {
+			t.Fatalf("unexpected reseal source: %+v", source)
+		}
+		delete(want, source.Name)
+	}
+	if len(want) != 0 {
+		t.Fatalf("missing live reseal sources: %v", want)
+	}
+}
+
 func (c *fakeCache) Scan(_ context.Context, cursor uint64, pattern string, limit int64) ([]string, uint64, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
