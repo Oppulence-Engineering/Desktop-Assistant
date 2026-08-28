@@ -20,6 +20,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -650,7 +651,7 @@ func (p *oauthRefreshFaultRuntime) markResponseSent() {
 
 func (p *oauthRefreshFaultRuntime) runPostAction() {
 	if p.plan.AfterResponseURL != "" {
-		req, err := http.NewRequest(http.MethodPost, p.plan.AfterResponseURL, nil)
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, p.plan.AfterResponseURL, nil)
 		if err == nil {
 			req.Header.Set("X-Fixture-Secret", p.plan.AfterResponseSecret)
 			client := &http.Client{Timeout: 5 * time.Second}

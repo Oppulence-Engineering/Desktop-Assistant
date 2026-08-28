@@ -6,6 +6,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -51,6 +52,13 @@ type stateResponse struct {
 }
 
 func main() {
+	if err := run(context.Background()); err != nil {
+		log.Printf("RFC 012 Redis fault proxy: %v", err)
+		os.Exit(1)
+	}
+}
+
+func run(ctx context.Context) error {
 	listenAddr := getenv("LISTEN_ADDR", "127.0.0.1:6380")
 	controlAddr := getenv("CONTROL_ADDR", "127.0.0.1:6381")
 	p := &proxy{
@@ -61,11 +69,16 @@ func main() {
 		observed:    make(map[string]int64),
 	}
 
-	ln, err := net.Listen("tcp", listenAddr)
+	var listenConfig net.ListenConfig
+	ln, err := listenConfig.Listen(ctx, "tcp", listenAddr)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	defer ln.Close()
+	defer func() {
+		if closeErr := ln.Close(); closeErr != nil && !errors.Is(closeErr, net.ErrClosed) {
+			log.Printf("close Redis proxy listener: %v", closeErr)
+		}
+	}()
 	go func() {
 		for {
 			conn, acceptErr := ln.Accept()
@@ -75,7 +88,7 @@ func main() {
 				}
 				return
 			}
-			go p.serve(conn)
+			go p.serve(ctx, conn)
 		}
 	}()
 
@@ -96,7 +109,10 @@ func main() {
 
 	log.Printf("RFC 012 Redis fault proxy listening on %s -> %s; control=%s", listenAddr, p.upstream, controlAddr)
 	server := &http.Server{Addr: controlAddr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
-	log.Fatal(server.ListenAndServe())
+	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
 }
 
 func (p *proxy) authorized(next http.HandlerFunc) http.HandlerFunc {
@@ -158,7 +174,7 @@ func (p *proxy) apply(req controlRequest) {
 	}
 }
 
-func (p *proxy) serve(client net.Conn) {
+func (p *proxy) serve(ctx context.Context, client net.Conn) {
 	p.mu.Lock()
 	available := p.available
 	p.mu.Unlock()
@@ -166,7 +182,8 @@ func (p *proxy) serve(client net.Conn) {
 		_ = client.Close()
 		return
 	}
-	upstream, err := net.DialTimeout("tcp", p.upstream, 2*time.Second)
+	dialer := net.Dialer{Timeout: 2 * time.Second}
+	upstream, err := dialer.DialContext(ctx, "tcp", p.upstream)
 	if err != nil {
 		_ = client.Close()
 		return

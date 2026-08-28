@@ -487,6 +487,8 @@ func TestRFC012FaultContract(t *testing.T) {
 	require.NoError(t, redisAdmin.Ping(t.Context()).Err())
 
 	c := &client{t: t, http: fixtureHTTPClient(t)}
+	installCredentialWorkerGate(t, db)
+	t.Cleanup(func() { removeCredentialWorkerGate(db) })
 
 	t.Run("Redis unavailable before lock fails without provider call", func(t *testing.T) {
 		resetFaults(t, c, faultSecret)
@@ -568,6 +570,8 @@ func TestRFC012FaultContract(t *testing.T) {
 		resetFaults(t, c, faultSecret)
 		connection := provisionFaultConnection(t, c, db, api, product, connector, "redis-after-response")
 		require.NoError(t, redisAdmin.FlushDB(t.Context()).Err())
+		setCredentialWorkerGate(t, db, true, "")
+		defer setCredentialWorkerGate(t, db, false, "")
 		configureOAuthFaults(t, c, faultSecret, map[string]any{
 			"reset":       true,
 			"revoke_fail": true,
@@ -586,13 +590,12 @@ func TestRFC012FaultContract(t *testing.T) {
 
 		var status, lastError string
 		var attempts int
-		require.NoError(t, db.QueryRow(`SELECT status,attempts,last_error_code FROM connector_credential_cleanup_jobs WHERE connection_id=$1`, connection.id).Scan(&status, &attempts, &lastError))
-		require.Equal(t, "pending", status)
-		require.Equal(t, 1, attempts)
-		require.Equal(t, "provider_revoke_unconfirmed", lastError)
+		require.Eventually(t, func() bool {
+			return db.QueryRow(`SELECT status,attempts,last_error_code FROM connector_credential_cleanup_jobs WHERE connection_id=$1`, connection.id).
+				Scan(&status, &attempts, &lastError) == nil && status == "pending" && attempts == 1 && lastError == "provider_revoke_unconfirmed"
+		}, 10*time.Second, 100*time.Millisecond, "direct compensation did not durably retain the failed cleanup job")
 		configureOAuthFaults(t, c, faultSecret, map[string]any{"revoke_fail": false})
-		_, err = db.Exec(`UPDATE connector_credential_cleanup_jobs SET next_attempt_at=now() WHERE connection_id=$1`, connection.id)
-		require.NoError(t, err)
+		releaseCleanupWorker(t, db, "rfc012-api-2", connection.id)
 		require.Eventually(t, func() bool {
 			var count int
 			_ = db.QueryRow(`SELECT count(*) FROM connector_credential_cleanup_jobs WHERE connection_id=$1`, connection.id).Scan(&count)
@@ -606,6 +609,8 @@ func TestRFC012FaultContract(t *testing.T) {
 		resetFaults(t, c, faultSecret)
 		connection := provisionFaultConnection(t, c, db, api, product, connector, "recovery-journal")
 		require.NoError(t, redisAdmin.FlushDB(t.Context()).Err())
+		setCredentialWorkerGate(t, db, true, "")
+		defer setCredentialWorkerGate(t, db, false, "")
 		installCleanupInsertFault(t, db)
 		t.Cleanup(func() { removeCleanupInsertFault(db) })
 		enableCleanupInsertFault(t, db)
@@ -617,18 +622,17 @@ func TestRFC012FaultContract(t *testing.T) {
 
 		var recoveryID, status, lastError string
 		var attempts int
-		require.NoError(t, db.QueryRow(`SELECT id::text,status,attempts,COALESCE(last_error_code,'') FROM connector_credential_recoveries WHERE owner_id=$1`, connection.id).Scan(&recoveryID, &status, &attempts, &lastError))
-		require.NotEmpty(t, recoveryID)
-		require.Equal(t, "pending", status)
-		require.Zero(t, attempts, "newly journaled recovery should not claim a worker attempt")
-		require.Empty(t, lastError, "provider failures before journal custody are not worker attempts")
+		require.Eventually(t, func() bool {
+			return db.QueryRow(`SELECT id::text,status,attempts,COALESCE(last_error_code,'') FROM connector_credential_recoveries WHERE owner_id=$1`, connection.id).
+				Scan(&recoveryID, &status, &attempts, &lastError) == nil && recoveryID != "" && status == "pending" && attempts == 0 && lastError == ""
+		}, 10*time.Second, 100*time.Millisecond, "newly journaled recovery was not retained before worker admission")
+		releaseRecoveryWorker(t, db, "rfc012-api-3", recoveryID)
 		require.Eventually(t, func() bool {
 			return db.QueryRow(`SELECT status,attempts,COALESCE(last_error_code,'') FROM connector_credential_recoveries WHERE id=$1`, recoveryID).
 				Scan(&status, &attempts, &lastError) == nil && status == "pending" && attempts >= 1 && lastError == "provider_revoke_unconfirmed"
 		}, 25*time.Second, 250*time.Millisecond, "production recovery worker did not retain the journal after provider revoke failure")
 		configureOAuthFaults(t, c, faultSecret, map[string]any{"revoke_fail": false})
-		_, err = db.Exec(`UPDATE connector_credential_recoveries SET next_attempt_at=now() WHERE id=$1`, recoveryID)
-		require.NoError(t, err)
+		releaseRecoveryWorker(t, db, "rfc012-api-1", recoveryID)
 		require.Eventually(t, func() bool {
 			var count int
 			_ = db.QueryRow(`SELECT count(*) FROM connector_credential_recoveries WHERE id=$1`, recoveryID).Scan(&count)
@@ -907,6 +911,83 @@ func installCleanupInsertFault(t *testing.T, db *sql.DB) {
 		CREATE TRIGGER rfc012_fail_cleanup_insert BEFORE INSERT ON connector_credential_cleanup_jobs
 		FOR EACH ROW EXECUTE FUNCTION rfc012_fail_cleanup_insert();`)
 	require.NoError(t, err)
+}
+
+func installCredentialWorkerGate(t *testing.T, db *sql.DB) {
+	t.Helper()
+	_, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS rfc012_credential_worker_gate(
+			id boolean PRIMARY KEY DEFAULT true CHECK (id),
+			enabled boolean NOT NULL,
+			allowed_application_name text NOT NULL
+		);
+		INSERT INTO rfc012_credential_worker_gate(id,enabled,allowed_application_name) VALUES(true,false,'')
+		ON CONFLICT(id) DO UPDATE SET enabled=false,allowed_application_name='';
+		CREATE OR REPLACE FUNCTION rfc012_gate_cleanup_worker() RETURNS trigger LANGUAGE plpgsql AS $$
+		DECLARE allowed text;
+		BEGIN
+			SELECT allowed_application_name INTO allowed FROM rfc012_credential_worker_gate WHERE id AND enabled;
+			IF FOUND AND OLD.status='pending' AND NEW.status='processing' AND OLD.next_attempt_at <= now()
+				AND current_setting('application_name',true) IS DISTINCT FROM allowed THEN
+				RETURN OLD;
+			END IF;
+			RETURN NEW;
+		END $$;
+		CREATE OR REPLACE FUNCTION rfc012_gate_recovery_worker() RETURNS trigger LANGUAGE plpgsql AS $$
+		DECLARE allowed text;
+		BEGIN
+			SELECT allowed_application_name INTO allowed FROM rfc012_credential_worker_gate WHERE id AND enabled;
+			IF FOUND AND OLD.status='pending' AND NEW.status='processing'
+				AND current_setting('application_name',true) IS DISTINCT FROM allowed THEN
+				RETURN OLD;
+			END IF;
+			RETURN NEW;
+		END $$;
+		DROP TRIGGER IF EXISTS rfc012_gate_cleanup_worker ON connector_credential_cleanup_jobs;
+		CREATE TRIGGER rfc012_gate_cleanup_worker BEFORE UPDATE ON connector_credential_cleanup_jobs
+		FOR EACH ROW EXECUTE FUNCTION rfc012_gate_cleanup_worker();
+		DROP TRIGGER IF EXISTS rfc012_gate_recovery_worker ON connector_credential_recoveries;
+		CREATE TRIGGER rfc012_gate_recovery_worker BEFORE UPDATE ON connector_credential_recoveries
+		FOR EACH ROW EXECUTE FUNCTION rfc012_gate_recovery_worker();`)
+	require.NoError(t, err)
+}
+
+func setCredentialWorkerGate(t *testing.T, db *sql.DB, enabled bool, applicationName string) {
+	t.Helper()
+	_, err := db.Exec(`UPDATE rfc012_credential_worker_gate SET enabled=$1,allowed_application_name=$2 WHERE id`, enabled, applicationName)
+	require.NoError(t, err)
+}
+
+func releaseCleanupWorker(t *testing.T, db *sql.DB, applicationName, connectionID string) {
+	t.Helper()
+	tx, err := db.BeginTx(t.Context(), nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = tx.Rollback() })
+	_, err = tx.Exec(`UPDATE rfc012_credential_worker_gate SET enabled=true,allowed_application_name=$1 WHERE id`, applicationName)
+	require.NoError(t, err)
+	_, err = tx.Exec(`UPDATE connector_credential_cleanup_jobs SET next_attempt_at=now() WHERE connection_id=$1`, connectionID)
+	require.NoError(t, err)
+	require.NoError(t, tx.Commit())
+}
+
+func releaseRecoveryWorker(t *testing.T, db *sql.DB, applicationName, recoveryID string) {
+	t.Helper()
+	tx, err := db.BeginTx(t.Context(), nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = tx.Rollback() })
+	_, err = tx.Exec(`UPDATE rfc012_credential_worker_gate SET enabled=true,allowed_application_name=$1 WHERE id`, applicationName)
+	require.NoError(t, err)
+	_, err = tx.Exec(`UPDATE connector_credential_recoveries SET next_attempt_at=now() WHERE id=$1`, recoveryID)
+	require.NoError(t, err)
+	require.NoError(t, tx.Commit())
+}
+
+func removeCredentialWorkerGate(db *sql.DB) {
+	_, _ = db.Exec(`DROP TRIGGER IF EXISTS rfc012_gate_cleanup_worker ON connector_credential_cleanup_jobs;
+		DROP TRIGGER IF EXISTS rfc012_gate_recovery_worker ON connector_credential_recoveries;
+		DROP FUNCTION IF EXISTS rfc012_gate_cleanup_worker();
+		DROP FUNCTION IF EXISTS rfc012_gate_recovery_worker();
+		DROP TABLE IF EXISTS rfc012_credential_worker_gate`)
 }
 
 func enableCleanupInsertFault(t *testing.T, db *sql.DB) {

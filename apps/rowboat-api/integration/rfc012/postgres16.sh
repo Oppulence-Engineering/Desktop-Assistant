@@ -163,11 +163,11 @@ ADDR="127.0.0.1:${OIDC_PORT}" ISSUER="$OIDC_URL" AUDIENCE=rowboat-api HYDRA_CONS
 wait_http "$OIDC_URL/.well-known/openid-configuration"
 
 start_api() {
-  local port=$1 metrics=$2 log=$3 signing_key=$4 key_id=$5
+  local port=$1 metrics=$2 log=$3 signing_key=$4 key_id=$5 application_name=$6
   env \
   ENVIRONMENT=development \
   HTTP_ADDR="127.0.0.1:${port}" METRICS_ADDR="127.0.0.1:${metrics}" GRPC_ADDR= \
-  DATABASE_URL="$DATABASE_URL" AUTO_MIGRATE=false \
+	  DATABASE_URL="${DATABASE_URL}&application_name=${application_name}" AUTO_MIGRATE=false \
   REDIS_URL="$REDIS_URL" \
   SSL_CERT_FILE="$SCRATCH/fixture-tls.crt" \
   DB_ENCRYPTION_KEY='rfc012-local-column-encryption-key' \
@@ -184,9 +184,9 @@ start_api() {
   "$SCRATCH/bin/rowboat-api" >"$log" 2>&1 & PIDS+=("$!")
 }
 echo 'JCODE_CHECKPOINT {"message":"Starting three real rowboat-api instances with migrated shared PostgreSQL"}'
-start_api "$API_PORT" "$METRICS_PORT" "$SCRATCH/api-1.log" "$BROKER_KEY" rfc012-broker-key
-start_api "$API2_PORT" "$METRICS2_PORT" "$SCRATCH/api-2.log" "$BROKER_NEXT_KEY" rfc012-broker-next
-start_api "$API3_PORT" "$METRICS3_PORT" "$SCRATCH/api-crash.log" "$BROKER_KEY" rfc012-broker-key
+start_api "$API_PORT" "$METRICS_PORT" "$SCRATCH/api-1.log" "$BROKER_KEY" rfc012-broker-key rfc012-api-1
+start_api "$API2_PORT" "$METRICS2_PORT" "$SCRATCH/api-2.log" "$BROKER_NEXT_KEY" rfc012-broker-next rfc012-api-2
+start_api "$API3_PORT" "$METRICS3_PORT" "$SCRATCH/api-crash.log" "$BROKER_KEY" rfc012-broker-key rfc012-api-3
 API3_PID="${PIDS[${#PIDS[@]}-1]}"
 wait_http "$API_URL/healthz"
 wait_http "$API2_URL/healthz"
@@ -241,8 +241,16 @@ env \
   RFC012_BROKER_PRIVATE_KEY_PEM="$BROKER_KEY" RFC012_BROKER_TOKEN_ISSUER="$API_URL" RFC012_BROKER_TOKEN_KEY_ID=rfc012-broker-key \
   SSL_CERT_FILE="$SCRATCH/fixture-tls.crt" \
   RFC012_TLS_CA="$SCRATCH/fixture-tls.crt" \
-  DATABASE_URL="$DATABASE_URL" \
-	  go test -tags=rfc012acceptance ./integration -run "${RFC012_TEST_RUN:-TestRFC012(Public|Fault)Contract}" -count=1 -v | tee "$SCRATCH/acceptance.log"
+	  DATABASE_URL="$DATABASE_URL" \
+	  bash -c '
+	    set -Eeuo pipefail
+	    if [ -n "${RFC012_TEST_RUN:-}" ]; then
+	      go test -tags=rfc012acceptance ./integration -run "$RFC012_TEST_RUN" -count=1 -v
+	    else
+	      go test -tags=rfc012acceptance ./integration -run "^TestRFC012PublicContract$" -count=1 -v
+	      go test -tags=rfc012acceptance ./integration -run "^TestRFC012FaultContract$" -count=1 -v
+	    fi
+	  ' | tee "$SCRATCH/acceptance.log"
 
 echo "RFC012_ACCEPTANCE_ARTIFACTS=$SCRATCH"
 trap - EXIT INT TERM
