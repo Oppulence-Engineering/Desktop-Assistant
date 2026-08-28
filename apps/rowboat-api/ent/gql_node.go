@@ -28,7 +28,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -184,11 +183,6 @@ var commitmenteventImplementors = []string{"CommitmentEvent", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*CommitmentEvent) IsNode() {}
-
-var connectorrevocationjobImplementors = []string{"ConnectorRevocationJob", "Node"}
-
-// IsNode implements the Node interface check for GQLGen.
-func (*ConnectorRevocationJob) IsNode() {}
 
 var conversationintelligenceartifactImplementors = []string{"ConversationIntelligenceArtifact", "Node"}
 
@@ -659,15 +653,6 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(commitmentevent.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, commitmenteventImplementors...); err != nil {
-				return nil, err
-			}
-		}
-		return query.Only(ctx)
-	case connectorrevocationjob.Table:
-		query := c.ConnectorRevocationJob.Query().
-			Where(connectorrevocationjob.ID(id))
-		if fc := graphql.GetFieldContext(ctx); fc != nil {
-			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, connectorrevocationjobImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -1476,22 +1461,6 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.CommitmentEvent.Query().
 			Where(commitmentevent.IDIn(ids...))
 		query, err := query.CollectFields(ctx, commitmenteventImplementors...)
-		if err != nil {
-			return nil, err
-		}
-		nodes, err := query.All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for _, node := range nodes {
-			for _, noder := range idmap[node.ID] {
-				*noder = node
-			}
-		}
-	case connectorrevocationjob.Table:
-		query := c.ConnectorRevocationJob.Query().
-			Where(connectorrevocationjob.IDIn(ids...))
-		query, err := query.CollectFields(ctx, connectorrevocationjobImplementors...)
 		if err != nil {
 			return nil, err
 		}

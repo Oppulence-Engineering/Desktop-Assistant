@@ -583,312 +583,6 @@ func (u *ConnectorAuditEventUpsert) UpdateUpdatedAt() *ConnectorAuditEventUpsert
 	return u
 }
 
-// SetEventType sets the "event_type" field.
-func (u *ConnectorAuditEventUpsert) SetEventType(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldEventType, v)
-	return u
-}
-
-// UpdateEventType sets the "event_type" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateEventType() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldEventType)
-	return u
-}
-
-// SetEventID sets the "event_id" field.
-func (u *ConnectorAuditEventUpsert) SetEventID(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldEventID, v)
-	return u
-}
-
-// UpdateEventID sets the "event_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateEventID() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldEventID)
-	return u
-}
-
-// ClearEventID clears the value of the "event_id" field.
-func (u *ConnectorAuditEventUpsert) ClearEventID() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldEventID)
-	return u
-}
-
-// SetConnector sets the "connector" field.
-func (u *ConnectorAuditEventUpsert) SetConnector(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldConnector, v)
-	return u
-}
-
-// UpdateConnector sets the "connector" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateConnector() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldConnector)
-	return u
-}
-
-// SetConnectionID sets the "connection_id" field.
-func (u *ConnectorAuditEventUpsert) SetConnectionID(v uuid.UUID) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldConnectionID, v)
-	return u
-}
-
-// UpdateConnectionID sets the "connection_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateConnectionID() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldConnectionID)
-	return u
-}
-
-// ClearConnectionID clears the value of the "connection_id" field.
-func (u *ConnectorAuditEventUpsert) ClearConnectionID() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldConnectionID)
-	return u
-}
-
-// SetOwnerWorkosUserID sets the "owner_workos_user_id" field.
-func (u *ConnectorAuditEventUpsert) SetOwnerWorkosUserID(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldOwnerWorkosUserID, v)
-	return u
-}
-
-// UpdateOwnerWorkosUserID sets the "owner_workos_user_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateOwnerWorkosUserID() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldOwnerWorkosUserID)
-	return u
-}
-
-// SetOrgID sets the "org_id" field.
-func (u *ConnectorAuditEventUpsert) SetOrgID(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldOrgID, v)
-	return u
-}
-
-// UpdateOrgID sets the "org_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateOrgID() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldOrgID)
-	return u
-}
-
-// ClearOrgID clears the value of the "org_id" field.
-func (u *ConnectorAuditEventUpsert) ClearOrgID() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldOrgID)
-	return u
-}
-
-// SetAudience sets the "audience" field.
-func (u *ConnectorAuditEventUpsert) SetAudience(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldAudience, v)
-	return u
-}
-
-// UpdateAudience sets the "audience" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateAudience() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldAudience)
-	return u
-}
-
-// ClearAudience clears the value of the "audience" field.
-func (u *ConnectorAuditEventUpsert) ClearAudience() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldAudience)
-	return u
-}
-
-// SetRequestedScopes sets the "requested_scopes" field.
-func (u *ConnectorAuditEventUpsert) SetRequestedScopes(v []string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldRequestedScopes, v)
-	return u
-}
-
-// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateRequestedScopes() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldRequestedScopes)
-	return u
-}
-
-// ClearRequestedScopes clears the value of the "requested_scopes" field.
-func (u *ConnectorAuditEventUpsert) ClearRequestedScopes() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldRequestedScopes)
-	return u
-}
-
-// SetGrantedScopes sets the "granted_scopes" field.
-func (u *ConnectorAuditEventUpsert) SetGrantedScopes(v []string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldGrantedScopes, v)
-	return u
-}
-
-// UpdateGrantedScopes sets the "granted_scopes" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateGrantedScopes() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldGrantedScopes)
-	return u
-}
-
-// ClearGrantedScopes clears the value of the "granted_scopes" field.
-func (u *ConnectorAuditEventUpsert) ClearGrantedScopes() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldGrantedScopes)
-	return u
-}
-
-// SetActorKind sets the "actor_kind" field.
-func (u *ConnectorAuditEventUpsert) SetActorKind(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldActorKind, v)
-	return u
-}
-
-// UpdateActorKind sets the "actor_kind" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateActorKind() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldActorKind)
-	return u
-}
-
-// ClearActorKind clears the value of the "actor_kind" field.
-func (u *ConnectorAuditEventUpsert) ClearActorKind() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldActorKind)
-	return u
-}
-
-// SetReason sets the "reason" field.
-func (u *ConnectorAuditEventUpsert) SetReason(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldReason, v)
-	return u
-}
-
-// UpdateReason sets the "reason" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateReason() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldReason)
-	return u
-}
-
-// ClearReason clears the value of the "reason" field.
-func (u *ConnectorAuditEventUpsert) ClearReason() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldReason)
-	return u
-}
-
-// SetMetadataJSON sets the "metadata_json" field.
-func (u *ConnectorAuditEventUpsert) SetMetadataJSON(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldMetadataJSON, v)
-	return u
-}
-
-// UpdateMetadataJSON sets the "metadata_json" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateMetadataJSON() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldMetadataJSON)
-	return u
-}
-
-// ClearMetadataJSON clears the value of the "metadata_json" field.
-func (u *ConnectorAuditEventUpsert) ClearMetadataJSON() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldMetadataJSON)
-	return u
-}
-
-// SetConsentSessionID sets the "consent_session_id" field.
-func (u *ConnectorAuditEventUpsert) SetConsentSessionID(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldConsentSessionID, v)
-	return u
-}
-
-// UpdateConsentSessionID sets the "consent_session_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateConsentSessionID() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldConsentSessionID)
-	return u
-}
-
-// ClearConsentSessionID clears the value of the "consent_session_id" field.
-func (u *ConnectorAuditEventUpsert) ClearConsentSessionID() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldConsentSessionID)
-	return u
-}
-
-// SetContextRequestID sets the "context_request_id" field.
-func (u *ConnectorAuditEventUpsert) SetContextRequestID(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldContextRequestID, v)
-	return u
-}
-
-// UpdateContextRequestID sets the "context_request_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateContextRequestID() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldContextRequestID)
-	return u
-}
-
-// ClearContextRequestID clears the value of the "context_request_id" field.
-func (u *ConnectorAuditEventUpsert) ClearContextRequestID() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldContextRequestID)
-	return u
-}
-
-// SetChallenge sets the "challenge" field.
-func (u *ConnectorAuditEventUpsert) SetChallenge(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldChallenge, v)
-	return u
-}
-
-// UpdateChallenge sets the "challenge" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateChallenge() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldChallenge)
-	return u
-}
-
-// ClearChallenge clears the value of the "challenge" field.
-func (u *ConnectorAuditEventUpsert) ClearChallenge() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldChallenge)
-	return u
-}
-
-// SetClientID sets the "client_id" field.
-func (u *ConnectorAuditEventUpsert) SetClientID(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldClientID, v)
-	return u
-}
-
-// UpdateClientID sets the "client_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateClientID() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldClientID)
-	return u
-}
-
-// ClearClientID clears the value of the "client_id" field.
-func (u *ConnectorAuditEventUpsert) ClearClientID() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldClientID)
-	return u
-}
-
-// SetResult sets the "result" field.
-func (u *ConnectorAuditEventUpsert) SetResult(v string) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldResult, v)
-	return u
-}
-
-// UpdateResult sets the "result" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateResult() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldResult)
-	return u
-}
-
-// ClearResult clears the value of the "result" field.
-func (u *ConnectorAuditEventUpsert) ClearResult() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldResult)
-	return u
-}
-
-// SetOccurredAt sets the "occurred_at" field.
-func (u *ConnectorAuditEventUpsert) SetOccurredAt(v time.Time) *ConnectorAuditEventUpsert {
-	u.Set(connectorauditevent.FieldOccurredAt, v)
-	return u
-}
-
-// UpdateOccurredAt sets the "occurred_at" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsert) UpdateOccurredAt() *ConnectorAuditEventUpsert {
-	u.SetExcluded(connectorauditevent.FieldOccurredAt)
-	return u
-}
-
-// ClearOccurredAt clears the value of the "occurred_at" field.
-func (u *ConnectorAuditEventUpsert) ClearOccurredAt() *ConnectorAuditEventUpsert {
-	u.SetNull(connectorauditevent.FieldOccurredAt)
-	return u
-}
-
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -908,6 +602,60 @@ func (u *ConnectorAuditEventUpsertOne) UpdateNewValues() *ConnectorAuditEventUps
 		}
 		if _, exists := u.create.mutation.CreatedAt(); exists {
 			s.SetIgnore(connectorauditevent.FieldCreatedAt)
+		}
+		if _, exists := u.create.mutation.EventType(); exists {
+			s.SetIgnore(connectorauditevent.FieldEventType)
+		}
+		if _, exists := u.create.mutation.EventID(); exists {
+			s.SetIgnore(connectorauditevent.FieldEventID)
+		}
+		if _, exists := u.create.mutation.Connector(); exists {
+			s.SetIgnore(connectorauditevent.FieldConnector)
+		}
+		if _, exists := u.create.mutation.ConnectionID(); exists {
+			s.SetIgnore(connectorauditevent.FieldConnectionID)
+		}
+		if _, exists := u.create.mutation.OwnerWorkosUserID(); exists {
+			s.SetIgnore(connectorauditevent.FieldOwnerWorkosUserID)
+		}
+		if _, exists := u.create.mutation.OrgID(); exists {
+			s.SetIgnore(connectorauditevent.FieldOrgID)
+		}
+		if _, exists := u.create.mutation.Audience(); exists {
+			s.SetIgnore(connectorauditevent.FieldAudience)
+		}
+		if _, exists := u.create.mutation.RequestedScopes(); exists {
+			s.SetIgnore(connectorauditevent.FieldRequestedScopes)
+		}
+		if _, exists := u.create.mutation.GrantedScopes(); exists {
+			s.SetIgnore(connectorauditevent.FieldGrantedScopes)
+		}
+		if _, exists := u.create.mutation.ActorKind(); exists {
+			s.SetIgnore(connectorauditevent.FieldActorKind)
+		}
+		if _, exists := u.create.mutation.Reason(); exists {
+			s.SetIgnore(connectorauditevent.FieldReason)
+		}
+		if _, exists := u.create.mutation.MetadataJSON(); exists {
+			s.SetIgnore(connectorauditevent.FieldMetadataJSON)
+		}
+		if _, exists := u.create.mutation.ConsentSessionID(); exists {
+			s.SetIgnore(connectorauditevent.FieldConsentSessionID)
+		}
+		if _, exists := u.create.mutation.ContextRequestID(); exists {
+			s.SetIgnore(connectorauditevent.FieldContextRequestID)
+		}
+		if _, exists := u.create.mutation.Challenge(); exists {
+			s.SetIgnore(connectorauditevent.FieldChallenge)
+		}
+		if _, exists := u.create.mutation.ClientID(); exists {
+			s.SetIgnore(connectorauditevent.FieldClientID)
+		}
+		if _, exists := u.create.mutation.Result(); exists {
+			s.SetIgnore(connectorauditevent.FieldResult)
+		}
+		if _, exists := u.create.mutation.OccurredAt(); exists {
+			s.SetIgnore(connectorauditevent.FieldOccurredAt)
 		}
 	}))
 	return u
@@ -951,363 +699,6 @@ func (u *ConnectorAuditEventUpsertOne) SetUpdatedAt(v time.Time) *ConnectorAudit
 func (u *ConnectorAuditEventUpsertOne) UpdateUpdatedAt() *ConnectorAuditEventUpsertOne {
 	return u.Update(func(s *ConnectorAuditEventUpsert) {
 		s.UpdateUpdatedAt()
-	})
-}
-
-// SetEventType sets the "event_type" field.
-func (u *ConnectorAuditEventUpsertOne) SetEventType(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetEventType(v)
-	})
-}
-
-// UpdateEventType sets the "event_type" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateEventType() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateEventType()
-	})
-}
-
-// SetEventID sets the "event_id" field.
-func (u *ConnectorAuditEventUpsertOne) SetEventID(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetEventID(v)
-	})
-}
-
-// UpdateEventID sets the "event_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateEventID() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateEventID()
-	})
-}
-
-// ClearEventID clears the value of the "event_id" field.
-func (u *ConnectorAuditEventUpsertOne) ClearEventID() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearEventID()
-	})
-}
-
-// SetConnector sets the "connector" field.
-func (u *ConnectorAuditEventUpsertOne) SetConnector(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetConnector(v)
-	})
-}
-
-// UpdateConnector sets the "connector" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateConnector() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateConnector()
-	})
-}
-
-// SetConnectionID sets the "connection_id" field.
-func (u *ConnectorAuditEventUpsertOne) SetConnectionID(v uuid.UUID) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetConnectionID(v)
-	})
-}
-
-// UpdateConnectionID sets the "connection_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateConnectionID() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateConnectionID()
-	})
-}
-
-// ClearConnectionID clears the value of the "connection_id" field.
-func (u *ConnectorAuditEventUpsertOne) ClearConnectionID() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearConnectionID()
-	})
-}
-
-// SetOwnerWorkosUserID sets the "owner_workos_user_id" field.
-func (u *ConnectorAuditEventUpsertOne) SetOwnerWorkosUserID(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetOwnerWorkosUserID(v)
-	})
-}
-
-// UpdateOwnerWorkosUserID sets the "owner_workos_user_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateOwnerWorkosUserID() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateOwnerWorkosUserID()
-	})
-}
-
-// SetOrgID sets the "org_id" field.
-func (u *ConnectorAuditEventUpsertOne) SetOrgID(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetOrgID(v)
-	})
-}
-
-// UpdateOrgID sets the "org_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateOrgID() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateOrgID()
-	})
-}
-
-// ClearOrgID clears the value of the "org_id" field.
-func (u *ConnectorAuditEventUpsertOne) ClearOrgID() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearOrgID()
-	})
-}
-
-// SetAudience sets the "audience" field.
-func (u *ConnectorAuditEventUpsertOne) SetAudience(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetAudience(v)
-	})
-}
-
-// UpdateAudience sets the "audience" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateAudience() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateAudience()
-	})
-}
-
-// ClearAudience clears the value of the "audience" field.
-func (u *ConnectorAuditEventUpsertOne) ClearAudience() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearAudience()
-	})
-}
-
-// SetRequestedScopes sets the "requested_scopes" field.
-func (u *ConnectorAuditEventUpsertOne) SetRequestedScopes(v []string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetRequestedScopes(v)
-	})
-}
-
-// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateRequestedScopes() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateRequestedScopes()
-	})
-}
-
-// ClearRequestedScopes clears the value of the "requested_scopes" field.
-func (u *ConnectorAuditEventUpsertOne) ClearRequestedScopes() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearRequestedScopes()
-	})
-}
-
-// SetGrantedScopes sets the "granted_scopes" field.
-func (u *ConnectorAuditEventUpsertOne) SetGrantedScopes(v []string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetGrantedScopes(v)
-	})
-}
-
-// UpdateGrantedScopes sets the "granted_scopes" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateGrantedScopes() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateGrantedScopes()
-	})
-}
-
-// ClearGrantedScopes clears the value of the "granted_scopes" field.
-func (u *ConnectorAuditEventUpsertOne) ClearGrantedScopes() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearGrantedScopes()
-	})
-}
-
-// SetActorKind sets the "actor_kind" field.
-func (u *ConnectorAuditEventUpsertOne) SetActorKind(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetActorKind(v)
-	})
-}
-
-// UpdateActorKind sets the "actor_kind" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateActorKind() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateActorKind()
-	})
-}
-
-// ClearActorKind clears the value of the "actor_kind" field.
-func (u *ConnectorAuditEventUpsertOne) ClearActorKind() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearActorKind()
-	})
-}
-
-// SetReason sets the "reason" field.
-func (u *ConnectorAuditEventUpsertOne) SetReason(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetReason(v)
-	})
-}
-
-// UpdateReason sets the "reason" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateReason() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateReason()
-	})
-}
-
-// ClearReason clears the value of the "reason" field.
-func (u *ConnectorAuditEventUpsertOne) ClearReason() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearReason()
-	})
-}
-
-// SetMetadataJSON sets the "metadata_json" field.
-func (u *ConnectorAuditEventUpsertOne) SetMetadataJSON(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetMetadataJSON(v)
-	})
-}
-
-// UpdateMetadataJSON sets the "metadata_json" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateMetadataJSON() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateMetadataJSON()
-	})
-}
-
-// ClearMetadataJSON clears the value of the "metadata_json" field.
-func (u *ConnectorAuditEventUpsertOne) ClearMetadataJSON() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearMetadataJSON()
-	})
-}
-
-// SetConsentSessionID sets the "consent_session_id" field.
-func (u *ConnectorAuditEventUpsertOne) SetConsentSessionID(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetConsentSessionID(v)
-	})
-}
-
-// UpdateConsentSessionID sets the "consent_session_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateConsentSessionID() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateConsentSessionID()
-	})
-}
-
-// ClearConsentSessionID clears the value of the "consent_session_id" field.
-func (u *ConnectorAuditEventUpsertOne) ClearConsentSessionID() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearConsentSessionID()
-	})
-}
-
-// SetContextRequestID sets the "context_request_id" field.
-func (u *ConnectorAuditEventUpsertOne) SetContextRequestID(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetContextRequestID(v)
-	})
-}
-
-// UpdateContextRequestID sets the "context_request_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateContextRequestID() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateContextRequestID()
-	})
-}
-
-// ClearContextRequestID clears the value of the "context_request_id" field.
-func (u *ConnectorAuditEventUpsertOne) ClearContextRequestID() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearContextRequestID()
-	})
-}
-
-// SetChallenge sets the "challenge" field.
-func (u *ConnectorAuditEventUpsertOne) SetChallenge(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetChallenge(v)
-	})
-}
-
-// UpdateChallenge sets the "challenge" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateChallenge() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateChallenge()
-	})
-}
-
-// ClearChallenge clears the value of the "challenge" field.
-func (u *ConnectorAuditEventUpsertOne) ClearChallenge() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearChallenge()
-	})
-}
-
-// SetClientID sets the "client_id" field.
-func (u *ConnectorAuditEventUpsertOne) SetClientID(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetClientID(v)
-	})
-}
-
-// UpdateClientID sets the "client_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateClientID() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateClientID()
-	})
-}
-
-// ClearClientID clears the value of the "client_id" field.
-func (u *ConnectorAuditEventUpsertOne) ClearClientID() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearClientID()
-	})
-}
-
-// SetResult sets the "result" field.
-func (u *ConnectorAuditEventUpsertOne) SetResult(v string) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetResult(v)
-	})
-}
-
-// UpdateResult sets the "result" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateResult() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateResult()
-	})
-}
-
-// ClearResult clears the value of the "result" field.
-func (u *ConnectorAuditEventUpsertOne) ClearResult() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearResult()
-	})
-}
-
-// SetOccurredAt sets the "occurred_at" field.
-func (u *ConnectorAuditEventUpsertOne) SetOccurredAt(v time.Time) *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetOccurredAt(v)
-	})
-}
-
-// UpdateOccurredAt sets the "occurred_at" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertOne) UpdateOccurredAt() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateOccurredAt()
-	})
-}
-
-// ClearOccurredAt clears the value of the "occurred_at" field.
-func (u *ConnectorAuditEventUpsertOne) ClearOccurredAt() *ConnectorAuditEventUpsertOne {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearOccurredAt()
 	})
 }
 
@@ -1497,6 +888,60 @@ func (u *ConnectorAuditEventUpsertBulk) UpdateNewValues() *ConnectorAuditEventUp
 			if _, exists := b.mutation.CreatedAt(); exists {
 				s.SetIgnore(connectorauditevent.FieldCreatedAt)
 			}
+			if _, exists := b.mutation.EventType(); exists {
+				s.SetIgnore(connectorauditevent.FieldEventType)
+			}
+			if _, exists := b.mutation.EventID(); exists {
+				s.SetIgnore(connectorauditevent.FieldEventID)
+			}
+			if _, exists := b.mutation.Connector(); exists {
+				s.SetIgnore(connectorauditevent.FieldConnector)
+			}
+			if _, exists := b.mutation.ConnectionID(); exists {
+				s.SetIgnore(connectorauditevent.FieldConnectionID)
+			}
+			if _, exists := b.mutation.OwnerWorkosUserID(); exists {
+				s.SetIgnore(connectorauditevent.FieldOwnerWorkosUserID)
+			}
+			if _, exists := b.mutation.OrgID(); exists {
+				s.SetIgnore(connectorauditevent.FieldOrgID)
+			}
+			if _, exists := b.mutation.Audience(); exists {
+				s.SetIgnore(connectorauditevent.FieldAudience)
+			}
+			if _, exists := b.mutation.RequestedScopes(); exists {
+				s.SetIgnore(connectorauditevent.FieldRequestedScopes)
+			}
+			if _, exists := b.mutation.GrantedScopes(); exists {
+				s.SetIgnore(connectorauditevent.FieldGrantedScopes)
+			}
+			if _, exists := b.mutation.ActorKind(); exists {
+				s.SetIgnore(connectorauditevent.FieldActorKind)
+			}
+			if _, exists := b.mutation.Reason(); exists {
+				s.SetIgnore(connectorauditevent.FieldReason)
+			}
+			if _, exists := b.mutation.MetadataJSON(); exists {
+				s.SetIgnore(connectorauditevent.FieldMetadataJSON)
+			}
+			if _, exists := b.mutation.ConsentSessionID(); exists {
+				s.SetIgnore(connectorauditevent.FieldConsentSessionID)
+			}
+			if _, exists := b.mutation.ContextRequestID(); exists {
+				s.SetIgnore(connectorauditevent.FieldContextRequestID)
+			}
+			if _, exists := b.mutation.Challenge(); exists {
+				s.SetIgnore(connectorauditevent.FieldChallenge)
+			}
+			if _, exists := b.mutation.ClientID(); exists {
+				s.SetIgnore(connectorauditevent.FieldClientID)
+			}
+			if _, exists := b.mutation.Result(); exists {
+				s.SetIgnore(connectorauditevent.FieldResult)
+			}
+			if _, exists := b.mutation.OccurredAt(); exists {
+				s.SetIgnore(connectorauditevent.FieldOccurredAt)
+			}
 		}
 	}))
 	return u
@@ -1540,363 +985,6 @@ func (u *ConnectorAuditEventUpsertBulk) SetUpdatedAt(v time.Time) *ConnectorAudi
 func (u *ConnectorAuditEventUpsertBulk) UpdateUpdatedAt() *ConnectorAuditEventUpsertBulk {
 	return u.Update(func(s *ConnectorAuditEventUpsert) {
 		s.UpdateUpdatedAt()
-	})
-}
-
-// SetEventType sets the "event_type" field.
-func (u *ConnectorAuditEventUpsertBulk) SetEventType(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetEventType(v)
-	})
-}
-
-// UpdateEventType sets the "event_type" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateEventType() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateEventType()
-	})
-}
-
-// SetEventID sets the "event_id" field.
-func (u *ConnectorAuditEventUpsertBulk) SetEventID(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetEventID(v)
-	})
-}
-
-// UpdateEventID sets the "event_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateEventID() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateEventID()
-	})
-}
-
-// ClearEventID clears the value of the "event_id" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearEventID() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearEventID()
-	})
-}
-
-// SetConnector sets the "connector" field.
-func (u *ConnectorAuditEventUpsertBulk) SetConnector(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetConnector(v)
-	})
-}
-
-// UpdateConnector sets the "connector" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateConnector() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateConnector()
-	})
-}
-
-// SetConnectionID sets the "connection_id" field.
-func (u *ConnectorAuditEventUpsertBulk) SetConnectionID(v uuid.UUID) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetConnectionID(v)
-	})
-}
-
-// UpdateConnectionID sets the "connection_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateConnectionID() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateConnectionID()
-	})
-}
-
-// ClearConnectionID clears the value of the "connection_id" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearConnectionID() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearConnectionID()
-	})
-}
-
-// SetOwnerWorkosUserID sets the "owner_workos_user_id" field.
-func (u *ConnectorAuditEventUpsertBulk) SetOwnerWorkosUserID(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetOwnerWorkosUserID(v)
-	})
-}
-
-// UpdateOwnerWorkosUserID sets the "owner_workos_user_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateOwnerWorkosUserID() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateOwnerWorkosUserID()
-	})
-}
-
-// SetOrgID sets the "org_id" field.
-func (u *ConnectorAuditEventUpsertBulk) SetOrgID(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetOrgID(v)
-	})
-}
-
-// UpdateOrgID sets the "org_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateOrgID() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateOrgID()
-	})
-}
-
-// ClearOrgID clears the value of the "org_id" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearOrgID() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearOrgID()
-	})
-}
-
-// SetAudience sets the "audience" field.
-func (u *ConnectorAuditEventUpsertBulk) SetAudience(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetAudience(v)
-	})
-}
-
-// UpdateAudience sets the "audience" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateAudience() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateAudience()
-	})
-}
-
-// ClearAudience clears the value of the "audience" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearAudience() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearAudience()
-	})
-}
-
-// SetRequestedScopes sets the "requested_scopes" field.
-func (u *ConnectorAuditEventUpsertBulk) SetRequestedScopes(v []string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetRequestedScopes(v)
-	})
-}
-
-// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateRequestedScopes() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateRequestedScopes()
-	})
-}
-
-// ClearRequestedScopes clears the value of the "requested_scopes" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearRequestedScopes() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearRequestedScopes()
-	})
-}
-
-// SetGrantedScopes sets the "granted_scopes" field.
-func (u *ConnectorAuditEventUpsertBulk) SetGrantedScopes(v []string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetGrantedScopes(v)
-	})
-}
-
-// UpdateGrantedScopes sets the "granted_scopes" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateGrantedScopes() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateGrantedScopes()
-	})
-}
-
-// ClearGrantedScopes clears the value of the "granted_scopes" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearGrantedScopes() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearGrantedScopes()
-	})
-}
-
-// SetActorKind sets the "actor_kind" field.
-func (u *ConnectorAuditEventUpsertBulk) SetActorKind(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetActorKind(v)
-	})
-}
-
-// UpdateActorKind sets the "actor_kind" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateActorKind() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateActorKind()
-	})
-}
-
-// ClearActorKind clears the value of the "actor_kind" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearActorKind() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearActorKind()
-	})
-}
-
-// SetReason sets the "reason" field.
-func (u *ConnectorAuditEventUpsertBulk) SetReason(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetReason(v)
-	})
-}
-
-// UpdateReason sets the "reason" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateReason() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateReason()
-	})
-}
-
-// ClearReason clears the value of the "reason" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearReason() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearReason()
-	})
-}
-
-// SetMetadataJSON sets the "metadata_json" field.
-func (u *ConnectorAuditEventUpsertBulk) SetMetadataJSON(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetMetadataJSON(v)
-	})
-}
-
-// UpdateMetadataJSON sets the "metadata_json" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateMetadataJSON() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateMetadataJSON()
-	})
-}
-
-// ClearMetadataJSON clears the value of the "metadata_json" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearMetadataJSON() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearMetadataJSON()
-	})
-}
-
-// SetConsentSessionID sets the "consent_session_id" field.
-func (u *ConnectorAuditEventUpsertBulk) SetConsentSessionID(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetConsentSessionID(v)
-	})
-}
-
-// UpdateConsentSessionID sets the "consent_session_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateConsentSessionID() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateConsentSessionID()
-	})
-}
-
-// ClearConsentSessionID clears the value of the "consent_session_id" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearConsentSessionID() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearConsentSessionID()
-	})
-}
-
-// SetContextRequestID sets the "context_request_id" field.
-func (u *ConnectorAuditEventUpsertBulk) SetContextRequestID(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetContextRequestID(v)
-	})
-}
-
-// UpdateContextRequestID sets the "context_request_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateContextRequestID() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateContextRequestID()
-	})
-}
-
-// ClearContextRequestID clears the value of the "context_request_id" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearContextRequestID() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearContextRequestID()
-	})
-}
-
-// SetChallenge sets the "challenge" field.
-func (u *ConnectorAuditEventUpsertBulk) SetChallenge(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetChallenge(v)
-	})
-}
-
-// UpdateChallenge sets the "challenge" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateChallenge() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateChallenge()
-	})
-}
-
-// ClearChallenge clears the value of the "challenge" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearChallenge() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearChallenge()
-	})
-}
-
-// SetClientID sets the "client_id" field.
-func (u *ConnectorAuditEventUpsertBulk) SetClientID(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetClientID(v)
-	})
-}
-
-// UpdateClientID sets the "client_id" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateClientID() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateClientID()
-	})
-}
-
-// ClearClientID clears the value of the "client_id" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearClientID() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearClientID()
-	})
-}
-
-// SetResult sets the "result" field.
-func (u *ConnectorAuditEventUpsertBulk) SetResult(v string) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetResult(v)
-	})
-}
-
-// UpdateResult sets the "result" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateResult() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateResult()
-	})
-}
-
-// ClearResult clears the value of the "result" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearResult() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearResult()
-	})
-}
-
-// SetOccurredAt sets the "occurred_at" field.
-func (u *ConnectorAuditEventUpsertBulk) SetOccurredAt(v time.Time) *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.SetOccurredAt(v)
-	})
-}
-
-// UpdateOccurredAt sets the "occurred_at" field to the value that was provided on create.
-func (u *ConnectorAuditEventUpsertBulk) UpdateOccurredAt() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.UpdateOccurredAt()
-	})
-}
-
-// ClearOccurredAt clears the value of the "occurred_at" field.
-func (u *ConnectorAuditEventUpsertBulk) ClearOccurredAt() *ConnectorAuditEventUpsertBulk {
-	return u.Update(func(s *ConnectorAuditEventUpsert) {
-		s.ClearOccurredAt()
 	})
 }
 

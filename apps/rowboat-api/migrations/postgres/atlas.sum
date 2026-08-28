@@ -1,4 +1,4 @@
-h1:n8XWMdO79EzIxI26em0WBw52ru/5fayqhv5jaXl3FPg=
+h1:lBX1M2sov1EZKg6DuW3TTODR61nSkTaBxjmk7z//T0o=
 20260821000000_baseline.sql h1:ZTvCxMIes/Jroxm9juxg6wPrT5n6uaFh7AqXnStxjAo=
 20260821010000_ent_hardening.sql h1:ovo6NSYCx4KpCbDWpMw4L/k7TPjiOm6CbVgvQJaFX2w=
 20260821020000_identifier_normalization.sql h1:1xx4DAQ5Bzb/PjveAqpp7YKM3Zq5Ihs49nQCrbC+NaM=
@@ -14,3 +14,4 @@ h1:n8XWMdO79EzIxI26em0WBw52ru/5fayqhv5jaXl3FPg=
 20260828003000_connector_credential_cleanup_outbox.sql h1:uR0gEqrNeUWjWwjdY9dt8wxBno+rWYoJY2Prk7Op2mw=
 20260828013000_connector_credential_recovery.sql h1:UDqNR8cQVEQ5aTAjc+NtQUPRreE7jbRucYYljvw3J8k=
 20260828014500_connection_history_secret_purge.sql h1:1uXqLCzkI4BokffT3Hr5zZpe6TazQBLbtTnJ/Bp7TqU=
+20260828030000_connector_state_and_audit_contract.sql h1:98UjSqEo/vH4JOfx3EBacpVqV1/ENI9Fnl2PiN3TzyI=
