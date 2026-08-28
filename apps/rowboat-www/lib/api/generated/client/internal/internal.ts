@@ -12,7 +12,10 @@ import type {
   InternalInvalidateResponse,
   N400Response,
   N401Response,
+  N403Response,
+  N409Response,
   N500Response,
+  N503Response,
 } from "../model";
 
 export type invalidateConnectionResponse200 = {
@@ -30,9 +33,24 @@ export type invalidateConnectionResponse401 = {
   status: 401;
 };
 
+export type invalidateConnectionResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type invalidateConnectionResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
 export type invalidateConnectionResponse500 = {
   data: N500Response;
   status: 500;
+};
+
+export type invalidateConnectionResponse503 = {
+  data: N503Response;
+  status: 503;
 };
 
 export type invalidateConnectionResponseSuccess = invalidateConnectionResponse200 & {
@@ -41,7 +59,10 @@ export type invalidateConnectionResponseSuccess = invalidateConnectionResponse20
 export type invalidateConnectionResponseError = (
   | invalidateConnectionResponse400
   | invalidateConnectionResponse401
+  | invalidateConnectionResponse403
+  | invalidateConnectionResponse409
   | invalidateConnectionResponse500
+  | invalidateConnectionResponse503
 ) & {
   headers: Headers;
 };
@@ -54,7 +75,7 @@ export const getInvalidateConnectionUrl = () => {
 };
 
 /**
- * Server-to-server endpoint supporting exact connection, user, org, connector, or combined targets. Matches become invalidated tombstones; credentials are cleared and upstream revocation is attempted.
+ * Server-to-server endpoint supporting exact connection, user, immutable credential-org, connector, or combined targets. Product/service principals are bound to configured connector(s) and selector classes. Global control requires an explicit platform_admin principal. Matches become invalidated tombstones; credentials are cleared and upstream revocation is attempted.
  * @summary Force-invalidate connector connections
  */
 export const invalidateConnection = async (
