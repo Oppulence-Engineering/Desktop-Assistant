@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mcpconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
@@ -44,6 +46,90 @@ func mockOry(t *testing.T) *httptest.Server {
 			w.WriteHeader(http.StatusNotFound)
 		}
 	}))
+}
+
+func TestRegistryRejectsMoneyMovingToolWithoutControlledScope(t *testing.T) {
+	for name, registry := range map[string]string{
+		"missing mapping":    `[{"name":"pay","displayName":"Pay","description":"x","mcpUrl":"https://pay.test/mcp","authType":"api_key","audience":"pay-api","mcpTools":[{"name":"refund.create","trustTier":"money-moving"}]}]`,
+		"uncontrolled scope": `[{"name":"pay","displayName":"Pay","description":"x","mcpUrl":"https://pay.test/mcp","authType":"api_key","audience":"pay-api","scopes":[{"name":"pay:refunds.create","displayName":"Refund","description":"x","grantTier":"optional","risk":"money-moving"}],"mcpTools":[{"name":"refund.create","trustTier":"money-moving","requiredScopes":["pay:refunds.create"]}]}]`,
+		"wrong tier":         `[{"name":"pay","displayName":"Pay","description":"x","mcpUrl":"https://pay.test/mcp","authType":"api_key","audience":"pay-api","scopes":[{"name":"pay:refunds.create","displayName":"Refund","description":"x","grantTier":"optional","risk":"money-moving","stepUpRequired":true,"perInvocationApproval":true}],"mcpTools":[{"name":"refund.create","trustTier":"act","requiredScopes":["pay:refunds.create"]}]}]`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			if _, err := connectors.LoadRegistry([]byte(registry)); err == nil {
+				t.Fatal("invalid money-moving registry was accepted")
+			}
+		})
+	}
+}
+
+func TestStripeAPIKeyMoneyMovingAuthorizationLifecycle(t *testing.T) {
+	client, u, h := setup(t, connectors.DefaultRegistry())
+	ctx := auth.WithUser(context.Background(), u)
+	setKey := func(key string) {
+		rec := httptest.NewRecorder()
+		h.SetAPIKey(rec, httptest.NewRequest(http.MethodPost, "/v1/connections/stripe/api-key", strings.NewReader(`{"apiKey":"`+key+`"}`)).WithContext(withParam(ctx, "name", "stripe")))
+		if rec.Code != http.StatusOK {
+			t.Fatalf("set key: %d %s", rec.Code, rec.Body.String())
+		}
+	}
+	listHasRefund := func() bool {
+		rec := httptest.NewRecorder()
+		h.List(rec, httptest.NewRequest(http.MethodGet, "/v1/connectors", nil).WithContext(ctx))
+		var body struct {
+			Connectors []struct {
+				Name     string `json:"name"`
+				MCPTools []struct {
+					Name string `json:"name"`
+				} `json:"mcpTools"`
+			} `json:"connectors"`
+		}
+		_ = json.Unmarshal(rec.Body.Bytes(), &body)
+		for _, c := range body.Connectors {
+			if c.Name == "stripe" {
+				for _, tool := range c.MCPTools {
+					if tool.Name == "refund.create" {
+						return true
+					}
+				}
+			}
+		}
+		return false
+	}
+	grant := func(actor *auth.Actor) *httptest.ResponseRecorder {
+		rec := httptest.NewRecorder()
+		grantCtx := auth.WithActor(ctx, actor)
+		h.AuthorizeAPIKeyGrant(rec, httptest.NewRequest(http.MethodPost, "/v1/connections/stripe/authorization-grant", strings.NewReader(`{"scopes":["stripe:refunds.create"]}`)).WithContext(withParam(grantCtx, "name", "stripe")))
+		return rec
+	}
+	setKey("sk_test_1")
+	if listHasRefund() {
+		t.Fatal("refund.create advertised from key possession alone")
+	}
+	if rec := grant(&auth.Actor{Kind: auth.KindUser, WorkOSUserID: u.WorkosUserID}); rec.Code != http.StatusForbidden {
+		t.Fatalf("grant without step-up = %d", rec.Code)
+	}
+	if rec := grant(&auth.Actor{Kind: auth.KindUser, WorkOSUserID: "wrong", AuthMethods: []string{"mfa"}}); rec.Code != http.StatusForbidden {
+		t.Fatalf("wrong user grant = %d", rec.Code)
+	}
+	if rec := grant(&auth.Actor{Kind: auth.KindUser, WorkOSUserID: u.WorkosUserID, AuthMethods: []string{"mfa"}}); rec.Code != http.StatusOK {
+		t.Fatalf("grant = %d %s", rec.Code, rec.Body.String())
+	}
+	if !listHasRefund() {
+		t.Fatal("refund.create not advertised after explicit grant")
+	}
+	setKey("sk_test_2")
+	if listHasRefund() {
+		t.Fatal("generation change did not clear refund grant")
+	}
+	conn := client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ("stripe"), mcpconnection.OrganizationIDEQ("org_1")).OnlyX(context.Background())
+	if slices.Contains(conn.Scopes, "stripe:refunds.create") {
+		t.Fatal("grant survived key replacement")
+	}
+	disconnect := httptest.NewRecorder()
+	h.Delete(disconnect, httptest.NewRequest(http.MethodDelete, "/v1/connections/stripe", nil).WithContext(withParam(ctx, "name", "stripe")))
+	if rec := grant(&auth.Actor{Kind: auth.KindUser, WorkOSUserID: u.WorkosUserID, AuthMethods: []string{"mfa"}}); rec.Code != http.StatusNotFound {
+		t.Fatalf("grant after disconnect = %d", rec.Code)
+	}
 }
 
 func setup(t *testing.T, registry *connectors.Registry) (*ent.Client, *ent.User, *connectors.Handler) {

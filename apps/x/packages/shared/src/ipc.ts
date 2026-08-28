@@ -138,6 +138,7 @@ const ConnectorTemplateBlockSchema = z.object({
 const ConnectorMCPToolPolicySchema = z.object({
   name: z.string(),
   trustTier: ConnectorTrustTierSchema.optional(),
+  requiredScopes: z.array(z.string()).optional(),
 });
 
 const ConnectorViewSchema = z.object({
@@ -692,6 +693,16 @@ const ipcSchemas = {
     req: z.object({
       connector: z.string(),
       apiKey: z.string(),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      error: z.string().optional(),
+    }),
+  },
+  "connectors:authorizeScopes": {
+    req: z.object({
+      connector: z.string(),
+      scopes: z.array(z.string()).min(1),
     }),
     res: z.object({
       success: z.boolean(),

@@ -157,6 +157,11 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
     const isActive = lifecycleAction === "disconnect";
     const scopes = integration.availableScopes ?? [];
     const grantedNames = new Set((integration.grantedScopes ?? []).map((scope) => scope.name));
+    const pendingMoneyScopes = scopes.filter(
+      (scope) =>
+        (scope.tier === "money-moving" || scope.tier === "money_moving") &&
+        !grantedNames.has(scope.name),
+    );
     const healthCopy = (
       {
         active: "Healthy",
@@ -241,6 +246,17 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
               ) : null}
             </div>
           </div>
+          <div className="flex shrink-0 flex-col gap-2">
+          {isActive && pendingMoneyScopes.length ? (
+            <Button
+              variant="default"
+              size="sm"
+              disabled={isBusy}
+              onClick={() => c.handleAuthorizeIntegrationScopes(integration, pendingMoneyScopes.map((scope) => scope.name))}
+            >
+              Authorize protected actions
+            </Button>
+          ) : null}
           <Button
             variant={isActive ? "outline" : "default"}
             size="sm"
@@ -267,6 +283,7 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
               </>
             )}
           </Button>
+          </div>
         </div>
       </div>
     );

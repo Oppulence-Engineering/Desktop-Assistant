@@ -47,16 +47,18 @@ type Config struct {
 
 // Handler serves the connector + connection endpoints.
 type Handler struct {
-	client                *ent.Client
-	sealer                *crypto.Sealer
-	registry              *Registry
-	resourceTokens        ResourceTokenIssuer
-	ory                   *oryClient
-	cfg                   Config
-	log                   *zap.Logger
-	refresh               refreshDeduper
-	commitCallbackForTest func(*ent.Tx) error
-	commitClaimForTest    func(*ent.Tx) error
+	client                  *ent.Client
+	sealer                  *crypto.Sealer
+	registry                *Registry
+	resourceTokens          ResourceTokenIssuer
+	ory                     *oryClient
+	cfg                     Config
+	log                     *zap.Logger
+	refresh                 refreshDeduper
+	commitCallbackForTest   func(*ent.Tx) error
+	commitClaimForTest      func(*ent.Tx) error
+	afterClaimCommitForTest func() error
+	custody                 *credentialCustodySupervisor
 }
 
 // SetResourceTokenIssuer configures the RS256 broker key used for short-lived
@@ -85,7 +87,7 @@ func New(client *ent.Client, sealer *crypto.Sealer, registry *Registry, cfg Conf
 	if cfg.DeepLinkScheme == "" {
 		cfg.DeepLinkScheme = "solomon-ai"
 	}
-	return &Handler{
+	h := &Handler{
 		client:   client,
 		sealer:   sealer,
 		registry: registry,
@@ -93,6 +95,16 @@ func New(client *ent.Client, sealer *crypto.Sealer, registry *Registry, cfg Conf
 		cfg:      cfg,
 		log:      log,
 	}
+	h.custody = newCredentialCustodySupervisor(log, 4, 64)
+	h.refresh.custody = h.custody
+	return h
+}
+
+func (h *Handler) CredentialCustodyReady(context.Context) error { return h.custody.ready() }
+
+func (h *Handler) CloseCredentialCustody() error {
+	h.custody.close()
+	return nil
 }
 
 // SetOryBaseURL overrides the Ory public URL (tests).
@@ -201,11 +213,14 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			Name: c.Name, DisplayName: c.DisplayName, Description: c.Description,
 			MCPURL: c.MCPURL, Transport: c.Transport, AuthType: c.AuthType, Audience: c.Audience,
 			Status: h.registry.EffectiveStatus(c.Name), Health: c.Health, AvailableScopes: h.registry.AvailableScopes(c.Name), IconURL: c.IconURL,
-			MCPTools: c.MCPTools, NativeTools: c.NativeTools, TemplateBlocks: c.TemplateBlocks,
+			MCPTools: filterToolPolicies(c.MCPTools, nil), NativeTools: filterToolPolicies(c.NativeTools, nil), TemplateBlocks: filterTemplateBlocks(c.TemplateBlocks, nil),
 		}
 		if mc, ok := connected[c.Name]; ok {
 			v.Connected = mc.Status == "active" && h.registry.Enabled(c.Name)
 			v.GrantedScopes = h.registry.definitionsForScopes(c.Name, mc.Scopes)
+			v.MCPTools = filterToolPolicies(c.MCPTools, mc.Scopes)
+			v.NativeTools = filterToolPolicies(c.NativeTools, mc.Scopes)
+			v.TemplateBlocks = filterTemplateBlocks(c.TemplateBlocks, mc.Scopes)
 			if !mc.ConnectedAt.IsZero() {
 				v.ConnectedAt = mc.ConnectedAt.UTC().Format(time.RFC3339)
 			}
@@ -222,6 +237,26 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		views = append(views, v)
 	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"connectors": views})
+}
+
+func filterToolPolicies(tools []MCPToolPolicy, granted []string) []MCPToolPolicy {
+	result := make([]MCPToolPolicy, 0, len(tools))
+	for _, tool := range tools {
+		if isSubset(tool.RequiredScopes, granted) {
+			result = append(result, tool)
+		}
+	}
+	return result
+}
+
+func filterTemplateBlocks(blocks []IntegrationTemplateBlock, granted []string) []IntegrationTemplateBlock {
+	result := make([]IntegrationTemplateBlock, 0, len(blocks))
+	for _, block := range blocks {
+		if isSubset(block.RequiredScopes, granted) {
+			result = append(result, block)
+		}
+	}
+	return result
 }
 
 func connectionHealth(mc *ent.MCPConnection) (string, string) {
@@ -666,7 +701,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	// irreducible. From this point forward the handler cannot return a live grant
 	// without either this encrypted journal row or confirmed provider revocation.
 	recoveryID, revoked, recoveryErr := establishCredentialRecovery(
-		context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, pending.ID,
+		h.custody, h.client, h.sealer, h.ory, h.log, pending.ID,
 		name, credentialRecoveryOwnerCallback, pending.ID.String(), tok.RefreshToken,
 		pending.ExpiresAt.UTC().Add(credentialCleanupAdoptionGrace),
 	)
@@ -829,7 +864,7 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	recoveryID, revoked, recoveryErr := establishCredentialRecovery(
-		context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, pending.ID,
+		h.custody, h.client, h.sealer, h.ory, h.log, pending.ID,
 		name, credentialRecoveryOwnerCallback, pending.ID.String(), cp.RefreshToken,
 		pending.ExpiresAt.UTC().Add(credentialCleanupAdoptionGrace),
 	)
@@ -887,7 +922,7 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusConflict, "ticket already consumed", "replay")
 		return
 	}
-	connection, replacedGrant, err := h.upsertConnectionWithClient(auth.WithUser(ctx, u), tx.Client(), u, c, cp.RefreshToken, cp.GrantedScopes, pending.CreatedAt)
+	connection, supersededCleanupID, err := h.upsertConnectionWithClient(auth.WithUser(ctx, u), tx.Client(), u, c, cp.RefreshToken, cp.GrantedScopes, pending.CreatedAt)
 	if err != nil {
 		h.log.Error("persist connection", zap.Error(err))
 		if errors.Is(err, errConnectorCredentialSuperseded) {
@@ -961,10 +996,14 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 		cp.GrantedScopes = storedCP.GrantedScopes
 		connectormetrics.Lifecycle.WithLabelValues(name, "claim", "reconciled").Inc()
 	}
-	if len(replacedGrant) > 0 {
-		if old, openErr := h.sealer.Open(replacedGrant); openErr == nil && string(old) != cp.RefreshToken {
-			_ = h.ory.revoke(context.WithoutCancel(ctx), string(old))
+	if h.afterClaimCommitForTest != nil {
+		if err := h.afterClaimCommitForTest(); err != nil {
+			httpx.Error(w, http.StatusInternalServerError, "connection committed; superseded credential revocation is pending", "commit_outcome_unknown")
+			return
 		}
+	}
+	if supersededCleanupID != uuid.Nil {
+		h.revokeSupersededCredential(context.WithoutCancel(ctx), supersededCleanupID)
 	}
 	connectormetrics.Lifecycle.WithLabelValues(name, "claim", "success").Inc()
 	writeClaimSuccess(w, connection, c, cp.GrantedScopes)
@@ -1037,6 +1076,69 @@ func (h *Handler) SetAPIKey(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"connected": true})
 }
 
+// AuthorizeAPIKeyGrant creates an explicit step-up-backed authorization grant
+// for API-key connector scopes. Credential possession alone never grants a
+// money-moving scope, and replacing the credential clears this grant.
+func (h *Handler) AuthorizeAPIKeyGrant(w http.ResponseWriter, r *http.Request) {
+	u, ok := auth.UserFromCtx(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
+		return
+	}
+	actor, ok := auth.ActorFromCtx(r.Context())
+	if !ok || actor.Kind != auth.KindUser || actor.WorkOSUserID != u.WorkosUserID || !actor.HasMFA() {
+		httpx.Error(w, http.StatusForbidden, "MFA step-up is required to authorize money-moving connector access", "step_up_required")
+		return
+	}
+	name := chi.URLParam(r, "name")
+	c, ok := h.registry.Get(name)
+	if !ok {
+		httpx.Error(w, http.StatusNotFound, "unknown connector", "not_found")
+		return
+	}
+	if c.AuthType != "api_key" {
+		httpx.Error(w, http.StatusBadRequest, "connector does not use api key auth", "unsupported_auth_type")
+		return
+	}
+	var req struct {
+		Scopes []string `json:"scopes"`
+	}
+	if !httpx.DecodeJSON(w, r, 1<<16, &req) {
+		return
+	}
+	requested, err := h.registry.validateRequestedScopes(name, req.Scopes)
+	if err != nil || len(requested) == 0 {
+		httpx.Error(w, http.StatusBadRequest, "invalid authorization scopes", "invalid_scopes")
+		return
+	}
+	definitions := h.registry.definitionsForScopes(name, requested)
+	for _, scope := range definitions {
+		if scope.Risk != "money-moving" || !scope.StepUpRequired || !scope.PerInvocationApproval {
+			httpx.Error(w, http.StatusBadRequest, "authorization endpoint accepts only money-moving scopes with step-up and per-invocation approval", "invalid_scopes")
+			return
+		}
+	}
+	orgID := connectorOrganizationID(u)
+	mc, err := h.client.MCPConnection.Query().Where(mcpconnection.ConnectorEQ(name), mcpconnection.OrganizationIDEQ(orgID)).Only(r.Context())
+	if err != nil || mc.Status != "active" || mc.APIKeyEncrypted == nil {
+		httpx.Error(w, http.StatusNotFound, "connector not connected", "not_connected")
+		return
+	}
+	updatedScopes := append([]string(nil), mc.Scopes...)
+	for _, scope := range requested {
+		if !slices.Contains(updatedScopes, scope) {
+			updatedScopes = append(updatedScopes, scope)
+		}
+	}
+	updated, err := mc.Update().Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active"), mcpconnection.OrganizationIDEQ(orgID)).SetScopes(updatedScopes).Save(r.Context())
+	if err != nil {
+		httpx.Error(w, http.StatusConflict, "connection changed while authorization was being granted", "authorization_generation_changed")
+		return
+	}
+	h.appendAudit(r.Context(), u, auditRecord{EventType: "api_key_authorization_granted", Connector: name, ConnectionID: updated.ID, OrganizationID: orgID, Audience: c.Audience, Granted: requested})
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"authorized": true, "grantedScopes": h.registry.definitionsForScopes(name, updated.Scopes)})
+}
+
 // deleteTicket consumes a single-use pending ticket on a detached, time-bounded
 // context (so a stalled DB can't block the response or hang on a stripped
 // deadline).
@@ -1048,10 +1150,10 @@ func (h *Handler) deleteTicket(ctx context.Context, pending *ent.OAuthPending) {
 	}
 }
 
-func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Client, u *ent.User, c Connector, refreshToken string, scopes []string, operationStartedAt time.Time) (*ent.MCPConnection, []byte, error) {
+func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Client, u *ent.User, c Connector, refreshToken string, scopes []string, operationStartedAt time.Time) (*ent.MCPConnection, uuid.UUID, error) {
 	sealed, err := h.sealer.SealString(refreshToken)
 	if err != nil {
-		return nil, nil, err
+		return nil, uuid.Nil, err
 	}
 	existing, err := client.MCPConnection.Query().Where(
 		mcpconnection.ConnectorEQ(c.Name), mcpconnection.OrganizationIDEQ(connectorOrganizationID(u)),
@@ -1059,9 +1161,31 @@ func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Cl
 	switch {
 	case err == nil:
 		if (existing.Status == "revoked" || existing.Status == "invalidated") && !existing.RevokedAt.IsZero() && existing.RevokedAt.After(operationStartedAt) {
-			return nil, nil, errConnectorCredentialSuperseded
+			return nil, uuid.Nil, errConnectorCredentialSuperseded
 		}
-		old := append([]byte(nil), existing.RefreshTokenEncrypted...)
+		cleanupID := uuid.Nil
+		if len(existing.RefreshTokenEncrypted) > 0 {
+			oldRefresh, openErr := h.sealer.OpenString(existing.RefreshTokenEncrypted)
+			if openErr != nil {
+				return nil, uuid.Nil, fmt.Errorf("open superseded connector credential: %w", openErr)
+			}
+			// Some providers may return the same refresh token on reauthorization.
+			// Never enqueue or revoke bytes that are also being installed as current.
+			if oldRefresh != refreshToken {
+				job, createErr := client.ConnectorCredentialCleanupJob.Create().
+					SetConnectionID(existing.ID).
+					SetConnector(c.Name).
+					SetExpectedCredentialGeneration(existing.CredentialGeneration).
+					SetRefreshTokenEncrypted(append([]byte(nil), existing.RefreshTokenEncrypted...)).
+					SetStatus("pending").
+					SetNextAttemptAt(time.Now().UTC()).
+					Save(auth.WithInternal(ctx))
+				if createErr != nil {
+					return nil, uuid.Nil, fmt.Errorf("escrow superseded connector credential: %w", createErr)
+				}
+				cleanupID = job.ID
+			}
+		}
 		updated, updateErr := existing.Update().
 			Where(mcpconnection.CredentialGenerationEQ(existing.CredentialGeneration), mcpconnection.OrganizationIDEQ(connectorOrganizationID(u))).
 			SetRefreshTokenEncrypted(sealed).
@@ -1074,9 +1198,9 @@ func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Cl
 			ClearRevokedAt().ClearRevokedReason().ClearRevokedBy().ClearRevocationAttemptedAt().ClearRevocationSucceeded().
 			Save(ctx)
 		if ent.IsNotFound(updateErr) {
-			return h.upsertConnectionWithClient(ctx, client, u, c, refreshToken, scopes, operationStartedAt)
+			return nil, uuid.Nil, errConnectorCredentialSuperseded
 		}
-		return updated, old, updateErr
+		return updated, cleanupID, updateErr
 	case ent.IsNotFound(err):
 		created, createErr := client.MCPConnection.Create().
 			SetUser(u).
@@ -1088,9 +1212,9 @@ func (h *Handler) upsertConnectionWithClient(ctx context.Context, client *ent.Cl
 			SetStatus("active").
 			SetConnectedAt(time.Now()).
 			Save(ctx)
-		return created, nil, createErr
+		return created, uuid.Nil, createErr
 	default:
-		return nil, nil, err
+		return nil, uuid.Nil, err
 	}
 }
 
@@ -1102,6 +1226,12 @@ func (h *Handler) upsertAPIKeyConnection(ctx context.Context, client *ent.Client
 	existing, err := client.MCPConnection.Query().Where(
 		mcpconnection.ConnectorEQ(c.Name), mcpconnection.OrganizationIDEQ(connectorOrganizationID(u)),
 	).Only(ctx)
+	baselineScopes := make([]string, 0, len(c.Scopes))
+	for _, scope := range h.registry.definitionsForScopes(c.Name, c.Scopes) {
+		if scope.Risk != "money-moving" {
+			baselineScopes = append(baselineScopes, scope.Name)
+		}
+	}
 	switch {
 	case err == nil:
 		if (existing.Status == "revoked" || existing.Status == "invalidated") && !existing.RevokedAt.IsZero() && existing.RevokedAt.After(operationStartedAt) {
@@ -1112,7 +1242,7 @@ func (h *Handler) upsertAPIKeyConnection(ctx context.Context, client *ent.Client
 			SetAPIKeyEncrypted(sealed).
 			AddCredentialGeneration(1).
 			ClearRefreshTokenEncrypted().
-			SetScopes(c.Scopes).
+			SetScopes(baselineScopes).
 			SetAudience(c.Audience).
 			SetStatus("active").
 			SetConnectedAt(time.Now()).
@@ -1128,7 +1258,7 @@ func (h *Handler) upsertAPIKeyConnection(ctx context.Context, client *ent.Client
 			SetConnector(c.Name).
 			SetAudience(c.Audience).
 			SetOrganizationID(connectorOrganizationID(u)).
-			SetScopes(c.Scopes).
+			SetScopes(baselineScopes).
 			SetAPIKeyEncrypted(sealed).
 			SetStatus("active").
 			SetConnectedAt(time.Now()).
@@ -1386,35 +1516,40 @@ func (h *Handler) writeResourceToken(ctx context.Context, w http.ResponseWriter,
 		httpx.Error(w, http.StatusServiceUnavailable, "connector resource token issuer is not configured", "broker_unconfigured")
 		return
 	}
-	tokenID := uuid.NewString()
-	token, expiresAt, err := h.resourceTokens.Mint(ResourceTokenClaims{
-		TokenID: tokenID, UserID: u.WorkosUserID, OrganizationID: mc.OrganizationID,
-		ConnectionID: mc.ID.String(), ConnectorID: c.Name, Audience: audience,
-		Scopes: scopes, TrustTier: trustTierForScopes(h.registry, c.Name, scopes),
-	})
+	if audience != c.Audience || audience != mc.Audience {
+		httpx.Error(w, http.StatusBadRequest, "requested audience does not match connection", "audience_mismatch")
+		return
+	}
+	lifecycle := NewLifecycleService(h.client, h.sealer, h.registry, h.ory)
+	lifecycle.SetIssuer(h.resourceTokens)
+	lifecycle.SetLogger(h.log)
+	result, err := lifecycle.MintResourceToken(ctx, u, c, mc, scopes)
 	if err != nil {
+		if errors.Is(err, errConnectorCredentialSuperseded) {
+			connectormetrics.TokenMint.WithLabelValues(c.Name, "revoked").Inc()
+			httpx.Error(w, http.StatusGone, "connector connection is revoked or replaced", "connection_revoked")
+			return
+		}
+		if strings.Contains(err.Error(), "entitlement denied") {
+			connectormetrics.TokenMint.WithLabelValues(c.Name, "entitlement_denied").Inc()
+			httpx.Error(w, http.StatusForbidden, "connector entitlement denied", "entitlement_denied")
+			return
+		}
 		h.log.Error("mint connector resource token", zap.String("connector", c.Name), zap.Error(err))
 		connectormetrics.TokenMint.WithLabelValues(c.Name, "signing_failed").Inc()
 		httpx.Error(w, http.StatusInternalServerError, "could not mint connector resource token", "internal_error")
 		return
 	}
-	if err := h.persistAuditTransitionWithClient(ctx, h.client, u, auditRecord{
-		EventType: "token_minted", EventID: deterministicAuditEventID("token_minted", tokenID),
-		Connector: c.Name, ConnectionID: mc.ID, OrganizationID: mc.OrganizationID,
-		Audience: audience, Requested: scopes, Granted: mc.Scopes,
-	}); err != nil {
-		h.log.Error("persist connector token audit", zap.Error(err))
-		httpx.Error(w, http.StatusInternalServerError, "could not persist token audit", "internal_error")
-		return
-	}
-	expiresIn := max(int64(time.Until(expiresAt).Seconds()), 1)
+	mc = result.Current
+	scopes = result.Scopes
+	expiresIn := max(int64(time.Until(result.ExpiresAt).Seconds()), 1)
 	connectormetrics.TokenMint.WithLabelValues(c.Name, "success").Inc()
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{
-		"access_token": token,
-		"token":        token,
+		"access_token": result.Token,
+		"token":        result.Token,
 		"token_type":   "Bearer",
 		"expires_in":   expiresIn,
-		"expires_at":   expiresAt.Unix(),
+		"expires_at":   result.ExpiresAt.Unix(),
 		"scope":        strings.Join(scopes, " "),
 		"scopes":       scopes,
 		"mcpUrl":       c.MCPURL,

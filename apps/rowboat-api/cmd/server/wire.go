@@ -352,6 +352,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}
 	connectorsH.SetOutboundPolicy(vendorPolicy)
 	connectorsH.SetRefreshDedup(refreshCache, sealer)
+	srv.AddReadyCheck("connector_credential_custody", connectorsH.CredentialCustodyReady)
+	srv.AddCloser("connector_credential_custody", connectorsH.CloseCredentialCustody)
 	go connectorsH.RunRevocationWorker(ctx)
 	go connectorsH.RunCredentialCleanupWorker(ctx)
 	hubspotClient := hubspotapi.New(client, sealer, vendorPolicy)
@@ -692,6 +694,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}
 	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 120, time.Minute), invalidationAuth.Require).
 		Post("/v1/internal/connections/invalidate", connectorsH.Invalidate)
+	r.With(rl.PerUserWindow(ratelimit.GroupInternal, 600, time.Minute), invalidationAuth.RequireConnectionStatus).
+		Post("/v1/internal/connections/status", connectorsH.ConnectionStatus)
 
 	// Other server-to-server APIs retain the separately scoped global internal
 	// capability. Possession of this secret no longer grants product invalidation.
@@ -918,6 +922,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			r.Post("/{name}/start", connectorsH.Start)
 			r.Post("/{name}/claim", connectorsH.Claim)
 			r.Post("/{name}/api-key", connectorsH.SetAPIKey)
+			r.Post("/{name}/authorization-grant", connectorsH.AuthorizeAPIKeyGrant)
 			r.Post("/{name}/mcp-token", connectorsH.MCPToken)
 			r.Delete("/{name}", connectorsH.Delete)
 		})

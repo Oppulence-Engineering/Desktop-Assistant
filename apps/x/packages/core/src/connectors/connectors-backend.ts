@@ -10,6 +10,7 @@ import type {
 export interface ConnectorMCPToolPolicy {
   name: string;
   trustTier?: "read" | "write" | "act" | "money-moving";
+  requiredScopes?: string[];
 }
 
 export interface IntegrationTemplateBlock {
@@ -351,6 +352,18 @@ export async function saveConnectorAPIKeyViaBackend(
   });
   if (!res.ok)
     throw new Error(`connector api key save failed: ${res.status} ${await readError(res)}`.trim());
+}
+export async function authorizeConnectorScopesViaBackend(
+  connector: string,
+  scopes: string[],
+): Promise<void> {
+  const res = await request(
+    `/v1/connections/${encodeURIComponent(connector)}/authorization-grant`,
+    "POST",
+    { scopes },
+  );
+  if (!res.ok)
+    throw new Error(`connector authorization failed: ${res.status} ${await readError(res)}`.trim());
 }
 export async function getConnectorMCPTokenViaBackend(
   connector: string,

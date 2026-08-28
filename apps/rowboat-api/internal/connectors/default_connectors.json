@@ -155,7 +155,7 @@
     ],
     "mcpTools": [
       { "name": "payment_run.list", "trustTier": "read" },
-      { "name": "payment.execute", "trustTier": "money-moving" }
+      { "name": "payment.execute", "trustTier": "money-moving", "requiredScopes": ["cadence:payments.execute"] }
     ],
     "templateBlocks": [
       {
@@ -488,12 +488,23 @@
       "production": "stripe-api"
     },
     "authoritativeEntitlementRequired": true,
+    "scopes": [
+      {
+        "name": "stripe:refunds.create",
+        "displayName": "Create refunds",
+        "description": "Create a Stripe refund for an exact approved invocation.",
+        "grantTier": "optional",
+        "risk": "money-moving",
+        "stepUpRequired": true,
+        "perInvocationApproval": true
+      }
+    ],
     "mcpTools": [
       { "name": "customer.lookup", "trustTier": "read" },
       { "name": "charge.search", "trustTier": "read" },
       { "name": "invoice.lookup", "trustTier": "read" },
       { "name": "invoice.finalize", "trustTier": "act" },
-      { "name": "refund.create", "trustTier": "money-moving" }
+      { "name": "refund.create", "trustTier": "money-moving", "requiredScopes": ["stripe:refunds.create"] }
     ],
     "templateBlocks": [
       {
@@ -511,6 +522,7 @@
         "description": "Finalize invoices and create refunds when explicitly requested.",
         "category": "payments",
         "mcpTools": ["invoice.finalize", "refund.create"],
+        "requiredScopes": ["stripe:refunds.create"],
         "trustTier": "money-moving",
         "samplePrompt": "Prepare the refund workflow for this charge."
       }

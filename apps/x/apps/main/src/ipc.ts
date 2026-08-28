@@ -103,6 +103,7 @@ import {
 import { submitFeedback } from "@x/core/feedback/feedback";
 import { AuthUnavailableError } from "@x/core/auth/refresh-errors";
 import {
+  authorizeConnectorScopesViaBackend,
   deleteConnectorViaBackend,
   listConnectorsViaBackend,
   saveConnectorAPIKeyViaBackend,
@@ -1365,6 +1366,16 @@ export function setupIpcHandlers() {
         return { success: true };
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Failed to save integration API key";
+        return { success: false, error: message };
+      }
+    },
+    "connectors:authorizeScopes": async (_event, args) => {
+      try {
+        await authorizeConnectorScopesViaBackend(args.connector, args.scopes);
+        invalidateCopilotInstructionsCache();
+        return { success: true };
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to authorize integration scopes";
         return { success: false, error: message };
       }
     },

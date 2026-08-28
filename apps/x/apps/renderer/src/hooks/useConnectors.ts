@@ -49,6 +49,11 @@ export interface IntegrationConnector {
   iconUrl?: string;
   templateBlocks?: IntegrationTemplateBlock[];
   nativeTools?: Array<{ name: string; trustTier?: "read" | "write" | "act" | "money-moving" }>;
+  mcpTools?: Array<{
+    name: string;
+    trustTier?: "read" | "write" | "act" | "money-moving";
+    requiredScopes?: string[];
+  }>;
   connected: boolean;
   connectedAt?: string;
 }
@@ -349,6 +354,27 @@ export function useConnectors(active: boolean) {
       } catch (error) {
         console.error("Failed to disconnect integration:", error);
         toast.error(`Failed to disconnect ${connector.displayName}`);
+      } finally {
+        setIntegrationConnecting((prev) => ({ ...prev, [connector.name]: false }));
+      }
+    },
+    [refreshIntegrations],
+  );
+
+  const handleAuthorizeIntegrationScopes = useCallback(
+    async (connector: IntegrationConnector, scopes: string[]) => {
+      try {
+        setIntegrationConnecting((prev) => ({ ...prev, [connector.name]: true }));
+        const result = await window.ipc.invoke("connectors:authorizeScopes", {
+          connector: connector.name,
+          scopes,
+        });
+        if (!result.success) {
+          toast.error(result.error || `Authorization failed for ${connector.displayName}`);
+          return;
+        }
+        toast.success(`Authorized protected access for ${connector.displayName}`);
+        await refreshIntegrations();
       } finally {
         setIntegrationConnecting((prev) => ({ ...prev, [connector.name]: false }));
       }
@@ -663,6 +689,7 @@ export function useConnectors(active: boolean) {
     handleConnectIntegration,
     handleIntegrationApiKeySubmit,
     handleDisconnectIntegration,
+    handleAuthorizeIntegrationScopes,
     refreshIntegrations,
 
     // Granola

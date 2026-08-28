@@ -168,8 +168,9 @@ func (r *Registry) ConfigureProductEntitlementsJSONWithOptions(rawURLs, rawKeys 
 
 // MCPToolPolicy allowlists one upstream tool exposed by a connector MCP server.
 type MCPToolPolicy struct {
-	Name      string `json:"name"`
-	TrustTier string `json:"trustTier,omitempty"` // read | write | act | money-moving
+	Name           string   `json:"name"`
+	TrustTier      string   `json:"trustTier,omitempty"` // read | write | act | money-moving
+	RequiredScopes []string `json:"requiredScopes,omitempty"`
 }
 
 // IntegrationTemplateBlock is the user-facing onboarding block shown for a
@@ -443,7 +444,7 @@ func validateRegistry(list []Connector) error {
 			if len(c.NativeTools) == 0 {
 				return fmt.Errorf("connector %q native transport requires nativeTools", name)
 			}
-			if err := validateToolPolicies(name, "native", c.NativeTools); err != nil {
+			if err := validateToolPolicies(c, "native", c.NativeTools); err != nil {
 				return err
 			}
 			if err := validateTemplateBlocks(c, c.NativeTools); err != nil {
@@ -470,7 +471,7 @@ func validateRegistry(list []Connector) error {
 		if len(c.MCPTools) == 0 {
 			return fmt.Errorf("connector %q has mcpUrl but no mcpTools allowlist", name)
 		}
-		if err := validateToolPolicies(name, "MCP", c.MCPTools); err != nil {
+		if err := validateToolPolicies(c, "MCP", c.MCPTools); err != nil {
 			return err
 		}
 		if err := validateTemplateBlocks(c, c.MCPTools); err != nil {
@@ -589,19 +590,37 @@ func scopeNames(scopes []ScopeDefinition) []string {
 	return names
 }
 
-func validateToolPolicies(connector, transport string, tools []MCPToolPolicy) error {
+func validateToolPolicies(connector Connector, transport string, tools []MCPToolPolicy) error {
 	seen := map[string]struct{}{}
+	scopes := make(map[string]ScopeDefinition, len(connector.ScopeCatalog))
+	for _, scope := range connector.ScopeCatalog {
+		scopes[scope.Name] = scope
+	}
 	for i, tool := range tools {
 		name := strings.TrimSpace(tool.Name)
 		if name == "" {
-			return fmt.Errorf("connector %q %sTools[%d].name is required", connector, strings.ToLower(transport), i)
+			return fmt.Errorf("connector %q %sTools[%d].name is required", connector.Name, strings.ToLower(transport), i)
 		}
 		if _, ok := seen[name]; ok {
-			return fmt.Errorf("connector %q declares duplicate %s tool %q", connector, transport, name)
+			return fmt.Errorf("connector %q declares duplicate %s tool %q", connector.Name, transport, name)
 		}
 		seen[name] = struct{}{}
 		if !validMCPTrustTier(tool.TrustTier) {
-			return fmt.Errorf("connector %q MCP tool %q has invalid trustTier %q", connector, name, tool.TrustTier)
+			return fmt.Errorf("connector %q MCP tool %q has invalid trustTier %q", connector.Name, name, tool.TrustTier)
+		}
+		moneyScope := false
+		for _, scopeName := range tool.RequiredScopes {
+			scope, ok := scopes[scopeName]
+			if !ok {
+				return fmt.Errorf("connector %q MCP tool %q references unknown scope %q", connector.Name, name, scopeName)
+			}
+			moneyScope = moneyScope || scope.Risk == "money-moving"
+		}
+		if tool.TrustTier == "money-moving" && !moneyScope {
+			return fmt.Errorf("connector %q money-moving MCP tool %q must map to an explicit money-moving scope", connector.Name, name)
+		}
+		if tool.TrustTier != "money-moving" && moneyScope {
+			return fmt.Errorf("connector %q MCP tool %q maps to a money-moving scope but has trustTier %q", connector.Name, name, tool.TrustTier)
 		}
 	}
 	return nil
