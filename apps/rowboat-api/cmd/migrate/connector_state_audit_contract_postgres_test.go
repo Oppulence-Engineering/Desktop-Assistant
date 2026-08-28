@@ -56,6 +56,14 @@ INSERT INTO connector_audit_events VALUES ('00000000-0000-0000-0000-000000000001
 	if state != "sha256:"+hash || strings.Contains(state, "raw-live-bearer") {
 		t.Fatalf("raw state survived contract migration: %q", state)
 	}
+	for _, statement := range []string{
+		`INSERT INTO oauth_pendings(state,state_hash,expires_at) VALUES ('raw-new-bearer', NULL, now() + interval '5 minutes')`,
+		`INSERT INTO oauth_pendings(state,state_hash,expires_at) VALUES ('sha256:not-a-digest', 'not-a-digest', now() + interval '5 minutes')`,
+	} {
+		if _, err := db.ExecContext(ctx, statement); err == nil {
+			t.Fatalf("malformed pending state was not rejected for %q", statement)
+		}
+	}
 	var count int
 	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM oauth_pendings`).Scan(&count); err != nil || count != 1 {
 		t.Fatalf("expired rows not purged: count=%d err=%v", count, err)

@@ -13,6 +13,8 @@ package slack
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -44,6 +46,31 @@ type slackRuntime interface {
 }
 
 var errWorkspaceOwned = errors.New("slack workspace is already connected to another user")
+
+func oauthStateHash(state string) string {
+	digest := sha256.Sum256([]byte(state))
+	return hex.EncodeToString(digest[:])
+}
+
+func oauthStateSentinel(stateHash string) string {
+	return "sha256:" + stateHash
+}
+
+// pendingByState uses the digest for steady-state rows and falls back to the
+// raw state column only for rows minted before the hash-storage rollout. The
+// fallback can be removed after every pre-rollout row has exceeded its TTL and
+// the contract migration has replaced raw state with the hash sentinel.
+func (h *Handler) pendingByState(ctx context.Context, state string) (*ent.OAuthPending, error) {
+	pending, err := h.client.OAuthPending.Query().
+		Where(oauthpending.StateHashEQ(oauthStateHash(state)), oauthpending.ProviderEQ("slack")).
+		Only(ctx)
+	if !ent.IsNotFound(err) {
+		return pending, err
+	}
+	return h.client.OAuthPending.Query().
+		Where(oauthpending.StateEQ(state), oauthpending.ProviderEQ("slack")).
+		Only(ctx)
+}
 
 // Handler serves the Slack OAuth broker endpoints.
 type Handler struct {
@@ -189,9 +216,7 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	pending, err := h.client.OAuthPending.Query().
-		Where(oauthpending.StateEQ(req.Session), oauthpending.ProviderEQ("slack")).
-		Only(ctx)
+	pending, err := h.pendingByState(ctx, req.Session)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			httpx.Error(w, http.StatusNotFound, "ticket not found or already used", "ticket_expired")

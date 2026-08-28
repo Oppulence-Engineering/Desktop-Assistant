@@ -20,10 +20,12 @@ func (OAuthPending) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} 
 // Fields of the OAuthPending.
 func (OAuthPending) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("state").Unique().NotEmpty(), // the ticket
-		// Connector flows store only SHA-256(state) in state/state_hash. Legacy
-		// Google and Slack handoffs continue to use state, so every new field is
-		// optional and does not change those consumers' storage contract.
+		// Steady-state writers store only a non-secret sha256:<hex> sentinel here.
+		// The raw browser/desktop bearer is never persisted after the contract phase.
+		field.String("state").Unique().NotEmpty(),
+		// Optional in the Ent model so the expand-phase compatibility binary can
+		// consume rows minted before backfill. The PostgreSQL contract migration
+		// makes this globally NOT NULL after the maximum pending TTL plus skew.
 		field.String("state_hash").Optional().Unique(),
 		field.String("provider"),                     // google | canvas | corinthian | wispr
 		field.Bytes("payload_encrypted").Sensitive(), // AES-GCM-sealed JSON

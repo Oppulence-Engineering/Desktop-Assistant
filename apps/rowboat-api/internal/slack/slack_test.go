@@ -2,6 +2,8 @@ package slack_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -10,6 +12,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -227,6 +230,12 @@ func TestSlackOAuthFullFlow(t *testing.T) {
 	h.SetOAuthFlow("https://slack.example/authorize", token.URL, "https://api.example/oauth/slack/callback", "solomon-ai", "")
 
 	state := startFlow(t, h, u)
+	stateDigest := sha256.Sum256([]byte(state))
+	wantStateHash := hex.EncodeToString(stateDigest[:])
+	pending := client.OAuthPending.Query().Where(oauthpending.ProviderEQ("slack")).OnlyX(context.Background())
+	if pending.StateHash != wantStateHash || pending.State != "sha256:"+wantStateHash || pending.State == state {
+		t.Fatalf("pending state storage = state %q hash %q, want hash-only sentinel", pending.State, pending.StateHash)
+	}
 
 	// Callback exchanges the code and deep-links success.
 	rec := runCallback(t, h, state)
@@ -293,6 +302,39 @@ func TestSlackOAuthFullFlow(t *testing.T) {
 	// One-shot: a second claim of the same ticket is rejected.
 	if rec := claim(t, h, u, state); rec.Code != http.StatusNotFound {
 		t.Fatalf("replayed claim: %d, want 404", rec.Code)
+	}
+}
+
+func TestSlackClaimConsumesLegacyRawStateTicket(t *testing.T) {
+	client, user, handler, sealer := setupWithSealer(t)
+	state := "legacy-slack-raw-state"
+	payload, err := json.Marshal(map[string]any{
+		"workos_user_id": user.WorkosUserID,
+		"access_token":   "xoxb-legacy",
+		"scope":          "channels:read",
+		"team_id":        "TEAM_LEGACY_RAW",
+		"team_name":      "Legacy Raw Team",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sealed, err := sealer.Seal(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.OAuthPending.Create().
+		SetState(state).
+		SetProvider("slack").
+		SetPayloadEncrypted(sealed).
+		SetExpiresAt(time.Now().Add(time.Minute)).
+		ExecX(context.Background())
+
+	recorder := claim(t, handler, user, state)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("legacy raw-state claim: %d (%s), want 200", recorder.Code, recorder.Body.String())
+	}
+	if client.OAuthPending.Query().CountX(context.Background()) != 0 {
+		t.Fatal("legacy raw-state ticket was not consumed")
 	}
 }
 
@@ -612,7 +654,8 @@ func TestSlackClaimBeforeCallbackIsRetryable(t *testing.T) {
 	if rec := claim(t, h, u, state); rec.Code != http.StatusConflict {
 		t.Fatalf("early claim: %d, want 409", rec.Code)
 	}
-	if n := client.OAuthPending.Query().Where(oauthpending.StateEQ(state)).CountX(context.Background()); n != 1 {
+	stateDigest := sha256.Sum256([]byte(state))
+	if n := client.OAuthPending.Query().Where(oauthpending.StateHashEQ(hex.EncodeToString(stateDigest[:]))).CountX(context.Background()); n != 1 {
 		t.Fatal("early claim must not consume the ticket")
 	}
 
