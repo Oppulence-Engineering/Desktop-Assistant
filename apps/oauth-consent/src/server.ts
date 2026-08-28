@@ -4,7 +4,7 @@ import type { Config } from './config.js';
 import { safeEqual, signValue, verifySignedValue } from './crypto.js';
 import { AppError, badRequest } from './errors.js';
 import { consentPage, entitlementDeniedPage, errorPage } from './html.js';
-import { OryAdmin, OryRequestError } from './ory.js';
+import { OryAdmin, type ConsentDecisionBinding, type ConsentDecisionProbe, type HydraOutcomeProof } from './ory.js';
 import { RowboatHooks, type AuditRequest, type ConsentContext } from './rowboat.js';
 import type { ConsentStateStore, ConsentSession, DecisionClaim, StepUpFlowClaim } from './state.js';
 import { WorkOS } from './workos.js';
@@ -157,7 +157,14 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
         requestedProductScopes,
       );
       const session = await store.getOrCreateShownConsent(
-        { challenge, subject: consent.subject, hydraClientId, context },
+        {
+          challenge,
+          subject: consent.subject,
+          hydraClientId,
+          hydraRequestedAudience: consent.requested_access_token_audience,
+          hydraRequestedScopes: consent.requested_scope,
+          context,
+        },
         (created) =>
           ({
             event: 'consent.shown',
@@ -184,9 +191,15 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
       const session = await consentSession(req, cfg, store);
       verifyCsrf(session, req.body.csrf);
       const decision = DecisionSchema.parse(req.body.decision);
-      if (session.status === 'approved' || session.status === 'denied' || session.status === 'invalidated') {
+      if (
+        session.status === 'approved' ||
+        session.status === 'denied' ||
+        session.status === 'invalidated' ||
+        session.status === 'indeterminate'
+      ) {
         if (session.decision !== decision)
           throw new AppError(409, 'consent_replay', 'This decision is already complete.');
+        if (session.status === 'indeterminate') throw indeterminateOutcomeError();
         res.clearCookie(CONSENT_COOKIE, { ...cookieOptions, maxAge: undefined });
         return session.hydraRedirectTo
           ? res.redirect(session.hydraRedirectTo)
@@ -376,16 +389,16 @@ async function executeDecision(
 ): Promise<string | undefined> {
   let claim = initialClaim;
   if (claim.session.hydraOutcomePhase === 'accept_pending' || claim.session.hydraOutcomePhase === 'reject_pending') {
+    let probe: ConsentDecisionProbe;
     try {
-      if (await ory.consentRequestPending(claim.session.challenge)) {
-        claim = await store.resetHydraPending(claim);
-      } else {
-        claim = await store.recordHydraOutcome(claim, claim.session.decision === 'approve' ? 'accepted' : 'rejected');
-      }
+      probe = await ory.probeConsentDecision(decisionBinding(claim.session));
     } catch (error) {
       await store.retryDecision(claim, errorMessage(error));
       throw error;
     }
+    if (probe.state === 'pending') claim = await store.resetHydraPending(claim);
+    else if (probe.state === 'committed') claim = await store.recordHydraOutcome(claim, probe.proof);
+    else await markIndeterminate(claim, store, probe);
   }
 
   if (claim.session.hydraOutcomePhase === 'accepted') return convergeAcceptedDecision(claim, store, hooks);
@@ -424,35 +437,74 @@ async function executeDecision(
           })
         : await ory.rejectConsent(claim.session.challenge, 'The user denied the connector authorization request.');
     await faults.afterHydra?.(claim);
-    claim = await store.recordHydraOutcome(
-      claim,
-      claim.session.decision === 'approve' ? 'accepted' : 'rejected',
-      completion.redirect_to,
-    );
+    claim = await store.recordHydraOutcome(claim, submissionOutcomeProof(claim.session, completion.redirect_to));
   } catch (error) {
     if (error instanceof InjectedPostHydraCrash) throw error;
-    let pending: boolean;
+    let probe: ConsentDecisionProbe;
     try {
-      pending =
-        error instanceof OryRequestError && [409, 410].includes(error.upstreamStatus)
-          ? false
-          : await ory.consentRequestPending(claim.session.challenge);
+      probe = await ory.probeConsentDecision(decisionBinding(claim.session));
     } catch (probeError) {
       await store.retryDecision(claim, errorMessage(probeError));
       throw probeError;
     }
-    if (!pending) {
-      claim = await store.recordHydraOutcome(claim, claim.session.decision === 'approve' ? 'accepted' : 'rejected');
-    } else {
+    if (probe.state === 'committed') {
+      claim = await store.recordHydraOutcome(claim, probe.proof);
+    } else if (probe.state === 'pending') {
       claim = await store.resetHydraPending(claim);
       await store.retryDecision(claim, errorMessage(error));
       throw error;
-    }
+    } else await markIndeterminate(claim, store, probe);
   }
 
   if (claim.session.hydraOutcomePhase === 'accepted') return convergeAcceptedDecision(claim, store, hooks);
   await store.finalizeDecision(claim, claim.session.hydraRedirectTo);
   return claim.session.hydraRedirectTo;
+}
+
+function decisionBinding(session: ConsentSession): ConsentDecisionBinding {
+  return {
+    challenge: session.challenge,
+    subject: session.subject,
+    clientId: session.hydraClientId,
+    requestedAudience: [...session.hydraRequestedAudience],
+    requestedScopes: [...session.hydraRequestedScopes],
+    decision: session.decision!,
+    grantedAudience: session.decision === 'approve' ? [session.context.connector.audience] : [],
+    grantedScopes: session.decision === 'approve' ? ['offline_access', ...(session.selectedScopes ?? [])] : [],
+  };
+}
+
+function submissionOutcomeProof(session: ConsentSession, redirectTo: string): HydraOutcomeProof {
+  const binding = decisionBinding(session);
+  return {
+    outcome: binding.decision === 'approve' ? 'accepted' : 'rejected',
+    source: 'submission_response',
+    challenge: binding.challenge,
+    subject: binding.subject,
+    clientId: binding.clientId,
+    requestedAudience: binding.requestedAudience,
+    requestedScopes: binding.requestedScopes,
+    grantedAudience: binding.grantedAudience,
+    grantedScopes: binding.grantedScopes,
+    redirectTo,
+  };
+}
+
+async function markIndeterminate(
+  claim: DecisionClaim,
+  store: ConsentStateStore,
+  probe: Extract<ConsentDecisionProbe, { state: 'indeterminate' }>,
+): Promise<never> {
+  await store.markDecisionIndeterminate(claim, probe.reason, probe.proof);
+  throw indeterminateOutcomeError();
+}
+
+function indeterminateOutcomeError(): AppError {
+  return new AppError(
+    503,
+    'consent_outcome_indeterminate',
+    'The authorization outcome could not be verified. Support must reconcile this request before it is retried.',
+  );
 }
 
 async function convergeAcceptedDecision(

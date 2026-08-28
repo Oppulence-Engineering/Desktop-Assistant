@@ -1,12 +1,21 @@
 import type { Pool, PoolClient } from 'pg';
 import { badRequest, conflict } from './errors.js';
 import { hashToken, randomToken } from './crypto.js';
+import type { HydraOutcomeProof } from './ory.js';
 import type { ConsentContext } from './rowboat.js';
 
 export type ConsentStatus =
-  'created' | 'shown' | 'step_up_pending' | 'processing' | 'approved' | 'denied' | 'invalidated' | 'failed';
+  | 'created'
+  | 'shown'
+  | 'step_up_pending'
+  | 'processing'
+  | 'approved'
+  | 'denied'
+  | 'invalidated'
+  | 'indeterminate'
+  | 'failed';
 
-export type HydraOutcomePhase = 'accept_pending' | 'accepted' | 'reject_pending' | 'rejected';
+export type HydraOutcomePhase = 'accept_pending' | 'accepted' | 'reject_pending' | 'rejected' | 'indeterminate';
 
 export interface ConsentSession {
   id: string;
@@ -14,6 +23,8 @@ export interface ConsentSession {
   csrf: string;
   subject: string;
   hydraClientId: string;
+  hydraRequestedAudience: string[];
+  hydraRequestedScopes: string[];
   context: ConsentContext;
   status: ConsentStatus;
   selectedScopes?: string[];
@@ -22,6 +33,8 @@ export interface ConsentSession {
   hydraOutcomePhase?: HydraOutcomePhase;
   hydraCommittedAt?: number;
   hydraRedirectTo?: string;
+  hydraOutcomeProof?: HydraOutcomeProof;
+  decisionLastError?: string;
   grantRecordedAt?: number;
   expiresAt: number;
   createdAt: number;
@@ -77,7 +90,12 @@ type NewConsent = Omit<
   | 'hydraCommittedAt'
   | 'hydraRedirectTo'
   | 'grantRecordedAt'
->;
+  | 'hydraOutcomeProof'
+  | 'decisionLastError'
+  | 'hydraRequestedAudience'
+  | 'hydraRequestedScopes'
+> &
+  Partial<Pick<ConsentSession, 'hydraRequestedAudience' | 'hydraRequestedScopes'>>;
 
 export interface ConsentStateStore {
   createConsent(input: NewConsent): Promise<ConsentSession> | ConsentSession;
@@ -133,11 +151,8 @@ export interface ConsentStateStore {
   ): Promise<DecisionClaim> | DecisionClaim;
   markHydraPending(claim: DecisionClaim): Promise<DecisionClaim> | DecisionClaim;
   resetHydraPending(claim: DecisionClaim): Promise<DecisionClaim> | DecisionClaim;
-  recordHydraOutcome(
-    claim: DecisionClaim,
-    outcome: 'accepted' | 'rejected',
-    redirectTo?: string,
-  ): Promise<DecisionClaim> | DecisionClaim;
+  recordHydraOutcome(claim: DecisionClaim, proof: HydraOutcomeProof): Promise<DecisionClaim> | DecisionClaim;
+  markDecisionIndeterminate(claim: DecisionClaim, reason: string, proof?: HydraOutcomeProof): Promise<void> | void;
   recordAcceptedGrant(claim: DecisionClaim): Promise<DecisionClaim> | DecisionClaim;
   invalidateAcceptedDecision(claim: DecisionClaim, payload: unknown): Promise<void> | void;
   finalizeDecision(claim: DecisionClaim, redirectTo?: string): Promise<void> | void;
@@ -189,6 +204,11 @@ export class StateStore implements ConsentStateStore {
     const createdAt = this.now();
     return {
       ...input,
+      hydraRequestedAudience: input.hydraRequestedAudience ?? [input.context.connector.audience],
+      hydraRequestedScopes: input.hydraRequestedScopes ?? [
+        'offline_access',
+        ...input.context.scopes.map((scope) => scope.name),
+      ],
       id: randomToken(),
       csrf: randomToken(),
       status,
@@ -199,7 +219,7 @@ export class StateStore implements ConsentStateStore {
 
   getConsent(id: string): ConsentSession {
     const value = this.consent.get(id);
-    if (!value || (value.expiresAt <= this.now() && value.status !== 'processing'))
+    if (!value || (value.expiresAt <= this.now() && !['processing', 'indeterminate'].includes(value.status)))
       throw conflict('consent_session_missing');
     return value;
   }
@@ -411,8 +431,10 @@ export class StateStore implements ConsentStateStore {
     return claim;
   }
 
-  recordHydraOutcome(claim: DecisionClaim, outcome: 'accepted' | 'rejected', redirectTo?: string): DecisionClaim {
+  recordHydraOutcome(claim: DecisionClaim, proof: HydraOutcomeProof): DecisionClaim {
     this.assertDecisionClaim(claim);
+    assertOutcomeProof(claim.session, proof);
+    const outcome = proof.outcome;
     const expected = claim.session.decision === 'approve' ? 'accepted' : 'rejected';
     if (outcome !== expected) throw conflict('hydra_outcome_irreversible');
     const pending = outcome === 'accepted' ? 'accept_pending' : 'reject_pending';
@@ -420,8 +442,19 @@ export class StateStore implements ConsentStateStore {
       throw conflict('hydra_outcome_irreversible');
     claim.session.hydraOutcomePhase = outcome;
     claim.session.hydraCommittedAt ??= this.now();
-    claim.session.hydraRedirectTo = redirectTo ?? claim.session.hydraRedirectTo;
+    claim.session.hydraRedirectTo = proof.redirectTo ?? claim.session.hydraRedirectTo;
+    claim.session.hydraOutcomeProof = proof;
     return claim;
+  }
+
+  markDecisionIndeterminate(claim: DecisionClaim, reason: string, proof?: HydraOutcomeProof): void {
+    this.assertDecisionClaim(claim);
+    if (proof) assertProofBinding(claim.session, proof);
+    claim.session.status = 'indeterminate';
+    claim.session.hydraOutcomePhase = 'indeterminate';
+    claim.session.hydraOutcomeProof = proof;
+    claim.session.decisionLastError = reason;
+    this.decisions.delete(claim.session.id);
   }
 
   recordAcceptedGrant(claim: DecisionClaim): DecisionClaim {
@@ -474,7 +507,8 @@ export class StateStore implements ConsentStateStore {
 
   cleanup(): void {
     for (const [id, value] of this.consent)
-      if (value.expiresAt <= this.now() && value.status !== 'processing') this.consent.delete(id);
+      if (value.expiresAt <= this.now() && value.status !== 'processing' && value.status !== 'indeterminate')
+        this.consent.delete(id);
     for (const [id, value] of this.flows) if (value.expiresAt <= this.now()) this.flows.delete(id);
   }
 }
@@ -532,8 +566,9 @@ export class PostgresStateStore implements ConsentStateStore {
   ) {
     const result = await client.query(
       `INSERT INTO oauth_consent_sessions
-       (id, challenge, csrf, subject, hydra_client_id, context, status, expires_at, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,to_timestamp($8 / 1000.0),to_timestamp($9 / 1000.0))
+       (id, challenge, csrf, subject, hydra_client_id, hydra_requested_audience, hydra_requested_scopes,
+        context, status, expires_at, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,to_timestamp($10 / 1000.0),to_timestamp($11 / 1000.0))
        ${ignoreConflict ? 'ON CONFLICT DO NOTHING' : ''} RETURNING id`,
       [
         session.id,
@@ -541,6 +576,8 @@ export class PostgresStateStore implements ConsentStateStore {
         session.csrf,
         session.subject,
         session.hydraClientId,
+        JSON.stringify(session.hydraRequestedAudience),
+        JSON.stringify(session.hydraRequestedScopes),
         JSON.stringify(session.context),
         session.status,
         session.expiresAt,
@@ -552,7 +589,7 @@ export class PostgresStateStore implements ConsentStateStore {
 
   async getConsent(id: string): Promise<ConsentSession> {
     const result = await this.pool.query(
-      `${CONSENT_SELECT} WHERE id=$1 AND (expires_at > now() OR status='processing')`,
+      `${CONSENT_SELECT} WHERE id=$1 AND (expires_at > now() OR status IN ('processing','indeterminate'))`,
       [id],
     );
     if (!result.rowCount) throw conflict('consent_session_missing');
@@ -926,23 +963,42 @@ export class PostgresStateStore implements ConsentStateStore {
     return { session: rowToConsent(result.rows[0]), claimToken: claim.claimToken };
   }
 
-  async recordHydraOutcome(
-    claim: DecisionClaim,
-    outcome: 'accepted' | 'rejected',
-    redirectTo?: string,
-  ): Promise<DecisionClaim> {
+  async recordHydraOutcome(claim: DecisionClaim, proof: HydraOutcomeProof): Promise<DecisionClaim> {
+    assertOutcomeProof(claim.session, proof);
+    const outcome = proof.outcome;
     const expectedDecision = outcome === 'accepted' ? 'approve' : 'deny';
     const pending = outcome === 'accepted' ? 'accept_pending' : 'reject_pending';
     const result = await this.pool.query(
       `UPDATE oauth_consent_sessions
        SET hydra_outcome_phase=$3, hydra_committed_at=COALESCE(hydra_committed_at,now()),
-           hydra_redirect_to=COALESCE($4,hydra_redirect_to), version=version+1
+           hydra_redirect_to=COALESCE($4,hydra_redirect_to), hydra_outcome_proof=$7, version=version+1
        WHERE id=$1 AND status='processing' AND decision_claim_token=$2 AND decision=$5
          AND hydra_outcome_phase IN ($6,$3) RETURNING ${CONSENT_COLUMNS}`,
-      [claim.session.id, claim.claimToken, outcome, redirectTo ?? null, expectedDecision, pending],
+      [
+        claim.session.id,
+        claim.claimToken,
+        outcome,
+        proof.redirectTo ?? null,
+        expectedDecision,
+        pending,
+        JSON.stringify(proof),
+      ],
     );
     if (!result.rowCount) throw conflict('hydra_outcome_irreversible');
     return { session: rowToConsent(result.rows[0]), claimToken: claim.claimToken };
+  }
+
+  async markDecisionIndeterminate(claim: DecisionClaim, reason: string, proof?: HydraOutcomeProof): Promise<void> {
+    if (proof) assertProofBinding(claim.session, proof);
+    const result = await this.pool.query(
+      `UPDATE oauth_consent_sessions
+       SET status='indeterminate', hydra_outcome_phase='indeterminate', hydra_outcome_proof=$3,
+           decision_last_error=$4, decision_claim_token=NULL, decision_lease_until=NULL, version=version+1
+       WHERE id=$1 AND status='processing' AND decision_claim_token=$2
+         AND hydra_outcome_phase IN ('accept_pending','reject_pending')`,
+      [claim.session.id, claim.claimToken, proof ? JSON.stringify(proof) : null, reason.slice(0, 1000)],
+    );
+    if (!result.rowCount) throw conflict('decision_claim_invalid');
   }
 
   async recordAcceptedGrant(claim: DecisionClaim): Promise<DecisionClaim> {
@@ -1037,14 +1093,18 @@ export class PostgresStateStore implements ConsentStateStore {
 
   async cleanup(): Promise<void> {
     await this.pool.query(`DELETE FROM oauth_consent_browser_flows WHERE expires_at <= now()`);
-    await this.pool.query(`DELETE FROM oauth_consent_sessions WHERE expires_at <= now() AND status <> 'processing'`);
+    await this.pool.query(
+      `DELETE FROM oauth_consent_sessions WHERE expires_at <= now() AND status NOT IN ('processing','indeterminate')`,
+    );
     await this.pool.query(`DELETE FROM oauth_consent_audit_outbox WHERE delivered_at < now() - interval '30 days'`);
   }
 }
 
-const CONSENT_COLUMNS = `id, challenge, csrf, subject, hydra_client_id, context, status, selected_scopes, decision,
+const CONSENT_COLUMNS = `id, challenge, csrf, subject, hydra_client_id, hydra_requested_audience,
+ hydra_requested_scopes, context, status, selected_scopes, decision,
  decision_payload, hydra_outcome_phase, extract(epoch from hydra_committed_at)*1000 AS hydra_committed_at_ms,
- hydra_redirect_to, extract(epoch from grant_recorded_at)*1000 AS grant_recorded_at_ms,
+ hydra_redirect_to, hydra_outcome_proof, decision_last_error,
+ extract(epoch from grant_recorded_at)*1000 AS grant_recorded_at_ms,
  extract(epoch from expires_at)*1000 AS expires_at_ms, extract(epoch from created_at)*1000 AS created_at_ms`;
 const CONSENT_SELECT = `SELECT ${CONSENT_COLUMNS} FROM oauth_consent_sessions`;
 const FLOW_COLUMNS = `state_hash, state_value, cookie_binding, nonce, challenge, consent_session_id,
@@ -1054,9 +1114,11 @@ const FLOW_COLUMNS = `state_hash, state_value, cookie_binding, nonce, challenge,
 function prefixedConsentColumns(prefix: string): string {
   return `
     ${prefix}.id, ${prefix}.challenge, ${prefix}.csrf, ${prefix}.subject, ${prefix}.hydra_client_id,
-    ${prefix}.context, ${prefix}.status, ${prefix}.selected_scopes, ${prefix}.decision, ${prefix}.decision_payload,
+    ${prefix}.hydra_requested_audience, ${prefix}.hydra_requested_scopes, ${prefix}.context, ${prefix}.status,
+    ${prefix}.selected_scopes, ${prefix}.decision, ${prefix}.decision_payload,
     ${prefix}.hydra_outcome_phase,
     extract(epoch from ${prefix}.hydra_committed_at)*1000 AS hydra_committed_at_ms, ${prefix}.hydra_redirect_to,
+    ${prefix}.hydra_outcome_proof, ${prefix}.decision_last_error,
     extract(epoch from ${prefix}.grant_recorded_at)*1000 AS grant_recorded_at_ms,
     extract(epoch from ${prefix}.expires_at)*1000 AS expires_at_ms,
     extract(epoch from ${prefix}.created_at)*1000 AS created_at_ms`;
@@ -1066,6 +1128,11 @@ function newConsent(input: NewConsent, ttlMs: number, status: ConsentStatus): Co
   const createdAt = Date.now();
   return {
     ...input,
+    hydraRequestedAudience: input.hydraRequestedAudience ?? [input.context.connector.audience],
+    hydraRequestedScopes: input.hydraRequestedScopes ?? [
+      'offline_access',
+      ...input.context.scopes.map((scope) => scope.name),
+    ],
     id: randomToken(),
     csrf: randomToken(),
     status,
@@ -1088,6 +1155,8 @@ function rowToConsent(row: Record<string, unknown>): ConsentSession {
     csrf: String(row.csrf),
     subject: String(row.subject),
     hydraClientId: String(row.hydra_client_id),
+    hydraRequestedAudience: row.hydra_requested_audience as string[],
+    hydraRequestedScopes: row.hydra_requested_scopes as string[],
     context: row.context as ConsentContext,
     status: row.status as ConsentStatus,
     selectedScopes: (row.selected_scopes as string[] | null) ?? undefined,
@@ -1096,6 +1165,8 @@ function rowToConsent(row: Record<string, unknown>): ConsentSession {
     hydraOutcomePhase: row.hydra_outcome_phase ? (String(row.hydra_outcome_phase) as HydraOutcomePhase) : undefined,
     hydraCommittedAt: row.hydra_committed_at_ms ? Number(row.hydra_committed_at_ms) : undefined,
     hydraRedirectTo: row.hydra_redirect_to ? String(row.hydra_redirect_to) : undefined,
+    hydraOutcomeProof: (row.hydra_outcome_proof as HydraOutcomeProof | null) ?? undefined,
+    decisionLastError: row.decision_last_error ? String(row.decision_last_error) : undefined,
     grantRecordedAt: row.grant_recorded_at_ms ? Number(row.grant_recorded_at_ms) : undefined,
     expiresAt: Number(row.expires_at_ms),
     createdAt: Number(row.created_at_ms),
@@ -1124,14 +1195,53 @@ function requireState(flow: BrowserFlow): BrowserFlow & { state: string } {
 }
 
 function assertSameConsent(existing: ConsentSession, input: NewConsent): void {
+  const requestedAudience = input.hydraRequestedAudience ?? [input.context.connector.audience];
+  const requestedScopes = input.hydraRequestedScopes ?? [
+    'offline_access',
+    ...input.context.scopes.map((scope) => scope.name),
+  ];
   if (
     existing.challenge !== input.challenge ||
     existing.subject !== input.subject ||
     existing.hydraClientId !== input.hydraClientId ||
+    !sameUniqueSet(existing.hydraRequestedAudience, requestedAudience) ||
+    !sameUniqueSet(existing.hydraRequestedScopes, requestedScopes) ||
     stableJson(consentSecurityContext(existing.context)) !== stableJson(consentSecurityContext(input.context))
   ) {
     throw conflict('consent_challenge_context_mismatch');
   }
+}
+
+function assertOutcomeProof(session: ConsentSession, proof: HydraOutcomeProof): void {
+  assertProofBinding(session, proof);
+  const expected = session.decision === 'approve' ? 'accepted' : 'rejected';
+  if (proof.outcome !== expected) throw conflict('hydra_outcome_proof_mismatch');
+  const expectedAudience = session.decision === 'approve' ? [session.context.connector.audience] : [];
+  const expectedScopes = session.decision === 'approve' ? ['offline_access', ...(session.selectedScopes ?? [])] : [];
+  if (!sameUniqueSet(proof.grantedAudience, expectedAudience) || !sameUniqueSet(proof.grantedScopes, expectedScopes)) {
+    throw conflict('hydra_outcome_proof_mismatch');
+  }
+}
+
+function assertProofBinding(session: ConsentSession, proof: HydraOutcomeProof): void {
+  if (
+    proof.challenge !== session.challenge ||
+    proof.subject !== session.subject ||
+    proof.clientId !== session.hydraClientId ||
+    !sameUniqueSet(proof.requestedAudience, session.hydraRequestedAudience) ||
+    !sameUniqueSet(proof.requestedScopes, session.hydraRequestedScopes)
+  ) {
+    throw conflict('hydra_outcome_proof_mismatch');
+  }
+}
+
+function sameUniqueSet(left: string[], right: string[]): boolean {
+  return (
+    new Set(left).size === left.length &&
+    new Set(right).size === right.length &&
+    left.length === right.length &&
+    left.every((value) => right.includes(value))
+  );
 }
 
 function consentSecurityContext(context: ConsentContext): unknown {

@@ -17,12 +17,55 @@ const ConsentRequestSchema = z.object({
   requested_access_token_audience: z.array(z.string()),
   client: z.object({ client_id: z.string().optional() }).optional(),
 });
-type ConsentRequest = z.infer<typeof ConsentRequestSchema>;
+export type ConsentRequest = z.infer<typeof ConsentRequestSchema>;
 
 const CompletionSchema = z.object({
   redirect_to: z.string(),
 });
 type Completion = z.infer<typeof CompletionSchema>;
+
+const ConsentSessionRequestSchema = ConsentRequestSchema.partial().extend({ challenge: z.string() });
+type ConsentSessionRequest = z.infer<typeof ConsentSessionRequestSchema>;
+
+const ConsentSessionSchema = z.object({
+  consent_request_id: z.string().optional(),
+  consent_request: ConsentSessionRequestSchema,
+  grant_access_token_audience: z.array(z.string()).default([]),
+  grant_scope: z.array(z.string()).default([]),
+  handled_at: z.string().nullish(),
+});
+const ConsentSessionsSchema = z.array(ConsentSessionSchema);
+
+export interface ConsentDecisionBinding {
+  challenge: string;
+  subject: string;
+  clientId: string;
+  requestedAudience: string[];
+  requestedScopes: string[];
+  decision: 'approve' | 'deny';
+  grantedAudience: string[];
+  grantedScopes: string[];
+}
+
+export interface HydraOutcomeProof {
+  outcome: 'accepted' | 'rejected';
+  source: 'submission_response' | 'consent_session' | 'terminal_redirect';
+  challenge: string;
+  subject: string;
+  clientId: string;
+  requestedAudience: string[];
+  requestedScopes: string[];
+  grantedAudience: string[];
+  grantedScopes: string[];
+  redirectTo?: string;
+  consentRequestId?: string;
+  handledAt?: string;
+}
+
+export type ConsentDecisionProbe =
+  | { state: 'pending' }
+  | { state: 'committed'; proof: HydraOutcomeProof }
+  | { state: 'indeterminate'; reason: string; proof?: HydraOutcomeProof };
 
 const AcceptConsentOptsSchema = z.object({
   grantScope: z.array(z.string()),
@@ -44,10 +87,10 @@ export class OryAdmin {
     private readonly timeoutMs: number,
   ) {}
 
-  private async req<T>(schema: z.ZodType<T>, method: string, path: string, body?: unknown): Promise<T> {
+  private async raw(method: string, path: string, body?: unknown): Promise<Response> {
     let res: Response;
     try {
-      res = await fetch(this.adminUrl + path, {
+      res = await fetch(new URL(path, this.adminUrl).toString(), {
         method,
         headers: { 'content-type': 'application/json', accept: 'application/json' },
         body: body ? JSON.stringify(body) : undefined,
@@ -56,12 +99,21 @@ export class OryAdmin {
     } catch {
       throw upstream('ory');
     }
-    if (!res.ok) throw new OryRequestError(res.status);
+    return res;
+  }
+
+  private async parse<T>(res: Response, schema: z.ZodType<T>): Promise<T> {
     try {
       return schema.parse(await res.json());
     } catch {
       throw upstream('ory');
     }
+  }
+
+  private async req<T>(schema: z.ZodType<T>, method: string, path: string, body?: unknown): Promise<T> {
+    const res = await this.raw(method, path, body);
+    if (!res.ok) throw new OryRequestError(res.status);
+    return this.parse(res, schema);
   }
 
   getLoginRequest(challenge: string): Promise<LoginRequest> {
@@ -113,6 +165,88 @@ export class OryAdmin {
     }
   }
 
+  async probeConsentDecision(binding: ConsentDecisionBinding): Promise<ConsentDecisionProbe> {
+    const res = await this.raw(
+      'GET',
+      `/admin/oauth2/auth/requests/consent?consent_challenge=${encodeURIComponent(binding.challenge)}`,
+    );
+    let terminalRedirect: string | undefined;
+    if (res.ok) {
+      const request = await this.parse(res, ConsentRequestSchema);
+      return consentRequestMatches(request, binding)
+        ? { state: 'pending' }
+        : { state: 'indeterminate', reason: 'hydra_pending_request_binding_mismatch' };
+    }
+    if (![404, 409, 410].includes(res.status)) throw new OryRequestError(res.status);
+    if (res.status === 410) {
+      const parsed = CompletionSchema.safeParse(await res.json().catch(() => undefined));
+      if (parsed.success) terminalRedirect = parsed.data.redirect_to;
+    }
+
+    const sessions = await this.listConsentSessions(binding.subject);
+    const sameChallenge = sessions.filter((session) => session.consent_request.challenge === binding.challenge);
+    const accepted = sameChallenge.find(
+      (session) =>
+        consentRequestMatches(session.consent_request, binding) &&
+        sameUniqueSet(session.grant_access_token_audience, binding.grantedAudience) &&
+        sameUniqueSet(session.grant_scope, binding.grantedScopes),
+    );
+    if (accepted) {
+      const proof: HydraOutcomeProof = {
+        outcome: 'accepted',
+        source: 'consent_session',
+        challenge: binding.challenge,
+        subject: binding.subject,
+        clientId: binding.clientId,
+        requestedAudience: [...binding.requestedAudience],
+        requestedScopes: [...binding.requestedScopes],
+        grantedAudience: [...accepted.grant_access_token_audience],
+        grantedScopes: [...accepted.grant_scope],
+        redirectTo: terminalRedirect,
+        consentRequestId: accepted.consent_request_id,
+        handledAt: accepted.handled_at ?? undefined,
+      };
+      return binding.decision === 'approve'
+        ? { state: 'committed', proof }
+        : { state: 'indeterminate', reason: 'hydra_terminal_outcome_conflicts_with_intent', proof };
+    }
+    if (sameChallenge.length) {
+      return { state: 'indeterminate', reason: 'hydra_accepted_session_binding_mismatch' };
+    }
+
+    if (terminalRedirect && redirectError(terminalRedirect) === 'access_denied') {
+      const proof: HydraOutcomeProof = {
+        outcome: 'rejected',
+        source: 'terminal_redirect',
+        challenge: binding.challenge,
+        subject: binding.subject,
+        clientId: binding.clientId,
+        requestedAudience: [...binding.requestedAudience],
+        requestedScopes: [...binding.requestedScopes],
+        grantedAudience: [],
+        grantedScopes: [],
+        redirectTo: terminalRedirect,
+      };
+      return binding.decision === 'deny'
+        ? { state: 'committed', proof }
+        : { state: 'indeterminate', reason: 'hydra_terminal_outcome_conflicts_with_intent', proof };
+    }
+    return { state: 'indeterminate', reason: 'hydra_terminal_outcome_unproven' };
+  }
+
+  private async listConsentSessions(subject: string): Promise<z.infer<typeof ConsentSessionsSchema>> {
+    const sessions: z.infer<typeof ConsentSessionsSchema> = [];
+    let path: string | undefined =
+      `/admin/oauth2/auth/sessions/consent?subject=${encodeURIComponent(subject)}&page_size=500`;
+    for (let page = 0; path && page < 100; page += 1) {
+      const res = await this.raw('GET', path);
+      if (!res.ok) throw new OryRequestError(res.status);
+      sessions.push(...(await this.parse(res, ConsentSessionsSchema)));
+      path = nextPage(res.headers.get('link'));
+    }
+    return sessions;
+  }
+
   acceptConsent(challenge: string, opts: AcceptConsentOpts): Promise<Completion> {
     return this.req(
       CompletionSchema,
@@ -152,4 +286,43 @@ export class OryAdmin {
       `/admin/oauth2/auth/requests/logout/accept?logout_challenge=${encodeURIComponent(challenge)}`,
     );
   }
+}
+
+function consentRequestMatches(
+  request: ConsentRequest | ConsentSessionRequest,
+  binding: ConsentDecisionBinding,
+): boolean {
+  return (
+    request.challenge === binding.challenge &&
+    request.subject === binding.subject &&
+    request.client?.client_id === binding.clientId &&
+    sameUniqueSet(request.requested_access_token_audience ?? [], binding.requestedAudience) &&
+    sameUniqueSet(request.requested_scope ?? [], binding.requestedScopes)
+  );
+}
+
+function sameUniqueSet(left: string[], right: string[]): boolean {
+  return (
+    new Set(left).size === left.length &&
+    new Set(right).size === right.length &&
+    left.length === right.length &&
+    left.every((value) => right.includes(value))
+  );
+}
+
+function redirectError(redirectTo: string): string | undefined {
+  try {
+    return new URL(redirectTo).searchParams.get('error') ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function nextPage(link: string | null): string | undefined {
+  if (!link) return undefined;
+  for (const entry of link.split(',')) {
+    const match = entry.match(/<([^>]+)>;\s*rel="?next"?/);
+    if (match?.[1]) return match[1];
+  }
+  return undefined;
 }

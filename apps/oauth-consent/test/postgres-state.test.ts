@@ -6,7 +6,13 @@ import { exportJWK, generateKeyPair, SignJWT, type JWK, type JWTPayload, type Ke
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Config } from '../src/config.js';
-import { OryRequestError, type OryAdmin } from '../src/ory.js';
+import {
+  OryRequestError,
+  type ConsentDecisionBinding,
+  type ConsentDecisionProbe,
+  type HydraOutcomeProof,
+  type OryAdmin,
+} from '../src/ory.js';
 import type { AuditRequest, ConsentContext, RowboatHooks } from '../src/rowboat.js';
 import { buildApp, InjectedPostHydraCrash, reconcileDecisions } from '../src/server.js';
 import { PostgresStateStore } from '../src/state.js';
@@ -68,12 +74,14 @@ const config: Config = {
 };
 
 class FakeOry {
-  terminal = false;
+  terminal?: 'accepted' | 'rejected' | 'expired';
   loginTerminal = false;
   hydraCommits = 0;
   acceptCalls = 0;
   loginAcceptCalls = 0;
   failNextLoginAccept = 0;
+  expireBeforeNextConsent = false;
+  loseNextConsentResponse = false;
   readonly challenge: string;
   readonly consentContext: ConsentContext;
 
@@ -114,21 +122,57 @@ class FakeOry {
 
   async acceptConsent() {
     this.acceptCalls += 1;
+    if (this.expireBeforeNextConsent) {
+      this.expireBeforeNextConsent = false;
+      this.terminal = 'expired';
+      throw new OryRequestError(410);
+    }
     if (this.terminal) throw new OryRequestError(409);
-    this.terminal = true;
+    this.terminal = 'accepted';
     this.hydraCommits += 1;
+    if (this.loseNextConsentResponse) {
+      this.loseNextConsentResponse = false;
+      throw new OryRequestError(503);
+    }
     return { redirect_to: 'http://desktop.test/complete' };
   }
 
   async rejectConsent() {
     if (this.terminal) throw new OryRequestError(409);
-    this.terminal = true;
+    this.terminal = 'rejected';
     this.hydraCommits += 1;
-    return { redirect_to: 'http://desktop.test/denied' };
+    return { redirect_to: 'http://desktop.test/denied?error=access_denied' };
   }
 
   async consentRequestPending() {
     return !this.terminal;
+  }
+
+  async probeConsentDecision(binding: ConsentDecisionBinding): Promise<ConsentDecisionProbe> {
+    if (!this.terminal) return { state: 'pending' };
+    if (this.terminal === 'expired') {
+      return { state: 'indeterminate', reason: 'hydra_terminal_outcome_unproven' };
+    }
+    const proof: HydraOutcomeProof = {
+      outcome: this.terminal,
+      source: this.terminal === 'accepted' ? 'consent_session' : 'terminal_redirect',
+      challenge: binding.challenge,
+      subject: binding.subject,
+      clientId: binding.clientId,
+      requestedAudience: [...binding.requestedAudience],
+      requestedScopes: [...binding.requestedScopes],
+      grantedAudience: this.terminal === 'accepted' ? [...binding.grantedAudience] : [],
+      grantedScopes: this.terminal === 'accepted' ? [...binding.grantedScopes] : [],
+      redirectTo:
+        this.terminal === 'accepted'
+          ? 'http://desktop.test/complete'
+          : 'http://desktop.test/denied?error=access_denied',
+      consentRequestId: this.terminal === 'accepted' ? `request_${binding.challenge}` : undefined,
+    };
+    const expected = binding.decision === 'approve' ? 'accepted' : 'rejected';
+    return proof.outcome === expected
+      ? { state: 'committed', proof }
+      : { state: 'indeterminate', reason: 'hydra_terminal_outcome_conflicts_with_intent', proof };
   }
 }
 
@@ -268,6 +312,7 @@ suite('PostgreSQL state store multi-instance behavior', () => {
         new URL('../migrations/20260827232500_irreversible_outcomes_and_login_leases.sql', import.meta.url),
         'utf8',
       ),
+      readFile(new URL('../migrations/20260828035100_authoritative_consent_outcomes.sql', import.meta.url), 'utf8'),
     ]);
     await poolA.query(
       'DROP TABLE IF EXISTS oauth_consent_audit_outbox, oauth_consent_browser_flows, oauth_consent_sessions CASCADE',
@@ -398,7 +443,17 @@ suite('PostgreSQL state store multi-instance behavior', () => {
     expect(replayed?.session.id).toBe(session.id);
     expect(replayed?.claimToken).not.toBe(initialClaim.claimToken);
     let accepted = await restarted.markHydraPending(replayed!);
-    accepted = await restarted.recordHydraOutcome(accepted, 'accepted');
+    accepted = await restarted.recordHydraOutcome(accepted, {
+      outcome: 'accepted',
+      source: 'consent_session',
+      challenge: session.challenge,
+      subject: session.subject,
+      clientId: session.hydraClientId,
+      requestedAudience: session.hydraRequestedAudience,
+      requestedScopes: session.hydraRequestedScopes,
+      grantedAudience: [session.context.connector.audience],
+      grantedScopes: ['offline_access'],
+    });
     accepted = await restarted.recordAcceptedGrant(accepted);
     await restarted.finalizeDecision(accepted);
     const audits = await a.claimAudits(10);
@@ -442,6 +497,129 @@ suite('PostgreSQL state store multi-instance behavior', () => {
     );
     const [left, right] = await Promise.all([a.claimDecisions(10, 1_000), b.claimDecisions(10, 1_000)]);
     expect([...left, ...right].filter((claim) => claim.session.id === session.id)).toHaveLength(1);
+  });
+
+  it('records challenge expiry between durable intent and Hydra submission as indeterminate without semantic audit', async () => {
+    const challenge = 'challenge_expired_after_intent';
+    const ory = new FakeOry(challenge);
+    const hooks = new FakeHooks();
+    const session = await a.createConsent({
+      challenge,
+      subject: context.subject,
+      hydraClientId: context.client.id,
+      context,
+    });
+    await a.transition(session.id, 'created', 'shown');
+    await a.setSelectedScopes(session.id, []);
+    await a.prepareDecision(
+      session.id,
+      'approve',
+      {
+        event: 'consent.granted',
+        eventId: `${session.id}:final`,
+        occurredAt: new Date().toISOString(),
+        sessionId: session.id,
+        context,
+        scopes: [],
+        result: 'approved',
+      },
+      1_000,
+    );
+    ory.expireBeforeNextConsent = true;
+    await poolA.query(
+      `UPDATE oauth_consent_sessions SET decision_lease_until=now() - interval '1 second' WHERE id=$1`,
+      [session.id],
+    );
+
+    const reconciled = await Promise.all([
+      reconcileDecisions(a, ory as unknown as OryAdmin, hooks as unknown as RowboatHooks, 25, 1_000),
+      reconcileDecisions(b, ory as unknown as OryAdmin, hooks as unknown as RowboatHooks, 25, 1_000),
+    ]);
+    expect(reconciled.sort()).toEqual([0, 1]);
+    expect(ory.acceptCalls).toBe(1);
+    expect(ory.hydraCommits).toBe(0);
+
+    const terminal = await b.getConsent(session.id);
+    expect(terminal.status).toBe('indeterminate');
+    expect(terminal.hydraOutcomePhase).toBe('indeterminate');
+    expect(terminal.decision).toBe('approve');
+    expect(terminal.decisionPayload).toEqual(expect.objectContaining({ event: 'consent.granted' }));
+    expect(terminal.decisionLastError).toBe('hydra_terminal_outcome_unproven');
+    expect(terminal.hydraOutcomeProof).toBeUndefined();
+    expect(await a.claimDecisions(25, 1_000)).toEqual([]);
+    expect([...hooks.audits.values()].filter((audit) => audit.event === 'consent.granted')).toHaveLength(0);
+    const audits = await poolA.query(`SELECT id FROM oauth_consent_audit_outbox WHERE id=$1`, [`${session.id}:final`]);
+    expect(audits.rowCount).toBe(0);
+
+    await poolA.query(`UPDATE oauth_consent_sessions SET expires_at=now() - interval '1 second' WHERE id=$1`, [
+      session.id,
+    ]);
+    await a.cleanup();
+    expect((await b.getConsent(session.id)).status).toBe('indeterminate');
+  });
+
+  it('uses an exact Hydra consent-session proof to converge a lost successful response once across replicas', async () => {
+    const challenge = 'challenge_lost_success_response';
+    const ory = new FakeOry(challenge);
+    const hooks = new FakeHooks();
+    const session = await a.createConsent({
+      challenge,
+      subject: context.subject,
+      hydraClientId: context.client.id,
+      context,
+    });
+    await a.transition(session.id, 'created', 'shown');
+    await a.setSelectedScopes(session.id, []);
+    await a.prepareDecision(
+      session.id,
+      'approve',
+      {
+        event: 'consent.granted',
+        eventId: `${session.id}:final`,
+        occurredAt: new Date().toISOString(),
+        sessionId: session.id,
+        context,
+        scopes: [],
+        result: 'approved',
+      },
+      1_000,
+    );
+    ory.loseNextConsentResponse = true;
+    await poolA.query(
+      `UPDATE oauth_consent_sessions SET decision_lease_until=now() - interval '1 second' WHERE id=$1`,
+      [session.id],
+    );
+
+    const reconciled = await Promise.all([
+      reconcileDecisions(a, ory as unknown as OryAdmin, hooks as unknown as RowboatHooks, 25, 1_000),
+      reconcileDecisions(b, ory as unknown as OryAdmin, hooks as unknown as RowboatHooks, 25, 1_000),
+    ]);
+    expect(reconciled.sort()).toEqual([0, 1]);
+    expect(ory.acceptCalls).toBe(1);
+    expect(ory.hydraCommits).toBe(1);
+
+    const terminal = await a.getConsent(session.id);
+    expect(terminal.status).toBe('approved');
+    expect(terminal.hydraOutcomePhase).toBe('accepted');
+    expect(terminal.hydraOutcomeProof).toEqual(
+      expect.objectContaining({
+        outcome: 'accepted',
+        source: 'consent_session',
+        challenge,
+        subject: context.subject,
+        clientId: context.client.id,
+        requestedAudience: [context.connector.audience],
+        requestedScopes: ['offline_access'],
+        grantedAudience: [context.connector.audience],
+        grantedScopes: ['offline_access'],
+      }),
+    );
+    expect([...hooks.audits.values()].filter((audit) => audit.event === 'consent.granted')).toHaveLength(1);
+    const audits = await poolA.query(
+      `SELECT count(*)::int AS count FROM oauth_consent_audit_outbox WHERE id=$1 AND delivered_at IS NOT NULL`,
+      [`${session.id}:final`],
+    );
+    expect(audits.rows[0].count).toBe(1);
   });
 
   it('keeps an accepted Hydra outcome irreversible, then explicitly invalidates after entitlement removal', async () => {
