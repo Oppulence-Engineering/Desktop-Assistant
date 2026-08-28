@@ -349,6 +349,7 @@ beforeEach(async () => {
     databaseUrl: 'postgres://test/test',
     auditRetryIntervalMs: 5_000,
     decisionLeaseMs: 1_000,
+    shutdownDeadlineMs: 1_000,
     ory: { adminUrl: oryServer.url },
     workos: {
       clientId: CLIENT_ID,

@@ -29,6 +29,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 {{- define "oauth-consent.validateValues" -}}
 {{- $environment := lower (default "development" .Values.deploymentEnvironment) -}}
+{{- $shutdownBudget := add (int64 .Values.shutdown.preStopDelaySeconds) (int64 .Values.shutdown.applicationDeadlineSeconds) -}}
+{{- $terminationGrace := int64 .Values.shutdown.terminationGracePeriodSeconds -}}
+{{- if ge $shutdownBudget $terminationGrace -}}
+  {{- fail "shutdown preStopDelaySeconds + applicationDeadlineSeconds must be less than terminationGracePeriodSeconds" -}}
+{{- end -}}
 {{- if has $environment (list "staging" "production") -}}
   {{- if not .Values.networkPolicy.enabled -}}
     {{- fail (printf "%s deployments must enable networkPolicy" $environment) -}}

@@ -11,6 +11,12 @@ fullnameOverride: ""
 imagePullSecrets: []
 
 port: 3000
+shutdown:
+  # The preStop hook marks the pod unready before Kubernetes sends SIGTERM.
+  # Their sum must remain below terminationGracePeriodSeconds.
+  preStopDelaySeconds: 5
+  applicationDeadlineSeconds: 20
+  terminationGracePeriodSeconds: 30
 service:
   type: ClusterIP
 

@@ -6,6 +6,7 @@ import { AppError, badRequest } from './errors.js';
 import { consentPage, entitlementDeniedPage, errorPage } from './html.js';
 import { OryAdmin, type ConsentDecisionBinding, type ConsentDecisionProbe, type HydraOutcomeProof } from './ory.js';
 import { RowboatHooks, type AuditRequest, type ConsentContext } from './rowboat.js';
+import { DrainState } from './shutdown.js';
 import type { ConsentStateStore, ConsentSession, DecisionClaim, StepUpFlowClaim } from './state.js';
 import { WorkOS } from './workos.js';
 
@@ -21,6 +22,7 @@ interface Dependencies {
   workos?: WorkOS;
   hooks?: RowboatHooks;
   store?: ConsentStateStore;
+  drain?: DrainState;
 }
 
 export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express {
@@ -30,6 +32,7 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
   const hooks = dependencies.hooks ?? new RowboatHooks(cfg.rowboatApi, cfg.upstreamTimeoutMs);
   const store = dependencies.store;
   if (!store) throw new Error('shared_state_store_required');
+  const drain = dependencies.drain ?? new DrainState();
   const cookieOptions = {
     httpOnly: true,
     secure: cfg.cookieSecure,
@@ -39,7 +42,6 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
   };
 
   app.disable('x-powered-by');
-  app.use(express.urlencoded({ extended: false, limit: '32kb' }));
   app.use((_req, res, next) => {
     res.setHeader('cache-control', 'no-store');
     res.setHeader(
@@ -52,14 +54,28 @@ export function buildApp(cfg: Config, dependencies: Dependencies = {}): Express 
   });
 
   app.get('/healthz', (_req, res) => res.json({ status: 'ok' }));
+  app.post('/drainz', (req, res) => {
+    if (!isLoopback(req.socket.remoteAddress)) return res.status(404).json({ error: 'not_found' });
+    const started = drain.begin();
+    return res.status(started ? 202 : 200).json({ status: 'draining' });
+  });
   app.get('/readyz', async (_req, res) => {
+    if (drain.isDraining()) return res.status(503).json({ status: 'draining' });
     try {
       await store.ready();
+      if (drain.isDraining()) return res.status(503).json({ status: 'draining' });
       res.json({ status: 'ok' });
     } catch {
       res.status(503).json({ status: 'unavailable' });
     }
   });
+  app.use((_req, res, next) => {
+    if (!drain.isDraining()) return next();
+    res.setHeader('connection', 'close');
+    res.setHeader('retry-after', '5');
+    return res.status(503).json({ error: 'service_draining' });
+  });
+  app.use(express.urlencoded({ extended: false, limit: '32kb' }));
 
   app.get(
     '/login',
@@ -590,6 +606,10 @@ function completedPage(message = 'Authorization is complete. You may return to t
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'decision_reconciliation_failed';
+}
+
+function isLoopback(address: string | undefined): boolean {
+  return address === '127.0.0.1' || address === '::1' || address?.startsWith('::ffff:127.') === true;
 }
 
 /**

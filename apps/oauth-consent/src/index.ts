@@ -4,13 +4,15 @@ import { buildApp, drainAuditOutbox, reconcileDecisions } from './server.js';
 import { RowboatHooks } from './rowboat.js';
 import { PostgresStateStore } from './state.js';
 import { OryAdmin } from './ory.js';
+import { DrainState, installShutdownSignalHandlers, ShutdownCoordinator } from './shutdown.js';
 
 const cfg = loadConfig();
 const pool = new Pool({ connectionString: cfg.databaseUrl, max: 10 });
 const store = new PostgresStateStore(pool, cfg.sessionTtlMs);
 const hooks = new RowboatHooks(cfg.rowboatApi, cfg.upstreamTimeoutMs);
 const ory = new OryAdmin(cfg.ory.adminUrl, cfg.upstreamTimeoutMs);
-const app = buildApp(cfg, { store, hooks, ory });
+const drain = new DrainState();
+const app = buildApp(cfg, { store, hooks, ory, drain });
 const retryTimer = setInterval(
   () =>
     void drainAuditOutbox(store, hooks).catch((error) =>
@@ -42,14 +44,15 @@ const server = app.listen(cfg.port, () => {
   console.log(JSON.stringify({ msg: 'oauth-consent listening', port: cfg.port }));
 });
 
-for (const sig of ['SIGINT', 'SIGTERM'] as const) {
-  process.on(sig, () => {
-    clearInterval(retryTimer);
-    clearInterval(reconcileTimer);
-    clearInterval(cleanupTimer);
-    server.close(() => void pool.end().finally(() => process.exit(0)));
-  });
-}
+const shutdown = new ShutdownCoordinator({
+  drain,
+  server,
+  pool,
+  timers: [retryTimer, reconcileTimer, cleanupTimer],
+  deadlineMs: cfg.shutdownDeadlineMs,
+  log: (record) => console.log(JSON.stringify(record)),
+});
+installShutdownSignalHandlers(shutdown);
 
 function logBackground(msg: string) {
   return (error: unknown) =>

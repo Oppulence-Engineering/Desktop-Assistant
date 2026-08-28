@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { EventEmitter } from 'node:events';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import express from 'express';
@@ -15,6 +16,7 @@ import {
 } from '../src/ory.js';
 import type { AuditRequest, ConsentContext, RowboatHooks } from '../src/rowboat.js';
 import { buildApp, InjectedPostHydraCrash, reconcileDecisions } from '../src/server.js';
+import { DrainState, installShutdownSignalHandlers, ShutdownCoordinator } from '../src/shutdown.js';
 import { PostgresStateStore } from '../src/state.js';
 import { WorkOS } from '../src/workos.js';
 
@@ -54,6 +56,7 @@ const config: Config = {
   databaseUrl: url ?? 'postgres://unused',
   auditRetryIntervalMs: 1_000,
   decisionLeaseMs: 1_000,
+  shutdownDeadlineMs: 1_000,
   ory: { adminUrl: 'http://unused.test' },
   workos: {
     clientId: 'desktop',
@@ -460,15 +463,118 @@ suite('PostgreSQL state store multi-instance behavior', () => {
     expect(audits.filter((item) => item.id === `${session.id}:final`)).toHaveLength(1);
   });
 
+  it('preserves an in-flight durable decision across SIGTERM and recovers it on another replica', async () => {
+    const terminatingPool = new Pool({ connectionString: url });
+    const terminatingStore = new PostgresStateStore(terminatingPool, 60_000);
+    const challenge = 'challenge_sigterm_durable_decision';
+    let releaseFirstAttempt!: () => void;
+    let markFirstAttemptStarted!: () => void;
+    const firstAttemptStarted = new Promise<void>((resolve) => {
+      markFirstAttemptStarted = resolve;
+    });
+    const releaseFirst = new Promise<void>((resolve) => {
+      releaseFirstAttempt = resolve;
+    });
+    class HeldOry extends FakeOry {
+      override async acceptConsent() {
+        this.acceptCalls += 1;
+        if (this.acceptCalls === 1) {
+          markFirstAttemptStarted();
+          await releaseFirst;
+          throw new OryRequestError(503);
+        }
+        if (this.terminal) throw new OryRequestError(409);
+        this.terminal = 'accepted';
+        this.hydraCommits += 1;
+        return { redirect_to: 'http://desktop.test/complete' };
+      }
+    }
+    const ory = new HeldOry(challenge);
+    const hooks = new FakeHooks();
+    const drain = new DrainState();
+    const running = await listen(
+      buildApp(config, {
+        store: terminatingStore,
+        ory: ory as unknown as OryAdmin,
+        hooks: hooks as unknown as RowboatHooks,
+        drain,
+      }),
+    );
+    const browser = new HttpBrowser();
+    const shown = await browser.get(running.url, `/consent?consent_challenge=${challenge}`);
+    const html = await shown.text();
+    const request = browser
+      .post(running.url, '/consent/decision', [
+        ['csrf', csrf(html)],
+        ['decision', 'approve'],
+      ])
+      .catch((error: unknown) => error);
+
+    await firstAttemptStarted;
+    const durableRows = await poolB.query(
+      `SELECT id, status, decision, hydra_outcome_phase, decision_payload
+       FROM oauth_consent_sessions WHERE challenge=$1`,
+      [challenge],
+    );
+    expect(durableRows.rows).toEqual([
+      expect.objectContaining({
+        status: 'processing',
+        decision: 'approve',
+        hydra_outcome_phase: 'accept_pending',
+        decision_payload: expect.objectContaining({ event: 'consent.granted' }),
+      }),
+    ]);
+
+    const coordinator = new ShutdownCoordinator({
+      drain,
+      server: running.server,
+      pool: terminatingPool,
+      timers: [],
+      deadlineMs: 250,
+    });
+    const signals = new EventEmitter();
+    const completed = new Promise<Awaited<ReturnType<typeof coordinator.begin>>>((resolve) => {
+      installShutdownSignalHandlers(coordinator, signals, resolve);
+    });
+    signals.emit('SIGTERM');
+    signals.emit('SIGTERM');
+    expect(drain.isDraining()).toBe(true);
+    expect(await completed).toEqual({ signal: 'SIGTERM', mode: 'forced-http' });
+    await request;
+
+    releaseFirstAttempt();
+    await new Promise((resolve) => setImmediate(resolve));
+    await poolB.query(
+      `UPDATE oauth_consent_sessions SET decision_lease_until=now() - interval '1 second' WHERE challenge=$1`,
+      [challenge],
+    );
+    expect(await reconcileDecisions(b, ory as unknown as OryAdmin, hooks as unknown as RowboatHooks, 25, 1_000)).toBe(
+      1,
+    );
+    expect(ory.hydraCommits).toBe(1);
+    const recovered = await b.getConsent(durableRows.rows[0].id);
+    expect(recovered.status).toBe('approved');
+    expect(recovered.decision).toBe('approve');
+    expect(recovered.hydraOutcomePhase).toBe('accepted');
+    expect([...hooks.audits].filter(([id]) => id === `${recovered.id}:final`)).toHaveLength(1);
+  });
+
   it('cleans up expired browser flows and sessions', async () => {
-    const short = new PostgresStateStore(poolA, -1);
-    await short.createLoginFlow('expired_flow');
+    const short = new PostgresStateStore(poolA, 60_000);
+    const flow = await short.createLoginFlow('expired_flow');
     const session = await short.createConsent({
       challenge: 'expired_session',
       subject: 'user_test',
       hydraClientId: 'desktop',
       context,
     });
+    await poolA.query(
+      `UPDATE oauth_consent_browser_flows SET expires_at=now() - interval '1 second' WHERE state_hash=$1`,
+      [flow.stateHash],
+    );
+    await poolA.query(`UPDATE oauth_consent_sessions SET expires_at=now() - interval '1 second' WHERE id=$1`, [
+      session.id,
+    ]);
     await short.cleanup();
     await expect(short.getConsent(session.id)).rejects.toThrow();
   });
