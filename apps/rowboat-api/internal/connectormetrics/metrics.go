@@ -32,4 +32,21 @@ var (
 		Name: "connector_consent_total",
 		Help: "Connector consent decisions by connector and bounded decision.",
 	}, []string{"connector", "decision"})
+
+	CredentialCustodyInFlight = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "connector_credential_custody_in_flight",
+		Help: "Provider credentials awaiting durable recovery custody or confirmed revocation in this process.",
+	})
+	CredentialCustodyQueueDepth = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "connector_credential_custody_queue_depth",
+		Help: "Provider credentials queued behind the bounded credential custody workers.",
+	})
+	CredentialCustodySaturated = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "connector_credential_custody_saturated",
+		Help: "Whether the bounded credential custody supervisor is applying admission backpressure.",
+	})
+	CredentialCustodyOutcomes = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "connector_credential_custody_total",
+		Help: "Credential custody supervisor outcomes by bounded outcome.",
+	}, []string{"outcome"})
 )

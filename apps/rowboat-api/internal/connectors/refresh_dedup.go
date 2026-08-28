@@ -102,6 +102,7 @@ type refreshDeduper struct {
 	sealer                       *crypto.Sealer
 	client                       *ent.Client
 	log                          *zap.Logger
+	custody                      *credentialCustodySupervisor
 	afterProviderResponseForTest func()
 	sf                           singleflight.Group
 }
@@ -212,7 +213,7 @@ func (d *refreshDeduper) refresh(
 				// revoke, because the provider may already have accepted it.
 				if revokeErr := revokeCredentialBounded(context.WithoutCancel(detached), ory, tok.RefreshToken); revokeErr != nil {
 					recoveryID, revoked, recoveryErr := establishCredentialRecovery(
-						context.WithoutCancel(detached), d.client, d.sealer, ory, d.log, uuid.New(),
+						d.custody, d.client, d.sealer, ory, d.log, uuid.New(),
 						bound.Connector, credentialRecoveryOwnerRotation, bound.ConnectionID,
 						tok.RefreshToken, time.Now().UTC(),
 					)

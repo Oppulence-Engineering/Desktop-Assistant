@@ -10,6 +10,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectormetrics"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -124,7 +125,7 @@ func persistCredentialRecovery(
 // A process death before either acknowledgement remains the irreducible window
 // for providers that offer neither idempotent exchange nor token introspection.
 func establishCredentialRecovery(
-	ctx context.Context,
+	supervisor *credentialCustodySupervisor,
 	client *ent.Client,
 	sealer *crypto.Sealer,
 	ory *oryClient,
@@ -136,30 +137,40 @@ func establishCredentialRecovery(
 	if refreshToken == "" {
 		return uuid.Nil, false, nil
 	}
-	detached := context.WithoutCancel(ctx)
-	for attempt := 0; ; attempt++ {
-		writeCtx, cancel := context.WithTimeout(detached, 5*time.Second)
-		recoveryID, err := persistCredentialRecovery(writeCtx, client, sealer, id, connector, ownerKind, ownerID, refreshToken, nextAttemptAt)
-		cancel()
-		if err == nil {
-			return recoveryID, false, nil
-		}
-		persistErr := err
-		revokeErr := revokeCredentialBounded(detached, ory, refreshToken)
-		if revokeErr == nil {
-			return uuid.Nil, true, fmt.Errorf("durably journal connector credential: %w; provider revocation confirmed", persistErr)
-		}
-		delay := time.Duration(min(attempt+1, 5)) * 200 * time.Millisecond
-		timer := time.NewTimer(delay)
-		<-timer.C
-		if attempt > 0 && attempt%5 == 0 {
-			if log != nil {
+	if supervisor == nil {
+		return uuid.Nil, false, errors.New("credential custody supervisor is not configured")
+	}
+	result := supervisor.submit(func() credentialCustodyResult {
+		for attempt := 0; ; attempt++ {
+			writeCtx, cancel := context.WithTimeout(processContext(), 5*time.Second)
+			recoveryID, err := persistCredentialRecovery(writeCtx, client, sealer, id, connector, ownerKind, ownerID, refreshToken, nextAttemptAt)
+			cancel()
+			if err == nil {
+				connectormetrics.CredentialCustodyOutcomes.WithLabelValues("journaled").Inc()
+				return credentialCustodyResult{recoveryID: recoveryID.String()}
+			}
+			persistErr := err
+			revokeErr := revokeCredentialBounded(processContext(), ory, refreshToken)
+			if revokeErr == nil {
+				connectormetrics.CredentialCustodyOutcomes.WithLabelValues("revoked").Inc()
+				return credentialCustodyResult{revoked: true, err: fmt.Errorf("durably journal connector credential: %w; provider revocation confirmed", persistErr)}
+			}
+			time.Sleep(time.Duration(min(attempt+1, 5)) * 200 * time.Millisecond)
+			if attempt > 0 && attempt%5 == 0 && log != nil {
 				log.Error("connector credential has no acknowledged custody path; retrying without returning",
 					zap.String("connector", connector), zap.String("owner_kind", ownerKind), zap.String("owner_id", ownerID),
 					zap.Error(persistErr), zap.NamedError("provider_revoke_error", revokeErr))
 			}
 		}
+	})
+	recoveryID, parseErr := uuid.Parse(result.recoveryID)
+	if result.recoveryID == "" {
+		recoveryID, parseErr = uuid.Nil, nil
 	}
+	if parseErr != nil {
+		return uuid.Nil, result.revoked, parseErr
+	}
+	return recoveryID, result.revoked, result.err
 }
 
 func compensateCredentialRecovery(ctx context.Context, client *ent.Client, sealer *crypto.Sealer, ory *oryClient, log *zap.Logger, recoveryID uuid.UUID, reason string) {
