@@ -353,6 +353,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	connectorsH.SetOutboundPolicy(vendorPolicy)
 	connectorsH.SetRefreshDedup(refreshCache, sealer)
 	srv.AddReadyCheck("connector_credential_custody", connectorsH.CredentialCustodyReady)
+	srv.AddReadyCheck("connector_refresh_failure_persistence", connectorsH.RefreshFailurePersistenceReady)
 	srv.AddShutdownHook("connector_credential_custody", connectorsH.BeginCredentialCustodyShutdown)
 	srv.AddContextCloser("connector_credential_custody", connectorsH.CloseCredentialCustody)
 	go connectorsH.RunRevocationWorker(ctx)

@@ -60,4 +60,16 @@ var (
 		Name: "connector_credential_custody_total",
 		Help: "Credential custody supervisor outcomes by bounded outcome.",
 	}, []string{"outcome"})
+
+	// RefreshFailurePersistence counts detached transactional lifecycle results.
+	RefreshFailurePersistence = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "connector_refresh_failure_persistence_total",
+		Help: "Detached connector refresh-failure lifecycle persistence outcomes.",
+	}, []string{"outcome"})
+	// RefreshFailurePersistenceFailed latches when a terminal provider signal was
+	// not transactionally acknowledged and the replica must remain unready.
+	RefreshFailurePersistenceFailed = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "connector_refresh_failure_persistence_failed",
+		Help: "Whether terminal connector refresh-failure persistence is unacknowledged on this replica.",
+	})
 )

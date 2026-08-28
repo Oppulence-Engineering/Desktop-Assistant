@@ -214,7 +214,8 @@ func (s *LifecycleService) HandleRefreshFailure(ctx context.Context, owner *ent.
 			SetRevocationAttemptedAt(now).SetRevocationSucceeded(true).ClearRefreshTokenEncrypted().ClearAPIKeyEncrypted()
 		newGeneration++
 	} else if status == "reauth_required" {
-		update.ClearRefreshTokenEncrypted()
+		update.AddCredentialGeneration(1).ClearRefreshTokenEncrypted()
+		newGeneration++
 	}
 	updated, err := update.Save(auth.WithUser(ctx, owner))
 	if err != nil {

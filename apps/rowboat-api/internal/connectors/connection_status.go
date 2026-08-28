@@ -58,6 +58,16 @@ func (h *Handler) ConnectionStatus(w http.ResponseWriter, r *http.Request) {
 		httpx.WriteJSON(w, http.StatusOK, map[string]any{"active": false})
 		return
 	}
+	denied, guardErr := h.refreshFailures.denied(r.Context(), req.ConnectionID, req.CredentialGeneration)
+	if guardErr != nil {
+		h.log.Error("load connector refresh failure guard")
+		httpx.Error(w, http.StatusServiceUnavailable, "connection status unavailable", "status_unavailable")
+		return
+	}
+	if denied {
+		httpx.WriteJSON(w, http.StatusOK, map[string]any{"active": false})
+		return
+	}
 
 	ctx := auth.WithInternal(r.Context())
 	connection, err := h.client.MCPConnection.Query().Where(

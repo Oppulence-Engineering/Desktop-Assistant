@@ -20,8 +20,10 @@ const credentialCleanupClaimTTL = 2 * time.Minute
 const credentialCleanupAdoptionGrace = time.Minute
 
 const (
-	credentialRecoveryOwnerCallback = "oauth_callback"
-	credentialRecoveryOwnerRotation = "refresh_rotation_fallback"
+	credentialRecoveryOwnerCallback       = "oauth_callback"
+	credentialRecoveryOwnerCallbackAccess = "oauth_callback_access_only"
+	credentialRecoveryOwnerRotation       = "refresh_rotation_fallback"
+	credentialRecoveryOwnerRotationAccess = "refresh_rotation_access_only"
 )
 
 func (d *refreshDeduper) enqueueCredentialCleanup(ctx context.Context, bound connectorRefreshContext, refreshToken string) (uuid.UUID, error) {

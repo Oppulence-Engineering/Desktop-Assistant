@@ -369,3 +369,131 @@ func TestProviderResponseCrashBoundaryPrecedesAllFallibleLocalWork(t *testing.T)
 		t.Fatalf("recovery rows at irreducible crash boundary = %d, want 0", count)
 	}
 }
+
+func TestRefreshProviderInvocationIsDeniedBeyondCustodyCapacity(t *testing.T) {
+	const callers = 14
+	supervisor := newCredentialCustodySupervisor(zap.NewNop(), 1, 1)
+	sealer, err := crypto.NewSealer("refresh-hard-custody-capacity")
+	if err != nil {
+		t.Fatal(err)
+	}
+	deduper := refreshDeduper{
+		cache:   workosauth.NewMemoryRefreshCache(),
+		sealer:  sealer,
+		log:     zap.NewNop(),
+		custody: supervisor,
+	}
+
+	releaseProvider := make(chan struct{})
+	providerStarted := make(chan struct{}, int(supervisor.capacity))
+	var providerCalls atomic.Int64
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		providerCalls.Add(1)
+		providerStarted <- struct{}{}
+		<-releaseProvider
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"invalid_grant"}`))
+	}))
+	t.Cleanup(provider.Close)
+	ory := newOryClient(provider.URL, "client", "secret")
+
+	startRefresh := func(i int, done chan<- error) {
+		bound := newConnectorRefreshContext("canvas", uuid.NewString(), fmt.Sprintf("org-%d", i), 1, "mcp:canvas", []string{"read"})
+		_, refreshErr := deduper.refresh(context.Background(), bound, ory, fmt.Sprintf("refresh-old-%d", i), nil)
+		done <- refreshErr
+	}
+
+	admittedDone := make(chan error, int(supervisor.capacity))
+	for i := 0; i < int(supervisor.capacity); i++ {
+		go startRefresh(i, admittedDone)
+	}
+	for i := 0; i < int(supervisor.capacity); i++ {
+		select {
+		case <-providerStarted:
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out filling custody capacity with provider operations")
+		}
+	}
+
+	excessDone := make(chan error, callers-int(supervisor.capacity))
+	for i := int(supervisor.capacity); i < callers; i++ {
+		go startRefresh(i, excessDone)
+	}
+	for i := int(supervisor.capacity); i < callers; i++ {
+		select {
+		case refreshErr := <-excessDone:
+			if !errors.Is(refreshErr, errCredentialCustodySaturated) {
+				t.Fatalf("excess refresh %d error = %v, want custody saturation", i, refreshErr)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatalf("excess refresh %d did not fail before provider invocation", i)
+		}
+		if got := supervisor.pending.Load(); got > supervisor.capacity {
+			t.Fatalf("pending exceeded hard capacity: pending=%d capacity=%d", got, supervisor.capacity)
+		}
+	}
+	if got := providerCalls.Load(); got != supervisor.capacity {
+		t.Fatalf("provider calls = %d, want hard capacity %d", got, supervisor.capacity)
+	}
+
+	close(releaseProvider)
+	for i := 0; i < int(supervisor.capacity); i++ {
+		select {
+		case refreshErr := <-admittedDone:
+			if !isOAuthErrorCode(refreshErr, "invalid_grant") {
+				t.Fatalf("admitted refresh %d error = %v", i, refreshErr)
+			}
+		case <-time.After(5 * time.Second):
+			t.Fatalf("admitted refresh %d did not finish", i)
+		}
+	}
+	if err := supervisor.closeContext(context.Background()); err != nil {
+		t.Fatalf("drain refresh custody supervisor: %v", err)
+	}
+}
+
+func TestAccessOnlyRefreshCredentialIsRevokedBeforePermitRelease(t *testing.T) {
+	var revokeCalls atomic.Int64
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/oauth2/revoke" {
+			revokeCalls.Add(1)
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(oryToken{AccessToken: "access-only-live-credential", ExpiresIn: 3600})
+	}))
+	t.Cleanup(provider.Close)
+
+	client := refreshLeaseTestClient(t)
+	sealer, err := crypto.NewSealer("access-only-refresh-custody")
+	if err != nil {
+		t.Fatal(err)
+	}
+	supervisor := newCredentialCustodySupervisor(zap.NewNop(), 1, 1)
+	deduper := refreshDeduper{
+		cache: workosauth.NewMemoryRefreshCache(), sealer: sealer, client: client,
+		log: zap.NewNop(), custody: supervisor,
+	}
+	bound := newConnectorRefreshContext("canvas", uuid.NewString(), "org-access-only", 1, "mcp:canvas", []string{"read"})
+	_, refreshErr := deduper.refresh(context.Background(), bound, newOryClient(provider.URL, "client", "secret"), "refresh-old", func(context.Context, *oryToken, uuid.UUID) (int64, error) {
+		t.Fatal("access-only provider credential must not reach connection persistence")
+		return 0, nil
+	})
+	if refreshErr == nil || !strings.Contains(refreshErr.Error(), "omitted a replacement refresh credential") {
+		t.Fatalf("access-only refresh error = %v", refreshErr)
+	}
+	if got := revokeCalls.Load(); got != 1 {
+		t.Fatalf("access-only provider credential revoke calls = %d, want 1", got)
+	}
+	if got := client.ConnectorCredentialRecovery.Query().CountX(auth.WithInternal(context.Background())); got != 0 {
+		t.Fatalf("access-only recovery rows after confirmed revoke = %d, want 0", got)
+	}
+	if got := supervisor.pending.Load(); got != 0 {
+		t.Fatalf("access-only provider permit remained reserved: pending=%d", got)
+	}
+	if err := supervisor.closeContext(context.Background()); err != nil {
+		t.Fatalf("drain access-only refresh custody: %v", err)
+	}
+}

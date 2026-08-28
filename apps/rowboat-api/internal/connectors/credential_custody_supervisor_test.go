@@ -20,35 +20,55 @@ func TestCredentialCustodySupervisorDualOutageSaturationAndDrain(t *testing.T) {
 	log := zap.New(zapcore.NewCore(encoder, zapcore.Lock(zapcore.AddSync(&logs)), zap.DebugLevel))
 	s := newCredentialCustodySupervisor(log, 1, 1)
 
-	release := make(chan struct{})
-	started := make(chan struct{}, 3)
+	providerRelease := make(chan struct{})
+	custodyRelease := make(chan struct{})
+	providerStarted := make(chan struct{}, 2)
+	var providerCalls atomic.Int64
 	var completed atomic.Int64
-	run := func() credentialCustodyResult {
-		_ = secret
-		started <- struct{}{}
-		<-release // PostgreSQL and provider are both unavailable.
-		completed.Add(1)
-		return credentialCustodyResult{recoveryID: "00000000-0000-0000-0000-000000000001"}
+	done := make(chan credentialCustodyResult, 2)
+	providerOperation := func() {
+		permit, err := s.acquireProviderOperation()
+		if err != nil {
+			done <- credentialCustodyResult{err: err}
+			return
+		}
+		defer permit.release()
+		providerCalls.Add(1)
+		providerStarted <- struct{}{}
+		<-providerRelease
+		done <- permit.submit(func() credentialCustodyResult {
+			_ = secret
+			<-custodyRelease // PostgreSQL recovery and provider revocation are unavailable.
+			completed.Add(1)
+			return credentialCustodyResult{recoveryID: "00000000-0000-0000-0000-000000000001"}
+		})
 	}
 
-	done := make(chan struct{}, 3)
-	go func() { s.submit(run); done <- struct{}{} }()
-	<-started
-	go func() { s.submit(run); done <- struct{}{} }()
+	for i := 0; i < int(s.capacity); i++ {
+		go providerOperation()
+	}
+	for i := 0; i < int(s.capacity); i++ {
+		<-providerStarted
+	}
+	if got := s.pending.Load(); got != s.capacity {
+		t.Fatalf("reserved operations = %d, want hard capacity %d", got, s.capacity)
+	}
+
+	const excess = 12
+	for i := 0; i < excess; i++ {
+		permit, err := s.acquireProviderOperation()
+		if permit != nil || !errors.Is(err, errCredentialCustodySaturated) {
+			t.Fatalf("excess caller %d was not denied before provider invocation: permit=%v err=%v", i, permit, err)
+		}
+		if got := s.pending.Load(); got > s.capacity {
+			t.Fatalf("pending exceeded hard capacity: pending=%d capacity=%d", got, s.capacity)
+		}
+	}
+	if got := providerCalls.Load(); got != s.capacity {
+		t.Fatalf("provider calls = %d, want at most hard capacity %d", got, s.capacity)
+	}
+
 	deadline := time.Now().Add(time.Second)
-	for len(s.queue) != 1 && time.Now().Before(deadline) {
-		time.Sleep(time.Millisecond)
-	}
-	go func() { s.submit(run); done <- struct{}{} }()
-	deadline = time.Now().Add(time.Second)
-	for s.pending.Load() != 3 && time.Now().Before(deadline) {
-		time.Sleep(time.Millisecond)
-	}
-	if s.pending.Load() != 3 {
-		t.Fatalf("third custody task was not admitted before shutdown: pending=%d", s.pending.Load())
-	}
-
-	deadline = time.Now().Add(time.Second)
 	for s.ready() == nil && time.Now().Before(deadline) {
 		time.Sleep(time.Millisecond)
 	}
@@ -69,16 +89,25 @@ func TestCredentialCustodySupervisorDualOutageSaturationAndDrain(t *testing.T) {
 	case <-time.After(30 * time.Millisecond):
 	}
 
-	close(release)
-	for i := 0; i < 3; i++ {
-		<-done
+	close(providerRelease)
+	select {
+	case <-closed:
+		t.Fatal("shutdown returned while credentials lacked custody during dual outage")
+	case <-time.After(30 * time.Millisecond):
+	}
+	close(custodyRelease)
+	for i := 0; i < int(s.capacity); i++ {
+		result := <-done
+		if result.err != nil || result.recoveryID == "" {
+			t.Fatalf("reserved custody result %d = %+v", i, result)
+		}
 	}
 	select {
 	case <-closed:
 	case <-time.After(time.Second):
 		t.Fatal("shutdown did not drain admitted credentials")
 	}
-	if completed.Load() != 3 {
+	if completed.Load() != s.capacity {
 		t.Fatalf("dropped credentials: completed=%d", completed.Load())
 	}
 	if !errors.Is(s.ready(), errCredentialCustodyStopping) {

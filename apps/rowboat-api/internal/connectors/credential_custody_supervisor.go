@@ -48,21 +48,22 @@ type credentialCustodyPermit struct {
 	released   atomic.Bool
 }
 
-// credentialCustodySupervisor bounds concurrent dual-outage recovery while
-// retaining custody of every admitted credential. Admission blocks at capacity,
-// workers use a process-scoped context, and close drains rather than canceling.
+// credentialCustodySupervisor bounds provider operations plus queued dual-outage
+// recovery as one hard capacity domain. Every provider operation reserves before
+// invocation, and its permit retains capacity until it confirms no credential was
+// returned or the worker acknowledges durable custody/provider revocation.
 type credentialCustodySupervisor struct {
 	log       *zap.Logger
 	queue     chan credentialCustodyTask
+	permits   chan struct{}
+	capacity  int64
 	workers   sync.WaitGroup
-	inflight  sync.WaitGroup
-	producers sync.WaitGroup
+	active    sync.WaitGroup
 	mu        sync.RWMutex
 	quiescing bool
 	stopping  bool
 	drainDone chan struct{}
 	pending   atomic.Int64
-	acquiring atomic.Int64
 	saturated atomic.Bool
 }
 
@@ -73,7 +74,13 @@ func newCredentialCustodySupervisor(log *zap.Logger, workers, queueSize int) *cr
 	if queueSize < 1 {
 		queueSize = 1
 	}
-	s := &credentialCustodySupervisor{log: log, queue: make(chan credentialCustodyTask, queueSize)}
+	capacity := workers + queueSize
+	s := &credentialCustodySupervisor{
+		log:      log,
+		queue:    make(chan credentialCustodyTask, queueSize),
+		permits:  make(chan struct{}, capacity),
+		capacity: int64(capacity),
+	}
 	for i := 0; i < workers; i++ {
 		s.workers.Add(1)
 		go func() {
@@ -84,13 +91,7 @@ func newCredentialCustodySupervisor(log *zap.Logger, workers, queueSize int) *cr
 				result := task.run()
 				task.result <- result
 				close(task.result)
-				pending := s.pending.Add(-1)
-				connectormetrics.CredentialCustodyInFlight.Dec()
-				if s.isQuiescing() {
-					connectormetrics.CredentialCustodyShutdownUnresolved.Set(float64(pending + s.acquiring.Load()))
-				}
-				s.inflight.Done()
-				s.updateSaturation()
+				s.releaseReservation()
 			}
 		}()
 	}
@@ -98,46 +99,25 @@ func newCredentialCustodySupervisor(log *zap.Logger, workers, queueSize int) *cr
 }
 
 func (s *credentialCustodySupervisor) submit(run func() credentialCustodyResult) credentialCustodyResult {
-	return s.submitInternal(run, nil)
+	permit, err := s.reserve(false)
+	if err != nil {
+		return credentialCustodyResult{err: err}
+	}
+	defer permit.release()
+	return permit.submit(run)
 }
 
-func (s *credentialCustodySupervisor) submitInternal(run func() credentialCustodyResult, permit *credentialCustodyPermit) credentialCustodyResult {
-	task := credentialCustodyTask{run: run, result: make(chan credentialCustodyResult, 1)}
-	s.mu.RLock()
-	stopping := s.stopping
-	preaccepted := permit != nil && permit.supervisor == s
-	if !stopping || preaccepted {
-		if preaccepted {
-			s.acquiring.Add(-1)
-		}
-		s.inflight.Add(1)
-		pending := s.pending.Add(1)
-		connectormetrics.CredentialCustodyInFlight.Inc()
-		if s.quiescing {
-			connectormetrics.CredentialCustodyShutdownUnresolved.Set(float64(pending + s.acquiring.Load()))
-		}
-	}
-	s.mu.RUnlock()
-	if stopping && !preaccepted {
-		// Admission closes only after the public listener has drained. Reaching this
-		// path means a request outlived the HTTP shutdown bound. Never execute new,
-		// untracked custody work after the drain snapshot.
-		connectormetrics.CredentialCustodyOutcomes.WithLabelValues("rejected_after_shutdown").Inc()
-		if s.log != nil {
-			s.log.Error("credential custody work arrived after shutdown admission closed",
-				zap.String("operator_action", "treat_process_exit_as_unresolved_credential_custody"))
-		}
+func (s *credentialCustodySupervisor) submitReserved(run func() credentialCustodyResult, permit *credentialCustodyPermit) credentialCustodyResult {
+	if run == nil || permit == nil || permit.supervisor != s {
 		return credentialCustodyResult{err: errCredentialCustodyStopping}
 	}
-	select {
-	case s.queue <- task:
-		connectormetrics.CredentialCustodyQueueDepth.Set(float64(len(s.queue)))
-		s.updateSaturation()
-	default:
-		s.setSaturated(true)
-		s.queue <- task
-		connectormetrics.CredentialCustodyQueueDepth.Set(float64(len(s.queue)))
-	}
+	task := credentialCustodyTask{run: run, result: make(chan credentialCustodyResult, 1)}
+	// The reservation domain is workers + queue capacity, so every sender here is
+	// already inside the hard bound. A scheduler-delayed send can wait only for a
+	// worker to consume a bounded queue slot; excess callers were rejected before
+	// their provider invocation and cannot accumulate as untracked submitters.
+	s.queue <- task
+	connectormetrics.CredentialCustodyQueueDepth.Set(float64(len(s.queue)))
 	return <-task.result
 }
 
@@ -147,30 +127,56 @@ func (s *credentialCustodySupervisor) submitInternal(run func() credentialCustod
 // every pre-shutdown permit either submits the credential or confirms that no
 // credential was received.
 func (s *credentialCustodySupervisor) acquireProviderOperation() (*credentialCustodyPermit, error) {
+	return s.reserve(true)
+}
+
+func (s *credentialCustodySupervisor) reserve(providerOperation bool) (*credentialCustodyPermit, error) {
 	s.mu.Lock()
 	if s.stopping {
 		s.mu.Unlock()
-		connectormetrics.CredentialCustodyOutcomes.WithLabelValues("provider_operation_rejected_after_shutdown").Inc()
+		outcome := "rejected_after_shutdown"
+		message := "credential custody work rejected after shutdown admission closed"
+		if providerOperation {
+			outcome = "provider_operation_rejected_after_shutdown"
+			message = "provider credential operation rejected after shutdown admission closed"
+		}
+		connectormetrics.CredentialCustodyOutcomes.WithLabelValues(outcome).Inc()
 		if s.log != nil {
-			s.log.Error("provider credential operation rejected after shutdown admission closed",
+			s.log.Error(message,
 				zap.String("operator_action", "retry_on_a_ready_replica; no_provider_credential_was_requested"))
 		}
 		return nil, errCredentialCustodyStopping
 	}
-	s.producers.Add(1)
-	acquiring := s.acquiring.Add(1)
+	select {
+	case s.permits <- struct{}{}:
+	default:
+		s.setSaturated(true)
+		s.mu.Unlock()
+		outcome := "custody_work_rejected_at_capacity"
+		if providerOperation {
+			outcome = "provider_operation_rejected_at_capacity"
+		}
+		connectormetrics.CredentialCustodyOutcomes.WithLabelValues(outcome).Inc()
+		return nil, errCredentialCustodySaturated
+	}
+	s.active.Add(1)
+	pending := s.pending.Add(1)
+	connectormetrics.CredentialCustodyInFlight.Inc()
 	if s.quiescing {
-		connectormetrics.CredentialCustodyShutdownUnresolved.Set(float64(s.pending.Load() + acquiring))
+		connectormetrics.CredentialCustodyShutdownUnresolved.Set(float64(pending))
+	}
+	if pending >= s.capacity {
+		s.setSaturated(true)
 	}
 	s.mu.Unlock()
 	return &credentialCustodyPermit{supervisor: s}, nil
 }
 
 func (p *credentialCustodyPermit) submit(run func() credentialCustodyResult) credentialCustodyResult {
-	if p == nil || p.supervisor == nil || p.released.Load() || !p.submitted.CompareAndSwap(false, true) {
+	if p == nil || p.supervisor == nil || run == nil || p.released.Load() || !p.submitted.CompareAndSwap(false, true) {
 		return credentialCustodyResult{err: errCredentialCustodyStopping}
 	}
-	return p.supervisor.submitInternal(run, p)
+	return p.supervisor.submitReserved(run, p)
 }
 
 func (p *credentialCustodyPermit) release() {
@@ -178,16 +184,30 @@ func (p *credentialCustodyPermit) release() {
 		return
 	}
 	if !p.submitted.Load() {
-		acquiring := p.supervisor.acquiring.Add(-1)
-		if p.supervisor.isQuiescing() {
-			connectormetrics.CredentialCustodyShutdownUnresolved.Set(float64(p.supervisor.pending.Load() + acquiring))
-		}
+		p.supervisor.releaseReservation()
 	}
-	p.supervisor.producers.Done()
 }
 
 func (s *credentialCustodySupervisor) updateSaturation() {
-	s.setSaturated(len(s.queue) == cap(s.queue))
+	s.setSaturated(s.pending.Load() >= s.capacity)
+}
+
+func (s *credentialCustodySupervisor) releaseReservation() {
+	select {
+	case <-s.permits:
+	default:
+		if s.log != nil {
+			s.log.Error("credential custody reservation accounting underflow")
+		}
+		return
+	}
+	pending := s.pending.Add(-1)
+	connectormetrics.CredentialCustodyInFlight.Dec()
+	if s.isQuiescing() {
+		connectormetrics.CredentialCustodyShutdownUnresolved.Set(float64(pending))
+	}
+	s.active.Done()
+	s.updateSaturation()
 }
 
 func (s *credentialCustodySupervisor) setSaturated(value bool) {
@@ -198,8 +218,8 @@ func (s *credentialCustodySupervisor) setSaturated(value bool) {
 		connectormetrics.CredentialCustodySaturated.Set(0)
 	}
 	if value && !previous && s.log != nil {
-		s.log.Error("connector credential custody supervisor saturated; applying admission backpressure",
-			zap.Int("queue_capacity", cap(s.queue)), zap.Int64("in_flight", s.pending.Load()))
+		s.log.Error("connector credential custody supervisor saturated; rejecting provider operations before invocation",
+			zap.Int64("hard_capacity", s.capacity), zap.Int64("reserved", s.pending.Load()))
 		connectormetrics.CredentialCustodyOutcomes.WithLabelValues("saturated").Inc()
 	}
 }
@@ -230,7 +250,7 @@ func (s *credentialCustodySupervisor) beginShutdown() {
 		return
 	}
 	s.quiescing = true
-	pending := s.pending.Load() + s.acquiring.Load()
+	pending := s.pending.Load()
 	s.mu.Unlock()
 
 	connectormetrics.CredentialCustodyShutdownUnresolved.Set(float64(pending))
@@ -260,8 +280,7 @@ func (s *credentialCustodySupervisor) closeContext(ctx context.Context) error {
 		s.drainDone = make(chan struct{})
 		drainDone := s.drainDone
 		go func() {
-			s.producers.Wait()
-			s.inflight.Wait()
+			s.active.Wait()
 			close(s.queue)
 			s.workers.Wait()
 			connectormetrics.CredentialCustodyQueueDepth.Set(0)
@@ -277,7 +296,7 @@ func (s *credentialCustodySupervisor) closeContext(ctx context.Context) error {
 		connectormetrics.CredentialCustodyOutcomes.WithLabelValues("shutdown_drained").Inc()
 		return nil
 	case <-ctx.Done():
-		pending := s.pending.Load() + s.acquiring.Load()
+		pending := s.pending.Load()
 		connectormetrics.CredentialCustodyShutdownUnresolved.Set(float64(pending))
 		connectormetrics.CredentialCustodyOutcomes.WithLabelValues("shutdown_timed_out").Inc()
 		if s.log != nil {

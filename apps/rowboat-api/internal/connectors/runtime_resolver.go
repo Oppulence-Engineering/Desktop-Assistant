@@ -24,6 +24,7 @@ type MCPRuntimeResolver struct {
 	registry  *Registry
 	ory       *oryClient
 	refresh   refreshDeduper
+	custody   *credentialCustodySupervisor
 	issuer    ResourceTokenIssuer
 	lifecycle *LifecycleService
 }
@@ -35,9 +36,39 @@ func (r *MCPRuntimeResolver) SetRefreshDedup(cache RefreshCache, sealer *crypto.
 		return
 	}
 	r.refresh.configure(cache, sealer, r.client, log)
+	if r.custody == nil {
+		r.custody = newCredentialCustodySupervisor(log, 4, 64)
+	}
+	r.refresh.custody = r.custody
 	if r.lifecycle != nil {
 		r.lifecycle.SetLogger(log)
 	}
+}
+
+// CredentialCustodyReady reports whether worker-side provider refreshes can
+// reserve hard custody capacity before contacting the provider.
+func (r *MCPRuntimeResolver) CredentialCustodyReady(context.Context) error {
+	if r == nil || r.custody == nil {
+		return errors.New("connector credential custody is not configured")
+	}
+	return r.custody.ready()
+}
+
+// BeginCredentialCustodyShutdown closes worker readiness before Temporal starts
+// draining activities while preserving reservations already accepted.
+func (r *MCPRuntimeResolver) BeginCredentialCustodyShutdown() {
+	if r != nil && r.custody != nil {
+		r.custody.beginShutdown()
+	}
+}
+
+// CloseCredentialCustody accounts for every worker-side provider reservation
+// before process termination or returns an explicit bounded-shutdown error.
+func (r *MCPRuntimeResolver) CloseCredentialCustody(ctx context.Context) error {
+	if r == nil || r.custody == nil {
+		return nil
+	}
+	return r.custody.closeContext(ctx)
 }
 
 // NewMCPRuntimeResolver builds a worker-side resolver for connector MCP access.

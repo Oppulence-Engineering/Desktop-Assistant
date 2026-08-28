@@ -167,6 +167,17 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 			}
 		}
 	}
+	defer func() {
+		if deps == nil || deps.MCPResolver == nil {
+			return
+		}
+		deps.MCPResolver.BeginCredentialCustodyShutdown()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
+		defer cancel()
+		if err := deps.MCPResolver.CloseCredentialCustody(shutdownCtx); err != nil {
+			log.Error("worker connector credential custody did not drain", zap.Error(err))
+		}
+	}()
 
 	var sandboxExec backgroundtaskruntime.SandboxExecutor
 	if cfg.CloudRuntimeEnabled && cfg.CloudRuntimeSandboxEnabled {
@@ -437,6 +448,10 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		ready.Store(true)
 		log.Info("rowboat-api temporal worker started")
 		<-ctx.Done()
+		ready.Store(false)
+		if deps != nil && deps.MCPResolver != nil {
+			deps.MCPResolver.BeginCredentialCustodyShutdown()
+		}
 		log.Info("shutdown signal received, stopping worker")
 		w.Stop()
 		temporalClient.Close()

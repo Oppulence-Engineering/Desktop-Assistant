@@ -203,6 +203,26 @@ func (d *refreshDeduper) refresh(
 		if d.afterProviderResponseForTest != nil {
 			d.afterProviderResponseForTest()
 		}
+		if tok.RefreshToken == "" && tok.AccessToken != "" {
+			// This broker never returns provider access credentials to callers. If a
+			// rotating provider omits the replacement refresh credential, journal the
+			// access credential under the existing revocation worker before failing the
+			// rotation. The permit may release after durable journal acknowledgement;
+			// immediate compensation then revokes or leaves that journal retryable.
+			recoveryID, revoked, recoveryErr := establishCredentialRecovery(
+				d.custody, permit, d.client, d.sealer, ory, d.log, uuid.New(),
+				bound.Connector, credentialRecoveryOwnerRotationAccess, bound.ConnectionID,
+				tok.AccessToken, time.Now().UTC(),
+			)
+			if recoveryErr != nil {
+				return nil, fmt.Errorf("retain unadopted provider access credential: %w", recoveryErr)
+			}
+			if !revoked {
+				compensateCredentialRecovery(context.WithoutCancel(detached), d.client, d.sealer, ory, d.log, recoveryID, "provider_refresh_credential_missing")
+			}
+			unlock = false
+			return nil, errors.New("provider refresh response omitted a replacement refresh credential")
+		}
 
 		if persist == nil || d.client == nil {
 			return nil, errors.New("connector refresh persistence is not configured")

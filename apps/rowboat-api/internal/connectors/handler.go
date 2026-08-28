@@ -55,6 +55,7 @@ type Handler struct {
 	cfg                     Config
 	log                     *zap.Logger
 	refresh                 refreshDeduper
+	refreshFailures         refreshFailureGuard
 	commitCallbackForTest   func(*ent.Tx) error
 	commitClaimForTest      func(*ent.Tx) error
 	afterClaimCommitForTest func() error
@@ -80,6 +81,7 @@ func (h *Handler) BrokerJWKS(w http.ResponseWriter, _ *http.Request) {
 // Ory's rotating, one-use connector refresh tokens.
 func (h *Handler) SetRefreshDedup(cache RefreshCache, sealer *crypto.Sealer) {
 	h.refresh.configure(cache, sealer, h.client, h.log)
+	h.refreshFailures.configure(cache)
 }
 
 // New builds the connectors handler.
@@ -102,6 +104,13 @@ func New(client *ent.Client, sealer *crypto.Sealer, registry *Registry, cfg Conf
 
 // CredentialCustodyReady reports whether the bounded credential custody supervisor can accept work.
 func (h *Handler) CredentialCustodyReady(context.Context) error { return h.custody.ready() }
+
+// RefreshFailurePersistenceReady fails readiness after a terminal provider
+// signal could not be acknowledged by PostgreSQL. The live status endpoint also
+// checks the corresponding fail-closed guard.
+func (h *Handler) RefreshFailurePersistenceReady(context.Context) error {
+	return h.refreshFailures.ready()
+}
 
 // BeginCredentialCustodyShutdown fails readiness before public listener drain,
 // while still allowing already accepted HTTP requests to submit custody work.
@@ -714,10 +723,18 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	// a process kill between response receipt and this first durable write is
 	// irreducible. From this point forward the handler cannot return a live grant
 	// without either this encrypted journal row or confirmed provider revocation.
+	providerCredential := tok.RefreshToken
+	recoveryOwnerKind := credentialRecoveryOwnerCallback
+	recoveryNextAttempt := pending.ExpiresAt.UTC().Add(credentialCleanupAdoptionGrace)
+	if providerCredential == "" {
+		providerCredential = tok.AccessToken
+		recoveryOwnerKind = credentialRecoveryOwnerCallbackAccess
+		recoveryNextAttempt = time.Now().UTC()
+	}
 	recoveryID, revoked, recoveryErr := establishCredentialRecovery(
 		h.custody, permit, h.client, h.sealer, h.ory, h.log, pending.ID,
-		name, credentialRecoveryOwnerCallback, pending.ID.String(), tok.RefreshToken,
-		pending.ExpiresAt.UTC().Add(credentialCleanupAdoptionGrace),
+		name, recoveryOwnerKind, pending.ID.String(), providerCredential,
+		recoveryNextAttempt,
 	)
 	if recoveryErr != nil {
 		_ = h.finishCallback(ctx, pending, owner, cp, claimID, "restart_required", "credential_custody_failed", nil, nil)
@@ -726,6 +743,13 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 			result = "restart_required"
 		}
 		h.deepLinkTo(w, r, cp.RedirectTarget, name, result, "")
+		return
+	}
+	if tok.RefreshToken == "" {
+		compensateCredentialRecovery(context.WithoutCancel(ctx), h.client, h.sealer, h.ory, h.log, recoveryID, "provider_refresh_credential_missing")
+		_ = h.finishCallback(ctx, pending, owner, cp, claimID, "restart_required", "provider_refresh_credential_missing", nil, nil)
+		connectormetrics.Lifecycle.WithLabelValues(name, "callback", "refresh_credential_missing").Inc()
+		h.deepLinkTo(w, r, cp.RedirectTarget, name, "restart_required", "")
 		return
 	}
 	granted, err := h.grantedScopes(name, cp.RequestedScopes, tok.Scope)
@@ -1442,19 +1466,33 @@ func (h *Handler) MCPToken(w http.ResponseWriter, r *http.Request) {
 			httpx.Error(w, http.StatusTooManyRequests, "token refresh in progress; retry shortly", "refresh_in_progress")
 			return
 		}
+		if errors.Is(err, errCredentialCustodySaturated) {
+			w.Header().Set("Retry-After", "2")
+			httpx.Error(w, http.StatusServiceUnavailable, "credential custody is at capacity; retry shortly", "credential_custody_saturated")
+			return
+		}
+		if errors.Is(err, errCredentialCustodyStopping) {
+			httpx.Error(w, http.StatusServiceUnavailable, "connector broker is draining", "broker_draining")
+			return
+		}
+		if errors.Is(err, errConnectorCredentialSuperseded) {
+			httpx.Error(w, http.StatusGone, "connector connection changed during refresh", "connection_revoked")
+			return
+		}
 		code := "upstream_error"
 		switch {
 		case isRefreshFamilyInvalidation(err):
-			_ = mc.Update().Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active")).SetStatus("invalidated").AddCredentialGeneration(1).SetRevokedAt(time.Now().UTC()).SetRevokedReason("refresh_token_reuse").SetRevokedBy("provider").SetRevocationSucceeded(true).ClearRefreshTokenEncrypted().ClearAPIKeyEncrypted().Exec(ctx)
-			h.appendAudit(ctx, u, auditRecord{EventType: "connection_invalidated", Connector: name, ConnectionID: mc.ID, Audience: mc.Audience, Granted: mc.Scopes, Reason: "refresh_token_reuse", Result: "credential_family_invalidated"})
-			connectormetrics.Revocation.WithLabelValues(name, "refresh_family_invalidated").Inc()
 			code = "connection_revoked"
 		case isOAuthErrorCode(err, "invalid_grant"):
 			code = "reauth_required"
-			_ = mc.Update().Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active")).SetStatus("reauth_required").AddCredentialGeneration(1).ClearRefreshTokenEncrypted().Exec(ctx)
-			h.appendAudit(ctx, u, auditRecord{EventType: "connection_reauth_required", Connector: name, ConnectionID: mc.ID, Audience: mc.Audience, Granted: mc.Scopes, Reason: "invalid_grant"})
-		default:
-			_ = mc.Update().Where(mcpconnection.CredentialGenerationEQ(mc.CredentialGeneration), mcpconnection.StatusEQ("active")).SetStatus("error").Exec(ctx)
+		}
+		if lifecycleErr := h.handleRefreshFailure(ctx, u, mc, err); lifecycleErr != nil {
+			h.log.Error("persist mcp-token refresh failure", zap.String("connector", name), zap.Error(lifecycleErr))
+			httpx.Error(w, http.StatusServiceUnavailable, "token refresh failure could not be durably recorded", "lifecycle_unavailable")
+			return
+		}
+		if isRefreshFamilyInvalidation(err) {
+			connectormetrics.Revocation.WithLabelValues(name, "refresh_family_invalidated").Inc()
 		}
 		h.log.Warn("mcp-token refresh failed", zap.String("connector", name), zap.Error(err))
 		httpx.Error(w, http.StatusBadGateway, "token refresh failed", code)

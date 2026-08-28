@@ -90,6 +90,10 @@ func semanticAuditRecords(record auditRecord) []auditRecord {
 			return []auditRecord{semantic("token.reuse_detected", "credential_family_invalidated"), semantic("token.revoked", "invalidated")}
 		}
 		return []auditRecord{semantic("token.revoked", "invalidated")}
+	case "connection_reauth_required":
+		return []auditRecord{semantic("token.revoked", "reauth_required")}
+	case "connection_refresh_failed":
+		return []auditRecord{semantic("token.refresh_failed", "upstream_error")}
 	case "connection_revoked":
 		return []auditRecord{semantic("token.revoked", "revoked")}
 	case "connection_revocation_completed":
