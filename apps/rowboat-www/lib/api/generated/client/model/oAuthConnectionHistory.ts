@@ -13,6 +13,7 @@ import type { OAuthConnectionHistoryOperation } from "./oAuthConnectionHistoryOp
 export interface OAuthConnectionHistory {
   /** Row creation timestamp. */
   created_at: string;
+  credential_generation: number;
   external_account_id?: string;
   /** Timestamp when this history record was written. */
   history_time: string;
@@ -24,8 +25,7 @@ export interface OAuthConnectionHistory {
   provider: string;
   /** UUID of the source row represented by a history row. */
   ref?: string;
-  /** Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints. */
-  refresh_token_encrypted: string;
+  refresh_token_present: boolean;
   /** OAuth scopes granted or requested. */
   scopes?: string[];
   /** Last row update timestamp. */

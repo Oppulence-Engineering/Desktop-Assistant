@@ -11,8 +11,7 @@ import type { MCPConnectionHistoryOperation } from "./mCPConnectionHistoryOperat
  * Audit history for MCPConnection rows.
  */
 export interface MCPConnectionHistory {
-  /** Sealed vendor API key. Sensitive internal storage field; never returned by desktop endpoints. */
-  api_key_encrypted?: string;
+  api_key_present: boolean;
   /** OAuth token audience for the connector. */
   audience: string;
   /** Timestamp when the connector was connected. */
@@ -35,8 +34,7 @@ export interface MCPConnectionHistory {
   organization_id?: string;
   /** UUID of the source row represented by a history row. */
   ref?: string;
-  /** Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints. */
-  refresh_token_encrypted?: string;
+  refresh_token_present: boolean;
   revocation_attempted_at?: string;
   revocation_succeeded?: boolean;
   revoked_at?: string;
