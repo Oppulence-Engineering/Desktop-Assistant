@@ -48,6 +48,13 @@ var (
 		Name: "connector_credential_custody_saturated",
 		Help: "Whether the bounded credential custody supervisor is applying admission backpressure.",
 	})
+	// CredentialCustodyShutdownUnresolved reports admitted work that remains
+	// unresolved after shutdown has begun. It stays scrapeable while the public
+	// listener drains so operators can page before Kubernetes reaches SIGKILL.
+	CredentialCustodyShutdownUnresolved = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "connector_credential_custody_shutdown_unresolved",
+		Help: "Admitted credential custody work still unresolved after process shutdown began.",
+	})
 	// CredentialCustodyOutcomes counts bounded custody supervisor outcomes.
 	CredentialCustodyOutcomes = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "connector_credential_custody_total",

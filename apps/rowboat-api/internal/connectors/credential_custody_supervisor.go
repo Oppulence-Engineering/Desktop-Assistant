@@ -3,6 +3,7 @@ package connectors
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"sync/atomic"
 
@@ -12,6 +13,18 @@ import (
 
 var errCredentialCustodySaturated = errors.New("credential custody supervisor saturated")
 var errCredentialCustodyStopping = errors.New("credential custody supervisor draining")
+var errCredentialCustodyUnresolved = errors.New("credential custody work has no acknowledged durable or revoked outcome")
+
+type credentialCustodyShutdownError struct {
+	pending int64
+	cause   error
+}
+
+func (e *credentialCustodyShutdownError) Error() string {
+	return fmt.Sprintf("credential custody shutdown deadline expired with %d admitted task(s) unresolved: %v", e.pending, e.cause)
+}
+
+func (e *credentialCustodyShutdownError) Unwrap() error { return e.cause }
 
 type credentialCustodyResult struct {
 	recoveryID string
@@ -33,7 +46,9 @@ type credentialCustodySupervisor struct {
 	workers   sync.WaitGroup
 	inflight  sync.WaitGroup
 	mu        sync.RWMutex
+	quiescing bool
 	stopping  bool
+	drainDone chan struct{}
 	pending   atomic.Int64
 	saturated atomic.Bool
 }
@@ -52,11 +67,15 @@ func newCredentialCustodySupervisor(log *zap.Logger, workers, queueSize int) *cr
 			defer s.workers.Done()
 			for task := range s.queue {
 				connectormetrics.CredentialCustodyQueueDepth.Set(float64(len(s.queue)))
+				s.updateSaturation()
 				result := task.run()
 				task.result <- result
 				close(task.result)
-				s.pending.Add(-1)
+				pending := s.pending.Add(-1)
 				connectormetrics.CredentialCustodyInFlight.Dec()
+				if s.isQuiescing() {
+					connectormetrics.CredentialCustodyShutdownUnresolved.Set(float64(pending))
+				}
 				s.inflight.Done()
 				s.updateSaturation()
 			}
@@ -71,14 +90,23 @@ func (s *credentialCustodySupervisor) submit(run func() credentialCustodyResult)
 	stopping := s.stopping
 	if !stopping {
 		s.inflight.Add(1)
-		s.pending.Add(1)
+		pending := s.pending.Add(1)
 		connectormetrics.CredentialCustodyInFlight.Inc()
+		if s.quiescing {
+			connectormetrics.CredentialCustodyShutdownUnresolved.Set(float64(pending))
+		}
 	}
 	s.mu.RUnlock()
 	if stopping {
-		// Shutdown is registered after HTTP draining, so this is only a defensive
-		// race path. Execute inline rather than abandon a live credential.
-		return run()
+		// Admission closes only after the public listener has drained. Reaching this
+		// path means a request outlived the HTTP shutdown bound. Never execute new,
+		// untracked custody work after the drain snapshot.
+		connectormetrics.CredentialCustodyOutcomes.WithLabelValues("rejected_after_shutdown").Inc()
+		if s.log != nil {
+			s.log.Error("credential custody work arrived after shutdown admission closed",
+				zap.String("operator_action", "treat_process_exit_as_unresolved_credential_custody"))
+		}
+		return credentialCustodyResult{err: errCredentialCustodyStopping}
 	}
 	select {
 	case s.queue <- task:
@@ -112,34 +140,93 @@ func (s *credentialCustodySupervisor) setSaturated(value bool) {
 
 func (s *credentialCustodySupervisor) ready() error {
 	s.mu.RLock()
-	stopping := s.stopping
+	quiescing := s.quiescing
 	s.mu.RUnlock()
-	if stopping {
+	if quiescing {
 		return errCredentialCustodyStopping
 	}
 	if s.saturated.Load() {
 		return errCredentialCustodySaturated
 	}
+	if s.pending.Load() > 0 {
+		return errCredentialCustodyUnresolved
+	}
 	return nil
 }
 
-func (s *credentialCustodySupervisor) close() {
+// beginShutdown fails readiness before listener draining starts while keeping
+// admission open for requests that were already accepted by the HTTP server.
+// The metrics listener stays up through the bounded custody drain.
+func (s *credentialCustodySupervisor) beginShutdown() {
 	s.mu.Lock()
-	if s.stopping {
+	if s.quiescing {
 		s.mu.Unlock()
-		s.workers.Wait()
 		return
 	}
-	s.stopping = true
+	s.quiescing = true
+	pending := s.pending.Load()
 	s.mu.Unlock()
-	s.setSaturated(true)
-	s.inflight.Wait()
-	close(s.queue)
-	s.workers.Wait()
-	connectormetrics.CredentialCustodyQueueDepth.Set(0)
+
+	connectormetrics.CredentialCustodyShutdownUnresolved.Set(float64(pending))
+	if pending > 0 && s.log != nil {
+		s.log.Error("shutdown began with unresolved credential custody work",
+			zap.Int64("accepted_work_unresolved", pending),
+			zap.String("operator_action", "block_disruption_and_restore_postgresql_or_provider_revocation_before_termination_deadline"))
+	}
 }
 
-// processContext deliberately has no request or signal cancellation. The
-// supervisor's only shutdown operation is draining to an acknowledged custody
-// outcome.
+func (s *credentialCustodySupervisor) isQuiescing() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.quiescing
+}
+
+// close stops admission and drains every task admitted before the listener
+// drain completed. It is bounded by ctx. A deadline returns an explicit error
+// and leaves the unresolved gauge/log state intact rather than claiming a clean
+// shutdown while credentials remain only in process memory.
+func (s *credentialCustodySupervisor) closeContext(ctx context.Context) error {
+	s.beginShutdown()
+
+	s.mu.Lock()
+	if !s.stopping {
+		s.stopping = true
+		s.drainDone = make(chan struct{})
+		drainDone := s.drainDone
+		go func() {
+			s.inflight.Wait()
+			close(s.queue)
+			s.workers.Wait()
+			connectormetrics.CredentialCustodyQueueDepth.Set(0)
+			connectormetrics.CredentialCustodyShutdownUnresolved.Set(0)
+			close(drainDone)
+		}()
+	}
+	drainDone := s.drainDone
+	s.mu.Unlock()
+
+	select {
+	case <-drainDone:
+		connectormetrics.CredentialCustodyOutcomes.WithLabelValues("shutdown_drained").Inc()
+		return nil
+	case <-ctx.Done():
+		pending := s.pending.Load()
+		connectormetrics.CredentialCustodyShutdownUnresolved.Set(float64(pending))
+		connectormetrics.CredentialCustodyOutcomes.WithLabelValues("shutdown_timed_out").Inc()
+		if s.log != nil {
+			s.log.Error("credential custody shutdown deadline expired with unresolved accepted work",
+				zap.Int64("accepted_work_unresolved", pending), zap.Error(ctx.Err()),
+				zap.String("operator_action", "page_security_and_restore_postgresql_or_provider_revocation; do_not_treat_rollout_as_clean"))
+		}
+		return &credentialCustodyShutdownError{pending: pending, cause: ctx.Err()}
+	}
+}
+
+// close preserves the simple cleanup contract used by focused tests. Runtime
+// lifecycle code must use closeContext with a deadline.
+func (s *credentialCustodySupervisor) close() { _ = s.closeContext(context.Background()) }
+
+// processContext deliberately has no request or signal cancellation. Admitted
+// work keeps trying for an acknowledged custody outcome while closeContext
+// bounds how long server shutdown waits and reports any unresolved remainder.
 func processContext() context.Context { return context.Background() }

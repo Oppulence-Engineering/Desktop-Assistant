@@ -8,9 +8,11 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
@@ -40,7 +42,15 @@ type ReadyCheck struct {
 // namedCloser is a cleanup function run during graceful shutdown.
 type namedCloser struct {
 	name  string
-	close func() error
+	close func(context.Context) error
+}
+
+// namedShutdownHook runs immediately after shutdown is requested, before the
+// public listener drains. Hooks are used for fail-fast readiness and subsystem
+// quiescing while already accepted HTTP requests are still allowed to finish.
+type namedShutdownHook struct {
+	name string
+	run  func()
 }
 
 // Server wraps the chi router and its listeners (HTTP, gRPC, metrics).
@@ -50,9 +60,12 @@ type Server struct {
 	router *chi.Mux
 	grpc   *grpc.Server
 
-	mu      sync.RWMutex
-	checks  []ReadyCheck
-	closers []namedCloser
+	mu            sync.RWMutex
+	checks        []ReadyCheck
+	closers       []namedCloser
+	shutdownHooks []namedShutdownHook
+	draining      atomic.Bool
+	shutdownOnce  sync.Once
 }
 
 // New builds the router with the baseline middleware chain
@@ -223,7 +236,24 @@ func (s *Server) AddOptionalReadyCheck(name string, check func(context.Context) 
 func (s *Server) AddCloser(name string, closeFn func() error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.closers = append(s.closers, namedCloser{name: name, close: func(context.Context) error { return closeFn() }})
+}
+
+// AddContextCloser registers a shutdown cleanup that observes the bounded
+// resource-drain context. Use it for custodial work that must report unresolved
+// state instead of hanging until the orchestrator sends SIGKILL.
+func (s *Server) AddContextCloser(name string, closeFn func(context.Context) error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.closers = append(s.closers, namedCloser{name: name, close: closeFn})
+}
+
+// AddShutdownHook registers a quiesce hook that runs as soon as shutdown is
+// requested and before the public listeners begin draining.
+func (s *Server) AddShutdownHook(name string, hook func()) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.shutdownHooks = append(s.shutdownHooks, namedShutdownHook{name: name, run: hook})
 }
 
 func (s *Server) handleHealthz(w http.ResponseWriter, _ *http.Request) {
@@ -233,6 +263,16 @@ func (s *Server) handleHealthz(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) handleReadyz(w http.ResponseWriter, r *http.Request) {
+	if s.draining.Load() {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"status": "not_ready",
+			"checks": map[string]string{"server_shutdown": "fail"},
+		})
+		return
+	}
+
 	s.mu.RLock()
 	checks := append([]ReadyCheck(nil), s.checks...)
 	s.mu.RUnlock()
@@ -266,6 +306,45 @@ func (s *Server) handleReadyz(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	_ = json.NewEncoder(w).Encode(map[string]any{"status": status, "checks": results})
+}
+
+func (s *Server) beginShutdown() {
+	s.shutdownOnce.Do(func() {
+		s.draining.Store(true)
+		s.mu.RLock()
+		hooks := append([]namedShutdownHook(nil), s.shutdownHooks...)
+		s.mu.RUnlock()
+		for _, hook := range hooks {
+			hook.run()
+			s.log.Info("shutdown hook completed", zap.String("hook", hook.name))
+		}
+	})
+}
+
+func (s *Server) closeResources(ctx context.Context) error {
+	s.mu.RLock()
+	closers := append([]namedCloser(nil), s.closers...)
+	s.mu.RUnlock()
+
+	var closeErrs []error
+	for i := len(closers) - 1; i >= 0; i-- {
+		closer := closers[i]
+		done := make(chan error, 1)
+		go func() { done <- closer.close(ctx) }()
+		select {
+		case err := <-done:
+			if err != nil {
+				s.log.Error("closer failed during shutdown", zap.String("closer", closer.name), zap.Error(err))
+				closeErrs = append(closeErrs, fmt.Errorf("close %s: %w", closer.name, err))
+			}
+		case <-ctx.Done():
+			err := fmt.Errorf("close %s exceeded shutdown deadline: %w", closer.name, ctx.Err())
+			s.log.Error("closer exceeded shutdown deadline", zap.String("closer", closer.name), zap.Error(ctx.Err()))
+			closeErrs = append(closeErrs, err)
+			return errors.Join(closeErrs...)
+		}
+	}
+	return errors.Join(closeErrs...)
 }
 
 // Run starts the public + metrics listeners and blocks until ctx is cancelled,
@@ -324,15 +403,17 @@ func (s *Server) Run(ctx context.Context) error {
 		}()
 	}
 
+	var serveErr error
 	select {
 	case <-ctx.Done():
 		s.log.Info("shutdown signal received, draining")
 	case err := <-errCh:
-		return err
+		serveErr = err
+		s.log.Error("listener failed, draining remaining server resources", zap.Error(err))
 	}
+	s.beginShutdown()
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), s.cfg.ShutdownTimeout)
-	defer cancel()
 
 	// GracefulStop has no deadline of its own: a stuck gRPC call would stall
 	// shutdown past the pod's termination grace and get the process SIGKILLed
@@ -344,7 +425,6 @@ func (s *Server) Run(ctx context.Context) error {
 		close(grpcDone)
 	}()
 
-	_ = metricsSrv.Shutdown(shutdownCtx)
 	httpErr := httpSrv.Shutdown(shutdownCtx)
 
 	select {
@@ -354,16 +434,19 @@ func (s *Server) Run(ctx context.Context) error {
 		s.grpc.Stop()
 		<-grpcDone
 	}
+	cancel()
 
-	// Release registered resources (DB pool, etc.) now that the listeners have
-	// drained, in LIFO order so dependants close before their dependencies.
-	s.mu.RLock()
-	closers := append([]namedCloser(nil), s.closers...)
-	s.mu.RUnlock()
-	for i := len(closers) - 1; i >= 0; i-- {
-		if err := closers[i].close(); err != nil {
-			s.log.Warn("closer failed during shutdown", zap.String("closer", closers[i].name), zap.Error(err))
-		}
-	}
-	return httpErr
+	// Give resource custody its own bounded drain window after request admission
+	// has closed. The metrics listener intentionally remains available throughout
+	// this phase so unresolved custody state can page before process exit.
+	resourceCtx, cancelResources := context.WithTimeout(context.Background(), s.cfg.ShutdownTimeout)
+	resourceErr := s.closeResources(resourceCtx)
+	cancelResources()
+
+	metricsTimeout := min(s.cfg.ShutdownTimeout, 5*time.Second)
+	metricsCtx, cancelMetrics := context.WithTimeout(context.Background(), metricsTimeout)
+	metricsErr := metricsSrv.Shutdown(metricsCtx)
+	cancelMetrics()
+
+	return errors.Join(serveErr, httpErr, resourceErr, metricsErr)
 }
