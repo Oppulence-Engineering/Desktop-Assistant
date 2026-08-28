@@ -38,9 +38,30 @@ cleanup() {
   docker rm -f "$PG_NAME" >/dev/null 2>&1 || true
   docker rm -f "$REDIS_NAME" >/dev/null 2>&1 || true
 }
+collect_entitlement_diagnostics() {
+  local phase=$1
+  local name url
+  for name in api-1 api-2 api-crash; do
+    case "$name" in
+      api-1) url="${METRICS_URL:-}" ;;
+      api-2) url="${METRICS2_URL:-}" ;;
+      api-crash) url="${METRICS3_URL:-}" ;;
+    esac
+    if [ -n "$url" ]; then
+      curl -fsS --max-time 3 "$url/metrics" >"$SCRATCH/entitlement-metrics-${name}-${phase}.prom" 2>"$SCRATCH/entitlement-metrics-${name}-${phase}.error" || true
+    fi
+  done
+  if [ -n "${PRODUCT_URL:-}" ]; then
+    curl -fsS --max-time 3 --cacert "${CURL_CA_BUNDLE:-}" \
+      -H "X-Fixture-Secret: ${PRODUCT_MCP_FIXTURE_SECRET:-}" \
+      "$PRODUCT_URL/fixture/entitlement-diagnostics" \
+      >"$SCRATCH/entitlement-product-${phase}.json" 2>"$SCRATCH/entitlement-product-${phase}.error" || true
+  fi
+}
 show_failure() {
   code=$?
   if [ "$code" -ne 0 ]; then
+    collect_entitlement_diagnostics failure
     echo "RFC 012 acceptance failed. Logs: $SCRATCH" >&2
     for f in "$SCRATCH"/*.log; do [ -f "$f" ] && { echo "===== $f =====" >&2; tail -n 120 "$f" >&2; }; done
   fi
@@ -145,6 +166,9 @@ OIDC_URL="http://127.0.0.1:${OIDC_PORT}"
 API_URL="http://127.0.0.1:${API_PORT}"
 API2_URL="http://127.0.0.1:${API2_PORT}"
 API3_URL="http://127.0.0.1:${API3_PORT}"
+METRICS_URL="http://127.0.0.1:${METRICS_PORT}"
+METRICS2_URL="http://127.0.0.1:${METRICS2_PORT}"
+METRICS3_URL="http://127.0.0.1:${METRICS3_PORT}"
 PRODUCT_URL="https://127.0.0.1:${PRODUCT_PORT}"
 CONSENT_URL="http://127.0.0.1:${CONSENT_PORT}"
 CONSENT2_URL="http://127.0.0.1:${CONSENT2_PORT}"
@@ -192,10 +216,11 @@ wait_http "$API_URL/healthz"
 wait_http "$API2_URL/healthz"
 wait_http "$API3_URL/healthz"
 
+PRODUCT_MCP_FIXTURE_SECRET=rfc012-fixture-secret
 DATABASE_URL="$DATABASE_URL" PRODUCT_MCP_ADDR="127.0.0.1:${PRODUCT_PORT}" \
   SSL_CERT_FILE="$SCRATCH/fixture-tls.crt" \
   PRODUCT_MCP_AUDIENCE=dev-product-api PRODUCT_MCP_ISSUER="$API_URL" PRODUCT_MCP_JWKS_URL="$API_URL/.well-known/connector-jwks.json" \
-  PRODUCT_MCP_FIXTURE_SECRET=rfc012-fixture-secret \
+	  PRODUCT_MCP_FIXTURE_SECRET="$PRODUCT_MCP_FIXTURE_SECRET" \
   PRODUCT_MCP_TLS_CERT="$SCRATCH/fixture-tls.crt" PRODUCT_MCP_TLS_KEY="$SCRATCH/fixture-tls.key" \
 	  PRODUCT_ENTITLEMENT_HMAC_KEY="$ENTITLEMENT_HMAC_KEY" \
 	  PRODUCT_CONNECTION_STATUS_URL="$API_URL/v1/internal/connections/status" \
@@ -227,6 +252,7 @@ TOKEN_A=$(mint user_rfc012_a org_rfc012_a a@example.test)
 TOKEN_B=$(mint user_rfc012_b org_rfc012_b b@example.test)
 TOKEN_U=$(mint user_rfc012_unentitled org_rfc012_unentitled u@example.test)
 
+collect_entitlement_diagnostics pre-acceptance
 echo 'JCODE_CHECKPOINT {"message":"Running authenticated public RFC 012 acceptance"}'
 env \
   RFC012_API_URL="$API_URL" RFC012_PRODUCT_MCP_URL="$PRODUCT_URL" \
@@ -235,6 +261,7 @@ env \
 	  RFC012_FAULT_SECRET="$RFC012_FAULT_SECRET" RFC012_OAUTH_FAULT_URL="$OIDC_URL/fixture/oauth-faults" \
 	  RFC012_REDIS_FAULT_URL="$REDIS_FAULT_URL" RFC012_REDIS_ADMIN_URL="$REDIS_ADMIN_URL" \
 	  RFC012_CRASH_API_URL="$API3_URL" RFC012_CRASH_API_PID="$API3_PID" \
+	  RFC012_API_METRICS_URL="$METRICS_URL" RFC012_API2_METRICS_URL="$METRICS2_URL" RFC012_CRASH_API_METRICS_URL="$METRICS3_URL" \
 	  RFC012_PRODUCT_SERVICE_PRINCIPAL=dev-product-service RFC012_PRODUCT_SERVICE_HMAC_SECRET="$PRODUCT_STATUS_HMAC_KEY" \
   RFC012_TENANT_A_JWT="$TOKEN_A" RFC012_TENANT_B_JWT="$TOKEN_B" RFC012_UNENTITLED_JWT="$TOKEN_U" \
   RFC012_TENANT_A_ORG_ID=org_rfc012_a RFC012_CONNECTOR=dev \
@@ -252,6 +279,7 @@ env \
 	    fi
 	  ' | tee "$SCRATCH/acceptance.log"
 
+collect_entitlement_diagnostics success
 echo "RFC012_ACCEPTANCE_ARTIFACTS=$SCRATCH"
 trap - EXIT INT TERM
 cleanup

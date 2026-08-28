@@ -106,16 +106,19 @@ type session struct {
 }
 
 type oauthRefreshFaultPlan struct {
-	ID                  string `json:"id"`
-	HoldBeforeResponse  bool   `json:"hold_before_response,omitempty"`
-	AfterResponseURL    string `json:"after_response_url,omitempty"`
-	AfterResponseSecret string `json:"after_response_secret,omitempty"`
-	SignalPID           int    `json:"signal_pid,omitempty"`
+	ID                       string `json:"id"`
+	HoldBeforeResponse       bool   `json:"hold_before_response,omitempty"`
+	AfterResponseURL         string `json:"after_response_url,omitempty"`
+	AfterResponseSecret      string `json:"after_response_secret,omitempty"`
+	SignalPID                int    `json:"signal_pid,omitempty"`
+	ProviderRefreshSemantics string `json:"provider_refresh_semantics,omitempty"`
 }
 
 type oauthRefreshFaultRuntime struct {
 	plan           oauthRefreshFaultPlan
 	entered        bool
+	oldConsumed    bool
+	rotatedIssued  bool
 	responseSent   bool
 	postActionDone bool
 	release        chan struct{}
@@ -137,11 +140,19 @@ type oauthFaultConfig struct {
 }
 
 type oauthRefreshFaultStatus struct {
-	ID             string `json:"id"`
-	Entered        bool   `json:"entered"`
-	ResponseSent   bool   `json:"response_sent"`
-	PostActionDone bool   `json:"post_action_done"`
+	ID                       string `json:"id"`
+	ProviderRefreshSemantics string `json:"provider_refresh_semantics,omitempty"`
+	Entered                  bool   `json:"entered"`
+	OldTokenConsumed         bool   `json:"old_token_consumed"`
+	RotatedTokenIssued       bool   `json:"rotated_token_issued"`
+	ResponseSent             bool   `json:"response_sent"`
+	PostActionDone           bool   `json:"post_action_done"`
 }
+
+const (
+	providerRefreshSemanticsMultiUseRotating    = "multi_use_rotating"
+	providerRefreshSemanticsOneUseNonIdempotent = "one_use_non_idempotent"
+)
 
 type oauthFaultStatus struct {
 	RefreshCalls int                       `json:"refresh_calls"`
@@ -455,26 +466,49 @@ func tokenFromCode(w http.ResponseWriter, r *http.Request) {
 
 func tokenFromRefresh(w http.ResponseWriter, r *http.Request) {
 	rt := r.Form.Get("refresh_token")
-	v, ok := refreshDB.Load(rt)
-	if !ok {
-		tokenError(w, "invalid_grant")
-		return
-	}
-	s := v.(session)
 	plan := oauthFaults.nextRefresh()
-	if plan == nil {
-		writeTokenResponse(w, s.sub, s.email, s.clientID, s.audience, s.scope, "", rt, nil, "")
-		return
+	if plan != nil {
+		plan.markEntered()
 	}
-	plan.markEntered()
-	if plan.plan.HoldBeforeResponse {
+	if plan != nil && plan.plan.HoldBeforeResponse {
 		select {
 		case <-plan.release:
 		case <-r.Context().Done():
 			return
 		}
 	}
-	raw, err := json.Marshal(tokenResponse(s.sub, s.email, s.clientID, s.audience, s.scope, "", rt, nil, ""))
+	var s session
+	rotated := rt
+	switch {
+	case plan != nil && plan.plan.ProviderRefreshSemantics == providerRefreshSemanticsOneUseNonIdempotent:
+		var ok bool
+		s, rotated, ok = rotateRefreshToken(rt)
+		if !ok {
+			tokenError(w, "invalid_grant")
+			return
+		}
+		plan.markRotated()
+	case plan != nil && plan.plan.ProviderRefreshSemantics == providerRefreshSemanticsMultiUseRotating:
+		var ok bool
+		s, rotated, ok = issueRefreshToken(rt)
+		if !ok {
+			tokenError(w, "invalid_grant")
+			return
+		}
+		plan.markRotationIssued()
+	default:
+		value, ok := refreshDB.Load(rt)
+		if !ok {
+			tokenError(w, "invalid_grant")
+			return
+		}
+		s = value.(session)
+	}
+	if plan == nil {
+		writeTokenResponse(w, s.sub, s.email, s.clientID, s.audience, s.scope, "", rotated, nil, "")
+		return
+	}
+	raw, err := json.Marshal(tokenResponse(s.sub, s.email, s.clientID, s.audience, s.scope, "", rotated, nil, ""))
 	if err != nil {
 		http.Error(w, "encode token response", http.StatusInternalServerError)
 		return
@@ -488,6 +522,34 @@ func tokenFromRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 	plan.markResponseSent()
 	plan.runPostAction()
+}
+
+func rotateRefreshToken(old string) (session, string, bool) {
+	rotated, err := randomToken(32)
+	if err != nil {
+		return session{}, "", false
+	}
+	value, ok := refreshDB.LoadAndDelete(old)
+	if !ok {
+		return session{}, "", false
+	}
+	s := value.(session)
+	refreshDB.Store(rotated, s)
+	return s, rotated, true
+}
+
+func issueRefreshToken(source string) (session, string, bool) {
+	value, ok := refreshDB.Load(source)
+	if !ok {
+		return session{}, "", false
+	}
+	rotated, err := randomToken(32)
+	if err != nil {
+		return session{}, "", false
+	}
+	s := value.(session)
+	refreshDB.Store(rotated, s)
+	return s, rotated, true
 }
 
 func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, tokenAudience, scope, nonce, refreshToken string, amr []string, acr string) {
@@ -544,7 +606,10 @@ func handleOAuthFaults(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "invalid fault config", http.StatusBadRequest)
 			return
 		}
-		oauthFaults.configure(config)
+		if err := oauthFaults.configure(config); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		w.WriteHeader(http.StatusNoContent)
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -575,7 +640,7 @@ func authorizedFixtureRequest(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-func (c *oauthFaultController) configure(config oauthFaultConfig) {
+func (c *oauthFaultController) configure(config oauthFaultConfig) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if config.Reset {
@@ -588,11 +653,15 @@ func (c *oauthFaultController) configure(config oauthFaultConfig) {
 		c.revokeFail = *config.RevokeFail
 	}
 	for index, plan := range config.RefreshPlans {
+		if plan.SignalPID > 0 && plan.ProviderRefreshSemantics != providerRefreshSemanticsOneUseNonIdempotent {
+			return fmt.Errorf("signal_pid refresh plans require provider_refresh_semantics=%q", providerRefreshSemanticsOneUseNonIdempotent)
+		}
 		if strings.TrimSpace(plan.ID) == "" {
 			plan.ID = fmt.Sprintf("refresh-%d", len(c.plans)+index+1)
 		}
 		c.plans = append(c.plans, &oauthRefreshFaultRuntime{plan: plan, release: make(chan struct{})})
 	}
+	return nil
 }
 
 func (c *oauthFaultController) nextRefresh() *oauthRefreshFaultRuntime {
@@ -631,7 +700,9 @@ func (c *oauthFaultController) status() oauthFaultStatus {
 	status := oauthFaultStatus{RefreshCalls: c.refreshCalls, RevokeCalls: c.revokeCalls, RevokeFail: c.revokeFail}
 	for _, plan := range c.plans {
 		status.Plans = append(status.Plans, oauthRefreshFaultStatus{
-			ID: plan.plan.ID, Entered: plan.entered, ResponseSent: plan.responseSent, PostActionDone: plan.postActionDone,
+			ID: plan.plan.ID, ProviderRefreshSemantics: plan.plan.ProviderRefreshSemantics,
+			Entered: plan.entered, OldTokenConsumed: plan.oldConsumed, RotatedTokenIssued: plan.rotatedIssued,
+			ResponseSent: plan.responseSent, PostActionDone: plan.postActionDone,
 		})
 	}
 	return status
@@ -640,6 +711,19 @@ func (c *oauthFaultController) status() oauthFaultStatus {
 func (p *oauthRefreshFaultRuntime) markEntered() {
 	oauthFaults.mu.Lock()
 	p.entered = true
+	oauthFaults.mu.Unlock()
+}
+
+func (p *oauthRefreshFaultRuntime) markRotated() {
+	oauthFaults.mu.Lock()
+	p.oldConsumed = true
+	p.rotatedIssued = true
+	oauthFaults.mu.Unlock()
+}
+
+func (p *oauthRefreshFaultRuntime) markRotationIssued() {
+	oauthFaults.mu.Lock()
+	p.rotatedIssued = true
 	oauthFaults.mu.Unlock()
 }
 

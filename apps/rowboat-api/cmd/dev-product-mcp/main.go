@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
@@ -34,6 +35,32 @@ type server struct {
 	statusPrincipal     string
 	statusSecret        string
 	httpClient          *http.Client
+	entitlementCauses   *entitlementDiagnostics
+}
+
+type entitlementDiagnostics struct {
+	mu     sync.Mutex
+	counts map[string]uint64
+}
+
+func newEntitlementDiagnostics() *entitlementDiagnostics {
+	return &entitlementDiagnostics{counts: make(map[string]uint64)}
+}
+
+func (d *entitlementDiagnostics) record(cause string) {
+	d.mu.Lock()
+	d.counts[cause]++
+	d.mu.Unlock()
+}
+
+func (d *entitlementDiagnostics) snapshot() map[string]uint64 {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	result := make(map[string]uint64, len(d.counts))
+	for cause, count := range d.counts {
+		result[cause] = count
+	}
+	return result
 }
 
 const (
@@ -91,10 +118,12 @@ func main() {
 		statusPrincipal:     required("PRODUCT_CONNECTION_STATUS_PRINCIPAL"),
 		statusSecret:        required("PRODUCT_CONNECTION_STATUS_HMAC_SECRET"),
 		httpClient:          &http.Client{Timeout: 5 * time.Second},
+		entitlementCauses:   newEntitlementDiagnostics(),
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { writeJSON(w, 200, map[string]any{"ok": true}) })
 	mux.HandleFunc("POST /v1/entitlements", s.entitlement)
+	mux.HandleFunc("GET /fixture/entitlement-diagnostics", s.entitlementDiagnosticSnapshot)
 	mux.HandleFunc("POST /fixture/entitlements", s.setEntitlement)
 	mux.HandleFunc("POST /fixture/connections", s.setConnection)
 	mux.HandleFunc("POST /v1/approvals", s.issueApproval)
@@ -174,7 +203,20 @@ CREATE TABLE IF NOT EXISTS dev_product_entitlements (
 
 func (s *server) entitlement(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 16<<10))
-	if err != nil || s.entitlementVerifier.Verify(r.Context(), r.Header, body) != nil {
+	if err != nil {
+		s.recordEntitlementCause("body_read")
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"code": "entitlement_unauthorized"})
+		return
+	}
+	if err := s.entitlementVerifier.Verify(r.Context(), r.Header, body); err != nil {
+		cause := "signature_invalid"
+		switch {
+		case errors.Is(err, oauthrs.ErrEntitlementRequestReplay):
+			cause = "request_replay"
+		case errors.Is(err, oauthrs.ErrEntitlementReplayStore):
+			cause = "replay_store"
+		}
+		s.recordEntitlementCause(cause)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"code": "entitlement_unauthorized"})
 		return
 	}
@@ -187,6 +229,7 @@ func (s *server) entitlement(w http.ResponseWriter, r *http.Request) {
 	dec := json.NewDecoder(bytes.NewReader(body))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&request); err != nil || request.Connector != "dev" || strings.TrimSpace(request.UserID) == "" || len(request.Scopes) == 0 {
+		s.recordEntitlementCause("request_invalid")
 		writeJSON(w, http.StatusBadRequest, map[string]string{"code": "invalid_entitlement_request"})
 		return
 	}
@@ -194,18 +237,36 @@ func (s *server) entitlement(w http.ResponseWriter, r *http.Request) {
 	var reason string
 	err = s.db.QueryRowContext(r.Context(), `SELECT allowed,reason FROM dev_product_entitlements WHERE user_id=$1`, request.UserID).Scan(&allowed, &reason)
 	if errors.Is(err, sql.ErrNoRows) {
+		s.entitlementCauses.record("denied_no_subscription")
 		writeJSON(w, http.StatusOK, map[string]any{"allowed": false, "reason": "no_subscription"})
 		return
 	}
 	if err != nil {
+		s.recordEntitlementCause("database_query")
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"code": "entitlement_failed"})
 		return
 	}
 	if allowed {
+		s.entitlementCauses.record("allowed")
 		writeJSON(w, http.StatusOK, map[string]any{"allowed": true})
 		return
 	}
+	s.entitlementCauses.record("denied_authoritative")
 	writeJSON(w, http.StatusOK, map[string]any{"allowed": false, "reason": reason})
+}
+
+func (s *server) recordEntitlementCause(cause string) {
+	s.entitlementCauses.record(cause)
+	encoded, _ := json.Marshal(map[string]string{"event": "entitlement_diagnostic", "cause": cause})
+	log.Print(string(encoded))
+}
+
+func (s *server) entitlementDiagnosticSnapshot(w http.ResponseWriter, r *http.Request) {
+	if required("PRODUCT_MCP_FIXTURE_SECRET") != r.Header.Get("X-Fixture-Secret") {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"code": "fixture_unauthorized"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"counts": s.entitlementCauses.snapshot()})
 }
 
 func (s *server) setEntitlement(w http.ResponseWriter, r *http.Request) {

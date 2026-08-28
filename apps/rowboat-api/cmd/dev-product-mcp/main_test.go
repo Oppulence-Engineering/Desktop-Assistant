@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -108,4 +109,23 @@ func TestCanonicalProductOriginAndAmbiguousCommitFixtureGate(t *testing.T) {
 	require.True(t, fixtureAmbiguousApprovalCommit(r))
 	r.Header.Set("X-Fixture-Secret", "wrong")
 	require.False(t, fixtureAmbiguousApprovalCommit(r))
+}
+
+func TestEntitlementDiagnosticSnapshotIsAuthenticatedAndBounded(t *testing.T) {
+	t.Setenv("PRODUCT_MCP_FIXTURE_SECRET", "fixture-secret")
+	s := &server{entitlementCauses: newEntitlementDiagnostics()}
+	s.recordEntitlementCause("replay_store")
+	s.entitlementCauses.record("allowed")
+
+	unauthorized := httptest.NewRecorder()
+	s.entitlementDiagnosticSnapshot(unauthorized, httptest.NewRequest(http.MethodGet, "/fixture/entitlement-diagnostics", nil))
+	require.Equal(t, http.StatusUnauthorized, unauthorized.Code)
+
+	request := httptest.NewRequest(http.MethodGet, "/fixture/entitlement-diagnostics", nil)
+	request.Header.Set("X-Fixture-Secret", "fixture-secret")
+	response := httptest.NewRecorder()
+	s.entitlementDiagnosticSnapshot(response, request)
+	require.Equal(t, http.StatusOK, response.Code)
+	require.JSONEq(t, `{"counts":{"allowed":1,"replay_store":1}}`, response.Body.String())
+	require.NotContains(t, response.Body.String(), "fixture-secret")
 }

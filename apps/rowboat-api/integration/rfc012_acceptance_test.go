@@ -485,8 +485,14 @@ func TestRFC012FaultContract(t *testing.T) {
 	redisAdmin := redis.NewClient(redisOptions)
 	t.Cleanup(func() { _ = redisAdmin.Close() })
 	require.NoError(t, redisAdmin.Ping(t.Context()).Err())
+	require.NoError(t, redisAdmin.FlushDB(t.Context()).Err(), "reset shared acceptance rate-limit state before signed entitlement readiness")
 
 	c := &client{t: t, http: fixtureHTTPClient(t)}
+	probeSignedEntitlementReadiness(t, c, db, product, connector, []acceptanceAPIInstance{
+		{name: "api-1", url: api, metricsURL: mustEnv(t, "RFC012_API_METRICS_URL")},
+		{name: "api-2", url: api2, metricsURL: mustEnv(t, "RFC012_API2_METRICS_URL")},
+		{name: "api-crash", url: crashAPI, metricsURL: mustEnv(t, "RFC012_CRASH_API_METRICS_URL")},
+	})
 	installCredentialWorkerGate(t, db)
 	t.Cleanup(func() { removeCredentialWorkerGate(db) })
 
@@ -512,8 +518,8 @@ func TestRFC012FaultContract(t *testing.T) {
 		configureOAuthFaults(t, c, faultSecret, map[string]any{
 			"reset": true,
 			"refresh_plans": []map[string]any{
-				{"id": "stale-owner", "hold_before_response": true},
-				{"id": "successor", "hold_before_response": true},
+				{"id": "stale-owner", "hold_before_response": true, "provider_refresh_semantics": "multi_use_rotating"},
+				{"id": "successor", "hold_before_response": true, "provider_refresh_semantics": "multi_use_rotating"},
 			},
 		})
 
@@ -640,18 +646,23 @@ func TestRFC012FaultContract(t *testing.T) {
 		}, 25*time.Second, 250*time.Millisecond, "production recovery worker did not revoke and remove the independent journal row")
 	})
 
-	t.Run("API process kill after provider response leaves no false local commit", func(t *testing.T) {
+	t.Run("API process kill after one-use rotation requires reauthentication without false local commit", func(t *testing.T) {
 		resetFaults(t, c, faultSecret)
 		connection := provisionFaultConnection(t, c, db, crashAPI, product, connector, "process-kill")
 		require.NoError(t, redisAdmin.FlushDB(t.Context()).Err())
 		pid, err := strconv.Atoi(mustEnv(t, "RFC012_CRASH_API_PID"))
 		require.NoError(t, err)
 		configureOAuthFaults(t, c, faultSecret, map[string]any{
-			"reset":         true,
-			"refresh_plans": []map[string]any{{"id": "crash-boundary", "signal_pid": pid}},
+			"reset": true,
+			"refresh_plans": []map[string]any{{
+				"id": "crash-boundary", "signal_pid": pid,
+				"provider_refresh_semantics": "one_use_non_idempotent",
+			}},
 		})
 		request := asyncJSON(longHTTPClient(c.http, 20*time.Second), http.MethodPost, crashAPI+"/v1/connections/"+connector+"/mcp-token", connection.token, nil)
-		waitOAuthPlan(t, c, faultSecret, "crash-boundary", func(plan oauthFaultPlanState) bool { return plan.PostActionDone })
+		waitOAuthPlan(t, c, faultSecret, "crash-boundary", func(plan oauthFaultPlanState) bool {
+			return plan.ProviderRefreshSemantics == "one_use_non_idempotent" && plan.OldTokenConsumed && plan.RotatedTokenIssued && plan.PostActionDone
+		})
 		require.NoError(t, syscall.Kill(pid, syscall.SIGKILL))
 		result := waitAsyncJSON(t, request, 20*time.Second)
 		require.Error(t, result.err, "killed API unexpectedly completed the public response")
@@ -666,8 +677,14 @@ func TestRFC012FaultContract(t *testing.T) {
 		require.Eventually(t, func() bool { return redisAdmin.Exists(t.Context(), lockKey).Val() == 0 }, 3*time.Second, 25*time.Millisecond,
 			"orphaned crash-owner lease did not expire")
 		recovered := c.json("POST", api2+"/v1/connections/"+connector+"/mcp-token", connection.token, nil)
-		require.Equal(t, http.StatusOK, recovered.status, recovered.body)
+		require.Equal(t, http.StatusBadGateway, recovered.status, recovered.body)
+		require.Equal(t, "reauth_required", recovered.code(), recovered.body)
 		assertConnectionGeneration(t, db, connection.id, connection.generation+1)
+		var status string
+		var refreshPresent bool
+		require.NoError(t, db.QueryRow(`SELECT status,refresh_token_present FROM mcp_connections WHERE id=$1`, connection.id).Scan(&status, &refreshPresent))
+		require.Equal(t, "reauth_required", status)
+		require.False(t, refreshPresent, "consumed one-use refresh token remained locally usable after the irreducible crash interval")
 	})
 }
 
@@ -677,16 +694,25 @@ type faultConnection struct {
 	generation int64
 }
 
+type acceptanceAPIInstance struct {
+	name       string
+	url        string
+	metricsURL string
+}
+
 type asyncJSONResult struct {
 	response response
 	err      error
 }
 
 type oauthFaultPlanState struct {
-	ID             string `json:"id"`
-	Entered        bool   `json:"entered"`
-	ResponseSent   bool   `json:"response_sent"`
-	PostActionDone bool   `json:"post_action_done"`
+	ID                       string `json:"id"`
+	ProviderRefreshSemantics string `json:"provider_refresh_semantics"`
+	Entered                  bool   `json:"entered"`
+	OldTokenConsumed         bool   `json:"old_token_consumed"`
+	RotatedTokenIssued       bool   `json:"rotated_token_issued"`
+	ResponseSent             bool   `json:"response_sent"`
+	PostActionDone           bool   `json:"post_action_done"`
 }
 
 type oauthFaultStateResponse struct {
@@ -702,37 +728,169 @@ type redisFaultStateResponse struct {
 	Observed  map[string]int64 `json:"observed"`
 }
 
-func provisionFaultConnection(t *testing.T, c *client, db *sql.DB, api, product, connector, _ string) faultConnection {
+func probeSignedEntitlementReadiness(t *testing.T, c *client, db *sql.DB, product, connector string, instances []acceptanceAPIInstance) {
 	t.Helper()
+	const userID = "user_rfc012_a"
+	token := mustEnv(t, "RFC012_TENANT_A_JWT")
+	if len(instances) == 0 {
+		t.Fatal("signed entitlement readiness requires at least one API instance")
+	}
+	materialize := c.json("GET", instances[0].url+"/v1/connectors", token, nil)
+	if materialize.status != http.StatusOK {
+		failFixtureProvisioning(t, c.http, instances[0], product, "readiness", "materialize_identity", materialize)
+	}
+	_, err := db.Exec(`INSERT INTO subscriptions(id,created_at,updated_at,plan,status,sanctioned_credits,stripe_customer_id,stripe_subscription_id,user_subscription)
+		SELECT gen_random_uuid(),now(),now(),'intelligence','active',10000,'','',id FROM users WHERE workos_user_id=$1
+		ON CONFLICT(user_subscription) DO UPDATE SET plan='intelligence',status='active',updated_at=now()`, userID)
+	require.NoError(t, err, "signed entitlement readiness fixture setup failed before fault execution")
+	entitlement := c.jsonHeader("POST", product+"/fixture/entitlements", "", map[string]any{"user_id": userID, "allowed": true}, "X-Fixture-Secret", mustEnv(t, "RFC012_FIXTURE_SECRET"))
+	require.Equal(t, http.StatusOK, entitlement.status, "signed entitlement readiness fixture setup failed before fault execution: %s", entitlement.body)
+
+	for _, instance := range instances {
+		start := c.json("POST", instance.url+"/v1/connections/"+connector+"/start", token, map[string]any{"requestedScopes": []string{"dev:records.read"}})
+		if start.status != http.StatusOK {
+			failFixtureProvisioning(t, c.http, instance, product, "readiness", "signed_entitlement_probe", start)
+		}
+		var started struct {
+			AuthorizeURL string `json:"authorize_url"`
+		}
+		if err := json.Unmarshal([]byte(start.body), &started); err != nil {
+			t.Fatalf("fixture provisioning failed before intended fault boundary: case=%q phase=%q api_instance=%q response_decode=%v diagnostics=%s", "readiness", "signed_entitlement_probe", instance.name, err, collectEntitlementDiagnostics(c.http, instance, product))
+		}
+		stateURL, err := url.Parse(started.AuthorizeURL)
+		if err != nil || stateURL.Query().Get("state") == "" {
+			t.Fatalf("fixture provisioning failed before intended fault boundary: case=%q phase=%q api_instance=%q invalid_authorize_url diagnostics=%s", "readiness", "signed_entitlement_probe", instance.name, collectEntitlementDiagnostics(c.http, instance, product))
+		}
+		result, err := db.Exec(`DELETE FROM oauth_pendings WHERE state_hash=encode(digest($1,'sha256'),'hex')`, stateURL.Query().Get("state"))
+		if err != nil {
+			t.Fatalf("fixture provisioning failed before intended fault boundary: case=%q phase=%q api_instance=%q cleanup_error=%v diagnostics=%s", "readiness", "signed_entitlement_probe", instance.name, err, collectEntitlementDiagnostics(c.http, instance, product))
+		}
+		deleted, err := result.RowsAffected()
+		if err != nil || deleted != 1 {
+			t.Fatalf("fixture provisioning failed before intended fault boundary: case=%q phase=%q api_instance=%q pending_cleanup_rows=%d cleanup_error=%v diagnostics=%s", "readiness", "signed_entitlement_probe", instance.name, deleted, err, collectEntitlementDiagnostics(c.http, instance, product))
+		}
+		t.Logf("signed entitlement readiness probe passed api_instance=%s", instance.name)
+	}
+}
+
+func provisionFaultConnection(t *testing.T, c *client, db *sql.DB, api, product, connector, caseName string) faultConnection {
+	t.Helper()
+	instance := acceptanceInstanceForURL(t, api)
 	redisOptions, err := redis.ParseURL(mustEnv(t, "RFC012_REDIS_ADMIN_URL"))
-	require.NoError(t, err)
+	require.NoError(t, err, "fixture provisioning failed before intended fault boundary: case=%q phase=redis_parse", caseName)
 	redisAdmin := redis.NewClient(redisOptions)
-	require.NoError(t, redisAdmin.FlushDB(t.Context()).Err())
-	require.NoError(t, redisAdmin.Close())
+	require.NoError(t, redisAdmin.FlushDB(t.Context()).Err(), "fixture provisioning failed before intended fault boundary: case=%q phase=redis_reset", caseName)
+	require.NoError(t, redisAdmin.Close(), "fixture provisioning failed before intended fault boundary: case=%q phase=redis_close", caseName)
 	userID := "user_rfc012_a"
 	token := mustEnv(t, "RFC012_TENANT_A_JWT")
-	require.Equal(t, http.StatusOK, c.json("GET", api+"/v1/connectors", token, nil).status)
+	list := c.json("GET", api+"/v1/connectors", token, nil)
+	if list.status != http.StatusOK {
+		failFixtureProvisioning(t, c.http, instance, product, caseName, "materialize_identity", list)
+	}
 	_, err = db.Exec(`INSERT INTO subscriptions(id,created_at,updated_at,plan,status,sanctioned_credits,stripe_customer_id,stripe_subscription_id,user_subscription)
 		SELECT gen_random_uuid(),now(),now(),'intelligence','active',10000,'','',id FROM users WHERE workos_user_id=$1
 		ON CONFLICT(user_subscription) DO UPDATE SET plan='intelligence',status='active',updated_at=now()`, userID)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, c.jsonHeader("POST", product+"/fixture/entitlements", "", map[string]any{"user_id": userID, "allowed": true}, "X-Fixture-Secret", mustEnv(t, "RFC012_FIXTURE_SECRET")).status)
+	require.NoError(t, err, "fixture provisioning failed before intended fault boundary: case=%q phase=local_entitlement", caseName)
+	entitlement := c.jsonHeader("POST", product+"/fixture/entitlements", "", map[string]any{"user_id": userID, "allowed": true}, "X-Fixture-Secret", mustEnv(t, "RFC012_FIXTURE_SECRET"))
+	if entitlement.status != http.StatusOK {
+		failFixtureProvisioning(t, c.http, instance, product, caseName, "product_entitlement_fixture", entitlement)
+	}
 	start := c.json("POST", api+"/v1/connections/"+connector+"/start", token, map[string]any{"requestedScopes": []string{"dev:records.read", "dev:payments.execute"}})
-	require.Equal(t, http.StatusOK, start.status, start.body)
+	if start.status != http.StatusOK {
+		failFixtureProvisioning(t, c.http, instance, product, caseName, "connector_start", start)
+	}
 	var started struct {
 		AuthorizeURL string `json:"authorize_url"`
 	}
-	require.NoError(t, json.Unmarshal([]byte(start.body), &started))
+	require.NoError(t, json.Unmarshal([]byte(start.body), &started), "fixture provisioning failed before intended fault boundary: case=%q phase=start_decode", caseName)
+	t.Logf("fault fixture provisioning reached consent before intended fault boundary case=%s api_instance=%s", caseName, instance.name)
 	callback := completeConsent(t, started.AuthorizeURL, []string{"dev:records.read", "dev:payments.execute"})
 	claim := c.json("POST", api+"/v1/connections/"+connector+"/claim", token, map[string]string{"state": queryFromLocation(t, callback.header.Get("Location"), "session")})
-	require.Equal(t, http.StatusOK, claim.status, claim.body)
+	if claim.status != http.StatusOK {
+		failFixtureProvisioning(t, c.http, instance, product, caseName, "connector_claim", claim)
+	}
 	var claimed struct {
 		ConnectionID string `json:"connectionId"`
 	}
-	require.NoError(t, json.Unmarshal([]byte(claim.body), &claimed))
+	require.NoError(t, json.Unmarshal([]byte(claim.body), &claimed), "fixture provisioning failed before intended fault boundary: case=%q phase=claim_decode", caseName)
 	var generation int64
-	require.NoError(t, db.QueryRow(`SELECT credential_generation FROM mcp_connections WHERE id=$1`, claimed.ConnectionID).Scan(&generation))
+	require.NoError(t, db.QueryRow(`SELECT credential_generation FROM mcp_connections WHERE id=$1`, claimed.ConnectionID).Scan(&generation), "fixture provisioning failed before intended fault boundary: case=%q phase=connection_verify", caseName)
 	return faultConnection{id: claimed.ConnectionID, token: token, generation: generation}
+}
+
+func acceptanceInstanceForURL(t *testing.T, apiURL string) acceptanceAPIInstance {
+	t.Helper()
+	instances := []acceptanceAPIInstance{
+		{name: "api-1", url: mustEnv(t, "RFC012_API_URL"), metricsURL: mustEnv(t, "RFC012_API_METRICS_URL")},
+		{name: "api-2", url: mustEnv(t, "RFC012_API2_URL"), metricsURL: mustEnv(t, "RFC012_API2_METRICS_URL")},
+		{name: "api-crash", url: mustEnv(t, "RFC012_CRASH_API_URL"), metricsURL: mustEnv(t, "RFC012_CRASH_API_METRICS_URL")},
+	}
+	for _, instance := range instances {
+		if instance.url == apiURL {
+			return instance
+		}
+	}
+	t.Fatalf("unknown RFC 012 API instance URL %q", apiURL)
+	return acceptanceAPIInstance{}
+}
+
+func failFixtureProvisioning(t *testing.T, httpClient *http.Client, instance acceptanceAPIInstance, product, caseName, phase string, response response) {
+	t.Helper()
+	t.Fatalf("fixture provisioning failed before intended fault boundary: case=%q phase=%q api_instance=%q status=%d code=%q diagnostics=%s", caseName, phase, instance.name, response.status, response.code(), collectEntitlementDiagnostics(httpClient, instance, product))
+}
+
+func collectEntitlementDiagnostics(httpClient *http.Client, instance acceptanceAPIInstance, product string) string {
+	type endpointDiagnostic struct {
+		Status int      `json:"status,omitempty"`
+		Error  string   `json:"error,omitempty"`
+		Body   string   `json:"body,omitempty"`
+		Metric []string `json:"metric,omitempty"`
+	}
+	result := struct {
+		APIInstance string             `json:"api_instance"`
+		Ready       endpointDiagnostic `json:"ready"`
+		Metrics     endpointDiagnostic `json:"metrics"`
+		Product     endpointDiagnostic `json:"product"`
+	}{APIInstance: instance.name}
+
+	result.Ready.Status, result.Ready.Body, result.Ready.Error = diagnosticRequest(httpClient, http.MethodGet, instance.url+"/readyz", nil)
+	metricsStatus, metricsBody, metricsErr := diagnosticRequest(httpClient, http.MethodGet, instance.metricsURL+"/metrics", nil)
+	result.Metrics.Status, result.Metrics.Error = metricsStatus, metricsErr
+	for _, line := range strings.Split(metricsBody, "\n") {
+		if strings.HasPrefix(line, "connector_entitlement_unavailable_total{") {
+			result.Metrics.Metric = append(result.Metrics.Metric, line)
+		}
+	}
+	sort.Strings(result.Metrics.Metric)
+	productStatus, productBody, productErr := diagnosticRequest(httpClient, http.MethodGet, product+"/fixture/entitlement-diagnostics", map[string]string{"X-Fixture-Secret": strings.TrimSpace(os.Getenv("RFC012_FIXTURE_SECRET"))})
+	result.Product.Status, result.Product.Body, result.Product.Error = productStatus, productBody, productErr
+	encoded, err := json.Marshal(result)
+	if err != nil {
+		return `{"diagnostic_error":"encode_failed"}`
+	}
+	return string(encoded)
+}
+
+func diagnosticRequest(httpClient *http.Client, method, endpoint string, headers map[string]string) (int, string, string) {
+	req, err := http.NewRequest(method, endpoint, nil)
+	if err != nil {
+		return 0, "", "request_build"
+	}
+	for name, value := range headers {
+		req.Header.Set(name, value)
+	}
+	clientCopy := *httpClient
+	clientCopy.Timeout = 3 * time.Second
+	response, err := clientCopy.Do(req)
+	if err != nil {
+		return 0, "", "transport"
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(response.Body, 64<<10))
+	if err != nil {
+		return response.StatusCode, "", "response_read"
+	}
+	return response.StatusCode, strings.TrimSpace(string(body)), ""
 }
 
 func configureOAuthFaults(t *testing.T, c *client, secret string, body any) {
