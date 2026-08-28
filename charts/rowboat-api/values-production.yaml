@@ -24,6 +24,55 @@ autoscaling:
 serviceMonitor:
   enabled: true
 
+# Production trust boundary. Public traffic is admitted only from the ingress
+# controller. External HTTPS, managed PostgreSQL, Redis, and provider traffic
+# must traverse the selected transparent egress gateway. Hydra Admin remains a
+# narrowly selected in-cluster destination.
+networkPolicy:
+  enabled: true
+  ingress:
+    from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: ingress-nginx
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: ingress-nginx
+  egress:
+    enabled: true
+    rules:
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: kube-system
+            podSelector:
+              matchLabels:
+                k8s-app: kube-dns
+        ports:
+          - { protocol: UDP, port: 53 }
+          - { protocol: TCP, port: 53 }
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: ory
+            podSelector:
+              matchLabels:
+                app.kubernetes.io/name: hydra
+                app.kubernetes.io/instance: hydra
+        ports:
+          - { protocol: TCP, port: 4445 }
+      - to:
+          - namespaceSelector:
+              matchLabels:
+                kubernetes.io/metadata.name: egress-system
+            podSelector:
+              matchLabels:
+                app.kubernetes.io/name: rowboat-egress-gateway
+        ports:
+          - { protocol: TCP, port: 443 }
+          - { protocol: TCP, port: 5432 }
+          - { protocol: TCP, port: 6379 }
+
 observability:
   prometheusRule:
     enabled: true

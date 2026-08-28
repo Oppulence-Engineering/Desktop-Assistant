@@ -56,5 +56,14 @@ app.kubernetes.io/instance: {{ .Release.Name }}
   {{- if empty .Values.networkPolicy.hydraAdmin.podSelector.matchLabels -}}
     {{- fail (printf "%s deployments must scope Hydra admin egress with podSelector.matchLabels" $environment) -}}
   {{- end -}}
+  {{- if empty .Values.networkPolicy.ingress.from -}}
+    {{- fail (printf "%s deployments must scope ingress with networkPolicy.ingress.from" $environment) -}}
+  {{- end -}}
+  {{- if or (empty .Values.networkPolicy.dns.namespaceSelector.matchLabels) (empty .Values.networkPolicy.dns.podSelector.matchLabels) -}}
+    {{- fail (printf "%s deployments must scope DNS egress with namespace and pod selectors" $environment) -}}
+  {{- end -}}
+  {{- if or (empty .Values.networkPolicy.externalEgressGateway.namespaceSelector.matchLabels) (empty .Values.networkPolicy.externalEgressGateway.podSelector.matchLabels) (empty .Values.networkPolicy.externalEgressGateway.ports) -}}
+    {{- fail (printf "%s deployments must use a selected external egress gateway" $environment) -}}
+  {{- end -}}
 {{- end -}}
 {{- end -}}

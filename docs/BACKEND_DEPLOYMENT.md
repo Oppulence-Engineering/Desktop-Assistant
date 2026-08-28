@@ -62,6 +62,26 @@ deployment must provide private endpoint CIDRs through an environment-owned,
 uncommitted values file. Empty lists, `0.0.0.0/0`, and the former example
 `10.0.0.10/32` fail schema/template validation.
 
+Production NetworkPolicies are destination-based rather than port-only:
+
+- oauth-consent ingress selects the ingress controller, DNS selects CoreDNS,
+  Hydra Admin selects both its namespace and pods, and managed PostgreSQL uses
+  deployment-owned private CIDRs.
+- WorkOS token/JWKS calls and rowboat-api hooks leave oauth-consent only through
+  the selected `rowboat-egress-gateway` pods on TCP 443.
+- rowboat-api ingress selects the ingress controller. Its direct in-cluster
+  Hydra Admin rule is namespace-and-pod scoped. Provider HTTPS, PostgreSQL, and
+  Redis are allowed only through the selected transparent egress gateway on
+  TCP 443, 5432, and 6379.
+
+The `egress-system` namespace and gateway workload labels in checked-in values
+are a release contract. Install a transparent, fail-closed gateway with those
+labels, or override both selectors in an environment-owned values file. The
+gateway must preserve WorkOS, Hydra public, PostgreSQL, Redis, model/provider,
+connector entitlement, OAuth provider, telemetry, and other configured upstream
+communication. Do not deploy these policies before transparent routing is
+enforced and connectivity probes pass.
+
 ```yaml
 # $OAUTH_CONSENT_NETWORK_VALUES
 networkPolicy:
@@ -75,6 +95,19 @@ egress:
     cidrs:
       - 10.42.18.8/32
 ```
+
+Before a release, run the mandatory state-machine gate. Unlike ordinary unit
+test collection, it fails if the PostgreSQL suite would be skipped:
+
+```bash
+cd apps/oauth-consent
+npm run test:release
+```
+
+The connector deployment contract also renders the upstream Hydra chart at
+version `0.55.0`, asserts the production runtime image is `oryd/hydra:v2.3.0`,
+and boots that exact real-Hydra image for client reconciliation and authorization
+acceptance.
 
 Use the actual environment-specific managed PostgreSQL private endpoint CIDRs.
 Do not copy the documentation addresses above into a deployment.

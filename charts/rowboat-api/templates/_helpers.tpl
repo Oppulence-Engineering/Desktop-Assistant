@@ -63,6 +63,18 @@ be opted into explicitly with connectorBroker.allowSeparateIssuer.
 {{- define "rowboat-api.validateDeploymentContract" -}}
 {{- $environment := lower (toString (default "" (index .Values.config "ENVIRONMENT"))) -}}
 {{- if eq $environment "production" -}}
+{{- if not .Values.networkPolicy.enabled -}}
+{{- fail "production networkPolicy.enabled must be true" -}}
+{{- end -}}
+{{- if empty .Values.networkPolicy.ingress.from -}}
+{{- fail "production networkPolicy.ingress.from must select trusted ingress-controller pods" -}}
+{{- end -}}
+{{- if not .Values.networkPolicy.egress.enabled -}}
+{{- fail "production networkPolicy.egress.enabled must be true" -}}
+{{- end -}}
+{{- if empty .Values.networkPolicy.egress.rules -}}
+{{- fail "production networkPolicy.egress.rules must define DNS, Hydra, and enforced gateway destinations" -}}
+{{- end -}}
 {{- $publicOrigin := required "production config.PUBLIC_BASE_URL is required for the connector broker issuer contract" (index .Values.config "PUBLIC_BASE_URL") -}}
 {{- $brokerIssuer := required "production config.BROKER_TOKEN_ISSUER is required for connector resource tokens" (index .Values.config "BROKER_TOKEN_ISSUER") -}}
 {{- if and (ne $brokerIssuer $publicOrigin) (not .Values.connectorBroker.allowSeparateIssuer) -}}

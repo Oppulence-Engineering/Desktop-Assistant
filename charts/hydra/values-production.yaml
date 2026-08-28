@@ -47,6 +47,13 @@ hydra:
 
   dangerousForceHttp: false
 
+# Pin the runtime independently of the pinned upstream chart version used by
+# the release contract. Renovation requires the real-Hydra render/boot profile.
+image:
+  repository: oryd/hydra
+  tag: v2.3.0
+  pullPolicy: IfNotPresent
+
 deployment:
   replicaCount: 2
   podMetadata:

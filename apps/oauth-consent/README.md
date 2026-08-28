@@ -108,6 +108,16 @@ restart/replay tests with:
 TEST_DATABASE_URL=postgres://... npm test
 ```
 
+The release gate is intentionally stricter and cannot silently skip this suite:
+
+```bash
+npm run test:release
+```
+
+It starts pinned PostgreSQL 16.10, sets `REQUIRE_POSTGRES_STATE_TESTS=true`, and
+fails before collection if `TEST_DATABASE_URL` is absent. Release CI invokes
+this command directly.
+
 ## rowboat-api hook contract
 
 Both hook requests and responses are signed over the exact UTF-8 body:

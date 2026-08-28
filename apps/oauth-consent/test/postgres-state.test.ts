@@ -13,6 +13,9 @@ import { PostgresStateStore } from '../src/state.js';
 import { WorkOS } from '../src/workos.js';
 
 const url = process.env.TEST_DATABASE_URL;
+if (process.env.REQUIRE_POSTGRES_STATE_TESTS === 'true' && !url) {
+  throw new Error('release gate requires TEST_DATABASE_URL; PostgreSQL state-machine tests may not be skipped');
+}
 const suite = url ? describe : describe.skip;
 const context = {
   request_id: 'ctx_test',

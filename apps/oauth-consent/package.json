@@ -10,6 +10,7 @@
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "test": "vitest run",
+    "test:release": "./scripts/release-postgres-test.sh",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
     "start": "node dist/index.js",
     "migrate": "node dist/migrate.js"

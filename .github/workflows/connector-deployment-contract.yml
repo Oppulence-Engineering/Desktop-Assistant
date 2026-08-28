@@ -81,3 +81,18 @@ jobs:
         run: go install sigs.k8s.io/kind@v0.27.0
       - name: Run production-shaped network-policy acceptance
         run: ./charts/hydra/tests/network-policy-kind.sh
+
+  oauth-consent-release-postgres:
+    name: oauth-consent release PostgreSQL state machine
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: apps/oauth-consent/package-lock.json
+      - name: Run mandatory real PostgreSQL consent tests
+        run: npm run test:release
+        working-directory: apps/oauth-consent

@@ -97,7 +97,7 @@ spec:
     spec:
       containers:
         - name: hydra
-          image: oryd/hydra:v2.2.0
+          image: oryd/hydra:v2.3.0
           args: [serve, all, --dev]
           env:
             - { name: DSN, value: memory }
@@ -156,7 +156,7 @@ spec:
     spec:
       containers:
         - name: hydra
-          image: oryd/hydra:v2.2.0
+          image: oryd/hydra:v2.3.0
           args: [serve, all, --dev]
           env:
             - { name: DSN, value: memory }
@@ -221,10 +221,22 @@ table="$(kubectl -n database exec deployment/postgres -- psql -U oauth_consent -
 [[ "$table" == "oauth_consent_sessions" ]] || fail "oauth-consent migrations were not applied"
 
 # /readyz performs a real database query and must return 200 through the Service.
-kubectl -n rowboat run ready-probe --rm -i --restart=Never \
-  --image=curlimages/curl:8.12.1 -- \
-  curl --fail --silent --max-time 10 http://oauth-consent-oauth-consent/readyz \
+kubectl -n ingress-nginx run ready-probe --restart=Never \
+  --labels='app.kubernetes.io/name=ingress-nginx' \
+  --image=curlimages/curl:8.12.1 --command -- sleep 300
+kubectl -n ingress-nginx wait --for=condition=Ready pod/ready-probe --timeout=180s
+kubectl -n ingress-nginx exec ready-probe -- \
+  curl --fail --silent --max-time 10 http://oauth-consent-oauth-consent.rowboat.svc.cluster.local/readyz \
   | grep -q '"status":"ok"' || fail "oauth-consent /readyz did not return 200"
+kubectl -n ingress-nginx delete pod ready-probe --wait=false >/dev/null
+
+# A pod outside the selected ingress-controller trust domain cannot reach the
+# consent service even when it targets the correct service port.
+if kubectl -n other run unauthorized-consent-probe --rm -i --restart=Never \
+  --image=curlimages/curl:8.12.1 -- \
+  curl --fail --silent --max-time 3 http://oauth-consent-oauth-consent.rowboat.svc.cluster.local/readyz; then
+  fail "unselected pod reached oauth-consent ingress"
+fi
 
 consent_pod="$(kubectl -n rowboat get pod -l app.kubernetes.io/component=oauth-consent -o jsonpath='{.items[0].metadata.name}')"
 kubectl -n rowboat exec "$consent_pod" -- node -e \
@@ -241,13 +253,13 @@ fi
 kubectl -n ory run reconciler-probe --restart=Never --image=curlimages/curl:8.12.1 \
   --labels='app.kubernetes.io/component=hydra-client-reconciler,networking.rowboat.dev/hydra-admin-access=true' \
   --command -- sleep 300
-kubectl -n ory wait --for=condition=Ready pod/reconciler-probe --timeout=90s
+kubectl -n ory wait --for=condition=Ready pod/reconciler-probe --timeout=180s
 kubectl -n ory exec reconciler-probe -- curl --fail --silent --max-time 5 \
   http://hydra-admin:4445/health/ready >/dev/null
 
 kubectl -n ory run unauthorized-probe --restart=Never --image=curlimages/curl:8.12.1 \
   --command -- sleep 300
-kubectl -n ory wait --for=condition=Ready pod/unauthorized-probe --timeout=90s
+kubectl -n ory wait --for=condition=Ready pod/unauthorized-probe --timeout=180s
 if kubectl -n ory exec unauthorized-probe -- curl --fail --silent --max-time 3 \
   http://hydra-admin:4445/health/ready >/dev/null; then
   fail "unlabeled pod reached Hydra Admin port 4445"

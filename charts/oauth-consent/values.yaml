@@ -71,6 +71,29 @@ database:
 
 networkPolicy:
   enabled: true
+  ingress:
+    from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: ingress-nginx
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: ingress-nginx
+  dns:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: kube-system
+    podSelector:
+      matchLabels:
+        k8s-app: kube-dns
+  externalEgressGateway:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: egress-system
+    podSelector:
+      matchLabels:
+        app.kubernetes.io/name: rowboat-egress-gateway
+    ports: [443]
   hydraAdmin:
     port: 4445
     namespaceSelector:
