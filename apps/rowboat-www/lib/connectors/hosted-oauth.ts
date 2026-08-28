@@ -5,7 +5,7 @@ import type {
 } from "@/lib/api/generated/client/connectors/connectors";
 
 export const HOSTED_CONNECTOR_CALLBACK_PATH = "/api/connectors/oauth/callback";
-export const CONNECTOR_SETTINGS_PATH = "/app/settings?settings=connections";
+const CONNECTOR_SETTINGS_PATH = "/app/settings?settings=connections";
 
 export type HostedOAuthOutcome =
   "active" | "entitlement" | "error" | "expired" | "replay" | "restart" | "retry" | "scope";

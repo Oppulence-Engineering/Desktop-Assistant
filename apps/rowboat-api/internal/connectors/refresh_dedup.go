@@ -220,7 +220,10 @@ func (d *refreshDeduper) refresh(
 						return nil, fmt.Errorf("durably escrow rotated connector credential: %w; provider revocation confirmed during recovery", err)
 					}
 					if recoveryErr != nil {
-						return nil, fmt.Errorf("durably escrow rotated connector credential: %w; recovery: %v", err, recoveryErr)
+						return nil, fmt.Errorf(
+							"durably escrow rotated connector credential: %w",
+							errors.Join(err, fmt.Errorf("credential recovery: %w", recoveryErr)),
+						)
 					}
 					return nil, fmt.Errorf("durably escrow rotated connector credential: %w; encrypted recovery journal %s retained", err, recoveryID)
 				}
