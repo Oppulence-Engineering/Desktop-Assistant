@@ -55,10 +55,10 @@ Removing an old key before migration is deliberately not transparent. Versioned 
 
 `cmd/connector-reencrypt` covers every live connector encrypted database payload
 class, including active credentials, pending OAuth payloads, durable revocation
-and orphan-credential cleanup work, legacy OAuth connection tables, and the
-shared Redis refresh result cache. Immutable MCP/OAuth connection history is not
-inventory: those tables retain lifecycle metadata and credential-presence flags
-only. Reports contain aggregate and per-source counts for each key ID and
+and orphan-credential cleanup and recovery work, legacy OAuth connection tables,
+and the shared Redis refresh result cache. Immutable MCP/OAuth connection history
+is not inventory: those tables retain lifecycle metadata and credential-presence
+flags only. Reports contain aggregate and per-source counts for each key ID and
 attribute legacy unversioned ciphertext to the key that successfully
 authenticated it. Plaintext and key material are never reported.
 
@@ -79,6 +79,17 @@ batch and Redis scan page. Restarting with the same file resumes safely. Databas
 and Redis replacements use compare-and-swap, so a concurrent credential refresh
 cannot be overwritten. A nonzero CAS-miss count requires another inventory/reseal
 pass.
+
+Refresh-result cache generations have bounded retention. The reseal inventory
+scans the current `connectors:refresh:result:v2:` prefix and every explicitly
+retained rolling prefix that may still contain readable ciphertext. When the
+application advances the cache generation, add the new prefix to the inventory
+before deployment and retain the previous prefix until its maximum TTL has
+elapsed on every replica, including deployment overlap and clock skew. Do not
+retire an encryption key while any retained cache generation or durable
+`connector_credential_recoveries.refresh_token_encrypted` row still depends on
+it. After the retention window, remove an obsolete prefix from the inventory in
+a reviewed change so the scan remains bounded.
 
 The retirement gate fails if the requested key is the active primary or if any
 verified payload still depends on it. Keep the retiring key in

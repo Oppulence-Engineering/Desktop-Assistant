@@ -32,12 +32,21 @@ var ConnectorSources = []Source{
 	{Name: "oauth_pending.payload", Table: "oauth_pendings", Column: "payload_encrypted"},
 	{Name: "connector_revocation_job.refresh_token", Table: "connector_revocation_jobs", Column: "refresh_token_encrypted"},
 	{Name: "connector_credential_cleanup_job.refresh_token", Table: "connector_credential_cleanup_jobs", Column: "refresh_token_encrypted"},
+	{Name: "connector_credential_recovery.refresh_token", Table: "connector_credential_recoveries", Column: "refresh_token_encrypted"},
 	{Name: "oauth_connection.refresh_token", Table: "oauth_connections", Column: "refresh_token_encrypted"},
 }
 
-// RefreshCachePrefix identifies encrypted cross-replica refresh results that
-// must be included in key inventory and resealing.
-const RefreshCachePrefix = "connectors:refresh:result:v1:"
+// RefreshCachePrefixes identifies encrypted cross-replica refresh-result
+// generations that may still be readable during their bounded TTL. Keep the
+// current generation first and retain older rolling generations until their
+// maximum retention window has elapsed across every API replica.
+var RefreshCachePrefixes = []string{
+	"connectors:refresh:result:v2:",
+	"connectors:refresh:result:v1:",
+}
+
+// RefreshCachePrefix is the current refresh-result generation.
+const RefreshCachePrefix = "connectors:refresh:result:v2:"
 
 // Record is one encrypted database value.
 type Record struct {
@@ -66,8 +75,11 @@ type Cache interface {
 type Checkpoint struct {
 	SourceIndex int    `json:"source_index"`
 	Cursor      string `json:"cursor,omitempty"`
-	CacheCursor uint64 `json:"cache_cursor,omitempty"`
-	Completed   bool   `json:"completed"`
+	// CachePrefixIndex and CacheCursor allow a restart to resume within the
+	// rolling refresh-result prefix inventory without skipping an older prefix.
+	CachePrefixIndex int    `json:"cache_prefix_index,omitempty"`
+	CacheCursor      uint64 `json:"cache_cursor,omitempty"`
+	Completed        bool   `json:"completed"`
 }
 
 // Report exposes aggregate and per-payload-class key dependency counts.
@@ -161,41 +173,51 @@ func (r Runner) Reseal(ctx context.Context, state *Checkpoint, checkpoint func(C
 		}
 	}
 	if r.Cache != nil {
-		cursor := state.CacheCursor
-		for {
-			keys, next, err := r.Cache.Scan(ctx, cursor, RefreshCachePrefix+"*", int64(r.batchSize()))
-			if err != nil {
-				return report, fmt.Errorf("reseal connector refresh cache at cursor %d: %w", cursor, err)
-			}
-			sort.Strings(keys)
-			for _, key := range keys {
-				sealed, ok, err := r.Cache.Get(ctx, key)
+		for prefixIndex := state.CachePrefixIndex; prefixIndex < len(RefreshCachePrefixes); prefixIndex++ {
+			prefix := RefreshCachePrefixes[prefixIndex]
+			cursor := state.CacheCursor
+			for {
+				keys, next, err := r.Cache.Scan(ctx, cursor, prefix+"*", int64(r.batchSize()))
 				if err != nil {
-					return report, fmt.Errorf("read connector refresh cache key: %w", err)
+					return report, fmt.Errorf("reseal connector refresh cache prefix %q at cursor %d: %w", prefix, cursor, err)
 				}
-				if !ok {
-					continue
+				sort.Strings(keys)
+				for _, key := range keys {
+					sealed, ok, err := r.Cache.Get(ctx, key)
+					if err != nil {
+						return report, fmt.Errorf("read connector refresh cache key: %w", err)
+					}
+					if !ok {
+						continue
+					}
+					_, err = r.resealValue(ctx, &report, "connector_refresh_cache", sealed, func(resealed []byte) (bool, error) {
+						return r.Cache.CompareAndSwap(ctx, key, sealed, resealed)
+					})
+					if err != nil {
+						return report, fmt.Errorf("reseal connector refresh cache key: %w", err)
+					}
 				}
-				_, err = r.resealValue(ctx, &report, "connector_refresh_cache", sealed, func(resealed []byte) (bool, error) {
-					return r.Cache.CompareAndSwap(ctx, key, sealed, resealed)
-				})
-				if err != nil {
-					return report, fmt.Errorf("reseal connector refresh cache key: %w", err)
+				state.CachePrefixIndex = prefixIndex
+				state.CacheCursor = next
+				if err := saveCheckpoint(checkpoint, *state); err != nil {
+					return report, err
 				}
+				if next == 0 {
+					state.CachePrefixIndex = prefixIndex + 1
+					state.CacheCursor = 0
+					if err := saveCheckpoint(checkpoint, *state); err != nil {
+						return report, err
+					}
+					break
+				}
+				cursor = next
 			}
-			state.CacheCursor = next
-			if err := saveCheckpoint(checkpoint, *state); err != nil {
-				return report, err
-			}
-			if next == 0 {
-				break
-			}
-			cursor = next
 		}
 	}
 	state.Completed = true
 	state.SourceIndex = len(ConnectorSources)
 	state.Cursor = ""
+	state.CachePrefixIndex = 0
 	state.CacheCursor = 0
 	if err := saveCheckpoint(checkpoint, *state); err != nil {
 		return report, err
@@ -226,28 +248,31 @@ func (r Runner) inventoryCache(ctx context.Context, report *Report) error {
 	if r.Cache == nil {
 		return nil
 	}
-	var cursor uint64
-	for {
-		keys, next, err := r.Cache.Scan(ctx, cursor, RefreshCachePrefix+"*", int64(r.batchSize()))
-		if err != nil {
-			return fmt.Errorf("inventory connector refresh cache at cursor %d: %w", cursor, err)
-		}
-		for _, key := range keys {
-			sealed, ok, err := r.Cache.Get(ctx, key)
+	for _, prefix := range RefreshCachePrefixes {
+		var cursor uint64
+		for {
+			keys, next, err := r.Cache.Scan(ctx, cursor, prefix+"*", int64(r.batchSize()))
 			if err != nil {
-				return fmt.Errorf("read connector refresh cache key: %w", err)
+				return fmt.Errorf("inventory connector refresh cache prefix %q at cursor %d: %w", prefix, cursor, err)
 			}
-			if ok {
-				if err := r.inspect(report, "connector_refresh_cache", sealed); err != nil {
-					return fmt.Errorf("inventory connector refresh cache key: %w", err)
+			for _, key := range keys {
+				sealed, ok, err := r.Cache.Get(ctx, key)
+				if err != nil {
+					return fmt.Errorf("read connector refresh cache key: %w", err)
+				}
+				if ok {
+					if err := r.inspect(report, "connector_refresh_cache", sealed); err != nil {
+						return fmt.Errorf("inventory connector refresh cache key: %w", err)
+					}
 				}
 			}
+			if next == 0 {
+				break
+			}
+			cursor = next
 		}
-		if next == 0 {
-			return nil
-		}
-		cursor = next
 	}
+	return nil
 }
 
 func (r Runner) resealValue(ctx context.Context, report *Report, source string, sealed []byte, replace func([]byte) (bool, error)) (bool, error) {

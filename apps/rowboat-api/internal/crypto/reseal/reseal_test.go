@@ -54,25 +54,88 @@ type fakeCache struct {
 }
 
 func TestConnectorSourcesContainOnlyLiveCredentialStores(t *testing.T) {
-	want := map[string]bool{
-		"mcp_connection.refresh_token":                   true,
-		"mcp_connection.api_key":                         true,
-		"oauth_pending.payload":                          true,
-		"connector_revocation_job.refresh_token":         true,
-		"connector_credential_cleanup_job.refresh_token": true,
-		"oauth_connection.refresh_token":                 true,
+	want := map[string]Source{
+		"mcp_connection.refresh_token":                   {Name: "mcp_connection.refresh_token", Table: "mcp_connections", Column: "refresh_token_encrypted"},
+		"mcp_connection.api_key":                         {Name: "mcp_connection.api_key", Table: "mcp_connections", Column: "api_key_encrypted"},
+		"oauth_pending.payload":                          {Name: "oauth_pending.payload", Table: "oauth_pendings", Column: "payload_encrypted"},
+		"connector_revocation_job.refresh_token":         {Name: "connector_revocation_job.refresh_token", Table: "connector_revocation_jobs", Column: "refresh_token_encrypted"},
+		"connector_credential_cleanup_job.refresh_token": {Name: "connector_credential_cleanup_job.refresh_token", Table: "connector_credential_cleanup_jobs", Column: "refresh_token_encrypted"},
+		"connector_credential_recovery.refresh_token":    {Name: "connector_credential_recovery.refresh_token", Table: "connector_credential_recoveries", Column: "refresh_token_encrypted"},
+		"oauth_connection.refresh_token":                 {Name: "oauth_connection.refresh_token", Table: "oauth_connections", Column: "refresh_token_encrypted"},
 	}
 	for _, source := range ConnectorSources {
 		if strings.Contains(source.Name, "history") || strings.Contains(source.Table, "histories") {
 			t.Fatalf("immutable history remains in live reseal inventory: %+v", source)
 		}
-		if !want[source.Name] {
+		expected, ok := want[source.Name]
+		if !ok || source != expected {
 			t.Fatalf("unexpected reseal source: %+v", source)
 		}
 		delete(want, source.Name)
 	}
 	if len(want) != 0 {
 		t.Fatalf("missing live reseal sources: %v", want)
+	}
+}
+
+func TestRecoveryRowsAndRollingRefreshCachesBlockRetirementUntilResealed(t *testing.T) {
+	oldOnly, err := appcrypto.NewKeyringSealer("old", map[string]string{"old": "old-key-material"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rotating, err := appcrypto.NewKeyringSealer("new", map[string]string{"old": "old-key-material", "new": "new-key-material"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldRecovery, _ := oldOnly.SealString("recovery-token")
+	oldV2Result, _ := oldOnly.SealString("current-cache-result")
+	oldV1Result, _ := oldOnly.SealString("rolling-cache-result")
+	recoverySource := Source{Name: "connector_credential_recovery.refresh_token", Table: "connector_credential_recoveries", Column: "refresh_token_encrypted"}
+	store := &fakeStore{rows: map[string]map[string][]byte{
+		recoverySource.Name: {"recovery-001": oldRecovery},
+	}}
+	cache := &fakeCache{values: map[string][]byte{
+		"connectors:refresh:result:v2:current": oldV2Result,
+		"connectors:refresh:result:v1:rolling": oldV1Result,
+		"connectors:refresh:result:v0:expired": oldV1Result,
+	}}
+	runner := Runner{Store: store, Cache: cache, Sealer: rotating, BatchSize: 1}
+
+	report, err := runner.RetirementGate(context.Background(), "old")
+	if err == nil {
+		t.Fatal("retirement gate allowed recovery and refresh-cache dependencies")
+	}
+	if report.BySource[recoverySource.Name]["old"] != 1 || report.BySource["connector_refresh_cache"]["old"] != 2 {
+		t.Fatalf("retirement inventory missed recovery or rolling cache dependencies: %+v", report)
+	}
+
+	state := Checkpoint{}
+	resealed, err := runner.Reseal(context.Background(), &state, func(next Checkpoint) error {
+		state = next
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resealed.Resealed != 3 {
+		t.Fatalf("resealed = %d, want recovery plus v2 and retained v1 cache", resealed.Resealed)
+	}
+	if _, err := runner.RetirementGate(context.Background(), "old"); err != nil {
+		t.Fatalf("retirement remained blocked after complete reseal: %v", err)
+	}
+	for _, key := range []string{"connectors:refresh:result:v2:current", "connectors:refresh:result:v1:rolling"} {
+		sealed, _, _ := cache.Get(context.Background(), key)
+		if _, keyID, err := rotating.OpenAndKeyID(sealed); err != nil || keyID != "new" {
+			t.Fatalf("cache key %q was not resealed: key=%q err=%v", key, keyID, err)
+		}
+	}
+	sealedRecovery := store.rows[recoverySource.Name]["recovery-001"]
+	if _, keyID, err := rotating.OpenAndKeyID(sealedRecovery); err != nil || keyID != "new" {
+		t.Fatalf("recovery row was not resealed: key=%q err=%v", keyID, err)
+	}
+	untouched, _, _ := cache.Get(context.Background(), "connectors:refresh:result:v0:expired")
+	if _, keyID, err := rotating.OpenAndKeyID(untouched); err != nil || keyID != "old" {
+		t.Fatalf("unretained cache generation changed: key=%q err=%v", keyID, err)
 	}
 }
 
