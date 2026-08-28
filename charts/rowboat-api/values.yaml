@@ -3,6 +3,17 @@
 
 replicaCount: 2
 
+# Custody shutdown has two bounded 25s phases: listener drain, then resource
+# drain, followed by at most 5s each for metrics and telemetry flush. Keep
+# Kubernetes grace above the complete process bound.
+terminationGracePeriodSeconds: 65
+
+deploymentStrategy:
+  # A custody-unready pod counts unavailable, preventing rollout scale-down
+  # while accepted credential custody work has no acknowledged outcome.
+  maxUnavailable: 0
+  maxSurge: 1
+
 worker:
   enabled: false
   replicaCount: 1
@@ -95,6 +106,10 @@ autoscaling:
   minReplicas: 2
   maxReplicas: 10
   targetCPUUtilizationPercentage: 70
+  # HPA scale-down bypasses PodDisruptionBudgets. Keep automatic scale-down
+  # disabled so it cannot select a custody-unready pod for deletion.
+  scaleDown:
+    selectPolicy: Disabled
 
 # Liveness/readiness probes hit the binary's health endpoints.
 probes:
@@ -107,14 +122,16 @@ probes:
   readiness:
     path: /readyz
     initialDelaySeconds: 5
-    periodSeconds: 10
+    periodSeconds: 2
     timeoutSeconds: 5
-    failureThreshold: 6
+    failureThreshold: 1
 
 # Prometheus Operator ServiceMonitor (set false if using annotation scraping).
 serviceMonitor:
   enabled: false
-  interval: 30s
+  # Custody resource drain is 25s. Scrape often enough to guarantee that an
+  # unresolved shutdown sample reaches Prometheus before the process exits.
+  interval: 5s
 
 # Prometheus alerts and a Grafana sidecar dashboard for the cloud workflow and
 # relationship-worker control planes. Environment overlays enable these only
@@ -156,7 +173,12 @@ topologySpreadConstraints:
 
 podDisruptionBudget:
   enabled: true
-  minAvailable: 1
+  # With maxUnavailable=1, a custody-unready API pod consumes the full budget and
+  # blocks every further voluntary eviction. When all pods are healthy, one-pod
+  # maintenance remains possible without a temporary policy override.
+  maxUnavailable: 1
+  workerMinAvailable: 1
+  unhealthyPodEvictionPolicy: IfHealthyBudget
 
 networkPolicy:
   enabled: true
@@ -196,6 +218,7 @@ connectorBroker:
 
 # Non-secret configuration, surfaced as env via a ConfigMap.
 config:
+  SHUTDOWN_TIMEOUT: 25s
   ENVIRONMENT: production
   LOG_LEVEL: info
   HTTP_ADDR: ":8080"

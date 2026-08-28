@@ -70,6 +70,33 @@ fi
 grep -q 'production connectorBroker.productionApprovalManifestDigest must be a sha256 digest' "$tmp_dir/invalid-approval.err" ||
   fail "malformed product approval digest did not report the deployment-contract error"
 
+production_manifest="$tmp_dir/production.yaml"
+for required in \
+  'terminationGracePeriodSeconds: 65' \
+  'terminationMessagePolicy: FallbackToLogsOnError' \
+  'publishNotReadyAddresses: true' \
+  'app.kubernetes.io/component: metrics' \
+  'service="rowboat-api-rowboat-api-metrics"' \
+  'maxUnavailable: 0' \
+  'maxSurge: 1' \
+  'maxUnavailable: "1"' \
+  'unhealthyPodEvictionPolicy: IfHealthyBudget' \
+  'selectPolicy: Disabled' \
+  'periodSeconds: 2' \
+  'failureThreshold: 1' \
+  'interval: 5s' \
+  'alert: RowboatConnectorCredentialCustodyUnresolved' \
+  'expr: max_over_time(connector_credential_custody_in_flight[5m]) > 0' \
+  'alert: RowboatConnectorCredentialCustodyShutdownBlocked' \
+  'expr: max_over_time(connector_credential_custody_shutdown_unresolved[5m]) > 0'; do
+  grep -Fq "$required" "$production_manifest" ||
+    fail "production custody shutdown contract missing: $required"
+done
+assert_equal \
+  "$(config_value "$production_manifest" SHUTDOWN_TIMEOUT)" \
+  "25s" \
+  "production bounded server shutdown timeout"
+
 if helm template rowboat-api "$chart" \
   -f "$chart/values-production.yaml" \
   --set-string config.BROKER_TOKEN_ISSUER=https://issuer.example.com \
@@ -104,7 +131,6 @@ grep -q 'PUBLIC_BASE_URL.*must equal the externally reachable ingress origin' "$
 # URL must be the connector key set on the externally reachable rowboat-api origin.
 # shellcheck disable=SC1090
 source "$verifier_example"
-production_manifest="$tmp_dir/production.yaml"
 production_origin="$(config_value "$production_manifest" PUBLIC_BASE_URL)"
 production_issuer="$(config_value "$production_manifest" BROKER_TOKEN_ISSUER)"
 assert_equal "$OAUTH_ISSUER" "$production_issuer" "product verifier issuer"

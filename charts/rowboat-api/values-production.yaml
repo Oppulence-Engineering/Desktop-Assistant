@@ -3,6 +3,16 @@
 #     -f charts/rowboat-api/values-production.yaml -n rowboat
 replicaCount: 3
 
+terminationGracePeriodSeconds: 65
+
+deploymentStrategy:
+  maxUnavailable: 0
+  maxSurge: 1
+
+podDisruptionBudget:
+  maxUnavailable: 1
+  unhealthyPodEvictionPolicy: IfHealthyBudget
+
 image:
   repository: ghcr.io/oppulence-engineering/desktop-assistant-rowboat-api
   tag: "" # set by CI to the released git SHA / tag
@@ -23,6 +33,7 @@ autoscaling:
 
 serviceMonitor:
   enabled: true
+  interval: 5s
 
 # Production trust boundary. Public traffic is admitted only from the ingress
 # controller. External HTTPS, managed PostgreSQL, Redis, and provider traffic
@@ -83,6 +94,7 @@ connectorBroker:
   productionApprovalManifestDigest: sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945
 
 config:
+  SHUTDOWN_TIMEOUT: 25s
   ENVIRONMENT: production
   LOG_LEVEL: info
   AUTO_MIGRATE: "false"

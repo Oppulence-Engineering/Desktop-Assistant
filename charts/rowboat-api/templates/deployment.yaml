@@ -5,6 +5,11 @@ metadata:
   labels:
     {{- include "rowboat-api.labels" . | nindent 4 }}
 spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: {{ .Values.deploymentStrategy.maxUnavailable }}
+      maxSurge: {{ .Values.deploymentStrategy.maxSurge }}
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
@@ -21,6 +26,7 @@ spec:
       labels:
         {{- include "rowboat-api.selectorLabels" . | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       serviceAccountName: {{ include "rowboat-api.serviceAccountName" . }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -32,6 +38,7 @@ spec:
         - name: rowboat-api
           image: {{ include "rowboat-api.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          terminationMessagePolicy: FallbackToLogsOnError
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           ports:

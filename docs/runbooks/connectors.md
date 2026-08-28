@@ -89,6 +89,67 @@ A disable must stop new consent starts and resource-token mints. Existing rows r
 6. Re-enable only after authorization, token refresh, and revocation checks pass in staging and production canary.
 7. Confirm audit events show disable/re-enable and no token material was logged.
 
+## Credential custody blocks shutdown
+
+**Trigger:** either `connector_credential_custody_in_flight > 0` or
+`connector_credential_custody_shutdown_unresolved > 0`. These alerts page
+immediately. The pod fails readiness as soon as custody work is admitted and
+again as soon as shutdown begins.
+
+This state means rowboat-api holds a provider credential for which neither the
+PostgreSQL recovery journal nor provider revocation has acknowledged ownership.
+The process keeps alternating bounded persistence and revocation attempts. Never
+copy the credential into a ticket, log query, shell history, or Kubernetes event.
+
+1. Stop voluntary operations that could remove the affected pod. Do not run a
+   node drain, manual pod delete, rollout restart, downscale, or HPA minimum
+   reduction. The chart uses rollout `maxUnavailable: 0`, an API PDB with
+   `maxUnavailable: 1` plus `IfHealthyBudget`, disabled HPA scale-down, and
+   readiness failure. One custody-unready pod consumes the entire PDB budget, so
+   Kubernetes blocks every further voluntary eviction while work is unresolved.
+2. Identify the affected pod from the alert's `pod`/`instance` labels and confirm
+   the state without printing secrets:
+
+   ```bash
+   kubectl get pods -n rowboat -l app.kubernetes.io/name=rowboat-api
+   kubectl logs -n rowboat POD --since=15m | \
+     grep -E 'unresolved credential custody|accepted_work_unresolved|operator_action'
+   kubectl get pdb -n rowboat rowboat-api
+   ```
+
+3. Restore at least one acknowledgement path. Prefer restoring PostgreSQL first
+   so the encrypted recovery journal becomes durable. Otherwise restore the
+   provider revocation endpoint. Watch both custody gauges return to zero and the
+   pod become ready before resuming a rollout.
+4. If SIGTERM has already been delivered, the server immediately fails readiness,
+   drains public HTTP/gRPC for at most `SHUTDOWN_TIMEOUT` (25 seconds), then gives
+   admitted custody work a separate 25-second drain window while `/metrics`
+   remains scrapeable through the dedicated metrics Service, which publishes
+   not-ready pod addresses without routing application traffic to them. Metrics
+   are scraped every five seconds and the alert expressions retain any unresolved
+   sample for five minutes, so the bounded drain cannot disappear between scrapes.
+   Metrics and telemetry then have at most five seconds each to flush. The chart's
+   65-second termination grace covers the complete bound.
+5. A custody drain deadline returns an error, logs
+   `accepted_work_unresolved` plus an explicit `operator_action`, and exits the
+   process non-zero. Kubernetes retains the error logs through
+   `FallbackToLogsOnError`. Treat that exit as an unresolved security incident,
+   not a successful deployment. Preserve pod logs, alert history, release SHA,
+   and dependency outage timestamps.
+6. Do not weaken the PDB while either custody gauge is non-zero, or shorten
+   termination grace to force progress. If an
+   involuntary node/process loss occurs before either acknowledgement path
+   succeeds, escalate to security, identify the connector and stable owner from
+   non-secret structured fields, restore dependencies, run recovery/cleanup
+   reconciliation, and require provider-side invalidation when custody cannot be
+   proven.
+
+Before planned node maintenance or capacity reduction, verify both custody gauges
+are zero. When every API pod is ready, the PDB permits one voluntary disruption at
+a time. Do not override the budget to evict an unready pod. Automatic HPA
+scale-down remains disabled, so capacity reduction is always an explicit operator
+change. Involuntary failures and direct pod deletion cannot be prevented by a PDB.
+
 ## Compromised connector secret
 
 1. Emergency-disable the connector in every affected environment.
