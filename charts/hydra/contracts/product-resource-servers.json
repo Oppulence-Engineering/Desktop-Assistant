@@ -21,7 +21,14 @@
           "requiredScopes": [
             "canvas:invoices.read",
             "canvas:customers.read"
-          ]
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate"
+          }
         },
         {
           "connector": "corinthian",
@@ -33,7 +40,14 @@
           ],
           "requiredScopes": [
             "corinthian:ar.read"
-          ]
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate"
+          }
         },
         {
           "connector": "cadence",
@@ -45,7 +59,14 @@
           ],
           "requiredScopes": [
             "cadence:payment_runs.read"
-          ]
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate"
+          }
         },
         {
           "connector": "conduit",
@@ -57,7 +78,14 @@
           ],
           "requiredScopes": [
             "conduit:pipelines.read"
-          ]
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate"
+          }
         },
         {
           "connector": "eigen",
@@ -69,7 +97,14 @@
           ],
           "requiredScopes": [
             "eigen:knowledge.read"
-          ]
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.oppulence.io/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate"
+          }
         }
       ]
     },
@@ -92,7 +127,14 @@
           "requiredScopes": [
             "canvas:invoices.read",
             "canvas:customers.read"
-          ]
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate"
+          }
         },
         {
           "connector": "corinthian",
@@ -104,7 +146,14 @@
           ],
           "requiredScopes": [
             "corinthian:ar.read"
-          ]
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate"
+          }
         },
         {
           "connector": "cadence",
@@ -116,7 +165,14 @@
           ],
           "requiredScopes": [
             "cadence:payment_runs.read"
-          ]
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate"
+          }
         },
         {
           "connector": "conduit",
@@ -128,7 +184,14 @@
           ],
           "requiredScopes": [
             "conduit:pipelines.read"
-          ]
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate"
+          }
         },
         {
           "connector": "eigen",
@@ -140,7 +203,14 @@
           ],
           "requiredScopes": [
             "eigen:knowledge.read"
-          ]
+          ],
+          "connectionStatusValidation": {
+            "mode": "live",
+            "endpoint": "https://api.x.staging.solomon-ai.co/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate"
+          }
         }
       ]
     }

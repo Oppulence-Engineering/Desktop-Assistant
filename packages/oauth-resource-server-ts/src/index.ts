@@ -34,6 +34,7 @@ export {
   requireAnyScope,
   requireMCPToken,
   verifyAuthorizationHeader,
+  MAX_OFFLINE_DEVELOPMENT_TOKEN_TTL_SECONDS,
   AuthedRequestSchema,
   type AuthedRequest,
   ResponseLikeSchema,
@@ -41,6 +42,7 @@ export {
   NextFnSchema,
   type NextFn,
   type MCPTokenOptions,
+  type ConnectionValidationMode,
   type ConnectionStatusValidator,
   type ApprovalValidator,
 } from './middleware.js';

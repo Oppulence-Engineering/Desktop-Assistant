@@ -154,6 +154,13 @@ for environment in ("production", "staging"):
             "audience": binding(connector, "audiences", environment),
             "scopes": scopes,
             "requiredScopes": required_scopes,
+            "connectionStatusValidation": {
+                "mode": "live",
+                "endpoint": public_base + "/v1/internal/connections/status",
+                "checkTiming": "every-request",
+                "failurePolicy": "deny",
+                "disconnectEnforcement": "immediate",
+            },
         })
         expected_callbacks.append(f"{public_base}/v1/connections/{connector['name']}/callback")
         expected_scopes.extend(scopes)

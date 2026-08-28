@@ -125,12 +125,12 @@ class MockResponse implements ResponseLike {
   }
 }
 
-async function runMiddleware(options: MCPTokenOptions, approvalToken?: string): Promise<{ res: MockResponse; next: boolean }> {
+async function runMiddleware(options: MCPTokenOptions, approvalToken?: string, token?: string): Promise<{ res: MockResponse; next: boolean }> {
   const req: AuthedRequest = {
     method: 'POST',
     url: '/money',
     headers: {
-      authorization: `Bearer ${await sign()}`,
+      authorization: `Bearer ${token ?? await sign()}`,
       ...(approvalToken ? { 'x-approval-token': approvalToken } : {}),
     },
   };
@@ -286,33 +286,73 @@ describe('RFC 012 verifier contract', () => {
 });
 
 describe('RFC 012 middleware parity', () => {
+  const activeConnection = () => true;
+
   it('enforces all-of and any-of scopes', async () => {
-    await expect(runMiddleware({ requiredScopes: ['canvas.read', 'canvas.watch'] })).resolves.toMatchObject({ next: true });
+    await expect(runMiddleware({ requiredScopes: ['canvas.read', 'canvas.watch'], connectionValidator: activeConnection })).resolves.toMatchObject({ next: true });
     const allFail = await runMiddleware({ requiredScopes: ['canvas.read', 'canvas.write'] });
     expect(allFail.res).toMatchObject({ statusCode: 403, body: { code: 'scope_missing' } });
-    await expect(runMiddleware({ anyScopes: ['canvas.write', 'canvas.watch'] })).resolves.toMatchObject({ next: true });
+    await expect(runMiddleware({ anyScopes: ['canvas.write', 'canvas.watch'], connectionValidator: activeConnection })).resolves.toMatchObject({ next: true });
     const anyFail = await runMiddleware({ anyScopes: ['canvas.write', 'canvas.pay'] });
     expect(anyFail.res).toMatchObject({ statusCode: 403, body: { code: 'scope_missing' } });
   });
 
   it('enforces a route-level audience', async () => {
-    await expect(runMiddleware({ audience: AUDIENCE })).resolves.toMatchObject({ next: true });
+    await expect(runMiddleware({ audience: AUDIENCE, connectionValidator: activeConnection })).resolves.toMatchObject({ next: true });
     const mismatch = await runMiddleware({ audience: 'mcp:other' });
     expect(mismatch.res).toMatchObject({ statusCode: 401, body: { code: 'audience_mismatch' } });
   });
 
   it('returns connection_revoked for inactive or failed status validation', async () => {
+    const missing = await runMiddleware({});
+    expect(missing.res).toMatchObject({ statusCode: 403, body: { code: 'connection_revoked' } });
     const revoked = await runMiddleware({ connectionValidator: () => false });
     expect(revoked.res).toMatchObject({ statusCode: 403, body: { code: 'connection_revoked' } });
+    const unavailable = await runMiddleware({ connectionValidator: () => Promise.reject(new Error('status unavailable')) });
+    expect(unavailable.res).toMatchObject({ statusCode: 403, body: { code: 'connection_revoked' } });
+  });
+
+  it('checks live connection status on every request so disconnect denies immediately', async () => {
+    const token = await sign();
+    let active = true;
+    let checks = 0;
+    const connectionValidator = () => {
+      checks += 1;
+      return active;
+    };
+    await expect(runMiddleware({ connectionValidator }, undefined, token)).resolves.toMatchObject({ next: true });
+    active = false;
+    const disconnected = await runMiddleware({ connectionValidator }, undefined, token);
+    expect(disconnected.res).toMatchObject({ statusCode: 403, body: { code: 'connection_revoked' } });
+    expect(checks).toBe(2);
+  });
+
+  it('allows offline development only with a bounded issued token TTL', async () => {
+    const bounded = await sign({}, { expSec: 120 });
+    const offline: MCPTokenOptions = {
+      connectionValidationMode: 'offline-development',
+      offlineMaxTokenTtlSeconds: 120,
+    };
+    await expect(runMiddleware(offline, undefined, bounded)).resolves.toMatchObject({ next: true });
+
+    for (const [options, token] of [
+      [{ connectionValidationMode: 'offline-development' }, bounded],
+      [{ connectionValidationMode: 'offline-development', offlineMaxTokenTtlSeconds: 301 }, bounded],
+      [offline, await sign({}, { expSec: 3600 })],
+      [offline, await sign({ iat: undefined }, { expSec: 120 })],
+    ] as Array<[MCPTokenOptions, string]>) {
+      const denied = await runMiddleware(options, undefined, token);
+      expect(denied.res).toMatchObject({ statusCode: 403, body: { code: 'connection_revoked' } });
+    }
   });
 
   it('requires and validates X-Approval-Token with HTTP 428', async () => {
     const validator = (token: string, _claims: unknown, req: AuthedRequest) => token === 'good' && req.url === '/money';
-    const missing = await runMiddleware({ approvalValidator: validator });
+    const missing = await runMiddleware({ connectionValidator: activeConnection, approvalValidator: validator });
     expect(missing.res).toMatchObject({ statusCode: 428, body: { code: 'approval_required' } });
-    const invalid = await runMiddleware({ approvalValidator: validator }, 'bad');
+    const invalid = await runMiddleware({ connectionValidator: activeConnection, approvalValidator: validator }, 'bad');
     expect(invalid.res).toMatchObject({ statusCode: 428, body: { code: 'approval_required' } });
-    await expect(runMiddleware({ approvalValidator: validator }, 'good')).resolves.toMatchObject({ next: true });
+    await expect(runMiddleware({ connectionValidator: activeConnection, approvalValidator: validator }, 'good')).resolves.toMatchObject({ next: true });
   });
 
   it('returns token_missing when Authorization is absent', async () => {

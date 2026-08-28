@@ -89,11 +89,21 @@ Exports include `requireAuth`, `requireAllScopes`, `requireAnyScope`,
 `requireMCPToken`, and `verifyAuthorizationHeader`.
 
 JWT bearer tokens remain replayable by a holder until `exp`. Signature and `jti`
-validation do not make a bearer token single-use. High-risk products, including
-money movement, destructive operations, and sensitive exports, must configure an
-online `connectionValidator` on every protected request so revocation is enforced
-immediately. Approval tokens should remain operation-bound and single-use where
-the product contract requires them.
+validation do not make a bearer token single-use. `requireMCPToken` therefore
+defaults to `connectionValidationMode: "live"` and fails closed when a
+`connectionValidator` is absent, rejects, or reports the connection inactive.
+Production product MCPs must perform that live check on every protected request so
+disconnect takes effect immediately.
+
+One-process offline development may opt in explicitly with
+`connectionValidationMode: "offline-development"` and a positive
+`offlineMaxTokenTtlSeconds`. The token must contain `iat`, its issued lifetime
+(`exp - iat`) must not exceed that configured bound, and the bound itself may not
+exceed `MAX_OFFLINE_DEVELOPMENT_TOKEN_TTL_SECONDS` (five minutes). This mode is not
+a production revocation mechanism.
+
+Approval tokens should remain operation-bound and single-use where the product
+contract requires them.
 
 ## Errors
 

@@ -598,6 +598,7 @@ func TestRequireMCPTokenParityContract(t *testing.T) {
 	v := newVerifier(t, srv.URL)
 	tokenStr := sign(t, key, validClaims())
 	final := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	activeConnection := func(context.Context, *oauthrs.Claims) (bool, error) { return true, nil }
 
 	run := func(t *testing.T, opts oauthrs.MCPTokenOptions, approval string) *httptest.ResponseRecorder {
 		t.Helper()
@@ -619,16 +620,18 @@ func TestRequireMCPTokenParityContract(t *testing.T) {
 		status   int
 		code     oauthrs.ErrorCode
 	}{
-		{name: "all scopes pass", opts: oauthrs.MCPTokenOptions{RequiredScopes: []string{"canvas.read", "canvas.watch"}}, status: 204},
-		{name: "route audience pass", opts: oauthrs.MCPTokenOptions{Audience: "rowboat-api"}, status: 204},
+		{name: "all scopes pass", opts: oauthrs.MCPTokenOptions{RequiredScopes: []string{"canvas.read", "canvas.watch"}, ConnectionValidator: activeConnection}, status: 204},
+		{name: "route audience pass", opts: oauthrs.MCPTokenOptions{Audience: "rowboat-api", ConnectionValidator: activeConnection}, status: 204},
 		{name: "route audience fail", opts: oauthrs.MCPTokenOptions{Audience: "mcp:other"}, status: 401, code: oauthrs.CodeAudienceMismatch},
 		{name: "all scopes fail", opts: oauthrs.MCPTokenOptions{RequiredScopes: []string{"canvas.read", "canvas.write"}}, status: 403, code: oauthrs.CodeScopeMissing},
-		{name: "any scope pass", opts: oauthrs.MCPTokenOptions{AnyScopes: []string{"canvas.write", "canvas.watch"}}, status: 204},
+		{name: "any scope pass", opts: oauthrs.MCPTokenOptions{AnyScopes: []string{"canvas.write", "canvas.watch"}, ConnectionValidator: activeConnection}, status: 204},
 		{name: "any scope fail", opts: oauthrs.MCPTokenOptions{AnyScopes: []string{"canvas.write", "canvas.pay"}}, status: 403, code: oauthrs.CodeScopeMissing},
+		{name: "live validator missing", opts: oauthrs.MCPTokenOptions{}, status: 403, code: oauthrs.CodeConnectionRevoked},
 		{name: "connection revoked", opts: oauthrs.MCPTokenOptions{ConnectionValidator: func(context.Context, *oauthrs.Claims) (bool, error) { return false, nil }}, status: 403, code: oauthrs.CodeConnectionRevoked},
-		{name: "approval missing", opts: oauthrs.MCPTokenOptions{ApprovalValidator: func(*http.Request, string, *oauthrs.Claims) (bool, error) { return true, nil }}, status: 428, code: oauthrs.CodeApprovalRequired},
-		{name: "approval invalid", approval: "bad", opts: oauthrs.MCPTokenOptions{ApprovalValidator: func(_ *http.Request, token string, _ *oauthrs.Claims) (bool, error) { return token == "good", nil }}, status: 428, code: oauthrs.CodeApprovalRequired},
-		{name: "approval valid", approval: "good", opts: oauthrs.MCPTokenOptions{ApprovalValidator: func(req *http.Request, token string, claims *oauthrs.Claims) (bool, error) {
+		{name: "connection status unavailable", opts: oauthrs.MCPTokenOptions{ConnectionValidator: func(context.Context, *oauthrs.Claims) (bool, error) { return false, context.DeadlineExceeded }}, status: 403, code: oauthrs.CodeConnectionRevoked},
+		{name: "approval missing", opts: oauthrs.MCPTokenOptions{ConnectionValidator: activeConnection, ApprovalValidator: func(*http.Request, string, *oauthrs.Claims) (bool, error) { return true, nil }}, status: 428, code: oauthrs.CodeApprovalRequired},
+		{name: "approval invalid", approval: "bad", opts: oauthrs.MCPTokenOptions{ConnectionValidator: activeConnection, ApprovalValidator: func(_ *http.Request, token string, _ *oauthrs.Claims) (bool, error) { return token == "good", nil }}, status: 428, code: oauthrs.CodeApprovalRequired},
+		{name: "approval valid", approval: "good", opts: oauthrs.MCPTokenOptions{ConnectionValidator: activeConnection, ApprovalValidator: func(req *http.Request, token string, claims *oauthrs.Claims) (bool, error) {
 			return req.URL.Path == "/money" && token == "good" && claims.ConnectionID == "conn_123", nil
 		}}, status: 204},
 	}
@@ -640,6 +643,89 @@ func TestRequireMCPTokenParityContract(t *testing.T) {
 			}
 			if tt.code != "" && !strings.Contains(rec.Body.String(), `"code":"`+string(tt.code)+`"`) {
 				t.Fatalf("body = %s", rec.Body.String())
+			}
+		})
+	}
+}
+
+func TestRequireMCPTokenDisconnectDeniesImmediately(t *testing.T) {
+	srv, key := jwksServer(t)
+	v := newVerifier(t, srv.URL)
+	tokenStr := sign(t, key, validClaims())
+	active := true
+	checks := 0
+	h := v.RequireMCPToken(oauthrs.MCPTokenOptions{
+		ConnectionValidator: func(context.Context, *oauthrs.Claims) (bool, error) {
+			checks++
+			return active, nil
+		},
+	})(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+
+	request := func() *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenStr)
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec
+	}
+
+	if rec := request(); rec.Code != http.StatusNoContent {
+		t.Fatalf("active connection: want 204, got %d: %s", rec.Code, rec.Body.String())
+	}
+	active = false
+	if rec := request(); rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), `"code":"connection_revoked"`) {
+		t.Fatalf("disconnected connection: want immediate 403 connection_revoked, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if checks != 2 {
+		t.Fatalf("connection validator checks = %d, want one per request", checks)
+	}
+}
+
+func TestRequireMCPTokenOfflineDevelopmentRequiresBoundedIssuedTTL(t *testing.T) {
+	srv, key := jwksServer(t)
+	v := newVerifier(t, srv.URL)
+	final := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	now := time.Now().Truncate(time.Second)
+
+	run := func(claims jwt.MapClaims, opts oauthrs.MCPTokenOptions) *httptest.ResponseRecorder {
+		tokenStr := sign(t, key, claims)
+		req := httptest.NewRequest(http.MethodPost, "/mcp", nil)
+		req.Header.Set("Authorization", "Bearer "+tokenStr)
+		rec := httptest.NewRecorder()
+		v.RequireMCPToken(opts)(final).ServeHTTP(rec, req)
+		return rec
+	}
+
+	bounded := validClaims()
+	bounded["iat"] = now.Unix()
+	bounded["exp"] = now.Add(2 * time.Minute).Unix()
+	offline := oauthrs.MCPTokenOptions{
+		ConnectionValidationMode: oauthrs.ConnectionValidationOfflineDevelopment,
+		OfflineMaxTokenTTL:       2 * time.Minute,
+	}
+	if rec := run(bounded, offline); rec.Code != http.StatusNoContent {
+		t.Fatalf("bounded offline token: want 204, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	longLived := validClaims()
+	longLived["iat"] = now.Unix()
+	longLived["exp"] = now.Add(time.Hour).Unix()
+	missingIssuedAt := validClaims()
+	delete(missingIssuedAt, "iat")
+	missingIssuedAt["exp"] = now.Add(2 * time.Minute).Unix()
+	for name, testCase := range map[string]struct {
+		claims jwt.MapClaims
+		opts   oauthrs.MCPTokenOptions
+	}{
+		"missing bound":        {bounded, oauthrs.MCPTokenOptions{ConnectionValidationMode: oauthrs.ConnectionValidationOfflineDevelopment}},
+		"bound above hard cap": {bounded, oauthrs.MCPTokenOptions{ConnectionValidationMode: oauthrs.ConnectionValidationOfflineDevelopment, OfflineMaxTokenTTL: oauthrs.MaxOfflineDevelopmentTokenTTL + time.Second}},
+		"token exceeds bound":  {longLived, offline},
+		"issued at missing":    {missingIssuedAt, offline},
+	} {
+		t.Run(name, func(t *testing.T) {
+			rec := run(testCase.claims, testCase.opts)
+			if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), `"code":"connection_revoked"`) {
+				t.Fatalf("want 403 connection_revoked, got %d: %s", rec.Code, rec.Body.String())
 			}
 		})
 	}

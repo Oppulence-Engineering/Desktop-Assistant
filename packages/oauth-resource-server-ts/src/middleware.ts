@@ -110,6 +110,10 @@ export function requireAnyScope(...scopes: string[]) {
 
 export type ConnectionStatusValidator = (claims: Claims) => boolean | Promise<boolean>;
 export type ApprovalValidator = (approvalToken: string, claims: Claims, request: AuthedRequest) => boolean | Promise<boolean>;
+export type ConnectionValidationMode = 'live' | 'offline-development';
+
+/** Largest issued token TTL allowed by the explicit offline-development policy. */
+export const MAX_OFFLINE_DEVELOPMENT_TOKEN_TTL_SECONDS = 5 * 60;
 
 export type MCPTokenOptions = {
   /** Route-level audience requirement, in addition to verifier configuration. */
@@ -118,15 +122,22 @@ export type MCPTokenOptions = {
   requiredScopes?: string[];
   /** Any-of scope requirements. */
   anyScopes?: string[];
-  /** Optional online connection revocation/status validation. */
+  /** Defaults to live, which requires an online check on every request. */
+  connectionValidationMode?: ConnectionValidationMode;
+  /** Required in live mode. Errors and inactive results deny access. */
   connectionValidator?: ConnectionStatusValidator;
+  /** Required in offline-development mode and capped at five minutes. */
+  offlineMaxTokenTtlSeconds?: number;
   /** Optional money-moving approval validation/introspection. */
   approvalValidator?: ApprovalValidator;
 };
 
 /**
- * Composes RFC 012 bearer, scope, connection, and approval checks. A configured
- * approval validator makes X-Approval-Token mandatory and failures return 428.
+ * Composes RFC 012 bearer, scope, connection, and approval checks. Live
+ * connection validation is the fail-closed default. Offline development must be
+ * selected explicitly and accepts only tokens with a bounded issued TTL. A
+ * configured approval validator makes X-Approval-Token mandatory and failures
+ * return 428.
  */
 export function requireMCPToken(verifier: Verifier, options: MCPTokenOptions = {}) {
   return async (req: AuthedRequest, res: ResponseLike, next: NextFn): Promise<void> => {
@@ -154,7 +165,12 @@ export function requireMCPToken(verifier: Verifier, options: MCPTokenOptions = {
       sendError(res, denial('scope_missing', 403, 'required scope missing'));
       return;
     }
-    if (options.connectionValidator) {
+    const connectionMode = options.connectionValidationMode ?? 'live';
+    if (connectionMode === 'live') {
+      if (!options.connectionValidator) {
+        sendError(res, denial('connection_revoked', 403, 'active connection validation required'));
+        return;
+      }
       try {
         if (!(await options.connectionValidator(claims))) {
           sendError(res, denial('connection_revoked', 403, 'connection revoked'));
@@ -164,6 +180,23 @@ export function requireMCPToken(verifier: Verifier, options: MCPTokenOptions = {
         sendError(res, denial('connection_revoked', 403, 'connection revoked', err));
         return;
       }
+    } else if (connectionMode === 'offline-development') {
+      const maxTtl = options.offlineMaxTokenTtlSeconds;
+      const issuedTtl = claims.issuedAt === undefined ? Number.POSITIVE_INFINITY : claims.expiresAt - claims.issuedAt;
+      if (
+        maxTtl === undefined
+        || !Number.isInteger(maxTtl)
+        || maxTtl <= 0
+        || maxTtl > MAX_OFFLINE_DEVELOPMENT_TOKEN_TTL_SECONDS
+        || issuedTtl <= 0
+        || issuedTtl > maxTtl
+      ) {
+        sendError(res, denial('connection_revoked', 403, 'offline development token policy denied'));
+        return;
+      }
+    } else {
+      sendError(res, denial('connection_revoked', 403, 'active connection validation required'));
+      return;
     }
     if (options.approvalValidator) {
       const token = headerValue(req.headers['x-approval-token'])?.trim();

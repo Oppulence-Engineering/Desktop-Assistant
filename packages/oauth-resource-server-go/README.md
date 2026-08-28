@@ -103,11 +103,21 @@ mux.Handle("POST /payments", verifier.RequireMCPToken(oauthrs.MCPTokenOptions{
 `RequireAllScopes` and `RequireAnyScope` are also available.
 
 JWT bearer tokens remain replayable by a holder until `exp`. Signature and `jti`
-validation do not make a bearer token single-use. High-risk products, including
-money movement, destructive operations, and sensitive exports, must configure an
-online `ConnectionValidator` on every protected request so revocation is enforced
-immediately. Approval tokens should remain operation-bound and single-use where
-the product contract requires them.
+validation do not make a bearer token single-use. `RequireMCPToken` therefore
+defaults to `ConnectionValidationLive` and fails closed when a
+`ConnectionValidator` is absent, returns an error, or reports the connection
+inactive. Production product MCPs must perform that live check on every protected
+request so disconnect takes effect immediately.
+
+One-process offline development may opt in explicitly with
+`ConnectionValidationMode: ConnectionValidationOfflineDevelopment` and a positive
+`OfflineMaxTokenTTL`. The token must contain `iat`, its issued lifetime
+(`exp - iat`) must not exceed that configured bound, and the bound itself may not
+exceed `MaxOfflineDevelopmentTokenTTL` (five minutes). This mode is not a
+production revocation mechanism.
+
+Approval tokens should remain operation-bound and single-use where the product
+contract requires them.
 
 ## Errors
 

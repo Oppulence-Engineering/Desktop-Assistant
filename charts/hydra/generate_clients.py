@@ -313,6 +313,13 @@ def generated_outputs() -> dict[Path, str]:
                         "audience": connector["audience"],
                         "scopes": connector["scopes"],
                         "requiredScopes": connector["requiredScopes"],
+                        "connectionStatusValidation": {
+                            "mode": "live",
+                            "endpoint": f"{contract['issuer']}/v1/internal/connections/status",
+                            "checkTiming": "every-request",
+                            "failurePolicy": "deny",
+                            "disconnectEnforcement": "immediate",
+                        },
                     }
                     for connector in contract["connectors"]
                 ],

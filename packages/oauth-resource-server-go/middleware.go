@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type claimsCtxKey struct{}
@@ -85,9 +86,25 @@ func RequireAnyScope(scopes ...string) func(http.Handler) http.Handler {
 	}
 }
 
-// ConnectionStatusValidator performs optional online revocation/status checks.
+// ConnectionStatusValidator performs online revocation/status checks.
 // It returns true only for an active connection. Errors deny access.
 type ConnectionStatusValidator func(context.Context, *Claims) (bool, error)
+
+// ConnectionValidationMode selects the RFC 012 connection-status policy.
+// The zero value is ConnectionValidationLive so production use fails closed.
+type ConnectionValidationMode string
+
+const (
+	// ConnectionValidationLive requires an online status check on every request.
+	ConnectionValidationLive ConnectionValidationMode = "live"
+	// ConnectionValidationOfflineDevelopment is an explicit development-only
+	// escape hatch that accepts only tokens with a tightly bounded issued TTL.
+	ConnectionValidationOfflineDevelopment ConnectionValidationMode = "offline-development"
+
+	// MaxOfflineDevelopmentTokenTTL is the largest token TTL accepted by the
+	// explicit offline-development connection policy.
+	MaxOfflineDevelopmentTokenTTL = 5 * time.Minute
+)
 
 // ApprovalValidator validates or introspects a per-invocation approval token.
 // It receives the full request so action/resource details can be matched.
@@ -97,24 +114,27 @@ type ApprovalValidator func(*http.Request, string, *Claims) (bool, error)
 // all-of. AnyScopes are any-of. A configured ApprovalValidator makes
 // X-Approval-Token mandatory.
 type MCPTokenOptions struct {
-	Audience            string
-	RequiredScopes      []string
-	AnyScopes           []string
-	ConnectionValidator ConnectionStatusValidator
-	ApprovalValidator   ApprovalValidator
+	Audience                 string
+	RequiredScopes           []string
+	AnyScopes                []string
+	ConnectionValidationMode ConnectionValidationMode
+	ConnectionValidator      ConnectionStatusValidator
+	OfflineMaxTokenTTL       time.Duration
+	ApprovalValidator        ApprovalValidator
 }
 
-// RequireMCPToken verifies the bearer token, applies scope checks, optionally
-// validates connection status, and optionally validates X-Approval-Token.
+// RequireMCPToken verifies the bearer token, applies scope checks, validates
+// connection status, and optionally validates X-Approval-Token. Live validation
+// is the default and denies every request when ConnectionValidator is absent or
+// fails. Offline development must be selected explicitly and requires an issued
+// token TTL no larger than both OfflineMaxTokenTTL and five minutes.
 func (v *Verifier) RequireMCPToken(opts MCPTokenOptions) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		h := next
 		if opts.ApprovalValidator != nil {
 			h = requireApproval(opts.ApprovalValidator)(h)
 		}
-		if opts.ConnectionValidator != nil {
-			h = requireActiveConnection(opts.ConnectionValidator)(h)
-		}
+		h = requireConnectionPolicy(opts)(h)
 		if len(opts.AnyScopes) > 0 {
 			h = RequireAnyScope(opts.AnyScopes...)(h)
 		}
@@ -125,6 +145,47 @@ func (v *Verifier) RequireMCPToken(opts MCPTokenOptions) func(http.Handler) http
 			h = requireAudience(opts.Audience)(h)
 		}
 		return v.Require(h)
+	}
+}
+
+func requireConnectionPolicy(opts MCPTokenOptions) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			c, ok := ClaimsFromContext(r.Context())
+			if !ok {
+				writeAuthorizationError(w, authorizationError(CodeTokenMissing, http.StatusUnauthorized, "missing bearer token", nil))
+				return
+			}
+
+			mode := opts.ConnectionValidationMode
+			if mode == "" {
+				mode = ConnectionValidationLive
+			}
+			switch mode {
+			case ConnectionValidationLive:
+				if opts.ConnectionValidator == nil {
+					writeAuthorizationError(w, authorizationError(CodeConnectionRevoked, http.StatusForbidden, "active connection validation required", nil))
+					return
+				}
+				active, err := opts.ConnectionValidator(r.Context(), c)
+				if err != nil || !active {
+					writeAuthorizationError(w, authorizationError(CodeConnectionRevoked, http.StatusForbidden, "connection revoked", err))
+					return
+				}
+			case ConnectionValidationOfflineDevelopment:
+				maxTTL := opts.OfflineMaxTokenTTL
+				issuedTTL := c.Expiry.Sub(c.IssuedAt)
+				if maxTTL <= 0 || maxTTL > MaxOfflineDevelopmentTokenTTL || c.IssuedAt.IsZero() || !c.Expiry.After(c.IssuedAt) || issuedTTL > maxTTL {
+					writeAuthorizationError(w, authorizationError(CodeConnectionRevoked, http.StatusForbidden, "offline development token policy denied", nil))
+					return
+				}
+			default:
+				writeAuthorizationError(w, authorizationError(CodeConnectionRevoked, http.StatusForbidden, "active connection validation required", nil))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
 	}
 }
 
@@ -145,24 +206,6 @@ func requireAudience(audience string) func(http.Handler) http.Handler {
 			}
 			if !matched {
 				writeAuthorizationError(w, authorizationError(CodeAudienceMismatch, http.StatusUnauthorized, "token audience mismatch", nil))
-				return
-			}
-			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func requireActiveConnection(validate ConnectionStatusValidator) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			c, ok := ClaimsFromContext(r.Context())
-			if !ok {
-				writeAuthorizationError(w, authorizationError(CodeTokenMissing, http.StatusUnauthorized, "missing bearer token", nil))
-				return
-			}
-			active, err := validate(r.Context(), c)
-			if err != nil || !active {
-				writeAuthorizationError(w, authorizationError(CodeConnectionRevoked, http.StatusForbidden, "connection revoked", err))
 				return
 			}
 			next.ServeHTTP(w, r)

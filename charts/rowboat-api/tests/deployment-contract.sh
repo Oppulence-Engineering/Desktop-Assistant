@@ -88,6 +88,11 @@ production_issuer="$(config_value "$production_manifest" BROKER_TOKEN_ISSUER)"
 assert_equal "$OAUTH_ISSUER" "$production_issuer" "product verifier issuer"
 assert_equal "$OAUTH_JWKS_URL" "$production_origin/.well-known/connector-jwks.json" "product verifier JWKS URL"
 assert_equal "$OAUTH_ALLOWED_ALGORITHMS" "RS256" "product verifier algorithm policy"
+assert_equal "$OAUTH_CONNECTION_VALIDATION_MODE" "live" "product verifier connection validation mode"
+assert_equal "$OAUTH_REVOCATION_CHECK_URL" "$production_origin/v1/internal/connections/status" "product verifier connection status URL"
+assert_equal "$OAUTH_CONNECTION_STATUS_CHECK" "every-request" "product verifier connection status timing"
+assert_equal "$OAUTH_CONNECTION_STATUS_FAILURE_POLICY" "deny" "product verifier connection status failure policy"
+assert_equal "$OAUTH_DISCONNECT_ENFORCEMENT" "immediate" "product verifier disconnect enforcement"
 
 staging_documented_issuer="$(sed -n 's/^# OAUTH_ISSUER=//p' "$verifier_example")"
 staging_documented_jwks="$(sed -n 's/^# OAUTH_JWKS_URL=//p' "$verifier_example")"
@@ -142,6 +147,16 @@ for connector in registry:
     assert staging["mcpUrl"] == connector["mcpUrls"]["staging"]
     assert "staging" not in urlparse(production["mcpUrl"]).hostname.split(".")
     assert "staging" in urlparse(staging["mcpUrl"]).hostname.split(".")
+    for environment, product in (("production", production), ("staging", staging)):
+        connection = product["connectionStatusValidation"]
+        expected_issuer = verifiers[environment]["issuer"]
+        assert connection == {
+            "mode": "live",
+            "endpoint": expected_issuer + "/v1/internal/connections/status",
+            "checkTiming": "every-request",
+            "failurePolicy": "deny",
+            "disconnectEnforcement": "immediate",
+        }
 PY
 
 printf 'rowboat-api deployment contract and token verifier configuration probe passed\n'
