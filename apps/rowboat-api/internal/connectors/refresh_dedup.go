@@ -17,7 +17,7 @@ import (
 
 const (
 	connectorRefreshResultTTL = 90 * time.Second
-	connectorRefreshLockTTL   = 30 * time.Second
+	connectorRefreshLockTTL   = 45 * time.Second
 	connectorRefreshPollWait  = 5 * time.Second
 )
 
@@ -30,8 +30,9 @@ var errConnectorCredentialSuperseded = errors.New("connector credential generati
 type RefreshCache interface {
 	Get(context.Context, string) ([]byte, bool, error)
 	Set(context.Context, string, []byte, time.Duration) error
-	TryLock(context.Context, string, time.Duration) (bool, error)
-	Unlock(context.Context, string) error
+	TryLock(context.Context, string, time.Duration) (string, bool, error)
+	Renew(context.Context, string, string, time.Duration) (bool, error)
+	Unlock(context.Context, string, string) error
 }
 
 // connectorRefreshContext binds one cached provider result to the immutable
@@ -142,7 +143,7 @@ func (d *refreshDeduper) refresh(
 		detached, cancel := context.WithTimeout(context.WithoutCancel(ctx), 25*time.Second)
 		defer cancel()
 
-		locked, err := d.cache.TryLock(detached, lockKey, connectorRefreshLockTTL)
+		owner, locked, err := d.cache.TryLock(detached, lockKey, connectorRefreshLockTTL)
 		if err != nil {
 			return nil, fmt.Errorf("acquire connector refresh lock: %w", err)
 		}
@@ -160,18 +161,23 @@ func (d *refreshDeduper) refresh(
 			}
 			return nil, errConnectorRefreshInProgress
 		}
+		stopRenewal := keepConnectorRefreshLease(detached, cancel, d.cache, lockKey, owner, connectorRefreshLockTTL, d.log)
+		defer stopRenewal()
 		unlock := true
 		defer func() {
 			if !unlock {
 				return
 			}
-			if err := d.cache.Unlock(context.Background(), lockKey); err != nil && d.log != nil {
+			if err := d.cache.Unlock(context.Background(), lockKey, owner); err != nil && d.log != nil {
 				d.log.Warn("connector refresh unlock failed", zap.Error(err))
 			}
 		}()
 
 		if result, ok := d.cached(detached, resultKey, bound); ok {
 			return result, nil
+		}
+		if err := requireConnectorRefreshOwnership(detached, d.cache, lockKey, owner); err != nil {
+			return nil, err
 		}
 		tok, err := ory.refresh(detached, oldRefresh)
 		if err != nil {
@@ -180,6 +186,9 @@ func (d *refreshDeduper) refresh(
 
 		if persist == nil {
 			return nil, errors.New("connector refresh persistence is not configured")
+		}
+		if err := requireConnectorRefreshOwnership(detached, d.cache, lockKey, owner); err != nil {
+			return nil, err
 		}
 		currentGeneration, err := persist(detached, tok)
 		if err != nil {
@@ -206,6 +215,9 @@ func (d *refreshDeduper) refresh(
 			}
 			return nil, errors.New("connector refresh persistence returned an unexpected credential generation")
 		}
+		if err := requireConnectorRefreshOwnership(detached, d.cache, lockKey, owner); err != nil {
+			return nil, err
+		}
 		if err := d.store(detached, resultKey, result); err != nil {
 			// Persistence already succeeded, so do not fail the request. A cache
 			// outage may make a replay return refresh_in_progress/error, but never
@@ -225,6 +237,48 @@ func (d *refreshDeduper) refresh(
 		return nil, errors.New("invalid connector refresh result")
 	}
 	return result, nil
+}
+
+func requireConnectorRefreshOwnership(ctx context.Context, cache RefreshCache, key, owner string) error {
+	owned, err := cache.Renew(ctx, key, owner, connectorRefreshLockTTL)
+	if err != nil {
+		return fmt.Errorf("renew connector refresh lock: %w", err)
+	}
+	if !owned {
+		return errConnectorRefreshInProgress
+	}
+	return nil
+}
+
+func keepConnectorRefreshLease(ctx context.Context, cancel context.CancelFunc, cache RefreshCache, key, owner string, ttl time.Duration, log *zap.Logger) func() {
+	stop := make(chan struct{})
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		ticker := time.NewTicker(ttl / 3)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-stop:
+				return
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				owned, err := cache.Renew(ctx, key, owner, ttl)
+				if err != nil || !owned {
+					if log != nil {
+						log.Warn("connector refresh lock renewal failed", zap.Bool("still_owner", owned), zap.Error(err))
+					}
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+	return func() {
+		close(stop)
+		<-done
+	}
 }
 
 func (d *refreshDeduper) cached(ctx context.Context, key string, expected connectorRefreshContext) (*connectorRefreshResult, bool) {

@@ -2,6 +2,8 @@ package workosauth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"sync"
@@ -15,14 +17,29 @@ import (
 type RefreshCache interface {
 	Get(ctx context.Context, key string) ([]byte, bool, error)
 	Set(ctx context.Context, key string, val []byte, ttl time.Duration) error
-	// TryLock acquires key for ttl; returns false when another holder has it.
-	TryLock(ctx context.Context, key string, ttl time.Duration) (bool, error)
-	Unlock(ctx context.Context, key string) error
+	// TryLock returns a cryptographically random owner token when acquired.
+	TryLock(ctx context.Context, key string, ttl time.Duration) (owner string, acquired bool, err error)
+	Renew(ctx context.Context, key, owner string, ttl time.Duration) (bool, error)
+	Unlock(ctx context.Context, key, owner string) error
 }
 
 // --- Redis ------------------------------------------------------------------
 
 type redisCache struct{ rdb *redis.Client }
+
+var renewLockScript = redis.NewScript(`
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("pexpire", KEYS[1], ARGV[2])
+end
+return 0
+`)
+
+var unlockScript = redis.NewScript(`
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("del", KEYS[1])
+end
+return 0
+`)
 
 // NewRedisRefreshCache connects like ratelimit's redis limiter (ParseURL +
 // ping with a short timeout) so misconfiguration fails at boot, not first use.
@@ -56,12 +73,25 @@ func (c *redisCache) Set(ctx context.Context, key string, val []byte, ttl time.D
 	return c.rdb.Set(ctx, key, val, ttl).Err()
 }
 
-func (c *redisCache) TryLock(ctx context.Context, key string, ttl time.Duration) (bool, error) {
-	return c.rdb.SetNX(ctx, key, "1", ttl).Result()
+func (c *redisCache) TryLock(ctx context.Context, key string, ttl time.Duration) (string, bool, error) {
+	owner, err := newLockOwner()
+	if err != nil {
+		return "", false, err
+	}
+	acquired, err := c.rdb.SetNX(ctx, key, owner, ttl).Result()
+	if !acquired {
+		owner = ""
+	}
+	return owner, acquired, err
 }
 
-func (c *redisCache) Unlock(ctx context.Context, key string) error {
-	return c.rdb.Del(ctx, key).Err()
+func (c *redisCache) Renew(ctx context.Context, key, owner string, ttl time.Duration) (bool, error) {
+	result, err := renewLockScript.Run(ctx, c.rdb, []string{key}, owner, ttl.Milliseconds()).Int64()
+	return result == 1, err
+}
+
+func (c *redisCache) Unlock(ctx context.Context, key, owner string) error {
+	return unlockScript.Run(ctx, c.rdb, []string{key}, owner).Err()
 }
 
 // --- In-memory (devstack / tests) -------------------------------------------
@@ -100,19 +130,46 @@ func (c *memoryCache) Set(_ context.Context, key string, val []byte, ttl time.Du
 	return nil
 }
 
-func (c *memoryCache) TryLock(_ context.Context, key string, ttl time.Duration) (bool, error) {
+func (c *memoryCache) TryLock(_ context.Context, key string, ttl time.Duration) (string, bool, error) {
+	owner, err := newLockOwner()
+	if err != nil {
+		return "", false, err
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if e, ok := c.entries[key]; ok && time.Now().Before(e.expiresAt) {
+		return "", false, nil
+	}
+	c.entries[key] = memoryEntry{val: []byte(owner), expiresAt: time.Now().Add(ttl)}
+	return owner, true, nil
+}
+
+func (c *memoryCache) Renew(_ context.Context, key, owner string, ttl time.Duration) (bool, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	e, ok := c.entries[key]
+	if !ok || time.Now().After(e.expiresAt) || string(e.val) != owner {
 		return false, nil
 	}
-	c.entries[key] = memoryEntry{val: []byte("1"), expiresAt: time.Now().Add(ttl)}
+	e.expiresAt = time.Now().Add(ttl)
+	c.entries[key] = e
 	return true, nil
 }
 
-func (c *memoryCache) Unlock(_ context.Context, key string) error {
+func (c *memoryCache) Unlock(_ context.Context, key, owner string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	delete(c.entries, key)
+	e, ok := c.entries[key]
+	if ok && time.Now().Before(e.expiresAt) && string(e.val) == owner {
+		delete(c.entries, key)
+	}
 	return nil
+}
+
+func newLockOwner() (string, error) {
+	var token [32]byte
+	if _, err := rand.Read(token[:]); err != nil {
+		return "", fmt.Errorf("workosauth: generate refresh lock owner: %w", err)
+	}
+	return hex.EncodeToString(token[:]), nil
 }
