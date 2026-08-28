@@ -1,9 +1,13 @@
 package schema
 
 import (
+	"entgo.io/contrib/entgql"
+	"entgo.io/contrib/entoas"
 	"entgo.io/ent"
+	"entgo.io/ent/schema"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
 	"github.com/google/uuid"
 )
@@ -13,8 +17,18 @@ import (
 // Processing this entity must never change connection lifecycle state.
 type ConnectorCredentialCleanupJob struct{ ent.Schema }
 
+// Annotations keeps the credential cleanup outbox behind internal worker APIs.
+func (ConnectorCredentialCleanupJob) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		entgql.Annotation{Skip: entgql.SkipAll},
+		entoas.Skip(true),
+	}
+}
+
+// Mixin attaches common identity and timestamp fields.
 func (ConnectorCredentialCleanupJob) Mixin() []ent.Mixin { return []ent.Mixin{mixin.BaseMixin{}} }
 
+// Fields defines sealed cleanup work and retry lease state.
 func (ConnectorCredentialCleanupJob) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("connection_id", uuid.UUID{}),
@@ -31,6 +45,7 @@ func (ConnectorCredentialCleanupJob) Fields() []ent.Field {
 	}
 }
 
+// Indexes supports due-work scans and connection-generation diagnostics.
 func (ConnectorCredentialCleanupJob) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("status", "next_attempt_at"),

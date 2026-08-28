@@ -221,6 +221,9 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil || schemas["IntegrationTemplateBlock"] == nil || schemas["SlackWorkspacesResponse"] == nil || schemas["SlackThreadReadResponse"] == nil || schemas["EntityProjection"] == nil || schemas["EntitySpine"] == nil {
 		t.Fatal("checked-in openapi json is missing enriched runtime schemas")
 	}
+	if schemas["ConnectorCredentialCleanupJob"] != nil {
+		t.Fatal("checked-in openapi json exposes the internal credential cleanup outbox")
+	}
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)

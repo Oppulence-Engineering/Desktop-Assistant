@@ -26,7 +26,6 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
@@ -3356,128 +3355,6 @@ func newCommitmentEventPaginateArgs(rv map[string]any) *commitmenteventPaginateA
 	}
 	if v, ok := rv[whereField].(*CommitmentEventWhereInput); ok {
 		args.opts = append(args.opts, WithCommitmentEventFilter(v.Filter))
-	}
-	return args
-}
-
-// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
-func (_q *ConnectorCredentialCleanupJobQuery) CollectFields(ctx context.Context, satisfies ...string) (*ConnectorCredentialCleanupJobQuery, error) {
-	fc := graphql.GetFieldContext(ctx)
-	if fc == nil {
-		return _q, nil
-	}
-	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
-		return nil, err
-	}
-	return _q, nil
-}
-
-func (_q *ConnectorCredentialCleanupJobQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
-	path = append([]string(nil), path...)
-	var (
-		unknownSeen    bool
-		fieldSeen      = make(map[string]struct{}, len(connectorcredentialcleanupjob.Columns))
-		selectedFields = []string{connectorcredentialcleanupjob.FieldID}
-	)
-	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
-		switch field.Name {
-		case "createdAt":
-			if _, ok := fieldSeen[connectorcredentialcleanupjob.FieldCreatedAt]; !ok {
-				selectedFields = append(selectedFields, connectorcredentialcleanupjob.FieldCreatedAt)
-				fieldSeen[connectorcredentialcleanupjob.FieldCreatedAt] = struct{}{}
-			}
-		case "updatedAt":
-			if _, ok := fieldSeen[connectorcredentialcleanupjob.FieldUpdatedAt]; !ok {
-				selectedFields = append(selectedFields, connectorcredentialcleanupjob.FieldUpdatedAt)
-				fieldSeen[connectorcredentialcleanupjob.FieldUpdatedAt] = struct{}{}
-			}
-		case "connectionID":
-			if _, ok := fieldSeen[connectorcredentialcleanupjob.FieldConnectionID]; !ok {
-				selectedFields = append(selectedFields, connectorcredentialcleanupjob.FieldConnectionID)
-				fieldSeen[connectorcredentialcleanupjob.FieldConnectionID] = struct{}{}
-			}
-		case "connector":
-			if _, ok := fieldSeen[connectorcredentialcleanupjob.FieldConnector]; !ok {
-				selectedFields = append(selectedFields, connectorcredentialcleanupjob.FieldConnector)
-				fieldSeen[connectorcredentialcleanupjob.FieldConnector] = struct{}{}
-			}
-		case "expectedCredentialGeneration":
-			if _, ok := fieldSeen[connectorcredentialcleanupjob.FieldExpectedCredentialGeneration]; !ok {
-				selectedFields = append(selectedFields, connectorcredentialcleanupjob.FieldExpectedCredentialGeneration)
-				fieldSeen[connectorcredentialcleanupjob.FieldExpectedCredentialGeneration] = struct{}{}
-			}
-		case "status":
-			if _, ok := fieldSeen[connectorcredentialcleanupjob.FieldStatus]; !ok {
-				selectedFields = append(selectedFields, connectorcredentialcleanupjob.FieldStatus)
-				fieldSeen[connectorcredentialcleanupjob.FieldStatus] = struct{}{}
-			}
-		case "attempts":
-			if _, ok := fieldSeen[connectorcredentialcleanupjob.FieldAttempts]; !ok {
-				selectedFields = append(selectedFields, connectorcredentialcleanupjob.FieldAttempts)
-				fieldSeen[connectorcredentialcleanupjob.FieldAttempts] = struct{}{}
-			}
-		case "nextAttemptAt":
-			if _, ok := fieldSeen[connectorcredentialcleanupjob.FieldNextAttemptAt]; !ok {
-				selectedFields = append(selectedFields, connectorcredentialcleanupjob.FieldNextAttemptAt)
-				fieldSeen[connectorcredentialcleanupjob.FieldNextAttemptAt] = struct{}{}
-			}
-		case "claimID":
-			if _, ok := fieldSeen[connectorcredentialcleanupjob.FieldClaimID]; !ok {
-				selectedFields = append(selectedFields, connectorcredentialcleanupjob.FieldClaimID)
-				fieldSeen[connectorcredentialcleanupjob.FieldClaimID] = struct{}{}
-			}
-		case "claimedUntil":
-			if _, ok := fieldSeen[connectorcredentialcleanupjob.FieldClaimedUntil]; !ok {
-				selectedFields = append(selectedFields, connectorcredentialcleanupjob.FieldClaimedUntil)
-				fieldSeen[connectorcredentialcleanupjob.FieldClaimedUntil] = struct{}{}
-			}
-		case "lastErrorCode":
-			if _, ok := fieldSeen[connectorcredentialcleanupjob.FieldLastErrorCode]; !ok {
-				selectedFields = append(selectedFields, connectorcredentialcleanupjob.FieldLastErrorCode)
-				fieldSeen[connectorcredentialcleanupjob.FieldLastErrorCode] = struct{}{}
-			}
-		case "completedAt":
-			if _, ok := fieldSeen[connectorcredentialcleanupjob.FieldCompletedAt]; !ok {
-				selectedFields = append(selectedFields, connectorcredentialcleanupjob.FieldCompletedAt)
-				fieldSeen[connectorcredentialcleanupjob.FieldCompletedAt] = struct{}{}
-			}
-		case "id":
-		case "__typename":
-		default:
-			unknownSeen = true
-		}
-	}
-	if !unknownSeen {
-		_q.Select(selectedFields...)
-	}
-	return nil
-}
-
-type connectorcredentialcleanupjobPaginateArgs struct {
-	first, last   *int
-	after, before *Cursor
-	opts          []ConnectorCredentialCleanupJobPaginateOption
-}
-
-func newConnectorCredentialCleanupJobPaginateArgs(rv map[string]any) *connectorcredentialcleanupjobPaginateArgs {
-	args := &connectorcredentialcleanupjobPaginateArgs{}
-	if rv == nil {
-		return args
-	}
-	if v := rv[firstField]; v != nil {
-		args.first = v.(*int)
-	}
-	if v := rv[lastField]; v != nil {
-		args.last = v.(*int)
-	}
-	if v := rv[afterField]; v != nil {
-		args.after = v.(*Cursor)
-	}
-	if v := rv[beforeField]; v != nil {
-		args.before = v.(*Cursor)
-	}
-	if v, ok := rv[whereField].(*ConnectorCredentialCleanupJobWhereInput); ok {
-		args.opts = append(args.opts, WithConnectorCredentialCleanupJobFilter(v.Filter))
 	}
 	return args
 }

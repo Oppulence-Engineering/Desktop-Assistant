@@ -151,6 +151,7 @@ func (h *Handler) ProcessCredentialCleanupJobs(ctx context.Context, limit int) (
 	return completed, nil
 }
 
+// RunCredentialCleanupWorker retries provider revocation for unadopted rotated credentials.
 func (h *Handler) RunCredentialCleanupWorker(ctx context.Context) {
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()

@@ -72,6 +72,7 @@ func Enrich(spec obj) {
 
 	components := ensureObj(spec, "components")
 	schemas := ensureObj(components, "schemas")
+	removeInternalSchemas(schemas)
 	responses := ensureObj(components, "responses")
 	addSecuritySchemes(ensureObj(components, "securitySchemes"))
 	addCommonResponses(responses)
@@ -86,6 +87,10 @@ func Enrich(spec obj) {
 	addRuntimePaths(paths)
 	addEntityPaths(paths)
 	spec["paths"] = paths
+}
+
+func removeInternalSchemas(schemas obj) {
+	delete(schemas, "ConnectorCredentialCleanupJob")
 }
 
 func addSecuritySchemes(schemes obj) {
