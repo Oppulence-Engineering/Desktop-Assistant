@@ -21,6 +21,14 @@ var (
 		Help: "Connector resource-token mint decisions by connector and outcome.",
 	}, []string{"connector", "outcome"})
 
+	// EntitlementUnavailable counts fail-closed product entitlement transport
+	// failures by a bounded, non-secret cause. The public authorization response
+	// remains the normalized entitlement_unavailable denial.
+	EntitlementUnavailable = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "connector_entitlement_unavailable_total",
+		Help: "Fail-closed product entitlement failures by connector and bounded non-secret cause.",
+	}, []string{"connector", "cause"})
+
 	// Revocation counts bounded connector revocation outcomes.
 	Revocation = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "connector_revocation_total",

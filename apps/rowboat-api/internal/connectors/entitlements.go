@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectormetrics"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
 	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
 )
@@ -71,28 +72,28 @@ func authoritativeProductEntitlement(ctx context.Context, owner *ent.User, organ
 		return false, "org_mismatch"
 	}
 	if len(conn.entitlementKey) < 32 {
-		return false, "entitlement_unavailable"
+		return entitlementUnavailable(conn.Name, "signing_key")
 	}
 	canonicalScopes := append([]string(nil), scopes...)
 	sort.Strings(canonicalScopes)
 	body, err := json.Marshal(entitlementRequest{Connector: conn.Name, UserID: owner.WorkosUserID, OrgID: organizationID, Scopes: canonicalScopes})
 	if err != nil {
-		return false, "entitlement_unavailable"
+		return entitlementUnavailable(conn.Name, "request_encode")
 	}
 	cctx, cancel := context.WithTimeout(ctx, entitlementTimeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(cctx, http.MethodPost, conn.EntitlementURL, bytes.NewReader(body))
 	if err != nil {
-		return false, "entitlement_unavailable"
+		return entitlementUnavailable(conn.Name, "request_build")
 	}
 	timestamp := time.Now().UTC().Format(time.RFC3339)
 	requestID, err := oauthrs.NewEntitlementRequestID()
 	if err != nil {
-		return false, "entitlement_unavailable"
+		return entitlementUnavailable(conn.Name, "request_id")
 	}
 	signature, err := oauthrs.SignEntitlementRequest(conn.entitlementKey, timestamp, requestID, body)
 	if err != nil {
-		return false, "entitlement_unavailable"
+		return entitlementUnavailable(conn.Name, "request_sign")
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(oauthrs.EntitlementConnectorHeader, conn.Name)
@@ -102,32 +103,37 @@ func authoritativeProductEntitlement(ctx context.Context, owner *ent.User, organ
 	client := productEntitlementClient(conn.allowPrivateEntitlement)
 	resp, err := client.Do(req)
 	if err != nil {
-		return false, "entitlement_unavailable"
+		return entitlementUnavailable(conn.Name, "transport")
 	}
 	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
-		return false, "entitlement_unavailable"
+		return entitlementUnavailable(conn.Name, "upstream_status")
 	}
 	body, err = outbound.ReadAll(resp.Body, entitlementMaxResponseBytes)
 	if err != nil {
-		return false, "entitlement_unavailable"
+		return entitlementUnavailable(conn.Name, "response_read")
 	}
 	var decision entitlementDecision
 	dec := json.NewDecoder(strings.NewReader(string(body)))
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&decision); err != nil {
-		return false, "entitlement_unavailable"
+		return entitlementUnavailable(conn.Name, "response_decode")
 	}
 	if decision.Allowed {
 		if decision.Reason != "" {
-			return false, "entitlement_unavailable"
+			return entitlementUnavailable(conn.Name, "inconsistent_allow")
 		}
 		return true, ""
 	}
 	if _, ok := authoritativeDenialReasons[decision.Reason]; !ok {
-		return false, "entitlement_unavailable"
+		return entitlementUnavailable(conn.Name, "unknown_denial")
 	}
 	return false, decision.Reason
+}
+
+func entitlementUnavailable(connector, cause string) (bool, string) {
+	connectormetrics.EntitlementUnavailable.WithLabelValues(connector, cause).Inc()
+	return false, "entitlement_unavailable"
 }
 
 func productEntitlementClient(allowPrivate bool) *http.Client {
