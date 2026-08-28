@@ -92,6 +92,25 @@ func Enrich(spec obj) {
 func removeInternalSchemas(schemas obj) {
 	delete(schemas, "ConnectorCredentialCleanupJob")
 	delete(schemas, "ConnectorCredentialRecovery")
+	delete(schemas, "ConnectorRevocationJob")
+	for _, schemaValue := range schemas {
+		schema, ok := schemaValue.(obj)
+		if !ok {
+			continue
+		}
+		properties, _ := schema["properties"].(obj)
+		delete(properties, "refresh_token_encrypted")
+		delete(properties, "api_key_encrypted")
+		if required, ok := schema["required"].([]any); ok {
+			filtered := required[:0]
+			for _, field := range required {
+				if field != "refresh_token_encrypted" && field != "api_key_encrypted" {
+					filtered = append(filtered, field)
+				}
+			}
+			schema["required"] = filtered
+		}
+	}
 }
 
 func addSecuritySchemes(schemes obj) {
@@ -855,6 +874,18 @@ func addInternalSchemas(schemas obj) {
 		"revoked":     intSchema("Number retained as revoked tombstones.", 1),
 		"failures":    intSchema("Number that could not be tombstoned.", 0),
 	}, "invalidated")
+	schemas["InternalConnectionStatusRequest"] = objectSchema("Exact binding extracted from one verified connector resource token. Partial selectors are rejected.", obj{
+		"jti":                   stringSchema("JWT ID from the verified product token.", "2ea124ab-866b-4c10-8e73-f0a6978f09ca"),
+		"connection_id":         stringSchema("Immutable MCPConnection UUID from the token.", "123e4567-e89b-12d3-a456-426614174000"),
+		"workos_user_id":        stringSchema("Bound WorkOS user subject.", "user_01HABCDEF"),
+		"organization_id":       stringSchema("Immutable grant-time organization.", "org_01HABCDEF"),
+		"connector":             stringSchema("Bound connector slug.", "canvas"),
+		"credential_generation": intSchema("Credential lifecycle generation minted into the token.", 3),
+		"audience":              stringSchema("Exact product resource audience.", "mcp:canvas"),
+	}, "jti", "connection_id", "workos_user_id", "organization_id", "connector", "credential_generation", "audience")
+	schemas["InternalConnectionStatusResponse"] = objectSchema("Fail-closed live connector-token decision.", obj{
+		"active": boolSchema("True only when every token binding, issuance record, live connection state, generation, and entitlement still match.", true),
+	}, "active")
 	schemas["ConsentContextRequest"] = objectSchema("Fetches consent context by opaque OAuth state.", obj{"state": stringSchema("Raw state received by the consent flow.", "state_abc123")}, "state")
 	schemas["ConsentAuditRequest"] = objectSchema("Append-only, replay-safe oauth-consent audit event. event_id is globally unique and conflicting replays are rejected.", obj{
 		"version":            intSchema("Hook contract version. Only version 1 is accepted.", 1),
@@ -1642,6 +1673,15 @@ func addInternalPaths(paths obj) {
 		"403": responseRef("403"),
 		"409": responseRef("409"),
 		"500": responseRef("500"),
+		"503": responseRef("503"),
+	})}
+	paths["/v1/internal/connections/status"] = obj{"post": operation("Internal", "Introspect live connector token status", "Every-request fail-closed validation for product resource servers. The authenticated product principal must be allowed for the token connector. The broker binds the jti issuance record, connection, user, immutable organization, connector, credential generation, audience, active lifecycle state, and current product entitlement. Stale tokens return active=false.", "introspectConnectorConnection", connectorInvalidationSecurity(), nil, jsonRequest("Exact verified token binding.", ref("InternalConnectionStatusRequest"), obj{"jti": "2ea124ab-866b-4c10-8e73-f0a6978f09ca", "connection_id": "123e4567-e89b-12d3-a456-426614174000", "workos_user_id": "user_01HABCDEF", "organization_id": "org_01HABCDEF", "connector": "canvas", "credential_generation": 3, "audience": "mcp:canvas"}), obj{
+		"200": jsonResponse("Live token status. Any stale binding returns active=false.", ref("InternalConnectionStatusResponse"), obj{"active": true}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"403": responseRef("403"),
+		"409": responseRef("409"),
+		"429": responseRef("429"),
 		"503": responseRef("503"),
 	})}
 	paths["/graphql"] = obj{"post": operation("GraphQL", "Admin GraphQL", "Internal admin GraphQL endpoint over the ent graph. The internal-secret middleware marks the request internal so resolvers can bypass per-user tenant scoping.", "graphql", internalSecret(), nil, jsonRequest("GraphQL request body.", ref("GraphQLRequest"), obj{"query": "{ users(first: 10) { edges { node { id email } } } }"}), obj{

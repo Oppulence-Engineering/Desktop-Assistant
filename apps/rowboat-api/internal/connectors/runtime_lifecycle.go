@@ -242,12 +242,32 @@ func (s *LifecycleService) HandleRefreshFailure(ctx context.Context, owner *ent.
 // repeats product entitlement against the current grant. A conditional touch is
 // the lifecycle linearization point used by multi-replica invalidation races.
 func (s *LifecycleService) Mint(ctx context.Context, owner *ent.User, conn Connector, expected *ent.MCPConnection, requestedScopes []string) (string, error) {
+	result, err := s.MintResourceToken(ctx, owner, conn, expected, requestedScopes)
+	if err != nil {
+		return "", err
+	}
+	return result.Token, nil
+}
+
+// MintedResourceToken is the complete broker signing result. HTTP and worker
+// callers share MintResourceToken so neither can bypass the post-entitlement
+// lifecycle linearization fence.
+type MintedResourceToken struct {
+	Token     string
+	ExpiresAt time.Time
+	Scopes    []string
+	Current   *ent.MCPConnection
+}
+
+// MintResourceToken performs the authoritative final lifecycle check and signs
+// only after the conditional generation/status fence wins.
+func (s *LifecycleService) MintResourceToken(ctx context.Context, owner *ent.User, conn Connector, expected *ent.MCPConnection, requestedScopes []string) (*MintedResourceToken, error) {
 	if s == nil || s.client == nil || s.registry == nil || s.issuer == nil || owner == nil || expected == nil {
-		return "", errors.New("connector resource token issuer not configured")
+		return nil, errors.New("connector resource token issuer not configured")
 	}
 	orgID := connectorOrganizationID(owner)
 	if orgID == "" || expected.OrganizationID != orgID {
-		return "", fmt.Errorf("connector %q organization mismatch", conn.Name)
+		return nil, fmt.Errorf("connector %q organization mismatch", conn.Name)
 	}
 	current, err := s.client.MCPConnection.Query().Where(
 		mcpconnection.IDEQ(expected.ID),
@@ -259,16 +279,16 @@ func (s *LifecycleService) Mint(ctx context.Context, owner *ent.User, conn Conne
 	).Only(auth.WithInternal(ctx))
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return "", errConnectorCredentialSuperseded
+			return nil, errConnectorCredentialSuperseded
 		}
-		return "", fmt.Errorf("reload connector before mint: %w", err)
+		return nil, fmt.Errorf("reload connector before mint: %w", err)
 	}
 	if current.Audience != conn.Audience || !slices.Equal(current.Scopes, expected.Scopes) {
-		return "", errConnectorCredentialSuperseded
+		return nil, errConnectorCredentialSuperseded
 	}
 	validated, err := s.registry.validateRequestedScopes(conn.Name, requestedScopes)
 	if err != nil || !isSubset(validated, current.Scopes) {
-		return "", fmt.Errorf("connector %q scopes changed before mint", conn.Name)
+		return nil, fmt.Errorf("connector %q scopes changed before mint", conn.Name)
 	}
 	if allowed, reason := s.entitlements.Check(ctx, owner, conn, validated); !allowed {
 		if reason != "entitlement_unavailable" {
@@ -281,7 +301,7 @@ func (s *LifecycleService) Mint(ctx context.Context, owner *ent.User, conn Conne
 				Audience: current.Audience, Requested: validated, Granted: current.Scopes, Reason: reason,
 			})
 		}
-		return "", fmt.Errorf("connector %q entitlement denied: %s", conn.Name, reason)
+		return nil, fmt.Errorf("connector %q entitlement denied: %s", conn.Name, reason)
 	}
 
 	// Re-read after the outbound entitlement call so an organization, audience,
@@ -297,12 +317,12 @@ func (s *LifecycleService) Mint(ctx context.Context, owner *ent.User, conn Conne
 	).Only(auth.WithInternal(ctx))
 	if err != nil {
 		if ent.IsNotFound(err) {
-			return "", errConnectorCredentialSuperseded
+			return nil, errConnectorCredentialSuperseded
 		}
-		return "", fmt.Errorf("reload connector after entitlement: %w", err)
+		return nil, fmt.Errorf("reload connector after entitlement: %w", err)
 	}
 	if currentAfterEntitlement.Audience != current.Audience || !slices.Equal(currentAfterEntitlement.Scopes, current.Scopes) {
-		return "", errConnectorCredentialSuperseded
+		return nil, errConnectorCredentialSuperseded
 	}
 	current = currentAfterEntitlement
 
@@ -316,28 +336,28 @@ func (s *LifecycleService) Mint(ctx context.Context, owner *ent.User, conn Conne
 		mcpconnection.HasUserWith(user.IDEQ(owner.ID)),
 	).SetLastUsedAt(time.Now().UTC()).Exec(auth.WithInternal(ctx)); err != nil {
 		if ent.IsNotFound(err) {
-			return "", errConnectorCredentialSuperseded
+			return nil, errConnectorCredentialSuperseded
 		}
-		return "", fmt.Errorf("fence connector before mint: %w", err)
+		return nil, fmt.Errorf("fence connector before mint: %w", err)
 	}
 
 	tokenID := uuid.NewString()
-	token, _, err := s.issuer.Mint(ResourceTokenClaims{
+	token, expiresAt, err := s.issuer.Mint(ResourceTokenClaims{
 		TokenID: tokenID, UserID: owner.WorkosUserID, OrganizationID: current.OrganizationID,
-		ConnectionID: current.ID.String(), ConnectorID: conn.Name, Audience: current.Audience,
-		Scopes: validated, TrustTier: trustTierForScopes(s.registry, conn.Name, validated),
+		ConnectionID: current.ID.String(), ConnectorID: conn.Name, CredentialGeneration: current.CredentialGeneration,
+		Audience: current.Audience, Scopes: validated, TrustTier: trustTierForScopes(s.registry, conn.Name, validated),
 	})
 	if err != nil {
-		return "", fmt.Errorf("mint connector %q resource token: %w", conn.Name, err)
+		return nil, fmt.Errorf("mint connector %q resource token: %w", conn.Name, err)
 	}
 	if err := persistAuditTransitionWithClient(ctx, s.client, owner, auditRecord{
 		EventType: "token_minted", EventID: deterministicAuditEventID("token_minted", tokenID),
 		Connector: conn.Name, ConnectionID: current.ID, OrganizationID: current.OrganizationID,
 		Audience: current.Audience, Requested: validated, Granted: current.Scopes,
 	}); err != nil {
-		return "", fmt.Errorf("persist connector token audit: %w", err)
+		return nil, fmt.Errorf("persist connector token audit: %w", err)
 	}
-	return token, nil
+	return &MintedResourceToken{Token: token, ExpiresAt: expiresAt, Scopes: validated, Current: current}, nil
 }
 
 func (s *LifecycleService) invalidateEntitlementDenied(ctx context.Context, owner *ent.User, current *ent.MCPConnection, reason string) error {

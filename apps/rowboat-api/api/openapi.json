@@ -3983,103 +3983,6 @@
         ],
         "type": "object"
       },
-      "ConnectorRevocationJob": {
-        "properties": {
-          "attempts": {
-            "type": "integer"
-          },
-          "claim_id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "claimed_until": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "completed_at": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "connection_id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "connector": {
-            "description": "Connector slug.",
-            "example": "canvas",
-            "type": "string"
-          },
-          "created_at": {
-            "description": "Row creation timestamp.",
-            "example": "2026-06-04T20:38:00Z",
-            "format": "date-time",
-            "type": "string"
-          },
-          "credential_generation": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "id": {
-            "description": "Stable UUID primary key.",
-            "example": "123e4567-e89b-12d3-a456-426614174000",
-            "format": "uuid",
-            "type": "string"
-          },
-          "last_error": {
-            "type": "string"
-          },
-          "next_attempt_at": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "owner_id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "refresh_token_encrypted": {
-            "description": "Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.",
-            "format": "byte",
-            "type": "string",
-            "writeOnly": true
-          },
-          "status": {
-            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "example": "active",
-            "type": "string"
-          },
-          "terminal_actor": {
-            "type": "string"
-          },
-          "terminal_reason": {
-            "type": "string"
-          },
-          "terminal_status": {
-            "type": "string"
-          },
-          "updated_at": {
-            "description": "Last row update timestamp.",
-            "example": "2026-06-04T20:39:00Z",
-            "format": "date-time",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "created_at",
-          "updated_at",
-          "connection_id",
-          "owner_id",
-          "connector",
-          "credential_generation",
-          "terminal_status",
-          "terminal_reason",
-          "terminal_actor",
-          "status",
-          "attempts",
-          "next_attempt_at"
-        ],
-        "type": "object"
-      },
       "ConnectorScope": {
         "description": "Canonical connector scope consent and risk policy.",
         "properties": {
@@ -5818,6 +5721,68 @@
         "required": ["userId", "source", "dedupeKey"],
         "type": "object"
       },
+      "InternalConnectionStatusRequest": {
+        "description": "Exact binding extracted from one verified connector resource token. Partial selectors are rejected.",
+        "properties": {
+          "audience": {
+            "description": "OAuth token audience for the connector.",
+            "example": "canvas-api",
+            "type": "string"
+          },
+          "connection_id": {
+            "description": "Immutable MCPConnection UUID from the token.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "connector": {
+            "description": "Connector slug.",
+            "example": "canvas",
+            "type": "string"
+          },
+          "credential_generation": {
+            "description": "Credential lifecycle generation minted into the token.",
+            "example": 3,
+            "type": "integer"
+          },
+          "jti": {
+            "description": "JWT ID from the verified product token.",
+            "example": "2ea124ab-866b-4c10-8e73-f0a6978f09ca",
+            "type": "string"
+          },
+          "organization_id": {
+            "description": "Immutable grant-time organization.",
+            "example": "org_01HABCDEF",
+            "type": "string"
+          },
+          "workos_user_id": {
+            "description": "WorkOS user id used to resolve bearer tokens into local users.",
+            "example": "user_01HABCDEF",
+            "type": "string"
+          }
+        },
+        "required": [
+          "jti",
+          "connection_id",
+          "workos_user_id",
+          "organization_id",
+          "connector",
+          "credential_generation",
+          "audience"
+        ],
+        "type": "object"
+      },
+      "InternalConnectionStatusResponse": {
+        "description": "Fail-closed live connector-token decision.",
+        "properties": {
+          "active": {
+            "description": "True only when every token binding, issuance record, live connection state, generation, and entitlement still match.",
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": ["active"],
+        "type": "object"
+      },
       "InternalInvalidateRequest": {
         "description": "Server-to-server force disconnect request.",
         "properties": {
@@ -6219,12 +6184,6 @@
       "MCPConnection": {
         "description": "Per-user connector credential state for MCP products. Stores sealed OAuth refresh tokens or API keys.",
         "properties": {
-          "api_key_encrypted": {
-            "description": "Sealed vendor API key. Sensitive internal storage field; never returned by desktop endpoints.",
-            "format": "byte",
-            "type": "string",
-            "writeOnly": true
-          },
           "api_key_present": {
             "type": "boolean"
           },
@@ -6274,12 +6233,6 @@
           },
           "organization_id": {
             "type": "string"
-          },
-          "refresh_token_encrypted": {
-            "description": "Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.",
-            "format": "byte",
-            "type": "string",
-            "writeOnly": true
           },
           "refresh_token_present": {
             "type": "boolean"
@@ -7232,12 +7185,6 @@
             "example": "openai",
             "type": "string"
           },
-          "refresh_token_encrypted": {
-            "description": "Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints.",
-            "format": "byte",
-            "type": "string",
-            "writeOnly": true
-          },
           "refresh_token_present": {
             "type": "boolean"
           },
@@ -7265,7 +7212,6 @@
           "created_at",
           "updated_at",
           "provider",
-          "refresh_token_encrypted",
           "refresh_token_present",
           "credential_generation",
           "user"
@@ -18378,6 +18324,75 @@
           }
         ],
         "summary": "Force-invalidate connector connections",
+        "tags": ["Internal"]
+      }
+    },
+    "/v1/internal/connections/status": {
+      "post": {
+        "description": "Every-request fail-closed validation for product resource servers. The authenticated product principal must be allowed for the token connector. The broker binds the jti issuance record, connection, user, immutable organization, connector, credential generation, audience, active lifecycle state, and current product entitlement. Stale tokens return active=false.",
+        "operationId": "introspectConnectorConnection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "audience": "mcp:canvas",
+                "connection_id": "123e4567-e89b-12d3-a456-426614174000",
+                "connector": "canvas",
+                "credential_generation": 3,
+                "jti": "2ea124ab-866b-4c10-8e73-f0a6978f09ca",
+                "organization_id": "org_01HABCDEF",
+                "workos_user_id": "user_01HABCDEF"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/InternalConnectionStatusRequest"
+              }
+            }
+          },
+          "description": "Exact verified token binding.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "active": true
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/InternalConnectionStatusResponse"
+                }
+              }
+            },
+            "description": "Live token status. Any stale binding returns active=false."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "403": {
+            "$ref": "#/components/responses/403"
+          },
+          "409": {
+            "$ref": "#/components/responses/409"
+          },
+          "429": {
+            "$ref": "#/components/responses/429"
+          },
+          "503": {
+            "$ref": "#/components/responses/503"
+          }
+        },
+        "security": [
+          {
+            "ConnectorInvalidationHMAC": []
+          },
+          {
+            "ConnectorInvalidationBearer": []
+          }
+        ],
+        "summary": "Introspect live connector token status",
         "tags": ["Internal"]
       }
     },

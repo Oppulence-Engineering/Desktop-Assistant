@@ -90,6 +90,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/entities/merge",
 		"/oauth-hooks/pre-consent",
 		"/v1/internal/connections/invalidate",
+		"/v1/internal/connections/status",
 		"/graphql",
 	} {
 		if paths[path] == nil {
@@ -98,6 +99,39 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 	}
 	if paths["/credit-ledgers"] != nil {
 		t.Fatal("unmounted generated entity CRUD path should not be documented")
+	}
+}
+
+func TestEnrichRejectsInternalCredentialCustodyFromPublicSchemas(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{
+		"ConnectorRevocationJob":        obj{"type": "object"},
+		"ConnectorCredentialCleanupJob": obj{"type": "object"},
+		"ConnectorCredentialRecovery":   obj{"type": "object"},
+		"MCPConnection": obj{
+			"type":       "object",
+			"properties": obj{"connector": obj{"type": "string"}, "refresh_token_encrypted": obj{"type": "string"}, "api_key_encrypted": obj{"type": "string"}},
+			"required":   []any{"connector", "refresh_token_encrypted", "api_key_encrypted"},
+		},
+	}}}
+
+	Enrich(spec)
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	for _, internal := range []string{"ConnectorRevocationJob", "ConnectorCredentialCleanupJob", "ConnectorCredentialRecovery"} {
+		if schemas[internal] != nil {
+			t.Fatalf("internal custody schema %s leaked into public OpenAPI", internal)
+		}
+	}
+	connection := asObj(schemas["MCPConnection"])
+	properties := asObj(connection["properties"])
+	for _, secret := range []string{"refresh_token_encrypted", "api_key_encrypted"} {
+		if properties[secret] != nil {
+			t.Fatalf("encrypted credential field %s leaked into public OpenAPI", secret)
+		}
+	}
+	for _, field := range connection["required"].([]any) {
+		if field == "refresh_token_encrypted" || field == "api_key_encrypted" {
+			t.Fatalf("encrypted credential field %s remained required", field)
+		}
 	}
 }
 
