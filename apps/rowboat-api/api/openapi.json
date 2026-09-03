@@ -916,9 +916,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "events"
-        ],
+        "required": ["events"],
         "type": "object"
       },
       "AgentSessionListResponse": {
@@ -932,9 +930,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "sessions"
-        ],
+        "required": ["sessions"],
         "type": "object"
       },
       "AgentToolCall": {
@@ -4924,11 +4920,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "seq",
-          "type",
-          "data"
-        ],
+        "required": ["seq", "type", "data"],
         "type": "object"
       },
       "DurableAgentSessionView": {
@@ -4998,13 +4990,7 @@
           },
           "status": {
             "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
-            "enum": [
-              "active",
-              "paused",
-              "completed",
-              "failed",
-              "canceled"
-            ],
+            "enum": ["active", "paused", "completed", "failed", "canceled"],
             "example": "active",
             "type": "string"
           },
@@ -5598,10 +5584,7 @@
           },
           "scopes": {
             "description": "OAuth scopes granted or requested.",
-            "example": [
-              "invoices:read",
-              "customers:read"
-            ],
+            "example": ["invoices:read", "customers:read"],
             "items": {
               "description": "Scope.",
               "example": "https://www.googleapis.com/auth/gmail.readonly",
@@ -5610,11 +5593,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "accountId",
-          "scopes",
-          "connectedAt"
-        ],
+        "required": ["accountId", "scopes", "connectedAt"],
         "type": "object"
       },
       "GoogleConnectionStatus": {
@@ -5633,10 +5612,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "connected",
-          "accounts"
-        ],
+        "required": ["connected", "accounts"],
         "type": "object"
       },
       "GoogleRefreshRequest": {
@@ -14365,9 +14341,7 @@
           }
         ],
         "summary": "List agent sessions",
-        "tags": [
-          "Agent Sessions"
-        ]
+        "tags": ["Agent Sessions"]
       }
     },
     "/v1/agent-sessions/{id}/events": {
@@ -14451,9 +14425,7 @@
           }
         ],
         "summary": "List agent session events",
-        "tags": [
-          "Agent Sessions"
-        ]
+        "tags": ["Agent Sessions"]
       }
     },
     "/v1/auth/workos/exchange": {
@@ -18398,9 +18370,7 @@
                     {
                       "accountId": "owner@example.com",
                       "connectedAt": "2026-06-04T20:38:00Z",
-                      "scopes": [
-                        "https://www.googleapis.com/auth/gmail.readonly"
-                      ]
+                      "scopes": ["https://www.googleapis.com/auth/gmail.readonly"]
                     }
                   ],
                   "connected": true
