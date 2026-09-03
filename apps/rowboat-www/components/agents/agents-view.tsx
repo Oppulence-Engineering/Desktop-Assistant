@@ -10,6 +10,7 @@ import {
   Folder,
   Plus,
   Robot,
+  Trash,
   Warning,
 } from "@phosphor-icons/react";
 
@@ -27,7 +28,6 @@ import {
 import { Input } from "@oppulence/ui/components/input";
 import { Label } from "@oppulence/ui/components/label";
 import { ScrollArea } from "@oppulence/ui/components/scroll-area";
-import { Separator } from "@oppulence/ui/components/separator";
 import { Textarea } from "@oppulence/ui/components/textarea";
 
 import { dashboardFetch } from "@/lib/auth/client";
@@ -161,9 +161,14 @@ function CreateAgentDialog({
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogTrigger asChild>
-        <Button size="sm" variant={source ? "outline" : "default"}>
+        <Button
+          aria-label={source ? `Duplicate ${source.name}` : undefined}
+          size={source ? "icon-xs" : "sm"}
+          title={source ? "Duplicate agent" : undefined}
+          variant={source ? "ghost" : "default"}
+        >
           {source ? <Copy className="size-4" /> : <Plus className="size-4" />}
-          {source ? "Duplicate" : "New agent"}
+          {source ? null : "New agent"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -233,9 +238,11 @@ function CreateAgentDialog({
 }
 
 export function AgentsView({
+  onAgentsChanged,
   onOpenDefinition,
   onUseAgent,
 }: {
+  onAgentsChanged: () => Promise<void>;
   onOpenDefinition: (slug: string) => void;
   onUseAgent: (slug: string) => void;
 }) {
@@ -243,6 +250,7 @@ export function AgentsView({
   const [selectedSlug, setSelectedSlug] = React.useState("");
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = React.useState(false);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -276,8 +284,25 @@ export function AgentsView({
   const selected = agents.find((agent) => agent.slug === selectedSlug) || null;
   const handleCreated = async (slug: string) => {
     await load();
+    await onAgentsChanged();
     setSelectedSlug(slug);
     onOpenDefinition(slug);
+  };
+
+  const deleteAgent = async (slug: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await dashboardFetch(`/api/rowboat/v1/agents/${encodeURIComponent(slug)}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error(`Could not delete agent (${response.status})`);
+      setConfirmingDelete(false);
+      await Promise.all([load(), onAgentsChanged()]);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not delete agent");
+      setLoading(false);
+    }
   };
 
   if (loading && agents.length === 0) {
@@ -290,20 +315,20 @@ export function AgentsView({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Robot className="size-5 text-oppulence-orange" weight="fill" />
-            <h1 className="text-sm font-medium">Agents</h1>
-            <Badge variant="secondary">{agents.length}</Badge>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Inspect the agents available to this workspace, their instructions, and permitted tools.
-          </p>
-        </div>
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b px-5 py-3">
+        <p className="text-sm text-muted-foreground">
+          {agents.length} {agents.length === 1 ? "agent" : "agents"} in this workspace
+        </p>
         <div className="flex gap-2">
-          <Button disabled={loading} onClick={() => void load()} size="sm" variant="outline">
-            <ArrowClockwise className={cn("size-4", loading && "animate-spin")} /> Refresh
+          <Button
+            aria-label="Refresh agents"
+            disabled={loading}
+            onClick={() => void load()}
+            size="icon-xs"
+            title="Refresh agents"
+            variant="ghost"
+          >
+            <ArrowClockwise className={cn("size-4", loading && "animate-spin")} />
           </Button>
           <CreateAgentDialog onCreated={(slug) => void handleCreated(slug)} />
         </div>
@@ -331,18 +356,21 @@ export function AgentsView({
           </div>
         </div>
       ) : (
-        <div className="grid min-h-0 flex-1 grid-cols-[240px_minmax(0,1fr)]">
-          <aside className="min-h-0 border-r bg-muted/10">
+        <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[220px_minmax(0,1fr)] md:grid-rows-1">
+          <aside className="max-h-52 min-h-0 border-b bg-muted/5 md:max-h-none md:border-r md:border-b-0">
             <ScrollArea className="h-full p-2">
               <div className="space-y-1">
                 {agents.map((agent) => (
                   <button
                     className={cn(
-                      "flex w-full items-start gap-2 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-muted",
-                      selected?.slug === agent.slug && "bg-muted",
+                      "flex w-full items-start gap-2 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted/70",
+                      selected?.slug === agent.slug && "bg-muted/70",
                     )}
                     key={agent.slug}
-                    onClick={() => setSelectedSlug(agent.slug)}
+                    onClick={() => {
+                      setSelectedSlug(agent.slug);
+                      setConfirmingDelete(false);
+                    }}
                     type="button"
                   >
                     <Robot className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
@@ -360,7 +388,7 @@ export function AgentsView({
 
           <ScrollArea className="min-h-0">
             {selected ? (
-              <div className="mx-auto max-w-4xl space-y-5 p-6">
+              <div className="mx-auto max-w-3xl space-y-6 p-6 lg:p-8">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
@@ -369,7 +397,39 @@ export function AgentsView({
                     </div>
                     <p className="mt-1 font-mono text-xs text-muted-foreground">{selected.slug}</p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {selected.source === "tenant" ? (
+                      confirmingDelete ? (
+                        <>
+                          <Button
+                            disabled={loading}
+                            onClick={() => void deleteAgent(selected.slug)}
+                            size="sm"
+                            variant="destructive"
+                          >
+                            Confirm delete
+                          </Button>
+                          <Button
+                            disabled={loading}
+                            onClick={() => setConfirmingDelete(false)}
+                            size="sm"
+                            variant="ghost"
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          aria-label={`Delete ${selected.name}`}
+                          onClick={() => setConfirmingDelete(true)}
+                          size="icon-xs"
+                          title="Delete agent"
+                          variant="ghost"
+                        >
+                          <Trash className="size-4" />
+                        </Button>
+                      )
+                    ) : null}
                     <CreateAgentDialog
                       onCreated={(slug) => void handleCreated(slug)}
                       source={selected}
@@ -388,24 +448,22 @@ export function AgentsView({
                   </div>
                 </div>
 
-                <Separator />
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-lg border p-4">
+                <dl className="grid gap-4 border-y py-4 sm:grid-cols-2">
+                  <div>
                     <p className="text-xs text-muted-foreground">Provider</p>
                     <p className="mt-1 text-sm">{selected.provider || "Workspace default"}</p>
                   </div>
-                  <div className="rounded-lg border p-4">
+                  <div>
                     <p className="text-xs text-muted-foreground">Model</p>
                     <p className="mt-1 text-sm">{selected.model || "Workspace default"}</p>
                   </div>
-                </div>
+                </dl>
 
                 <section>
                   <h3 className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                     Instructions
                   </h3>
-                  <p className="mt-2 whitespace-pre-wrap rounded-lg border bg-muted/20 p-4 text-sm leading-6">
+                  <p className="mt-2 whitespace-pre-wrap rounded-xl border bg-muted/15 p-4 text-sm leading-6">
                     {selected.instructions || "No additional instructions."}
                   </p>
                 </section>
@@ -428,12 +486,12 @@ export function AgentsView({
                 </section>
 
                 {selected.subagentRefs?.length || selected.connectorReqs?.length ? (
-                  <section className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-lg border p-4">
+                  <section className="grid gap-4 border-t pt-4 sm:grid-cols-2">
+                    <div>
                       <p className="text-xs text-muted-foreground">Subagents</p>
                       <p className="mt-1 text-sm">{selected.subagentRefs?.join(", ") || "None"}</p>
                     </div>
-                    <div className="rounded-lg border p-4">
+                    <div>
                       <p className="text-xs text-muted-foreground">Required connections</p>
                       <p className="mt-1 text-sm">{selected.connectorReqs?.join(", ") || "None"}</p>
                     </div>

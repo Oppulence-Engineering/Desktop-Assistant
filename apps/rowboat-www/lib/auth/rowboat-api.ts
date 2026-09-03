@@ -4,10 +4,12 @@ import { rowboatApiBaseURL, rowboatApiURL } from "@/lib/auth/config";
 import { decodeUnverifiedWorkOSClaims } from "@/lib/auth/jwt";
 import {
   RowboatAPIErrorSchema,
+  ViewerIdentityResponseSchema,
   ViewerResponseSchema,
   WorkOSLoginURLResponseSchema,
   WorkOSTokenBundleSchema,
   type DashboardSessionCookie,
+  type ViewerIdentityResponse,
   type ViewerResponse,
   type WorkOSTokenBundle,
 } from "@/lib/auth/schemas";
@@ -114,6 +116,19 @@ export async function fetchViewer(session: DashboardSessionCookie): Promise<View
     await throwAPIError(res, "could not load viewer");
   }
   return ViewerResponseSchema.parse(await parseJSON(res));
+}
+
+export async function fetchViewerIdentity(
+  session: DashboardSessionCookie,
+): Promise<ViewerIdentityResponse> {
+  const res = await rowboatFetch("/api/auth/get-session", {
+    method: "GET",
+    headers: { Authorization: `${session.tokenType} ${session.accessToken}` },
+  });
+  if (!res.ok) {
+    await throwAPIError(res, "could not verify viewer identity");
+  }
+  return ViewerIdentityResponseSchema.parse(await parseJSON(res));
 }
 
 /**

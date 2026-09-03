@@ -63,6 +63,59 @@ export const DisconnectGoogle500Response = zod
   );
 
 /**
+ * Returns safe metadata for the authenticated user's connected Google account without exposing credentials.
+ * @summary Get Google connection status
+ */
+export const GetGoogleConnectionStatus200Response = zod
+  .strictObject({
+    accounts: zod
+      .array(
+        zod
+          .strictObject({
+            accountId: zod.string().describe("Google account email when available."),
+            connectedAt: zod.string().describe("RFC3339 connection timestamp."),
+            scopes: zod
+              .array(zod.string().describe("Scope."))
+              .describe("OAuth scopes granted or requested."),
+          })
+          .describe("Safe metadata for a connected Google account."),
+      )
+      .describe("Connected Google accounts."),
+    connected: zod.boolean().describe("Whether a Google account is connected."),
+  })
+  .describe("Google connection status for the authenticated user.");
+
+export const GetGoogleConnectionStatus401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetGoogleConnectionStatus500Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
  * Consumes a one-time Google OAuth session ticket, requires the authenticated user to match the user that started it, persists the refresh token when present, and returns the token bundle to the desktop.
  * @summary Claim Google OAuth token bundle
  */

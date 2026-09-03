@@ -8,6 +8,7 @@ import {
   Check,
   Clipboard,
   Cloud,
+  MagnifyingGlass,
   Monitor,
   Moon,
   Plugs,
@@ -33,6 +34,14 @@ import {
   SelectValue,
 } from "@oppulence/ui/components/select";
 import { dashboardFetch } from "@/lib/auth/client";
+import { ListConnectors200Response } from "@/lib/api/generated/zod/connectors/connectors";
+import { GetGoogleConnectionStatus200Response } from "@/lib/api/generated/zod/google-oauth/google-oauth";
+import { GetRelationshipSourceInventory200Response } from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
+import { ListSlackWorkspaces200Response } from "@/lib/api/generated/zod/slack-oauth/slack-oauth";
+import type { Connector } from "@/lib/api/generated/client/model/connector";
+import type { GoogleConnectionAccount } from "@/lib/api/generated/client/model/googleConnectionAccount";
+import type { RelationshipSourceInventoryItem } from "@/lib/api/generated/client/model/relationshipSourceInventoryItem";
+import type { SlackWorkspace } from "@/lib/api/generated/client/model/slackWorkspace";
 import { getPref, setPref } from "@/lib/console-prefs";
 import { cn } from "@/lib/utils";
 
@@ -461,19 +470,73 @@ function ModelsSection() {
   );
 }
 
-type ConnectorEntry = {
+type ConnectorEntry = Connector;
+
+async function runManagedOAuth({
+  name,
+  startPath,
+  claimPath,
+  authorizeField,
+  claimField,
+}: {
   name: string;
-  description?: string;
-  authType?: "oauth" | "api_key";
-  connected: boolean;
-  connectedAt?: string | null;
-};
+  startPath: string;
+  claimPath: string;
+  authorizeField: "authorizeUrl" | "authorize_url";
+  claimField: "session" | "state";
+}) {
+  const popup = window.open("about:blank", `oppulence-${name}`, "popup,width=640,height=760");
+  if (!popup) throw new Error("Allow pop-ups to connect this service.");
+  popup.opener = null;
+  try {
+    const res = await dashboardFetch(startPath, { method: "POST" });
+    if (!res.ok) throw new Error(`Connect failed (${res.status})`);
+    const data: unknown = await res.json();
+    const authorizeURL =
+      data &&
+      typeof data === "object" &&
+      typeof (data as Record<string, unknown>)[authorizeField] === "string"
+        ? String((data as Record<string, unknown>)[authorizeField])
+        : "";
+    const state = authorizeURL ? new URL(authorizeURL).searchParams.get("state") : null;
+    if (!authorizeURL || !state) {
+      throw new Error("The connector did not return a valid authorization URL.");
+    }
+    popup.location.replace(authorizeURL);
+
+    for (let attempt = 0; attempt < 200; attempt += 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, 3_000));
+      const claim = await dashboardFetch(claimPath, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [claimField]: state }),
+      });
+      if (claim.ok) return;
+      if (claim.status !== 409) throw new Error(`Connection claim failed (${claim.status})`);
+      if (popup.closed) throw new Error("Connection canceled.");
+    }
+    throw new Error("Connection timed out. Please try again.");
+  } finally {
+    popup.close();
+  }
+}
 
 function ConnectorRow({
   connector,
+  accountLabels,
+  oauth,
+  disconnectManaged,
   onChanged,
 }: {
   connector: ConnectorEntry;
+  accountLabels?: string[];
+  oauth?: {
+    startPath: string;
+    claimPath: string;
+    authorizeField: "authorizeUrl" | "authorize_url";
+    claimField: "session" | "state";
+  };
+  disconnectManaged?: () => Promise<void>;
   onChanged: () => void;
 }) {
   const [busy, setBusy] = React.useState(false);
@@ -496,17 +559,19 @@ function ConnectorRow({
   };
 
   const connect = () =>
-    run(async () => {
-      const res = await dashboardFetch(
-        `/api/rowboat/v1/connections/${encodeURIComponent(connector.name)}/start`,
-        { method: "POST" },
-      );
-      if (!res.ok) throw new Error(`Connect failed (${res.status})`);
-      const data = await res.json();
-      if (typeof data?.authorize_url === "string") {
-        window.open(data.authorize_url, "_blank", "noopener");
-      }
-    });
+    run(() =>
+      runManagedOAuth({
+        name: connector.name,
+        startPath:
+          oauth?.startPath ??
+          `/api/rowboat/v1/connections/${encodeURIComponent(connector.name)}/start`,
+        claimPath:
+          oauth?.claimPath ??
+          `/api/rowboat/v1/connections/${encodeURIComponent(connector.name)}/claim`,
+        authorizeField: oauth?.authorizeField ?? "authorize_url",
+        claimField: oauth?.claimField ?? "state",
+      }),
+    );
 
   const saveKey = () =>
     run(async () => {
@@ -525,11 +590,15 @@ function ConnectorRow({
 
   const disconnect = () =>
     run(async () => {
-      const res = await dashboardFetch(
-        `/api/rowboat/v1/connections/${encodeURIComponent(connector.name)}`,
-        { method: "DELETE" },
-      );
-      if (!res.ok) throw new Error(`Disconnect failed (${res.status})`);
+      if (disconnectManaged) {
+        await disconnectManaged();
+      } else {
+        const res = await dashboardFetch(
+          `/api/rowboat/v1/connections/${encodeURIComponent(connector.name)}`,
+          { method: "DELETE" },
+        );
+        if (!res.ok) throw new Error(`Disconnect failed (${res.status})`);
+      }
       setConfirming(false);
     });
 
@@ -538,8 +607,8 @@ function ConnectorRow({
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <span className="flex items-center gap-2">
-            <span className="truncate text-sm font-medium capitalize text-primary">
-              {connector.name}
+            <span className="truncate text-sm font-medium text-primary">
+              {connector.displayName}
             </span>
             {connector.connected ? (
               <Badge className="shrink-0 rounded-[2px] border-oppulence-green/40 text-oppulence-green">
@@ -552,8 +621,16 @@ function ConnectorRow({
             )}
           </span>
           {connector.description ? (
-            <span className="block truncate text-xs text-muted-foreground">
-              {connector.description}
+            <span className="block text-xs text-muted-foreground">{connector.description}</span>
+          ) : null}
+          {connector.connectedAt ? (
+            <span className="mt-0.5 block text-[11px] text-primary/40">
+              Connected {new Date(connector.connectedAt).toLocaleDateString()}
+            </span>
+          ) : null}
+          {accountLabels?.length ? (
+            <span className="mt-0.5 block text-[11px] text-primary/40">
+              {accountLabels.join(", ")}
             </span>
           ) : null}
         </div>
@@ -574,9 +651,16 @@ function ConnectorRow({
                 </Button>
               </>
             ) : (
-              <Button onClick={() => setConfirming(true)} size="sm" variant="outline">
-                Disconnect
-              </Button>
+              <>
+                {connector.authType === "oauth" ? (
+                  <Button disabled={busy} onClick={connect} size="sm" variant="outline">
+                    {busy ? "Opening…" : "Reconnect"}
+                  </Button>
+                ) : null}
+                <Button onClick={() => setConfirming(true)} size="sm" variant="outline">
+                  Disconnect
+                </Button>
+              </>
             )
           ) : connector.authType === "api_key" ? (
             <Button
@@ -608,6 +692,21 @@ function ConnectorRow({
           </Button>
         </div>
       ) : null}
+      {connector.templateBlocks?.length ? (
+        <div className="flex flex-wrap gap-1.5">
+          {connector.templateBlocks.map((block) => (
+            <Badge className="rounded-[2px]" key={block.id} variant="outline">
+              {block.title} · {block.trustTier}
+            </Badge>
+          ))}
+        </div>
+      ) : null}
+      {connector.scopes?.length ? (
+        <details className="text-xs text-primary/50">
+          <summary className="cursor-pointer">Permissions ({connector.scopes.length})</summary>
+          <p className="mt-1 break-words font-mono text-[11px]">{connector.scopes.join(", ")}</p>
+        </details>
+      ) : null}
       {error ? <p className="font-mono text-xs text-destructive">{error}</p> : null}
     </div>
   );
@@ -615,46 +714,155 @@ function ConnectorRow({
 
 function ConnectorsSection() {
   const [refreshKey, setRefreshKey] = React.useState(0);
-  const { items, state } = useJsonList(`/api/rowboat/v1/connectors?r=${refreshKey}`, (data) => {
-    const record = (data ?? {}) as Record<string, unknown>;
-    if (Array.isArray(record.connectors)) return record.connectors;
-    return Array.isArray(data) ? (data as unknown[]) : [];
-  });
+  const [query, setQuery] = React.useState("");
+  const { items, state: connectorState } = useJsonList(
+    `/api/rowboat/v1/connectors?r=${refreshKey}`,
+    (data) => ListConnectors200Response.parse(data).connectors,
+  );
+  const { items: sourceItems, state: sourceState } = useJsonList(
+    `/api/rowboat/v1/relationship-sources?r=${refreshKey}`,
+    (data) => GetRelationshipSourceInventory200Response.parse(data).sources,
+  );
+  const { items: googleItems, state: googleState } = useJsonList(
+    `/api/rowboat/v1/google-oauth?r=${refreshKey}`,
+    (data) => GetGoogleConnectionStatus200Response.parse(data).accounts,
+  );
+  const { items: slackItems, state: slackState } = useJsonList(
+    `/api/rowboat/v1/slack-oauth/workspaces?r=${refreshKey}`,
+    (data) => ListSlackWorkspaces200Response.parse(data).workspaces,
+  );
 
-  const connectors: ConnectorEntry[] = items.map((item) => {
-    const record = (typeof item === "object" && item ? item : {}) as Record<string, unknown>;
-    return {
-      name: nameOf(item),
-      description: typeof record.description === "string" ? record.description : undefined,
-      authType:
-        record.authType === "api_key"
-          ? "api_key"
-          : record.authType === "oauth"
-            ? "oauth"
-            : undefined,
-      connected: record.connected === true,
-      connectedAt: typeof record.connectedAt === "string" ? record.connectedAt : null,
-    };
+  const sources = sourceItems as RelationshipSourceInventoryItem[];
+  const googleAccounts = googleItems as GoogleConnectionAccount[];
+  const slackWorkspaces = slackItems as SlackWorkspace[];
+  const managedConnectors = sources
+    .filter((source) => source.source === "google" || source.source === "slack")
+    .map<ConnectorEntry>((source) => {
+      const accounts = source.source === "google" ? googleAccounts : slackWorkspaces;
+      return {
+        authType: "oauth",
+        connected: accounts.length > 0,
+        connectedAt: accounts[0]?.connectedAt,
+        description: source.scopeExplanation,
+        displayName: source.displayName,
+        mcpUrl: "",
+        name: source.source,
+        scopes: [...source.readScopes, ...source.writeScopes],
+        templateBlocks: [
+          {
+            id: `${source.source}-evidence`,
+            title: `Evidence: ${source.evidence.join(", ")}`,
+            description: "Relationship evidence this source can contribute.",
+            category: "evidence",
+            trustTier: "read",
+          },
+          ...(source.actions.length
+            ? [
+                {
+                  id: `${source.source}-actions`,
+                  title: `Actions: ${source.actions.join(", ")}`,
+                  description: "Approval-gated actions available through this source.",
+                  category: "actions",
+                  trustTier: "act" as const,
+                },
+              ]
+            : []),
+        ],
+        transport: "native",
+      };
+    });
+
+  const allConnectors = [
+    ...managedConnectors,
+    ...(items as ConnectorEntry[]).filter(
+      (connector) => connector.name !== "google" && connector.name !== "slack",
+    ),
+  ];
+
+  const connectors = allConnectors.filter((connector) => {
+    const needle = query.trim().toLowerCase();
+    return (
+      !needle ||
+      connector.displayName.toLowerCase().includes(needle) ||
+      connector.description.toLowerCase().includes(needle) ||
+      connector.templateBlocks?.some((block) => block.title.toLowerCase().includes(needle))
+    );
   });
+  const state = [connectorState, sourceState, googleState, slackState].includes("error")
+    ? "error"
+    : [connectorState, sourceState, googleState, slackState].includes("loading")
+      ? "loading"
+      : "ready";
+
+  const changed = () => setRefreshKey((key) => key + 1);
+  const disconnectGoogle = async () => {
+    const res = await dashboardFetch("/api/rowboat/v1/google-oauth", { method: "DELETE" });
+    if (!res.ok) throw new Error(`Disconnect failed (${res.status})`);
+  };
+  const disconnectSlack = async () => {
+    for (const workspace of slackWorkspaces) {
+      const res = await dashboardFetch(
+        `/api/rowboat/v1/slack-oauth/workspaces/${encodeURIComponent(workspace.teamId)}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) throw new Error(`Disconnect failed (${res.status})`);
+    }
+  };
 
   return (
     <SettingsRow
       description="Managed connections your agents can use. OAuth connectors open a browser window; API-key connectors store the key sealed server-side."
       title="Connectors"
     >
+      <div className="relative border-b border-primary/10 p-3">
+        <MagnifyingGlass className="absolute left-6 top-1/2 size-4 -translate-y-1/2 text-primary/35" />
+        <Input
+          aria-label="Search connectors"
+          className="pl-9"
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search connectors and capabilities"
+          value={query}
+        />
+      </div>
       {state === "loading" ? (
         <EmptyCardState>Loading connectors…</EmptyCardState>
       ) : state === "error" ? (
         <EmptyCardState>Could not load connectors.</EmptyCardState>
       ) : connectors.length === 0 ? (
-        <EmptyCardState>No connectors are available yet.</EmptyCardState>
+        <EmptyCardState>
+          {query.trim() ? "No connectors match your search." : "No connectors are available yet."}
+        </EmptyCardState>
       ) : (
         <div className="flex flex-col divide-y divide-primary/10">
           {connectors.map((connector) => (
             <ConnectorRow
+              accountLabels={
+                connector.name === "google"
+                  ? googleAccounts.map((account) => account.accountId).filter(Boolean)
+                  : connector.name === "slack"
+                    ? slackWorkspaces.map((workspace) => workspace.teamName || workspace.teamId)
+                    : undefined
+              }
               connector={connector}
+              disconnectManaged={
+                connector.name === "google"
+                  ? disconnectGoogle
+                  : connector.name === "slack"
+                    ? disconnectSlack
+                    : undefined
+              }
               key={connector.name}
-              onChanged={() => setRefreshKey((k) => k + 1)}
+              oauth={
+                connector.name === "google" || connector.name === "slack"
+                  ? {
+                      startPath: `/api/rowboat/v1/${connector.name}-oauth/start`,
+                      claimPath: `/api/rowboat/v1/${connector.name}-oauth/claim`,
+                      authorizeField: "authorizeUrl",
+                      claimField: "session",
+                    }
+                  : undefined
+              }
+              onChanged={changed}
             />
           ))}
         </div>
@@ -765,38 +973,14 @@ function PageIntro({ title, description }: { title: string; description: string 
   );
 }
 
-const OVERVIEW_GROUPS = [
-  {
-    label: "Workspace",
-    keys: [
-      "preferences",
-      "notifications",
-      "permissions",
-      "security",
-      "extensions",
-      "connections",
-      "transcription",
-      "note-tagging",
-      "advanced",
-    ],
-  },
-  {
-    label: "Global",
-    keys: [
-      "models",
-      "code-mode",
-      "customization",
-      "appearance",
-      "mcp",
-      "environment",
-      "updates",
-      "memory",
-      "recovery",
-    ],
-  },
-  { label: "Cloud", keys: ["account", "connect"] },
-  { label: "Support", keys: ["help"] },
-] as const;
+const OVERVIEW_KEYS: SettingsSection[] = [
+  "preferences",
+  "connections",
+  "models",
+  "appearance",
+  "account",
+  "help",
+];
 
 function OverviewSection({ onNavigate }: { onNavigate: (section: SettingsSection) => void }) {
   return (
@@ -805,67 +989,29 @@ function OverviewSection({ onNavigate }: { onNavigate: (section: SettingsSection
         description="Configure how Oppulence reasons, connects, and acts across every customer relationship."
         title="Settings"
       />
-      {OVERVIEW_GROUPS.map((group) => (
-        <section className="settings-overview-group" key={group.label}>
-          <h2 className="settings-overview-label">{group.label}</h2>
-          <div className="settings-card-grid">
-            {group.keys.map((key) => {
-              const section = SETTINGS_SECTIONS.find((item) => item.key === key);
-              if (!section) return null;
-              return (
-                <button
-                  className="settings-card"
-                  key={section.key}
-                  onClick={() => onNavigate(section.key)}
-                  type="button"
-                >
-                  <span className="settings-card-icon">
-                    <section.icon />
-                  </span>
-                  <span className="settings-card-copy">
-                    <span className="settings-card-title">{section.label}</span>
-                    <span className="settings-card-description">{section.description}</span>
-                  </span>
-                  <ArrowRight className="ml-auto size-3.5 shrink-0 text-primary/30" />
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      ))}
       <section className="settings-overview-group">
-        <h2 className="settings-overview-label">Help</h2>
         <div className="settings-card-grid">
-          {[
-            {
-              title: "Send feedback",
-              description: "Tell us where relationship intelligence should go next.",
-              icon: Bell,
-              href: "mailto:hello@oppulence.io?subject=Oppulence%20feedback",
-            },
-            {
-              title: "Read the documentation",
-              description: "Review the relationship model and API reference.",
-              icon: BookOpen,
-              href: "/api/reference",
-            },
-          ].map((item) => (
-            <button
-              className="settings-card"
-              key={item.title}
-              onClick={() => window.open(item.href, "_blank")}
-              type="button"
-            >
-              <span className="settings-card-icon">
-                <item.icon />
-              </span>
-              <span className="settings-card-copy">
-                <span className="settings-card-title">{item.title}</span>
-                <span className="settings-card-description">{item.description}</span>
-              </span>
-              <ArrowRight className="ml-auto size-3.5 shrink-0 text-primary/30" />
-            </button>
-          ))}
+          {OVERVIEW_KEYS.map((key) => {
+            const section = SETTINGS_SECTIONS.find((item) => item.key === key);
+            if (!section) return null;
+            return (
+              <button
+                className="settings-card"
+                key={section.key}
+                onClick={() => onNavigate(section.key)}
+                type="button"
+              >
+                <span className="settings-card-icon">
+                  <section.icon />
+                </span>
+                <span className="settings-card-copy">
+                  <span className="settings-card-title">{section.label}</span>
+                  <span className="settings-card-description">{section.description}</span>
+                </span>
+                <ArrowRight className="ml-auto size-3.5 shrink-0 text-primary/30" />
+              </button>
+            );
+          })}
         </div>
       </section>
     </>

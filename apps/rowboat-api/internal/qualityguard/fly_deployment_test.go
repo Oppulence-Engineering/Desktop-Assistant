@@ -31,6 +31,7 @@ func TestFlyDeploymentContract(t *testing.T) {
 		`type = "http"`,
 		`memory = "512mb"`,
 		`memory = "256mb"`,
+		`TOKEN_AUDIENCE = ""`,
 	} {
 		if !strings.Contains(config, required) {
 			t.Errorf("fly.toml missing deployment invariant %q", required)

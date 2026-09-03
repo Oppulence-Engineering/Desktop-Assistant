@@ -7,6 +7,7 @@
  */
 import type {
   GoogleClaimRequest,
+  GoogleConnectionStatus,
   GoogleRefreshRequest,
   HandleGoogleOAuthCallbackParams,
   N400Response,
@@ -124,6 +125,55 @@ export const disconnectGoogle = async (
 
   const data: disconnectGoogleResponse["data"] = body ? JSON.parse(body) : undefined;
   return { data, status: res.status, headers: res.headers } as disconnectGoogleResponse;
+};
+
+export type getGoogleConnectionStatusResponse200 = {
+  data: GoogleConnectionStatus;
+  status: 200;
+};
+
+export type getGoogleConnectionStatusResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getGoogleConnectionStatusResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type getGoogleConnectionStatusResponseSuccess = getGoogleConnectionStatusResponse200 & {
+  headers: Headers;
+};
+export type getGoogleConnectionStatusResponseError = (
+  getGoogleConnectionStatusResponse401 | getGoogleConnectionStatusResponse500
+) & {
+  headers: Headers;
+};
+
+export type getGoogleConnectionStatusResponse =
+  getGoogleConnectionStatusResponseSuccess | getGoogleConnectionStatusResponseError;
+
+export const getGetGoogleConnectionStatusUrl = () => {
+  return `/v1/google-oauth`;
+};
+
+/**
+ * Returns safe metadata for the authenticated user's connected Google account without exposing credentials.
+ * @summary Get Google connection status
+ */
+export const getGoogleConnectionStatus = async (
+  options?: RequestInit,
+): Promise<getGoogleConnectionStatusResponse> => {
+  const res = await fetch(getGetGoogleConnectionStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getGoogleConnectionStatusResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as getGoogleConnectionStatusResponse;
 };
 
 export type claimGoogleOAuthResponse200 = {

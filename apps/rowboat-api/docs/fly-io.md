@@ -42,6 +42,7 @@ fly secrets set --app <app-name> \
   WORKOS_API_KEY='...' \
   WORKOS_CLIENT_ID='...' \
   TOKEN_ISSUER='https://api.workos.com' \
+  TOKEN_AUDIENCE='' \
   HOOK_HMAC_SECRET='...' \
   INTERNAL_API_SECRET='...' \
   APP_URL='https://app.example.com' \

@@ -112,6 +112,15 @@ export const ViewerResponseSchema = z.object({
 
 export type ViewerResponse = z.infer<typeof ViewerResponseSchema>;
 
+export const ViewerIdentityResponseSchema = z.object({
+  user: z.object({
+    id: z.string(),
+    email: z.string().email().optional().or(z.literal("")),
+  }),
+});
+
+export type ViewerIdentityResponse = z.infer<typeof ViewerIdentityResponseSchema>;
+
 export const BrowserSessionResponseSchema = z.discriminatedUnion("authenticated", [
   z.object({
     authenticated: z.literal(false),

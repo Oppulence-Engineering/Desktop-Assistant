@@ -4,7 +4,7 @@ import DesktopIcon from "@mui/icons-material/DesktopWindowsOutlined";
 import DownloadIcon from "@mui/icons-material/DownloadOutlined";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMoreOutlined";
 import Link from "next/link";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -209,6 +209,25 @@ export function DesktopDownloadChooser() {
   const selectedGroup =
     downloadGroups.find((group) => group.operatingSystem === selectedOperatingSystem) ??
     downloadGroups[0];
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const last = downloadGroups.length - 1;
+    const next =
+      event.key === "ArrowLeft"
+        ? (index || downloadGroups.length) - 1
+        : event.key === "ArrowRight"
+          ? (index + 1) % downloadGroups.length
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? last
+              : null;
+    if (next === null) return;
+    event.preventDefault();
+    const tab =
+      event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>("[role=tab]")[next];
+    tab?.focus();
+    tab?.click();
+  };
 
   return (
     <div className="mt-8">
@@ -264,11 +283,13 @@ export function DesktopDownloadChooser() {
                   className="desktop-download-tab"
                   id={`${panelId}-${group.operatingSystem}-tab`}
                   key={group.operatingSystem}
+                  onKeyDown={(event) => handleTabKeyDown(event, downloadGroups.indexOf(group))}
                   onClick={() => {
                     selectionChanged.current = true;
                     setSelectedOperatingSystem(group.operatingSystem);
                   }}
                   role="tab"
+                  tabIndex={isSelected ? 0 : -1}
                   type="button"
                 >
                   <DesktopIcon aria-hidden="true" />

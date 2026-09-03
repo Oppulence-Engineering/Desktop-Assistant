@@ -73,7 +73,7 @@ export function RevenuePanel({ onOpenConnectors }: { onOpenConnectors?: () => vo
     void getWorkspace()
       .then(setWorkspace)
       .catch((e) => {
-        if (e instanceof RevenueAPIError && e.status === 401) return;
+        if (e instanceof RevenueAPIError && (e.status === 401 || e.status === 404)) return;
         setError(e instanceof Error ? e.message : "Could not load the revenue workspace.");
       });
     const ids = loadScanIds();
@@ -144,21 +144,8 @@ export function RevenuePanel({ onOpenConnectors }: { onOpenConnectors?: () => vo
     <Tabs
       value={tab}
       onValueChange={(value) => setTab(value as Tab)}
-      className="flex h-full w-full flex-col gap-6 px-4 py-6 lg:px-6 lg:py-8"
+      className="flex h-full w-full flex-col gap-4 px-4 py-4 lg:px-6 lg:py-5"
     >
-      <header className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-9 items-center justify-center rounded-[2px] bg-background-200 text-primary/70 dark:bg-background-100">
-          <AddressBook weight="fill" className="size-5" />
-        </div>
-        <div>
-          <h1 className="text-lg font-semibold text-primary">Relationships</h1>
-          <p className="max-w-lg text-sm text-primary/60">
-            A living model of every customer relationship: what changed, what needs action, and the
-            evidence behind each recommendation.
-          </p>
-        </div>
-      </header>
-
       {/* sub-navigation */}
       <TabsList variant="line" className="h-auto w-full justify-start border-b border-border p-0">
         {TABS.map((t) => (

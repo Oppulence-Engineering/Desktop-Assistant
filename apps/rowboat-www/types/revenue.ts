@@ -147,6 +147,25 @@ export interface RelationshipParticipant {
   title?: string;
   active: boolean;
   externalRefs: string[];
+  personId?: string;
+  person?: {
+    id: string;
+    displayName: string;
+    employmentStatus?: "unknown" | "active" | "departed";
+  };
+}
+
+export interface PersonDeletionReceipt {
+  receiptId: string;
+  personId: string;
+  requestedAt: string;
+  completedAt: string;
+  reason: string;
+  suppressedIdentities: number;
+  attributesDeleted: number;
+  identitiesDeleted: number;
+  interactionStatsDeleted: number;
+  mergeCandidatesDeleted: number;
 }
 
 export interface RelationshipCommitment {

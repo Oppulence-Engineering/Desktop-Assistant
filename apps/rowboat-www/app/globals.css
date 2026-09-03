@@ -1179,16 +1179,6 @@
   --selection-foreground: oklch(0.205 0 0);
 }
 
-/*
- * Authenticated console theme ("app shell"). Scoped overrides only — the
- * marketing pages keep their own look. Square corners and hairline borders
- * instead of shadows, workspace card floating on a tinted canvas, orange
- * as the single semantic accent (use text-oppulence-orange sparingly).
- */
-.app-shell {
-  --radius: 0;
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -2697,7 +2687,6 @@
   @media (prefers-reduced-motion: no-preference) {
     html[data-marketing-reveals] .is-revealed {
       animation: linear-reveal 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
-      animation-delay: var(--reveal-delay, 0ms);
     }
   }
 

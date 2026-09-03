@@ -752,6 +752,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			})
 			r.Route("/v1/agent-sessions", func(r chi.Router) {
 				r.Use(rl.PerUserWindow(ratelimit.GroupAgent, 120, time.Minute))
+				r.Get("/", agentsH.ListSessions)
 				r.Post("/", agentsH.CreateSession)
 				r.Get("/{id}", agentsH.GetSession)
 				r.Post("/{id}/turns", agentsH.SubmitTurn)
@@ -796,6 +797,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 
 		r.Route("/v1/google-oauth", func(r chi.Router) {
 			r.Use(rl.PerUserWindow(ratelimit.GroupConnections, 30, time.Minute))
+			r.Get("/", googleH.Status)
 			r.Post("/start", googleH.Start)
 			r.Post("/claim", googleH.Claim)
 			r.Post("/refresh", googleH.Refresh)

@@ -74,6 +74,22 @@ func TestListAgentsIncludesBuiltins(t *testing.T) {
 	}
 }
 
+func TestListSessionsReturnsOnlyCurrentUser(t *testing.T) {
+	h, u := setupHandler(t)
+	ctx := auth.WithUser(context.Background(), u)
+	h.client.AgentSession.Create().SetUser(u).SetSessionID("mine").SetAgentSlug("assistant").SaveX(ctx)
+	other := h.client.User.Create().SetEmail("b@x.co").SetWorkosUserID("user_2").SaveX(context.Background())
+	h.client.AgentSession.Create().SetUser(other).SetSessionID("theirs").SetAgentSlug("assistant").
+		SaveX(auth.WithUser(context.Background(), other))
+
+	rec := httptest.NewRecorder()
+	h.ListSessions(rec, httptest.NewRequest(http.MethodGet, "/v1/agent-sessions", nil).WithContext(ctx))
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"sessionId":"mine"`) ||
+		strings.Contains(rec.Body.String(), "theirs") {
+		t.Fatalf("tenant session list = %d %s", rec.Code, rec.Body.String())
+	}
+}
+
 // TestContinuationTokenResolvesSession is the continuation-token gate: a valid
 // signed token resolves the session (overriding the path id), and a forged token
 // is rejected.

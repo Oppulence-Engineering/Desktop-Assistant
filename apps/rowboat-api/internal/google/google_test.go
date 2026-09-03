@@ -92,6 +92,27 @@ func TestClaimConsumesTicketAndPersists(t *testing.T) {
 	}
 }
 
+func TestStatusReturnsSafeConnectionMetadata(t *testing.T) {
+	client, ctx, u, _, h := setup(t)
+	client.OAuthConnection.Create().
+		SetUser(u).
+		SetProvider("google").
+		SetExternalAccountID("owner@example.com").
+		SetRefreshTokenEncrypted([]byte("sealed-secret")).
+		SetScopes([]string{"gmail.readonly"}).
+		SaveX(ctx)
+
+	rec := httptest.NewRecorder()
+	h.Status(rec, httptest.NewRequest(http.MethodGet, "/v1/google-oauth", nil).WithContext(ctx))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d: %s", rec.Code, rec.Body.String())
+	}
+	if body := rec.Body.String(); !strings.Contains(body, `"connected":true`) ||
+		!strings.Contains(body, `"accountId":"owner@example.com"`) || strings.Contains(body, "sealed-secret") {
+		t.Fatalf("unsafe or incomplete status: %s", body)
+	}
+}
+
 func TestClaimRejectsCrossProviderTicket(t *testing.T) {
 	client, ctx, _, sealer, h := setup(t)
 	raw, _ := json.Marshal(map[string]any{

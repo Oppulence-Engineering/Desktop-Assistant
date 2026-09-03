@@ -18,6 +18,8 @@ type PageProps = {
   params: Promise<{ slug: string[] }>;
 };
 
+export const instant = false;
+
 export function generateStaticParams() {
   return marketingPaths.map((path) => ({
     slug: path.split("/"),

@@ -214,6 +214,29 @@ func (h *Handler) GetSession(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, h.viewSession(sess, uid))
 }
 
+// ListSessions returns the authenticated user's most recently updated sessions.
+func (h *Handler) ListSessions(w http.ResponseWriter, r *http.Request) {
+	u, ok := auth.UserFromCtx(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
+		return
+	}
+	rows, err := h.client.AgentSession.Query().
+		Order(agentsession.ByUpdatedAt(entsql.OrderDesc())).
+		Limit(50).
+		All(r.Context())
+	if err != nil {
+		h.log.Error("list agent sessions", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not list sessions", "internal_error")
+		return
+	}
+	sessions := make([]sessionView, 0, len(rows))
+	for _, row := range rows {
+		sessions = append(sessions, h.viewSession(row, u.ID.String()))
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"sessions": sessions})
+}
+
 // SubmitTurn handles POST /v1/agent-sessions/{id}/turns.
 func (h *Handler) SubmitTurn(w http.ResponseWriter, r *http.Request) {
 	u, ok := auth.UserFromCtx(r.Context())

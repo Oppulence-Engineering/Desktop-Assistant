@@ -90,13 +90,6 @@ export function MarketingEffects() {
     let revealFallback: number | undefined;
 
     if (!reduceMotion && revealTargets.length > 0 && "IntersectionObserver" in window) {
-      const siblingIndex = new Map<Element, number>();
-      revealTargets.forEach((element) => {
-        const parent = element.parentElement;
-        const index = parent ? (siblingIndex.get(parent) ?? 0) : 0;
-        if (parent) siblingIndex.set(parent, index + 1);
-        element.style.setProperty("--reveal-delay", `${Math.min(index, 5) * 70}ms`);
-      });
       root.setAttribute("data-marketing-reveals", "");
       revealObserver = new IntersectionObserver(
         (entries) => {
