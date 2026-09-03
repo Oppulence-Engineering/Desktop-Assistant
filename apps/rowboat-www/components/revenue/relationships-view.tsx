@@ -67,6 +67,7 @@ import {
   decideConversationReview,
   correctRelationship,
   createRelationship,
+  deletePerson,
   DETECTOR_LABELS,
   getRelationship,
   getRelationshipBetaDiagnostics,
@@ -91,6 +92,7 @@ import {
   requestConversationDeletion,
   retractRelationshipAssertion,
   RELATIONSHIP_KIND_LABELS,
+  RevenueAPIError,
   relativeTime,
   semanticSearch,
   type SemanticMatch,
@@ -191,6 +193,7 @@ export function RelationshipsView({
       setIdentityCandidates([...pendingCandidates, ...deferredCandidates]);
       setAttention(attentionItems);
     } catch (e) {
+      if (e instanceof RevenueAPIError && e.status === 404) return;
       onError(errMessage(e, "Could not load relationship intelligence."));
     } finally {
       setLoading(false);
@@ -1639,17 +1642,73 @@ function RelationshipSheet({
               )}
             </section>
 
-            <TwoColumnList
-              leftTitle={`People (${data.participants.length})`}
-              left={data.participants.map((person) =>
-                [person.displayName, person.role, person.title].filter(Boolean).join(" · "),
-              )}
-              rightTitle={`Commitments (${data.commitments.length})`}
-              right={data.commitments.map(
-                (commitment) =>
-                  `${commitment.text}${commitment.dueAt ? ` · ${relativeTime(commitment.dueAt)}` : ""}`,
-              )}
-            />
+            <div className="grid gap-5 sm:grid-cols-2">
+              <section data-capability="person-management">
+                <SectionTitle title={`People (${data.participants.length})`} />
+                {data.participants.length === 0 ? (
+                  <EmptyText>None recorded.</EmptyText>
+                ) : (
+                  <ul className="flex flex-col gap-1.5" aria-label="People">
+                    {data.participants.map((participant) => {
+                      const departed = participant.person?.employmentStatus === "departed";
+                      return (
+                        <li
+                          key={participant.id}
+                          className="flex items-start justify-between gap-2 border border-border p-2 text-xs"
+                        >
+                          <span className={departed ? "text-primary/50" : undefined}>
+                            {[participant.displayName, participant.role, participant.title]
+                              .filter(Boolean)
+                              .join(" · ")}
+                            {departed ? (
+                              <Badge variant="secondary" className="ml-2">
+                                Left the company
+                              </Badge>
+                            ) : null}
+                          </span>
+                          {participant.person?.id ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="shrink-0"
+                              disabled={busy === `delete-person:${participant.person.id}`}
+                              onClick={() => {
+                                const personId = participant.person!.id;
+                                if (
+                                  !window.confirm(
+                                    `Remove ${participant.displayName} and everything derived from them? Their address is suppressed, so a later sync will not recreate them. This cannot be undone.`,
+                                  )
+                                )
+                                  return;
+                                void act(`delete-person:${personId}`, () => deletePerson(personId));
+                              }}
+                            >
+                              Remove
+                            </Button>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+              <section>
+                <SectionTitle title={`Commitments (${data.commitments.length})`} />
+                {data.commitments.length === 0 ? (
+                  <EmptyText>None recorded.</EmptyText>
+                ) : (
+                  <ul className="flex flex-col gap-1.5" aria-label="Commitments">
+                    {data.commitments.map((commitment) => (
+                      <li key={commitment.id} className="border border-border p-2 text-xs">
+                        {commitment.text}
+                        {commitment.dueAt ? ` · ${relativeTime(commitment.dueAt)}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </div>
 
             {data.commitmentDependencies.length ? (
               <section>

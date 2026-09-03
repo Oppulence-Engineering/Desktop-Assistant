@@ -19,6 +19,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
@@ -197,6 +198,44 @@ type tokenBundle struct {
 	ExpiresAt    int64  `json:"expires_at"`
 	Scope        string `json:"scope,omitempty"`
 	TokenType    string `json:"token_type,omitempty"`
+}
+
+type connectionAccount struct {
+	AccountID   string   `json:"accountId"`
+	Scopes      []string `json:"scopes"`
+	ConnectedAt string   `json:"connectedAt"`
+}
+
+type connectionStatusResponse struct {
+	Connected bool                `json:"connected"`
+	Accounts  []connectionAccount `json:"accounts"`
+}
+
+// Status returns safe metadata for the authenticated user's Google connection.
+func (h *Handler) Status(w http.ResponseWriter, r *http.Request) {
+	u, ok := auth.UserFromCtx(r.Context())
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "unauthenticated", "unauthorized")
+		return
+	}
+	conns, err := h.client.OAuthConnection.Query().
+		Where(oauthconnection.ProviderEQ("google"), oauthconnection.HasUserWith(user.IDEQ(u.ID))).
+		Order(oauthconnection.ByCreatedAt()).
+		All(r.Context())
+	if err != nil {
+		h.log.Error("google connection status", zap.Error(err))
+		httpx.Error(w, http.StatusInternalServerError, "could not load google connection", "internal_error")
+		return
+	}
+	accounts := make([]connectionAccount, 0, len(conns))
+	for _, conn := range conns {
+		accounts = append(accounts, connectionAccount{
+			AccountID:   conn.ExternalAccountID,
+			Scopes:      conn.Scopes,
+			ConnectedAt: conn.CreatedAt.UTC().Format(time.RFC3339),
+		})
+	}
+	httpx.WriteJSON(w, http.StatusOK, connectionStatusResponse{Connected: len(accounts) > 0, Accounts: accounts})
 }
 
 // parkedPayload is what the webapp seals into OAuthPending.payload_encrypted.

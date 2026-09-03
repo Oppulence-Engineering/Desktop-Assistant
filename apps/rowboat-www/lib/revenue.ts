@@ -28,6 +28,7 @@ import type {
   BetaDiagnostics,
   RelationshipGraph,
   RelationshipStateSnapshot,
+  PersonDeletionReceipt,
 } from "@/types/revenue";
 
 export class RevenueAPIError extends Error {
@@ -219,6 +220,12 @@ export async function getRelationshipGraph(
 }
 
 export const getRelationship = (id: string) => call<RelationshipDetail>(`/relationships/${id}`);
+
+export const deletePerson = (personId: string) =>
+  call<PersonDeletionReceipt>(`/relationship-persons/${encodeURIComponent(personId)}`, {
+    method: "DELETE",
+    body: JSON.stringify({ reason: "user_action" }),
+  });
 
 export const acknowledgeMissionControl = (id: string, stateVersion: number, stateHash: string) =>
   post(`/relationships/${id}/acknowledgements`, { stateVersion, stateHash }) as Promise<{

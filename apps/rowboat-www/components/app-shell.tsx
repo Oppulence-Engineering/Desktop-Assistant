@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -13,7 +14,6 @@ import {
   ChatsCircle,
   Clock,
   Cpu,
-  DotsThree,
   Folder,
   GearSix,
   HardDrives,
@@ -26,6 +26,7 @@ import {
   Question,
   Rocket,
   ShieldCheck,
+  SidebarSimple,
   SignOut,
   Sun,
   Tag,
@@ -304,33 +305,6 @@ type ShellUser = {
   avatar: string;
 };
 
-/* ---------------------------------- topbar --------------------------------- */
-
-export function AppShellTopbar() {
-  return (
-    <header className="flex h-16 min-h-16 w-full items-center justify-between pr-5 pl-6">
-      <div className="flex items-center gap-2.5">
-        <img alt="Oppulence" className="size-5.5" src="/marketing/oppulence-icon.png" />
-        <span className="text-sm font-medium text-primary">Oppulence</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Link
-          className="flex h-8 items-center gap-1.5 rounded px-2.5 text-sm text-primary/70 transition-colors hover:bg-background-200 hover:text-primary dark:hover:bg-background-100"
-          href="/api/reference"
-        >
-          Docs
-        </Link>
-        <span className="flex h-8 items-center gap-1.5 rounded px-2.5 text-sm text-primary/70">
-          Assistant
-          <span className="rounded-sm bg-oppulence-orange px-1.5 py-0.5 text-[10px] font-medium text-white">
-            AI
-          </span>
-        </span>
-      </div>
-    </header>
-  );
-}
-
 /* --------------------------------- sidebar --------------------------------- */
 
 function SidebarNavItem({
@@ -353,8 +327,8 @@ function SidebarNavItem({
   return (
     <button
       className={cn(
-        "group/item flex h-10 w-full items-center gap-2.5 rounded px-3 py-1 text-left text-sm text-primary/80 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300",
-        active && "bg-background-100 text-primary dark:bg-background-300",
+        "group/item flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 py-1 text-left text-sm text-primary/70 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200",
+        active && "bg-background-200 text-primary dark:bg-background-200",
         className,
       )}
       type="button"
@@ -399,8 +373,8 @@ function SidebarSubItem({
   return (
     <button
       className={cn(
-        "flex h-8 w-full items-center gap-2.5 rounded py-1 pr-3 pl-5 text-left text-sm text-primary/70 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300",
-        active && "bg-background-100 text-primary dark:bg-background-300",
+        "flex h-8 w-full items-center gap-2.5 rounded-md py-1 pr-3 pl-5 text-left text-sm text-primary/65 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200",
+        active && "bg-background-200 text-primary dark:bg-background-200",
         muted && "text-primary/50",
       )}
       onClick={onClick}
@@ -583,14 +557,6 @@ export function AppShellSidebar({
       onNavigate: onNavigateAgents,
     },
     {
-      key: "config",
-      label: "Config",
-      icon: Plugs,
-      kind: "config",
-      items: [],
-      empty: "",
-    },
-    {
       key: "scheduled",
       label: "Scheduled",
       icon: Clock,
@@ -617,25 +583,35 @@ export function AppShellSidebar({
   return (
     <div
       className={cn(
-        "relative flex h-full shrink-0 overflow-hidden border-r transition-all duration-200 ease-in-out",
-        open ? "w-72" : "w-0 border-r-0",
+        "absolute inset-y-0 left-0 z-30 flex h-full shrink-0 overflow-hidden border-r shadow-xl transition-all duration-200 ease-in-out md:relative md:shadow-none",
+        open ? "w-64" : "w-0 border-r-0",
         view === "settings" && "settings-rail",
       )}
     >
-      <div className="flex h-full w-72 shrink-0 flex-col">
+      <div className="flex h-full w-64 shrink-0 flex-col bg-background-50/70 dark:bg-background-50">
+        <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+          <Image
+            alt=""
+            className="size-5"
+            height={20}
+            src="/marketing/oppulence-icon.png"
+            width={20}
+          />
+          <span className="text-sm font-medium tracking-tight text-primary">Oppulence</span>
+          <button
+            aria-label="Close sidebar"
+            className="ml-auto flex size-8 items-center justify-center rounded-md text-primary/50 hover:bg-background-100 hover:text-primary md:hidden"
+            onClick={onToggle}
+            type="button"
+          >
+            <SidebarSimple className="size-4" />
+          </button>
+        </div>
         {view === "settings" ? (
           <nav className="settings-rail-scroll flex flex-1 flex-col overflow-y-auto px-2 pb-3 pt-2">
             <button className="settings-back" onClick={onCloseSettings} type="button">
               <ArrowLeft className="size-3.5" />
               <span>Back to app</span>
-            </button>
-            <button
-              className="settings-identity"
-              onClick={() => onOpenSettings?.("overview")}
-              type="button"
-            >
-              <span>Oppulence</span>
-              <CaretRight className="size-3.5 rotate-90" />
             </button>
             <button
               className="settings-nav-item mt-1"
@@ -681,63 +657,54 @@ export function AppShellSidebar({
               label="Relationships"
               onClick={onNavigateRevenue}
             />
-            {groups.map((group) =>
-              group.key === "config" ? (
-                <SidebarNavItem
-                  icon={group.icon}
-                  key={group.key}
-                  label={group.label}
-                  onClick={() => onOpenSettings?.("overview")}
-                />
-              ) : (
-                <Collapsible
-                  key={group.key}
-                  onOpenChange={(nextOpen) =>
-                    setOpenGroups((current) => ({ ...current, [group.key]: nextOpen }))
-                  }
-                  open={Boolean(openGroups[group.key])}
-                >
-                  <CollapsibleTrigger asChild>
-                    <SidebarNavItem
-                      active={activeResourceGroup === group.key}
-                      chevron
-                      chevronOpen={Boolean(openGroups[group.key])}
-                      count={group.items.length}
-                      icon={group.icon}
-                      label={group.label}
-                      onClick={group.onNavigate}
-                    />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="flex flex-col gap-0.5 pb-1">
-                      {group.loading ? (
-                        <SidebarEmptyHint>Loading…</SidebarEmptyHint>
-                      ) : group.error ? (
-                        <SidebarEmptyHint>{group.error}</SidebarEmptyHint>
-                      ) : group.items.length === 0 ? (
-                        <SidebarEmptyHint>{group.empty}</SidebarEmptyHint>
-                      ) : (
-                        group.items.map((item) => (
-                          <SidebarSubItem
-                            active={selected?.kind === group.kind && selected?.name === item.value}
-                            key={item.value}
-                            label={item.label}
-                            onClick={
-                              group.kind
-                                ? () => onSelectResource?.({ kind: group.kind!, name: item.value })
-                                : undefined
-                            }
-                          />
-                        ))
-                      )}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              ),
-            )}
+            {groups.map((group) => (
+              <Collapsible
+                key={group.key}
+                onOpenChange={(nextOpen) =>
+                  setOpenGroups((current) => ({ ...current, [group.key]: nextOpen }))
+                }
+                open={Boolean(openGroups[group.key])}
+              >
+                <CollapsibleTrigger asChild>
+                  <SidebarNavItem
+                    active={activeResourceGroup === group.key}
+                    chevron
+                    chevronOpen={Boolean(openGroups[group.key])}
+                    count={group.items.length}
+                    icon={group.icon}
+                    label={group.label}
+                    onClick={group.onNavigate}
+                  />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="flex flex-col gap-0.5 pb-1">
+                    {group.loading ? (
+                      <SidebarEmptyHint>Loading…</SidebarEmptyHint>
+                    ) : group.error ? (
+                      <SidebarEmptyHint>{group.error}</SidebarEmptyHint>
+                    ) : group.items.length === 0 ? (
+                      <SidebarEmptyHint>{group.empty}</SidebarEmptyHint>
+                    ) : (
+                      group.items.map((item) => (
+                        <SidebarSubItem
+                          active={selected?.kind === group.kind && selected?.name === item.value}
+                          key={item.value}
+                          label={item.label}
+                          onClick={
+                            group.kind
+                              ? () => onSelectResource?.({ kind: group.kind!, name: item.value })
+                              : undefined
+                          }
+                        />
+                      ))
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            ))}
 
             <div className="flex items-center justify-between px-3 pt-4 pb-1">
-              <p className="text-[11px] uppercase tracking-wider text-primary/50">Chat history</p>
+              <p className="text-[11px] font-medium text-primary/45">History</p>
               <button
                 aria-label="New chat"
                 className="flex size-5 items-center justify-center rounded text-primary/50 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300"
@@ -752,7 +719,7 @@ export function AppShellSidebar({
               <SidebarEmptyHint>No conversations yet</SidebarEmptyHint>
             ) : (
               <>
-                {sessions.slice(0, 8).map((session) => (
+                {sessions.map((session) => (
                   <SidebarSubItem
                     active={session.runId === activeRunId}
                     key={session.runId}
@@ -760,12 +727,6 @@ export function AppShellSidebar({
                     onClick={() => onOpenSession?.(session.runId)}
                   />
                 ))}
-                {sessions.length > 8 ? (
-                  <div className="flex h-8 w-full items-center gap-2.5 py-1 pr-3 pl-5 text-sm text-primary/40">
-                    <DotsThree className="size-3.5 shrink-0" />
-                    <span>{sessions.length - 8} more</span>
-                  </div>
-                ) : null}
               </>
             )}
           </nav>
@@ -773,7 +734,7 @@ export function AppShellSidebar({
 
         <div className="flex flex-col gap-1 px-2 py-2">
           <Link
-            className="group/item flex h-10 w-full items-center gap-2.5 rounded px-3 py-1 text-sm text-primary/80 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300"
+            className="group/item flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 py-1 text-sm text-primary/70 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200"
             href="/api/reference"
           >
             <AppIcon
@@ -792,12 +753,12 @@ export function AppShellSidebar({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex w-full items-center gap-2.5 rounded px-2 py-1.5 text-left transition-colors hover:bg-background-100 data-[state=open]:bg-background-100 dark:hover:bg-background-300 dark:data-[state=open]:bg-background-300"
+                className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-background-100 data-[state=open]:bg-background-100 dark:hover:bg-background-200 dark:data-[state=open]:bg-background-200"
                 type="button"
               >
-                <Avatar className="size-8 rounded-[2px] ring-1 ring-border">
+                <Avatar className="size-8 rounded-full ring-1 ring-border">
                   <AvatarImage alt={user.name} src={user.avatar} />
-                  <AvatarFallback className="rounded-[2px] font-mono text-xs">
+                  <AvatarFallback className="rounded-full font-mono text-xs">
                     {fallback}
                   </AvatarFallback>
                 </Avatar>
@@ -810,15 +771,15 @@ export function AppShellSidebar({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="app-shell min-w-56 rounded-[2px]"
+              className="app-shell min-w-56 rounded-xl"
               side="right"
               sideOffset={8}
             >
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar className="size-8 rounded-[2px] ring-1 ring-border">
+                  <Avatar className="size-8 rounded-full ring-1 ring-border">
                     <AvatarImage alt={user.name} src={user.avatar} />
-                    <AvatarFallback className="rounded-[2px] font-mono text-xs">
+                    <AvatarFallback className="rounded-full font-mono text-xs">
                       {fallback}
                     </AvatarFallback>
                   </Avatar>

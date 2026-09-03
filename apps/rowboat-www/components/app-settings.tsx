@@ -8,6 +8,7 @@ import {
   Check,
   Clipboard,
   Cloud,
+  MagnifyingGlass,
   Monitor,
   Moon,
   Plugs,
@@ -34,6 +35,14 @@ import {
   SelectValue,
 } from "@oppulence/ui/components/select";
 import { dashboardFetch } from "@/lib/auth/client";
+import { ListConnectors200Response } from "@/lib/api/generated/zod/connectors/connectors";
+import { GetGoogleConnectionStatus200Response } from "@/lib/api/generated/zod/google-oauth/google-oauth";
+import { GetRelationshipSourceInventory200Response } from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
+import { ListSlackWorkspaces200Response } from "@/lib/api/generated/zod/slack-oauth/slack-oauth";
+import type { Connector } from "@/lib/api/generated/client/model/connector";
+import type { GoogleConnectionAccount } from "@/lib/api/generated/client/model/googleConnectionAccount";
+import type { RelationshipSourceInventoryItem } from "@/lib/api/generated/client/model/relationshipSourceInventoryItem";
+import type { SlackWorkspace } from "@/lib/api/generated/client/model/slackWorkspace";
 import { getPref, setPref } from "@/lib/console-prefs";
 import { cn } from "@/lib/utils";
 
@@ -564,38 +573,14 @@ function PageIntro({ title, description }: { title: string; description: string 
   );
 }
 
-const OVERVIEW_GROUPS = [
-  {
-    label: "Workspace",
-    keys: [
-      "preferences",
-      "notifications",
-      "permissions",
-      "security",
-      "extensions",
-      "connections",
-      "transcription",
-      "note-tagging",
-      "advanced",
-    ],
-  },
-  {
-    label: "Global",
-    keys: [
-      "models",
-      "code-mode",
-      "customization",
-      "appearance",
-      "mcp",
-      "environment",
-      "updates",
-      "memory",
-      "recovery",
-    ],
-  },
-  { label: "Cloud", keys: ["account", "connect"] },
-  { label: "Support", keys: ["help"] },
-] as const;
+const OVERVIEW_KEYS: SettingsSection[] = [
+  "preferences",
+  "connections",
+  "models",
+  "appearance",
+  "account",
+  "help",
+];
 
 function OverviewSection({ onNavigate }: { onNavigate: (section: SettingsSection) => void }) {
   return (
@@ -604,67 +589,29 @@ function OverviewSection({ onNavigate }: { onNavigate: (section: SettingsSection
         description="Configure how Oppulence reasons, connects, and acts across every customer relationship."
         title="Settings"
       />
-      {OVERVIEW_GROUPS.map((group) => (
-        <section className="settings-overview-group" key={group.label}>
-          <h2 className="settings-overview-label">{group.label}</h2>
-          <div className="settings-card-grid">
-            {group.keys.map((key) => {
-              const section = SETTINGS_SECTIONS.find((item) => item.key === key);
-              if (!section) return null;
-              return (
-                <button
-                  className="settings-card"
-                  key={section.key}
-                  onClick={() => onNavigate(section.key)}
-                  type="button"
-                >
-                  <span className="settings-card-icon">
-                    <section.icon />
-                  </span>
-                  <span className="settings-card-copy">
-                    <span className="settings-card-title">{section.label}</span>
-                    <span className="settings-card-description">{section.description}</span>
-                  </span>
-                  <ArrowRight className="ml-auto size-3.5 shrink-0 text-primary/30" />
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      ))}
       <section className="settings-overview-group">
-        <h2 className="settings-overview-label">Help</h2>
         <div className="settings-card-grid">
-          {[
-            {
-              title: "Send feedback",
-              description: "Tell us where relationship intelligence should go next.",
-              icon: Bell,
-              href: "mailto:hello@oppulence.io?subject=Oppulence%20feedback",
-            },
-            {
-              title: "Read the documentation",
-              description: "Review the relationship model and API reference.",
-              icon: BookOpen,
-              href: "/api/reference",
-            },
-          ].map((item) => (
-            <button
-              className="settings-card"
-              key={item.title}
-              onClick={() => window.open(item.href, "_blank")}
-              type="button"
-            >
-              <span className="settings-card-icon">
-                <item.icon />
-              </span>
-              <span className="settings-card-copy">
-                <span className="settings-card-title">{item.title}</span>
-                <span className="settings-card-description">{item.description}</span>
-              </span>
-              <ArrowRight className="ml-auto size-3.5 shrink-0 text-primary/30" />
-            </button>
-          ))}
+          {OVERVIEW_KEYS.map((key) => {
+            const section = SETTINGS_SECTIONS.find((item) => item.key === key);
+            if (!section) return null;
+            return (
+              <button
+                className="settings-card"
+                key={section.key}
+                onClick={() => onNavigate(section.key)}
+                type="button"
+              >
+                <span className="settings-card-icon">
+                  <section.icon />
+                </span>
+                <span className="settings-card-copy">
+                  <span className="settings-card-title">{section.label}</span>
+                  <span className="settings-card-description">{section.description}</span>
+                </span>
+                <ArrowRight className="ml-auto size-3.5 shrink-0 text-primary/30" />
+              </button>
+            );
+          })}
         </div>
       </section>
     </>

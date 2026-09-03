@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { CircleNotch, SignIn } from "@phosphor-icons/react";
+import { ArrowClockwise, CircleNotch } from "@phosphor-icons/react";
 
 import { Button } from "@oppulence/ui/components/button";
 import { loadBrowserSession, loginURL } from "@/lib/auth/client";
@@ -11,7 +11,7 @@ type AuthState =
   | { status: "loading" }
   | { status: "authenticated"; session: Extract<BrowserSessionResponse, { authenticated: true }> }
   | { status: "unauthenticated" }
-  | { status: "error"; message: string };
+  | { status: "error" };
 
 const AuthSessionContext = createContext<Extract<AuthState, { status: "authenticated" }> | null>(
   null,
@@ -40,10 +40,9 @@ export function AuthGate({ children }: { children: ReactNode }) {
         }
         setState({ status: "authenticated", session });
       })
-      .catch((error: unknown) => {
+      .catch(() => {
         if (cancelled) return;
-        const message = error instanceof Error ? error.message : "Could not verify your session";
-        setState({ status: "error", message });
+        setState({ status: "error" });
       });
     return () => {
       cancelled = true;
@@ -63,12 +62,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
       <div className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
         {state.status === "error" ? (
           <>
-            <div className="text-sm font-medium text-destructive">{state.message}</div>
-            <Button asChild>
-              <a href={loginURL("/app")}>
-                <SignIn />
-                Sign in
-              </a>
+            <div className="space-y-1">
+              <h1 className="text-base font-medium">We couldn’t verify your session</h1>
+              <p className="text-sm text-muted-foreground">Check your connection and try again.</p>
+            </div>
+            <Button onClick={() => window.location.reload()}>
+              <ArrowClockwise />
+              Try again
             </Button>
           </>
         ) : (

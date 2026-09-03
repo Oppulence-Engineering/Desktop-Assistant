@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -33,6 +34,14 @@ func TestApplyPostgresIsIdempotent(t *testing.T) {
 		t.Fatalf("idempotent migration apply: %v", err)
 	}
 
+	expected, err := filepath.Glob(filepath.Join(postgresMigrationDir, "*.sql"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(expected) == 0 {
+		t.Fatalf("no migration files found in %s", postgresMigrationDir)
+	}
+
 	database, err := sql.Open("pgx", dsn)
 	if err != nil {
 		t.Fatal(err)
@@ -42,7 +51,7 @@ func TestApplyPostgresIsIdempotent(t *testing.T) {
 	if err := database.QueryRowContext(context.Background(), `SELECT count(*) FROM atlas_schema_revisions`).Scan(&revisions); err != nil {
 		t.Fatal(err)
 	}
-	if revisions != 6 {
-		t.Fatalf("expected 6 applied revisions, got %d", revisions)
+	if revisions != len(expected) {
+		t.Fatalf("expected %d applied revisions, got %d", len(expected), revisions)
 	}
 }

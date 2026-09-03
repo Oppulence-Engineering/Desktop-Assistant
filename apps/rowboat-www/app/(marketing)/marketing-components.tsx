@@ -1595,18 +1595,11 @@ export function DemoPage({ page }: { page: MarketingPage }) {
           <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
             Book your scan
           </p>
-          <div className="mt-5 grid gap-3">
-            {["Work email", "Company", "CRM or sales system"].map((field) => (
-              <div
-                className="marketing-chip border px-4 py-3 text-[13px] text-muted-foreground"
-                key={field}
-              >
-                {field}
-              </div>
-            ))}
-          </div>
+          <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
+            Tell us which relationship systems you use today. We’ll reply with a time.
+          </p>
           <Button asChild className="marketing-cta-primary mt-5">
-            <Link href="/book-a-demo/success">Book my scan</Link>
+            <a href="mailto:hello@oppulence.io?subject=Revenue%20Leak%20Scan">Book my scan</a>
           </Button>
         </div>
       </section>

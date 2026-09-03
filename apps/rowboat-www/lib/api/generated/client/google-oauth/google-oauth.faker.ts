@@ -7,9 +7,25 @@
  */
 import { faker } from "@faker-js/faker";
 
-import type { OAuthTokenBundle, StartGoogleOAuth200 } from "../model";
+import type { GoogleConnectionStatus, OAuthTokenBundle, StartGoogleOAuth200 } from "../model";
 
 export const getHandleGoogleOAuthCallbackResponseMock = (): string => faker.word.sample();
+
+export const getGetGoogleConnectionStatusResponseMock = (
+  overrideResponse: Partial<Extract<GoogleConnectionStatus, object>> = {},
+): GoogleConnectionStatus => ({
+  accounts: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
+      accountId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      connectedAt: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      scopes: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+        () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+      ),
+    }),
+  ),
+  connected: faker.datatype.boolean(),
+  ...overrideResponse,
+});
 
 export const getClaimGoogleOAuthResponseMock = (
   overrideResponse: Partial<Extract<OAuthTokenBundle, object>> = {},

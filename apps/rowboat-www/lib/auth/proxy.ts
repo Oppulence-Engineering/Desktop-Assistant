@@ -16,6 +16,8 @@ const FORWARDED_REQUEST_HEADERS = [
   "if-none-match",
   "last-event-id",
   "range",
+  "x-approval-token",
+  "x-continuation-token",
   "x-idempotency-key",
   "x-request-id",
 ] as const;
@@ -31,6 +33,15 @@ const RESPONSE_HEADERS = [
   "retry-after",
   "x-rowboat-session-id",
 ];
+
+export function dashboardProxyHeaders(source: Headers): Headers {
+  const forwarded = new Headers();
+  for (const key of FORWARDED_REQUEST_HEADERS) {
+    const value = source.get(key);
+    if (value) forwarded.set(key, value);
+  }
+  return forwarded;
+}
 
 export type AuthorizedSessionResult =
   | { ok: true; session: DashboardSessionCookie; refreshed?: DashboardSessionCookie }
@@ -86,11 +97,7 @@ export async function proxyRowboatAPI(request: NextRequest, path: string[]): Pro
   if (!auth.ok) return auth.response;
 
   const upstreamURL = rowboatApiURL(dashboardProxyPath(path), request.nextUrl.searchParams);
-  const headers = new Headers();
-  for (const key of FORWARDED_REQUEST_HEADERS) {
-    const value = request.headers.get(key);
-    if (value) headers.set(key, value);
-  }
+  const headers = dashboardProxyHeaders(request.headers);
   headers.set("Authorization", `${auth.session.tokenType} ${auth.session.accessToken}`);
 
   const method = request.method.toUpperCase();

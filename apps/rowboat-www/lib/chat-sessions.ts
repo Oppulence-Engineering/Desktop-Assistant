@@ -3,9 +3,8 @@
 import "client-only";
 
 /**
- * Sensitive chat history is intentionally memory-only. A full navigation,
- * logout, or account switch destroys it; transcripts never enter Web Storage.
- * Durable history should come from an organization-scoped server endpoint.
+ * Sensitive chat history is cached in memory only; the organization-scoped
+ * agent-session event log is the durable source used after a reload.
  */
 
 const MAX_SESSIONS = 30;

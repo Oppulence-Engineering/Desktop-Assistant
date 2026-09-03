@@ -899,6 +899,40 @@
         ],
         "type": "object"
       },
+      "AgentSessionEventsResponse": {
+        "description": "A page of durable session events.",
+        "properties": {
+          "events": {
+            "description": "Ordered session events.",
+            "items": {
+              "$ref": "#/components/schemas/DurableAgentSessionEvent"
+            },
+            "type": "array"
+          },
+          "nextSeq": {
+            "description": "Last returned sequence when another page may exist.",
+            "example": 500,
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "required": ["events"],
+        "type": "object"
+      },
+      "AgentSessionListResponse": {
+        "description": "Recent durable agent conversations.",
+        "properties": {
+          "sessions": {
+            "description": "Sessions ordered by latest update.",
+            "items": {
+              "$ref": "#/components/schemas/DurableAgentSessionView"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["sessions"],
+        "type": "object"
+      },
       "AgentToolCall": {
         "properties": {
           "args_json": {
@@ -4861,6 +4895,136 @@
         "required": ["sanctionedCredits", "usedCredits", "availableCredits", "usageDay"],
         "type": "object"
       },
+      "DurableAgentSessionEvent": {
+        "description": "One ordered durable agent lifecycle or transcript event.",
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "description": "Event payload.",
+            "type": "object"
+          },
+          "seq": {
+            "description": "Stable session event sequence.",
+            "example": 4,
+            "type": "integer"
+          },
+          "turnSeq": {
+            "description": "Owning turn sequence when applicable.",
+            "example": 1,
+            "nullable": true,
+            "type": "integer"
+          },
+          "type": {
+            "description": "Canonical event type.",
+            "example": "agent.message",
+            "type": "string"
+          }
+        },
+        "required": ["seq", "type", "data"],
+        "type": "object"
+      },
+      "DurableAgentSessionView": {
+        "description": "Durable agent conversation metadata.",
+        "properties": {
+          "agent": {
+            "description": "Pinned agent slug.",
+            "example": "assistant",
+            "type": "string"
+          },
+          "agentSource": {
+            "description": "Agent definition source.",
+            "example": "builtin",
+            "nullable": true,
+            "type": "string"
+          },
+          "channel": {
+            "description": "Originating channel.",
+            "example": "web",
+            "type": "string"
+          },
+          "continuationToken": {
+            "description": "Signed continuation handle when configured.",
+            "example": "agt_example",
+            "nullable": true,
+            "type": "string"
+          },
+          "costUnits": {
+            "description": "Cumulative metered cost units.",
+            "example": 45,
+            "type": "integer"
+          },
+          "createdAt": {
+            "description": "Session creation time.",
+            "example": "2026-09-02T15:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "error": {
+            "description": "Terminal error summary.",
+            "example": "",
+            "nullable": true,
+            "type": "string"
+          },
+          "errorCode": {
+            "description": "Stable terminal error code.",
+            "example": "",
+            "nullable": true,
+            "type": "string"
+          },
+          "lastActivityAt": {
+            "description": "Most recent activity time.",
+            "example": "2026-09-02T15:01:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "llmCalls": {
+            "description": "Cumulative model calls.",
+            "example": 3,
+            "type": "integer"
+          },
+          "sessionId": {
+            "description": "Stable session id.",
+            "example": "session_abc123",
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "enum": ["active", "paused", "completed", "failed", "canceled"],
+            "example": "active",
+            "type": "string"
+          },
+          "title": {
+            "description": "Conversation title.",
+            "example": "Review the Acme renewal",
+            "nullable": true,
+            "type": "string"
+          },
+          "toolCalls": {
+            "description": "Cumulative tool calls.",
+            "example": 1,
+            "type": "integer"
+          },
+          "turns": {
+            "description": "Completed turn count.",
+            "example": 2,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessionId",
+          "agent",
+          "status",
+          "channel",
+          "turns",
+          "llmCalls",
+          "toolCalls",
+          "costUnits",
+          "continuationToken",
+          "createdAt"
+        ],
+        "type": "object"
+      },
       "Entity": {
         "properties": {
           "canonical_entity_id": {
@@ -5403,6 +5567,52 @@
           }
         },
         "required": ["session"],
+        "type": "object"
+      },
+      "GoogleConnectionAccount": {
+        "description": "Safe metadata for a connected Google account.",
+        "properties": {
+          "accountId": {
+            "description": "Google account email when available.",
+            "example": "owner@example.com",
+            "type": "string"
+          },
+          "connectedAt": {
+            "description": "RFC3339 connection timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "type": "string"
+          },
+          "scopes": {
+            "description": "OAuth scopes granted or requested.",
+            "example": ["invoices:read", "customers:read"],
+            "items": {
+              "description": "Scope.",
+              "example": "https://www.googleapis.com/auth/gmail.readonly",
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["accountId", "scopes", "connectedAt"],
+        "type": "object"
+      },
+      "GoogleConnectionStatus": {
+        "description": "Google connection status for the authenticated user.",
+        "properties": {
+          "accounts": {
+            "description": "Connected Google accounts.",
+            "items": {
+              "$ref": "#/components/schemas/GoogleConnectionAccount"
+            },
+            "type": "array"
+          },
+          "connected": {
+            "description": "Whether a Google account is connected.",
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": ["connected", "accounts"],
         "type": "object"
       },
       "GoogleRefreshRequest": {
@@ -14086,6 +14296,138 @@
         "tags": ["System"]
       }
     },
+    "/v1/agent-sessions": {
+      "get": {
+        "description": "Returns the authenticated user's recent durable agent conversations.",
+        "operationId": "listAgentSessions",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "sessions": [
+                    {
+                      "agent": "assistant",
+                      "channel": "web",
+                      "continuationToken": "agt_example",
+                      "costUnits": 45,
+                      "createdAt": "2026-09-02T15:00:00Z",
+                      "llmCalls": 3,
+                      "sessionId": "session_abc123",
+                      "status": "active",
+                      "title": "Review the Acme renewal",
+                      "toolCalls": 1,
+                      "turns": 2
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSessionListResponse"
+                }
+              }
+            },
+            "description": "Recent agent conversations."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List agent sessions",
+        "tags": ["Agent Sessions"]
+      }
+    },
+    "/v1/agent-sessions/{id}/events": {
+      "get": {
+        "description": "Returns ordered durable events used to reconstruct a conversation after navigation or reload.",
+        "operationId": "listAgentSessionEvents",
+        "parameters": [
+          {
+            "description": "Stable session id.",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "Session id.",
+              "example": "session_abc123",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Return events after this sequence.",
+            "in": "query",
+            "name": "afterSeq",
+            "required": false,
+            "schema": {
+              "description": "Sequence cursor.",
+              "example": 10,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Maximum events to return (up to 1000).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "description": "Page size.",
+              "example": 500,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "events": [
+                    {
+                      "data": {
+                        "input": "Review Acme"
+                      },
+                      "seq": 1,
+                      "turnSeq": 1,
+                      "type": "agent.turn_started"
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AgentSessionEventsResponse"
+                }
+              }
+            },
+            "description": "Durable session events."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List agent session events",
+        "tags": ["Agent Sessions"]
+      }
+    },
     "/v1/auth/workos/exchange": {
       "post": {
         "description": "Completes the authorization-code exchange server-side with the WorkOS API key, then returns the desktop token bundle.",
@@ -18014,6 +18356,45 @@
           }
         ],
         "summary": "Disconnect Google",
+        "tags": ["Google OAuth"]
+      },
+      "get": {
+        "description": "Returns safe metadata for the authenticated user's connected Google account without exposing credentials.",
+        "operationId": "getGoogleConnectionStatus",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "accounts": [
+                    {
+                      "accountId": "owner@example.com",
+                      "connectedAt": "2026-06-04T20:38:00Z",
+                      "scopes": ["https://www.googleapis.com/auth/gmail.readonly"]
+                    }
+                  ],
+                  "connected": true
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleConnectionStatus"
+                }
+              }
+            },
+            "description": "Google connection status."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get Google connection status",
         "tags": ["Google OAuth"]
       }
     },

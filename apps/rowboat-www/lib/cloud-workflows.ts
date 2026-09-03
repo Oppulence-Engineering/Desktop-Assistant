@@ -144,7 +144,9 @@ async function workflowRequest<T>(
     const message =
       body && typeof body === "object" && "message" in body && typeof body.message === "string"
         ? body.message
-        : `Workflow request failed (${response.status})`;
+        : response.status === 404
+          ? "Cloud workflows aren’t available in this environment."
+          : `Workflow request failed (${response.status})`;
     throw new Error(message);
   }
   return schema.parse(body);

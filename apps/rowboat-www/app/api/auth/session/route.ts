@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { clearAuthCookies, readSessionCookie, setSessionCookie } from "@/lib/auth/cookies";
-import { fetchViewer, refreshWorkOSSession, shouldRefreshSession } from "@/lib/auth/rowboat-api";
+import {
+  fetchViewer,
+  fetchViewerIdentity,
+  refreshWorkOSSession,
+  shouldRefreshSession,
+} from "@/lib/auth/rowboat-api";
 
 export async function GET(request: NextRequest) {
   let session = readSessionCookie(request);
@@ -21,26 +26,32 @@ export async function GET(request: NextRequest) {
     refreshed = true;
   }
 
+  let viewer: Awaited<ReturnType<typeof fetchViewer>> | undefined;
+  let identity: Awaited<ReturnType<typeof fetchViewerIdentity>> | undefined;
   try {
-    const viewer = await fetchViewer(session);
-    const response = NextResponse.json({
-      authenticated: true,
-      user: {
-        id: viewer.user.id,
-        workosUserId: session.user.workosUserId,
-        email: viewer.user.email || session.user.email,
-        sessionId: session.user.sessionId,
-        organizationId: session.user.organizationId,
-        role: session.user.role,
-        permissions: session.user.permissions,
-      },
-      billing: viewer.billing,
-      expiresAt: session.expiresAt,
-    });
-    if (refreshed) setSessionCookie(response, session);
-    return response;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "could not load viewer";
-    return NextResponse.json({ error: message, code: "session_unavailable" }, { status: 502 });
+    viewer = await fetchViewer(session);
+  } catch {
+    try {
+      identity = await fetchViewerIdentity(session);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "could not verify viewer identity";
+      return NextResponse.json({ error: message, code: "session_unavailable" }, { status: 502 });
+    }
   }
+  const response = NextResponse.json({
+    authenticated: true,
+    user: {
+      id: viewer?.user.id ?? identity?.user.id,
+      workosUserId: session.user.workosUserId,
+      email: viewer?.user.email || identity?.user.email || session.user.email,
+      sessionId: session.user.sessionId,
+      organizationId: session.user.organizationId,
+      role: session.user.role,
+      permissions: session.user.permissions,
+    },
+    billing: viewer?.billing,
+    expiresAt: session.expiresAt,
+  });
+  if (refreshed) setSessionCookie(response, session);
+  return response;
 }

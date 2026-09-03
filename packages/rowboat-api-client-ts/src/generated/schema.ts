@@ -284,6 +284,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/agent-sessions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List agent sessions
+     * @description Returns the authenticated user's recent durable agent conversations.
+     */
+    get: operations["listAgentSessions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/agent-sessions/{id}/events": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List agent session events
+     * @description Returns ordered durable events used to reconstruct a conversation after navigation or reload.
+     */
+    get: operations["listAgentSessionEvents"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/auth/workos/exchange": {
     parameters: {
       query?: never;
@@ -1127,7 +1167,11 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /**
+     * Get Google connection status
+     * @description Returns safe metadata for the authenticated user's connected Google account without exposing credentials.
+     */
+    get: operations["getGoogleConnectionStatus"];
     put?: never;
     post?: never;
     /**
@@ -3141,6 +3185,21 @@ export interface components {
       updated_at: string;
       /** @description User that owns this row. */
       user: components["schemas"]["User"];
+    };
+    /** @description A page of durable session events. */
+    AgentSessionEventsResponse: {
+      /** @description Ordered session events. */
+      events: components["schemas"]["DurableAgentSessionEvent"][];
+      /**
+       * @description Last returned sequence when another page may exist.
+       * @example 500
+       */
+      nextSeq?: number | null;
+    };
+    /** @description Recent durable agent conversations. */
+    AgentSessionListResponse: {
+      /** @description Sessions ordered by latest update. */
+      sessions: components["schemas"]["DurableAgentSessionView"][];
     };
     AgentToolCall: {
       args_json?: string;
@@ -6016,6 +6075,109 @@ export interface components {
        */
       usedCredits: number;
     };
+    /** @description One ordered durable agent lifecycle or transcript event. */
+    DurableAgentSessionEvent: {
+      /** @description Event payload. */
+      data: {
+        [key: string]: unknown;
+      };
+      /**
+       * @description Stable session event sequence.
+       * @example 4
+       */
+      seq: number;
+      /**
+       * @description Owning turn sequence when applicable.
+       * @example 1
+       */
+      turnSeq?: number | null;
+      /**
+       * @description Canonical event type.
+       * @example agent.message
+       */
+      type: string;
+    };
+    /** @description Durable agent conversation metadata. */
+    DurableAgentSessionView: {
+      /**
+       * @description Pinned agent slug.
+       * @example assistant
+       */
+      agent: string;
+      /**
+       * @description Agent definition source.
+       * @example builtin
+       */
+      agentSource?: string | null;
+      /**
+       * @description Originating channel.
+       * @example web
+       */
+      channel: string;
+      /**
+       * @description Signed continuation handle when configured.
+       * @example agt_example
+       */
+      continuationToken: string | null;
+      /**
+       * @description Cumulative metered cost units.
+       * @example 45
+       */
+      costUnits: number;
+      /**
+       * Format: date-time
+       * @description Session creation time.
+       * @example 2026-09-02T15:00:00Z
+       */
+      createdAt: string;
+      /**
+       * @description Terminal error summary.
+       * @example
+       */
+      error?: string | null;
+      /**
+       * @description Stable terminal error code.
+       * @example
+       */
+      errorCode?: string | null;
+      /**
+       * Format: date-time
+       * @description Most recent activity time.
+       * @example 2026-09-02T15:01:00Z
+       */
+      lastActivityAt?: string | null;
+      /**
+       * @description Cumulative model calls.
+       * @example 3
+       */
+      llmCalls: number;
+      /**
+       * @description Stable session id.
+       * @example session_abc123
+       */
+      sessionId: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       * @enum {string}
+       */
+      status: "active" | "paused" | "completed" | "failed" | "canceled";
+      /**
+       * @description Conversation title.
+       * @example Review the Acme renewal
+       */
+      title?: string | null;
+      /**
+       * @description Cumulative tool calls.
+       * @example 1
+       */
+      toolCalls: number;
+      /**
+       * @description Completed turn count.
+       * @example 2
+       */
+      turns: number;
+    };
     Entity: {
       canonical_entity_id?: string;
       /**
@@ -6343,6 +6505,37 @@ export interface components {
        * @example state_abc123
        */
       session: string;
+    };
+    /** @description Safe metadata for a connected Google account. */
+    GoogleConnectionAccount: {
+      /**
+       * @description Google account email when available.
+       * @example owner@example.com
+       */
+      accountId: string;
+      /**
+       * @description RFC3339 connection timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      connectedAt: string;
+      /**
+       * @description OAuth scopes granted or requested.
+       * @example [
+       *       "invoices:read",
+       *       "customers:read"
+       *     ]
+       */
+      scopes: string[];
+    };
+    /** @description Google connection status for the authenticated user. */
+    GoogleConnectionStatus: {
+      /** @description Connected Google accounts. */
+      accounts: components["schemas"]["GoogleConnectionAccount"][];
+      /**
+       * @description Whether a Google account is connected.
+       * @example true
+       */
+      connected: boolean;
     };
     /** @description Refreshes a Google access token with the server-held OAuth client secret. */
     GoogleRefreshRequest: {
@@ -12143,6 +12336,93 @@ export interface operations {
       503: components["responses"]["503"];
     };
   };
+  listAgentSessions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Recent agent conversations. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "sessions": [
+           *         {
+           *           "agent": "assistant",
+           *           "channel": "web",
+           *           "continuationToken": "agt_example",
+           *           "costUnits": 45,
+           *           "createdAt": "2026-09-02T15:00:00Z",
+           *           "llmCalls": 3,
+           *           "sessionId": "session_abc123",
+           *           "status": "active",
+           *           "title": "Review the Acme renewal",
+           *           "toolCalls": 1,
+           *           "turns": 2
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": components["schemas"]["AgentSessionListResponse"];
+        };
+      };
+      401: components["responses"]["401"];
+      500: components["responses"]["500"];
+    };
+  };
+  listAgentSessionEvents: {
+    parameters: {
+      query?: {
+        /** @description Return events after this sequence. */
+        afterSeq?: number;
+        /** @description Maximum events to return (up to 1000). */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description Stable session id. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Durable session events. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "events": [
+           *         {
+           *           "data": {
+           *             "input": "Review Acme"
+           *           },
+           *           "seq": 1,
+           *           "turnSeq": 1,
+           *           "type": "agent.turn_started"
+           *         }
+           *       ]
+           *     }
+           */
+          "application/json": components["schemas"]["AgentSessionEventsResponse"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
   exchangeWorkOSToken: {
     parameters: {
       query?: never;
@@ -14789,6 +15069,42 @@ export interface operations {
       };
       401: components["responses"]["401"];
       404: components["responses"]["404"];
+      500: components["responses"]["500"];
+    };
+  };
+  getGoogleConnectionStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Google connection status. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "accounts": [
+           *         {
+           *           "accountId": "owner@example.com",
+           *           "connectedAt": "2026-06-04T20:38:00Z",
+           *           "scopes": [
+           *             "https://www.googleapis.com/auth/gmail.readonly"
+           *           ]
+           *         }
+           *       ],
+           *       "connected": true
+           *     }
+           */
+          "application/json": components["schemas"]["GoogleConnectionStatus"];
+        };
+      };
+      401: components["responses"]["401"];
       500: components["responses"]["500"];
     };
   };

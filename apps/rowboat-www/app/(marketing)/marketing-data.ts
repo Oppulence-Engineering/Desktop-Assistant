@@ -1256,20 +1256,7 @@ export const primaryPages: MarketingPage[] = [
     ],
     proof: baseProof,
     ctaLabel: "Book my scan",
-  },
-  {
-    path: "book-a-demo/success",
-    eyebrow: "Demo Request",
-    title: "Demo request received.",
-    description:
-      "This static success page keeps the demo flow in place while the request backend is wired separately.",
-    category: "demo",
-    bullets: [
-      "Review the living work graph and runtime pages while waiting.",
-      "Prepare the source systems and workflows worth mapping first.",
-      "Bring deployment constraints, model preferences, and tool requirements.",
-    ],
-    proof: baseProof,
+    ctaHref: "mailto:hello@oppulence.io?subject=Revenue%20Leak%20Scan",
   },
   // Canonical legal pages live at /terms and /privacy (app/terms, app/privacy).
   // The old /legal/* paths redirect there (see next.config.ts).

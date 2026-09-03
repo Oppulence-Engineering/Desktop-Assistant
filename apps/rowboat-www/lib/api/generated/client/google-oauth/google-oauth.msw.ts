@@ -8,10 +8,11 @@
 import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
-import type { OAuthTokenBundle, StartGoogleOAuth200 } from "../model";
+import type { GoogleConnectionStatus, OAuthTokenBundle, StartGoogleOAuth200 } from "../model";
 
 import {
   getClaimGoogleOAuthResponseMock,
+  getGetGoogleConnectionStatusResponseMock,
   getHandleGoogleOAuthCallbackResponseMock,
   getRefreshGoogleOAuthResponseMock,
   getStartGoogleOAuthResponseMock,
@@ -19,6 +20,7 @@ import {
 
 export {
   getHandleGoogleOAuthCallbackResponseMock,
+  getGetGoogleConnectionStatusResponseMock,
   getClaimGoogleOAuthResponseMock,
   getRefreshGoogleOAuthResponseMock,
   getStartGoogleOAuthResponseMock,
@@ -59,6 +61,30 @@ export const getDisconnectGoogleMockHandler = (
       }
 
       return new HttpResponse(null, { status: 204 });
+    },
+    options,
+  );
+};
+
+export const getGetGoogleConnectionStatusMockHandler = (
+  overrideResponse?:
+    | GoogleConnectionStatus
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GoogleConnectionStatus> | GoogleConnectionStatus),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/google-oauth",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetGoogleConnectionStatusResponseMock(),
+        { status: 200 },
+      );
     },
     options,
   );
@@ -138,6 +164,7 @@ export const getStartGoogleOAuthMockHandler = (
 export const getGoogleOauthMock = () => [
   getHandleGoogleOAuthCallbackMockHandler(),
   getDisconnectGoogleMockHandler(),
+  getGetGoogleConnectionStatusMockHandler(),
   getClaimGoogleOAuthMockHandler(),
   getRefreshGoogleOAuthMockHandler(),
   getStartGoogleOAuthMockHandler(),

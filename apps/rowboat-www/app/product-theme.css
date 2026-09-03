@@ -43,7 +43,7 @@
   --border: #e5e7eb;
   --input: #e5e7eb;
   --ring: var(--main-color, oklch(70.8% 0 0));
-  --radius: 0.25rem;
+  --radius: 0.5rem;
   --sidebar: hsl(0 0% 98%);
   --sidebar-foreground: hsl(240 5.3% 26.1%);
   --sidebar-primary: hsl(240 5.9% 10%);
@@ -136,21 +136,6 @@
   --selection-foreground: oklch(0.205 0 0);
 }
 
-.app-shell {
-  --radius: 0;
-}
-
-/*
- * The authenticated product uses a deliberately square visual language.
- * Keep this stronger than component defaults, including portalled dialogs,
- * popovers, and selects rendered outside the .app-shell subtree.
- */
-.app-shell,
-.app-shell *,
-body:has([data-product-shell]) * {
-  border-radius: 0 !important;
-}
-
 /*
  * Settings workspace
  * ------------------
@@ -189,17 +174,17 @@ body:has([data-product-shell]) * {
 }
 
 .settings-workspace .text-lg {
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.4;
 }
 
 .settings-workspace .text-sm {
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.4;
 }
 
 .settings-workspace .text-xs {
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -207,7 +192,7 @@ body:has([data-product-shell]) * {
 .settings-workspace .rounded-md,
 .settings-workspace .rounded-lg,
 .settings-workspace .rounded-xl {
-  border-radius: 2px;
+  border-radius: 8px;
 }
 
 .settings-rail {
@@ -223,7 +208,7 @@ body:has([data-product-shell]) * {
 
 .settings-rail-heading {
   color: var(--settings-faint);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.075em;
   line-height: 1;
@@ -232,7 +217,6 @@ body:has([data-product-shell]) * {
 }
 
 .settings-back,
-.settings-identity,
 .settings-nav-item {
   align-items: center;
   border: 0;
@@ -254,22 +238,12 @@ body:has([data-product-shell]) * {
   color: var(--settings-copy);
 }
 
-.settings-identity {
-  color: var(--settings-copy);
-  font-size: 12px;
-  font-weight: 600;
-  justify-content: space-between;
-  min-height: 36px;
-  padding: 0 12px;
-  width: 100%;
-}
-
 .settings-nav-item {
-  border-radius: 2px;
-  font-size: 12px;
+  border-radius: 8px;
+  font-size: 13px;
   gap: 8px;
-  min-height: 30px;
-  padding: 5px 9px;
+  min-height: 34px;
+  padding: 7px 10px;
   transition:
     background-color 140ms ease,
     color 140ms ease;
@@ -324,14 +298,8 @@ body:has([data-product-shell]) * {
 
 .settings-stage-header-title {
   color: var(--settings-copy);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 620;
-}
-
-.settings-stage-header-brand {
-  color: var(--settings-faint);
-  font-size: 10px;
-  font-weight: 450;
 }
 
 .settings-page-scroll {
@@ -343,8 +311,8 @@ body:has([data-product-shell]) * {
 
 .settings-page {
   margin: 0 auto;
-  max-width: 920px;
-  padding: 54px 44px 80px;
+  max-width: 880px;
+  padding: 48px 40px 80px;
   width: 100%;
 }
 
@@ -354,7 +322,7 @@ body:has([data-product-shell]) * {
 
 .settings-page-title {
   color: var(--settings-copy);
-  font-size: 17px;
+  font-size: 24px;
   font-weight: 650;
   letter-spacing: -0.02em;
   line-height: 1.25;
@@ -362,7 +330,7 @@ body:has([data-product-shell]) * {
 
 .settings-page-description {
   color: var(--settings-muted);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.55;
   margin-top: 5px;
   max-width: 620px;
@@ -378,10 +346,9 @@ body:has([data-product-shell]) * {
   margin-top: 28px;
 }
 
-.settings-overview-label,
 .settings-section-kicker {
   color: var(--settings-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 610;
   margin-bottom: 10px;
 }
@@ -396,12 +363,12 @@ body:has([data-product-shell]) * {
   align-items: center;
   background: var(--settings-panel);
   border: 1px solid var(--settings-line);
-  border-radius: 2px;
+  border-radius: 12px;
   color: var(--settings-copy);
   display: flex;
   gap: 11px;
-  min-height: 68px;
-  padding: 12px;
+  min-height: 72px;
+  padding: 14px;
   text-align: left;
   transition: border-color 140ms ease;
   width: 100%;
@@ -413,19 +380,18 @@ body:has([data-product-shell]) * {
 
 .settings-card-icon {
   align-items: center;
-  background: var(--settings-accent-soft);
-  border: 1px solid color-mix(in srgb, var(--settings-accent) 12%, transparent);
-  border-radius: 2px;
+  background: transparent;
+  border: 0;
   color: var(--settings-accent);
   display: flex;
-  flex: 0 0 31px;
-  height: 31px;
+  flex: 0 0 22px;
+  height: 22px;
   justify-content: center;
 }
 
 .settings-card-icon svg {
-  height: 14px;
-  width: 14px;
+  height: 16px;
+  width: 16px;
 }
 
 .settings-card-copy {
@@ -434,14 +400,14 @@ body:has([data-product-shell]) * {
 
 .settings-card-title {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 620;
 }
 
 .settings-card-description {
   color: var(--settings-muted);
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.4;
   margin-top: 3px;
 }
@@ -464,13 +430,13 @@ body:has([data-product-shell]) * {
 
 .settings-section-title {
   color: var(--settings-copy);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 620;
 }
 
 .settings-section-description {
   color: var(--settings-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
   margin-top: 3px;
   max-width: 630px;
@@ -479,7 +445,7 @@ body:has([data-product-shell]) * {
 .settings-panel {
   background: var(--settings-panel);
   border: 1px solid var(--settings-line);
-  border-radius: 2px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -503,13 +469,13 @@ body:has([data-product-shell]) * {
 
 .settings-row-label {
   color: var(--settings-copy);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 580;
 }
 
 .settings-row-description {
   color: var(--settings-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.45;
   margin-top: 3px;
   max-width: 560px;
@@ -541,7 +507,7 @@ body:has([data-product-shell]) * {
 .settings-inline-notice {
   background: var(--settings-success-soft);
   border: 1px solid color-mix(in srgb, var(--settings-success) 18%, transparent);
-  border-radius: 2px;
+  border-radius: 8px;
   color: var(--settings-success);
   font-size: 10px;
   margin-top: 14px;
@@ -551,7 +517,7 @@ body:has([data-product-shell]) * {
 .settings-preview {
   background: var(--settings-panel);
   border: 1px solid var(--settings-line);
-  border-radius: 2px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -573,7 +539,7 @@ body:has([data-product-shell]) * {
 .settings-choice {
   background: var(--settings-panel);
   border: 1px solid var(--settings-line);
-  border-radius: 2px;
+  border-radius: 12px;
   color: var(--settings-copy);
   padding: 8px;
   text-align: left;
@@ -599,9 +565,9 @@ body:has([data-product-shell]) * {
 .settings-control,
 .settings-select,
 .settings-button {
-  border-radius: 2px;
+  border-radius: 8px;
   font: inherit;
-  font-size: 10px;
+  font-size: 13px;
   min-height: 31px;
 }
 

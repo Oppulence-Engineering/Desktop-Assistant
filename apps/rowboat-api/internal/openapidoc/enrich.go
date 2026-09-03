@@ -211,6 +211,40 @@ func addRuntimeSchemas(schemas obj) {
 	addSlackOAuthSchemas(schemas)
 	addCloudEventSchemas(schemas)
 	addInternalSchemas(schemas)
+	addAgentSessionSchemas(schemas)
+}
+
+func addAgentSessionSchemas(schemas obj) {
+	schemas["DurableAgentSessionView"] = objectSchema("Durable agent conversation metadata.", obj{
+		"sessionId":         stringSchema("Stable session id.", "session_abc123"),
+		"agent":             stringSchema("Pinned agent slug.", "assistant"),
+		"agentSource":       stringSchema("Agent definition source.", "builtin", nullable()),
+		"status":            stringEnum("Session lifecycle status.", "active", "active", "paused", "completed", "failed", "canceled"),
+		"channel":           stringSchema("Originating channel.", "web"),
+		"title":             stringSchema("Conversation title.", "Review the Acme renewal", nullable()),
+		"turns":             intSchema("Completed turn count.", 2),
+		"llmCalls":          intSchema("Cumulative model calls.", 3),
+		"toolCalls":         intSchema("Cumulative tool calls.", 1),
+		"costUnits":         intSchema("Cumulative metered cost units.", 45),
+		"continuationToken": stringSchema("Signed continuation handle when configured.", "agt_example", nullable()),
+		"error":             stringSchema("Terminal error summary.", "", nullable()),
+		"errorCode":         stringSchema("Stable terminal error code.", "", nullable()),
+		"createdAt":         stringSchema("Session creation time.", "2026-09-02T15:00:00Z", obj{"format": "date-time"}),
+		"lastActivityAt":    stringSchema("Most recent activity time.", "2026-09-02T15:01:00Z", obj{"format": "date-time"}, nullable()),
+	}, "sessionId", "agent", "status", "channel", "turns", "llmCalls", "toolCalls", "costUnits", "continuationToken", "createdAt")
+	schemas["AgentSessionListResponse"] = objectSchema("Recent durable agent conversations.", obj{
+		"sessions": arraySchema("Sessions ordered by latest update.", ref("DurableAgentSessionView")),
+	}, "sessions")
+	schemas["DurableAgentSessionEvent"] = objectSchema("One ordered durable agent lifecycle or transcript event.", obj{
+		"seq":     intSchema("Stable session event sequence.", 4),
+		"type":    stringSchema("Canonical event type.", "agent.message"),
+		"turnSeq": intSchema("Owning turn sequence when applicable.", 1, nullable()),
+		"data":    freeFormSchema("Event payload."),
+	}, "seq", "type", "data")
+	schemas["AgentSessionEventsResponse"] = objectSchema("A page of durable session events.", obj{
+		"events":  arraySchema("Ordered session events.", ref("DurableAgentSessionEvent")),
+		"nextSeq": intSchema("Last returned sequence when another page may exist.", 500, nullable()),
+	}, "events")
 }
 
 func addBillingSchemas(schemas obj) {
@@ -566,6 +600,15 @@ func addVendorProxySchemas(schemas obj) {
 }
 
 func addOAuthSchemas(schemas obj) {
+	schemas["GoogleConnectionAccount"] = objectSchema("Safe metadata for a connected Google account.", obj{
+		"accountId":   stringSchema("Google account email when available.", "owner@example.com"),
+		"scopes":      arraySchema("Granted Google OAuth scopes.", stringSchema("Scope.", "https://www.googleapis.com/auth/gmail.readonly")),
+		"connectedAt": stringSchema("RFC3339 connection timestamp.", "2026-06-04T20:38:00Z"),
+	}, "accountId", "scopes", "connectedAt")
+	schemas["GoogleConnectionStatus"] = objectSchema("Google connection status for the authenticated user.", obj{
+		"connected": boolSchema("Whether a Google account is connected.", true),
+		"accounts":  arraySchema("Connected Google accounts.", ref("GoogleConnectionAccount")),
+	}, "connected", "accounts")
 	schemas["OAuthTokenBundle"] = objectSchema("OAuth token bundle returned to the desktop.", obj{
 		"access_token":  stringSchema("Provider access token.", "example-access-token"),
 		"refresh_token": stringSchema("Provider refresh token, present on claim when the provider issues one.", "1//refresh", nullable()),
@@ -949,6 +992,7 @@ func addRuntimePaths(paths obj) {
 	addAuthPaths(paths)
 	addBillingPaths(paths)
 	addBackgroundTaskPaths(paths)
+	addAgentSessionPaths(paths)
 	addLLMPaths(paths)
 	addVendorProxyPaths(paths)
 	addGoogleOAuthPaths(paths)
@@ -958,6 +1002,25 @@ func addRuntimePaths(paths obj) {
 	addRevenuePaths(paths)
 	addInternalPaths(paths)
 	addVoiceCloudPaths(paths)
+}
+
+func addAgentSessionPaths(paths obj) {
+	paths["/v1/agent-sessions"] = obj{"get": operation("Agent Sessions", "List agent sessions", "Returns the authenticated user's recent durable agent conversations.", "listAgentSessions", bearer(), nil, nil, obj{
+		"200": jsonResponse("Recent agent conversations.", ref("AgentSessionListResponse"), obj{"sessions": []any{obj{"sessionId": "session_abc123", "agent": "assistant", "status": "active", "channel": "web", "title": "Review the Acme renewal", "turns": 2, "llmCalls": 3, "toolCalls": 1, "costUnits": 45, "continuationToken": "agt_example", "createdAt": "2026-09-02T15:00:00Z"}}}),
+		"401": responseRef("401"),
+		"500": responseRef("500"),
+	})}
+	paths["/v1/agent-sessions/{id}/events"] = obj{"get": operation("Agent Sessions", "List agent session events", "Returns ordered durable events used to reconstruct a conversation after navigation or reload.", "listAgentSessionEvents", bearer(), []any{
+		pathParam("id", "Stable session id.", stringSchema("Session id.", "session_abc123")),
+		queryParam("afterSeq", "Return events after this sequence.", false, intSchema("Sequence cursor.", 10)),
+		queryParam("limit", "Maximum events to return (up to 1000).", false, intSchema("Page size.", 500)),
+	}, nil, obj{
+		"200": jsonResponse("Durable session events.", ref("AgentSessionEventsResponse"), obj{"events": []any{obj{"seq": 1, "type": "agent.turn_started", "turnSeq": 1, "data": obj{"input": "Review Acme"}}}}),
+		"400": responseRef("400"),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+		"500": responseRef("500"),
+	})}
 }
 
 func addVoiceCloudSchemas(schemas obj) {
@@ -1441,11 +1504,18 @@ func addVendorProxyPaths(paths obj) {
 }
 
 func addGoogleOAuthPaths(paths obj) {
-	paths["/v1/google-oauth"] = obj{"delete": operation("Google OAuth", "Disconnect Google", "Removes the user's Google connection and purges data derived from it (the RFC 031 cloud mail index; evidence quotes are retained as the user's own action history). Idempotent: returns 204 whether or not a connection existed. The user should also revoke the grant in their Google account.", "disconnectGoogle", bearer(), nil, nil, obj{
-		"204": obj{"description": "Disconnected (idempotent)."},
-		"401": responseRef("401"),
-		"500": responseRef("500"),
-	})}
+	paths["/v1/google-oauth"] = obj{
+		"get": operation("Google OAuth", "Get Google connection status", "Returns safe metadata for the authenticated user's connected Google account without exposing credentials.", "getGoogleConnectionStatus", bearer(), nil, nil, obj{
+			"200": jsonResponse("Google connection status.", ref("GoogleConnectionStatus"), obj{"connected": true, "accounts": []any{obj{"accountId": "owner@example.com", "scopes": []any{"https://www.googleapis.com/auth/gmail.readonly"}, "connectedAt": "2026-06-04T20:38:00Z"}}}),
+			"401": responseRef("401"),
+			"500": responseRef("500"),
+		}),
+		"delete": operation("Google OAuth", "Disconnect Google", "Removes the user's Google connection and purges data derived from it (the RFC 031 cloud mail index; evidence quotes are retained as the user's own action history). Idempotent: returns 204 whether or not a connection existed. The user should also revoke the grant in their Google account.", "disconnectGoogle", bearer(), nil, nil, obj{
+			"204": obj{"description": "Disconnected (idempotent)."},
+			"401": responseRef("401"),
+			"500": responseRef("500"),
+		}),
+	}
 	paths["/v1/google-oauth/start"] = obj{"post": operation("Google OAuth", "Start Google OAuth consent", "Creates a one-time state ticket bound to the authenticated Rowboat user and a PKCE S256 verifier, then returns the Google consent URL for the desktop to open.", "startGoogleOAuth", bearer(), nil, nil, obj{
 		"200": jsonResponse("Bound Google authorization URL.", obj{"type": "object", "required": []any{"authorizeUrl"}, "properties": obj{"authorizeUrl": obj{"type": "string", "format": "uri"}}}, obj{"authorizeUrl": "https://accounts.google.com/o/oauth2/v2/auth?..."}),
 		"401": responseRef("401"),
