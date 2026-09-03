@@ -8,15 +8,21 @@
 import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
-import type { CloudEventIngestResponse, InternalInvalidateResponse } from "../model";
+import type {
+  CloudEventIngestResponse,
+  InternalConnectionStatusResponse,
+  InternalInvalidateResponse,
+} from "../model";
 
 import {
   getIngestInternalCloudEventResponseMock,
+  getIntrospectConnectorConnectionResponseMock,
   getInvalidateConnectionResponseMock,
 } from "./internal.faker";
 
 export {
   getInvalidateConnectionResponseMock,
+  getIntrospectConnectorConnectionResponseMock,
   getIngestInternalCloudEventResponseMock,
 } from "./internal.faker";
 
@@ -37,6 +43,30 @@ export const getInvalidateConnectionMockHandler = (
             ? await overrideResponse(info)
             : overrideResponse
           : getInvalidateConnectionResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getIntrospectConnectorConnectionMockHandler = (
+  overrideResponse?:
+    | InternalConnectionStatusResponse
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<InternalConnectionStatusResponse> | InternalConnectionStatusResponse),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/v1/internal/connections/status",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getIntrospectConnectorConnectionResponseMock(),
         { status: 200 },
       );
     },
@@ -69,5 +99,6 @@ export const getIngestInternalCloudEventMockHandler = (
 };
 export const getInternalMock = () => [
   getInvalidateConnectionMockHandler(),
+  getIntrospectConnectorConnectionMockHandler(),
   getIngestInternalCloudEventMockHandler(),
 ];

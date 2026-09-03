@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -24,13 +25,43 @@ type OAuthPending struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// State holds the value of the "state" field.
 	State string `json:"state,omitempty"`
+	// StateHash holds the value of the "state_hash" field.
+	StateHash string `json:"state_hash,omitempty"`
 	// Provider holds the value of the "provider" field.
 	Provider string `json:"provider,omitempty"`
 	// PayloadEncrypted holds the value of the "payload_encrypted" field.
 	PayloadEncrypted []byte `json:"-"`
 	// ExpiresAt holds the value of the "expires_at" field.
-	ExpiresAt    time.Time `json:"expires_at,omitempty"`
-	selectValues sql.SelectValues
+	ExpiresAt time.Time `json:"expires_at,omitempty"`
+	// LifecycleStatus holds the value of the "lifecycle_status" field.
+	LifecycleStatus string `json:"lifecycle_status,omitempty"`
+	// OwnerWorkosUserID holds the value of the "owner_workos_user_id" field.
+	OwnerWorkosUserID string `json:"owner_workos_user_id,omitempty"`
+	// OwnerOrgID holds the value of the "owner_org_id" field.
+	OwnerOrgID string `json:"owner_org_id,omitempty"`
+	// RequestedScopes holds the value of the "requested_scopes" field.
+	RequestedScopes []string `json:"requested_scopes,omitempty"`
+	// RedirectTarget holds the value of the "redirect_target" field.
+	RedirectTarget string `json:"redirect_target,omitempty"`
+	// ConsentChallenge holds the value of the "consent_challenge" field.
+	ConsentChallenge string `json:"consent_challenge,omitempty"`
+	// ContextRequestID holds the value of the "context_request_id" field.
+	ContextRequestID string `json:"context_request_id,omitempty"`
+	// HydraClientID holds the value of the "hydra_client_id" field.
+	HydraClientID string `json:"hydra_client_id,omitempty"`
+	// CallbackAt holds the value of the "callback_at" field.
+	CallbackAt time.Time `json:"callback_at,omitempty"`
+	// CallbackClaimID holds the value of the "callback_claim_id" field.
+	CallbackClaimID uuid.UUID `json:"callback_claim_id,omitempty"`
+	// CallbackClaimedUntil holds the value of the "callback_claimed_until" field.
+	CallbackClaimedUntil time.Time `json:"callback_claimed_until,omitempty"`
+	// CallbackAttempts holds the value of the "callback_attempts" field.
+	CallbackAttempts int `json:"callback_attempts,omitempty"`
+	// ClaimedAt holds the value of the "claimed_at" field.
+	ClaimedAt time.Time `json:"claimed_at,omitempty"`
+	// FailureReason holds the value of the "failure_reason" field.
+	FailureReason string `json:"failure_reason,omitempty"`
+	selectValues  sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -38,13 +69,15 @@ func (*OAuthPending) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case oauthpending.FieldPayloadEncrypted:
+		case oauthpending.FieldPayloadEncrypted, oauthpending.FieldRequestedScopes:
 			values[i] = new([]byte)
-		case oauthpending.FieldState, oauthpending.FieldProvider:
+		case oauthpending.FieldCallbackAttempts:
+			values[i] = new(sql.NullInt64)
+		case oauthpending.FieldState, oauthpending.FieldStateHash, oauthpending.FieldProvider, oauthpending.FieldLifecycleStatus, oauthpending.FieldOwnerWorkosUserID, oauthpending.FieldOwnerOrgID, oauthpending.FieldRedirectTarget, oauthpending.FieldConsentChallenge, oauthpending.FieldContextRequestID, oauthpending.FieldHydraClientID, oauthpending.FieldFailureReason:
 			values[i] = new(sql.NullString)
-		case oauthpending.FieldCreatedAt, oauthpending.FieldUpdatedAt, oauthpending.FieldExpiresAt:
+		case oauthpending.FieldCreatedAt, oauthpending.FieldUpdatedAt, oauthpending.FieldExpiresAt, oauthpending.FieldCallbackAt, oauthpending.FieldCallbackClaimedUntil, oauthpending.FieldClaimedAt:
 			values[i] = new(sql.NullTime)
-		case oauthpending.FieldID:
+		case oauthpending.FieldID, oauthpending.FieldCallbackClaimID:
 			values[i] = new(uuid.UUID)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -85,6 +118,12 @@ func (_m *OAuthPending) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.State = value.String
 			}
+		case oauthpending.FieldStateHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field state_hash", values[i])
+			} else if value.Valid {
+				_m.StateHash = value.String
+			}
 		case oauthpending.FieldProvider:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field provider", values[i])
@@ -102,6 +141,92 @@ func (_m *OAuthPending) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field expires_at", values[i])
 			} else if value.Valid {
 				_m.ExpiresAt = value.Time
+			}
+		case oauthpending.FieldLifecycleStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field lifecycle_status", values[i])
+			} else if value.Valid {
+				_m.LifecycleStatus = value.String
+			}
+		case oauthpending.FieldOwnerWorkosUserID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field owner_workos_user_id", values[i])
+			} else if value.Valid {
+				_m.OwnerWorkosUserID = value.String
+			}
+		case oauthpending.FieldOwnerOrgID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field owner_org_id", values[i])
+			} else if value.Valid {
+				_m.OwnerOrgID = value.String
+			}
+		case oauthpending.FieldRequestedScopes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field requested_scopes", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.RequestedScopes); err != nil {
+					return fmt.Errorf("unmarshal field requested_scopes: %w", err)
+				}
+			}
+		case oauthpending.FieldRedirectTarget:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field redirect_target", values[i])
+			} else if value.Valid {
+				_m.RedirectTarget = value.String
+			}
+		case oauthpending.FieldConsentChallenge:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field consent_challenge", values[i])
+			} else if value.Valid {
+				_m.ConsentChallenge = value.String
+			}
+		case oauthpending.FieldContextRequestID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field context_request_id", values[i])
+			} else if value.Valid {
+				_m.ContextRequestID = value.String
+			}
+		case oauthpending.FieldHydraClientID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field hydra_client_id", values[i])
+			} else if value.Valid {
+				_m.HydraClientID = value.String
+			}
+		case oauthpending.FieldCallbackAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field callback_at", values[i])
+			} else if value.Valid {
+				_m.CallbackAt = value.Time
+			}
+		case oauthpending.FieldCallbackClaimID:
+			if value, ok := values[i].(*uuid.UUID); !ok {
+				return fmt.Errorf("unexpected type %T for field callback_claim_id", values[i])
+			} else if value != nil {
+				_m.CallbackClaimID = *value
+			}
+		case oauthpending.FieldCallbackClaimedUntil:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field callback_claimed_until", values[i])
+			} else if value.Valid {
+				_m.CallbackClaimedUntil = value.Time
+			}
+		case oauthpending.FieldCallbackAttempts:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field callback_attempts", values[i])
+			} else if value.Valid {
+				_m.CallbackAttempts = int(value.Int64)
+			}
+		case oauthpending.FieldClaimedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field claimed_at", values[i])
+			} else if value.Valid {
+				_m.ClaimedAt = value.Time
+			}
+		case oauthpending.FieldFailureReason:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field failure_reason", values[i])
+			} else if value.Valid {
+				_m.FailureReason = value.String
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -148,6 +273,9 @@ func (_m *OAuthPending) String() string {
 	builder.WriteString("state=")
 	builder.WriteString(_m.State)
 	builder.WriteString(", ")
+	builder.WriteString("state_hash=")
+	builder.WriteString(_m.StateHash)
+	builder.WriteString(", ")
 	builder.WriteString("provider=")
 	builder.WriteString(_m.Provider)
 	builder.WriteString(", ")
@@ -155,6 +283,48 @@ func (_m *OAuthPending) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("expires_at=")
 	builder.WriteString(_m.ExpiresAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("lifecycle_status=")
+	builder.WriteString(_m.LifecycleStatus)
+	builder.WriteString(", ")
+	builder.WriteString("owner_workos_user_id=")
+	builder.WriteString(_m.OwnerWorkosUserID)
+	builder.WriteString(", ")
+	builder.WriteString("owner_org_id=")
+	builder.WriteString(_m.OwnerOrgID)
+	builder.WriteString(", ")
+	builder.WriteString("requested_scopes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RequestedScopes))
+	builder.WriteString(", ")
+	builder.WriteString("redirect_target=")
+	builder.WriteString(_m.RedirectTarget)
+	builder.WriteString(", ")
+	builder.WriteString("consent_challenge=")
+	builder.WriteString(_m.ConsentChallenge)
+	builder.WriteString(", ")
+	builder.WriteString("context_request_id=")
+	builder.WriteString(_m.ContextRequestID)
+	builder.WriteString(", ")
+	builder.WriteString("hydra_client_id=")
+	builder.WriteString(_m.HydraClientID)
+	builder.WriteString(", ")
+	builder.WriteString("callback_at=")
+	builder.WriteString(_m.CallbackAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("callback_claim_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CallbackClaimID))
+	builder.WriteString(", ")
+	builder.WriteString("callback_claimed_until=")
+	builder.WriteString(_m.CallbackClaimedUntil.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("callback_attempts=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CallbackAttempts))
+	builder.WriteString(", ")
+	builder.WriteString("claimed_at=")
+	builder.WriteString(_m.ClaimedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("failure_reason=")
+	builder.WriteString(_m.FailureReason)
 	builder.WriteByte(')')
 	return builder.String()
 }

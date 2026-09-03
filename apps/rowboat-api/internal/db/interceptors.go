@@ -27,6 +27,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -103,6 +104,7 @@ var tenantUserColumns = map[string]string{
 	ent.TypeBackgroundTaskRunEvent:            backgroundtaskrunevent.UserColumn,
 	ent.TypeBackgroundTaskScheduleState:       backgroundtaskschedulestate.UserColumn,
 	ent.TypeCloudEvent:                        cloudevent.UserColumn,
+	ent.TypeConnectorAuditEvent:               connectorauditevent.UserColumn,
 	ent.TypeCaptureArtifact:                   captureartifact.UserColumn,
 	ent.TypeCreditLedger:                      creditledger.UserColumn,
 	ent.TypeGoogleWatch:                       googlewatch.UserColumn,
@@ -341,6 +343,13 @@ func registerInterceptors(client *ent.Client, log *zap.Logger) {
 		func(ctx context.Context, q *ent.MCPConnectionQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(mcpconnection.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.ConnectorAuditEvent.Intercept(intercept.TraverseConnectorAuditEvent(
+		func(ctx context.Context, q *ent.ConnectorAuditEventQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(connectorauditevent.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 

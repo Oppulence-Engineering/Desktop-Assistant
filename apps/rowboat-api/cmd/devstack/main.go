@@ -20,6 +20,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -37,8 +38,10 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -59,8 +62,10 @@ var (
 	issuer   string
 	audience string
 
-	authCodes sync.Map // code -> authCode
-	refreshDB sync.Map // refresh_token -> session
+	authCodes   sync.Map // code -> authCode
+	refreshDB   sync.Map // refresh_token -> session
+	hydraDB     sync.Map // consent challenge -> hydraConsent
+	oauthFaults = newOAuthFaultController()
 )
 
 var routeTaskIDRe = regexp.MustCompile(`(?m)^\d+\.\s+id:\s+([^\n]+)`)
@@ -69,10 +74,26 @@ type authCode struct {
 	challenge   string
 	redirectURI string
 	clientID    string
+	audience    string
 	scope       string
 	sub         string
 	email       string
 	nonce       string
+	amr         []string
+	acr         string
+	expires     time.Time
+}
+
+type hydraConsent struct {
+	challenge   string
+	clientID    string
+	redirectURI string
+	audience    []string
+	scopes      []string
+	state       string
+	subject     string
+	email       string
+	pkce        string
 	expires     time.Time
 }
 
@@ -80,7 +101,68 @@ type session struct {
 	sub      string
 	email    string
 	clientID string
+	audience string
 	scope    string
+}
+
+type oauthRefreshFaultPlan struct {
+	ID                       string `json:"id"`
+	HoldBeforeResponse       bool   `json:"hold_before_response,omitempty"`
+	AfterResponseURL         string `json:"after_response_url,omitempty"`
+	AfterResponseSecret      string `json:"after_response_secret,omitempty"`
+	SignalPID                int    `json:"signal_pid,omitempty"`
+	ProviderRefreshSemantics string `json:"provider_refresh_semantics,omitempty"`
+}
+
+type oauthRefreshFaultRuntime struct {
+	plan           oauthRefreshFaultPlan
+	entered        bool
+	oldConsumed    bool
+	rotatedIssued  bool
+	responseSent   bool
+	postActionDone bool
+	release        chan struct{}
+	releaseOnce    sync.Once
+}
+
+type oauthFaultController struct {
+	mu           sync.Mutex
+	plans        []*oauthRefreshFaultRuntime
+	refreshCalls int
+	revokeCalls  int
+	revokeFail   bool
+}
+
+type oauthFaultConfig struct {
+	Reset        bool                    `json:"reset,omitempty"`
+	RevokeFail   *bool                   `json:"revoke_fail,omitempty"`
+	RefreshPlans []oauthRefreshFaultPlan `json:"refresh_plans,omitempty"`
+}
+
+type oauthRefreshFaultStatus struct {
+	ID                       string `json:"id"`
+	ProviderRefreshSemantics string `json:"provider_refresh_semantics,omitempty"`
+	Entered                  bool   `json:"entered"`
+	OldTokenConsumed         bool   `json:"old_token_consumed"`
+	RotatedTokenIssued       bool   `json:"rotated_token_issued"`
+	ResponseSent             bool   `json:"response_sent"`
+	PostActionDone           bool   `json:"post_action_done"`
+}
+
+const (
+	providerRefreshSemanticsMultiUseRotating    = "multi_use_rotating"
+	providerRefreshSemanticsOneUseNonIdempotent = "one_use_non_idempotent"
+)
+
+type oauthFaultStatus struct {
+	RefreshCalls int                       `json:"refresh_calls"`
+	RevokeCalls  int                       `json:"revoke_calls"`
+	RevokeFail   bool                      `json:"revoke_fail"`
+	Plans        []oauthRefreshFaultStatus `json:"plans"`
+}
+
+func newOAuthFaultController() *oauthFaultController {
+	return &oauthFaultController{}
 }
 
 func main() {
@@ -100,7 +182,19 @@ func main() {
 	mux.HandleFunc("/.well-known/openid-configuration", handleDiscovery)
 	mux.HandleFunc("/oauth2/register", handleRegister)
 	mux.HandleFunc("/authorize", handleAuthorize)
+	// Hydra exposes the authorization endpoint at /oauth2/auth. Keep /authorize
+	// for OIDC desktop tests and serve the same deterministic fixture behavior
+	// at the broker path used by the connector suite.
+	mux.HandleFunc("/oauth2/auth", handleAuthorize)
 	mux.HandleFunc("/oauth2/token", handleToken)
+	mux.HandleFunc("/oauth2/revoke", handleRevoke)
+	if strings.TrimSpace(os.Getenv("DEVSTACK_FIXTURE_SECRET")) != "" {
+		mux.HandleFunc("/fixture/oauth-faults", handleOAuthFaults)
+		mux.HandleFunc("/fixture/oauth-faults/release", handleOAuthFaultRelease)
+	}
+	mux.HandleFunc("/admin/oauth2/auth/requests/consent", handleHydraConsentRequest)
+	mux.HandleFunc("/admin/oauth2/auth/requests/consent/accept", handleHydraConsentAccept)
+	mux.HandleFunc("/admin/oauth2/auth/requests/consent/reject", handleHydraConsentReject)
 	mux.HandleFunc("/mint", handleMint)
 	// WorkOS AuthKit mock (confidential): authorize reuses the OIDC code path;
 	// authenticate is WorkOS's proprietary, secret-required token exchange.
@@ -127,6 +221,12 @@ func main() {
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      60 * time.Second,
 		IdleTimeout:       120 * time.Second,
+	}
+	if cert, key := strings.TrimSpace(os.Getenv("TLS_CERT_FILE")), strings.TrimSpace(os.Getenv("TLS_KEY_FILE")); cert != "" || key != "" {
+		if cert == "" || key == "" {
+			log.Fatal("TLS_CERT_FILE and TLS_KEY_FILE must be configured together")
+		}
+		log.Fatal(srv.ListenAndServeTLS(cert, key))
 	}
 	log.Fatal(srv.ListenAndServe())
 }
@@ -187,15 +287,42 @@ func handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing redirect_uri", http.StatusBadRequest)
 		return
 	}
+	if r.URL.Path == "/oauth2/auth" && strings.TrimSpace(os.Getenv("HYDRA_CONSENT_URL")) != "" {
+		challenge, _ := randomToken(24)
+		scope := strings.Fields(def(q.Get("scope"), "openid email profile"))
+		aud := strings.Fields(q.Get("audience"))
+		if len(aud) == 0 {
+			aud = []string{audience}
+		}
+		hydraDB.Store(challenge, hydraConsent{
+			challenge: challenge, clientID: q.Get("client_id"), redirectURI: redirectURI,
+			audience: aud, scopes: scope, state: q.Get("state"),
+			subject: getenv("FIXTURE_SUBJECT", "user_rfc012_a"), email: getenv("FIXTURE_EMAIL", "a@example.test"),
+			pkce: q.Get("code_challenge"), expires: time.Now().Add(5 * time.Minute),
+		})
+		u, _ := url.Parse(strings.TrimRight(os.Getenv("HYDRA_CONSENT_URL"), "/") + "/consent")
+		qq := u.Query()
+		qq.Set("consent_challenge", challenge)
+		u.RawQuery = qq.Encode()
+		http.Redirect(w, r, u.String(), http.StatusFound)
+		return
+	}
 	code, _ := randomToken(24)
+	scope := def(q.Get("scope"), "openid email profile")
+	if q.Get("fixture_scope_escalation") == "true" {
+		scope = strings.TrimSpace(scope + " dev:admin.write")
+	}
 	authCodes.Store(code, authCode{
 		challenge:   q.Get("code_challenge"),
 		redirectURI: redirectURI,
 		clientID:    q.Get("client_id"),
-		scope:       def(q.Get("scope"), "openid email profile"),
-		sub:         "user_dev_1",
-		email:       "dev@solomon-ai.co",
+		audience:    def(q.Get("audience"), audience),
+		scope:       scope,
+		sub:         getenv("FIXTURE_SUBJECT", "user_dev_1"),
+		email:       getenv("FIXTURE_EMAIL", "dev@solomon-ai.co"),
 		nonce:       q.Get("nonce"),
+		amr:         workOSAMR(q),
+		acr:         q.Get("acr_values"),
 		expires:     time.Now().Add(5 * time.Minute),
 	})
 
@@ -214,6 +341,76 @@ func handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, u.String(), http.StatusFound)
 }
 
+func workOSAMR(q url.Values) []string {
+	if q.Get("acr_values") != "" || q.Get("prompt") == "login" {
+		return []string{"pwd", "mfa"}
+	}
+	return []string{"pwd"}
+}
+
+func handleHydraConsentRequest(w http.ResponseWriter, r *http.Request) {
+	challenge := r.URL.Query().Get("consent_challenge")
+	v, ok := hydraDB.Load(challenge)
+	if !ok {
+		http.Error(w, "unknown consent challenge", http.StatusNotFound)
+		return
+	}
+	h := v.(hydraConsent)
+	writeJSON(w, map[string]any{"skip": false, "subject": h.subject, "challenge": h.challenge,
+		"requested_scope": h.scopes, "requested_access_token_audience": h.audience,
+		"client": map[string]string{"client_id": h.clientID}})
+}
+
+func handleHydraConsentAccept(w http.ResponseWriter, r *http.Request) {
+	challenge := r.URL.Query().Get("consent_challenge")
+	v, ok := hydraDB.LoadAndDelete(challenge)
+	if !ok {
+		http.Error(w, "unknown consent challenge", http.StatusNotFound)
+		return
+	}
+	h := v.(hydraConsent)
+	if time.Now().After(h.expires) {
+		http.Error(w, "expired consent challenge", http.StatusGone)
+		return
+	}
+	var body struct {
+		GrantScope    []string `json:"grant_scope"`
+		GrantAudience []string `json:"grant_access_token_audience"`
+	}
+	_ = json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&body)
+	code, _ := randomToken(24)
+	authCodes.Store(code, authCode{challenge: h.pkce, redirectURI: h.redirectURI, clientID: h.clientID,
+		audience: strings.Join(body.GrantAudience, " "), scope: strings.Join(body.GrantScope, " "),
+		sub: h.subject, email: h.email, expires: time.Now().Add(5 * time.Minute)})
+	u, err := url.Parse(h.redirectURI)
+	if err != nil {
+		http.Error(w, "bad redirect", 500)
+		return
+	}
+	q := u.Query()
+	q.Set("code", code)
+	q.Set("state", h.state)
+	q.Set("iss", issuer)
+	u.RawQuery = q.Encode()
+	writeJSON(w, map[string]string{"redirect_to": u.String()})
+}
+
+func handleHydraConsentReject(w http.ResponseWriter, r *http.Request) {
+	challenge := r.URL.Query().Get("consent_challenge")
+	v, ok := hydraDB.LoadAndDelete(challenge)
+	if !ok {
+		http.Error(w, "unknown consent challenge", http.StatusNotFound)
+		return
+	}
+	h := v.(hydraConsent)
+	u, _ := url.Parse(h.redirectURI)
+	q := u.Query()
+	q.Set("error", "access_denied")
+	q.Set("state", h.state)
+	u.RawQuery = q.Encode()
+	writeJSON(w, map[string]string{"redirect_to": u.String()})
+}
+
 func handleToken(w http.ResponseWriter, r *http.Request) {
 	_ = r.ParseForm()
 	switch r.Form.Get("grant_type") {
@@ -224,6 +421,18 @@ func handleToken(w http.ResponseWriter, r *http.Request) {
 	default:
 		tokenError(w, "unsupported_grant_type")
 	}
+}
+
+func handleRevoke(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	if oauthFaults.recordRevoke() {
+		http.Error(w, "injected provider revoke failure", http.StatusServiceUnavailable)
+		return
+	}
+	if token := strings.TrimSpace(r.Form.Get("token")); token != "" {
+		refreshDB.Delete(token)
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func tokenFromCode(w http.ResponseWriter, r *http.Request) {
@@ -251,25 +460,106 @@ func tokenFromCode(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	rt, _ := randomToken(32)
-	refreshDB.Store(rt, session{sub: ac.sub, email: ac.email, clientID: ac.clientID, scope: ac.scope})
-	writeTokenResponse(w, ac.sub, ac.email, ac.clientID, ac.scope, ac.nonce, rt)
+	refreshDB.Store(rt, session{sub: ac.sub, email: ac.email, clientID: ac.clientID, audience: ac.audience, scope: ac.scope})
+	writeTokenResponse(w, ac.sub, ac.email, ac.clientID, ac.audience, ac.scope, ac.nonce, rt, ac.amr, ac.acr)
 }
 
 func tokenFromRefresh(w http.ResponseWriter, r *http.Request) {
 	rt := r.Form.Get("refresh_token")
-	v, ok := refreshDB.Load(rt)
-	if !ok {
-		tokenError(w, "invalid_grant")
+	plan := oauthFaults.nextRefresh()
+	if plan != nil {
+		plan.markEntered()
+	}
+	if plan != nil && plan.plan.HoldBeforeResponse {
+		select {
+		case <-plan.release:
+		case <-r.Context().Done():
+			return
+		}
+	}
+	var s session
+	rotated := rt
+	switch {
+	case plan != nil && plan.plan.ProviderRefreshSemantics == providerRefreshSemanticsOneUseNonIdempotent:
+		var ok bool
+		s, rotated, ok = rotateRefreshToken(rt)
+		if !ok {
+			tokenError(w, "invalid_grant")
+			return
+		}
+		plan.markRotated()
+	case plan != nil && plan.plan.ProviderRefreshSemantics == providerRefreshSemanticsMultiUseRotating:
+		var ok bool
+		s, rotated, ok = issueRefreshToken(rt)
+		if !ok {
+			tokenError(w, "invalid_grant")
+			return
+		}
+		plan.markRotationIssued()
+	default:
+		value, ok := refreshDB.Load(rt)
+		if !ok {
+			tokenError(w, "invalid_grant")
+			return
+		}
+		s = value.(session)
+	}
+	if plan == nil {
+		writeTokenResponse(w, s.sub, s.email, s.clientID, s.audience, s.scope, "", rotated, nil, "")
 		return
 	}
-	s := v.(session)
-	writeTokenResponse(w, s.sub, s.email, s.clientID, s.scope, "", rt)
+	raw, err := json.Marshal(tokenResponse(s.sub, s.email, s.clientID, s.audience, s.scope, "", rotated, nil, ""))
+	if err != nil {
+		http.Error(w, "encode token response", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Length", strconv.Itoa(len(raw)))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(raw)
+	if flusher, ok := w.(http.Flusher); ok {
+		flusher.Flush()
+	}
+	plan.markResponseSent()
+	plan.runPostAction()
 }
 
-func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, scope, nonce, refreshToken string) {
+func rotateRefreshToken(old string) (session, string, bool) {
+	rotated, err := randomToken(32)
+	if err != nil {
+		return session{}, "", false
+	}
+	value, ok := refreshDB.LoadAndDelete(old)
+	if !ok {
+		return session{}, "", false
+	}
+	s := value.(session)
+	refreshDB.Store(rotated, s)
+	return s, rotated, true
+}
+
+func issueRefreshToken(source string) (session, string, bool) {
+	value, ok := refreshDB.Load(source)
+	if !ok {
+		return session{}, "", false
+	}
+	rotated, err := randomToken(32)
+	if err != nil {
+		return session{}, "", false
+	}
+	s := value.(session)
+	refreshDB.Store(rotated, s)
+	return s, rotated, true
+}
+
+func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, tokenAudience, scope, nonce, refreshToken string, amr []string, acr string) {
+	writeJSON(w, tokenResponse(sub, email, clientID, tokenAudience, scope, nonce, refreshToken, amr, acr))
+}
+
+func tokenResponse(sub, email, clientID, tokenAudience, scope, nonce, refreshToken string, amr []string, acr string) map[string]any {
 	access := signToken(jwt.MapClaims{
 		"iss":   issuer,
-		"aud":   audience,
+		"aud":   def(tokenAudience, audience),
 		"sub":   sub,
 		"iat":   time.Now().Unix(),
 		"exp":   time.Now().Add(time.Hour).Unix(),
@@ -287,14 +577,179 @@ func writeTokenResponse(w http.ResponseWriter, sub, email, clientID, scope, nonc
 	if nonce != "" {
 		idClaims["nonce"] = nonce
 	}
-	writeJSON(w, map[string]any{
+	if len(amr) > 0 {
+		idClaims["amr"] = amr
+	}
+	if acr != "" {
+		idClaims["acr"] = acr
+	}
+	return map[string]any{
 		"access_token":  access,
 		"id_token":      signToken(idClaims),
 		"refresh_token": refreshToken,
 		"token_type":    "Bearer",
 		"expires_in":    3600,
 		"scope":         scope,
-	})
+	}
+}
+
+func handleOAuthFaults(w http.ResponseWriter, r *http.Request) {
+	if !authorizedFixtureRequest(w, r) {
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		writeJSON(w, oauthFaults.status())
+	case http.MethodPost:
+		var config oauthFaultConfig
+		if err := json.NewDecoder(io.LimitReader(r.Body, 1<<16)).Decode(&config); err != nil {
+			http.Error(w, "invalid fault config", http.StatusBadRequest)
+			return
+		}
+		if err := oauthFaults.configure(config); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+func handleOAuthFaultRelease(w http.ResponseWriter, r *http.Request) {
+	if !authorizedFixtureRequest(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	if !oauthFaults.release(r.URL.Query().Get("id")) {
+		http.Error(w, "unknown refresh plan", http.StatusNotFound)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func authorizedFixtureRequest(w http.ResponseWriter, r *http.Request) bool {
+	secret := strings.TrimSpace(os.Getenv("DEVSTACK_FIXTURE_SECRET"))
+	if secret == "" || r.Header.Get("X-Fixture-Secret") != secret {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return false
+	}
+	return true
+}
+
+func (c *oauthFaultController) configure(config oauthFaultConfig) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if config.Reset {
+		c.plans = nil
+		c.refreshCalls = 0
+		c.revokeCalls = 0
+		c.revokeFail = false
+	}
+	if config.RevokeFail != nil {
+		c.revokeFail = *config.RevokeFail
+	}
+	for index, plan := range config.RefreshPlans {
+		if plan.SignalPID > 0 && plan.ProviderRefreshSemantics != providerRefreshSemanticsOneUseNonIdempotent {
+			return fmt.Errorf("signal_pid refresh plans require provider_refresh_semantics=%q", providerRefreshSemanticsOneUseNonIdempotent)
+		}
+		if strings.TrimSpace(plan.ID) == "" {
+			plan.ID = fmt.Sprintf("refresh-%d", len(c.plans)+index+1)
+		}
+		c.plans = append(c.plans, &oauthRefreshFaultRuntime{plan: plan, release: make(chan struct{})})
+	}
+	return nil
+}
+
+func (c *oauthFaultController) nextRefresh() *oauthRefreshFaultRuntime {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	index := c.refreshCalls
+	c.refreshCalls++
+	if index >= len(c.plans) {
+		return nil
+	}
+	return c.plans[index]
+}
+
+func (c *oauthFaultController) recordRevoke() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.revokeCalls++
+	return c.revokeFail
+}
+
+func (c *oauthFaultController) release(id string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, plan := range c.plans {
+		if plan.plan.ID == id {
+			plan.releaseOnce.Do(func() { close(plan.release) })
+			return true
+		}
+	}
+	return false
+}
+
+func (c *oauthFaultController) status() oauthFaultStatus {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	status := oauthFaultStatus{RefreshCalls: c.refreshCalls, RevokeCalls: c.revokeCalls, RevokeFail: c.revokeFail}
+	for _, plan := range c.plans {
+		status.Plans = append(status.Plans, oauthRefreshFaultStatus{
+			ID: plan.plan.ID, ProviderRefreshSemantics: plan.plan.ProviderRefreshSemantics,
+			Entered: plan.entered, OldTokenConsumed: plan.oldConsumed, RotatedTokenIssued: plan.rotatedIssued,
+			ResponseSent: plan.responseSent, PostActionDone: plan.postActionDone,
+		})
+	}
+	return status
+}
+
+func (p *oauthRefreshFaultRuntime) markEntered() {
+	oauthFaults.mu.Lock()
+	p.entered = true
+	oauthFaults.mu.Unlock()
+}
+
+func (p *oauthRefreshFaultRuntime) markRotated() {
+	oauthFaults.mu.Lock()
+	p.oldConsumed = true
+	p.rotatedIssued = true
+	oauthFaults.mu.Unlock()
+}
+
+func (p *oauthRefreshFaultRuntime) markRotationIssued() {
+	oauthFaults.mu.Lock()
+	p.rotatedIssued = true
+	oauthFaults.mu.Unlock()
+}
+
+func (p *oauthRefreshFaultRuntime) markResponseSent() {
+	oauthFaults.mu.Lock()
+	p.responseSent = true
+	oauthFaults.mu.Unlock()
+}
+
+func (p *oauthRefreshFaultRuntime) runPostAction() {
+	if p.plan.AfterResponseURL != "" {
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, p.plan.AfterResponseURL, nil)
+		if err == nil {
+			req.Header.Set("X-Fixture-Secret", p.plan.AfterResponseSecret)
+			client := &http.Client{Timeout: 5 * time.Second}
+			if resp, doErr := client.Do(req); doErr == nil {
+				_ = resp.Body.Close()
+			}
+		}
+	}
+	if p.plan.SignalPID > 0 {
+		_ = syscall.Kill(p.plan.SignalPID, syscall.SIGSTOP)
+	}
+	oauthFaults.mu.Lock()
+	p.postActionDone = true
+	oauthFaults.mu.Unlock()
 }
 
 // handleWorkOSAuthenticate mocks WorkOS's POST /user_management/authenticate:

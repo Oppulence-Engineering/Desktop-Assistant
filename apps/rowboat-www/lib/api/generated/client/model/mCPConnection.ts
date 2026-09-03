@@ -11,8 +11,7 @@ import type { User } from "./user";
  * Per-user connector credential state for MCP products. Stores sealed OAuth refresh tokens or API keys.
  */
 export interface MCPConnection {
-  /** Sealed vendor API key. Sensitive internal storage field; never returned by desktop endpoints. */
-  api_key_encrypted?: string;
+  api_key_present: boolean;
   /** OAuth token audience for the connector. */
   audience: string;
   /** Timestamp when the connector was connected. */
@@ -21,16 +20,24 @@ export interface MCPConnection {
   connector: string;
   /** Row creation timestamp. */
   created_at: string;
+  credential_generation: number;
   /** Credential or one-time ticket expiry timestamp. */
   expires_at?: string;
   /** Stable UUID primary key. */
   id: string;
   /** Timestamp when the connector credential was last minted or used. */
   last_used_at?: string;
-  /** Sealed refresh token. Sensitive internal storage field; never returned by desktop endpoints. */
-  refresh_token_encrypted?: string;
+  organization_id?: string;
+  refresh_token_present: boolean;
+  revocation_attempted_at?: string;
+  revocation_succeeded?: boolean;
+  revoked_at?: string;
+  revoked_by?: string;
+  revoked_reason?: string;
   /** OAuth scopes granted or requested. */
   scopes?: string[];
+  /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
+  status: string;
   /** Last row update timestamp. */
   updated_at: string;
   /** User that owns this row. */

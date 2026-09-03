@@ -90,6 +90,7 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/entities/merge",
 		"/oauth-hooks/pre-consent",
 		"/v1/internal/connections/invalidate",
+		"/v1/internal/connections/status",
 		"/graphql",
 	} {
 		if paths[path] == nil {
@@ -98,6 +99,39 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 	}
 	if paths["/credit-ledgers"] != nil {
 		t.Fatal("unmounted generated entity CRUD path should not be documented")
+	}
+}
+
+func TestEnrichRejectsInternalCredentialCustodyFromPublicSchemas(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{
+		"ConnectorRevocationJob":        obj{"type": "object"},
+		"ConnectorCredentialCleanupJob": obj{"type": "object"},
+		"ConnectorCredentialRecovery":   obj{"type": "object"},
+		"MCPConnection": obj{
+			"type":       "object",
+			"properties": obj{"connector": obj{"type": "string"}, "refresh_token_encrypted": obj{"type": "string"}, "api_key_encrypted": obj{"type": "string"}},
+			"required":   []any{"connector", "refresh_token_encrypted", "api_key_encrypted"},
+		},
+	}}}
+
+	Enrich(spec)
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	for _, internal := range []string{"ConnectorRevocationJob", "ConnectorCredentialCleanupJob", "ConnectorCredentialRecovery"} {
+		if schemas[internal] != nil {
+			t.Fatalf("internal custody schema %s leaked into public OpenAPI", internal)
+		}
+	}
+	connection := asObj(schemas["MCPConnection"])
+	properties := asObj(connection["properties"])
+	for _, secret := range []string{"refresh_token_encrypted", "api_key_encrypted"} {
+		if properties[secret] != nil {
+			t.Fatalf("encrypted credential field %s leaked into public OpenAPI", secret)
+		}
+	}
+	for _, field := range connection["required"].([]any) {
+		if field == "refresh_token_encrypted" || field == "api_key_encrypted" {
+			t.Fatalf("encrypted credential field %s remained required", field)
+		}
 	}
 }
 
@@ -221,6 +255,9 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	if schemas["LLMChatCompletionsRequest"] == nil || schemas["MeResponse"] == nil || schemas["BackgroundTask"] == nil || schemas["BackgroundTaskTemplate"] == nil || schemas["RevisionConflictEnvelope"] == nil || schemas["IntegrationTemplateBlock"] == nil || schemas["SlackWorkspacesResponse"] == nil || schemas["SlackThreadReadResponse"] == nil || schemas["EntityProjection"] == nil || schemas["EntitySpine"] == nil {
 		t.Fatal("checked-in openapi json is missing enriched runtime schemas")
 	}
+	if schemas["ConnectorCredentialCleanupJob"] != nil || schemas["ConnectorCredentialRecovery"] != nil {
+		t.Fatal("checked-in openapi json exposes internal credential cleanup or recovery state")
+	}
 	evidenceProperties := asObj(asObj(schemas["MissionControlDimensionEvidence"])["properties"])
 	if reason := asObj(evidenceProperties["reason"]); reason["type"] != "string" || reason["enum"] != nil {
 		t.Fatalf("checked-in MissionControlDimensionEvidence.reason is invalid: %#v", reason)
@@ -231,5 +268,34 @@ func TestCheckedInOpenAPIJSONIsEnriched(t *testing.T) {
 	entityProperties := asObj(asObj(schemas["EntityProjection"])["properties"])
 	if id := asObj(entityProperties["id"]); id["description"] != "Optional body copy of the path ULID." || id["example"] != "01J9Z8Q5K3R7V2C4M6N8P0T1S3" {
 		t.Fatalf("checked-in entity projection ULID metadata is invalid: %#v", id)
+	}
+}
+
+func TestConnectorContractsDocumentLifecycleAndRateLimitResponses(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+	paths := asObj(spec["paths"])
+	for _, path := range []string{"/v1/connections/{name}/start", "/v1/connectors/{name}/start", "/v1/connections/{name}/callback", "/v1/connectors/{name}/callback", "/v1/connections/{name}/mcp-token", "/v1/connectors/{name}/resource-token", "/v1/connections/{name}", "/v1/connectors/{name}/connections/{connectionID}"} {
+		item := asObj(paths[path])
+		var operation obj
+		for _, method := range []string{"get", "post", "delete"} {
+			if candidate := asObj(item[method]); candidate != nil {
+				operation = candidate
+				break
+			}
+		}
+		responses := asObj(operation["responses"])
+		if responses["429"] == nil {
+			t.Fatalf("%s does not document 429", path)
+		}
+	}
+	token := asObj(asObj(paths["/v1/connections/{name}/mcp-token"])["post"])
+	if required, ok := asObj(token["requestBody"])["required"].(bool); !ok || required {
+		t.Fatalf("MCP token body must be optional: %#v", token["requestBody"])
+	}
+	for _, status := range []string{"403", "409", "410", "429"} {
+		if asObj(token["responses"])[status] == nil {
+			t.Fatalf("MCP token missing %s", status)
+		}
 	}
 }

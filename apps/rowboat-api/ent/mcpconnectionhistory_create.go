@@ -99,21 +99,79 @@ func (_c *MCPConnectionHistoryCreate) SetAudience(v string) *MCPConnectionHistor
 	return _c
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (_c *MCPConnectionHistoryCreate) SetOrganizationID(v string) *MCPConnectionHistoryCreate {
+	_c.mutation.SetOrganizationID(v)
+	return _c
+}
+
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (_c *MCPConnectionHistoryCreate) SetNillableOrganizationID(v *string) *MCPConnectionHistoryCreate {
+	if v != nil {
+		_c.SetOrganizationID(*v)
+	}
+	return _c
+}
+
 // SetScopes sets the "scopes" field.
 func (_c *MCPConnectionHistoryCreate) SetScopes(v []string) *MCPConnectionHistoryCreate {
 	_c.mutation.SetScopes(v)
 	return _c
 }
 
-// SetRefreshTokenEncrypted sets the "refresh_token_encrypted" field.
-func (_c *MCPConnectionHistoryCreate) SetRefreshTokenEncrypted(v []byte) *MCPConnectionHistoryCreate {
-	_c.mutation.SetRefreshTokenEncrypted(v)
+// SetRefreshTokenPresent sets the "refresh_token_present" field.
+func (_c *MCPConnectionHistoryCreate) SetRefreshTokenPresent(v bool) *MCPConnectionHistoryCreate {
+	_c.mutation.SetRefreshTokenPresent(v)
 	return _c
 }
 
-// SetAPIKeyEncrypted sets the "api_key_encrypted" field.
-func (_c *MCPConnectionHistoryCreate) SetAPIKeyEncrypted(v []byte) *MCPConnectionHistoryCreate {
-	_c.mutation.SetAPIKeyEncrypted(v)
+// SetNillableRefreshTokenPresent sets the "refresh_token_present" field if the given value is not nil.
+func (_c *MCPConnectionHistoryCreate) SetNillableRefreshTokenPresent(v *bool) *MCPConnectionHistoryCreate {
+	if v != nil {
+		_c.SetRefreshTokenPresent(*v)
+	}
+	return _c
+}
+
+// SetAPIKeyPresent sets the "api_key_present" field.
+func (_c *MCPConnectionHistoryCreate) SetAPIKeyPresent(v bool) *MCPConnectionHistoryCreate {
+	_c.mutation.SetAPIKeyPresent(v)
+	return _c
+}
+
+// SetNillableAPIKeyPresent sets the "api_key_present" field if the given value is not nil.
+func (_c *MCPConnectionHistoryCreate) SetNillableAPIKeyPresent(v *bool) *MCPConnectionHistoryCreate {
+	if v != nil {
+		_c.SetAPIKeyPresent(*v)
+	}
+	return _c
+}
+
+// SetCredentialGeneration sets the "credential_generation" field.
+func (_c *MCPConnectionHistoryCreate) SetCredentialGeneration(v int64) *MCPConnectionHistoryCreate {
+	_c.mutation.SetCredentialGeneration(v)
+	return _c
+}
+
+// SetNillableCredentialGeneration sets the "credential_generation" field if the given value is not nil.
+func (_c *MCPConnectionHistoryCreate) SetNillableCredentialGeneration(v *int64) *MCPConnectionHistoryCreate {
+	if v != nil {
+		_c.SetCredentialGeneration(*v)
+	}
+	return _c
+}
+
+// SetStatus sets the "status" field.
+func (_c *MCPConnectionHistoryCreate) SetStatus(v string) *MCPConnectionHistoryCreate {
+	_c.mutation.SetStatus(v)
+	return _c
+}
+
+// SetNillableStatus sets the "status" field if the given value is not nil.
+func (_c *MCPConnectionHistoryCreate) SetNillableStatus(v *string) *MCPConnectionHistoryCreate {
+	if v != nil {
+		_c.SetStatus(*v)
+	}
 	return _c
 }
 
@@ -155,6 +213,76 @@ func (_c *MCPConnectionHistoryCreate) SetExpiresAt(v time.Time) *MCPConnectionHi
 func (_c *MCPConnectionHistoryCreate) SetNillableExpiresAt(v *time.Time) *MCPConnectionHistoryCreate {
 	if v != nil {
 		_c.SetExpiresAt(*v)
+	}
+	return _c
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (_c *MCPConnectionHistoryCreate) SetRevokedAt(v time.Time) *MCPConnectionHistoryCreate {
+	_c.mutation.SetRevokedAt(v)
+	return _c
+}
+
+// SetNillableRevokedAt sets the "revoked_at" field if the given value is not nil.
+func (_c *MCPConnectionHistoryCreate) SetNillableRevokedAt(v *time.Time) *MCPConnectionHistoryCreate {
+	if v != nil {
+		_c.SetRevokedAt(*v)
+	}
+	return _c
+}
+
+// SetRevokedReason sets the "revoked_reason" field.
+func (_c *MCPConnectionHistoryCreate) SetRevokedReason(v string) *MCPConnectionHistoryCreate {
+	_c.mutation.SetRevokedReason(v)
+	return _c
+}
+
+// SetNillableRevokedReason sets the "revoked_reason" field if the given value is not nil.
+func (_c *MCPConnectionHistoryCreate) SetNillableRevokedReason(v *string) *MCPConnectionHistoryCreate {
+	if v != nil {
+		_c.SetRevokedReason(*v)
+	}
+	return _c
+}
+
+// SetRevokedBy sets the "revoked_by" field.
+func (_c *MCPConnectionHistoryCreate) SetRevokedBy(v string) *MCPConnectionHistoryCreate {
+	_c.mutation.SetRevokedBy(v)
+	return _c
+}
+
+// SetNillableRevokedBy sets the "revoked_by" field if the given value is not nil.
+func (_c *MCPConnectionHistoryCreate) SetNillableRevokedBy(v *string) *MCPConnectionHistoryCreate {
+	if v != nil {
+		_c.SetRevokedBy(*v)
+	}
+	return _c
+}
+
+// SetRevocationAttemptedAt sets the "revocation_attempted_at" field.
+func (_c *MCPConnectionHistoryCreate) SetRevocationAttemptedAt(v time.Time) *MCPConnectionHistoryCreate {
+	_c.mutation.SetRevocationAttemptedAt(v)
+	return _c
+}
+
+// SetNillableRevocationAttemptedAt sets the "revocation_attempted_at" field if the given value is not nil.
+func (_c *MCPConnectionHistoryCreate) SetNillableRevocationAttemptedAt(v *time.Time) *MCPConnectionHistoryCreate {
+	if v != nil {
+		_c.SetRevocationAttemptedAt(*v)
+	}
+	return _c
+}
+
+// SetRevocationSucceeded sets the "revocation_succeeded" field.
+func (_c *MCPConnectionHistoryCreate) SetRevocationSucceeded(v bool) *MCPConnectionHistoryCreate {
+	_c.mutation.SetRevocationSucceeded(v)
+	return _c
+}
+
+// SetNillableRevocationSucceeded sets the "revocation_succeeded" field if the given value is not nil.
+func (_c *MCPConnectionHistoryCreate) SetNillableRevocationSucceeded(v *bool) *MCPConnectionHistoryCreate {
+	if v != nil {
+		_c.SetRevocationSucceeded(*v)
 	}
 	return _c
 }
@@ -231,6 +359,22 @@ func (_c *MCPConnectionHistoryCreate) defaults() error {
 		v := mcpconnectionhistory.DefaultHistoryTime()
 		_c.mutation.SetHistoryTime(v)
 	}
+	if _, ok := _c.mutation.RefreshTokenPresent(); !ok {
+		v := mcpconnectionhistory.DefaultRefreshTokenPresent
+		_c.mutation.SetRefreshTokenPresent(v)
+	}
+	if _, ok := _c.mutation.APIKeyPresent(); !ok {
+		v := mcpconnectionhistory.DefaultAPIKeyPresent
+		_c.mutation.SetAPIKeyPresent(v)
+	}
+	if _, ok := _c.mutation.CredentialGeneration(); !ok {
+		v := mcpconnectionhistory.DefaultCredentialGeneration
+		_c.mutation.SetCredentialGeneration(v)
+	}
+	if _, ok := _c.mutation.Status(); !ok {
+		v := mcpconnectionhistory.DefaultStatus
+		_c.mutation.SetStatus(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		if mcpconnectionhistory.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized mcpconnectionhistory.DefaultID (forgotten import ent/runtime?)")
@@ -265,6 +409,18 @@ func (_c *MCPConnectionHistoryCreate) check() error {
 	}
 	if _, ok := _c.mutation.Audience(); !ok {
 		return &ValidationError{Name: "audience", err: errors.New(`ent: missing required field "MCPConnectionHistory.audience"`)}
+	}
+	if _, ok := _c.mutation.RefreshTokenPresent(); !ok {
+		return &ValidationError{Name: "refresh_token_present", err: errors.New(`ent: missing required field "MCPConnectionHistory.refresh_token_present"`)}
+	}
+	if _, ok := _c.mutation.APIKeyPresent(); !ok {
+		return &ValidationError{Name: "api_key_present", err: errors.New(`ent: missing required field "MCPConnectionHistory.api_key_present"`)}
+	}
+	if _, ok := _c.mutation.CredentialGeneration(); !ok {
+		return &ValidationError{Name: "credential_generation", err: errors.New(`ent: missing required field "MCPConnectionHistory.credential_generation"`)}
+	}
+	if _, ok := _c.mutation.Status(); !ok {
+		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "MCPConnectionHistory.status"`)}
 	}
 	return nil
 }
@@ -330,17 +486,29 @@ func (_c *MCPConnectionHistoryCreate) createSpec() (*MCPConnectionHistory, *sqlg
 		_spec.SetField(mcpconnectionhistory.FieldAudience, field.TypeString, value)
 		_node.Audience = value
 	}
+	if value, ok := _c.mutation.OrganizationID(); ok {
+		_spec.SetField(mcpconnectionhistory.FieldOrganizationID, field.TypeString, value)
+		_node.OrganizationID = value
+	}
 	if value, ok := _c.mutation.Scopes(); ok {
 		_spec.SetField(mcpconnectionhistory.FieldScopes, field.TypeJSON, value)
 		_node.Scopes = value
 	}
-	if value, ok := _c.mutation.RefreshTokenEncrypted(); ok {
-		_spec.SetField(mcpconnectionhistory.FieldRefreshTokenEncrypted, field.TypeBytes, value)
-		_node.RefreshTokenEncrypted = value
+	if value, ok := _c.mutation.RefreshTokenPresent(); ok {
+		_spec.SetField(mcpconnectionhistory.FieldRefreshTokenPresent, field.TypeBool, value)
+		_node.RefreshTokenPresent = value
 	}
-	if value, ok := _c.mutation.APIKeyEncrypted(); ok {
-		_spec.SetField(mcpconnectionhistory.FieldAPIKeyEncrypted, field.TypeBytes, value)
-		_node.APIKeyEncrypted = value
+	if value, ok := _c.mutation.APIKeyPresent(); ok {
+		_spec.SetField(mcpconnectionhistory.FieldAPIKeyPresent, field.TypeBool, value)
+		_node.APIKeyPresent = value
+	}
+	if value, ok := _c.mutation.CredentialGeneration(); ok {
+		_spec.SetField(mcpconnectionhistory.FieldCredentialGeneration, field.TypeInt64, value)
+		_node.CredentialGeneration = value
+	}
+	if value, ok := _c.mutation.Status(); ok {
+		_spec.SetField(mcpconnectionhistory.FieldStatus, field.TypeString, value)
+		_node.Status = value
 	}
 	if value, ok := _c.mutation.ConnectedAt(); ok {
 		_spec.SetField(mcpconnectionhistory.FieldConnectedAt, field.TypeTime, value)
@@ -353,6 +521,26 @@ func (_c *MCPConnectionHistoryCreate) createSpec() (*MCPConnectionHistory, *sqlg
 	if value, ok := _c.mutation.ExpiresAt(); ok {
 		_spec.SetField(mcpconnectionhistory.FieldExpiresAt, field.TypeTime, value)
 		_node.ExpiresAt = value
+	}
+	if value, ok := _c.mutation.RevokedAt(); ok {
+		_spec.SetField(mcpconnectionhistory.FieldRevokedAt, field.TypeTime, value)
+		_node.RevokedAt = value
+	}
+	if value, ok := _c.mutation.RevokedReason(); ok {
+		_spec.SetField(mcpconnectionhistory.FieldRevokedReason, field.TypeString, value)
+		_node.RevokedReason = value
+	}
+	if value, ok := _c.mutation.RevokedBy(); ok {
+		_spec.SetField(mcpconnectionhistory.FieldRevokedBy, field.TypeString, value)
+		_node.RevokedBy = value
+	}
+	if value, ok := _c.mutation.RevocationAttemptedAt(); ok {
+		_spec.SetField(mcpconnectionhistory.FieldRevocationAttemptedAt, field.TypeTime, value)
+		_node.RevocationAttemptedAt = value
+	}
+	if value, ok := _c.mutation.RevocationSucceeded(); ok {
+		_spec.SetField(mcpconnectionhistory.FieldRevocationSucceeded, field.TypeBool, value)
+		_node.RevocationSucceeded = value
 	}
 	return _node, _spec
 }
@@ -453,14 +641,23 @@ func (u *MCPConnectionHistoryUpsertOne) UpdateNewValues() *MCPConnectionHistoryU
 		if _, exists := u.create.mutation.Audience(); exists {
 			s.SetIgnore(mcpconnectionhistory.FieldAudience)
 		}
+		if _, exists := u.create.mutation.OrganizationID(); exists {
+			s.SetIgnore(mcpconnectionhistory.FieldOrganizationID)
+		}
 		if _, exists := u.create.mutation.Scopes(); exists {
 			s.SetIgnore(mcpconnectionhistory.FieldScopes)
 		}
-		if _, exists := u.create.mutation.RefreshTokenEncrypted(); exists {
-			s.SetIgnore(mcpconnectionhistory.FieldRefreshTokenEncrypted)
+		if _, exists := u.create.mutation.RefreshTokenPresent(); exists {
+			s.SetIgnore(mcpconnectionhistory.FieldRefreshTokenPresent)
 		}
-		if _, exists := u.create.mutation.APIKeyEncrypted(); exists {
-			s.SetIgnore(mcpconnectionhistory.FieldAPIKeyEncrypted)
+		if _, exists := u.create.mutation.APIKeyPresent(); exists {
+			s.SetIgnore(mcpconnectionhistory.FieldAPIKeyPresent)
+		}
+		if _, exists := u.create.mutation.CredentialGeneration(); exists {
+			s.SetIgnore(mcpconnectionhistory.FieldCredentialGeneration)
+		}
+		if _, exists := u.create.mutation.Status(); exists {
+			s.SetIgnore(mcpconnectionhistory.FieldStatus)
 		}
 		if _, exists := u.create.mutation.ConnectedAt(); exists {
 			s.SetIgnore(mcpconnectionhistory.FieldConnectedAt)
@@ -470,6 +667,21 @@ func (u *MCPConnectionHistoryUpsertOne) UpdateNewValues() *MCPConnectionHistoryU
 		}
 		if _, exists := u.create.mutation.ExpiresAt(); exists {
 			s.SetIgnore(mcpconnectionhistory.FieldExpiresAt)
+		}
+		if _, exists := u.create.mutation.RevokedAt(); exists {
+			s.SetIgnore(mcpconnectionhistory.FieldRevokedAt)
+		}
+		if _, exists := u.create.mutation.RevokedReason(); exists {
+			s.SetIgnore(mcpconnectionhistory.FieldRevokedReason)
+		}
+		if _, exists := u.create.mutation.RevokedBy(); exists {
+			s.SetIgnore(mcpconnectionhistory.FieldRevokedBy)
+		}
+		if _, exists := u.create.mutation.RevocationAttemptedAt(); exists {
+			s.SetIgnore(mcpconnectionhistory.FieldRevocationAttemptedAt)
+		}
+		if _, exists := u.create.mutation.RevocationSucceeded(); exists {
+			s.SetIgnore(mcpconnectionhistory.FieldRevocationSucceeded)
 		}
 	}))
 	return u
@@ -717,14 +929,23 @@ func (u *MCPConnectionHistoryUpsertBulk) UpdateNewValues() *MCPConnectionHistory
 			if _, exists := b.mutation.Audience(); exists {
 				s.SetIgnore(mcpconnectionhistory.FieldAudience)
 			}
+			if _, exists := b.mutation.OrganizationID(); exists {
+				s.SetIgnore(mcpconnectionhistory.FieldOrganizationID)
+			}
 			if _, exists := b.mutation.Scopes(); exists {
 				s.SetIgnore(mcpconnectionhistory.FieldScopes)
 			}
-			if _, exists := b.mutation.RefreshTokenEncrypted(); exists {
-				s.SetIgnore(mcpconnectionhistory.FieldRefreshTokenEncrypted)
+			if _, exists := b.mutation.RefreshTokenPresent(); exists {
+				s.SetIgnore(mcpconnectionhistory.FieldRefreshTokenPresent)
 			}
-			if _, exists := b.mutation.APIKeyEncrypted(); exists {
-				s.SetIgnore(mcpconnectionhistory.FieldAPIKeyEncrypted)
+			if _, exists := b.mutation.APIKeyPresent(); exists {
+				s.SetIgnore(mcpconnectionhistory.FieldAPIKeyPresent)
+			}
+			if _, exists := b.mutation.CredentialGeneration(); exists {
+				s.SetIgnore(mcpconnectionhistory.FieldCredentialGeneration)
+			}
+			if _, exists := b.mutation.Status(); exists {
+				s.SetIgnore(mcpconnectionhistory.FieldStatus)
 			}
 			if _, exists := b.mutation.ConnectedAt(); exists {
 				s.SetIgnore(mcpconnectionhistory.FieldConnectedAt)
@@ -734,6 +955,21 @@ func (u *MCPConnectionHistoryUpsertBulk) UpdateNewValues() *MCPConnectionHistory
 			}
 			if _, exists := b.mutation.ExpiresAt(); exists {
 				s.SetIgnore(mcpconnectionhistory.FieldExpiresAt)
+			}
+			if _, exists := b.mutation.RevokedAt(); exists {
+				s.SetIgnore(mcpconnectionhistory.FieldRevokedAt)
+			}
+			if _, exists := b.mutation.RevokedReason(); exists {
+				s.SetIgnore(mcpconnectionhistory.FieldRevokedReason)
+			}
+			if _, exists := b.mutation.RevokedBy(); exists {
+				s.SetIgnore(mcpconnectionhistory.FieldRevokedBy)
+			}
+			if _, exists := b.mutation.RevocationAttemptedAt(); exists {
+				s.SetIgnore(mcpconnectionhistory.FieldRevocationAttemptedAt)
+			}
+			if _, exists := b.mutation.RevocationSucceeded(); exists {
+				s.SetIgnore(mcpconnectionhistory.FieldRevocationSucceeded)
 			}
 		}
 	}))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -42,6 +43,8 @@ func setup(t *testing.T) (*ent.Client, context.Context, *ent.User, *crypto.Seale
 
 func parkTicket(t *testing.T, client *ent.Client, sealer *crypto.Sealer, state string, expires time.Time, payload map[string]any) {
 	t.Helper()
+	// Raw state intentionally models a row minted before the hash-only writer
+	// rollout. Claim must keep consuming these rows through the transition TTL.
 	raw, _ := json.Marshal(payload)
 	sealed, err := sealer.Seal(raw)
 	if err != nil {
@@ -191,6 +194,11 @@ func TestStartBindsTicketAndWrongUserCannotClaim(t *testing.T) {
 		t.Fatalf("authorize URL missing PKCE challenge: %q", start.AuthorizeURL)
 	}
 	pending := client.OAuthPending.Query().FirstX(context.Background())
+	stateDigest := sha256.Sum256([]byte(state))
+	wantStateHash := hex.EncodeToString(stateDigest[:])
+	if pending.StateHash != wantStateHash || pending.State != "sha256:"+wantStateHash || pending.State == state {
+		t.Fatalf("pending state storage = state %q hash %q, want hash-only sentinel", pending.State, pending.StateHash)
+	}
 	raw, err := sealer.Open(pending.PayloadEncrypted)
 	if err != nil || !strings.Contains(string(raw), `"workos_user_id":"user_1"`) {
 		t.Fatalf("start ticket is not user-bound: %s (%v)", raw, err)

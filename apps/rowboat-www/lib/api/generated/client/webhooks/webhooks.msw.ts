@@ -8,11 +8,71 @@
 import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
-import type { PreConsentResponse } from "../model";
+import type {
+  ConnectorConsentContext200,
+  ConsentAuditResponse,
+  PreConsentResponse,
+} from "../model";
 
-import { getPreConsentResponseMock } from "./webhooks.faker";
+import {
+  getAppendConnectorConsentAuditResponseMock,
+  getConnectorConsentContextResponseMock,
+  getPreConsentResponseMock,
+} from "./webhooks.faker";
 
-export { getPreConsentResponseMock } from "./webhooks.faker";
+export {
+  getAppendConnectorConsentAuditResponseMock,
+  getConnectorConsentContextResponseMock,
+  getPreConsentResponseMock,
+} from "./webhooks.faker";
+
+export const getAppendConnectorConsentAuditMockHandler = (
+  overrideResponse?:
+    | ConsentAuditResponse
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<ConsentAuditResponse> | ConsentAuditResponse),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/oauth-hooks/consent-audit",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getAppendConnectorConsentAuditResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getConnectorConsentContextMockHandler = (
+  overrideResponse?:
+    | ConnectorConsentContext200
+    | ((
+        info: Parameters<Parameters<typeof http.post>[1]>[0],
+      ) => Promise<ConnectorConsentContext200> | ConnectorConsentContext200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.post(
+    "*/oauth-hooks/consent-context",
+    async (info: Parameters<Parameters<typeof http.post>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getConnectorConsentContextResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 
 export const getPreConsentMockHandler = (
   overrideResponse?:
@@ -37,4 +97,8 @@ export const getPreConsentMockHandler = (
     options,
   );
 };
-export const getWebhooksMock = () => [getPreConsentMockHandler()];
+export const getWebhooksMock = () => [
+  getAppendConnectorConsentAuditMockHandler(),
+  getConnectorConsentContextMockHandler(),
+  getPreConsentMockHandler(),
+];

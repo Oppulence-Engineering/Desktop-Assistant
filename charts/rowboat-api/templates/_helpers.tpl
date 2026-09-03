@@ -54,3 +54,41 @@ app.kubernetes.io/component: scheduler
 {{- printf "%s-secrets" (include "rowboat-api.fullname" .) -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Fail production renders when the connector resource-token issuer drifts from the
+public rowboat-api origin. A separate issuer is an exceptional topology and must
+be opted into explicitly with connectorBroker.allowSeparateIssuer.
+*/}}
+{{- define "rowboat-api.validateDeploymentContract" -}}
+{{- $environment := lower (toString (default "" (index .Values.config "ENVIRONMENT"))) -}}
+{{- if eq $environment "production" -}}
+{{- if not .Values.networkPolicy.enabled -}}
+{{- fail "production networkPolicy.enabled must be true" -}}
+{{- end -}}
+{{- if empty .Values.networkPolicy.ingress.from -}}
+{{- fail "production networkPolicy.ingress.from must select trusted ingress-controller pods" -}}
+{{- end -}}
+{{- if not .Values.networkPolicy.egress.enabled -}}
+{{- fail "production networkPolicy.egress.enabled must be true" -}}
+{{- end -}}
+{{- if empty .Values.networkPolicy.egress.rules -}}
+{{- fail "production networkPolicy.egress.rules must define DNS, Hydra, and enforced gateway destinations" -}}
+{{- end -}}
+{{- $publicOrigin := required "production config.PUBLIC_BASE_URL is required for the connector broker issuer contract" (index .Values.config "PUBLIC_BASE_URL") -}}
+{{- $brokerIssuer := required "production config.BROKER_TOKEN_ISSUER is required for connector resource tokens" (index .Values.config "BROKER_TOKEN_ISSUER") -}}
+{{- if and (ne $brokerIssuer $publicOrigin) (not .Values.connectorBroker.allowSeparateIssuer) -}}
+{{- fail (printf "production config.BROKER_TOKEN_ISSUER (%s) must equal config.PUBLIC_BASE_URL (%s); set connectorBroker.allowSeparateIssuer=true only for the documented separate-issuer topology" $brokerIssuer $publicOrigin) -}}
+{{- end -}}
+{{- if and .Values.ingress.enabled .Values.ingress.tls.enabled -}}
+{{- $ingressOrigin := printf "https://%s" (required "production ingress.host is required when ingress is enabled" .Values.ingress.host) -}}
+{{- if ne $publicOrigin $ingressOrigin -}}
+{{- fail (printf "production config.PUBLIC_BASE_URL (%s) must equal the externally reachable ingress origin (%s)" $publicOrigin $ingressOrigin) -}}
+{{- end -}}
+{{- end -}}
+{{- $approvalDigest := required "production connectorBroker.productionApprovalManifestDigest is required; compute it with charts/hydra/product_approval.py" .Values.connectorBroker.productionApprovalManifestDigest -}}
+{{- if not (regexMatch "^sha256:[0-9a-f]{64}$" $approvalDigest) -}}
+{{- fail "production connectorBroker.productionApprovalManifestDigest must be a sha256 digest" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}

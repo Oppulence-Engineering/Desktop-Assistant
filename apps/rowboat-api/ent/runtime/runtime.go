@@ -27,6 +27,10 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -1324,6 +1328,135 @@ func init() {
 	commitmenteventDescID := commitmenteventMixinFields0[0].Descriptor()
 	// commitmentevent.DefaultID holds the default value on creation for the id field.
 	commitmentevent.DefaultID = commitmenteventDescID.Default.(func() uuid.UUID)
+	connectorauditeventMixin := schema.ConnectorAuditEvent{}.Mixin()
+	connectorauditevent.Policy = privacy.NewPolicies(connectorauditeventMixin[0], schema.ConnectorAuditEvent{})
+	connectorauditevent.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := connectorauditevent.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	connectorauditeventMixinFields0 := connectorauditeventMixin[0].Fields()
+	_ = connectorauditeventMixinFields0
+	connectorauditeventFields := schema.ConnectorAuditEvent{}.Fields()
+	_ = connectorauditeventFields
+	// connectorauditeventDescCreatedAt is the schema descriptor for created_at field.
+	connectorauditeventDescCreatedAt := connectorauditeventMixinFields0[1].Descriptor()
+	// connectorauditevent.DefaultCreatedAt holds the default value on creation for the created_at field.
+	connectorauditevent.DefaultCreatedAt = connectorauditeventDescCreatedAt.Default.(func() time.Time)
+	// connectorauditeventDescUpdatedAt is the schema descriptor for updated_at field.
+	connectorauditeventDescUpdatedAt := connectorauditeventMixinFields0[2].Descriptor()
+	// connectorauditevent.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	connectorauditevent.DefaultUpdatedAt = connectorauditeventDescUpdatedAt.Default.(func() time.Time)
+	// connectorauditevent.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	connectorauditevent.UpdateDefaultUpdatedAt = connectorauditeventDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// connectorauditeventDescEventType is the schema descriptor for event_type field.
+	connectorauditeventDescEventType := connectorauditeventFields[0].Descriptor()
+	// connectorauditevent.EventTypeValidator is a validator for the "event_type" field. It is called by the builders before save.
+	connectorauditevent.EventTypeValidator = connectorauditeventDescEventType.Validators[0].(func(string) error)
+	// connectorauditeventDescConnector is the schema descriptor for connector field.
+	connectorauditeventDescConnector := connectorauditeventFields[2].Descriptor()
+	// connectorauditevent.ConnectorValidator is a validator for the "connector" field. It is called by the builders before save.
+	connectorauditevent.ConnectorValidator = connectorauditeventDescConnector.Validators[0].(func(string) error)
+	// connectorauditeventDescOwnerWorkosUserID is the schema descriptor for owner_workos_user_id field.
+	connectorauditeventDescOwnerWorkosUserID := connectorauditeventFields[4].Descriptor()
+	// connectorauditevent.OwnerWorkosUserIDValidator is a validator for the "owner_workos_user_id" field. It is called by the builders before save.
+	connectorauditevent.OwnerWorkosUserIDValidator = connectorauditeventDescOwnerWorkosUserID.Validators[0].(func(string) error)
+	// connectorauditeventDescID is the schema descriptor for id field.
+	connectorauditeventDescID := connectorauditeventMixinFields0[0].Descriptor()
+	// connectorauditevent.DefaultID holds the default value on creation for the id field.
+	connectorauditevent.DefaultID = connectorauditeventDescID.Default.(func() uuid.UUID)
+	connectorcredentialcleanupjobMixin := schema.ConnectorCredentialCleanupJob{}.Mixin()
+	connectorcredentialcleanupjobMixinFields0 := connectorcredentialcleanupjobMixin[0].Fields()
+	_ = connectorcredentialcleanupjobMixinFields0
+	connectorcredentialcleanupjobFields := schema.ConnectorCredentialCleanupJob{}.Fields()
+	_ = connectorcredentialcleanupjobFields
+	// connectorcredentialcleanupjobDescCreatedAt is the schema descriptor for created_at field.
+	connectorcredentialcleanupjobDescCreatedAt := connectorcredentialcleanupjobMixinFields0[1].Descriptor()
+	// connectorcredentialcleanupjob.DefaultCreatedAt holds the default value on creation for the created_at field.
+	connectorcredentialcleanupjob.DefaultCreatedAt = connectorcredentialcleanupjobDescCreatedAt.Default.(func() time.Time)
+	// connectorcredentialcleanupjobDescUpdatedAt is the schema descriptor for updated_at field.
+	connectorcredentialcleanupjobDescUpdatedAt := connectorcredentialcleanupjobMixinFields0[2].Descriptor()
+	// connectorcredentialcleanupjob.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	connectorcredentialcleanupjob.DefaultUpdatedAt = connectorcredentialcleanupjobDescUpdatedAt.Default.(func() time.Time)
+	// connectorcredentialcleanupjob.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	connectorcredentialcleanupjob.UpdateDefaultUpdatedAt = connectorcredentialcleanupjobDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// connectorcredentialcleanupjobDescExpectedCredentialGeneration is the schema descriptor for expected_credential_generation field.
+	connectorcredentialcleanupjobDescExpectedCredentialGeneration := connectorcredentialcleanupjobFields[2].Descriptor()
+	// connectorcredentialcleanupjob.ExpectedCredentialGenerationValidator is a validator for the "expected_credential_generation" field. It is called by the builders before save.
+	connectorcredentialcleanupjob.ExpectedCredentialGenerationValidator = connectorcredentialcleanupjobDescExpectedCredentialGeneration.Validators[0].(func(int64) error)
+	// connectorcredentialcleanupjobDescStatus is the schema descriptor for status field.
+	connectorcredentialcleanupjobDescStatus := connectorcredentialcleanupjobFields[4].Descriptor()
+	// connectorcredentialcleanupjob.DefaultStatus holds the default value on creation for the status field.
+	connectorcredentialcleanupjob.DefaultStatus = connectorcredentialcleanupjobDescStatus.Default.(string)
+	// connectorcredentialcleanupjobDescAttempts is the schema descriptor for attempts field.
+	connectorcredentialcleanupjobDescAttempts := connectorcredentialcleanupjobFields[5].Descriptor()
+	// connectorcredentialcleanupjob.DefaultAttempts holds the default value on creation for the attempts field.
+	connectorcredentialcleanupjob.DefaultAttempts = connectorcredentialcleanupjobDescAttempts.Default.(int)
+	// connectorcredentialcleanupjobDescID is the schema descriptor for id field.
+	connectorcredentialcleanupjobDescID := connectorcredentialcleanupjobMixinFields0[0].Descriptor()
+	// connectorcredentialcleanupjob.DefaultID holds the default value on creation for the id field.
+	connectorcredentialcleanupjob.DefaultID = connectorcredentialcleanupjobDescID.Default.(func() uuid.UUID)
+	connectorcredentialrecoveryMixin := schema.ConnectorCredentialRecovery{}.Mixin()
+	connectorcredentialrecoveryMixinFields0 := connectorcredentialrecoveryMixin[0].Fields()
+	_ = connectorcredentialrecoveryMixinFields0
+	connectorcredentialrecoveryFields := schema.ConnectorCredentialRecovery{}.Fields()
+	_ = connectorcredentialrecoveryFields
+	// connectorcredentialrecoveryDescCreatedAt is the schema descriptor for created_at field.
+	connectorcredentialrecoveryDescCreatedAt := connectorcredentialrecoveryMixinFields0[1].Descriptor()
+	// connectorcredentialrecovery.DefaultCreatedAt holds the default value on creation for the created_at field.
+	connectorcredentialrecovery.DefaultCreatedAt = connectorcredentialrecoveryDescCreatedAt.Default.(func() time.Time)
+	// connectorcredentialrecoveryDescUpdatedAt is the schema descriptor for updated_at field.
+	connectorcredentialrecoveryDescUpdatedAt := connectorcredentialrecoveryMixinFields0[2].Descriptor()
+	// connectorcredentialrecovery.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	connectorcredentialrecovery.DefaultUpdatedAt = connectorcredentialrecoveryDescUpdatedAt.Default.(func() time.Time)
+	// connectorcredentialrecovery.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	connectorcredentialrecovery.UpdateDefaultUpdatedAt = connectorcredentialrecoveryDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// connectorcredentialrecoveryDescStatus is the schema descriptor for status field.
+	connectorcredentialrecoveryDescStatus := connectorcredentialrecoveryFields[4].Descriptor()
+	// connectorcredentialrecovery.DefaultStatus holds the default value on creation for the status field.
+	connectorcredentialrecovery.DefaultStatus = connectorcredentialrecoveryDescStatus.Default.(string)
+	// connectorcredentialrecoveryDescAttempts is the schema descriptor for attempts field.
+	connectorcredentialrecoveryDescAttempts := connectorcredentialrecoveryFields[5].Descriptor()
+	// connectorcredentialrecovery.DefaultAttempts holds the default value on creation for the attempts field.
+	connectorcredentialrecovery.DefaultAttempts = connectorcredentialrecoveryDescAttempts.Default.(int)
+	// connectorcredentialrecoveryDescID is the schema descriptor for id field.
+	connectorcredentialrecoveryDescID := connectorcredentialrecoveryMixinFields0[0].Descriptor()
+	// connectorcredentialrecovery.DefaultID holds the default value on creation for the id field.
+	connectorcredentialrecovery.DefaultID = connectorcredentialrecoveryDescID.Default.(func() uuid.UUID)
+	connectorrevocationjobMixin := schema.ConnectorRevocationJob{}.Mixin()
+	connectorrevocationjobMixinFields0 := connectorrevocationjobMixin[0].Fields()
+	_ = connectorrevocationjobMixinFields0
+	connectorrevocationjobFields := schema.ConnectorRevocationJob{}.Fields()
+	_ = connectorrevocationjobFields
+	// connectorrevocationjobDescCreatedAt is the schema descriptor for created_at field.
+	connectorrevocationjobDescCreatedAt := connectorrevocationjobMixinFields0[1].Descriptor()
+	// connectorrevocationjob.DefaultCreatedAt holds the default value on creation for the created_at field.
+	connectorrevocationjob.DefaultCreatedAt = connectorrevocationjobDescCreatedAt.Default.(func() time.Time)
+	// connectorrevocationjobDescUpdatedAt is the schema descriptor for updated_at field.
+	connectorrevocationjobDescUpdatedAt := connectorrevocationjobMixinFields0[2].Descriptor()
+	// connectorrevocationjob.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	connectorrevocationjob.DefaultUpdatedAt = connectorrevocationjobDescUpdatedAt.Default.(func() time.Time)
+	// connectorrevocationjob.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	connectorrevocationjob.UpdateDefaultUpdatedAt = connectorrevocationjobDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// connectorrevocationjobDescCredentialGeneration is the schema descriptor for credential_generation field.
+	connectorrevocationjobDescCredentialGeneration := connectorrevocationjobFields[4].Descriptor()
+	// connectorrevocationjob.CredentialGenerationValidator is a validator for the "credential_generation" field. It is called by the builders before save.
+	connectorrevocationjob.CredentialGenerationValidator = connectorrevocationjobDescCredentialGeneration.Validators[0].(func(int64) error)
+	// connectorrevocationjobDescStatus is the schema descriptor for status field.
+	connectorrevocationjobDescStatus := connectorrevocationjobFields[8].Descriptor()
+	// connectorrevocationjob.DefaultStatus holds the default value on creation for the status field.
+	connectorrevocationjob.DefaultStatus = connectorrevocationjobDescStatus.Default.(string)
+	// connectorrevocationjobDescAttempts is the schema descriptor for attempts field.
+	connectorrevocationjobDescAttempts := connectorrevocationjobFields[9].Descriptor()
+	// connectorrevocationjob.DefaultAttempts holds the default value on creation for the attempts field.
+	connectorrevocationjob.DefaultAttempts = connectorrevocationjobDescAttempts.Default.(int)
+	// connectorrevocationjobDescID is the schema descriptor for id field.
+	connectorrevocationjobDescID := connectorrevocationjobMixinFields0[0].Descriptor()
+	// connectorrevocationjob.DefaultID holds the default value on creation for the id field.
+	connectorrevocationjob.DefaultID = connectorrevocationjobDescID.Default.(func() uuid.UUID)
 	conversationintelligenceartifactMixin := schema.ConversationIntelligenceArtifact{}.Mixin()
 	conversationintelligenceartifact.Policy = privacy.NewPolicies(conversationintelligenceartifactMixin[0], schema.ConversationIntelligenceArtifact{})
 	conversationintelligenceartifact.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -1724,6 +1857,9 @@ func init() {
 			return next.Mutate(ctx, m)
 		})
 	}
+	mcpconnectionHooks := schema.MCPConnection{}.Hooks()
+
+	mcpconnection.Hooks[1] = mcpconnectionHooks[0]
 	mcpconnectionMixinFields0 := mcpconnectionMixin[0].Fields()
 	_ = mcpconnectionMixinFields0
 	mcpconnectionFields := schema.MCPConnection{}.Fields()
@@ -1738,6 +1874,26 @@ func init() {
 	mcpconnection.DefaultUpdatedAt = mcpconnectionDescUpdatedAt.Default.(func() time.Time)
 	// mcpconnection.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	mcpconnection.UpdateDefaultUpdatedAt = mcpconnectionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// mcpconnectionDescRefreshTokenPresent is the schema descriptor for refresh_token_present field.
+	mcpconnectionDescRefreshTokenPresent := mcpconnectionFields[6].Descriptor()
+	// mcpconnection.DefaultRefreshTokenPresent holds the default value on creation for the refresh_token_present field.
+	mcpconnection.DefaultRefreshTokenPresent = mcpconnectionDescRefreshTokenPresent.Default.(bool)
+	// mcpconnectionDescAPIKeyPresent is the schema descriptor for api_key_present field.
+	mcpconnectionDescAPIKeyPresent := mcpconnectionFields[7].Descriptor()
+	// mcpconnection.DefaultAPIKeyPresent holds the default value on creation for the api_key_present field.
+	mcpconnection.DefaultAPIKeyPresent = mcpconnectionDescAPIKeyPresent.Default.(bool)
+	// mcpconnectionDescCredentialGeneration is the schema descriptor for credential_generation field.
+	mcpconnectionDescCredentialGeneration := mcpconnectionFields[8].Descriptor()
+	// mcpconnection.DefaultCredentialGeneration holds the default value on creation for the credential_generation field.
+	mcpconnection.DefaultCredentialGeneration = mcpconnectionDescCredentialGeneration.Default.(int64)
+	// mcpconnection.CredentialGenerationValidator is a validator for the "credential_generation" field. It is called by the builders before save.
+	mcpconnection.CredentialGenerationValidator = mcpconnectionDescCredentialGeneration.Validators[0].(func(int64) error)
+	// mcpconnectionDescStatus is the schema descriptor for status field.
+	mcpconnectionDescStatus := mcpconnectionFields[9].Descriptor()
+	// mcpconnection.DefaultStatus holds the default value on creation for the status field.
+	mcpconnection.DefaultStatus = mcpconnectionDescStatus.Default.(string)
+	// mcpconnection.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	mcpconnection.StatusValidator = mcpconnectionDescStatus.Validators[0].(func(string) error)
 	// mcpconnectionDescID is the schema descriptor for id field.
 	mcpconnectionDescID := mcpconnectionMixinFields0[0].Descriptor()
 	// mcpconnection.DefaultID holds the default value on creation for the id field.
@@ -1770,6 +1926,22 @@ func init() {
 	mcpconnectionhistoryDescHistoryTime := mcpconnectionhistoryFields[1].Descriptor()
 	// mcpconnectionhistory.DefaultHistoryTime holds the default value on creation for the history_time field.
 	mcpconnectionhistory.DefaultHistoryTime = mcpconnectionhistoryDescHistoryTime.Default.(func() time.Time)
+	// mcpconnectionhistoryDescRefreshTokenPresent is the schema descriptor for refresh_token_present field.
+	mcpconnectionhistoryDescRefreshTokenPresent := mcpconnectionhistoryFields[8].Descriptor()
+	// mcpconnectionhistory.DefaultRefreshTokenPresent holds the default value on creation for the refresh_token_present field.
+	mcpconnectionhistory.DefaultRefreshTokenPresent = mcpconnectionhistoryDescRefreshTokenPresent.Default.(bool)
+	// mcpconnectionhistoryDescAPIKeyPresent is the schema descriptor for api_key_present field.
+	mcpconnectionhistoryDescAPIKeyPresent := mcpconnectionhistoryFields[9].Descriptor()
+	// mcpconnectionhistory.DefaultAPIKeyPresent holds the default value on creation for the api_key_present field.
+	mcpconnectionhistory.DefaultAPIKeyPresent = mcpconnectionhistoryDescAPIKeyPresent.Default.(bool)
+	// mcpconnectionhistoryDescCredentialGeneration is the schema descriptor for credential_generation field.
+	mcpconnectionhistoryDescCredentialGeneration := mcpconnectionhistoryFields[10].Descriptor()
+	// mcpconnectionhistory.DefaultCredentialGeneration holds the default value on creation for the credential_generation field.
+	mcpconnectionhistory.DefaultCredentialGeneration = mcpconnectionhistoryDescCredentialGeneration.Default.(int64)
+	// mcpconnectionhistoryDescStatus is the schema descriptor for status field.
+	mcpconnectionhistoryDescStatus := mcpconnectionhistoryFields[11].Descriptor()
+	// mcpconnectionhistory.DefaultStatus holds the default value on creation for the status field.
+	mcpconnectionhistory.DefaultStatus = mcpconnectionhistoryDescStatus.Default.(string)
 	// mcpconnectionhistoryDescID is the schema descriptor for id field.
 	mcpconnectionhistoryDescID := mcpconnectionhistoryFields[0].Descriptor()
 	// mcpconnectionhistory.DefaultID holds the default value on creation for the id field.
@@ -2006,6 +2178,9 @@ func init() {
 			return next.Mutate(ctx, m)
 		})
 	}
+	oauthconnectionHooks := schema.OAuthConnection{}.Hooks()
+
+	oauthconnection.Hooks[1] = oauthconnectionHooks[0]
 	oauthconnectionMixinFields0 := oauthconnectionMixin[0].Fields()
 	_ = oauthconnectionMixinFields0
 	oauthconnectionFields := schema.OAuthConnection{}.Fields()
@@ -2020,6 +2195,16 @@ func init() {
 	oauthconnection.DefaultUpdatedAt = oauthconnectionDescUpdatedAt.Default.(func() time.Time)
 	// oauthconnection.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	oauthconnection.UpdateDefaultUpdatedAt = oauthconnectionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// oauthconnectionDescRefreshTokenPresent is the schema descriptor for refresh_token_present field.
+	oauthconnectionDescRefreshTokenPresent := oauthconnectionFields[2].Descriptor()
+	// oauthconnection.DefaultRefreshTokenPresent holds the default value on creation for the refresh_token_present field.
+	oauthconnection.DefaultRefreshTokenPresent = oauthconnectionDescRefreshTokenPresent.Default.(bool)
+	// oauthconnectionDescCredentialGeneration is the schema descriptor for credential_generation field.
+	oauthconnectionDescCredentialGeneration := oauthconnectionFields[3].Descriptor()
+	// oauthconnection.DefaultCredentialGeneration holds the default value on creation for the credential_generation field.
+	oauthconnection.DefaultCredentialGeneration = oauthconnectionDescCredentialGeneration.Default.(int64)
+	// oauthconnection.CredentialGenerationValidator is a validator for the "credential_generation" field. It is called by the builders before save.
+	oauthconnection.CredentialGenerationValidator = oauthconnectionDescCredentialGeneration.Validators[0].(func(int64) error)
 	// oauthconnectionDescID is the schema descriptor for id field.
 	oauthconnectionDescID := oauthconnectionMixinFields0[0].Descriptor()
 	// oauthconnection.DefaultID holds the default value on creation for the id field.
@@ -2052,6 +2237,14 @@ func init() {
 	oauthconnectionhistoryDescHistoryTime := oauthconnectionhistoryFields[1].Descriptor()
 	// oauthconnectionhistory.DefaultHistoryTime holds the default value on creation for the history_time field.
 	oauthconnectionhistory.DefaultHistoryTime = oauthconnectionhistoryDescHistoryTime.Default.(func() time.Time)
+	// oauthconnectionhistoryDescRefreshTokenPresent is the schema descriptor for refresh_token_present field.
+	oauthconnectionhistoryDescRefreshTokenPresent := oauthconnectionhistoryFields[5].Descriptor()
+	// oauthconnectionhistory.DefaultRefreshTokenPresent holds the default value on creation for the refresh_token_present field.
+	oauthconnectionhistory.DefaultRefreshTokenPresent = oauthconnectionhistoryDescRefreshTokenPresent.Default.(bool)
+	// oauthconnectionhistoryDescCredentialGeneration is the schema descriptor for credential_generation field.
+	oauthconnectionhistoryDescCredentialGeneration := oauthconnectionhistoryFields[6].Descriptor()
+	// oauthconnectionhistory.DefaultCredentialGeneration holds the default value on creation for the credential_generation field.
+	oauthconnectionhistory.DefaultCredentialGeneration = oauthconnectionhistoryDescCredentialGeneration.Default.(int64)
 	// oauthconnectionhistoryDescID is the schema descriptor for id field.
 	oauthconnectionhistoryDescID := oauthconnectionhistoryFields[0].Descriptor()
 	// oauthconnectionhistory.DefaultID holds the default value on creation for the id field.
@@ -2075,6 +2268,12 @@ func init() {
 	oauthpendingDescState := oauthpendingFields[0].Descriptor()
 	// oauthpending.StateValidator is a validator for the "state" field. It is called by the builders before save.
 	oauthpending.StateValidator = oauthpendingDescState.Validators[0].(func(string) error)
+	// oauthpendingDescCallbackAttempts is the schema descriptor for callback_attempts field.
+	oauthpendingDescCallbackAttempts := oauthpendingFields[16].Descriptor()
+	// oauthpending.DefaultCallbackAttempts holds the default value on creation for the callback_attempts field.
+	oauthpending.DefaultCallbackAttempts = oauthpendingDescCallbackAttempts.Default.(int)
+	// oauthpending.CallbackAttemptsValidator is a validator for the "callback_attempts" field. It is called by the builders before save.
+	oauthpending.CallbackAttemptsValidator = oauthpendingDescCallbackAttempts.Validators[0].(func(int) error)
 	// oauthpendingDescID is the schema descriptor for id field.
 	oauthpendingDescID := oauthpendingMixinFields0[0].Descriptor()
 	// oauthpending.DefaultID holds the default value on creation for the id field.

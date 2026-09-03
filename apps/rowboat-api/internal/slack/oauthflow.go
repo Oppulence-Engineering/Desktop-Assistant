@@ -16,7 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthpending"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/httpx"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/outbound"
@@ -52,8 +51,10 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 		h.errorPage(w, http.StatusInternalServerError, "Could not start the Slack install.")
 		return
 	}
+	stateHash := oauthStateHash(state)
 	if err := h.client.OAuthPending.Create().
-		SetState(state).
+		SetState(oauthStateSentinel(stateHash)).
+		SetStateHash(stateHash).
 		SetProvider("slack").
 		SetPayloadEncrypted(sealed).
 		SetExpiresAt(time.Now().Add(10 * time.Minute)).
@@ -84,9 +85,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pending, err := h.client.OAuthPending.Query().
-		Where(oauthpending.StateEQ(state), oauthpending.ProviderEQ("slack")).
-		Only(ctx)
+	pending, err := h.pendingByState(ctx, state)
 	if err != nil {
 		h.errorPage(w, http.StatusBadRequest, "Install session expired or invalid. Please try again.")
 		return

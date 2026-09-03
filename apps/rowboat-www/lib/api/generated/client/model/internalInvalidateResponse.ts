@@ -10,8 +10,12 @@
  * Force disconnect result.
  */
 export interface InternalInvalidateResponse {
-  /** Number of connection rows deleted. Omitted for unknown users. */
-  deleted?: number;
+  /** Number that could not be tombstoned. */
+  failures?: number;
   /** Always true on successful handling, including no-op unknown users. */
   invalidated: boolean;
+  /** Number of matching connection rows. */
+  matched?: number;
+  /** Number retained as revoked tombstones. */
+  revoked?: number;
 }

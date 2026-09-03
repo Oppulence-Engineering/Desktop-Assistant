@@ -29,6 +29,10 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -707,6 +711,114 @@ func (f TraverseCommitmentEvent) Traverse(ctx context.Context, q ent.Query) erro
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.CommitmentEventQuery", q)
+}
+
+// The ConnectorAuditEventFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ConnectorAuditEventFunc func(context.Context, *ent.ConnectorAuditEventQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ConnectorAuditEventFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ConnectorAuditEventQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ConnectorAuditEventQuery", q)
+}
+
+// The TraverseConnectorAuditEvent type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseConnectorAuditEvent func(context.Context, *ent.ConnectorAuditEventQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseConnectorAuditEvent) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseConnectorAuditEvent) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConnectorAuditEventQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ConnectorAuditEventQuery", q)
+}
+
+// The ConnectorCredentialCleanupJobFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ConnectorCredentialCleanupJobFunc func(context.Context, *ent.ConnectorCredentialCleanupJobQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ConnectorCredentialCleanupJobFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ConnectorCredentialCleanupJobQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ConnectorCredentialCleanupJobQuery", q)
+}
+
+// The TraverseConnectorCredentialCleanupJob type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseConnectorCredentialCleanupJob func(context.Context, *ent.ConnectorCredentialCleanupJobQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseConnectorCredentialCleanupJob) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseConnectorCredentialCleanupJob) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConnectorCredentialCleanupJobQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ConnectorCredentialCleanupJobQuery", q)
+}
+
+// The ConnectorCredentialRecoveryFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ConnectorCredentialRecoveryFunc func(context.Context, *ent.ConnectorCredentialRecoveryQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ConnectorCredentialRecoveryFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ConnectorCredentialRecoveryQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ConnectorCredentialRecoveryQuery", q)
+}
+
+// The TraverseConnectorCredentialRecovery type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseConnectorCredentialRecovery func(context.Context, *ent.ConnectorCredentialRecoveryQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseConnectorCredentialRecovery) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseConnectorCredentialRecovery) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConnectorCredentialRecoveryQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ConnectorCredentialRecoveryQuery", q)
+}
+
+// The ConnectorRevocationJobFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ConnectorRevocationJobFunc func(context.Context, *ent.ConnectorRevocationJobQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ConnectorRevocationJobFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ConnectorRevocationJobQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ConnectorRevocationJobQuery", q)
+}
+
+// The TraverseConnectorRevocationJob type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseConnectorRevocationJob func(context.Context, *ent.ConnectorRevocationJobQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseConnectorRevocationJob) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseConnectorRevocationJob) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConnectorRevocationJobQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ConnectorRevocationJobQuery", q)
 }
 
 // The ConversationIntelligenceArtifactFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -2212,6 +2324,14 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.CommitmentDependencyQuery, predicate.CommitmentDependency, commitmentdependency.OrderOption]{typ: ent.TypeCommitmentDependency, tq: q}, nil
 	case *ent.CommitmentEventQuery:
 		return &query[*ent.CommitmentEventQuery, predicate.CommitmentEvent, commitmentevent.OrderOption]{typ: ent.TypeCommitmentEvent, tq: q}, nil
+	case *ent.ConnectorAuditEventQuery:
+		return &query[*ent.ConnectorAuditEventQuery, predicate.ConnectorAuditEvent, connectorauditevent.OrderOption]{typ: ent.TypeConnectorAuditEvent, tq: q}, nil
+	case *ent.ConnectorCredentialCleanupJobQuery:
+		return &query[*ent.ConnectorCredentialCleanupJobQuery, predicate.ConnectorCredentialCleanupJob, connectorcredentialcleanupjob.OrderOption]{typ: ent.TypeConnectorCredentialCleanupJob, tq: q}, nil
+	case *ent.ConnectorCredentialRecoveryQuery:
+		return &query[*ent.ConnectorCredentialRecoveryQuery, predicate.ConnectorCredentialRecovery, connectorcredentialrecovery.OrderOption]{typ: ent.TypeConnectorCredentialRecovery, tq: q}, nil
+	case *ent.ConnectorRevocationJobQuery:
+		return &query[*ent.ConnectorRevocationJobQuery, predicate.ConnectorRevocationJob, connectorrevocationjob.OrderOption]{typ: ent.TypeConnectorRevocationJob, tq: q}, nil
 	case *ent.ConversationIntelligenceArtifactQuery:
 		return &query[*ent.ConversationIntelligenceArtifactQuery, predicate.ConversationIntelligenceArtifact, conversationintelligenceartifact.OrderOption]{typ: ent.TypeConversationIntelligenceArtifact, tq: q}, nil
 	case *ent.CreditLedgerQuery:

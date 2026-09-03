@@ -6,12 +6,162 @@
  * OpenAPI spec version: 0.1.0
  */
 import type {
+  ConnectorConsentContext200,
+  ConsentAuditRequest,
+  ConsentAuditResponse,
+  ConsentContextRequest,
   N400Response,
   N401Response,
+  N403Response,
+  N404Response,
+  N409Response,
   N500Response,
+  N503Response,
   PreConsentRequest,
   PreConsentResponse,
 } from "../model";
+
+export type appendConnectorConsentAuditResponse200 = {
+  data: ConsentAuditResponse;
+  status: 200;
+};
+
+export type appendConnectorConsentAuditResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type appendConnectorConsentAuditResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type appendConnectorConsentAuditResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type appendConnectorConsentAuditResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type appendConnectorConsentAuditResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
+export type appendConnectorConsentAuditResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type appendConnectorConsentAuditResponseSuccess = appendConnectorConsentAuditResponse200 & {
+  headers: Headers;
+};
+export type appendConnectorConsentAuditResponseError = (
+  | appendConnectorConsentAuditResponse400
+  | appendConnectorConsentAuditResponse401
+  | appendConnectorConsentAuditResponse403
+  | appendConnectorConsentAuditResponse404
+  | appendConnectorConsentAuditResponse409
+  | appendConnectorConsentAuditResponse500
+) & {
+  headers: Headers;
+};
+
+export type appendConnectorConsentAuditResponse =
+  appendConnectorConsentAuditResponseSuccess | appendConnectorConsentAuditResponseError;
+
+export const getAppendConnectorConsentAuditUrl = () => {
+  return `/oauth-hooks/consent-audit`;
+};
+
+/**
+ * HMAC-signed endpoint accepting only consent.shown, consent.granted, or consent.denied. It validates every identity and scope against the pending flow and durably deduplicates event_id.
+ * @summary Append replay-safe connector consent audit
+ */
+export const appendConnectorConsentAudit = async (
+  consentAuditRequest: ConsentAuditRequest,
+  options?: RequestInit,
+): Promise<appendConnectorConsentAuditResponse> => {
+  const res = await fetch(getAppendConnectorConsentAuditUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(consentAuditRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: appendConnectorConsentAuditResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as appendConnectorConsentAuditResponse;
+};
+
+export type connectorConsentContextResponse200 = {
+  data: ConnectorConsentContext200;
+  status: 200;
+};
+
+export type connectorConsentContextResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type connectorConsentContextResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type connectorConsentContextResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type connectorConsentContextResponse503 = {
+  data: N503Response;
+  status: 503;
+};
+
+export type connectorConsentContextResponseSuccess = connectorConsentContextResponse200 & {
+  headers: Headers;
+};
+export type connectorConsentContextResponseError = (
+  | connectorConsentContextResponse400
+  | connectorConsentContextResponse401
+  | connectorConsentContextResponse404
+  | connectorConsentContextResponse503
+) & {
+  headers: Headers;
+};
+
+export type connectorConsentContextResponse =
+  connectorConsentContextResponseSuccess | connectorConsentContextResponseError;
+
+export const getConnectorConsentContextUrl = () => {
+  return `/oauth-hooks/consent-context`;
+};
+
+/**
+ * HMAC-authenticated endpoint returning owner, entitlement, and the exact structured requested scope catalog bound to a hashed pending state.
+ * @summary Fetch connector consent context
+ */
+export const connectorConsentContext = async (
+  consentContextRequest: ConsentContextRequest,
+  options?: RequestInit,
+): Promise<connectorConsentContextResponse> => {
+  const res = await fetch(getConnectorConsentContextUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(consentContextRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: connectorConsentContextResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as connectorConsentContextResponse;
+};
 
 export type preConsentResponse200 = {
   data: PreConsentResponse;
@@ -28,6 +178,16 @@ export type preConsentResponse401 = {
   status: 401;
 };
 
+export type preConsentResponse403 = {
+  data: N403Response;
+  status: 403;
+};
+
+export type preConsentResponse409 = {
+  data: N409Response;
+  status: 409;
+};
+
 export type preConsentResponse500 = {
   data: N500Response;
   status: 500;
@@ -37,7 +197,11 @@ export type preConsentResponseSuccess = preConsentResponse200 & {
   headers: Headers;
 };
 export type preConsentResponseError = (
-  preConsentResponse400 | preConsentResponse401 | preConsentResponse500
+  | preConsentResponse400
+  | preConsentResponse401
+  | preConsentResponse403
+  | preConsentResponse409
+  | preConsentResponse500
 ) & {
   headers: Headers;
 };
@@ -49,8 +213,8 @@ export const getPreConsentUrl = () => {
 };
 
 /**
- * Shared-secret webhook called by OAuth infrastructure before consent. It resolves the requested connector and returns allow=true or an upsell payload based on the user's billing plan.
- * @summary Evaluate connector pre-consent entitlement
+ * HMAC-signed oauth-consent hook. It binds the Hydra challenge, WorkOS subject, desktop client, one connector audience, exact scope catalog, and current entitlement to one pending flow.
+ * @summary Resolve strict connector consent context
  */
 export const preConsent = async (
   preConsentRequest: PreConsentRequest,

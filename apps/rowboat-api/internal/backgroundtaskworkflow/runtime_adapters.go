@@ -22,6 +22,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskmetrics"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/temporal"
@@ -198,6 +199,8 @@ func (a *Activities) toolRegistry(ctx context.Context, task *ent.BackgroundTask,
 	if owner != nil && a.HubSpot != nil {
 		_, err := a.Client.MCPConnection.Query().Where(
 			mcpconnection.ConnectorEQ("hubspot"),
+			mcpconnection.StatusEQ("active"),
+			mcpconnection.OrganizationIDEQ(connectors.OrganizationIDForUser(owner)),
 			mcpconnection.HasUserWith(user.IDEQ(owner.ID)),
 		).Only(auth.WithInternal(ctx))
 		if err == nil {

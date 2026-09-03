@@ -10,18 +10,33 @@
  * Ephemeral one-time OAuth handoff ticket with sealed payload and expiry.
  */
 export interface OAuthPending {
+  callback_at?: string;
+  callback_attempts: number;
+  callback_claim_id?: string;
+  callback_claimed_until?: string;
+  claimed_at?: string;
+  consent_challenge?: string;
+  context_request_id?: string;
   /** Row creation timestamp. */
   created_at: string;
   /** Credential or one-time ticket expiry timestamp. */
   expires_at: string;
+  failure_reason?: string;
+  hydra_client_id?: string;
   /** Stable UUID primary key. */
   id: string;
+  lifecycle_status?: string;
+  owner_org_id?: string;
+  owner_workos_user_id?: string;
   /** AES-GCM sealed OAuth handoff payload. Internal storage field. */
   payload_encrypted: string;
   /** Provider slug. Depending on the row this may be an OAuth provider, LLM provider, or execution backend. */
   provider: string;
+  redirect_target?: string;
+  requested_scopes?: string[];
   /** Opaque one-time OAuth state/session ticket. */
   state: string;
+  state_hash?: string;
   /** Last row update timestamp. */
   updated_at: string;
 }

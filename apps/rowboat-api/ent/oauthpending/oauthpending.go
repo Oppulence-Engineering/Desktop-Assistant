@@ -20,12 +20,42 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// FieldState holds the string denoting the state field in the database.
 	FieldState = "state"
+	// FieldStateHash holds the string denoting the state_hash field in the database.
+	FieldStateHash = "state_hash"
 	// FieldProvider holds the string denoting the provider field in the database.
 	FieldProvider = "provider"
 	// FieldPayloadEncrypted holds the string denoting the payload_encrypted field in the database.
 	FieldPayloadEncrypted = "payload_encrypted"
 	// FieldExpiresAt holds the string denoting the expires_at field in the database.
 	FieldExpiresAt = "expires_at"
+	// FieldLifecycleStatus holds the string denoting the lifecycle_status field in the database.
+	FieldLifecycleStatus = "lifecycle_status"
+	// FieldOwnerWorkosUserID holds the string denoting the owner_workos_user_id field in the database.
+	FieldOwnerWorkosUserID = "owner_workos_user_id"
+	// FieldOwnerOrgID holds the string denoting the owner_org_id field in the database.
+	FieldOwnerOrgID = "owner_org_id"
+	// FieldRequestedScopes holds the string denoting the requested_scopes field in the database.
+	FieldRequestedScopes = "requested_scopes"
+	// FieldRedirectTarget holds the string denoting the redirect_target field in the database.
+	FieldRedirectTarget = "redirect_target"
+	// FieldConsentChallenge holds the string denoting the consent_challenge field in the database.
+	FieldConsentChallenge = "consent_challenge"
+	// FieldContextRequestID holds the string denoting the context_request_id field in the database.
+	FieldContextRequestID = "context_request_id"
+	// FieldHydraClientID holds the string denoting the hydra_client_id field in the database.
+	FieldHydraClientID = "hydra_client_id"
+	// FieldCallbackAt holds the string denoting the callback_at field in the database.
+	FieldCallbackAt = "callback_at"
+	// FieldCallbackClaimID holds the string denoting the callback_claim_id field in the database.
+	FieldCallbackClaimID = "callback_claim_id"
+	// FieldCallbackClaimedUntil holds the string denoting the callback_claimed_until field in the database.
+	FieldCallbackClaimedUntil = "callback_claimed_until"
+	// FieldCallbackAttempts holds the string denoting the callback_attempts field in the database.
+	FieldCallbackAttempts = "callback_attempts"
+	// FieldClaimedAt holds the string denoting the claimed_at field in the database.
+	FieldClaimedAt = "claimed_at"
+	// FieldFailureReason holds the string denoting the failure_reason field in the database.
+	FieldFailureReason = "failure_reason"
 	// Table holds the table name of the oauthpending in the database.
 	Table = "oauth_pendings"
 )
@@ -36,9 +66,24 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldState,
+	FieldStateHash,
 	FieldProvider,
 	FieldPayloadEncrypted,
 	FieldExpiresAt,
+	FieldLifecycleStatus,
+	FieldOwnerWorkosUserID,
+	FieldOwnerOrgID,
+	FieldRequestedScopes,
+	FieldRedirectTarget,
+	FieldConsentChallenge,
+	FieldContextRequestID,
+	FieldHydraClientID,
+	FieldCallbackAt,
+	FieldCallbackClaimID,
+	FieldCallbackClaimedUntil,
+	FieldCallbackAttempts,
+	FieldClaimedAt,
+	FieldFailureReason,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -60,6 +105,10 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// StateValidator is a validator for the "state" field. It is called by the builders before save.
 	StateValidator func(string) error
+	// DefaultCallbackAttempts holds the default value on creation for the "callback_attempts" field.
+	DefaultCallbackAttempts int
+	// CallbackAttemptsValidator is a validator for the "callback_attempts" field. It is called by the builders before save.
+	CallbackAttemptsValidator func(int) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -87,6 +136,11 @@ func ByState(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldState, opts...).ToFunc()
 }
 
+// ByStateHash orders the results by the state_hash field.
+func ByStateHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStateHash, opts...).ToFunc()
+}
+
 // ByProvider orders the results by the provider field.
 func ByProvider(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProvider, opts...).ToFunc()
@@ -95,4 +149,69 @@ func ByProvider(opts ...sql.OrderTermOption) OrderOption {
 // ByExpiresAt orders the results by the expires_at field.
 func ByExpiresAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldExpiresAt, opts...).ToFunc()
+}
+
+// ByLifecycleStatus orders the results by the lifecycle_status field.
+func ByLifecycleStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLifecycleStatus, opts...).ToFunc()
+}
+
+// ByOwnerWorkosUserID orders the results by the owner_workos_user_id field.
+func ByOwnerWorkosUserID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOwnerWorkosUserID, opts...).ToFunc()
+}
+
+// ByOwnerOrgID orders the results by the owner_org_id field.
+func ByOwnerOrgID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOwnerOrgID, opts...).ToFunc()
+}
+
+// ByRedirectTarget orders the results by the redirect_target field.
+func ByRedirectTarget(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRedirectTarget, opts...).ToFunc()
+}
+
+// ByConsentChallenge orders the results by the consent_challenge field.
+func ByConsentChallenge(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldConsentChallenge, opts...).ToFunc()
+}
+
+// ByContextRequestID orders the results by the context_request_id field.
+func ByContextRequestID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldContextRequestID, opts...).ToFunc()
+}
+
+// ByHydraClientID orders the results by the hydra_client_id field.
+func ByHydraClientID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldHydraClientID, opts...).ToFunc()
+}
+
+// ByCallbackAt orders the results by the callback_at field.
+func ByCallbackAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCallbackAt, opts...).ToFunc()
+}
+
+// ByCallbackClaimID orders the results by the callback_claim_id field.
+func ByCallbackClaimID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCallbackClaimID, opts...).ToFunc()
+}
+
+// ByCallbackClaimedUntil orders the results by the callback_claimed_until field.
+func ByCallbackClaimedUntil(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCallbackClaimedUntil, opts...).ToFunc()
+}
+
+// ByCallbackAttempts orders the results by the callback_attempts field.
+func ByCallbackAttempts(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCallbackAttempts, opts...).ToFunc()
+}
+
+// ByClaimedAt orders the results by the claimed_at field.
+func ByClaimedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldClaimedAt, opts...).ToFunc()
+}
+
+// ByFailureReason orders the results by the failure_reason field.
+func ByFailureReason(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFailureReason, opts...).ToFunc()
 }

@@ -1471,6 +1471,7 @@ export const BuiltinTools: z.infer<typeof BuiltinToolsSchema> = {
                 await repo.upsert(serverName, {
                     type: 'http',
                     url: token.mcpUrl,
+                    connectionId: token.connectionId,
                     headers: {
                         Authorization: `${tokenType} ${token.access_token}`,
                     },

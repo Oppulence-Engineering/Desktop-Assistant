@@ -3,10 +3,41 @@
     "name": "canvas",
     "displayName": "Canvas",
     "description": "Banking, invoicing, dunning, transactions",
-    "mcpUrl": "https://api.canvas.solomon-ai.co/v1/mcp",
+    "mcpUrls": {
+      "development": "https://api.canvas.solomon-ai.co/v1/mcp",
+      "staging": "https://api.canvas.staging.solomon-ai.co/v1/mcp",
+      "production": "https://api.canvas.solomon-ai.co/v1/mcp"
+    },
     "authType": "oauth",
-    "audience": "canvas-api",
-    "scopes": ["invoices:read", "customers:read", "transactions:read"],
+    "audiences": {
+      "development": "mcp:canvas",
+      "staging": "mcp:canvas-staging",
+      "production": "mcp:canvas"
+    },
+    "authoritativeEntitlementRequired": true,
+    "scopes": [
+      {
+        "name": "canvas:invoices.read",
+        "displayName": "Read invoices",
+        "description": "View invoice balances, status, due dates, and line-item context.",
+        "grantTier": "required",
+        "risk": "low"
+      },
+      {
+        "name": "canvas:customers.read",
+        "displayName": "Read customers",
+        "description": "View customer identity and account context needed to interpret invoices.",
+        "grantTier": "required",
+        "risk": "low"
+      },
+      {
+        "name": "canvas:transactions.read",
+        "displayName": "Read transactions",
+        "description": "Search transaction history and payment activity.",
+        "grantTier": "optional",
+        "risk": "low"
+      }
+    ],
     "mcpTools": [
       { "name": "customer.lookup", "trustTier": "read" },
       { "name": "invoice.lookup", "trustTier": "read" },
@@ -18,7 +49,7 @@
         "title": "Invoice context",
         "description": "Look up invoices, customers, balances, and current payment status.",
         "category": "finance",
-        "requiredScopes": ["invoices:read", "customers:read"],
+        "requiredScopes": ["canvas:invoices.read", "canvas:customers.read"],
         "mcpTools": ["invoice.lookup", "customer.lookup"],
         "trustTier": "read",
         "samplePrompt": "Show me the current invoice status for Acme."
@@ -28,7 +59,7 @@
         "title": "Transaction review",
         "description": "Search transactions and summarize recent customer activity.",
         "category": "finance",
-        "requiredScopes": ["transactions:read"],
+        "requiredScopes": ["canvas:transactions.read"],
         "mcpTools": ["transaction.search"],
         "trustTier": "read",
         "samplePrompt": "Find recent transactions for this customer."
@@ -39,10 +70,35 @@
     "name": "corinthian",
     "displayName": "Corinthian",
     "description": "Accounts receivable, collections, communications",
-    "mcpUrl": "https://mcp.corinthian.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.corinthian.solomon-ai.co/mcp",
+      "staging": "https://mcp.corinthian.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.corinthian.solomon-ai.co/mcp"
+    },
     "authType": "oauth",
-    "audience": "corinthian-api",
-    "scopes": ["ar:read", "collections:read"],
+    "audiences": {
+      "development": "mcp:corinthian",
+      "staging": "mcp:corinthian-staging",
+      "production": "mcp:corinthian"
+    },
+    "authoritativeEntitlementRequired": true,
+    "scopes": [
+      {
+        "name": "corinthian:ar.read",
+        "displayName": "Read accounts receivable",
+        "description": "View receivables, balances, and aging context.",
+        "grantTier": "required",
+        "risk": "low"
+      },
+      {
+        "name": "corinthian:collections.read",
+        "displayName": "Read collections",
+        "description": "View collection cases, customer threads, and promises to pay.",
+        "grantTier": "optional",
+        "risk": "low",
+        "implies": ["corinthian:ar.read"]
+      }
+    ],
     "mcpTools": [
       { "name": "thread.search", "trustTier": "read" },
       { "name": "case.lookup", "trustTier": "read" },
@@ -54,7 +110,7 @@
         "title": "Collections context",
         "description": "Review collection cases, promises to pay, and customer thread history.",
         "category": "finance",
-        "requiredScopes": ["collections:read"],
+        "requiredScopes": ["corinthian:collections.read"],
         "mcpTools": ["case.lookup", "promise.list", "thread.search"],
         "trustTier": "read",
         "samplePrompt": "Summarize this customer's open collection promises."
@@ -62,12 +118,177 @@
     ]
   },
   {
+    "name": "cadence",
+    "displayName": "Cadence",
+    "description": "Billing operations, payment runs, and finance approvals",
+    "mcpUrls": {
+      "development": "https://mcp.cadence.solomon-ai.co/mcp",
+      "staging": "https://mcp.cadence.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.cadence.solomon-ai.co/mcp"
+    },
+    "authType": "oauth",
+    "audiences": {
+      "development": "mcp:cadence",
+      "staging": "mcp:cadence-staging",
+      "production": "mcp:cadence"
+    },
+    "authoritativeEntitlementRequired": true,
+    "scopes": [
+      {
+        "name": "cadence:payment_runs.read",
+        "displayName": "Read payment runs",
+        "description": "View payment-run status, totals, and approval context.",
+        "grantTier": "required",
+        "risk": "low"
+      },
+      {
+        "name": "cadence:payments.execute",
+        "displayName": "Execute approved payments",
+        "description": "Execute a payment only after a separate action-specific approval.",
+        "grantTier": "optional",
+        "risk": "money-moving",
+        "implies": ["cadence:payment_runs.read"],
+        "stepUpRequired": true,
+        "perInvocationApproval": true,
+        "requiredPlan": "intelligence",
+        "environments": ["development", "staging"]
+      }
+    ],
+    "mcpTools": [
+      { "name": "payment_run.list", "trustTier": "read" },
+      { "name": "payment.execute", "trustTier": "money-moving", "requiredScopes": ["cadence:payments.execute"] }
+    ],
+    "templateBlocks": [
+      {
+        "id": "payment-run-context",
+        "title": "Payment run context",
+        "description": "Review payment runs and their approval status.",
+        "category": "finance",
+        "requiredScopes": ["cadence:payment_runs.read"],
+        "mcpTools": ["payment_run.list"],
+        "trustTier": "read",
+        "samplePrompt": "Summarize the open Cadence payment runs."
+      }
+    ]
+  },
+  {
+    "name": "conduit",
+    "displayName": "Conduit",
+    "description": "Data pipelines, event routing, and operational integrations",
+    "mcpUrls": {
+      "development": "https://mcp.conduit.solomon-ai.co/mcp",
+      "staging": "https://mcp.conduit.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.conduit.solomon-ai.co/mcp"
+    },
+    "authType": "oauth",
+    "audiences": {
+      "development": "mcp:conduit",
+      "staging": "mcp:conduit-staging",
+      "production": "mcp:conduit"
+    },
+    "authoritativeEntitlementRequired": true,
+    "scopes": [
+      {
+        "name": "conduit:pipelines.read",
+        "displayName": "Read pipelines",
+        "description": "View pipeline definitions, health, and recent runs.",
+        "grantTier": "required",
+        "risk": "low"
+      },
+      {
+        "name": "conduit:pipelines.write",
+        "displayName": "Modify pipelines",
+        "description": "Create or update pipeline configuration.",
+        "grantTier": "optional",
+        "risk": "medium",
+        "implies": ["conduit:pipelines.read"]
+      }
+    ],
+    "mcpTools": [
+      { "name": "pipeline.list", "trustTier": "read" },
+      { "name": "pipeline.update", "trustTier": "write" }
+    ],
+    "templateBlocks": [
+      {
+        "id": "pipeline-operations",
+        "title": "Pipeline operations",
+        "description": "Inspect Conduit pipeline health and recent runs.",
+        "category": "operations",
+        "requiredScopes": ["conduit:pipelines.read"],
+        "mcpTools": ["pipeline.list"],
+        "trustTier": "read",
+        "samplePrompt": "Show me unhealthy Conduit pipelines."
+      }
+    ]
+  },
+  {
+    "name": "eigen",
+    "displayName": "Eigen",
+    "description": "Knowledge retrieval, reasoning context, and governed actions",
+    "mcpUrls": {
+      "development": "https://mcp.eigen.solomon-ai.co/mcp",
+      "staging": "https://mcp.eigen.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.eigen.solomon-ai.co/mcp"
+    },
+    "authType": "oauth",
+    "audiences": {
+      "development": "mcp:eigen",
+      "staging": "mcp:eigen-staging",
+      "production": "mcp:eigen"
+    },
+    "authoritativeEntitlementRequired": true,
+    "scopes": [
+      {
+        "name": "eigen:knowledge.read",
+        "displayName": "Read knowledge",
+        "description": "Search governed Eigen knowledge and citations.",
+        "grantTier": "required",
+        "risk": "low"
+      },
+      {
+        "name": "eigen:actions.execute",
+        "displayName": "Execute governed actions",
+        "description": "Execute explicitly approved Eigen actions.",
+        "grantTier": "optional",
+        "risk": "high",
+        "implies": ["eigen:knowledge.read"],
+        "stepUpRequired": true,
+        "environments": ["development", "staging"]
+      }
+    ],
+    "mcpTools": [
+      { "name": "knowledge.search", "trustTier": "read" },
+      { "name": "action.execute", "trustTier": "act" }
+    ],
+    "templateBlocks": [
+      {
+        "id": "governed-knowledge",
+        "title": "Governed knowledge",
+        "description": "Search Eigen with source-backed citations.",
+        "category": "knowledge",
+        "requiredScopes": ["eigen:knowledge.read"],
+        "mcpTools": ["knowledge.search"],
+        "trustTier": "read",
+        "samplePrompt": "Find the Eigen sources relevant to this decision."
+      }
+    ]
+  },
+  {
     "name": "wispr",
     "displayName": "Wispr Flow",
     "description": "AI dictation transcripts",
-    "mcpUrl": "https://mcp.wispr.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.wispr.solomon-ai.co/mcp",
+      "staging": "https://mcp.wispr.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.wispr.solomon-ai.co/mcp"
+    },
     "authType": "api_key",
-    "audience": "wispr-api",
+    "audiences": {
+      "development": "wispr-api",
+      "staging": "wispr-api-staging",
+      "production": "wispr-api"
+    },
+    "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "transcript.search", "trustTier": "read" },
       { "name": "transcript.get", "trustTier": "read" }
@@ -91,7 +312,12 @@
     "mcpUrl": "",
     "transport": "native",
     "authType": "api_key",
-    "audience": "hubspot-api",
+    "audiences": {
+      "development": "hubspot-api",
+      "staging": "hubspot-api-staging",
+      "production": "hubspot-api"
+    },
+    "authoritativeEntitlementRequired": true,
     "nativeTools": [
       { "name": "connector.read.hubspot_search", "trustTier": "read" },
       { "name": "connector.write.hubspot_note", "trustTier": "act" },
@@ -122,9 +348,18 @@
     "name": "github",
     "displayName": "GitHub",
     "description": "Repositories, issues, pull requests, and code review context",
-    "mcpUrl": "https://mcp.github.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.github.solomon-ai.co/mcp",
+      "staging": "https://mcp.github.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.github.solomon-ai.co/mcp"
+    },
     "authType": "api_key",
-    "audience": "github-api",
+    "audiences": {
+      "development": "github-api",
+      "staging": "github-api-staging",
+      "production": "github-api"
+    },
+    "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "repository.get", "trustTier": "read" },
       { "name": "issue.search", "trustTier": "read" },
@@ -157,9 +392,18 @@
     "name": "linear",
     "displayName": "Linear",
     "description": "Issues, projects, comments, and triage workflows",
-    "mcpUrl": "https://mcp.linear.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.linear.solomon-ai.co/mcp",
+      "staging": "https://mcp.linear.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.linear.solomon-ai.co/mcp"
+    },
     "authType": "api_key",
-    "audience": "linear-api",
+    "audiences": {
+      "development": "linear-api",
+      "staging": "linear-api-staging",
+      "production": "linear-api"
+    },
+    "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "issue.search", "trustTier": "read" },
       { "name": "project.lookup", "trustTier": "read" },
@@ -191,9 +435,18 @@
     "name": "notion",
     "displayName": "Notion",
     "description": "Workspace pages, databases, and knowledge bases",
-    "mcpUrl": "https://mcp.notion.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.notion.solomon-ai.co/mcp",
+      "staging": "https://mcp.notion.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.notion.solomon-ai.co/mcp"
+    },
     "authType": "api_key",
-    "audience": "notion-api",
+    "audiences": {
+      "development": "notion-api",
+      "staging": "notion-api-staging",
+      "production": "notion-api"
+    },
+    "authoritativeEntitlementRequired": true,
     "mcpTools": [
       { "name": "page.search", "trustTier": "read" },
       { "name": "page.get", "trustTier": "read" },
@@ -225,15 +478,36 @@
     "name": "stripe",
     "displayName": "Stripe",
     "description": "Customers, charges, invoices, subscriptions, and refunds",
-    "mcpUrl": "https://mcp.stripe.solomon-ai.co/mcp",
+    "mcpUrls": {
+      "development": "https://mcp.stripe.solomon-ai.co/mcp",
+      "staging": "https://mcp.stripe.staging.solomon-ai.co/mcp",
+      "production": "https://mcp.stripe.solomon-ai.co/mcp"
+    },
     "authType": "api_key",
-    "audience": "stripe-api",
+    "audiences": {
+      "development": "stripe-api",
+      "staging": "stripe-api-staging",
+      "production": "stripe-api"
+    },
+    "authoritativeEntitlementRequired": true,
+    "scopes": [
+      {
+        "name": "stripe:refunds.create",
+        "displayName": "Create refunds",
+        "description": "Create a Stripe refund for an exact approved invocation.",
+        "grantTier": "optional",
+        "risk": "money-moving",
+        "stepUpRequired": true,
+        "perInvocationApproval": true,
+        "environments": ["development", "staging"]
+      }
+    ],
     "mcpTools": [
       { "name": "customer.lookup", "trustTier": "read" },
       { "name": "charge.search", "trustTier": "read" },
       { "name": "invoice.lookup", "trustTier": "read" },
       { "name": "invoice.finalize", "trustTier": "act" },
-      { "name": "refund.create", "trustTier": "money-moving" }
+      { "name": "refund.create", "trustTier": "money-moving", "requiredScopes": ["stripe:refunds.create"] }
     ],
     "templateBlocks": [
       {
@@ -251,6 +525,7 @@
         "description": "Finalize invoices and create refunds when explicitly requested.",
         "category": "payments",
         "mcpTools": ["invoice.finalize", "refund.create"],
+        "requiredScopes": ["stripe:refunds.create"],
         "trustTier": "money-moving",
         "samplePrompt": "Prepare the refund workflow for this charge."
       }

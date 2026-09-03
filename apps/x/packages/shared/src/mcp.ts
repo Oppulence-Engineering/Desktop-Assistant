@@ -11,6 +11,8 @@ export const HttpMcpServerConfig = z.object({
     type: z.literal("http").optional(),
     url: z.string(),
     headers: z.record(z.string(), z.string()).optional(),
+    /** Stable broker connection identity, when the MCP credential issuer provides one. */
+    connectionId: z.string().optional(),
 });
 
 export const McpServerDefinition = z.union([StdioMcpServerConfig, HttpMcpServerConfig]);

@@ -179,7 +179,13 @@ function agentViewToDocument(value: unknown, fallbackSlug: string): Record<strin
   };
 }
 
-function PageBody({ initialView }: { initialView: ProductView }) {
+function PageBody({
+  initialView,
+  initialSettingsSection,
+}: {
+  initialView: ProductView;
+  initialSettingsSection: SettingsSection;
+}) {
   const session = useAuthSession();
   const sessionScope = useMemo<SessionScope>(
     () => ({
@@ -210,7 +216,7 @@ function PageBody({ initialView }: { initialView: ProductView }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [view, setView] = useState<ProductView>(initialView);
   const [workflowFocus, setWorkflowFocus] = useState<"scheduled" | "runs">("scheduled");
-  const [settingsSection, setSettingsSection] = useState<SettingsSection>("overview");
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>(initialSettingsSection);
   const [sessions, setSessions] = useState<SessionMeta[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [agentOptions, setAgentOptions] = useState<string[]>(["assistant"]);
@@ -1824,13 +1830,15 @@ function PageBody({ initialView }: { initialView: ProductView }) {
 
 export default function ProductDashboardClient({
   initialView = "chat",
+  initialSettingsSection = "overview",
 }: {
   initialView?: ProductView;
+  initialSettingsSection?: SettingsSection;
 }) {
   return (
     <AuthGate>
       <div className="app-shell contents" data-product-shell>
-        <PageBody initialView={initialView} />
+        <PageBody initialSettingsSection={initialSettingsSection} initialView={initialView} />
       </div>
     </AuthGate>
   );

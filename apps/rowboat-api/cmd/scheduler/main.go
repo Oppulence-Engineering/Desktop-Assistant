@@ -146,7 +146,7 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 // (to unseal connection refresh tokens), the vendor-secret store (Google
 // OAuth client credentials), and the endpoint config.
 func buildWatchManager(ctx context.Context, cfg appconfig.Config, log *zap.Logger, database *db.DB) (*googlewatch.Manager, error) {
-	sealer, err := crypto.NewSealer(cfg.DBEncryptionKey)
+	sealer, err := schedulerColumnSealer(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func buildWatchManager(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 // startRevenueAutoScan builds the revenue service with its Gmail sweeper and
 // runs the background auto-scanner until the context is cancelled.
 func startRevenueAutoScan(ctx context.Context, cfg appconfig.Config, log *zap.Logger, database *db.DB) error {
-	sealer, err := crypto.NewSealer(cfg.DBEncryptionKey)
+	sealer, err := schedulerColumnSealer(cfg)
 	if err != nil {
 		return err
 	}
@@ -205,6 +205,18 @@ func startRevenueAutoScan(ctx context.Context, cfg appconfig.Config, log *zap.Lo
 	}, log)
 	go func() { _ = scanner.Run(ctx) }()
 	return nil
+}
+
+func schedulerColumnSealer(cfg appconfig.Config) (*crypto.Sealer, error) {
+	primaryKeyID, keyring, err := cfg.DBEncryptionKeyring()
+	if err != nil {
+		return nil, fmt.Errorf("column encryption configuration: %w", err)
+	}
+	sealer, err := crypto.NewKeyringSealer(primaryKeyID, keyring)
+	if err != nil {
+		return nil, fmt.Errorf("build column encryption keyring: %w", err)
+	}
+	return sealer, nil
 }
 
 // startRevenueDigest builds the revenue service and email provider, then runs

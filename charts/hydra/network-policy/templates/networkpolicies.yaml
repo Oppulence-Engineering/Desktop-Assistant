@@ -1,0 +1,86 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "hydra-network-policy.fullname" . }}-default-deny
+  labels:
+    {{- include "hydra-network-policy.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    {{- toYaml .Values.hydra.podSelector | nindent 4 }}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "hydra-network-policy.fullname" . }}-public-ingress
+  labels:
+    {{- include "hydra-network-policy.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    {{- toYaml .Values.hydra.podSelector | nindent 4 }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            {{- toYaml .Values.publicIngress.namespaceSelector | nindent 12 }}
+          podSelector:
+            {{- toYaml .Values.publicIngress.podSelector | nindent 12 }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.hydra.publicPort }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "hydra-network-policy.fullname" . }}-admin-ingress
+  labels:
+    {{- include "hydra-network-policy.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    {{- toYaml .Values.hydra.podSelector | nindent 4 }}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            {{- toYaml .Values.adminIngress.oauthConsent.namespaceSelector | nindent 12 }}
+          podSelector:
+            {{- toYaml .Values.adminIngress.oauthConsent.podSelector | nindent 12 }}
+        - namespaceSelector:
+            {{- toYaml .Values.adminIngress.reconcilers.namespaceSelector | nindent 12 }}
+          podSelector:
+            {{- toYaml .Values.adminIngress.reconcilers.podSelector | nindent 12 }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.hydra.adminPort }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "hydra-network-policy.fullname" . }}-egress
+  labels:
+    {{- include "hydra-network-policy.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    {{- toYaml .Values.hydra.podSelector | nindent 4 }}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            {{- toYaml .Values.egress.dns.namespaceSelector | nindent 12 }}
+          podSelector:
+            {{- toYaml .Values.egress.dns.podSelector | nindent 12 }}
+      ports:
+        - protocol: UDP
+          port: {{ .Values.egress.dns.port }}
+        - protocol: TCP
+          port: {{ .Values.egress.dns.port }}
+    {{- range .Values.egress.postgresql.cidrs }}
+    - to:
+        - ipBlock:
+            cidr: {{ . | quote }}
+      ports:
+        - protocol: TCP
+          port: {{ $.Values.egress.postgresql.port }}
+    {{- end }}

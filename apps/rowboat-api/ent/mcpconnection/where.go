@@ -76,6 +76,11 @@ func Audience(v string) predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldEQ(FieldAudience, v))
 }
 
+// OrganizationID applies equality check predicate on the "organization_id" field. It's identical to OrganizationIDEQ.
+func OrganizationID(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldOrganizationID, v))
+}
+
 // RefreshTokenEncrypted applies equality check predicate on the "refresh_token_encrypted" field. It's identical to RefreshTokenEncryptedEQ.
 func RefreshTokenEncrypted(v []byte) predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldEQ(FieldRefreshTokenEncrypted, v))
@@ -84,6 +89,26 @@ func RefreshTokenEncrypted(v []byte) predicate.MCPConnection {
 // APIKeyEncrypted applies equality check predicate on the "api_key_encrypted" field. It's identical to APIKeyEncryptedEQ.
 func APIKeyEncrypted(v []byte) predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldEQ(FieldAPIKeyEncrypted, v))
+}
+
+// RefreshTokenPresent applies equality check predicate on the "refresh_token_present" field. It's identical to RefreshTokenPresentEQ.
+func RefreshTokenPresent(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRefreshTokenPresent, v))
+}
+
+// APIKeyPresent applies equality check predicate on the "api_key_present" field. It's identical to APIKeyPresentEQ.
+func APIKeyPresent(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldAPIKeyPresent, v))
+}
+
+// CredentialGeneration applies equality check predicate on the "credential_generation" field. It's identical to CredentialGenerationEQ.
+func CredentialGeneration(v int64) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldCredentialGeneration, v))
+}
+
+// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
+func Status(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldStatus, v))
 }
 
 // ConnectedAt applies equality check predicate on the "connected_at" field. It's identical to ConnectedAtEQ.
@@ -99,6 +124,31 @@ func LastUsedAt(v time.Time) predicate.MCPConnection {
 // ExpiresAt applies equality check predicate on the "expires_at" field. It's identical to ExpiresAtEQ.
 func ExpiresAt(v time.Time) predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldEQ(FieldExpiresAt, v))
+}
+
+// RevokedAt applies equality check predicate on the "revoked_at" field. It's identical to RevokedAtEQ.
+func RevokedAt(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRevokedAt, v))
+}
+
+// RevokedReason applies equality check predicate on the "revoked_reason" field. It's identical to RevokedReasonEQ.
+func RevokedReason(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRevokedReason, v))
+}
+
+// RevokedBy applies equality check predicate on the "revoked_by" field. It's identical to RevokedByEQ.
+func RevokedBy(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRevokedBy, v))
+}
+
+// RevocationAttemptedAt applies equality check predicate on the "revocation_attempted_at" field. It's identical to RevocationAttemptedAtEQ.
+func RevocationAttemptedAt(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRevocationAttemptedAt, v))
+}
+
+// RevocationSucceeded applies equality check predicate on the "revocation_succeeded" field. It's identical to RevocationSucceededEQ.
+func RevocationSucceeded(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRevocationSucceeded, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -311,6 +361,81 @@ func AudienceContainsFold(v string) predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldContainsFold(FieldAudience, v))
 }
 
+// OrganizationIDEQ applies the EQ predicate on the "organization_id" field.
+func OrganizationIDEQ(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDNEQ applies the NEQ predicate on the "organization_id" field.
+func OrganizationIDNEQ(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDIn applies the In predicate on the "organization_id" field.
+func OrganizationIDIn(vs ...string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIn(FieldOrganizationID, vs...))
+}
+
+// OrganizationIDNotIn applies the NotIn predicate on the "organization_id" field.
+func OrganizationIDNotIn(vs ...string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotIn(FieldOrganizationID, vs...))
+}
+
+// OrganizationIDGT applies the GT predicate on the "organization_id" field.
+func OrganizationIDGT(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGT(FieldOrganizationID, v))
+}
+
+// OrganizationIDGTE applies the GTE predicate on the "organization_id" field.
+func OrganizationIDGTE(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGTE(FieldOrganizationID, v))
+}
+
+// OrganizationIDLT applies the LT predicate on the "organization_id" field.
+func OrganizationIDLT(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLT(FieldOrganizationID, v))
+}
+
+// OrganizationIDLTE applies the LTE predicate on the "organization_id" field.
+func OrganizationIDLTE(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLTE(FieldOrganizationID, v))
+}
+
+// OrganizationIDContains applies the Contains predicate on the "organization_id" field.
+func OrganizationIDContains(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldContains(FieldOrganizationID, v))
+}
+
+// OrganizationIDHasPrefix applies the HasPrefix predicate on the "organization_id" field.
+func OrganizationIDHasPrefix(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldHasPrefix(FieldOrganizationID, v))
+}
+
+// OrganizationIDHasSuffix applies the HasSuffix predicate on the "organization_id" field.
+func OrganizationIDHasSuffix(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldHasSuffix(FieldOrganizationID, v))
+}
+
+// OrganizationIDIsNil applies the IsNil predicate on the "organization_id" field.
+func OrganizationIDIsNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIsNull(FieldOrganizationID))
+}
+
+// OrganizationIDNotNil applies the NotNil predicate on the "organization_id" field.
+func OrganizationIDNotNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotNull(FieldOrganizationID))
+}
+
+// OrganizationIDEqualFold applies the EqualFold predicate on the "organization_id" field.
+func OrganizationIDEqualFold(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEqualFold(FieldOrganizationID, v))
+}
+
+// OrganizationIDContainsFold applies the ContainsFold predicate on the "organization_id" field.
+func OrganizationIDContainsFold(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldContainsFold(FieldOrganizationID, v))
+}
+
 // ScopesIsNil applies the IsNil predicate on the "scopes" field.
 func ScopesIsNil() predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldIsNull(FieldScopes))
@@ -419,6 +544,131 @@ func APIKeyEncryptedIsNil() predicate.MCPConnection {
 // APIKeyEncryptedNotNil applies the NotNil predicate on the "api_key_encrypted" field.
 func APIKeyEncryptedNotNil() predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldNotNull(FieldAPIKeyEncrypted))
+}
+
+// RefreshTokenPresentEQ applies the EQ predicate on the "refresh_token_present" field.
+func RefreshTokenPresentEQ(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRefreshTokenPresent, v))
+}
+
+// RefreshTokenPresentNEQ applies the NEQ predicate on the "refresh_token_present" field.
+func RefreshTokenPresentNEQ(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNEQ(FieldRefreshTokenPresent, v))
+}
+
+// APIKeyPresentEQ applies the EQ predicate on the "api_key_present" field.
+func APIKeyPresentEQ(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldAPIKeyPresent, v))
+}
+
+// APIKeyPresentNEQ applies the NEQ predicate on the "api_key_present" field.
+func APIKeyPresentNEQ(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNEQ(FieldAPIKeyPresent, v))
+}
+
+// CredentialGenerationEQ applies the EQ predicate on the "credential_generation" field.
+func CredentialGenerationEQ(v int64) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationNEQ applies the NEQ predicate on the "credential_generation" field.
+func CredentialGenerationNEQ(v int64) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNEQ(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationIn applies the In predicate on the "credential_generation" field.
+func CredentialGenerationIn(vs ...int64) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIn(FieldCredentialGeneration, vs...))
+}
+
+// CredentialGenerationNotIn applies the NotIn predicate on the "credential_generation" field.
+func CredentialGenerationNotIn(vs ...int64) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotIn(FieldCredentialGeneration, vs...))
+}
+
+// CredentialGenerationGT applies the GT predicate on the "credential_generation" field.
+func CredentialGenerationGT(v int64) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGT(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationGTE applies the GTE predicate on the "credential_generation" field.
+func CredentialGenerationGTE(v int64) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGTE(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationLT applies the LT predicate on the "credential_generation" field.
+func CredentialGenerationLT(v int64) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLT(FieldCredentialGeneration, v))
+}
+
+// CredentialGenerationLTE applies the LTE predicate on the "credential_generation" field.
+func CredentialGenerationLTE(v int64) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLTE(FieldCredentialGeneration, v))
+}
+
+// StatusEQ applies the EQ predicate on the "status" field.
+func StatusEQ(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldStatus, v))
+}
+
+// StatusNEQ applies the NEQ predicate on the "status" field.
+func StatusNEQ(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNEQ(FieldStatus, v))
+}
+
+// StatusIn applies the In predicate on the "status" field.
+func StatusIn(vs ...string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIn(FieldStatus, vs...))
+}
+
+// StatusNotIn applies the NotIn predicate on the "status" field.
+func StatusNotIn(vs ...string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotIn(FieldStatus, vs...))
+}
+
+// StatusGT applies the GT predicate on the "status" field.
+func StatusGT(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGT(FieldStatus, v))
+}
+
+// StatusGTE applies the GTE predicate on the "status" field.
+func StatusGTE(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGTE(FieldStatus, v))
+}
+
+// StatusLT applies the LT predicate on the "status" field.
+func StatusLT(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLT(FieldStatus, v))
+}
+
+// StatusLTE applies the LTE predicate on the "status" field.
+func StatusLTE(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLTE(FieldStatus, v))
+}
+
+// StatusContains applies the Contains predicate on the "status" field.
+func StatusContains(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldContains(FieldStatus, v))
+}
+
+// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
+func StatusHasPrefix(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldHasPrefix(FieldStatus, v))
+}
+
+// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
+func StatusHasSuffix(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldHasSuffix(FieldStatus, v))
+}
+
+// StatusEqualFold applies the EqualFold predicate on the "status" field.
+func StatusEqualFold(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEqualFold(FieldStatus, v))
+}
+
+// StatusContainsFold applies the ContainsFold predicate on the "status" field.
+func StatusContainsFold(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldContainsFold(FieldStatus, v))
 }
 
 // ConnectedAtEQ applies the EQ predicate on the "connected_at" field.
@@ -569,6 +819,276 @@ func ExpiresAtIsNil() predicate.MCPConnection {
 // ExpiresAtNotNil applies the NotNil predicate on the "expires_at" field.
 func ExpiresAtNotNil() predicate.MCPConnection {
 	return predicate.MCPConnection(sql.FieldNotNull(FieldExpiresAt))
+}
+
+// RevokedAtEQ applies the EQ predicate on the "revoked_at" field.
+func RevokedAtEQ(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRevokedAt, v))
+}
+
+// RevokedAtNEQ applies the NEQ predicate on the "revoked_at" field.
+func RevokedAtNEQ(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNEQ(FieldRevokedAt, v))
+}
+
+// RevokedAtIn applies the In predicate on the "revoked_at" field.
+func RevokedAtIn(vs ...time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIn(FieldRevokedAt, vs...))
+}
+
+// RevokedAtNotIn applies the NotIn predicate on the "revoked_at" field.
+func RevokedAtNotIn(vs ...time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotIn(FieldRevokedAt, vs...))
+}
+
+// RevokedAtGT applies the GT predicate on the "revoked_at" field.
+func RevokedAtGT(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGT(FieldRevokedAt, v))
+}
+
+// RevokedAtGTE applies the GTE predicate on the "revoked_at" field.
+func RevokedAtGTE(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGTE(FieldRevokedAt, v))
+}
+
+// RevokedAtLT applies the LT predicate on the "revoked_at" field.
+func RevokedAtLT(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLT(FieldRevokedAt, v))
+}
+
+// RevokedAtLTE applies the LTE predicate on the "revoked_at" field.
+func RevokedAtLTE(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLTE(FieldRevokedAt, v))
+}
+
+// RevokedAtIsNil applies the IsNil predicate on the "revoked_at" field.
+func RevokedAtIsNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIsNull(FieldRevokedAt))
+}
+
+// RevokedAtNotNil applies the NotNil predicate on the "revoked_at" field.
+func RevokedAtNotNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotNull(FieldRevokedAt))
+}
+
+// RevokedReasonEQ applies the EQ predicate on the "revoked_reason" field.
+func RevokedReasonEQ(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRevokedReason, v))
+}
+
+// RevokedReasonNEQ applies the NEQ predicate on the "revoked_reason" field.
+func RevokedReasonNEQ(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNEQ(FieldRevokedReason, v))
+}
+
+// RevokedReasonIn applies the In predicate on the "revoked_reason" field.
+func RevokedReasonIn(vs ...string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIn(FieldRevokedReason, vs...))
+}
+
+// RevokedReasonNotIn applies the NotIn predicate on the "revoked_reason" field.
+func RevokedReasonNotIn(vs ...string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotIn(FieldRevokedReason, vs...))
+}
+
+// RevokedReasonGT applies the GT predicate on the "revoked_reason" field.
+func RevokedReasonGT(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGT(FieldRevokedReason, v))
+}
+
+// RevokedReasonGTE applies the GTE predicate on the "revoked_reason" field.
+func RevokedReasonGTE(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGTE(FieldRevokedReason, v))
+}
+
+// RevokedReasonLT applies the LT predicate on the "revoked_reason" field.
+func RevokedReasonLT(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLT(FieldRevokedReason, v))
+}
+
+// RevokedReasonLTE applies the LTE predicate on the "revoked_reason" field.
+func RevokedReasonLTE(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLTE(FieldRevokedReason, v))
+}
+
+// RevokedReasonContains applies the Contains predicate on the "revoked_reason" field.
+func RevokedReasonContains(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldContains(FieldRevokedReason, v))
+}
+
+// RevokedReasonHasPrefix applies the HasPrefix predicate on the "revoked_reason" field.
+func RevokedReasonHasPrefix(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldHasPrefix(FieldRevokedReason, v))
+}
+
+// RevokedReasonHasSuffix applies the HasSuffix predicate on the "revoked_reason" field.
+func RevokedReasonHasSuffix(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldHasSuffix(FieldRevokedReason, v))
+}
+
+// RevokedReasonIsNil applies the IsNil predicate on the "revoked_reason" field.
+func RevokedReasonIsNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIsNull(FieldRevokedReason))
+}
+
+// RevokedReasonNotNil applies the NotNil predicate on the "revoked_reason" field.
+func RevokedReasonNotNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotNull(FieldRevokedReason))
+}
+
+// RevokedReasonEqualFold applies the EqualFold predicate on the "revoked_reason" field.
+func RevokedReasonEqualFold(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEqualFold(FieldRevokedReason, v))
+}
+
+// RevokedReasonContainsFold applies the ContainsFold predicate on the "revoked_reason" field.
+func RevokedReasonContainsFold(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldContainsFold(FieldRevokedReason, v))
+}
+
+// RevokedByEQ applies the EQ predicate on the "revoked_by" field.
+func RevokedByEQ(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRevokedBy, v))
+}
+
+// RevokedByNEQ applies the NEQ predicate on the "revoked_by" field.
+func RevokedByNEQ(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNEQ(FieldRevokedBy, v))
+}
+
+// RevokedByIn applies the In predicate on the "revoked_by" field.
+func RevokedByIn(vs ...string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIn(FieldRevokedBy, vs...))
+}
+
+// RevokedByNotIn applies the NotIn predicate on the "revoked_by" field.
+func RevokedByNotIn(vs ...string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotIn(FieldRevokedBy, vs...))
+}
+
+// RevokedByGT applies the GT predicate on the "revoked_by" field.
+func RevokedByGT(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGT(FieldRevokedBy, v))
+}
+
+// RevokedByGTE applies the GTE predicate on the "revoked_by" field.
+func RevokedByGTE(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGTE(FieldRevokedBy, v))
+}
+
+// RevokedByLT applies the LT predicate on the "revoked_by" field.
+func RevokedByLT(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLT(FieldRevokedBy, v))
+}
+
+// RevokedByLTE applies the LTE predicate on the "revoked_by" field.
+func RevokedByLTE(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLTE(FieldRevokedBy, v))
+}
+
+// RevokedByContains applies the Contains predicate on the "revoked_by" field.
+func RevokedByContains(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldContains(FieldRevokedBy, v))
+}
+
+// RevokedByHasPrefix applies the HasPrefix predicate on the "revoked_by" field.
+func RevokedByHasPrefix(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldHasPrefix(FieldRevokedBy, v))
+}
+
+// RevokedByHasSuffix applies the HasSuffix predicate on the "revoked_by" field.
+func RevokedByHasSuffix(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldHasSuffix(FieldRevokedBy, v))
+}
+
+// RevokedByIsNil applies the IsNil predicate on the "revoked_by" field.
+func RevokedByIsNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIsNull(FieldRevokedBy))
+}
+
+// RevokedByNotNil applies the NotNil predicate on the "revoked_by" field.
+func RevokedByNotNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotNull(FieldRevokedBy))
+}
+
+// RevokedByEqualFold applies the EqualFold predicate on the "revoked_by" field.
+func RevokedByEqualFold(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEqualFold(FieldRevokedBy, v))
+}
+
+// RevokedByContainsFold applies the ContainsFold predicate on the "revoked_by" field.
+func RevokedByContainsFold(v string) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldContainsFold(FieldRevokedBy, v))
+}
+
+// RevocationAttemptedAtEQ applies the EQ predicate on the "revocation_attempted_at" field.
+func RevocationAttemptedAtEQ(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRevocationAttemptedAt, v))
+}
+
+// RevocationAttemptedAtNEQ applies the NEQ predicate on the "revocation_attempted_at" field.
+func RevocationAttemptedAtNEQ(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNEQ(FieldRevocationAttemptedAt, v))
+}
+
+// RevocationAttemptedAtIn applies the In predicate on the "revocation_attempted_at" field.
+func RevocationAttemptedAtIn(vs ...time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIn(FieldRevocationAttemptedAt, vs...))
+}
+
+// RevocationAttemptedAtNotIn applies the NotIn predicate on the "revocation_attempted_at" field.
+func RevocationAttemptedAtNotIn(vs ...time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotIn(FieldRevocationAttemptedAt, vs...))
+}
+
+// RevocationAttemptedAtGT applies the GT predicate on the "revocation_attempted_at" field.
+func RevocationAttemptedAtGT(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGT(FieldRevocationAttemptedAt, v))
+}
+
+// RevocationAttemptedAtGTE applies the GTE predicate on the "revocation_attempted_at" field.
+func RevocationAttemptedAtGTE(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldGTE(FieldRevocationAttemptedAt, v))
+}
+
+// RevocationAttemptedAtLT applies the LT predicate on the "revocation_attempted_at" field.
+func RevocationAttemptedAtLT(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLT(FieldRevocationAttemptedAt, v))
+}
+
+// RevocationAttemptedAtLTE applies the LTE predicate on the "revocation_attempted_at" field.
+func RevocationAttemptedAtLTE(v time.Time) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldLTE(FieldRevocationAttemptedAt, v))
+}
+
+// RevocationAttemptedAtIsNil applies the IsNil predicate on the "revocation_attempted_at" field.
+func RevocationAttemptedAtIsNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIsNull(FieldRevocationAttemptedAt))
+}
+
+// RevocationAttemptedAtNotNil applies the NotNil predicate on the "revocation_attempted_at" field.
+func RevocationAttemptedAtNotNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotNull(FieldRevocationAttemptedAt))
+}
+
+// RevocationSucceededEQ applies the EQ predicate on the "revocation_succeeded" field.
+func RevocationSucceededEQ(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldEQ(FieldRevocationSucceeded, v))
+}
+
+// RevocationSucceededNEQ applies the NEQ predicate on the "revocation_succeeded" field.
+func RevocationSucceededNEQ(v bool) predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNEQ(FieldRevocationSucceeded, v))
+}
+
+// RevocationSucceededIsNil applies the IsNil predicate on the "revocation_succeeded" field.
+func RevocationSucceededIsNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldIsNull(FieldRevocationSucceeded))
+}
+
+// RevocationSucceededNotNil applies the NotNil predicate on the "revocation_succeeded" field.
+func RevocationSucceededNotNil() predicate.MCPConnection {
+	return predicate.MCPConnection(sql.FieldNotNull(FieldRevocationSucceeded))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.

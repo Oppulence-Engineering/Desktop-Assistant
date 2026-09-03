@@ -8,6 +8,6 @@
 import type { ErrorEnvelope } from "./errorEnvelope";
 
 /**
- * Too many requests. A per-user rate limit bucket rejected the request.
+ * Too many requests. A named per-user or pre-auth IP bucket rejected the request.
  */
 export type N429Response = ErrorEnvelope;

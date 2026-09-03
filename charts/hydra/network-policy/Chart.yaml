@@ -1,0 +1,6 @@
+apiVersion: v2
+name: hydra-network-policy
+description: Default-deny and least-privilege NetworkPolicies for the upstream Ory Hydra chart.
+type: application
+version: 0.1.0
+appVersion: "2.2.0"

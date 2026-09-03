@@ -232,6 +232,7 @@ func TestHubSpotExecutorUsesSDKWithAssociation(t *testing.T) {
 		SetUser(f.user).
 		SetConnector("hubspot").
 		SetAudience("hubspot-api").
+		SetOrganizationID("personal:" + f.user.WorkosUserID).
 		SetAPIKeyEncrypted(sealed).
 		SaveX(f.ctx)
 
@@ -298,7 +299,8 @@ func TestHubSpotExecutorReconcilesThroughOfficialSDKSearch(t *testing.T) {
 		t.Fatalf("seal token: %v", err)
 	}
 	f.client.MCPConnection.Create().SetUser(f.user).SetConnector("hubspot").
-		SetAudience("hubspot-api").SetAPIKeyEncrypted(sealed).SaveX(f.ctx)
+		SetAudience("hubspot-api").SetOrganizationID("personal:" + f.user.WorkosUserID).
+		SetAPIKeyEncrypted(sealed).SaveX(f.ctx)
 	var searches, creates int
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/crm/objects/2026-03/notes/search" {

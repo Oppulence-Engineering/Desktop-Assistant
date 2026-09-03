@@ -4269,10 +4269,35 @@ func (_q *MCPConnectionQuery) collectField(ctx context.Context, oneNode bool, op
 				selectedFields = append(selectedFields, mcpconnection.FieldAudience)
 				fieldSeen[mcpconnection.FieldAudience] = struct{}{}
 			}
+		case "organizationID":
+			if _, ok := fieldSeen[mcpconnection.FieldOrganizationID]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldOrganizationID)
+				fieldSeen[mcpconnection.FieldOrganizationID] = struct{}{}
+			}
 		case "scopes":
 			if _, ok := fieldSeen[mcpconnection.FieldScopes]; !ok {
 				selectedFields = append(selectedFields, mcpconnection.FieldScopes)
 				fieldSeen[mcpconnection.FieldScopes] = struct{}{}
+			}
+		case "refreshTokenPresent":
+			if _, ok := fieldSeen[mcpconnection.FieldRefreshTokenPresent]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldRefreshTokenPresent)
+				fieldSeen[mcpconnection.FieldRefreshTokenPresent] = struct{}{}
+			}
+		case "apiKeyPresent":
+			if _, ok := fieldSeen[mcpconnection.FieldAPIKeyPresent]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldAPIKeyPresent)
+				fieldSeen[mcpconnection.FieldAPIKeyPresent] = struct{}{}
+			}
+		case "credentialGeneration":
+			if _, ok := fieldSeen[mcpconnection.FieldCredentialGeneration]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldCredentialGeneration)
+				fieldSeen[mcpconnection.FieldCredentialGeneration] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[mcpconnection.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldStatus)
+				fieldSeen[mcpconnection.FieldStatus] = struct{}{}
 			}
 		case "connectedAt":
 			if _, ok := fieldSeen[mcpconnection.FieldConnectedAt]; !ok {
@@ -4288,6 +4313,31 @@ func (_q *MCPConnectionQuery) collectField(ctx context.Context, oneNode bool, op
 			if _, ok := fieldSeen[mcpconnection.FieldExpiresAt]; !ok {
 				selectedFields = append(selectedFields, mcpconnection.FieldExpiresAt)
 				fieldSeen[mcpconnection.FieldExpiresAt] = struct{}{}
+			}
+		case "revokedAt":
+			if _, ok := fieldSeen[mcpconnection.FieldRevokedAt]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldRevokedAt)
+				fieldSeen[mcpconnection.FieldRevokedAt] = struct{}{}
+			}
+		case "revokedReason":
+			if _, ok := fieldSeen[mcpconnection.FieldRevokedReason]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldRevokedReason)
+				fieldSeen[mcpconnection.FieldRevokedReason] = struct{}{}
+			}
+		case "revokedBy":
+			if _, ok := fieldSeen[mcpconnection.FieldRevokedBy]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldRevokedBy)
+				fieldSeen[mcpconnection.FieldRevokedBy] = struct{}{}
+			}
+		case "revocationAttemptedAt":
+			if _, ok := fieldSeen[mcpconnection.FieldRevocationAttemptedAt]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldRevocationAttemptedAt)
+				fieldSeen[mcpconnection.FieldRevocationAttemptedAt] = struct{}{}
+			}
+		case "revocationSucceeded":
+			if _, ok := fieldSeen[mcpconnection.FieldRevocationSucceeded]; !ok {
+				selectedFields = append(selectedFields, mcpconnection.FieldRevocationSucceeded)
+				fieldSeen[mcpconnection.FieldRevocationSucceeded] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -4974,6 +5024,16 @@ func (_q *OAuthConnectionQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, oauthconnection.FieldProvider)
 				fieldSeen[oauthconnection.FieldProvider] = struct{}{}
 			}
+		case "refreshTokenPresent":
+			if _, ok := fieldSeen[oauthconnection.FieldRefreshTokenPresent]; !ok {
+				selectedFields = append(selectedFields, oauthconnection.FieldRefreshTokenPresent)
+				fieldSeen[oauthconnection.FieldRefreshTokenPresent] = struct{}{}
+			}
+		case "credentialGeneration":
+			if _, ok := fieldSeen[oauthconnection.FieldCredentialGeneration]; !ok {
+				selectedFields = append(selectedFields, oauthconnection.FieldCredentialGeneration)
+				fieldSeen[oauthconnection.FieldCredentialGeneration] = struct{}{}
+			}
 		case "scopes":
 			if _, ok := fieldSeen[oauthconnection.FieldScopes]; !ok {
 				selectedFields = append(selectedFields, oauthconnection.FieldScopes)
@@ -5061,6 +5121,11 @@ func (_q *OAuthPendingQuery) collectField(ctx context.Context, oneNode bool, opC
 				selectedFields = append(selectedFields, oauthpending.FieldState)
 				fieldSeen[oauthpending.FieldState] = struct{}{}
 			}
+		case "stateHash":
+			if _, ok := fieldSeen[oauthpending.FieldStateHash]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldStateHash)
+				fieldSeen[oauthpending.FieldStateHash] = struct{}{}
+			}
 		case "provider":
 			if _, ok := fieldSeen[oauthpending.FieldProvider]; !ok {
 				selectedFields = append(selectedFields, oauthpending.FieldProvider)
@@ -5070,6 +5135,76 @@ func (_q *OAuthPendingQuery) collectField(ctx context.Context, oneNode bool, opC
 			if _, ok := fieldSeen[oauthpending.FieldExpiresAt]; !ok {
 				selectedFields = append(selectedFields, oauthpending.FieldExpiresAt)
 				fieldSeen[oauthpending.FieldExpiresAt] = struct{}{}
+			}
+		case "lifecycleStatus":
+			if _, ok := fieldSeen[oauthpending.FieldLifecycleStatus]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldLifecycleStatus)
+				fieldSeen[oauthpending.FieldLifecycleStatus] = struct{}{}
+			}
+		case "ownerWorkosUserID":
+			if _, ok := fieldSeen[oauthpending.FieldOwnerWorkosUserID]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldOwnerWorkosUserID)
+				fieldSeen[oauthpending.FieldOwnerWorkosUserID] = struct{}{}
+			}
+		case "ownerOrgID":
+			if _, ok := fieldSeen[oauthpending.FieldOwnerOrgID]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldOwnerOrgID)
+				fieldSeen[oauthpending.FieldOwnerOrgID] = struct{}{}
+			}
+		case "requestedScopes":
+			if _, ok := fieldSeen[oauthpending.FieldRequestedScopes]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldRequestedScopes)
+				fieldSeen[oauthpending.FieldRequestedScopes] = struct{}{}
+			}
+		case "redirectTarget":
+			if _, ok := fieldSeen[oauthpending.FieldRedirectTarget]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldRedirectTarget)
+				fieldSeen[oauthpending.FieldRedirectTarget] = struct{}{}
+			}
+		case "consentChallenge":
+			if _, ok := fieldSeen[oauthpending.FieldConsentChallenge]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldConsentChallenge)
+				fieldSeen[oauthpending.FieldConsentChallenge] = struct{}{}
+			}
+		case "contextRequestID":
+			if _, ok := fieldSeen[oauthpending.FieldContextRequestID]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldContextRequestID)
+				fieldSeen[oauthpending.FieldContextRequestID] = struct{}{}
+			}
+		case "hydraClientID":
+			if _, ok := fieldSeen[oauthpending.FieldHydraClientID]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldHydraClientID)
+				fieldSeen[oauthpending.FieldHydraClientID] = struct{}{}
+			}
+		case "callbackAt":
+			if _, ok := fieldSeen[oauthpending.FieldCallbackAt]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldCallbackAt)
+				fieldSeen[oauthpending.FieldCallbackAt] = struct{}{}
+			}
+		case "callbackClaimID":
+			if _, ok := fieldSeen[oauthpending.FieldCallbackClaimID]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldCallbackClaimID)
+				fieldSeen[oauthpending.FieldCallbackClaimID] = struct{}{}
+			}
+		case "callbackClaimedUntil":
+			if _, ok := fieldSeen[oauthpending.FieldCallbackClaimedUntil]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldCallbackClaimedUntil)
+				fieldSeen[oauthpending.FieldCallbackClaimedUntil] = struct{}{}
+			}
+		case "callbackAttempts":
+			if _, ok := fieldSeen[oauthpending.FieldCallbackAttempts]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldCallbackAttempts)
+				fieldSeen[oauthpending.FieldCallbackAttempts] = struct{}{}
+			}
+		case "claimedAt":
+			if _, ok := fieldSeen[oauthpending.FieldClaimedAt]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldClaimedAt)
+				fieldSeen[oauthpending.FieldClaimedAt] = struct{}{}
+			}
+		case "failureReason":
+			if _, ok := fieldSeen[oauthpending.FieldFailureReason]; !ok {
+				selectedFields = append(selectedFields, oauthpending.FieldFailureReason)
+				fieldSeen[oauthpending.FieldFailureReason] = struct{}{}
 			}
 		case "id":
 		case "__typename":

@@ -3,6 +3,17 @@
 
 replicaCount: 2
 
+# Custody shutdown has two bounded 25s phases: listener drain, then resource
+# drain, followed by at most 5s each for metrics and telemetry flush. Keep
+# Kubernetes grace above the complete process bound.
+terminationGracePeriodSeconds: 65
+
+deploymentStrategy:
+  # A custody-unready pod counts unavailable, preventing rollout scale-down
+  # while accepted credential custody work has no acknowledged outcome.
+  maxUnavailable: 0
+  maxSurge: 1
+
 worker:
   enabled: false
   replicaCount: 1
@@ -95,6 +106,10 @@ autoscaling:
   minReplicas: 2
   maxReplicas: 10
   targetCPUUtilizationPercentage: 70
+  # HPA scale-down bypasses PodDisruptionBudgets. Keep automatic scale-down
+  # disabled so it cannot select a custody-unready pod for deletion.
+  scaleDown:
+    selectPolicy: Disabled
 
 # Liveness/readiness probes hit the binary's health endpoints.
 probes:
@@ -107,14 +122,16 @@ probes:
   readiness:
     path: /readyz
     initialDelaySeconds: 5
-    periodSeconds: 10
+    periodSeconds: 2
     timeoutSeconds: 5
-    failureThreshold: 6
+    failureThreshold: 1
 
 # Prometheus Operator ServiceMonitor (set false if using annotation scraping).
 serviceMonitor:
   enabled: false
-  interval: 30s
+  # Custody resource drain is 25s. Scrape often enough to guarantee that an
+  # unresolved shutdown sample reaches Prometheus before the process exits.
+  interval: 5s
 
 # Prometheus alerts and a Grafana sidecar dashboard for the cloud workflow and
 # relationship-worker control planes. Environment overlays enable these only
@@ -156,7 +173,12 @@ topologySpreadConstraints:
 
 podDisruptionBudget:
   enabled: true
-  minAvailable: 1
+  # With maxUnavailable=1, a custody-unready API pod consumes the full budget and
+  # blocks every further voluntary eviction. When all pods are healthy, one-pod
+  # maintenance remains possible without a temporary policy override.
+  maxUnavailable: 1
+  workerMinAvailable: 1
+  unhealthyPodEvictionPolicy: IfHealthyBudget
 
 networkPolicy:
   enabled: true
@@ -183,8 +205,20 @@ serviceMesh:
       enabled: false
       mtlsMode: STRICT
 
+# Connector resource tokens are minted and signed by rowboat-api. In production,
+# their issuer must be the externally reachable API origin in config.PUBLIC_BASE_URL.
+# Set allowSeparateIssuer only for a reviewed topology where BROKER_TOKEN_ISSUER is
+# intentionally different and every product verifier is configured with that exact
+# issuer while still fetching rowboat-api's connector JWKS endpoint.
+connectorBroker:
+  allowSeparateIssuer: false
+  # Digest of the canonical checked-in production product approval manifest.
+  # The deployment contract recomputes it from the connector registry.
+  productionApprovalManifestDigest: ""
+
 # Non-secret configuration, surfaced as env via a ConfigMap.
 config:
+  SHUTDOWN_TIMEOUT: 25s
   ENVIRONMENT: production
   LOG_LEVEL: info
   HTTP_ADDR: ":8080"
@@ -206,6 +240,13 @@ config:
   WORKOS_CLIENT_ID: ""
   ORY_PUBLIC_URL: https://oauth.solomon-ai.co
   PUBLIC_BASE_URL: https://api.x.solomon-ai.co
+  # Exact iss for rowboat-api-minted connector resource tokens. This is not the
+  # Hydra issuer used by the authorization-code and consent flow.
+  BROKER_TOKEN_ISSUER: https://api.x.solomon-ai.co
+  # Active signing kid. It must exist in BROKER_TOKEN_KEYRING_JSON and match
+  # BROKER_TOKEN_PRIVATE_KEY_PEM or every replica fails startup.
+  BROKER_TOKEN_KEY_ID: rowboat-broker-1
+  BROKER_TOKEN_TTL: 5m
   GOOGLE_REDIRECT_URI: https://api.x.solomon-ai.co/oauth/google/callback
   OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability:4318
   INFISICAL_ENABLED: "true"
@@ -355,9 +396,19 @@ secretValues: {}
   # DATABASE_URL: ""
   # REDIS_URL: ""
   # DB_ENCRYPTION_KEY: ""
+  # DB_ENCRYPTION_PRIMARY_KEY_ID: "legacy-db-encryption-key"
+  # DB_ENCRYPTION_KEYRING_JSON: '{"legacy-db-encryption-key":"...","2026-08":"..."}'
+  # BROKER_TOKEN_PRIVATE_KEY_PEM: "-----BEGIN RSA PRIVATE KEY-----\n..."
+  # BROKER_TOKEN_KEYRING_JSON: '{"rowboat-broker-1":"-----BEGIN PUBLIC KEY-----\n..."}'
   # WORKOS_API_KEY: ""
   # HOOK_HMAC_SECRET: ""
   # INTERNAL_API_SECRET: ""
+  # Product invalidation principals are independently authenticated and scoped.
+  # Keep HMAC keys distinct per product. An entry may omit hmac_secret only when
+  # CONNECTOR_INVALIDATION_JWT_* config is enabled and its JWT sub matches.
+  # Global invalidation requires a separate explicit capability:"platform_admin"
+  # entry rather than INTERNAL_API_SECRET.
+  # CONNECTOR_INVALIDATION_PRINCIPALS_JSON: '[{"principal":"canvas-api","connectors":["canvas"],"selector_classes":["connection","user","organization"],"hmac_secret":"..."}]'
   # SLACK_SIGNING_SECRET: ""
   # GOOGLE_WEBHOOK_TOKEN: ""
   # WEBHOOK_SIGNING_SECRET: ""

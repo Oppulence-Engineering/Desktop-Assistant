@@ -167,6 +167,17 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 			}
 		}
 	}
+	defer func() {
+		if deps == nil || deps.MCPResolver == nil {
+			return
+		}
+		deps.MCPResolver.BeginCredentialCustodyShutdown()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
+		defer cancel()
+		if err := deps.MCPResolver.CloseCredentialCustody(shutdownCtx); err != nil {
+			log.Error("worker connector credential custody did not drain", zap.Error(err))
+		}
+	}()
 
 	var sandboxExec backgroundtaskruntime.SandboxExecutor
 	if cfg.CloudRuntimeEnabled && cfg.CloudRuntimeSandboxEnabled {
@@ -437,6 +448,10 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 		ready.Store(true)
 		log.Info("rowboat-api temporal worker started")
 		<-ctx.Done()
+		ready.Store(false)
+		if deps != nil && deps.MCPResolver != nil {
+			deps.MCPResolver.BeginCredentialCustodyShutdown()
+		}
 		log.Info("shutdown signal received, stopping worker")
 		w.Stop()
 		temporalClient.Close()
@@ -472,19 +487,31 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 	if err != nil {
 		return nil, err
 	}
-	sealer, err := crypto.NewSealer(cfg.DBEncryptionKey)
+	sealer, err := workerColumnSealer(cfg)
 	if err != nil {
 		return nil, err
 	}
-	connectorRegistry, err := connectors.LoadRegistry([]byte(cfg.ConnectorsJSON))
+	connectorRegistry, err := loadWorkerConnectorRegistry(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("load connector registry: %w", err)
+		return nil, err
 	}
 	mcpResolver := connectors.NewMCPRuntimeResolver(client, sealer, connectorRegistry, connectors.Config{
 		OryPublicURL:          cfg.OryPublicURL,
 		OryBrokerClientID:     cfg.OryBrokerClientID,
 		OryBrokerClientSecret: cfg.OryBrokerClientSecret,
 	})
+	if strings.TrimSpace(cfg.BrokerTokenPrivateKey) != "" {
+		resourceTokenIssuer, issuerErr := connectors.NewRSAResourceTokenIssuer(
+			[]byte(cfg.BrokerTokenPrivateKey), cfg.BrokerTokenKeyID, cfg.BrokerTokenIssuer, cfg.BrokerTokenTTL,
+			[]byte(cfg.BrokerTokenKeyringJSON),
+		)
+		if issuerErr != nil {
+			return nil, fmt.Errorf("configure connector resource-token issuer: %w", issuerErr)
+		}
+		mcpResolver.SetResourceTokenIssuer(resourceTokenIssuer)
+	} else if cfg.IsProduction() {
+		return nil, fmt.Errorf("BROKER_TOKEN_PRIVATE_KEY_PEM is required in production")
+	}
 	mcpResolver.SetOutboundPolicy(outbound.Policy{
 		Timeout:          15 * time.Second,
 		MaxConcurrent:    64,
@@ -549,6 +576,33 @@ func buildWorkerDeps(ctx context.Context, cfg appconfig.Config, log *zap.Logger,
 		MCPConnectors: connectorNames(connectorRegistry),
 		MCPPolicies:   mcpPolicies(connectorRegistry),
 	}, nil
+}
+
+func loadWorkerConnectorRegistry(cfg appconfig.Config) (*connectors.Registry, error) {
+	registry, err := connectors.LoadRegistryForEnvironment(
+		[]byte(cfg.ConnectorsJSON), cfg.Environment, cfg.ConnectorEmergencyDisabled,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("load connector registry: %w", err)
+	}
+	if err := registry.ConfigureProductEntitlementsJSON(
+		cfg.ConnectorEntitlementURLsJSON, cfg.ConnectorEntitlementHMACKeysJSON,
+	); err != nil {
+		return nil, fmt.Errorf("configure connector product entitlements: %w", err)
+	}
+	return registry, nil
+}
+
+func workerColumnSealer(cfg appconfig.Config) (*crypto.Sealer, error) {
+	primaryKeyID, keyring, err := cfg.DBEncryptionKeyring()
+	if err != nil {
+		return nil, fmt.Errorf("column encryption configuration: %w", err)
+	}
+	sealer, err := crypto.NewKeyringSealer(primaryKeyID, keyring)
+	if err != nil {
+		return nil, fmt.Errorf("build column encryption keyring: %w", err)
+	}
+	return sealer, nil
 }
 
 func connectorNames(registry *connectors.Registry) []string {

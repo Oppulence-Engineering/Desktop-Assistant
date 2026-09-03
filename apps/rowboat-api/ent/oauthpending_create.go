@@ -58,6 +58,20 @@ func (_c *OAuthPendingCreate) SetState(v string) *OAuthPendingCreate {
 	return _c
 }
 
+// SetStateHash sets the "state_hash" field.
+func (_c *OAuthPendingCreate) SetStateHash(v string) *OAuthPendingCreate {
+	_c.mutation.SetStateHash(v)
+	return _c
+}
+
+// SetNillableStateHash sets the "state_hash" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableStateHash(v *string) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetStateHash(*v)
+	}
+	return _c
+}
+
 // SetProvider sets the "provider" field.
 func (_c *OAuthPendingCreate) SetProvider(v string) *OAuthPendingCreate {
 	_c.mutation.SetProvider(v)
@@ -73,6 +87,194 @@ func (_c *OAuthPendingCreate) SetPayloadEncrypted(v []byte) *OAuthPendingCreate 
 // SetExpiresAt sets the "expires_at" field.
 func (_c *OAuthPendingCreate) SetExpiresAt(v time.Time) *OAuthPendingCreate {
 	_c.mutation.SetExpiresAt(v)
+	return _c
+}
+
+// SetLifecycleStatus sets the "lifecycle_status" field.
+func (_c *OAuthPendingCreate) SetLifecycleStatus(v string) *OAuthPendingCreate {
+	_c.mutation.SetLifecycleStatus(v)
+	return _c
+}
+
+// SetNillableLifecycleStatus sets the "lifecycle_status" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableLifecycleStatus(v *string) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetLifecycleStatus(*v)
+	}
+	return _c
+}
+
+// SetOwnerWorkosUserID sets the "owner_workos_user_id" field.
+func (_c *OAuthPendingCreate) SetOwnerWorkosUserID(v string) *OAuthPendingCreate {
+	_c.mutation.SetOwnerWorkosUserID(v)
+	return _c
+}
+
+// SetNillableOwnerWorkosUserID sets the "owner_workos_user_id" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableOwnerWorkosUserID(v *string) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetOwnerWorkosUserID(*v)
+	}
+	return _c
+}
+
+// SetOwnerOrgID sets the "owner_org_id" field.
+func (_c *OAuthPendingCreate) SetOwnerOrgID(v string) *OAuthPendingCreate {
+	_c.mutation.SetOwnerOrgID(v)
+	return _c
+}
+
+// SetNillableOwnerOrgID sets the "owner_org_id" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableOwnerOrgID(v *string) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetOwnerOrgID(*v)
+	}
+	return _c
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (_c *OAuthPendingCreate) SetRequestedScopes(v []string) *OAuthPendingCreate {
+	_c.mutation.SetRequestedScopes(v)
+	return _c
+}
+
+// SetRedirectTarget sets the "redirect_target" field.
+func (_c *OAuthPendingCreate) SetRedirectTarget(v string) *OAuthPendingCreate {
+	_c.mutation.SetRedirectTarget(v)
+	return _c
+}
+
+// SetNillableRedirectTarget sets the "redirect_target" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableRedirectTarget(v *string) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetRedirectTarget(*v)
+	}
+	return _c
+}
+
+// SetConsentChallenge sets the "consent_challenge" field.
+func (_c *OAuthPendingCreate) SetConsentChallenge(v string) *OAuthPendingCreate {
+	_c.mutation.SetConsentChallenge(v)
+	return _c
+}
+
+// SetNillableConsentChallenge sets the "consent_challenge" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableConsentChallenge(v *string) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetConsentChallenge(*v)
+	}
+	return _c
+}
+
+// SetContextRequestID sets the "context_request_id" field.
+func (_c *OAuthPendingCreate) SetContextRequestID(v string) *OAuthPendingCreate {
+	_c.mutation.SetContextRequestID(v)
+	return _c
+}
+
+// SetNillableContextRequestID sets the "context_request_id" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableContextRequestID(v *string) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetContextRequestID(*v)
+	}
+	return _c
+}
+
+// SetHydraClientID sets the "hydra_client_id" field.
+func (_c *OAuthPendingCreate) SetHydraClientID(v string) *OAuthPendingCreate {
+	_c.mutation.SetHydraClientID(v)
+	return _c
+}
+
+// SetNillableHydraClientID sets the "hydra_client_id" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableHydraClientID(v *string) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetHydraClientID(*v)
+	}
+	return _c
+}
+
+// SetCallbackAt sets the "callback_at" field.
+func (_c *OAuthPendingCreate) SetCallbackAt(v time.Time) *OAuthPendingCreate {
+	_c.mutation.SetCallbackAt(v)
+	return _c
+}
+
+// SetNillableCallbackAt sets the "callback_at" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableCallbackAt(v *time.Time) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetCallbackAt(*v)
+	}
+	return _c
+}
+
+// SetCallbackClaimID sets the "callback_claim_id" field.
+func (_c *OAuthPendingCreate) SetCallbackClaimID(v uuid.UUID) *OAuthPendingCreate {
+	_c.mutation.SetCallbackClaimID(v)
+	return _c
+}
+
+// SetNillableCallbackClaimID sets the "callback_claim_id" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableCallbackClaimID(v *uuid.UUID) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetCallbackClaimID(*v)
+	}
+	return _c
+}
+
+// SetCallbackClaimedUntil sets the "callback_claimed_until" field.
+func (_c *OAuthPendingCreate) SetCallbackClaimedUntil(v time.Time) *OAuthPendingCreate {
+	_c.mutation.SetCallbackClaimedUntil(v)
+	return _c
+}
+
+// SetNillableCallbackClaimedUntil sets the "callback_claimed_until" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableCallbackClaimedUntil(v *time.Time) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetCallbackClaimedUntil(*v)
+	}
+	return _c
+}
+
+// SetCallbackAttempts sets the "callback_attempts" field.
+func (_c *OAuthPendingCreate) SetCallbackAttempts(v int) *OAuthPendingCreate {
+	_c.mutation.SetCallbackAttempts(v)
+	return _c
+}
+
+// SetNillableCallbackAttempts sets the "callback_attempts" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableCallbackAttempts(v *int) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetCallbackAttempts(*v)
+	}
+	return _c
+}
+
+// SetClaimedAt sets the "claimed_at" field.
+func (_c *OAuthPendingCreate) SetClaimedAt(v time.Time) *OAuthPendingCreate {
+	_c.mutation.SetClaimedAt(v)
+	return _c
+}
+
+// SetNillableClaimedAt sets the "claimed_at" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableClaimedAt(v *time.Time) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetClaimedAt(*v)
+	}
+	return _c
+}
+
+// SetFailureReason sets the "failure_reason" field.
+func (_c *OAuthPendingCreate) SetFailureReason(v string) *OAuthPendingCreate {
+	_c.mutation.SetFailureReason(v)
+	return _c
+}
+
+// SetNillableFailureReason sets the "failure_reason" field if the given value is not nil.
+func (_c *OAuthPendingCreate) SetNillableFailureReason(v *string) *OAuthPendingCreate {
+	if v != nil {
+		_c.SetFailureReason(*v)
+	}
 	return _c
 }
 
@@ -133,6 +335,10 @@ func (_c *OAuthPendingCreate) defaults() {
 		v := oauthpending.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.CallbackAttempts(); !ok {
+		v := oauthpending.DefaultCallbackAttempts
+		_c.mutation.SetCallbackAttempts(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := oauthpending.DefaultID()
 		_c.mutation.SetID(v)
@@ -163,6 +369,14 @@ func (_c *OAuthPendingCreate) check() error {
 	}
 	if _, ok := _c.mutation.ExpiresAt(); !ok {
 		return &ValidationError{Name: "expires_at", err: errors.New(`ent: missing required field "OAuthPending.expires_at"`)}
+	}
+	if _, ok := _c.mutation.CallbackAttempts(); !ok {
+		return &ValidationError{Name: "callback_attempts", err: errors.New(`ent: missing required field "OAuthPending.callback_attempts"`)}
+	}
+	if v, ok := _c.mutation.CallbackAttempts(); ok {
+		if err := oauthpending.CallbackAttemptsValidator(v); err != nil {
+			return &ValidationError{Name: "callback_attempts", err: fmt.Errorf(`ent: validator failed for field "OAuthPending.callback_attempts": %w`, err)}
+		}
 	}
 	return nil
 }
@@ -212,6 +426,10 @@ func (_c *OAuthPendingCreate) createSpec() (*OAuthPending, *sqlgraph.CreateSpec)
 		_spec.SetField(oauthpending.FieldState, field.TypeString, value)
 		_node.State = value
 	}
+	if value, ok := _c.mutation.StateHash(); ok {
+		_spec.SetField(oauthpending.FieldStateHash, field.TypeString, value)
+		_node.StateHash = value
+	}
 	if value, ok := _c.mutation.Provider(); ok {
 		_spec.SetField(oauthpending.FieldProvider, field.TypeString, value)
 		_node.Provider = value
@@ -223,6 +441,62 @@ func (_c *OAuthPendingCreate) createSpec() (*OAuthPending, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.ExpiresAt(); ok {
 		_spec.SetField(oauthpending.FieldExpiresAt, field.TypeTime, value)
 		_node.ExpiresAt = value
+	}
+	if value, ok := _c.mutation.LifecycleStatus(); ok {
+		_spec.SetField(oauthpending.FieldLifecycleStatus, field.TypeString, value)
+		_node.LifecycleStatus = value
+	}
+	if value, ok := _c.mutation.OwnerWorkosUserID(); ok {
+		_spec.SetField(oauthpending.FieldOwnerWorkosUserID, field.TypeString, value)
+		_node.OwnerWorkosUserID = value
+	}
+	if value, ok := _c.mutation.OwnerOrgID(); ok {
+		_spec.SetField(oauthpending.FieldOwnerOrgID, field.TypeString, value)
+		_node.OwnerOrgID = value
+	}
+	if value, ok := _c.mutation.RequestedScopes(); ok {
+		_spec.SetField(oauthpending.FieldRequestedScopes, field.TypeJSON, value)
+		_node.RequestedScopes = value
+	}
+	if value, ok := _c.mutation.RedirectTarget(); ok {
+		_spec.SetField(oauthpending.FieldRedirectTarget, field.TypeString, value)
+		_node.RedirectTarget = value
+	}
+	if value, ok := _c.mutation.ConsentChallenge(); ok {
+		_spec.SetField(oauthpending.FieldConsentChallenge, field.TypeString, value)
+		_node.ConsentChallenge = value
+	}
+	if value, ok := _c.mutation.ContextRequestID(); ok {
+		_spec.SetField(oauthpending.FieldContextRequestID, field.TypeString, value)
+		_node.ContextRequestID = value
+	}
+	if value, ok := _c.mutation.HydraClientID(); ok {
+		_spec.SetField(oauthpending.FieldHydraClientID, field.TypeString, value)
+		_node.HydraClientID = value
+	}
+	if value, ok := _c.mutation.CallbackAt(); ok {
+		_spec.SetField(oauthpending.FieldCallbackAt, field.TypeTime, value)
+		_node.CallbackAt = value
+	}
+	if value, ok := _c.mutation.CallbackClaimID(); ok {
+		_spec.SetField(oauthpending.FieldCallbackClaimID, field.TypeUUID, value)
+		_node.CallbackClaimID = value
+	}
+	if value, ok := _c.mutation.CallbackClaimedUntil(); ok {
+		_spec.SetField(oauthpending.FieldCallbackClaimedUntil, field.TypeTime, value)
+		_node.CallbackClaimedUntil = value
+	}
+	if value, ok := _c.mutation.CallbackAttempts(); ok {
+		_spec.SetField(oauthpending.FieldCallbackAttempts, field.TypeInt, value)
+		_node.CallbackAttempts = value
+	}
+	if value, ok := _c.mutation.ClaimedAt(); ok {
+		_spec.SetField(oauthpending.FieldClaimedAt, field.TypeTime, value)
+		_node.ClaimedAt = value
+	}
+	if value, ok := _c.mutation.FailureReason(); ok {
+		_spec.SetField(oauthpending.FieldFailureReason, field.TypeString, value)
+		_node.FailureReason = value
 	}
 	return _node, _spec
 }
@@ -300,6 +574,24 @@ func (u *OAuthPendingUpsert) UpdateState() *OAuthPendingUpsert {
 	return u
 }
 
+// SetStateHash sets the "state_hash" field.
+func (u *OAuthPendingUpsert) SetStateHash(v string) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldStateHash, v)
+	return u
+}
+
+// UpdateStateHash sets the "state_hash" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateStateHash() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldStateHash)
+	return u
+}
+
+// ClearStateHash clears the value of the "state_hash" field.
+func (u *OAuthPendingUpsert) ClearStateHash() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldStateHash)
+	return u
+}
+
 // SetProvider sets the "provider" field.
 func (u *OAuthPendingUpsert) SetProvider(v string) *OAuthPendingUpsert {
 	u.Set(oauthpending.FieldProvider, v)
@@ -333,6 +625,258 @@ func (u *OAuthPendingUpsert) SetExpiresAt(v time.Time) *OAuthPendingUpsert {
 // UpdateExpiresAt sets the "expires_at" field to the value that was provided on create.
 func (u *OAuthPendingUpsert) UpdateExpiresAt() *OAuthPendingUpsert {
 	u.SetExcluded(oauthpending.FieldExpiresAt)
+	return u
+}
+
+// SetLifecycleStatus sets the "lifecycle_status" field.
+func (u *OAuthPendingUpsert) SetLifecycleStatus(v string) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldLifecycleStatus, v)
+	return u
+}
+
+// UpdateLifecycleStatus sets the "lifecycle_status" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateLifecycleStatus() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldLifecycleStatus)
+	return u
+}
+
+// ClearLifecycleStatus clears the value of the "lifecycle_status" field.
+func (u *OAuthPendingUpsert) ClearLifecycleStatus() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldLifecycleStatus)
+	return u
+}
+
+// SetOwnerWorkosUserID sets the "owner_workos_user_id" field.
+func (u *OAuthPendingUpsert) SetOwnerWorkosUserID(v string) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldOwnerWorkosUserID, v)
+	return u
+}
+
+// UpdateOwnerWorkosUserID sets the "owner_workos_user_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateOwnerWorkosUserID() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldOwnerWorkosUserID)
+	return u
+}
+
+// ClearOwnerWorkosUserID clears the value of the "owner_workos_user_id" field.
+func (u *OAuthPendingUpsert) ClearOwnerWorkosUserID() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldOwnerWorkosUserID)
+	return u
+}
+
+// SetOwnerOrgID sets the "owner_org_id" field.
+func (u *OAuthPendingUpsert) SetOwnerOrgID(v string) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldOwnerOrgID, v)
+	return u
+}
+
+// UpdateOwnerOrgID sets the "owner_org_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateOwnerOrgID() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldOwnerOrgID)
+	return u
+}
+
+// ClearOwnerOrgID clears the value of the "owner_org_id" field.
+func (u *OAuthPendingUpsert) ClearOwnerOrgID() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldOwnerOrgID)
+	return u
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *OAuthPendingUpsert) SetRequestedScopes(v []string) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldRequestedScopes, v)
+	return u
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateRequestedScopes() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldRequestedScopes)
+	return u
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *OAuthPendingUpsert) ClearRequestedScopes() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldRequestedScopes)
+	return u
+}
+
+// SetRedirectTarget sets the "redirect_target" field.
+func (u *OAuthPendingUpsert) SetRedirectTarget(v string) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldRedirectTarget, v)
+	return u
+}
+
+// UpdateRedirectTarget sets the "redirect_target" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateRedirectTarget() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldRedirectTarget)
+	return u
+}
+
+// ClearRedirectTarget clears the value of the "redirect_target" field.
+func (u *OAuthPendingUpsert) ClearRedirectTarget() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldRedirectTarget)
+	return u
+}
+
+// SetConsentChallenge sets the "consent_challenge" field.
+func (u *OAuthPendingUpsert) SetConsentChallenge(v string) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldConsentChallenge, v)
+	return u
+}
+
+// UpdateConsentChallenge sets the "consent_challenge" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateConsentChallenge() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldConsentChallenge)
+	return u
+}
+
+// ClearConsentChallenge clears the value of the "consent_challenge" field.
+func (u *OAuthPendingUpsert) ClearConsentChallenge() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldConsentChallenge)
+	return u
+}
+
+// SetContextRequestID sets the "context_request_id" field.
+func (u *OAuthPendingUpsert) SetContextRequestID(v string) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldContextRequestID, v)
+	return u
+}
+
+// UpdateContextRequestID sets the "context_request_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateContextRequestID() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldContextRequestID)
+	return u
+}
+
+// ClearContextRequestID clears the value of the "context_request_id" field.
+func (u *OAuthPendingUpsert) ClearContextRequestID() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldContextRequestID)
+	return u
+}
+
+// SetHydraClientID sets the "hydra_client_id" field.
+func (u *OAuthPendingUpsert) SetHydraClientID(v string) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldHydraClientID, v)
+	return u
+}
+
+// UpdateHydraClientID sets the "hydra_client_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateHydraClientID() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldHydraClientID)
+	return u
+}
+
+// ClearHydraClientID clears the value of the "hydra_client_id" field.
+func (u *OAuthPendingUpsert) ClearHydraClientID() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldHydraClientID)
+	return u
+}
+
+// SetCallbackAt sets the "callback_at" field.
+func (u *OAuthPendingUpsert) SetCallbackAt(v time.Time) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldCallbackAt, v)
+	return u
+}
+
+// UpdateCallbackAt sets the "callback_at" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateCallbackAt() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldCallbackAt)
+	return u
+}
+
+// ClearCallbackAt clears the value of the "callback_at" field.
+func (u *OAuthPendingUpsert) ClearCallbackAt() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldCallbackAt)
+	return u
+}
+
+// SetCallbackClaimID sets the "callback_claim_id" field.
+func (u *OAuthPendingUpsert) SetCallbackClaimID(v uuid.UUID) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldCallbackClaimID, v)
+	return u
+}
+
+// UpdateCallbackClaimID sets the "callback_claim_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateCallbackClaimID() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldCallbackClaimID)
+	return u
+}
+
+// ClearCallbackClaimID clears the value of the "callback_claim_id" field.
+func (u *OAuthPendingUpsert) ClearCallbackClaimID() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldCallbackClaimID)
+	return u
+}
+
+// SetCallbackClaimedUntil sets the "callback_claimed_until" field.
+func (u *OAuthPendingUpsert) SetCallbackClaimedUntil(v time.Time) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldCallbackClaimedUntil, v)
+	return u
+}
+
+// UpdateCallbackClaimedUntil sets the "callback_claimed_until" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateCallbackClaimedUntil() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldCallbackClaimedUntil)
+	return u
+}
+
+// ClearCallbackClaimedUntil clears the value of the "callback_claimed_until" field.
+func (u *OAuthPendingUpsert) ClearCallbackClaimedUntil() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldCallbackClaimedUntil)
+	return u
+}
+
+// SetCallbackAttempts sets the "callback_attempts" field.
+func (u *OAuthPendingUpsert) SetCallbackAttempts(v int) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldCallbackAttempts, v)
+	return u
+}
+
+// UpdateCallbackAttempts sets the "callback_attempts" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateCallbackAttempts() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldCallbackAttempts)
+	return u
+}
+
+// AddCallbackAttempts adds v to the "callback_attempts" field.
+func (u *OAuthPendingUpsert) AddCallbackAttempts(v int) *OAuthPendingUpsert {
+	u.Add(oauthpending.FieldCallbackAttempts, v)
+	return u
+}
+
+// SetClaimedAt sets the "claimed_at" field.
+func (u *OAuthPendingUpsert) SetClaimedAt(v time.Time) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldClaimedAt, v)
+	return u
+}
+
+// UpdateClaimedAt sets the "claimed_at" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateClaimedAt() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldClaimedAt)
+	return u
+}
+
+// ClearClaimedAt clears the value of the "claimed_at" field.
+func (u *OAuthPendingUpsert) ClearClaimedAt() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldClaimedAt)
+	return u
+}
+
+// SetFailureReason sets the "failure_reason" field.
+func (u *OAuthPendingUpsert) SetFailureReason(v string) *OAuthPendingUpsert {
+	u.Set(oauthpending.FieldFailureReason, v)
+	return u
+}
+
+// UpdateFailureReason sets the "failure_reason" field to the value that was provided on create.
+func (u *OAuthPendingUpsert) UpdateFailureReason() *OAuthPendingUpsert {
+	u.SetExcluded(oauthpending.FieldFailureReason)
+	return u
+}
+
+// ClearFailureReason clears the value of the "failure_reason" field.
+func (u *OAuthPendingUpsert) ClearFailureReason() *OAuthPendingUpsert {
+	u.SetNull(oauthpending.FieldFailureReason)
 	return u
 }
 
@@ -415,6 +959,27 @@ func (u *OAuthPendingUpsertOne) UpdateState() *OAuthPendingUpsertOne {
 	})
 }
 
+// SetStateHash sets the "state_hash" field.
+func (u *OAuthPendingUpsertOne) SetStateHash(v string) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetStateHash(v)
+	})
+}
+
+// UpdateStateHash sets the "state_hash" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateStateHash() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateStateHash()
+	})
+}
+
+// ClearStateHash clears the value of the "state_hash" field.
+func (u *OAuthPendingUpsertOne) ClearStateHash() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearStateHash()
+	})
+}
+
 // SetProvider sets the "provider" field.
 func (u *OAuthPendingUpsertOne) SetProvider(v string) *OAuthPendingUpsertOne {
 	return u.Update(func(s *OAuthPendingUpsert) {
@@ -454,6 +1019,300 @@ func (u *OAuthPendingUpsertOne) SetExpiresAt(v time.Time) *OAuthPendingUpsertOne
 func (u *OAuthPendingUpsertOne) UpdateExpiresAt() *OAuthPendingUpsertOne {
 	return u.Update(func(s *OAuthPendingUpsert) {
 		s.UpdateExpiresAt()
+	})
+}
+
+// SetLifecycleStatus sets the "lifecycle_status" field.
+func (u *OAuthPendingUpsertOne) SetLifecycleStatus(v string) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetLifecycleStatus(v)
+	})
+}
+
+// UpdateLifecycleStatus sets the "lifecycle_status" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateLifecycleStatus() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateLifecycleStatus()
+	})
+}
+
+// ClearLifecycleStatus clears the value of the "lifecycle_status" field.
+func (u *OAuthPendingUpsertOne) ClearLifecycleStatus() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearLifecycleStatus()
+	})
+}
+
+// SetOwnerWorkosUserID sets the "owner_workos_user_id" field.
+func (u *OAuthPendingUpsertOne) SetOwnerWorkosUserID(v string) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetOwnerWorkosUserID(v)
+	})
+}
+
+// UpdateOwnerWorkosUserID sets the "owner_workos_user_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateOwnerWorkosUserID() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateOwnerWorkosUserID()
+	})
+}
+
+// ClearOwnerWorkosUserID clears the value of the "owner_workos_user_id" field.
+func (u *OAuthPendingUpsertOne) ClearOwnerWorkosUserID() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearOwnerWorkosUserID()
+	})
+}
+
+// SetOwnerOrgID sets the "owner_org_id" field.
+func (u *OAuthPendingUpsertOne) SetOwnerOrgID(v string) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetOwnerOrgID(v)
+	})
+}
+
+// UpdateOwnerOrgID sets the "owner_org_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateOwnerOrgID() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateOwnerOrgID()
+	})
+}
+
+// ClearOwnerOrgID clears the value of the "owner_org_id" field.
+func (u *OAuthPendingUpsertOne) ClearOwnerOrgID() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearOwnerOrgID()
+	})
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *OAuthPendingUpsertOne) SetRequestedScopes(v []string) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetRequestedScopes(v)
+	})
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateRequestedScopes() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateRequestedScopes()
+	})
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *OAuthPendingUpsertOne) ClearRequestedScopes() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearRequestedScopes()
+	})
+}
+
+// SetRedirectTarget sets the "redirect_target" field.
+func (u *OAuthPendingUpsertOne) SetRedirectTarget(v string) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetRedirectTarget(v)
+	})
+}
+
+// UpdateRedirectTarget sets the "redirect_target" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateRedirectTarget() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateRedirectTarget()
+	})
+}
+
+// ClearRedirectTarget clears the value of the "redirect_target" field.
+func (u *OAuthPendingUpsertOne) ClearRedirectTarget() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearRedirectTarget()
+	})
+}
+
+// SetConsentChallenge sets the "consent_challenge" field.
+func (u *OAuthPendingUpsertOne) SetConsentChallenge(v string) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetConsentChallenge(v)
+	})
+}
+
+// UpdateConsentChallenge sets the "consent_challenge" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateConsentChallenge() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateConsentChallenge()
+	})
+}
+
+// ClearConsentChallenge clears the value of the "consent_challenge" field.
+func (u *OAuthPendingUpsertOne) ClearConsentChallenge() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearConsentChallenge()
+	})
+}
+
+// SetContextRequestID sets the "context_request_id" field.
+func (u *OAuthPendingUpsertOne) SetContextRequestID(v string) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetContextRequestID(v)
+	})
+}
+
+// UpdateContextRequestID sets the "context_request_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateContextRequestID() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateContextRequestID()
+	})
+}
+
+// ClearContextRequestID clears the value of the "context_request_id" field.
+func (u *OAuthPendingUpsertOne) ClearContextRequestID() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearContextRequestID()
+	})
+}
+
+// SetHydraClientID sets the "hydra_client_id" field.
+func (u *OAuthPendingUpsertOne) SetHydraClientID(v string) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetHydraClientID(v)
+	})
+}
+
+// UpdateHydraClientID sets the "hydra_client_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateHydraClientID() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateHydraClientID()
+	})
+}
+
+// ClearHydraClientID clears the value of the "hydra_client_id" field.
+func (u *OAuthPendingUpsertOne) ClearHydraClientID() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearHydraClientID()
+	})
+}
+
+// SetCallbackAt sets the "callback_at" field.
+func (u *OAuthPendingUpsertOne) SetCallbackAt(v time.Time) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackAt(v)
+	})
+}
+
+// UpdateCallbackAt sets the "callback_at" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateCallbackAt() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackAt()
+	})
+}
+
+// ClearCallbackAt clears the value of the "callback_at" field.
+func (u *OAuthPendingUpsertOne) ClearCallbackAt() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearCallbackAt()
+	})
+}
+
+// SetCallbackClaimID sets the "callback_claim_id" field.
+func (u *OAuthPendingUpsertOne) SetCallbackClaimID(v uuid.UUID) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackClaimID(v)
+	})
+}
+
+// UpdateCallbackClaimID sets the "callback_claim_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateCallbackClaimID() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackClaimID()
+	})
+}
+
+// ClearCallbackClaimID clears the value of the "callback_claim_id" field.
+func (u *OAuthPendingUpsertOne) ClearCallbackClaimID() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearCallbackClaimID()
+	})
+}
+
+// SetCallbackClaimedUntil sets the "callback_claimed_until" field.
+func (u *OAuthPendingUpsertOne) SetCallbackClaimedUntil(v time.Time) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackClaimedUntil(v)
+	})
+}
+
+// UpdateCallbackClaimedUntil sets the "callback_claimed_until" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateCallbackClaimedUntil() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackClaimedUntil()
+	})
+}
+
+// ClearCallbackClaimedUntil clears the value of the "callback_claimed_until" field.
+func (u *OAuthPendingUpsertOne) ClearCallbackClaimedUntil() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearCallbackClaimedUntil()
+	})
+}
+
+// SetCallbackAttempts sets the "callback_attempts" field.
+func (u *OAuthPendingUpsertOne) SetCallbackAttempts(v int) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackAttempts(v)
+	})
+}
+
+// AddCallbackAttempts adds v to the "callback_attempts" field.
+func (u *OAuthPendingUpsertOne) AddCallbackAttempts(v int) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.AddCallbackAttempts(v)
+	})
+}
+
+// UpdateCallbackAttempts sets the "callback_attempts" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateCallbackAttempts() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackAttempts()
+	})
+}
+
+// SetClaimedAt sets the "claimed_at" field.
+func (u *OAuthPendingUpsertOne) SetClaimedAt(v time.Time) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetClaimedAt(v)
+	})
+}
+
+// UpdateClaimedAt sets the "claimed_at" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateClaimedAt() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateClaimedAt()
+	})
+}
+
+// ClearClaimedAt clears the value of the "claimed_at" field.
+func (u *OAuthPendingUpsertOne) ClearClaimedAt() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearClaimedAt()
+	})
+}
+
+// SetFailureReason sets the "failure_reason" field.
+func (u *OAuthPendingUpsertOne) SetFailureReason(v string) *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetFailureReason(v)
+	})
+}
+
+// UpdateFailureReason sets the "failure_reason" field to the value that was provided on create.
+func (u *OAuthPendingUpsertOne) UpdateFailureReason() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateFailureReason()
+	})
+}
+
+// ClearFailureReason clears the value of the "failure_reason" field.
+func (u *OAuthPendingUpsertOne) ClearFailureReason() *OAuthPendingUpsertOne {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearFailureReason()
 	})
 }
 
@@ -703,6 +1562,27 @@ func (u *OAuthPendingUpsertBulk) UpdateState() *OAuthPendingUpsertBulk {
 	})
 }
 
+// SetStateHash sets the "state_hash" field.
+func (u *OAuthPendingUpsertBulk) SetStateHash(v string) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetStateHash(v)
+	})
+}
+
+// UpdateStateHash sets the "state_hash" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateStateHash() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateStateHash()
+	})
+}
+
+// ClearStateHash clears the value of the "state_hash" field.
+func (u *OAuthPendingUpsertBulk) ClearStateHash() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearStateHash()
+	})
+}
+
 // SetProvider sets the "provider" field.
 func (u *OAuthPendingUpsertBulk) SetProvider(v string) *OAuthPendingUpsertBulk {
 	return u.Update(func(s *OAuthPendingUpsert) {
@@ -742,6 +1622,300 @@ func (u *OAuthPendingUpsertBulk) SetExpiresAt(v time.Time) *OAuthPendingUpsertBu
 func (u *OAuthPendingUpsertBulk) UpdateExpiresAt() *OAuthPendingUpsertBulk {
 	return u.Update(func(s *OAuthPendingUpsert) {
 		s.UpdateExpiresAt()
+	})
+}
+
+// SetLifecycleStatus sets the "lifecycle_status" field.
+func (u *OAuthPendingUpsertBulk) SetLifecycleStatus(v string) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetLifecycleStatus(v)
+	})
+}
+
+// UpdateLifecycleStatus sets the "lifecycle_status" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateLifecycleStatus() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateLifecycleStatus()
+	})
+}
+
+// ClearLifecycleStatus clears the value of the "lifecycle_status" field.
+func (u *OAuthPendingUpsertBulk) ClearLifecycleStatus() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearLifecycleStatus()
+	})
+}
+
+// SetOwnerWorkosUserID sets the "owner_workos_user_id" field.
+func (u *OAuthPendingUpsertBulk) SetOwnerWorkosUserID(v string) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetOwnerWorkosUserID(v)
+	})
+}
+
+// UpdateOwnerWorkosUserID sets the "owner_workos_user_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateOwnerWorkosUserID() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateOwnerWorkosUserID()
+	})
+}
+
+// ClearOwnerWorkosUserID clears the value of the "owner_workos_user_id" field.
+func (u *OAuthPendingUpsertBulk) ClearOwnerWorkosUserID() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearOwnerWorkosUserID()
+	})
+}
+
+// SetOwnerOrgID sets the "owner_org_id" field.
+func (u *OAuthPendingUpsertBulk) SetOwnerOrgID(v string) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetOwnerOrgID(v)
+	})
+}
+
+// UpdateOwnerOrgID sets the "owner_org_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateOwnerOrgID() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateOwnerOrgID()
+	})
+}
+
+// ClearOwnerOrgID clears the value of the "owner_org_id" field.
+func (u *OAuthPendingUpsertBulk) ClearOwnerOrgID() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearOwnerOrgID()
+	})
+}
+
+// SetRequestedScopes sets the "requested_scopes" field.
+func (u *OAuthPendingUpsertBulk) SetRequestedScopes(v []string) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetRequestedScopes(v)
+	})
+}
+
+// UpdateRequestedScopes sets the "requested_scopes" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateRequestedScopes() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateRequestedScopes()
+	})
+}
+
+// ClearRequestedScopes clears the value of the "requested_scopes" field.
+func (u *OAuthPendingUpsertBulk) ClearRequestedScopes() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearRequestedScopes()
+	})
+}
+
+// SetRedirectTarget sets the "redirect_target" field.
+func (u *OAuthPendingUpsertBulk) SetRedirectTarget(v string) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetRedirectTarget(v)
+	})
+}
+
+// UpdateRedirectTarget sets the "redirect_target" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateRedirectTarget() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateRedirectTarget()
+	})
+}
+
+// ClearRedirectTarget clears the value of the "redirect_target" field.
+func (u *OAuthPendingUpsertBulk) ClearRedirectTarget() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearRedirectTarget()
+	})
+}
+
+// SetConsentChallenge sets the "consent_challenge" field.
+func (u *OAuthPendingUpsertBulk) SetConsentChallenge(v string) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetConsentChallenge(v)
+	})
+}
+
+// UpdateConsentChallenge sets the "consent_challenge" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateConsentChallenge() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateConsentChallenge()
+	})
+}
+
+// ClearConsentChallenge clears the value of the "consent_challenge" field.
+func (u *OAuthPendingUpsertBulk) ClearConsentChallenge() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearConsentChallenge()
+	})
+}
+
+// SetContextRequestID sets the "context_request_id" field.
+func (u *OAuthPendingUpsertBulk) SetContextRequestID(v string) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetContextRequestID(v)
+	})
+}
+
+// UpdateContextRequestID sets the "context_request_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateContextRequestID() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateContextRequestID()
+	})
+}
+
+// ClearContextRequestID clears the value of the "context_request_id" field.
+func (u *OAuthPendingUpsertBulk) ClearContextRequestID() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearContextRequestID()
+	})
+}
+
+// SetHydraClientID sets the "hydra_client_id" field.
+func (u *OAuthPendingUpsertBulk) SetHydraClientID(v string) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetHydraClientID(v)
+	})
+}
+
+// UpdateHydraClientID sets the "hydra_client_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateHydraClientID() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateHydraClientID()
+	})
+}
+
+// ClearHydraClientID clears the value of the "hydra_client_id" field.
+func (u *OAuthPendingUpsertBulk) ClearHydraClientID() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearHydraClientID()
+	})
+}
+
+// SetCallbackAt sets the "callback_at" field.
+func (u *OAuthPendingUpsertBulk) SetCallbackAt(v time.Time) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackAt(v)
+	})
+}
+
+// UpdateCallbackAt sets the "callback_at" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateCallbackAt() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackAt()
+	})
+}
+
+// ClearCallbackAt clears the value of the "callback_at" field.
+func (u *OAuthPendingUpsertBulk) ClearCallbackAt() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearCallbackAt()
+	})
+}
+
+// SetCallbackClaimID sets the "callback_claim_id" field.
+func (u *OAuthPendingUpsertBulk) SetCallbackClaimID(v uuid.UUID) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackClaimID(v)
+	})
+}
+
+// UpdateCallbackClaimID sets the "callback_claim_id" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateCallbackClaimID() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackClaimID()
+	})
+}
+
+// ClearCallbackClaimID clears the value of the "callback_claim_id" field.
+func (u *OAuthPendingUpsertBulk) ClearCallbackClaimID() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearCallbackClaimID()
+	})
+}
+
+// SetCallbackClaimedUntil sets the "callback_claimed_until" field.
+func (u *OAuthPendingUpsertBulk) SetCallbackClaimedUntil(v time.Time) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackClaimedUntil(v)
+	})
+}
+
+// UpdateCallbackClaimedUntil sets the "callback_claimed_until" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateCallbackClaimedUntil() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackClaimedUntil()
+	})
+}
+
+// ClearCallbackClaimedUntil clears the value of the "callback_claimed_until" field.
+func (u *OAuthPendingUpsertBulk) ClearCallbackClaimedUntil() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearCallbackClaimedUntil()
+	})
+}
+
+// SetCallbackAttempts sets the "callback_attempts" field.
+func (u *OAuthPendingUpsertBulk) SetCallbackAttempts(v int) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetCallbackAttempts(v)
+	})
+}
+
+// AddCallbackAttempts adds v to the "callback_attempts" field.
+func (u *OAuthPendingUpsertBulk) AddCallbackAttempts(v int) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.AddCallbackAttempts(v)
+	})
+}
+
+// UpdateCallbackAttempts sets the "callback_attempts" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateCallbackAttempts() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateCallbackAttempts()
+	})
+}
+
+// SetClaimedAt sets the "claimed_at" field.
+func (u *OAuthPendingUpsertBulk) SetClaimedAt(v time.Time) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetClaimedAt(v)
+	})
+}
+
+// UpdateClaimedAt sets the "claimed_at" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateClaimedAt() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateClaimedAt()
+	})
+}
+
+// ClearClaimedAt clears the value of the "claimed_at" field.
+func (u *OAuthPendingUpsertBulk) ClearClaimedAt() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearClaimedAt()
+	})
+}
+
+// SetFailureReason sets the "failure_reason" field.
+func (u *OAuthPendingUpsertBulk) SetFailureReason(v string) *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.SetFailureReason(v)
+	})
+}
+
+// UpdateFailureReason sets the "failure_reason" field to the value that was provided on create.
+func (u *OAuthPendingUpsertBulk) UpdateFailureReason() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.UpdateFailureReason()
+	})
+}
+
+// ClearFailureReason clears the value of the "failure_reason" field.
+func (u *OAuthPendingUpsertBulk) ClearFailureReason() *OAuthPendingUpsertBulk {
+	return u.Update(func(s *OAuthPendingUpsert) {
+		s.ClearFailureReason()
 	})
 }
 

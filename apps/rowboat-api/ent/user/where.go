@@ -583,6 +583,29 @@ func HasMcpConnectionsWith(preds ...predicate.MCPConnection) predicate.User {
 	})
 }
 
+// HasConnectorAuditEvents applies the HasEdge predicate on the "connector_audit_events" edge.
+func HasConnectorAuditEvents() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ConnectorAuditEventsTable, ConnectorAuditEventsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConnectorAuditEventsWith applies the HasEdge predicate on the "connector_audit_events" edge with a given conditions (other predicates).
+func HasConnectorAuditEventsWith(preds ...predicate.ConnectorAuditEvent) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newConnectorAuditEventsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasBackgroundTasks applies the HasEdge predicate on the "background_tasks" edge.
 func HasBackgroundTasks() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

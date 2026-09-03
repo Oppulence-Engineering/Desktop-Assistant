@@ -3,12 +3,12 @@
 |                  |                                                                                                                                                           |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **RFC**          | 012                                                                                                                                                       |
-| **Status**       | Implementing — core broker endpoints landed; full consent and first-party rollout open                                                                    |
+| **Status**       | Complete — production acceptance and independent adversarial closure validated on 2026-08-28                                                              |
 | **Track**        | Cross-product connector authorization                                                                                                                     |
 | **Owners**       | `apps/rowboat-api`, `apps/oauth-consent`, product MCP owners                                                                                              |
 | **Created**      | 2026-06-06                                                                                                                                                |
-| **Last updated** | 2026-07-26                                                                                                                                                |
-| **Depends on**   | [RFC 011](./complete-011-identity-and-authorization-plane.md), WorkOS, deferred Hydra/Ory broker mode                                                     |
+| **Last updated** | 2026-08-28                                                                                                                                                |
+| **Depends on**   | [RFC 011](./complete-011-identity-and-authorization-plane.md), WorkOS, Hydra/Ory broker mode                                                              |
 | **Enables**      | [RFC 013](./013-oppulence-product-connector-fabric.md), [RFC 020](./020-native-third-party-action-engine.md), [RFC 008](./008-conduit-eigen-faculties.md) |
 | **Supersedes**   | Former connector suite plan and connector sections of the former backend implementation plan.                                                             |
 
@@ -30,16 +30,15 @@ substrate; it does not create a second credential broker.
 
 ## Current state
 
-| Capability                      | State                                                                       |
-| ------------------------------- | --------------------------------------------------------------------------- |
-| Desktop MCP client              | Exists in `apps/x/packages/core/src/mcp`                                    |
-| Canvas MCP                      | Exists in the portfolio, already HTTP-MCP shaped                            |
-| Corinthian MCP                  | Exists with approval-token patterns                                         |
-| Cadence/Billflow MCP            | Missing or needs shim                                                       |
-| rowboat-api connector endpoints | Landed: catalog; OAuth start/callback/claim; API key; MCP token; disconnect |
-| Connection storage and audit    | Landed: `MCPConnection`, history hooks, and tenant interceptors             |
-| Hydra/Ory broker                | Deferred by deployment doc                                                  |
-| Consent UI                      | Artifacts exist but deferred                                                |
+| Capability                      | State                                                                                                       |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Desktop MCP client              | Complete: direct product MCP, connection lifecycle, exact-bound approval retry, and code redemption         |
+| First-party product contracts   | Environment-isolated registry, audiences, scopes, entitlement endpoints, and product verifier contracts     |
+| rowboat-api connector endpoints | Complete: catalog, OAuth start/callback/claim, API key, resource token, disconnect, and scoped invalidation |
+| Connection storage and audit    | Complete: tenant-scoped rows, immutable organization binding, lifecycle generations, tombstones, outboxes   |
+| Hydra/Ory broker                | Complete: registered clients, consent/login routing, default-deny network policy, and real Hydra contract   |
+| Consent UI                      | Complete: shared PostgreSQL state, replay-safe decisions, MFA step-up, durable audit, and reconciliation    |
+| Resource-server libraries       | Complete with equivalent Go and TypeScript claim, JWKS, scope, approval, and revocation behavior            |
 
 RFC 004 assumes cloud runtime connector reads, and RFC 008 assumes connector
 registry access for Conduit/Eigen. This RFC fills the shared broker contract those
@@ -79,7 +78,7 @@ flowchart LR
     API -->|refresh grant| O
     API -->|short-lived access token| D
     D -->|Bearer token| P[Product MCP]
-    P -->|JWKS + scope check| O
+    P -->|rowboat-api JWKS + scope check| API
 ```
 
 ## Scope model
@@ -142,10 +141,17 @@ All connection rows are per user and unique on `(user, connector)`.
 
 ## Entitlement gate
 
-Before consent, rowboat-api calls the target product's entitlement endpoint:
+Before consent and before each resource-token mint, rowboat-api calls the target
+product's entitlement endpoint using a bounded signed `POST` request:
 
 ```
-GET /v1/internal/entitlements?user_id={workos_user_id}
+POST /v1/entitlements
+X-Rowboat-Entitlement-Connector: {connector}
+X-Rowboat-Entitlement-Timestamp: {timestamp}
+X-Rowboat-Entitlement-Request-ID: {nonce}
+X-Rowboat-Entitlement-Signature: {hmac}
+
+{"connector":"canvas","user_id":"user_123","org_id":"org_123","scopes":["canvas:invoices.read"]}
 ```
 
 The product returns whether the user or org may grant the requested scopes. If
@@ -204,8 +210,11 @@ return `428 Precondition Required` for action-specific approval:
 }
 ```
 
-The user approves the exact action in a browser. The product returns a one-time
-approval token, and the desktop retries the MCP call with `X-Approval-Token`.
+The user approves the exact action in a browser. The custom-protocol callback
+contains only a short-lived one-time completion code. The desktop redeems that
+code with its PKCE verifier over authenticated exact-origin TLS; only the HTTPS
+JSON response contains the product-owned approval bearer. The desktop then
+retries exactly one matching MCP `tools/call` with `X-Approval-Token`.
 
 Approval tokens are product-owned because only the product can bind the approval
 to the exact domain action.
@@ -214,12 +223,12 @@ to the exact domain action.
 
 Revocation can originate from:
 
-| Origin               | Flow                                                                                                |
-| -------------------- | --------------------------------------------------------------------------------------------------- |
-| Desktop              | `DELETE /v1/connections/{name}` -> Ory revoke -> delete `MCPConnection`.                            |
-| Product              | `/v1/internal/connections/invalidate` -> Ory revoke -> delete row -> notify desktop on next launch. |
-| Refresh token expiry | Mark disconnected; desktop re-prompts when connector is used.                                       |
-| Security incident    | Product or platform revokes all grants by connector/user/org.                                       |
+| Origin               | Flow                                                                                                       |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Desktop              | `DELETE /v1/connections/{name}` -> fence generation -> erase credentials -> durable revoke -> tombstone.   |
+| Product              | Scoped authenticated invalidation -> fence generation -> erase credentials -> durable revoke -> tombstone. |
+| Refresh token expiry | Mark disconnected; desktop re-prompts when connector is used.                                              |
+| Security incident    | Product or platform revokes all grants by connector/user/org.                                              |
 
 Refresh tokens rotate on use. Reuse detection must revoke the connection.
 
@@ -227,12 +236,15 @@ Refresh tokens rotate on use. Reuse detection must revoke the connection.
 
 Minimum broker entities:
 
-| Entity                | Fields                                                                                                               |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `ConnectorDefinition` | name, display name, audience, MCP URL, auth type, supported scopes, environment, status. May start config-backed.    |
-| `MCPConnection`       | user edge, connector, audience, scopes, encrypted refresh token, connected_at, last_used_at, expires_at, revoked_at. |
-| `OAuthPending`        | state, connector, code verifier, requested scopes, redirect target, expires_at.                                      |
-| `ConnectorAuditEvent` | user, connector, event type, scoped metadata, created_at. Can be table or structured logs in v1.                     |
+| Entity                          | Fields                                                                                                                |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `ConnectorDefinition`           | name, display name, audience, MCP URL, auth type, supported scopes, environment, status. May start config-backed.     |
+| `MCPConnection`                 | user and immutable org, connector, audience, scopes, encrypted credentials, generation, lifecycle state, timestamps.  |
+| `OAuthPending`                  | hashed state, connector, code verifier, requested scopes, challenge metadata, expiry, and one-time claim state.       |
+| `ConnectorAuditEvent`           | durable semantic event id, actor/principal, connector, connection, scoped metadata, reconciliation state, timestamp.  |
+| `ConnectorRevocationJob`        | intended generation/state/reason, encrypted upstream credential, lease owner/expiry, attempt state, timestamps.       |
+| `ConnectorCredentialCleanupJob` | internal-only sealed rotated credential, expected generation, claim lease, retry state, and timestamps.               |
+| `ConnectorCredentialRecovery`   | independent internal encrypted custody journal keyed by stable callback/rotation owner, claim lease, and retry state. |
 
 ## Observability and audit
 
@@ -255,6 +267,10 @@ Required audit events:
 
 Metrics label only by connector, product, result, and reason. No user IDs in
 metric labels.
+
+Connection history stores only credential-presence flags, lifecycle generation,
+and non-secret transition metadata. Database constraints and repair migrations
+prevent encrypted provider credentials from being copied back into history.
 
 ## Rollout
 
@@ -492,10 +508,33 @@ Resource-token minting uses this algorithm:
 2. Verify connection is active.
 3. Verify requested scopes are a subset of granted scopes.
 4. Verify entitlement still allows the connector.
-5. Refresh upstream OAuth access token if needed.
-6. Store rotated refresh token if provider returns one.
-7. Mint Rowboat resource token for product MCP.
-8. Emit audit event.
+5. Acquire a shared Redis lease with a cryptographic owner token and lifecycle-generation context.
+6. Renew the lease while work is in flight; cancel immediately if ownership is lost.
+7. Refresh upstream OAuth access token if needed.
+8. Seal and escrow every newly rotated refresh credential in the internal cleanup
+   outbox before the post-provider ownership fence.
+9. If normal escrow cannot be acknowledged, admit the credential to a bounded
+   process-level custody supervisor. The supervisor alternates durable writes to
+   the independent encrypted recovery journal with bounded provider revocation
+   until one path is acknowledged. Saturation fails readiness and applies
+   admission backpressure; shutdown drains admitted work rather than cancelling it.
+10. Recheck lease ownership, immutable connection context, generation, scopes,
+    audience, and entitlement.
+11. Adopt a rotated refresh token only through a generation-fenced transaction
+    that deletes its cleanup or recovery row atomically with connection persistence.
+12. If ownership or generation is lost, claim the still-orphaned custody row,
+    attempt bounded provider revocation, and retain durable retry work until
+    revocation is confirmed. Cleanup and recovery workers never mutate
+    `MCPConnection`, so stale work cannot revoke or tombstone a newer grant.
+13. Reconcile ambiguous callback, claim, refresh, and reconnect commits against
+    the stable custody owner before either adopting or revoking a credential.
+14. Recheck ownership before publishing a cached result or minting a Rowboat
+    resource token.
+15. Emit a durable semantic audit event and release only with compare-owner deletion.
+
+For providers that offer neither idempotent exchange nor credential lookup, a
+process crash in the instant after the provider returns a new credential but
+before any local write or confirmed revoke is the irreducible protocol limit.
 
 Provider access tokens should remain server-side unless the product MCP
 architecture explicitly requires them. Prefer product MCP servers to call their
@@ -579,6 +618,14 @@ The product MCP validates:
 Rowboat may initiate or display the approval challenge, but final validation
 lives with the product that owns the risky action.
 
+The browser completion path never returns that bearer through a custom protocol.
+It returns a bounded one-time code plus the desktop challenge id. The desktop
+redeems the code once with its locally held PKCE verifier at the exact HTTPS
+origin that issued the MCP approval challenge. Redemption is bound to connection,
+tool, canonical arguments digest, action, actor, approval id, and expiry. The
+returned bearer is held only long enough to inject it into one matching MCP
+`tools/call` request on a request-local transport.
+
 ### Provider onboarding checklist
 
 Before adding a connector:
@@ -605,6 +652,12 @@ Before adding a connector:
 - Do not allow `redirect_after` to arbitrary web origins.
 - Maintain emergency connector disable flags.
 - Support admin invalidation by connector, org, user, or connection id.
+- Sign product entitlement requests and reject redirects, oversized responses,
+  private-address resolution outside explicit development fixtures, and invalid TLS.
+- Use owner-token Redis leases with compare-owner renewal and release for every
+  cross-replica refresh deduplication path.
+- Never place provider credentials, resource tokens, or approval bearers in URLs,
+  custom-protocol callbacks, logs, metrics, or public connector responses.
 
 ### Operational runbook
 
@@ -617,6 +670,34 @@ Common incidents:
 | Bad scope catalog deploy     | Roll back catalog, prevent new consent, preserve existing grants until reviewed.             |
 | Product MCP rejecting tokens | Check audience, JWKS cache, clock skew, and scope names.                                     |
 | Entitlement bug              | Disable token mint for affected connector and run audit query by connector/result.           |
+
+## Completion evidence
+
+RFC 012 was closed against the production-shaped implementation on 2026-08-28.
+The evidence set includes:
+
+- PostgreSQL 16 with all authoritative Atlas migrations applied from
+  `apps/rowboat-api`, `AUTO_MIGRATE=false`, shared Redis 7, two rowboat-api
+  replicas, two oauth-consent replicas, real public HTTP/JWT flows, and cleanup.
+- Authenticated acceptance for entitlement denial and downgrade, OAuth state and
+  PKCE, cross-instance consent, concurrent one-time claim, cross-tenant isolation,
+  signer overlap, scope enforcement, approval code issuance and exact-bound PKCE
+  redemption, one-time action retry, disconnect, tombstones, upstream revocation,
+  and durable semantic audit events.
+- Real Hydra v2 authorization-code flow plus rendered production/staging broker,
+  consent, JWKS, audience, network-policy, and desktop deep-link contracts.
+- PostgreSQL consent crash/concurrency recovery, Redis stale-holder/reacquisition
+  adversarial tests, cleanup escrow and independent recovery-journal
+  adoption/revocation/restart races, bounded custody saturation and drain tests,
+  normal and race tests for both resource-server libraries, and generated
+  OpenAPI/client and migration drift checks. Internal credential cleanup rows are
+  absent from public GraphQL, OpenAPI, and generated clients.
+- Passing repository gates: `make verify` in `apps/rowboat-api`, `npm run verify`
+  in `apps/rowboat-www`, and `pnpm verify` in `apps/x`.
+- Two fresh independent post-compensation closure reports at
+  `$JCODE_SCRATCH_DIR/rfc012-post-compensation-review-a.md` and
+  `$JCODE_SCRATCH_DIR/rfc012-post-compensation-review-b.md`, with no unresolved
+  Critical or High findings required for this status.
 
 ## Acceptance criteria
 

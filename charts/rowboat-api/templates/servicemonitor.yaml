@@ -8,7 +8,9 @@ metadata:
 spec:
   selector:
     matchLabels:
-      {{- include "rowboat-api.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/name: {{ include "rowboat-api.name" . }}
+      app.kubernetes.io/component: metrics
   endpoints:
     - port: metrics
       interval: {{ .Values.serviceMonitor.interval }}

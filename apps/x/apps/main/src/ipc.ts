@@ -103,6 +103,7 @@ import {
 import { submitFeedback } from "@x/core/feedback/feedback";
 import { AuthUnavailableError } from "@x/core/auth/refresh-errors";
 import {
+  authorizeConnectorScopesViaBackend,
   deleteConnectorViaBackend,
   listConnectorsViaBackend,
   saveConnectorAPIKeyViaBackend,
@@ -1345,7 +1346,10 @@ export function setupIpcHandlers() {
       // Starts the connector OAuth flow + opens the browser. The browser
       // completes at the api callback, which deep-links back and main redeems
       // the grant via the connector /claim endpoint (see deeplink.ts).
-      return await connectConnector(args.connector);
+      return await connectConnector(args.connector, {
+        requestedScopes: args.requestedScopes,
+        redirectAfter: args.redirectAfter,
+      });
     },
     "connectors:list": async () => {
       try {
@@ -1362,6 +1366,16 @@ export function setupIpcHandlers() {
         return { success: true };
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Failed to save integration API key";
+        return { success: false, error: message };
+      }
+    },
+    "connectors:authorizeScopes": async (_event, args) => {
+      try {
+        await authorizeConnectorScopesViaBackend(args.connector, args.scopes);
+        invalidateCopilotInstructionsCache();
+        return { success: true };
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to authorize integration scopes";
         return { success: false, error: message };
       }
     },

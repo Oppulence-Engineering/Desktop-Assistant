@@ -25,6 +25,7 @@ import type { CloudEvent } from "./cloudEvent";
 import type { Commitment } from "./commitment";
 import type { CommitmentDependency } from "./commitmentDependency";
 import type { CommitmentEvent } from "./commitmentEvent";
+import type { ConnectorAuditEvent } from "./connectorAuditEvent";
 import type { ConversationIntelligenceArtifact } from "./conversationIntelligenceArtifact";
 import type { CreditLedger } from "./creditLedger";
 import type { Entity } from "./entity";
@@ -100,6 +101,7 @@ export interface User {
   commitment_dependencies?: CommitmentDependency[];
   commitment_events?: CommitmentEvent[];
   commitments?: Commitment[];
+  connector_audit_events?: ConnectorAuditEvent[];
   conversation_intelligence_artifacts?: ConversationIntelligenceArtifact[];
   /** Row creation timestamp. */
   created_at: string;

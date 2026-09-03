@@ -13,10 +13,18 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: {
-    command: `npm run start -- --hostname 127.0.0.1 --port ${port}`,
-    url: `http://127.0.0.1:${port}`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: "node e2e/fake-rowboat-api.mjs",
+      url: "http://127.0.0.1:4318/__test/state",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+    {
+      command: `ROWBOAT_WWW_API_PROXY_URL=http://127.0.0.1:4318 ROWBOAT_WWW_PUBLIC_API_BASE_URL=http://127.0.0.1:4318 ROWBOAT_WWW_PUBLIC_APP_URL=http://127.0.0.1:${port} ROWBOAT_WWW_SESSION_SECRET=playwright-rowboat-www-session-secret-0001 npm run start -- --hostname 127.0.0.1 --port ${port}`,
+      url: `http://127.0.0.1:${port}`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+  ],
 });

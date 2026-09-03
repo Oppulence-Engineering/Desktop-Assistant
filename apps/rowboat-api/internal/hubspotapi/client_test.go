@@ -44,6 +44,7 @@ func TestSearchUsesOfficialSDKAndUserCredential(t *testing.T) {
 	database.Client.MCPConnection.Create().
 		SetUser(user).
 		SetConnector("hubspot").
+		SetOrganizationID("personal:" + user.WorkosUserID).
 		SetAudience("hubspot-api").
 		SetAPIKeyEncrypted(sealed).
 		SaveX(ctx)
@@ -116,7 +117,7 @@ func TestListCompaniesUsesBoundedOfficialSDKPage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	database.Client.MCPConnection.Create().SetUser(user).SetConnector("hubspot").
+	database.Client.MCPConnection.Create().SetUser(user).SetConnector("hubspot").SetOrganizationID("personal:" + user.WorkosUserID).
 		SetAudience("hubspot-api").SetAPIKeyEncrypted(sealed).SaveX(ctx)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

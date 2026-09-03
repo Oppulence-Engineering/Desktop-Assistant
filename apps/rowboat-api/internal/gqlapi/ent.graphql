@@ -6412,10 +6412,20 @@ type MCPConnection implements Node {
   updatedAt: Time!
   connector: String!
   audience: String!
+  organizationID: String
   scopes: [String!]
+  refreshTokenPresent: Boolean!
+  apiKeyPresent: Boolean!
+  credentialGeneration: Int!
+  status: String!
   connectedAt: Time
   lastUsedAt: Time
   expiresAt: Time
+  revokedAt: Time
+  revokedReason: String
+  revokedBy: String
+  revocationAttemptedAt: Time
+  revocationSucceeded: Boolean
   user: User!
 }
 """
@@ -6522,6 +6532,61 @@ input MCPConnectionWhereInput {
   audienceEqualFold: String
   audienceContainsFold: String
   """
+  organization_id field predicates
+  """
+  organizationID: String
+  organizationIDNEQ: String
+  organizationIDIn: [String!]
+  organizationIDNotIn: [String!]
+  organizationIDGT: String
+  organizationIDGTE: String
+  organizationIDLT: String
+  organizationIDLTE: String
+  organizationIDContains: String
+  organizationIDHasPrefix: String
+  organizationIDHasSuffix: String
+  organizationIDIsNil: Boolean
+  organizationIDNotNil: Boolean
+  organizationIDEqualFold: String
+  organizationIDContainsFold: String
+  """
+  refresh_token_present field predicates
+  """
+  refreshTokenPresent: Boolean
+  refreshTokenPresentNEQ: Boolean
+  """
+  api_key_present field predicates
+  """
+  apiKeyPresent: Boolean
+  apiKeyPresentNEQ: Boolean
+  """
+  credential_generation field predicates
+  """
+  credentialGeneration: Int
+  credentialGenerationNEQ: Int
+  credentialGenerationIn: [Int!]
+  credentialGenerationNotIn: [Int!]
+  credentialGenerationGT: Int
+  credentialGenerationGTE: Int
+  credentialGenerationLT: Int
+  credentialGenerationLTE: Int
+  """
+  status field predicates
+  """
+  status: String
+  statusNEQ: String
+  statusIn: [String!]
+  statusNotIn: [String!]
+  statusGT: String
+  statusGTE: String
+  statusLT: String
+  statusLTE: String
+  statusContains: String
+  statusHasPrefix: String
+  statusHasSuffix: String
+  statusEqualFold: String
+  statusContainsFold: String
+  """
   connected_at field predicates
   """
   connectedAt: Time
@@ -6560,6 +6625,75 @@ input MCPConnectionWhereInput {
   expiresAtLTE: Time
   expiresAtIsNil: Boolean
   expiresAtNotNil: Boolean
+  """
+  revoked_at field predicates
+  """
+  revokedAt: Time
+  revokedAtNEQ: Time
+  revokedAtIn: [Time!]
+  revokedAtNotIn: [Time!]
+  revokedAtGT: Time
+  revokedAtGTE: Time
+  revokedAtLT: Time
+  revokedAtLTE: Time
+  revokedAtIsNil: Boolean
+  revokedAtNotNil: Boolean
+  """
+  revoked_reason field predicates
+  """
+  revokedReason: String
+  revokedReasonNEQ: String
+  revokedReasonIn: [String!]
+  revokedReasonNotIn: [String!]
+  revokedReasonGT: String
+  revokedReasonGTE: String
+  revokedReasonLT: String
+  revokedReasonLTE: String
+  revokedReasonContains: String
+  revokedReasonHasPrefix: String
+  revokedReasonHasSuffix: String
+  revokedReasonIsNil: Boolean
+  revokedReasonNotNil: Boolean
+  revokedReasonEqualFold: String
+  revokedReasonContainsFold: String
+  """
+  revoked_by field predicates
+  """
+  revokedBy: String
+  revokedByNEQ: String
+  revokedByIn: [String!]
+  revokedByNotIn: [String!]
+  revokedByGT: String
+  revokedByGTE: String
+  revokedByLT: String
+  revokedByLTE: String
+  revokedByContains: String
+  revokedByHasPrefix: String
+  revokedByHasSuffix: String
+  revokedByIsNil: Boolean
+  revokedByNotNil: Boolean
+  revokedByEqualFold: String
+  revokedByContainsFold: String
+  """
+  revocation_attempted_at field predicates
+  """
+  revocationAttemptedAt: Time
+  revocationAttemptedAtNEQ: Time
+  revocationAttemptedAtIn: [Time!]
+  revocationAttemptedAtNotIn: [Time!]
+  revocationAttemptedAtGT: Time
+  revocationAttemptedAtGTE: Time
+  revocationAttemptedAtLT: Time
+  revocationAttemptedAtLTE: Time
+  revocationAttemptedAtIsNil: Boolean
+  revocationAttemptedAtNotNil: Boolean
+  """
+  revocation_succeeded field predicates
+  """
+  revocationSucceeded: Boolean
+  revocationSucceededNEQ: Boolean
+  revocationSucceededIsNil: Boolean
+  revocationSucceededNotNil: Boolean
   """
   user edge predicates
   """
@@ -7236,6 +7370,8 @@ type OAuthConnection implements Node {
   createdAt: Time!
   updatedAt: Time!
   provider: String!
+  refreshTokenPresent: Boolean!
+  credentialGeneration: Int!
   scopes: [String!]
   externalAccountID: String
   user: User!
@@ -7298,6 +7434,22 @@ input OAuthConnectionWhereInput {
   providerEqualFold: String
   providerContainsFold: String
   """
+  refresh_token_present field predicates
+  """
+  refreshTokenPresent: Boolean
+  refreshTokenPresentNEQ: Boolean
+  """
+  credential_generation field predicates
+  """
+  credentialGeneration: Int
+  credentialGenerationNEQ: Int
+  credentialGenerationIn: [Int!]
+  credentialGenerationNotIn: [Int!]
+  credentialGenerationGT: Int
+  credentialGenerationGTE: Int
+  credentialGenerationLT: Int
+  credentialGenerationLTE: Int
+  """
   external_account_id field predicates
   """
   externalAccountID: String
@@ -7326,8 +7478,23 @@ type OAuthPending implements Node {
   createdAt: Time!
   updatedAt: Time!
   state: String!
+  stateHash: String
   provider: String!
   expiresAt: Time!
+  lifecycleStatus: String
+  ownerWorkosUserID: String
+  ownerOrgID: String
+  requestedScopes: [String!]
+  redirectTarget: String
+  consentChallenge: String
+  contextRequestID: String
+  hydraClientID: String
+  callbackAt: Time
+  callbackClaimID: UUID
+  callbackClaimedUntil: Time
+  callbackAttempts: Int!
+  claimedAt: Time
+  failureReason: String
 }
 """
 OAuthPendingWhereInput is used for filtering OAuthPending objects.
@@ -7387,6 +7554,24 @@ input OAuthPendingWhereInput {
   stateEqualFold: String
   stateContainsFold: String
   """
+  state_hash field predicates
+  """
+  stateHash: String
+  stateHashNEQ: String
+  stateHashIn: [String!]
+  stateHashNotIn: [String!]
+  stateHashGT: String
+  stateHashGTE: String
+  stateHashLT: String
+  stateHashLTE: String
+  stateHashContains: String
+  stateHashHasPrefix: String
+  stateHashHasSuffix: String
+  stateHashIsNil: Boolean
+  stateHashNotNil: Boolean
+  stateHashEqualFold: String
+  stateHashContainsFold: String
+  """
   provider field predicates
   """
   provider: String
@@ -7413,6 +7598,213 @@ input OAuthPendingWhereInput {
   expiresAtGTE: Time
   expiresAtLT: Time
   expiresAtLTE: Time
+  """
+  lifecycle_status field predicates
+  """
+  lifecycleStatus: String
+  lifecycleStatusNEQ: String
+  lifecycleStatusIn: [String!]
+  lifecycleStatusNotIn: [String!]
+  lifecycleStatusGT: String
+  lifecycleStatusGTE: String
+  lifecycleStatusLT: String
+  lifecycleStatusLTE: String
+  lifecycleStatusContains: String
+  lifecycleStatusHasPrefix: String
+  lifecycleStatusHasSuffix: String
+  lifecycleStatusIsNil: Boolean
+  lifecycleStatusNotNil: Boolean
+  lifecycleStatusEqualFold: String
+  lifecycleStatusContainsFold: String
+  """
+  owner_workos_user_id field predicates
+  """
+  ownerWorkosUserID: String
+  ownerWorkosUserIDNEQ: String
+  ownerWorkosUserIDIn: [String!]
+  ownerWorkosUserIDNotIn: [String!]
+  ownerWorkosUserIDGT: String
+  ownerWorkosUserIDGTE: String
+  ownerWorkosUserIDLT: String
+  ownerWorkosUserIDLTE: String
+  ownerWorkosUserIDContains: String
+  ownerWorkosUserIDHasPrefix: String
+  ownerWorkosUserIDHasSuffix: String
+  ownerWorkosUserIDIsNil: Boolean
+  ownerWorkosUserIDNotNil: Boolean
+  ownerWorkosUserIDEqualFold: String
+  ownerWorkosUserIDContainsFold: String
+  """
+  owner_org_id field predicates
+  """
+  ownerOrgID: String
+  ownerOrgIDNEQ: String
+  ownerOrgIDIn: [String!]
+  ownerOrgIDNotIn: [String!]
+  ownerOrgIDGT: String
+  ownerOrgIDGTE: String
+  ownerOrgIDLT: String
+  ownerOrgIDLTE: String
+  ownerOrgIDContains: String
+  ownerOrgIDHasPrefix: String
+  ownerOrgIDHasSuffix: String
+  ownerOrgIDIsNil: Boolean
+  ownerOrgIDNotNil: Boolean
+  ownerOrgIDEqualFold: String
+  ownerOrgIDContainsFold: String
+  """
+  redirect_target field predicates
+  """
+  redirectTarget: String
+  redirectTargetNEQ: String
+  redirectTargetIn: [String!]
+  redirectTargetNotIn: [String!]
+  redirectTargetGT: String
+  redirectTargetGTE: String
+  redirectTargetLT: String
+  redirectTargetLTE: String
+  redirectTargetContains: String
+  redirectTargetHasPrefix: String
+  redirectTargetHasSuffix: String
+  redirectTargetIsNil: Boolean
+  redirectTargetNotNil: Boolean
+  redirectTargetEqualFold: String
+  redirectTargetContainsFold: String
+  """
+  consent_challenge field predicates
+  """
+  consentChallenge: String
+  consentChallengeNEQ: String
+  consentChallengeIn: [String!]
+  consentChallengeNotIn: [String!]
+  consentChallengeGT: String
+  consentChallengeGTE: String
+  consentChallengeLT: String
+  consentChallengeLTE: String
+  consentChallengeContains: String
+  consentChallengeHasPrefix: String
+  consentChallengeHasSuffix: String
+  consentChallengeIsNil: Boolean
+  consentChallengeNotNil: Boolean
+  consentChallengeEqualFold: String
+  consentChallengeContainsFold: String
+  """
+  context_request_id field predicates
+  """
+  contextRequestID: String
+  contextRequestIDNEQ: String
+  contextRequestIDIn: [String!]
+  contextRequestIDNotIn: [String!]
+  contextRequestIDGT: String
+  contextRequestIDGTE: String
+  contextRequestIDLT: String
+  contextRequestIDLTE: String
+  contextRequestIDContains: String
+  contextRequestIDHasPrefix: String
+  contextRequestIDHasSuffix: String
+  contextRequestIDIsNil: Boolean
+  contextRequestIDNotNil: Boolean
+  contextRequestIDEqualFold: String
+  contextRequestIDContainsFold: String
+  """
+  hydra_client_id field predicates
+  """
+  hydraClientID: String
+  hydraClientIDNEQ: String
+  hydraClientIDIn: [String!]
+  hydraClientIDNotIn: [String!]
+  hydraClientIDGT: String
+  hydraClientIDGTE: String
+  hydraClientIDLT: String
+  hydraClientIDLTE: String
+  hydraClientIDContains: String
+  hydraClientIDHasPrefix: String
+  hydraClientIDHasSuffix: String
+  hydraClientIDIsNil: Boolean
+  hydraClientIDNotNil: Boolean
+  hydraClientIDEqualFold: String
+  hydraClientIDContainsFold: String
+  """
+  callback_at field predicates
+  """
+  callbackAt: Time
+  callbackAtNEQ: Time
+  callbackAtIn: [Time!]
+  callbackAtNotIn: [Time!]
+  callbackAtGT: Time
+  callbackAtGTE: Time
+  callbackAtLT: Time
+  callbackAtLTE: Time
+  callbackAtIsNil: Boolean
+  callbackAtNotNil: Boolean
+  """
+  callback_claim_id field predicates
+  """
+  callbackClaimID: UUID
+  callbackClaimIDNEQ: UUID
+  callbackClaimIDIn: [UUID!]
+  callbackClaimIDNotIn: [UUID!]
+  callbackClaimIDGT: UUID
+  callbackClaimIDGTE: UUID
+  callbackClaimIDLT: UUID
+  callbackClaimIDLTE: UUID
+  callbackClaimIDIsNil: Boolean
+  callbackClaimIDNotNil: Boolean
+  """
+  callback_claimed_until field predicates
+  """
+  callbackClaimedUntil: Time
+  callbackClaimedUntilNEQ: Time
+  callbackClaimedUntilIn: [Time!]
+  callbackClaimedUntilNotIn: [Time!]
+  callbackClaimedUntilGT: Time
+  callbackClaimedUntilGTE: Time
+  callbackClaimedUntilLT: Time
+  callbackClaimedUntilLTE: Time
+  callbackClaimedUntilIsNil: Boolean
+  callbackClaimedUntilNotNil: Boolean
+  """
+  callback_attempts field predicates
+  """
+  callbackAttempts: Int
+  callbackAttemptsNEQ: Int
+  callbackAttemptsIn: [Int!]
+  callbackAttemptsNotIn: [Int!]
+  callbackAttemptsGT: Int
+  callbackAttemptsGTE: Int
+  callbackAttemptsLT: Int
+  callbackAttemptsLTE: Int
+  """
+  claimed_at field predicates
+  """
+  claimedAt: Time
+  claimedAtNEQ: Time
+  claimedAtIn: [Time!]
+  claimedAtNotIn: [Time!]
+  claimedAtGT: Time
+  claimedAtGTE: Time
+  claimedAtLT: Time
+  claimedAtLTE: Time
+  claimedAtIsNil: Boolean
+  claimedAtNotNil: Boolean
+  """
+  failure_reason field predicates
+  """
+  failureReason: String
+  failureReasonNEQ: String
+  failureReasonIn: [String!]
+  failureReasonNotIn: [String!]
+  failureReasonGT: String
+  failureReasonGTE: String
+  failureReasonLT: String
+  failureReasonLTE: String
+  failureReasonContains: String
+  failureReasonHasPrefix: String
+  failureReasonHasSuffix: String
+  failureReasonIsNil: Boolean
+  failureReasonNotNil: Boolean
+  failureReasonEqualFold: String
+  failureReasonContainsFold: String
 }
 """
 Possible directions in which to order a list of items when provided an `orderBy` argument.

@@ -5,13 +5,29 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
+import type { InternalInvalidateRequestReason } from "./internalInvalidateRequestReason";
 
 /**
  * Server-to-server force disconnect request.
  */
 export interface InternalInvalidateRequest {
+  /**
+   * Optional exact MCPConnection UUID target.
+   * @nullable
+   */
+  connection_id?: string | null;
   /** Connector slug. */
-  connector: string;
+  connector?: string;
+  /**
+   * Optional WorkOS organization target.
+   * @nullable
+   */
+  org_id?: string | null;
+  /**
+   * Reason code for the ledger entry.
+   * @nullable
+   */
+  reason?: InternalInvalidateRequestReason;
   /** WorkOS user id used to resolve bearer tokens into local users. */
-  workos_user_id: string;
+  workos_user_id?: string;
 }

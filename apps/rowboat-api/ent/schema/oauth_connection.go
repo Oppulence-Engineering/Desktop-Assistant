@@ -32,6 +32,10 @@ func (OAuthConnection) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("provider"), // google
 		field.Bytes("refresh_token_encrypted").Sensitive(),
+		// Immutable history records only whether a credential existed and which
+		// replacement generation was current. It never receives ciphertext.
+		field.Bool("refresh_token_present").Default(false),
+		field.Int64("credential_generation").Default(1).Positive(),
 		field.Strings("scopes").Optional(),
 		// external_account_id is the provider-side account key (google: the
 		// account email; slack: the team id). Provider webhooks resolve the
@@ -40,6 +44,9 @@ func (OAuthConnection) Fields() []ent.Field {
 		field.String("external_account_id").Optional(),
 	}
 }
+
+// Hooks derives safe credential metadata before enthistory observes a mutation.
+func (OAuthConnection) Hooks() []ent.Hook { return []ent.Hook{connectorCredentialMetadataHook(true)} }
 
 // Edges of the OAuthConnection.
 func (OAuthConnection) Edges() []ent.Edge {

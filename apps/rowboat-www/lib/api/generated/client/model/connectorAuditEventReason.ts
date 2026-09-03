@@ -5,14 +5,19 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { UpsellRequiredPlan } from "./upsellRequiredPlan";
 
 /**
- * Upgrade instruction returned when a connector requires a higher plan.
+ * Reason code for the ledger entry.
  */
-export interface Upsell {
-  /** Human-readable upgrade copy. */
-  message: string;
-  /** Minimum plan required. */
-  requiredPlan: UpsellRequiredPlan;
-}
+export type ConnectorAuditEventReason =
+  (typeof ConnectorAuditEventReason)[keyof typeof ConnectorAuditEventReason];
+
+export const ConnectorAuditEventReason = {
+  llm_call: "llm_call",
+  llm_call_reserve: "llm_call_reserve",
+  llm_settle: "llm_settle",
+  voice_tts: "voice_tts",
+  exa_search: "exa_search",
+  grant: "grant",
+  refund: "refund",
+} as const;

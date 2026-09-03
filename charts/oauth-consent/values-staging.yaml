@@ -1,0 +1,35 @@
+replicaCount: 1
+deploymentEnvironment: staging
+existingSecret: oauth-consent-secrets
+createSecret: false
+networkPolicy:
+  enabled: true
+  hydraAdmin:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: ory-staging
+  postgresql:
+    # REQUIRED deployment input. Supply staging's PostgreSQL private endpoint
+    # CIDR(s) in a separate environment-owned values file.
+    cidrs: []
+ingress:
+  host: consent.staging.oppulence.io
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+  tls:
+    enabled: true
+    secretName: oauth-consent-tls
+config:
+  ORY_ADMIN_URL: http://hydra-admin.ory-staging.svc.cluster.local:4445
+  WORKOS_ISSUER: https://auth.staging.oppulence.io
+  WORKOS_REDIRECT_URI: https://consent.staging.oppulence.io/callback
+  WORKOS_STEP_UP_REDIRECT_URI: https://consent.staging.oppulence.io/step-up/callback
+  WORKOS_STEP_UP_ACR: urn:rowboat:loa:money-moving
+  WORKOS_STEP_UP_AMR: mfa
+  ROWBOAT_API_URL: https://api.x.staging.oppulence.io
+  CONSENT_CONTEXT_HOOK_PATH: /oauth-hooks/pre-consent
+  CONSENT_AUDIT_HOOK_PATH: /oauth-hooks/consent-audit
+  HOOK_SIGNATURE_MAX_AGE_MS: "300000"
+  CONSENT_SESSION_TTL_MS: "600000"
+  UPSTREAM_TIMEOUT_MS: "5000"
+  COOKIE_SECURE: "true"

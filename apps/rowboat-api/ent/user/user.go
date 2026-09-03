@@ -43,6 +43,8 @@ const (
 	EdgeOauthConnections = "oauth_connections"
 	// EdgeMcpConnections holds the string denoting the mcp_connections edge name in mutations.
 	EdgeMcpConnections = "mcp_connections"
+	// EdgeConnectorAuditEvents holds the string denoting the connector_audit_events edge name in mutations.
+	EdgeConnectorAuditEvents = "connector_audit_events"
 	// EdgeBackgroundTasks holds the string denoting the background_tasks edge name in mutations.
 	EdgeBackgroundTasks = "background_tasks"
 	// EdgeBackgroundTaskArtifacts holds the string denoting the background_task_artifacts edge name in mutations.
@@ -222,6 +224,13 @@ const (
 	McpConnectionsInverseTable = "mcp_connections"
 	// McpConnectionsColumn is the table column denoting the mcp_connections relation/edge.
 	McpConnectionsColumn = "user_mcp_connections"
+	// ConnectorAuditEventsTable is the table that holds the connector_audit_events relation/edge.
+	ConnectorAuditEventsTable = "connector_audit_events"
+	// ConnectorAuditEventsInverseTable is the table name for the ConnectorAuditEvent entity.
+	// It exists in this package in order to avoid circular dependency with the "connectorauditevent" package.
+	ConnectorAuditEventsInverseTable = "connector_audit_events"
+	// ConnectorAuditEventsColumn is the table column denoting the connector_audit_events relation/edge.
+	ConnectorAuditEventsColumn = "user_connector_audit_events"
 	// BackgroundTasksTable is the table that holds the background_tasks relation/edge.
 	BackgroundTasksTable = "background_tasks"
 	// BackgroundTasksInverseTable is the table name for the BackgroundTask entity.
@@ -805,6 +814,20 @@ func ByMcpConnectionsCount(opts ...sql.OrderTermOption) OrderOption {
 func ByMcpConnections(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newMcpConnectionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByConnectorAuditEventsCount orders the results by connector_audit_events count.
+func ByConnectorAuditEventsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newConnectorAuditEventsStep(), opts...)
+	}
+}
+
+// ByConnectorAuditEvents orders the results by connector_audit_events terms.
+func ByConnectorAuditEvents(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newConnectorAuditEventsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 
@@ -1666,6 +1689,13 @@ func newMcpConnectionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(McpConnectionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, McpConnectionsTable, McpConnectionsColumn),
+	)
+}
+func newConnectorAuditEventsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ConnectorAuditEventsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ConnectorAuditEventsTable, ConnectorAuditEventsColumn),
 	)
 }
 func newBackgroundTasksStep() *sqlgraph.Step {

@@ -7,11 +7,9 @@
  */
 
 /**
- * Minimum plan required.
+ * Fetches consent context by opaque OAuth state.
  */
-export type UpsellRequiredPlan = (typeof UpsellRequiredPlan)[keyof typeof UpsellRequiredPlan];
-
-export const UpsellRequiredPlan = {
-  starter: "starter",
-  pro: "pro",
-} as const;
+export interface ConsentContextRequest {
+  /** Opaque one-time OAuth state/session ticket. */
+  state: string;
+}
