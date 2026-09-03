@@ -17,7 +17,7 @@
     "knip": "knip --config config/quality/knip.json",
     "lighthouse": "node scripts/run-lighthouse.mjs",
     "lint": "eslint .",
-    "security:gitleaks": "go run github.com/zricethezav/gitleaks/v8@v8.30.1 git --gitleaks-ignore-path ../../.gitleaksignore --redact --no-banner --log-opts=--no-merges ../..",
+    "security:gitleaks": "node scripts/run-gitleaks.mjs",
     "security:osv": "go run github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.5.1 scan source .",
     "security:semgrep": "pipx run --spec semgrep==1.174.0 semgrep scan --config config/quality/semgrep.yml --error --metrics=off --no-git-ignore --exclude=node_modules --exclude=.next --exclude='lib/api/generated/**' --exclude='.rowboat-contracts-*' .",
     "seed:demo": "tsx scripts/seed-demo-workspace.ts",
