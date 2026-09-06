@@ -149,14 +149,50 @@ const HEALTH_TONE: Record<string, string> = {
 
 const humanize = (value?: string) => (value || "unknown").replaceAll("_", " ");
 
-type OptionalCompanyColumn = "people" | "emails" | "health" | "nextAction";
+type OptionalCompanyColumn =
+  | "people"
+  | "emails"
+  | "health"
+  | "nextAction"
+  | "headquarters"
+  | "employees"
+  | "funding"
+  | "revenue"
+  | "signals";
 
 const OPTIONAL_COMPANY_COLUMNS: Array<{ id: OptionalCompanyColumn; label: string }> = [
   { id: "people", label: "People" },
   { id: "emails", label: "Emails" },
   { id: "health", label: "Health" },
   { id: "nextAction", label: "Next action" },
+  { id: "headquarters", label: "Headquarters" },
+  { id: "employees", label: "Employees" },
+  { id: "funding", label: "Funding" },
+  { id: "revenue", label: "Revenue" },
+  { id: "signals", label: "Growth signals" },
 ];
+
+const COMPANY_FIELD_LABELS: Record<string, string> = {
+  industry_category: "Industry",
+  subindustry: "Subindustry",
+  company_description: "Description",
+  headquarters: "Headquarters",
+  founded_year: "Founded",
+  employee_range: "Employees",
+  ownership: "Ownership",
+  stock_ticker: "Ticker",
+  funding_summary: "Funding",
+  revenue_range: "Revenue",
+  business_model: "Business model",
+  products: "Products",
+  customer_segments: "Customer segments",
+  technologies: "Technologies",
+  key_executives: "Key executives",
+  recent_news: "Recent news",
+  growth_signals: "Growth signals",
+  website_url: "Website",
+  social_urls: "Social profiles",
+};
 
 const companyName = (relationship: RevenueRelationship) => {
   if (
@@ -279,9 +315,11 @@ function RelationshipEnrichment({
           </p>
           <h3 className="mt-1 text-sm font-semibold text-primary">Know who is behind the inbox</h3>
           <p className="mt-1 max-w-3xl text-xs text-primary/55">
-            Add company category, description, LinkedIn, plus person role, seniority, and location
-            from public sources. Every fact keeps its source link. Message content, transcripts,
-            notes, and full email addresses never leave Oppulence.
+            Parallel Web builds cited dossiers across company ownership, size, funding, revenue,
+            products, buyers, technology, executives, news, and growth signals—plus each person’s
+            role, department, bio, work history, expertise, activity, and verified LinkedIn. Every
+            stored fact keeps its source link; message content, notes, and full email addresses
+            never leave Oppulence.
           </p>
         </div>
         {status?.consent.consented ? (
@@ -335,7 +373,7 @@ function RelationshipEnrichment({
       ) : (
         <p className="mt-3 border-t border-border pt-3 text-xs text-primary/55">
           {!status.available
-            ? `Unavailable until a workspace administrator configures the research provider${status.reason === "plan_required" ? ` and enables the ${status.requiredPlan} plan` : ""}.`
+            ? `Unavailable until a workspace administrator configures Parallel Web${status.reason === "plan_required" ? ` and enables the ${status.requiredPlan} plan` : ""}.`
             : status.reason === "plan_required"
               ? `Available on the ${status.requiredPlan} plan.`
               : status.reason === "capability_disabled"
@@ -372,7 +410,11 @@ export function RelationshipsView({
   const [health, setHealth] = React.useState("all");
   const [lifecycle, setLifecycle] = React.useState("all");
   const [surface, setSurface] = React.useState<"list" | "graph">("list");
-  const [optionalColumns, setOptionalColumns] = React.useState<OptionalCompanyColumn[]>([]);
+  const [optionalColumns, setOptionalColumns] = React.useState<OptionalCompanyColumn[]>([
+    "headquarters",
+    "employees",
+    "funding",
+  ]);
   const hasConnectedSource = sources.some((source) =>
     ["connected", "backfilling", "live"].includes(source.status),
   );
@@ -448,7 +490,7 @@ export function RelationshipsView({
     <div className="flex min-h-full flex-col">
       <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
         <button
-          className="flex h-8 items-center gap-2 rounded-md border border-border bg-background px-3 text-[13px] font-medium text-primary hover:bg-background-100"
+          className="flex h-8 items-center gap-2 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-primary hover:bg-background-100"
           type="button"
         >
           <Buildings /> All companies <span className="text-primary/40">{companies.length}</span>
@@ -509,7 +551,7 @@ export function RelationshipsView({
               <SelectTrigger className="h-8 w-36" size="sm">
                 <SelectValue placeholder="Health" />
               </SelectTrigger>
-              <SelectContent className="app-shell rounded-md">
+              <SelectContent className="app-shell rounded-none">
                 <SelectItem value="all">All health</SelectItem>
                 {HEALTH_OPTIONS.map((value) => (
                   <SelectItem key={value} value={value}>
@@ -522,7 +564,7 @@ export function RelationshipsView({
               <SelectTrigger className="h-8 w-40" size="sm">
                 <SelectValue placeholder="Lifecycle" />
               </SelectTrigger>
-              <SelectContent className="app-shell rounded-md">
+              <SelectContent className="app-shell rounded-none">
                 <SelectItem value="all">All lifecycle</SelectItem>
                 {LIFECYCLE_OPTIONS.map((value) => (
                   <SelectItem key={value} value={value}>
@@ -541,7 +583,7 @@ export function RelationshipsView({
               <ArrowClockwise className={loading ? "animate-spin" : ""} /> Refresh
             </Button>
             <details className="group relative ml-auto">
-              <summary className="flex h-8 cursor-pointer list-none items-center gap-2 rounded-md border border-border bg-background px-3 text-[12px] text-primary/65 outline-none hover:bg-background-100 hover:text-primary focus-visible:ring-1 focus-visible:ring-primary/20">
+              <summary className="flex h-8 cursor-pointer list-none items-center gap-2 rounded-none border border-border bg-background px-3 text-[12px] text-primary/65 outline-none hover:bg-background-100 hover:text-primary focus-visible:ring-1 focus-visible:ring-primary/20">
                 <Sparkle /> Data health
                 {companyAttention.length + identityCandidates.length > 0 ? (
                   <Badge variant="secondary">
@@ -549,7 +591,7 @@ export function RelationshipsView({
                   </Badge>
                 ) : null}
               </summary>
-              <div className="absolute right-0 top-9 z-30 grid min-w-0 max-h-[70vh] w-[640px] max-w-[calc(100vw-320px)] gap-4 overflow-x-hidden overflow-y-auto rounded-md border border-border bg-background p-4 shadow-2xl">
+              <div className="absolute right-0 top-9 z-30 grid min-w-0 max-h-[70vh] w-[640px] max-w-[calc(100vw-320px)] gap-4 overflow-x-hidden overflow-y-auto rounded-none border border-border bg-background p-4 shadow-2xl">
                 <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border pb-3">
                   <div className="min-w-0">
                     <p className="text-[13px] font-medium text-primary">
@@ -690,6 +732,21 @@ export function RelationshipsView({
                     {optionalColumns.includes("nextAction") ? (
                       <th className="w-56 border-r border-border px-3">Next action</th>
                     ) : null}
+                    {optionalColumns.includes("headquarters") ? (
+                      <th className="w-48 border-r border-border px-3">Headquarters</th>
+                    ) : null}
+                    {optionalColumns.includes("employees") ? (
+                      <th className="w-40 border-r border-border px-3">Employees</th>
+                    ) : null}
+                    {optionalColumns.includes("funding") ? (
+                      <th className="w-64 border-r border-border px-3">Funding</th>
+                    ) : null}
+                    {optionalColumns.includes("revenue") ? (
+                      <th className="w-44 border-r border-border px-3">Revenue</th>
+                    ) : null}
+                    {optionalColumns.includes("signals") ? (
+                      <th className="w-72 border-r border-border px-3">Growth signals</th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -789,6 +846,31 @@ export function RelationshipsView({
                             (relationship.openActions
                               ? `${relationship.openActions} open action${relationship.openActions === 1 ? "" : "s"}`
                               : "No open action")}
+                        </td>
+                      ) : null}
+                      {optionalColumns.includes("headquarters") ? (
+                        <td className="truncate border-r border-border px-3 text-[13px] text-primary/60">
+                          {relationship.companyEnrichmentData?.headquarters || "—"}
+                        </td>
+                      ) : null}
+                      {optionalColumns.includes("employees") ? (
+                        <td className="truncate border-r border-border px-3 text-[13px] text-primary/60">
+                          {relationship.companyEnrichmentData?.employee_range || "—"}
+                        </td>
+                      ) : null}
+                      {optionalColumns.includes("funding") ? (
+                        <td className="truncate border-r border-border px-3 text-[13px] text-primary/60">
+                          {relationship.companyEnrichmentData?.funding_summary || "—"}
+                        </td>
+                      ) : null}
+                      {optionalColumns.includes("revenue") ? (
+                        <td className="truncate border-r border-border px-3 text-[13px] text-primary/60">
+                          {relationship.companyEnrichmentData?.revenue_range || "—"}
+                        </td>
+                      ) : null}
+                      {optionalColumns.includes("signals") ? (
+                        <td className="truncate border-r border-border px-3 text-[13px] text-primary/60">
+                          {relationship.companyEnrichmentData?.growth_signals || "—"}
                         </td>
                       ) : null}
                     </tr>
@@ -895,19 +977,19 @@ function PortfolioAttentionQueue({
       </div>
       <ol className="space-y-2">
         {items.slice(0, 10).map((item) => (
-          <li key={item.id} className="rounded-[2px] border border-border p-3">
+          <li key={item.id} className="rounded-none border border-border p-3">
             <div className="flex flex-wrap items-start gap-3">
               <Button
                 type="button"
                 variant="ghost"
-                className="h-auto min-w-0 flex-1 justify-start whitespace-normal rounded-[8px] p-0 text-left hover:bg-transparent"
+                className="h-auto min-w-0 flex-1 justify-start whitespace-normal rounded-none p-0 text-left hover:bg-transparent"
                 onClick={() => onOpenRelationship(item.relationshipId)}
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium text-primary">{item.relationshipName}</span>
                   <Badge
                     variant="outline"
-                    className={`rounded-[2px] capitalize ${
+                    className={`rounded-none capitalize ${
                       item.urgencyBand === "critical"
                         ? "border-red-500/40 text-red-600"
                         : item.urgencyBand === "high"
@@ -982,7 +1064,7 @@ function PortfolioAttentionQueue({
 function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
   if (statuses.length === 0) {
     return (
-      <Badge variant="outline" className="w-fit rounded-[2px] font-normal text-primary/45">
+      <Badge variant="outline" className="w-fit rounded-none font-normal text-primary/45">
         No evidence sources yet
       </Badge>
     );
@@ -997,7 +1079,7 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
           key={`${source.source}:${source.sourceAccountId}`}
           variant="outline"
           title={source.lastError || source.lastObservationAt}
-          className={`rounded-[2px] font-normal capitalize ${
+          className={`rounded-none font-normal capitalize ${
             source.status === "live"
               ? "border-emerald-500/30"
               : ["connected", "backfilling"].includes(source.status)
@@ -1075,11 +1157,11 @@ function SourceConnectionCards({
           return (
             <article
               key={item.source}
-              className="min-w-0 space-y-3 rounded-[2px] border border-border p-3"
+              className="min-w-0 space-y-3 rounded-none border border-border p-3"
             >
               <div className="flex items-start justify-between gap-2">
                 <h4 className="text-sm font-medium text-primary">{item.displayName}</h4>
-                <Badge variant="outline" className="rounded-[2px] capitalize">
+                <Badge variant="outline" className="rounded-none capitalize">
                   {humanize(account?.status || "not_connected")}
                 </Badge>
               </div>
@@ -1193,7 +1275,7 @@ function IdentityReviewInbox({
   return (
     <section
       aria-labelledby="identity-review-heading"
-      className="space-y-2 rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+      className="space-y-2 rounded-none border border-amber-500/30 bg-amber-500/5 p-3"
       data-capability="identity-review"
     >
       <div className="flex items-start justify-between gap-3">
@@ -1206,7 +1288,7 @@ function IdentityReviewInbox({
             receive actions until reviewed.
           </p>
         </div>
-        <Badge variant="outline" className="rounded-[2px] border-amber-500/40">
+        <Badge variant="outline" className="rounded-none border-amber-500/40">
           Human decision required
         </Badge>
       </div>
@@ -1313,7 +1395,7 @@ function MissionControlOverview({
                 : model.completeness.explanation}
             </p>
           </div>
-          <Badge variant="outline" className="rounded-[2px] font-normal">
+          <Badge variant="outline" className="rounded-none font-normal">
             {supported}/{total} state dimensions sourced
           </Badge>
         </div>
@@ -1368,7 +1450,7 @@ function MissionControlOverview({
                   {RELATIONSHIP_DIMENSION_LABELS[item.dimension] ??
                     relationshipLabel(item.dimension)}
                 </span>
-                <Badge variant="outline" className="rounded-[2px] font-normal">
+                <Badge variant="outline" className="rounded-none font-normal">
                   {item.supported
                     ? (AUTHORITY_LABELS[item.authority ?? ""] ?? relationshipLabel(item.authority))
                     : "Explicitly incomplete"}
@@ -1682,7 +1764,7 @@ function RelationshipSheet({
             {data?.relationship.primaryEmail}
             {data?.relationship.accountDomain ? ` · ${data.relationship.accountDomain}` : ""}
           </SheetDescription>
-          <span className="ml-auto rounded-md border border-border px-3 py-1.5 text-xs text-primary">
+          <span className="ml-auto rounded-none border border-border px-3 py-1.5 text-xs text-primary">
             Ask Oppulence
           </span>
         </SheetHeader>
@@ -1693,7 +1775,7 @@ function RelationshipSheet({
             <aside className="border-b border-border px-4 py-5 md:border-r md:border-b-0">
               <section>
                 <div className="flex items-center gap-3">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background-100 text-xs font-semibold text-primary/60">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-none border border-border bg-background-100 text-xs font-semibold text-primary/60">
                     {companyName(data.relationship).slice(0, 2).toUpperCase()}
                   </span>
                   <div className="min-w-0">
@@ -1723,12 +1805,12 @@ function RelationshipSheet({
               <section className="mt-5 border-t border-border pt-4">
                 <p className="mb-3 text-xs font-medium text-primary/55">Record details</p>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="rounded-[2px] capitalize">
+                  <Badge variant="outline" className="rounded-none capitalize">
                     {humanize(data.relationship.lifecycle)}
                   </Badge>
                   <Badge
                     variant="outline"
-                    className={`rounded-[2px] capitalize ${HEALTH_TONE[data.relationship.health]}`}
+                    className={`rounded-none capitalize ${HEALTH_TONE[data.relationship.health]}`}
                   >
                     {humanize(data.relationship.health)}
                   </Badge>
@@ -1787,6 +1869,40 @@ function RelationshipSheet({
                       </dd>
                     </>
                   ) : null}
+                  {Object.entries(data.relationship.companyEnrichmentData ?? {})
+                    .filter(
+                      ([field]) =>
+                        ![
+                          "industry_category",
+                          "company_description",
+                          "linkedin_company_url",
+                        ].includes(field),
+                    )
+                    .map(([field, value]) => {
+                      const source = (data.relationship.companyEnrichmentRefs?.[field] ?? [])
+                        .map(safeResearchCitationURL)
+                        .find((url): url is string => Boolean(url));
+                      return (
+                        <React.Fragment key={field}>
+                          <dt className="text-primary/40">
+                            {COMPANY_FIELD_LABELS[field] ?? humanize(field)}
+                          </dt>
+                          <dd className="text-primary/75">
+                            {value}
+                            {source ? (
+                              <a
+                                className="ml-2 text-[11px] text-primary/40 underline-offset-2 hover:underline"
+                                href={source}
+                                rel="noreferrer"
+                                target="_blank"
+                              >
+                                source
+                              </a>
+                            ) : null}
+                          </dd>
+                        </React.Fragment>
+                      );
+                    })}
                   <dt className="text-primary/40">People</dt>
                   <dd className="text-primary/75">{data.participants.length}</dd>
                   <dt className="text-primary/40">Lifecycle</dt>
@@ -1820,7 +1936,7 @@ function RelationshipSheet({
                 <button
                   type="button"
                   onClick={() => openSection("overview")}
-                  className="rounded-md bg-background-200 px-3 py-1.5 text-primary"
+                  className="rounded-none bg-background-200 px-3 py-1.5 text-primary"
                 >
                   Overview
                 </button>
@@ -1873,7 +1989,7 @@ function RelationshipSheet({
                       String(data.commitments.filter((item) => item.status === "open").length),
                     ],
                   ].map(([label, value]) => (
-                    <div key={label} className="min-h-24 rounded-md border border-border p-3">
+                    <div key={label} className="min-h-24 rounded-none border border-border p-3">
                       <p className="text-[11px] text-primary/40">{label}</p>
                       <p className="mt-5 text-sm font-medium capitalize text-primary">{value}</p>
                     </div>
@@ -1885,7 +2001,7 @@ function RelationshipSheet({
                   {data.emailThreads.length === 0 ? (
                     <EmptyText>No Gmail threads linked yet.</EmptyText>
                   ) : (
-                    <ul className="flex flex-col divide-y divide-primary/10 rounded-md border border-border">
+                    <ul className="flex flex-col divide-y divide-primary/10 rounded-none border border-border">
                       {data.emailThreads.map((thread) => (
                         <li key={thread.id} className="flex items-start justify-between gap-4 p-3">
                           <div className="min-w-0">
@@ -1995,7 +2111,7 @@ function RelationshipSheet({
                       {data.intelligence.liveCues.map((cue) => (
                         <li
                           key={cue.id}
-                          className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+                          className="rounded-none border border-amber-500/30 bg-amber-500/5 p-3"
                         >
                           <p className="text-xs font-medium text-primary">{cue.title}</p>
                           <p className="mt-1 text-xs text-primary/60">{cue.detail}</p>
@@ -2130,7 +2246,7 @@ function RelationshipSheet({
                   ) : (
                     <ul className="flex flex-col gap-2">
                       {data.recommendations.map((action) => (
-                        <li key={action.id} className="rounded-[2px] border border-border p-3">
+                        <li key={action.id} className="rounded-none border border-border p-3">
                           <div className="flex items-start justify-between gap-2">
                             <div>
                               <p className="text-sm font-medium text-primary">
@@ -2469,7 +2585,7 @@ function RelationshipSheet({
                       {data.intelligence.delta.changes.map((change) => (
                         <li
                           key={change.dimension}
-                          className="rounded-[2px] border border-border p-3"
+                          className="rounded-none border border-border p-3"
                         >
                           <p className="text-xs font-medium capitalize text-primary">
                             {humanize(change.dimension)}
@@ -2486,7 +2602,7 @@ function RelationshipSheet({
                     </ul>
                   ) : null}
                   {data.intelligence?.contradictionCases.length ? (
-                    <ul className="mb-3 space-y-2 rounded-[2px] border border-amber-500/30 p-3 text-xs text-primary/60">
+                    <ul className="mb-3 space-y-2 rounded-none border border-amber-500/30 p-3 text-xs text-primary/60">
                       {data.intelligence.contradictionCases.map((item) => (
                         <li key={item.caseId}>
                           <span className="font-medium capitalize text-primary">
@@ -2536,7 +2652,7 @@ function RelationshipSheet({
                     </p>
                   ) : null}
                   {data.intelligence?.delta.recommendationReason ? (
-                    <p className="mb-3 rounded-[2px] border border-border p-3 text-xs text-primary/60">
+                    <p className="mb-3 rounded-none border border-border p-3 text-xs text-primary/60">
                       <span className="font-medium text-primary">
                         Why the recommendation changed:
                       </span>{" "}
@@ -2571,7 +2687,7 @@ function RelationshipSheet({
                       {data.intelligence.governanceReceipts.slice(0, 5).map((receipt) => (
                         <li
                           key={receipt.receiptId}
-                          className="rounded-[2px] border border-border p-3 text-xs text-primary/60"
+                          className="rounded-none border border-border p-3 text-xs text-primary/60"
                         >
                           <p>
                             {humanize(receipt.capturePolicy)} · {humanize(receipt.routing)}
@@ -2596,14 +2712,14 @@ function RelationshipSheet({
                   {timeline.length === 0 ? (
                     <EmptyText>No observations yet.</EmptyText>
                   ) : (
-                    <ul className="flex flex-col divide-y divide-primary/10 rounded-[2px] border border-border">
+                    <ul className="flex flex-col divide-y divide-primary/10 rounded-none border border-border">
                       {timeline.map((observation) => (
                         <li key={observation.id} className="p-3">
                           <Button
                             type="button"
                             variant="ghost"
                             onClick={() => void revealEvidence(observation)}
-                            className="h-auto w-full justify-start rounded-[8px] p-0 text-left hover:bg-transparent"
+                            className="h-auto w-full justify-start rounded-none p-0 text-left hover:bg-transparent"
                           >
                             <div className="flex items-center justify-between gap-2">
                               <span className="text-xs font-medium capitalize text-primary">
@@ -2618,7 +2734,7 @@ function RelationshipSheet({
                             </p>
                           </Button>
                           {observation.id in evidence ? (
-                            <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap rounded-[2px] bg-background-100 p-2 text-[11px] text-primary/60 dark:bg-background-200">
+                            <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap rounded-none bg-background-100 p-2 text-[11px] text-primary/60 dark:bg-background-200">
                               {JSON.stringify(evidence[observation.id], null, 2)}
                             </pre>
                           ) : null}
@@ -2656,7 +2772,7 @@ function CorrectionReview({
   if (items.length === 0) return null;
   return (
     <section
-      className="rounded-[2px] border border-amber-500/30 bg-amber-500/5 p-3"
+      className="rounded-none border border-amber-500/30 bg-amber-500/5 p-3"
       data-capability="conversation-review"
     >
       <SectionTitle title={`Focused evidence review (${items.length})`} />
@@ -2667,7 +2783,7 @@ function CorrectionReview({
         {items.map((item) => {
           const draft = drafts[item.id] ?? item.currentValue;
           return (
-            <li key={item.id} className="rounded-[2px] border border-border bg-background p-3">
+            <li key={item.id} className="rounded-none border border-border bg-background p-3">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-medium text-primary">{item.label}</p>
                 <span className="text-[11px] text-primary/40">
@@ -2771,7 +2887,7 @@ function StateCorrection({
 
   return (
     <section
-      className="rounded-[2px] border border-dashed border-border p-3"
+      className="rounded-none border border-dashed border-border p-3"
       data-capability="state-correction"
     >
       <SectionTitle title="Correct the model" />
@@ -2787,7 +2903,7 @@ function StateCorrection({
           <SelectTrigger size="sm">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="app-shell rounded-[2px]">
+          <SelectContent className="app-shell rounded-none">
             {["health", "lifecycle", "engagement", "sentiment"].map((item) => (
               <SelectItem key={item} value={item}>
                 {humanize(item)}
@@ -2799,7 +2915,7 @@ function StateCorrection({
           <SelectTrigger size="sm">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="app-shell rounded-[2px]">
+          <SelectContent className="app-shell rounded-none">
             {options.map((item) => (
               <SelectItem key={item} value={item}>
                 {humanize(item)}

@@ -1872,6 +1872,7 @@ export const getGetRevenueImpactResponseMock = (
   overrideResponse: Partial<Extract<RevenueImpact, object>> = {},
 ): RevenueImpact => ({
   approved: faker.number.int(),
+  atRiskRelationships: faker.number.int(),
   byDetector: faker.helpers.arrayElement([
     Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
       detector: faker.helpers.arrayElement([
@@ -1883,9 +1884,11 @@ export const getGetRevenueImpactResponseMock = (
     })),
     undefined,
   ]),
+  criticalRelationships: faker.number.int(),
   dismissed: faker.helpers.arrayElement([faker.number.int(), undefined]),
   executed: faker.number.int(),
   handled: faker.number.int(),
+  longestOverdueDays: faker.number.int(),
   lost: faker.helpers.arrayElement([faker.number.int(), undefined]),
   meetingRate: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.number.float({ fractionDigits: 2 }), null]),
@@ -1894,11 +1897,22 @@ export const getGetRevenueImpactResponseMock = (
   meetingsBooked: faker.helpers.arrayElement([faker.number.int(), undefined]),
   open: faker.number.int(),
   outcomes: faker.helpers.arrayElement([{}, undefined]),
+  overdueByThem: faker.number.int(),
+  overdueByUs: faker.number.int(),
+  overdueCommitments: faker.number.int(),
+  portfolioRiskScore: faker.number.int(),
+  relationships: faker.number.int(),
   replied: faker.helpers.arrayElement([faker.number.int(), undefined]),
   replyRate: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.number.float({ fractionDigits: 2 }), null]),
     undefined,
   ]),
+  riskReasons: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
+      reason: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      relationships: faker.number.int(),
+    }),
+  ),
   snoozed: faker.helpers.arrayElement([faker.number.int(), undefined]),
   surfaced: faker.number.int(),
   won: faker.helpers.arrayElement([faker.number.int(), undefined]),

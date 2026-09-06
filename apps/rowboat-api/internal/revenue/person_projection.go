@@ -27,7 +27,7 @@ import (
 // assertionPriority, then valid_from, then confidence, then id — so "why does it say
 // she works at Acme?" has one answer everywhere in the system.
 
-const personProjectorVersion = 3
+const personProjectorVersion = 4
 
 /** Dimensions that accumulate every active value. */
 var personMultiValuedDimensions = [...]string{"alias", "handle"}
@@ -311,6 +311,8 @@ func projectPersonAttributes(
 		"locale":       value("locale"),
 		"seniority":    value("seniority"),
 		"location":     value("location"),
+		"linkedin_url": value("linkedin_url"),
+		"department":   value("department"),
 		"employment":   employment,
 	}
 	encoded, err := json.Marshal(projected)
@@ -335,6 +337,8 @@ func projectPersonAttributes(
 		SetLocale(value("locale")).
 		SetSeniority(value("seniority")).
 		SetLocation(value("location")).
+		SetLinkedinURL(value("linkedin_url")).
+		SetDepartment(value("department")).
 		SetEmploymentStatus(employment).
 		SetAttributesHash(hash).
 		SetAttributesVersion(p.AttributesVersion + 1).

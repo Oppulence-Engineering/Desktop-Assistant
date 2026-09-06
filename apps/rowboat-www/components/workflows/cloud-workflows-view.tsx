@@ -43,9 +43,11 @@ import { Separator } from "@oppulence/ui/components/separator";
 import { Switch } from "@oppulence/ui/components/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import { Textarea } from "@oppulence/ui/components/textarea";
+import { VisualWorkflowBuilder } from "@/components/features/workflows/visual-workflow-builder/visual-workflow-builder";
 
 import {
   cancelCloudRun,
+  compileVisualWorkflow,
   createCloudTask,
   ensureFirstPartyWorkflows,
   getCloudSchedule,
@@ -57,6 +59,7 @@ import {
   listCloudTemplates,
   retryCloudRun,
   taskCron,
+  taskVisualWorkflow,
   triggerCloudRun,
   updateCloudTask,
   type CloudRun,
@@ -66,12 +69,19 @@ import {
   type CloudSchedule,
   type CloudTask,
   type CloudTaskTemplate,
+  type VisualWorkflowDefinition,
 } from "@/lib/cloud-workflows";
 import { cn } from "@/lib/utils";
 
 type FilterValue<T extends string> = T | "all";
 
 const terminalStatuses = new Set<CloudRunStatus>(["succeeded", "failed", "stopped"]);
+const defaultVisualWorkflow = (): VisualWorkflowDefinition => ({
+  version: 1,
+  trigger: { kind: "communication" },
+  actions: ["review-account", "draft-email"],
+  objective: "",
+});
 
 function formatDate(value?: string | null): string {
   if (!value) return "—";
@@ -146,7 +156,7 @@ function WorkflowTaskList({
       {rows.map((task) => (
         <Button
           className={cn(
-            "h-auto w-full justify-start rounded-lg px-2.5 py-2.5 text-left",
+            "h-auto w-full justify-start rounded-none px-2.5 py-2.5 text-left",
             selectedSlug === task.slug && "bg-muted",
           )}
           key={task.id}
@@ -155,7 +165,7 @@ function WorkflowTaskList({
         >
           <span
             className={cn(
-              "mt-0.5 size-2 shrink-0 rounded-full",
+              "mt-0.5 size-2 shrink-0 rounded-none",
               task.active ? "bg-emerald-500" : "bg-muted-foreground/40",
             )}
           />
@@ -189,7 +199,7 @@ function CreateWorkflowDialog({
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState("");
   const [instructions, setInstructions] = React.useState("");
-  const [cron, setCron] = React.useState("");
+  const [workflow, setWorkflow] = React.useState<VisualWorkflowDefinition>(defaultVisualWorkflow);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -197,17 +207,19 @@ function CreateWorkflowDialog({
     setBusy(true);
     setError(null);
     try {
+      const definition = { ...workflow, objective: instructions.trim() };
+      const compiled = compileVisualWorkflow(definition);
       const task = await createCloudTask({
         name,
-        instructions,
+        instructions: compiled.instructions,
         active: true,
-        cronExpr: cron.trim() || undefined,
+        triggers: compiled.triggers,
       });
       onCreated(task);
       setOpen(false);
       setName("");
       setInstructions("");
-      setCron("");
+      setWorkflow(defaultVisualWorkflow());
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not create workflow");
     } finally {
@@ -232,11 +244,11 @@ function CreateWorkflowDialog({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button className="rounded-full" size="sm">
+        <Button className="rounded-none" size="sm">
           <Plus className="size-4" /> New workflow
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="max-h-[calc(100vh-32px)] overflow-x-hidden overflow-y-auto rounded-none sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Create a cloud workflow</DialogTitle>
           <DialogDescription>
@@ -259,27 +271,20 @@ function CreateWorkflowDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="workflow-instructions">Instructions</Label>
+              <Label htmlFor="workflow-instructions">Objective</Label>
               <Textarea
                 id="workflow-instructions"
                 onChange={(event) => setInstructions(event.target.value)}
-                placeholder="Explain what evidence to inspect and what artifact to produce."
-                rows={6}
+                placeholder="For example: recover stalled enterprise evaluations before the promised follow-up is overdue."
+                rows={3}
                 value={instructions}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="workflow-cron">
-                Cron schedule <span className="font-normal text-muted-foreground">(optional)</span>
-              </Label>
-              <Input
-                className="font-mono"
-                id="workflow-cron"
-                onChange={(event) => setCron(event.target.value)}
-                placeholder="0 9 * * 1-5"
-                value={cron}
-              />
-            </div>
+            <VisualWorkflowBuilder
+              aria-label="Workflow definition"
+              onChange={setWorkflow}
+              value={workflow}
+            />
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
             <DialogFooter>
               <Button disabled={busy || !name.trim() || !instructions.trim()} onClick={create}>
@@ -344,12 +349,21 @@ function TaskInspector({
     active?: boolean;
     cronExpr?: string;
     instructions?: string;
+    triggers?: Record<string, unknown>;
   }) => Promise<void>;
 }) {
   const [cron, setCron] = React.useState(taskCron(task));
   const [instructions, setInstructions] = React.useState(task.instructions);
+  const [workflow, setWorkflow] = React.useState<VisualWorkflowDefinition | null>(() =>
+    taskVisualWorkflow(task),
+  );
   const editable = !task.systemManaged;
-  const dirty = editable && (cron !== taskCron(task) || instructions !== task.instructions);
+  const originalWorkflow = taskVisualWorkflow(task);
+  const dirty =
+    editable &&
+    (workflow
+      ? JSON.stringify(workflow) !== JSON.stringify(originalWorkflow)
+      : cron !== taskCron(task) || instructions !== task.instructions);
 
   return (
     <ScrollArea className="min-h-0 flex-1">
@@ -370,7 +384,7 @@ function TaskInspector({
             <p className="mt-1 font-mono text-xs text-muted-foreground">{task.slug}</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 rounded-full border px-3 py-1.5">
+            <div className="flex items-center gap-2 rounded-none border px-3 py-1.5">
               <span className="text-xs text-muted-foreground">Active</span>
               <Switch
                 checked={task.active}
@@ -379,7 +393,7 @@ function TaskInspector({
                 size="sm"
               />
             </div>
-            <Button className="rounded-full" disabled={busy || !task.active} onClick={onRun}>
+            <Button className="rounded-none" disabled={busy || !task.active} onClick={onRun}>
               {busy ? (
                 <CircleNotch className="size-4 animate-spin" />
               ) : (
@@ -416,42 +430,91 @@ function TaskInspector({
         ) : null}
 
         <Separator />
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
-          <div className="space-y-2">
-            <Label htmlFor="task-instructions">Instructions</Label>
-            <Textarea
+        {workflow ? (
+          <div className="space-y-4">
+            <VisualWorkflowBuilder
+              aria-label="Workflow definition"
               disabled={!editable}
-              id="task-instructions"
-              onChange={(event) => setInstructions(event.target.value)}
-              rows={10}
-              value={instructions}
+              onChange={setWorkflow}
+              value={workflow}
             />
-            {task.systemManaged ? (
-              <p className="text-xs text-muted-foreground">
-                Version {task.templateVersion} is maintained by Oppulence. You can pause it without
-                losing its definition.
+            <div className="space-y-2">
+              <Label htmlFor="task-objective">Objective</Label>
+              <Textarea
+                disabled={!editable}
+                id="task-objective"
+                onChange={(event) => setWorkflow({ ...workflow, objective: event.target.value })}
+                rows={3}
+                value={workflow.objective ?? ""}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+            <div className="space-y-2">
+              <Label htmlFor="task-instructions">Instructions</Label>
+              <Textarea
+                disabled={!editable}
+                id="task-instructions"
+                onChange={(event) => setInstructions(event.target.value)}
+                rows={10}
+                value={instructions}
+              />
+              {task.systemManaged ? (
+                <p className="text-xs text-muted-foreground">
+                  Version {task.templateVersion} is maintained by Oppulence. You can pause it
+                  without losing its definition.
+                </p>
+              ) : null}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="task-cron">Cron schedule</Label>
+              <Input
+                className="font-mono"
+                disabled={!editable}
+                id="task-cron"
+                onChange={(event) => setCron(event.target.value)}
+                value={cron}
+              />
+              <p className="text-xs leading-5 text-muted-foreground">
+                Times use the workflow timezone. Empty schedules remain manual.
               </p>
-            ) : null}
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="task-cron">Cron schedule</Label>
-            <Input
-              className="font-mono"
-              disabled={!editable}
-              id="task-cron"
-              onChange={(event) => setCron(event.target.value)}
-              value={cron}
-            />
-            <p className="text-xs leading-5 text-muted-foreground">
-              Times use the workflow timezone. Empty schedules remain manual.
-            </p>
-          </div>
-        </div>
+        )}
+        {editable && !workflow ? (
+          <Button
+            className="rounded-none"
+            onClick={() =>
+              setWorkflow({
+                ...defaultVisualWorkflow(),
+                trigger: taskCron(task)
+                  ? { kind: "schedule", cronExpr: taskCron(task) }
+                  : { kind: "manual" },
+                objective: task.instructions,
+              })
+            }
+            type="button"
+            variant="outline"
+          >
+            <Plus /> Convert to visual workflow
+          </Button>
+        ) : null}
         {editable ? (
           <div className="flex justify-end">
             <Button
               disabled={!dirty || busy}
-              onClick={() => void onUpdate({ cronExpr: cron, instructions })}
+              onClick={() => {
+                if (workflow) {
+                  const compiled = compileVisualWorkflow(workflow);
+                  void onUpdate({
+                    instructions: compiled.instructions,
+                    triggers: compiled.triggers,
+                  });
+                  return;
+                }
+                void onUpdate({ cronExpr: cron, instructions });
+              }}
               variant="outline"
             >
               Save definition
@@ -487,7 +550,7 @@ function TaskInspector({
           </Card>
         ) : null}
         {task.scheduleSyncError || task.lastRunError ? (
-          <div className="flex gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          <div className="flex gap-2 rounded-none border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
             <Warning className="mt-0.5 size-4 shrink-0" />
             {task.scheduleSyncError || task.lastRunError}
           </div>
@@ -573,10 +636,10 @@ function RunInspector({
           </div>
         </div>
         {run.summary ? (
-          <p className="rounded-md bg-muted p-2.5 text-xs leading-5">{run.summary}</p>
+          <p className="rounded-none bg-muted p-2.5 text-xs leading-5">{run.summary}</p>
         ) : null}
         {run.error ? (
-          <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2.5 text-xs leading-5 text-destructive">
+          <p className="rounded-none border border-destructive/30 bg-destructive/5 p-2.5 text-xs leading-5 text-destructive">
             {run.errorCode ? `${run.errorCode}: ` : ""}
             {run.error}
           </p>
@@ -591,10 +654,10 @@ function RunInspector({
           <ol className="space-y-3">
             {events.map((event) => (
               <li className="grid grid-cols-[28px_minmax(0,1fr)] gap-2 text-xs" key={event.id}>
-                <span className="flex size-7 items-center justify-center rounded-full border bg-background font-mono text-[10px]">
+                <span className="flex size-7 items-center justify-center rounded-none border bg-background font-mono text-[10px]">
                   {event.seq}
                 </span>
-                <div className="min-w-0 rounded-md border p-2.5">
+                <div className="min-w-0 rounded-none border p-2.5">
                   <div className="flex justify-between gap-2">
                     <span className="font-medium">{event.type}</span>
                     <time className="text-muted-foreground">{formatDate(event.receivedAt)}</time>
@@ -967,7 +1030,7 @@ export function CloudWorkflowsView({
               {runs.map((run) => (
                 <Button
                   className={cn(
-                    "h-auto w-full justify-start rounded-lg px-2.5 py-2 text-left",
+                    "h-auto w-full justify-start rounded-none px-2.5 py-2 text-left",
                     selectedRun?.runId === run.runId && "bg-muted",
                   )}
                   key={run.id}

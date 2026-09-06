@@ -232,6 +232,12 @@ func (_u *RelationshipUpdate) SetCompanyEnrichmentRefs(v map[string][]string) *R
 	return _u
 }
 
+// SetCompanyEnrichmentData sets the "company_enrichment_data" field.
+func (_u *RelationshipUpdate) SetCompanyEnrichmentData(v map[string]string) *RelationshipUpdate {
+	_u.mutation.SetCompanyEnrichmentData(v)
+	return _u
+}
+
 // SetCompanyEnrichmentVersion sets the "company_enrichment_version" field.
 func (_u *RelationshipUpdate) SetCompanyEnrichmentVersion(v string) *RelationshipUpdate {
 	_u.mutation.SetCompanyEnrichmentVersion(v)
@@ -1431,6 +1437,9 @@ func (_u *RelationshipUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if value, ok := _u.mutation.CompanyEnrichmentRefs(); ok {
 		_spec.SetField(relationship.FieldCompanyEnrichmentRefs, field.TypeJSON, value)
 	}
+	if value, ok := _u.mutation.CompanyEnrichmentData(); ok {
+		_spec.SetField(relationship.FieldCompanyEnrichmentData, field.TypeJSON, value)
+	}
 	if value, ok := _u.mutation.CompanyEnrichmentVersion(); ok {
 		_spec.SetField(relationship.FieldCompanyEnrichmentVersion, field.TypeString, value)
 	}
@@ -2590,6 +2599,12 @@ func (_u *RelationshipUpdateOne) ClearLinkedinURL() *RelationshipUpdateOne {
 // SetCompanyEnrichmentRefs sets the "company_enrichment_refs" field.
 func (_u *RelationshipUpdateOne) SetCompanyEnrichmentRefs(v map[string][]string) *RelationshipUpdateOne {
 	_u.mutation.SetCompanyEnrichmentRefs(v)
+	return _u
+}
+
+// SetCompanyEnrichmentData sets the "company_enrichment_data" field.
+func (_u *RelationshipUpdateOne) SetCompanyEnrichmentData(v map[string]string) *RelationshipUpdateOne {
+	_u.mutation.SetCompanyEnrichmentData(v)
 	return _u
 }
 
@@ -3821,6 +3836,9 @@ func (_u *RelationshipUpdateOne) sqlSave(ctx context.Context) (_node *Relationsh
 	}
 	if value, ok := _u.mutation.CompanyEnrichmentRefs(); ok {
 		_spec.SetField(relationship.FieldCompanyEnrichmentRefs, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.CompanyEnrichmentData(); ok {
+		_spec.SetField(relationship.FieldCompanyEnrichmentData, field.TypeJSON, value)
 	}
 	if value, ok := _u.mutation.CompanyEnrichmentVersion(); ok {
 		_spec.SetField(relationship.FieldCompanyEnrichmentVersion, field.TypeString, value)

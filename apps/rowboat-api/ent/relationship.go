@@ -47,6 +47,8 @@ type Relationship struct {
 	LinkedinURL string `json:"linkedin_url,omitempty"`
 	// CompanyEnrichmentRefs holds the value of the "company_enrichment_refs" field.
 	CompanyEnrichmentRefs map[string][]string `json:"company_enrichment_refs,omitempty"`
+	// CompanyEnrichmentData holds the value of the "company_enrichment_data" field.
+	CompanyEnrichmentData map[string]string `json:"company_enrichment_data,omitempty"`
 	// CompanyEnrichmentVersion holds the value of the "company_enrichment_version" field.
 	CompanyEnrichmentVersion string `json:"company_enrichment_version,omitempty"`
 	// CompanyEnrichedAt holds the value of the "company_enriched_at" field.
@@ -362,7 +364,7 @@ func (*Relationship) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case relationship.FieldResourceRefs, relationship.FieldCompanyCategories, relationship.FieldCompanyEnrichmentRefs, relationship.FieldRisks, relationship.FieldMilestones:
+		case relationship.FieldResourceRefs, relationship.FieldCompanyCategories, relationship.FieldCompanyEnrichmentRefs, relationship.FieldCompanyEnrichmentData, relationship.FieldRisks, relationship.FieldMilestones:
 			values[i] = new([]byte)
 		case relationship.FieldStateVersion, relationship.FieldProjectorVersion:
 			values[i] = new(sql.NullInt64)
@@ -479,6 +481,14 @@ func (_m *Relationship) assignValues(columns []string, values []any) error {
 			} else if value != nil && len(*value) > 0 {
 				if err := json.Unmarshal(*value, &_m.CompanyEnrichmentRefs); err != nil {
 					return fmt.Errorf("unmarshal field company_enrichment_refs: %w", err)
+				}
+			}
+		case relationship.FieldCompanyEnrichmentData:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field company_enrichment_data", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.CompanyEnrichmentData); err != nil {
+					return fmt.Errorf("unmarshal field company_enrichment_data: %w", err)
 				}
 			}
 		case relationship.FieldCompanyEnrichmentVersion:
@@ -796,6 +806,9 @@ func (_m *Relationship) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("company_enrichment_refs=")
 	builder.WriteString(fmt.Sprintf("%v", _m.CompanyEnrichmentRefs))
+	builder.WriteString(", ")
+	builder.WriteString("company_enrichment_data=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CompanyEnrichmentData))
 	builder.WriteString(", ")
 	builder.WriteString("company_enrichment_version=")
 	builder.WriteString(_m.CompanyEnrichmentVersion)

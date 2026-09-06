@@ -160,7 +160,7 @@ func newGRPCServer(cfg appconfig.Config, log *zap.Logger) *grpc.Server {
 }
 
 // exemptStreamWriteDeadline clears the per-connection write deadline for
-// long-lived streaming routes (the same set RequestTimeout exempts). The
+// long-lived routes (the same set RequestTimeout exempts). The
 // server-wide WriteTimeout is a hard deadline on the whole response, so
 // without this any LLM SSE completion or events stream outliving it is
 // severed mid-write. This wraps OUTSIDE otelhttp so it sees the raw

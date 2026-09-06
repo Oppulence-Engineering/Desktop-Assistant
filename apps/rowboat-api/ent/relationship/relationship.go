@@ -42,6 +42,8 @@ const (
 	FieldLinkedinURL = "linkedin_url"
 	// FieldCompanyEnrichmentRefs holds the string denoting the company_enrichment_refs field in the database.
 	FieldCompanyEnrichmentRefs = "company_enrichment_refs"
+	// FieldCompanyEnrichmentData holds the string denoting the company_enrichment_data field in the database.
+	FieldCompanyEnrichmentData = "company_enrichment_data"
 	// FieldCompanyEnrichmentVersion holds the string denoting the company_enrichment_version field in the database.
 	FieldCompanyEnrichmentVersion = "company_enrichment_version"
 	// FieldCompanyEnrichedAt holds the string denoting the company_enriched_at field in the database.
@@ -287,6 +289,7 @@ var Columns = []string{
 	FieldCompanyDescription,
 	FieldLinkedinURL,
 	FieldCompanyEnrichmentRefs,
+	FieldCompanyEnrichmentData,
 	FieldCompanyEnrichmentVersion,
 	FieldCompanyEnrichedAt,
 	FieldSummary,
@@ -360,6 +363,8 @@ var (
 	DefaultCompanyCategories []string
 	// DefaultCompanyEnrichmentRefs holds the default value on creation for the "company_enrichment_refs" field.
 	DefaultCompanyEnrichmentRefs map[string][]string
+	// DefaultCompanyEnrichmentData holds the default value on creation for the "company_enrichment_data" field.
+	DefaultCompanyEnrichmentData map[string]string
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.

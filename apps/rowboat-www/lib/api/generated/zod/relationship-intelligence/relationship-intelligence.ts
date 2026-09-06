@@ -479,6 +479,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                   .datetime({ offset: true })
                   .nullish()
                   .describe("When the company profile was last enriched."),
+                companyEnrichmentData: zod
+                  .record(zod.string(), zod.unknown())
+                  .optional()
+                  .describe("Cited public-web company facts keyed by enrichment field."),
                 companyEnrichmentRefs: zod
                   .record(zod.string(), zod.unknown())
                   .optional()
@@ -624,6 +628,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                   .datetime({ offset: true })
                   .nullish()
                   .describe("When the company profile was last enriched."),
+                companyEnrichmentData: zod
+                  .record(zod.string(), zod.unknown())
+                  .optional()
+                  .describe("Cited public-web company facts keyed by enrichment field."),
                 companyEnrichmentRefs: zod
                   .record(zod.string(), zod.unknown())
                   .optional()
@@ -818,6 +826,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
           .datetime({ offset: true })
           .nullish()
           .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -944,6 +956,10 @@ export const GetRelationshipIdentityCandidate200Response = zod
           .datetime({ offset: true })
           .nullish()
           .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -1131,6 +1147,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
           .datetime({ offset: true })
           .nullish()
           .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -1257,6 +1277,10 @@ export const DecideRelationshipIdentityCandidate200Response = zod
           .datetime({ offset: true })
           .nullish()
           .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -2689,6 +2713,10 @@ export const ListRelationships200Response = zod
               .datetime({ offset: true })
               .nullish()
               .describe("When the company profile was last enriched."),
+            companyEnrichmentData: zod
+              .record(zod.string(), zod.unknown())
+              .optional()
+              .describe("Cited public-web company facts keyed by enrichment field."),
             companyEnrichmentRefs: zod
               .record(zod.string(), zod.unknown())
               .optional()
@@ -2816,6 +2844,10 @@ export const CreateRelationship201Response = zod
       .datetime({ offset: true })
       .nullish()
       .describe("When the company profile was last enriched."),
+    companyEnrichmentData: zod
+      .record(zod.string(), zod.unknown())
+      .optional()
+      .describe("Cited public-web company facts keyed by enrichment field."),
     companyEnrichmentRefs: zod
       .record(zod.string(), zod.unknown())
       .optional()
@@ -3888,6 +3920,10 @@ export const GetRelationship200Response = zod
           .datetime({ offset: true })
           .nullish()
           .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -4105,6 +4141,10 @@ export const RetractRelationshipAssertion200Response = zod
       .datetime({ offset: true })
       .nullish()
       .describe("When the company profile was last enriched."),
+    companyEnrichmentData: zod
+      .record(zod.string(), zod.unknown())
+      .optional()
+      .describe("Cited public-web company facts keyed by enrichment field."),
     companyEnrichmentRefs: zod
       .record(zod.string(), zod.unknown())
       .optional()
@@ -5003,6 +5043,10 @@ export const CorrectConversationEvidence201Response = zod
           .datetime({ offset: true })
           .nullish()
           .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -5381,6 +5425,10 @@ export const DecideConversationChange201Response = zod
           .datetime({ offset: true })
           .nullish()
           .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
         companyEnrichmentRefs: zod
           .record(zod.string(), zod.unknown())
           .optional()
@@ -5793,6 +5841,10 @@ export const CorrectRelationship201Response = zod
       .datetime({ offset: true })
       .nullish()
       .describe("When the company profile was last enriched."),
+    companyEnrichmentData: zod
+      .record(zod.string(), zod.unknown())
+      .optional()
+      .describe("Cited public-web company facts keyed by enrichment field."),
     companyEnrichmentRefs: zod
       .record(zod.string(), zod.unknown())
       .optional()

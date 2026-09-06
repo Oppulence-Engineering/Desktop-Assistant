@@ -6,6 +6,7 @@ export type WorkspaceNote = {
   body: string;
   content?: unknown;
   meetingLinked?: boolean;
+  liveLinked?: boolean;
   relationshipId: string;
   relationshipName: string;
   occurredAt: string;
@@ -43,6 +44,7 @@ export function collapseWorkspaceNotes(
         body: String(observation.normalizedFacts.body || ""),
         content: observation.normalizedFacts.content,
         meetingLinked: Boolean(observation.normalizedFacts.meetingLinked),
+        liveLinked: Boolean(observation.normalizedFacts.liveLinked),
         relationshipId: relationships[index].id,
         relationshipName: relationships[index].displayName,
         occurredAt: observation.occurredAt,

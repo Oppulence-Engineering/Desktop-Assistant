@@ -145,6 +145,7 @@ export interface RevenueRelationship {
   companyDescription?: string;
   linkedinUrl?: string;
   companyEnrichmentRefs?: Record<string, string[]>;
+  companyEnrichmentData?: Record<string, string>;
   companyEnrichedAt?: string;
 }
 
@@ -172,6 +173,8 @@ export interface RelationshipPerson {
   locale?: string;
   seniority?: string;
   location?: string;
+  linkedinUrl?: string;
+  department?: string;
   status: string;
   employmentStatus?: "unknown" | "active" | "departed";
   relationshipCount: number;
@@ -957,6 +960,15 @@ export interface RevenueImpact {
   meetingRate: number | null;
   outcomes: Record<string, number>;
   byDetector: DetectorStat[];
+  relationships: number;
+  atRiskRelationships: number;
+  criticalRelationships: number;
+  portfolioRiskScore: number;
+  overdueCommitments: number;
+  overdueByUs: number;
+  overdueByThem: number;
+  longestOverdueDays: number;
+  riskReasons: Array<{ reason: string; relationships: number }>;
 }
 
 export const RelationshipGraphNodeKindSchema = z.enum([

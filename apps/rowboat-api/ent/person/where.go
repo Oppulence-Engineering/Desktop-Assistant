@@ -116,6 +116,16 @@ func Location(v string) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldLocation, v))
 }
 
+// LinkedinURL applies equality check predicate on the "linkedin_url" field. It's identical to LinkedinURLEQ.
+func LinkedinURL(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldLinkedinURL, v))
+}
+
+// Department applies equality check predicate on the "department" field. It's identical to DepartmentEQ.
+func Department(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldDepartment, v))
+}
+
 // EmploymentStatus applies equality check predicate on the "employment_status" field. It's identical to EmploymentStatusEQ.
 func EmploymentStatus(v string) predicate.Person {
 	return predicate.Person(sql.FieldEQ(FieldEmploymentStatus, v))
@@ -989,6 +999,156 @@ func LocationEqualFold(v string) predicate.Person {
 // LocationContainsFold applies the ContainsFold predicate on the "location" field.
 func LocationContainsFold(v string) predicate.Person {
 	return predicate.Person(sql.FieldContainsFold(FieldLocation, v))
+}
+
+// LinkedinURLEQ applies the EQ predicate on the "linkedin_url" field.
+func LinkedinURLEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldLinkedinURL, v))
+}
+
+// LinkedinURLNEQ applies the NEQ predicate on the "linkedin_url" field.
+func LinkedinURLNEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldNEQ(FieldLinkedinURL, v))
+}
+
+// LinkedinURLIn applies the In predicate on the "linkedin_url" field.
+func LinkedinURLIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldIn(FieldLinkedinURL, vs...))
+}
+
+// LinkedinURLNotIn applies the NotIn predicate on the "linkedin_url" field.
+func LinkedinURLNotIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldNotIn(FieldLinkedinURL, vs...))
+}
+
+// LinkedinURLGT applies the GT predicate on the "linkedin_url" field.
+func LinkedinURLGT(v string) predicate.Person {
+	return predicate.Person(sql.FieldGT(FieldLinkedinURL, v))
+}
+
+// LinkedinURLGTE applies the GTE predicate on the "linkedin_url" field.
+func LinkedinURLGTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldGTE(FieldLinkedinURL, v))
+}
+
+// LinkedinURLLT applies the LT predicate on the "linkedin_url" field.
+func LinkedinURLLT(v string) predicate.Person {
+	return predicate.Person(sql.FieldLT(FieldLinkedinURL, v))
+}
+
+// LinkedinURLLTE applies the LTE predicate on the "linkedin_url" field.
+func LinkedinURLLTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldLTE(FieldLinkedinURL, v))
+}
+
+// LinkedinURLContains applies the Contains predicate on the "linkedin_url" field.
+func LinkedinURLContains(v string) predicate.Person {
+	return predicate.Person(sql.FieldContains(FieldLinkedinURL, v))
+}
+
+// LinkedinURLHasPrefix applies the HasPrefix predicate on the "linkedin_url" field.
+func LinkedinURLHasPrefix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasPrefix(FieldLinkedinURL, v))
+}
+
+// LinkedinURLHasSuffix applies the HasSuffix predicate on the "linkedin_url" field.
+func LinkedinURLHasSuffix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasSuffix(FieldLinkedinURL, v))
+}
+
+// LinkedinURLIsNil applies the IsNil predicate on the "linkedin_url" field.
+func LinkedinURLIsNil() predicate.Person {
+	return predicate.Person(sql.FieldIsNull(FieldLinkedinURL))
+}
+
+// LinkedinURLNotNil applies the NotNil predicate on the "linkedin_url" field.
+func LinkedinURLNotNil() predicate.Person {
+	return predicate.Person(sql.FieldNotNull(FieldLinkedinURL))
+}
+
+// LinkedinURLEqualFold applies the EqualFold predicate on the "linkedin_url" field.
+func LinkedinURLEqualFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldEqualFold(FieldLinkedinURL, v))
+}
+
+// LinkedinURLContainsFold applies the ContainsFold predicate on the "linkedin_url" field.
+func LinkedinURLContainsFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldContainsFold(FieldLinkedinURL, v))
+}
+
+// DepartmentEQ applies the EQ predicate on the "department" field.
+func DepartmentEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldEQ(FieldDepartment, v))
+}
+
+// DepartmentNEQ applies the NEQ predicate on the "department" field.
+func DepartmentNEQ(v string) predicate.Person {
+	return predicate.Person(sql.FieldNEQ(FieldDepartment, v))
+}
+
+// DepartmentIn applies the In predicate on the "department" field.
+func DepartmentIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldIn(FieldDepartment, vs...))
+}
+
+// DepartmentNotIn applies the NotIn predicate on the "department" field.
+func DepartmentNotIn(vs ...string) predicate.Person {
+	return predicate.Person(sql.FieldNotIn(FieldDepartment, vs...))
+}
+
+// DepartmentGT applies the GT predicate on the "department" field.
+func DepartmentGT(v string) predicate.Person {
+	return predicate.Person(sql.FieldGT(FieldDepartment, v))
+}
+
+// DepartmentGTE applies the GTE predicate on the "department" field.
+func DepartmentGTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldGTE(FieldDepartment, v))
+}
+
+// DepartmentLT applies the LT predicate on the "department" field.
+func DepartmentLT(v string) predicate.Person {
+	return predicate.Person(sql.FieldLT(FieldDepartment, v))
+}
+
+// DepartmentLTE applies the LTE predicate on the "department" field.
+func DepartmentLTE(v string) predicate.Person {
+	return predicate.Person(sql.FieldLTE(FieldDepartment, v))
+}
+
+// DepartmentContains applies the Contains predicate on the "department" field.
+func DepartmentContains(v string) predicate.Person {
+	return predicate.Person(sql.FieldContains(FieldDepartment, v))
+}
+
+// DepartmentHasPrefix applies the HasPrefix predicate on the "department" field.
+func DepartmentHasPrefix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasPrefix(FieldDepartment, v))
+}
+
+// DepartmentHasSuffix applies the HasSuffix predicate on the "department" field.
+func DepartmentHasSuffix(v string) predicate.Person {
+	return predicate.Person(sql.FieldHasSuffix(FieldDepartment, v))
+}
+
+// DepartmentIsNil applies the IsNil predicate on the "department" field.
+func DepartmentIsNil() predicate.Person {
+	return predicate.Person(sql.FieldIsNull(FieldDepartment))
+}
+
+// DepartmentNotNil applies the NotNil predicate on the "department" field.
+func DepartmentNotNil() predicate.Person {
+	return predicate.Person(sql.FieldNotNull(FieldDepartment))
+}
+
+// DepartmentEqualFold applies the EqualFold predicate on the "department" field.
+func DepartmentEqualFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldEqualFold(FieldDepartment, v))
+}
+
+// DepartmentContainsFold applies the ContainsFold predicate on the "department" field.
+func DepartmentContainsFold(v string) predicate.Person {
+	return predicate.Person(sql.FieldContainsFold(FieldDepartment, v))
 }
 
 // EmploymentStatusEQ applies the EQ predicate on the "employment_status" field.

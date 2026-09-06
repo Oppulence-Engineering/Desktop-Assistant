@@ -809,6 +809,7 @@ type ComplexityRoot struct {
 		AttributesHash          func(childComplexity int) int
 		AttributesVersion       func(childComplexity int) int
 		CreatedAt               func(childComplexity int) int
+		Department              func(childComplexity int) int
 		DisplayName             func(childComplexity int) int
 		EmploymentStatus        func(childComplexity int) int
 		ExistingMergeCandidates func(childComplexity int) int
@@ -817,6 +818,7 @@ type ComplexityRoot struct {
 		Identities              func(childComplexity int) int
 		InteractionStats        func(childComplexity int) int
 		LastInteractionAt       func(childComplexity int) int
+		LinkedinURL             func(childComplexity int) int
 		Locale                  func(childComplexity int) int
 		Location                func(childComplexity int) int
 		MergedAt                func(childComplexity int) int
@@ -5262,6 +5264,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Person.CreatedAt(childComplexity), true
+	case "Person.department":
+		if e.ComplexityRoot.Person.Department == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Person.Department(childComplexity), true
 	case "Person.displayName":
 		if e.ComplexityRoot.Person.DisplayName == nil {
 			break
@@ -5310,6 +5318,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Person.LastInteractionAt(childComplexity), true
+	case "Person.linkedinURL":
+		if e.ComplexityRoot.Person.LinkedinURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Person.LinkedinURL(childComplexity), true
 	case "Person.locale":
 		if e.ComplexityRoot.Person.Locale == nil {
 			break
@@ -11089,6 +11103,10 @@ func (ec *executionContext) childFields_Person(ctx context.Context, field graphq
 		return ec.fieldContext_Person_seniority(ctx, field)
 	case "location":
 		return ec.fieldContext_Person_location(ctx, field)
+	case "linkedinURL":
+		return ec.fieldContext_Person_linkedinURL(ctx, field)
+	case "department":
+		return ec.fieldContext_Person_department(ctx, field)
 	case "employmentStatus":
 		return ec.fieldContext_Person_employmentStatus(ctx, field)
 	case "attributesVersion":
@@ -28250,6 +28268,52 @@ func (ec *executionContext) _Person_location(ctx context.Context, field graphql.
 	)
 }
 func (ec *executionContext) fieldContext_Person_location(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Person", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Person_linkedinURL(ctx context.Context, field graphql.CollectedField, obj *ent.Person) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Person_linkedinURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LinkedinURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Person_linkedinURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Person", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Person_department(ctx context.Context, field graphql.CollectedField, obj *ent.Person) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Person_department(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.Department, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Person_department(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Person", field, false, false, errors.New("field of type String does not have child fields"))
 }
 
@@ -88737,7 +88801,7 @@ func (ec *executionContext) unmarshalInputPersonWhereInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "displayName", "displayNameNEQ", "displayNameIn", "displayNameNotIn", "displayNameGT", "displayNameGTE", "displayNameLT", "displayNameLTE", "displayNameContains", "displayNameHasPrefix", "displayNameHasSuffix", "displayNameEqualFold", "displayNameContainsFold", "title", "titleNEQ", "titleIn", "titleNotIn", "titleGT", "titleGTE", "titleLT", "titleLTE", "titleContains", "titleHasPrefix", "titleHasSuffix", "titleIsNil", "titleNotNil", "titleEqualFold", "titleContainsFold", "orgName", "orgNameNEQ", "orgNameIn", "orgNameNotIn", "orgNameGT", "orgNameGTE", "orgNameLT", "orgNameLTE", "orgNameContains", "orgNameHasPrefix", "orgNameHasSuffix", "orgNameIsNil", "orgNameNotNil", "orgNameEqualFold", "orgNameContainsFold", "orgDomain", "orgDomainNEQ", "orgDomainIn", "orgDomainNotIn", "orgDomainGT", "orgDomainGTE", "orgDomainLT", "orgDomainLTE", "orgDomainContains", "orgDomainHasPrefix", "orgDomainHasSuffix", "orgDomainIsNil", "orgDomainNotNil", "orgDomainEqualFold", "orgDomainContainsFold", "timezone", "timezoneNEQ", "timezoneIn", "timezoneNotIn", "timezoneGT", "timezoneGTE", "timezoneLT", "timezoneLTE", "timezoneContains", "timezoneHasPrefix", "timezoneHasSuffix", "timezoneIsNil", "timezoneNotNil", "timezoneEqualFold", "timezoneContainsFold", "locale", "localeNEQ", "localeIn", "localeNotIn", "localeGT", "localeGTE", "localeLT", "localeLTE", "localeContains", "localeHasPrefix", "localeHasSuffix", "localeIsNil", "localeNotNil", "localeEqualFold", "localeContainsFold", "seniority", "seniorityNEQ", "seniorityIn", "seniorityNotIn", "seniorityGT", "seniorityGTE", "seniorityLT", "seniorityLTE", "seniorityContains", "seniorityHasPrefix", "seniorityHasSuffix", "seniorityIsNil", "seniorityNotNil", "seniorityEqualFold", "seniorityContainsFold", "location", "locationNEQ", "locationIn", "locationNotIn", "locationGT", "locationGTE", "locationLT", "locationLTE", "locationContains", "locationHasPrefix", "locationHasSuffix", "locationIsNil", "locationNotNil", "locationEqualFold", "locationContainsFold", "employmentStatus", "employmentStatusNEQ", "employmentStatusIn", "employmentStatusNotIn", "employmentStatusGT", "employmentStatusGTE", "employmentStatusLT", "employmentStatusLTE", "employmentStatusContains", "employmentStatusHasPrefix", "employmentStatusHasSuffix", "employmentStatusEqualFold", "employmentStatusContainsFold", "attributesVersion", "attributesVersionNEQ", "attributesVersionIn", "attributesVersionNotIn", "attributesVersionGT", "attributesVersionGTE", "attributesVersionLT", "attributesVersionLTE", "attributesHash", "attributesHashNEQ", "attributesHashIn", "attributesHashNotIn", "attributesHashGT", "attributesHashGTE", "attributesHashLT", "attributesHashLTE", "attributesHashContains", "attributesHashHasPrefix", "attributesHashHasSuffix", "attributesHashIsNil", "attributesHashNotNil", "attributesHashEqualFold", "attributesHashContainsFold", "projectorVersion", "projectorVersionNEQ", "projectorVersionIn", "projectorVersionNotIn", "projectorVersionGT", "projectorVersionGTE", "projectorVersionLT", "projectorVersionLTE", "projectedAt", "projectedAtNEQ", "projectedAtIn", "projectedAtNotIn", "projectedAtGT", "projectedAtGTE", "projectedAtLT", "projectedAtLTE", "projectedAtIsNil", "projectedAtNotNil", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "mergedIntoPersonID", "mergedIntoPersonIDNEQ", "mergedIntoPersonIDIn", "mergedIntoPersonIDNotIn", "mergedIntoPersonIDGT", "mergedIntoPersonIDGTE", "mergedIntoPersonIDLT", "mergedIntoPersonIDLTE", "mergedIntoPersonIDIsNil", "mergedIntoPersonIDNotNil", "mergedAt", "mergedAtNEQ", "mergedAtIn", "mergedAtNotIn", "mergedAtGT", "mergedAtGTE", "mergedAtLT", "mergedAtLTE", "mergedAtIsNil", "mergedAtNotNil", "firstInteractionAt", "firstInteractionAtNEQ", "firstInteractionAtIn", "firstInteractionAtNotIn", "firstInteractionAtGT", "firstInteractionAtGTE", "firstInteractionAtLT", "firstInteractionAtLTE", "firstInteractionAtIsNil", "firstInteractionAtNotNil", "lastInteractionAt", "lastInteractionAtNEQ", "lastInteractionAtIn", "lastInteractionAtNotIn", "lastInteractionAtGT", "lastInteractionAtGTE", "lastInteractionAtLT", "lastInteractionAtLTE", "lastInteractionAtIsNil", "lastInteractionAtNotNil", "relationshipCount", "relationshipCountNEQ", "relationshipCountIn", "relationshipCountNotIn", "relationshipCountGT", "relationshipCountGTE", "relationshipCountLT", "relationshipCountLTE", "hasWorkspace", "hasWorkspaceWith", "hasUser", "hasUserWith", "hasIdentities", "hasIdentitiesWith", "hasAttributes", "hasAttributesWith", "hasParticipants", "hasParticipantsWith", "hasInteractionStats", "hasInteractionStatsWith", "hasProposedMergeCandidates", "hasProposedMergeCandidatesWith", "hasExistingMergeCandidates", "hasExistingMergeCandidatesWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "displayName", "displayNameNEQ", "displayNameIn", "displayNameNotIn", "displayNameGT", "displayNameGTE", "displayNameLT", "displayNameLTE", "displayNameContains", "displayNameHasPrefix", "displayNameHasSuffix", "displayNameEqualFold", "displayNameContainsFold", "title", "titleNEQ", "titleIn", "titleNotIn", "titleGT", "titleGTE", "titleLT", "titleLTE", "titleContains", "titleHasPrefix", "titleHasSuffix", "titleIsNil", "titleNotNil", "titleEqualFold", "titleContainsFold", "orgName", "orgNameNEQ", "orgNameIn", "orgNameNotIn", "orgNameGT", "orgNameGTE", "orgNameLT", "orgNameLTE", "orgNameContains", "orgNameHasPrefix", "orgNameHasSuffix", "orgNameIsNil", "orgNameNotNil", "orgNameEqualFold", "orgNameContainsFold", "orgDomain", "orgDomainNEQ", "orgDomainIn", "orgDomainNotIn", "orgDomainGT", "orgDomainGTE", "orgDomainLT", "orgDomainLTE", "orgDomainContains", "orgDomainHasPrefix", "orgDomainHasSuffix", "orgDomainIsNil", "orgDomainNotNil", "orgDomainEqualFold", "orgDomainContainsFold", "timezone", "timezoneNEQ", "timezoneIn", "timezoneNotIn", "timezoneGT", "timezoneGTE", "timezoneLT", "timezoneLTE", "timezoneContains", "timezoneHasPrefix", "timezoneHasSuffix", "timezoneIsNil", "timezoneNotNil", "timezoneEqualFold", "timezoneContainsFold", "locale", "localeNEQ", "localeIn", "localeNotIn", "localeGT", "localeGTE", "localeLT", "localeLTE", "localeContains", "localeHasPrefix", "localeHasSuffix", "localeIsNil", "localeNotNil", "localeEqualFold", "localeContainsFold", "seniority", "seniorityNEQ", "seniorityIn", "seniorityNotIn", "seniorityGT", "seniorityGTE", "seniorityLT", "seniorityLTE", "seniorityContains", "seniorityHasPrefix", "seniorityHasSuffix", "seniorityIsNil", "seniorityNotNil", "seniorityEqualFold", "seniorityContainsFold", "location", "locationNEQ", "locationIn", "locationNotIn", "locationGT", "locationGTE", "locationLT", "locationLTE", "locationContains", "locationHasPrefix", "locationHasSuffix", "locationIsNil", "locationNotNil", "locationEqualFold", "locationContainsFold", "linkedinURL", "linkedinURLNEQ", "linkedinURLIn", "linkedinURLNotIn", "linkedinURLGT", "linkedinURLGTE", "linkedinURLLT", "linkedinURLLTE", "linkedinURLContains", "linkedinURLHasPrefix", "linkedinURLHasSuffix", "linkedinURLIsNil", "linkedinURLNotNil", "linkedinURLEqualFold", "linkedinURLContainsFold", "department", "departmentNEQ", "departmentIn", "departmentNotIn", "departmentGT", "departmentGTE", "departmentLT", "departmentLTE", "departmentContains", "departmentHasPrefix", "departmentHasSuffix", "departmentIsNil", "departmentNotNil", "departmentEqualFold", "departmentContainsFold", "employmentStatus", "employmentStatusNEQ", "employmentStatusIn", "employmentStatusNotIn", "employmentStatusGT", "employmentStatusGTE", "employmentStatusLT", "employmentStatusLTE", "employmentStatusContains", "employmentStatusHasPrefix", "employmentStatusHasSuffix", "employmentStatusEqualFold", "employmentStatusContainsFold", "attributesVersion", "attributesVersionNEQ", "attributesVersionIn", "attributesVersionNotIn", "attributesVersionGT", "attributesVersionGTE", "attributesVersionLT", "attributesVersionLTE", "attributesHash", "attributesHashNEQ", "attributesHashIn", "attributesHashNotIn", "attributesHashGT", "attributesHashGTE", "attributesHashLT", "attributesHashLTE", "attributesHashContains", "attributesHashHasPrefix", "attributesHashHasSuffix", "attributesHashIsNil", "attributesHashNotNil", "attributesHashEqualFold", "attributesHashContainsFold", "projectorVersion", "projectorVersionNEQ", "projectorVersionIn", "projectorVersionNotIn", "projectorVersionGT", "projectorVersionGTE", "projectorVersionLT", "projectorVersionLTE", "projectedAt", "projectedAtNEQ", "projectedAtIn", "projectedAtNotIn", "projectedAtGT", "projectedAtGTE", "projectedAtLT", "projectedAtLTE", "projectedAtIsNil", "projectedAtNotNil", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "mergedIntoPersonID", "mergedIntoPersonIDNEQ", "mergedIntoPersonIDIn", "mergedIntoPersonIDNotIn", "mergedIntoPersonIDGT", "mergedIntoPersonIDGTE", "mergedIntoPersonIDLT", "mergedIntoPersonIDLTE", "mergedIntoPersonIDIsNil", "mergedIntoPersonIDNotNil", "mergedAt", "mergedAtNEQ", "mergedAtIn", "mergedAtNotIn", "mergedAtGT", "mergedAtGTE", "mergedAtLT", "mergedAtLTE", "mergedAtIsNil", "mergedAtNotNil", "firstInteractionAt", "firstInteractionAtNEQ", "firstInteractionAtIn", "firstInteractionAtNotIn", "firstInteractionAtGT", "firstInteractionAtGTE", "firstInteractionAtLT", "firstInteractionAtLTE", "firstInteractionAtIsNil", "firstInteractionAtNotNil", "lastInteractionAt", "lastInteractionAtNEQ", "lastInteractionAtIn", "lastInteractionAtNotIn", "lastInteractionAtGT", "lastInteractionAtGTE", "lastInteractionAtLT", "lastInteractionAtLTE", "lastInteractionAtIsNil", "lastInteractionAtNotNil", "relationshipCount", "relationshipCountNEQ", "relationshipCountIn", "relationshipCountNotIn", "relationshipCountGT", "relationshipCountGTE", "relationshipCountLT", "relationshipCountLTE", "hasWorkspace", "hasWorkspaceWith", "hasUser", "hasUserWith", "hasIdentities", "hasIdentitiesWith", "hasAttributes", "hasAttributesWith", "hasParticipants", "hasParticipantsWith", "hasInteractionStats", "hasInteractionStatsWith", "hasProposedMergeCandidates", "hasProposedMergeCandidatesWith", "hasExistingMergeCandidates", "hasExistingMergeCandidatesWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -89759,6 +89823,216 @@ func (ec *executionContext) unmarshalInputPersonWhereInput(ctx context.Context, 
 				return it, err
 			}
 			it.LocationContainsFold = data
+		case "linkedinURL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURL"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURL = data
+		case "linkedinURLNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLNEQ = data
+		case "linkedinURLIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLIn = data
+		case "linkedinURLNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLNotIn = data
+		case "linkedinURLGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLGT = data
+		case "linkedinURLGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLGTE = data
+		case "linkedinURLLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLLT = data
+		case "linkedinURLLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLLTE = data
+		case "linkedinURLContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLContains = data
+		case "linkedinURLHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLHasPrefix = data
+		case "linkedinURLHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLHasSuffix = data
+		case "linkedinURLIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLIsNil = data
+		case "linkedinURLNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLNotNil = data
+		case "linkedinURLEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLEqualFold = data
+		case "linkedinURLContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLContainsFold = data
+		case "department":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("department"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Department = data
+		case "departmentNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentNEQ = data
+		case "departmentIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentIn = data
+		case "departmentNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentNotIn = data
+		case "departmentGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentGT = data
+		case "departmentGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentGTE = data
+		case "departmentLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentLT = data
+		case "departmentLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentLTE = data
+		case "departmentContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentContains = data
+		case "departmentHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentHasPrefix = data
+		case "departmentHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentHasSuffix = data
+		case "departmentIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentIsNil = data
+		case "departmentNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentNotNil = data
+		case "departmentEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentEqualFold = data
+		case "departmentContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("departmentContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DepartmentContainsFold = data
 		case "employmentStatus":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("employmentStatus"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -127840,6 +128114,10 @@ func (ec *executionContext) _Person(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Person_seniority(ctx, field, obj)
 		case "location":
 			out.Values[i] = ec._Person_location(ctx, field, obj)
+		case "linkedinURL":
+			out.Values[i] = ec._Person_linkedinURL(ctx, field, obj)
+		case "department":
+			out.Values[i] = ec._Person_department(ctx, field, obj)
 		case "employmentStatus":
 			out.Values[i] = ec._Person_employmentStatus(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

@@ -2246,6 +2246,9 @@ export const GetRevenueDigest401Response = zod
 export const GetRevenueImpact200Response = zod
   .strictObject({
     approved: zod.int().describe("Actions approved."),
+    atRiskRelationships: zod
+      .int()
+      .describe("Distinct relationships with at least one open attention item."),
     byDetector: zod
       .array(
         zod
@@ -2258,9 +2261,13 @@ export const GetRevenueImpact200Response = zod
       )
       .optional()
       .describe("Per-detector contribution."),
+    criticalRelationships: zod
+      .int()
+      .describe("Distinct relationships with a critical open attention item."),
     dismissed: zod.int().optional().describe("Actions dismissed."),
     executed: zod.int().describe("Actions executed (draft created or email sent)."),
     handled: zod.int().describe("Actions marked handled."),
+    longestOverdueDays: zod.int().describe("Whole days the oldest open commitment is overdue."),
     lost: zod.int().optional().describe("Deals marked lost."),
     meetingRate: zod
       .number()
@@ -2272,11 +2279,30 @@ export const GetRevenueImpact200Response = zod
       .record(zod.string(), zod.unknown())
       .optional()
       .describe("Raw outcome-kind counts."),
+    overdueByThem: zod.int().describe("Overdue commitments promised by the counterparty."),
+    overdueByUs: zod.int().describe("Overdue commitments promised by the user or their team."),
+    overdueCommitments: zod.int().describe("Confirmed or accepted open commitments past due."),
+    portfolioRiskScore: zod
+      .int()
+      .describe(
+        "Deterministic 0-100 portfolio exposure score from each account's highest open risk.",
+      ),
+    relationships: zod.int().describe("Active relationships in the portfolio."),
     replied: zod.int().optional().describe("Replies observed."),
     replyRate: zod
       .number()
       .nullish()
       .describe("Reply rate = replied \/ executed; null with no denominator."),
+    riskReasons: zod
+      .array(
+        zod
+          .strictObject({
+            reason: zod.string().describe("Stable reason code."),
+            relationships: zod.int().describe("Distinct affected relationships."),
+          })
+          .describe("Relationship risk reason."),
+      )
+      .describe("Deterministic reasons currently exposing relationships."),
     snoozed: zod.int().optional().describe("Actions snoozed."),
     surfaced: zod.int().describe("Total actions ever surfaced."),
     won: zod.int().optional().describe("Deals marked won."),

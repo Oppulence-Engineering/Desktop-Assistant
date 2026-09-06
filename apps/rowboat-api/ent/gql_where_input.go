@@ -25652,6 +25652,40 @@ type PersonWhereInput struct {
 	LocationEqualFold    *string  `json:"locationEqualFold,omitempty"`
 	LocationContainsFold *string  `json:"locationContainsFold,omitempty"`
 
+	// "linkedin_url" field predicates.
+	LinkedinURL             *string  `json:"linkedinURL,omitempty"`
+	LinkedinURLNEQ          *string  `json:"linkedinURLNEQ,omitempty"`
+	LinkedinURLIn           []string `json:"linkedinURLIn,omitempty"`
+	LinkedinURLNotIn        []string `json:"linkedinURLNotIn,omitempty"`
+	LinkedinURLGT           *string  `json:"linkedinURLGT,omitempty"`
+	LinkedinURLGTE          *string  `json:"linkedinURLGTE,omitempty"`
+	LinkedinURLLT           *string  `json:"linkedinURLLT,omitempty"`
+	LinkedinURLLTE          *string  `json:"linkedinURLLTE,omitempty"`
+	LinkedinURLContains     *string  `json:"linkedinURLContains,omitempty"`
+	LinkedinURLHasPrefix    *string  `json:"linkedinURLHasPrefix,omitempty"`
+	LinkedinURLHasSuffix    *string  `json:"linkedinURLHasSuffix,omitempty"`
+	LinkedinURLIsNil        bool     `json:"linkedinURLIsNil,omitempty"`
+	LinkedinURLNotNil       bool     `json:"linkedinURLNotNil,omitempty"`
+	LinkedinURLEqualFold    *string  `json:"linkedinURLEqualFold,omitempty"`
+	LinkedinURLContainsFold *string  `json:"linkedinURLContainsFold,omitempty"`
+
+	// "department" field predicates.
+	Department             *string  `json:"department,omitempty"`
+	DepartmentNEQ          *string  `json:"departmentNEQ,omitempty"`
+	DepartmentIn           []string `json:"departmentIn,omitempty"`
+	DepartmentNotIn        []string `json:"departmentNotIn,omitempty"`
+	DepartmentGT           *string  `json:"departmentGT,omitempty"`
+	DepartmentGTE          *string  `json:"departmentGTE,omitempty"`
+	DepartmentLT           *string  `json:"departmentLT,omitempty"`
+	DepartmentLTE          *string  `json:"departmentLTE,omitempty"`
+	DepartmentContains     *string  `json:"departmentContains,omitempty"`
+	DepartmentHasPrefix    *string  `json:"departmentHasPrefix,omitempty"`
+	DepartmentHasSuffix    *string  `json:"departmentHasSuffix,omitempty"`
+	DepartmentIsNil        bool     `json:"departmentIsNil,omitempty"`
+	DepartmentNotNil       bool     `json:"departmentNotNil,omitempty"`
+	DepartmentEqualFold    *string  `json:"departmentEqualFold,omitempty"`
+	DepartmentContainsFold *string  `json:"departmentContainsFold,omitempty"`
+
 	// "employment_status" field predicates.
 	EmploymentStatus             *string  `json:"employmentStatus,omitempty"`
 	EmploymentStatusNEQ          *string  `json:"employmentStatusNEQ,omitempty"`
@@ -26408,6 +26442,96 @@ func (i *PersonWhereInput) P() (predicate.Person, error) {
 	}
 	if i.LocationContainsFold != nil {
 		predicates = append(predicates, person.LocationContainsFold(*i.LocationContainsFold))
+	}
+	if i.LinkedinURL != nil {
+		predicates = append(predicates, person.LinkedinURLEQ(*i.LinkedinURL))
+	}
+	if i.LinkedinURLNEQ != nil {
+		predicates = append(predicates, person.LinkedinURLNEQ(*i.LinkedinURLNEQ))
+	}
+	if len(i.LinkedinURLIn) > 0 {
+		predicates = append(predicates, person.LinkedinURLIn(i.LinkedinURLIn...))
+	}
+	if len(i.LinkedinURLNotIn) > 0 {
+		predicates = append(predicates, person.LinkedinURLNotIn(i.LinkedinURLNotIn...))
+	}
+	if i.LinkedinURLGT != nil {
+		predicates = append(predicates, person.LinkedinURLGT(*i.LinkedinURLGT))
+	}
+	if i.LinkedinURLGTE != nil {
+		predicates = append(predicates, person.LinkedinURLGTE(*i.LinkedinURLGTE))
+	}
+	if i.LinkedinURLLT != nil {
+		predicates = append(predicates, person.LinkedinURLLT(*i.LinkedinURLLT))
+	}
+	if i.LinkedinURLLTE != nil {
+		predicates = append(predicates, person.LinkedinURLLTE(*i.LinkedinURLLTE))
+	}
+	if i.LinkedinURLContains != nil {
+		predicates = append(predicates, person.LinkedinURLContains(*i.LinkedinURLContains))
+	}
+	if i.LinkedinURLHasPrefix != nil {
+		predicates = append(predicates, person.LinkedinURLHasPrefix(*i.LinkedinURLHasPrefix))
+	}
+	if i.LinkedinURLHasSuffix != nil {
+		predicates = append(predicates, person.LinkedinURLHasSuffix(*i.LinkedinURLHasSuffix))
+	}
+	if i.LinkedinURLIsNil {
+		predicates = append(predicates, person.LinkedinURLIsNil())
+	}
+	if i.LinkedinURLNotNil {
+		predicates = append(predicates, person.LinkedinURLNotNil())
+	}
+	if i.LinkedinURLEqualFold != nil {
+		predicates = append(predicates, person.LinkedinURLEqualFold(*i.LinkedinURLEqualFold))
+	}
+	if i.LinkedinURLContainsFold != nil {
+		predicates = append(predicates, person.LinkedinURLContainsFold(*i.LinkedinURLContainsFold))
+	}
+	if i.Department != nil {
+		predicates = append(predicates, person.DepartmentEQ(*i.Department))
+	}
+	if i.DepartmentNEQ != nil {
+		predicates = append(predicates, person.DepartmentNEQ(*i.DepartmentNEQ))
+	}
+	if len(i.DepartmentIn) > 0 {
+		predicates = append(predicates, person.DepartmentIn(i.DepartmentIn...))
+	}
+	if len(i.DepartmentNotIn) > 0 {
+		predicates = append(predicates, person.DepartmentNotIn(i.DepartmentNotIn...))
+	}
+	if i.DepartmentGT != nil {
+		predicates = append(predicates, person.DepartmentGT(*i.DepartmentGT))
+	}
+	if i.DepartmentGTE != nil {
+		predicates = append(predicates, person.DepartmentGTE(*i.DepartmentGTE))
+	}
+	if i.DepartmentLT != nil {
+		predicates = append(predicates, person.DepartmentLT(*i.DepartmentLT))
+	}
+	if i.DepartmentLTE != nil {
+		predicates = append(predicates, person.DepartmentLTE(*i.DepartmentLTE))
+	}
+	if i.DepartmentContains != nil {
+		predicates = append(predicates, person.DepartmentContains(*i.DepartmentContains))
+	}
+	if i.DepartmentHasPrefix != nil {
+		predicates = append(predicates, person.DepartmentHasPrefix(*i.DepartmentHasPrefix))
+	}
+	if i.DepartmentHasSuffix != nil {
+		predicates = append(predicates, person.DepartmentHasSuffix(*i.DepartmentHasSuffix))
+	}
+	if i.DepartmentIsNil {
+		predicates = append(predicates, person.DepartmentIsNil())
+	}
+	if i.DepartmentNotNil {
+		predicates = append(predicates, person.DepartmentNotNil())
+	}
+	if i.DepartmentEqualFold != nil {
+		predicates = append(predicates, person.DepartmentEqualFold(*i.DepartmentEqualFold))
+	}
+	if i.DepartmentContainsFold != nil {
+		predicates = append(predicates, person.DepartmentContainsFold(*i.DepartmentContainsFold))
 	}
 	if i.EmploymentStatus != nil {
 		predicates = append(predicates, person.EmploymentStatusEQ(*i.EmploymentStatus))

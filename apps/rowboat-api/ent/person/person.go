@@ -42,6 +42,10 @@ const (
 	FieldSeniority = "seniority"
 	// FieldLocation holds the string denoting the location field in the database.
 	FieldLocation = "location"
+	// FieldLinkedinURL holds the string denoting the linkedin_url field in the database.
+	FieldLinkedinURL = "linkedin_url"
+	// FieldDepartment holds the string denoting the department field in the database.
+	FieldDepartment = "department"
 	// FieldEmploymentStatus holds the string denoting the employment_status field in the database.
 	FieldEmploymentStatus = "employment_status"
 	// FieldAttributesVersion holds the string denoting the attributes_version field in the database.
@@ -156,6 +160,8 @@ var Columns = []string{
 	FieldLocale,
 	FieldSeniority,
 	FieldLocation,
+	FieldLinkedinURL,
+	FieldDepartment,
 	FieldEmploymentStatus,
 	FieldAttributesVersion,
 	FieldAttributesHash,
@@ -299,6 +305,16 @@ func BySeniority(opts ...sql.OrderTermOption) OrderOption {
 // ByLocation orders the results by the location field.
 func ByLocation(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLocation, opts...).ToFunc()
+}
+
+// ByLinkedinURL orders the results by the linkedin_url field.
+func ByLinkedinURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLinkedinURL, opts...).ToFunc()
+}
+
+// ByDepartment orders the results by the department field.
+func ByDepartment(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDepartment, opts...).ToFunc()
 }
 
 // ByEmploymentStatus orders the results by the employment_status field.

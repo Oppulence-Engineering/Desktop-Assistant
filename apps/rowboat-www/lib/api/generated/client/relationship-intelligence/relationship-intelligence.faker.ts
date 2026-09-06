@@ -315,6 +315,7 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
           undefined,
         ]),
+        companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
         companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
         displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
         engagement: faker.helpers.arrayElement([
@@ -474,6 +475,7 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
           undefined,
         ]),
+        companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
         companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
         displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
         engagement: faker.helpers.arrayElement([
@@ -665,6 +667,7 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       undefined,
     ]),
+    companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
     engagement: faker.helpers.arrayElement([
@@ -817,6 +820,7 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       undefined,
     ]),
+    companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
     engagement: faker.helpers.arrayElement([
@@ -1000,6 +1004,7 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       undefined,
     ]),
+    companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
     engagement: faker.helpers.arrayElement([
@@ -1152,6 +1157,7 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       undefined,
     ]),
+    companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
     engagement: faker.helpers.arrayElement([
@@ -2194,6 +2200,7 @@ export const getListRelationshipsResponseMock = (
         faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
         undefined,
       ]),
+      companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
       companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
       displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
       engagement: faker.helpers.arrayElement([
@@ -2308,6 +2315,7 @@ export const getCreateRelationshipResponseMock = (
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
   ]),
+  companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
   companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
   displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
   engagement: faker.helpers.arrayElement([
@@ -3264,6 +3272,7 @@ export const getGetRelationshipResponseMock = (
         faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
         undefined,
       ]),
+      companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
       companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
       displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
       engagement: faker.helpers.arrayElement([
@@ -3388,6 +3397,7 @@ export const getRetractRelationshipAssertionResponseMock = (
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
   ]),
+  companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
   companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
   displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
   engagement: faker.helpers.arrayElement([
@@ -3849,6 +3859,7 @@ export const getCorrectConversationEvidenceResponseMock = (
       faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       undefined,
     ]),
+    companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
     engagement: faker.helpers.arrayElement([
@@ -4157,6 +4168,7 @@ export const getDecideConversationChangeResponseMock = (
       faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       undefined,
     ]),
+    companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
     companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
     engagement: faker.helpers.arrayElement([
@@ -4316,6 +4328,7 @@ export const getCorrectRelationshipResponseMock = (
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
   ]),
+  companyEnrichmentData: faker.helpers.arrayElement([{}, undefined]),
   companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
   displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
   engagement: faker.helpers.arrayElement([

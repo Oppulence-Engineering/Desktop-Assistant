@@ -97,7 +97,21 @@ export function safeResearchCitationURL(value: string) {
 
 export const getWorkspace = () => call<RevenueWorkspace>("/revenue-workspaces/current");
 
-export const getImpact = () => call<RevenueImpact>("/revenue-impact");
+export const getImpact = async () => {
+  const impact = await call<RevenueImpact>("/revenue-impact");
+  return {
+    ...impact,
+    relationships: impact.relationships ?? 0,
+    atRiskRelationships: impact.atRiskRelationships ?? 0,
+    criticalRelationships: impact.criticalRelationships ?? 0,
+    portfolioRiskScore: impact.portfolioRiskScore ?? 0,
+    overdueCommitments: impact.overdueCommitments ?? 0,
+    overdueByUs: impact.overdueByUs ?? 0,
+    overdueByThem: impact.overdueByThem ?? 0,
+    longestOverdueDays: impact.longestOverdueDays ?? 0,
+    riskReasons: impact.riskReasons ?? [],
+  };
+};
 
 export const getDigest = () => call<RevenueDigest>("/revenue-digest");
 
@@ -345,6 +359,8 @@ export const getResearchEstimate = () => call<ResearchEstimate>("/research/peopl
 export const getCompanyResearchEstimate = () =>
   call<ResearchEstimate>("/research/companies/estimate");
 
+const researchSignal = () => AbortSignal.timeout(10 * 60_000);
+
 export const enrichPendingPersons = async (batchSize: number) => {
   const { personIds } = await call<{ personIds: string[] }>("/research/people/pending");
   const outcomes: PersonResearchOutcome[] = [];
@@ -353,6 +369,7 @@ export const enrichPendingPersons = async (batchSize: number) => {
     const result = await call<{ outcomes: PersonResearchOutcome[] }>("/research/people", {
       method: "POST",
       body: JSON.stringify({ personIds: personIds.slice(offset, offset + size) }),
+      signal: researchSignal(),
     });
     outcomes.push(...(result.outcomes ?? []));
   }
@@ -369,6 +386,7 @@ export const enrichPendingCompanies = async (batchSize: number) => {
     const result = await call<{ outcomes: CompanyResearchOutcome[] }>("/research/companies", {
       method: "POST",
       body: JSON.stringify({ relationshipIds: relationshipIds.slice(offset, offset + size) }),
+      signal: researchSignal(),
     });
     outcomes.push(...(result.outcomes ?? []));
   }
