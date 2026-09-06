@@ -52,6 +52,14 @@ assert_equal "$configured_approval_digest" "$approval_digest" "production approv
 render_environment production
 render_environment staging
 
+kind_manifest="$tmp_dir/kind.yaml"
+helm template rowboat-api "$chart" -f "$chart/values-kind.yaml" >"$kind_manifest"
+assert_equal "$(config_value "$kind_manifest" AUTO_MIGRATE)" "false" "kind versioned migrations"
+assert_equal \
+  "$(config_value "$kind_manifest" CONNECTOR_ALLOW_LOCAL_ENTITLEMENT_DEVELOPMENT)" \
+  "true" \
+  "kind local connector entitlements"
+
 if helm template rowboat-api "$chart" \
   -f "$chart/values-production.yaml" \
   --set-string connectorBroker.productionApprovalManifestDigest= \
@@ -79,7 +87,8 @@ for required in \
   'service="rowboat-api-rowboat-api-metrics"' \
   'maxUnavailable: 0' \
   'maxSurge: 1' \
-  'maxUnavailable: "1"' \
+  'maxUnavailable: 1' \
+  'minAvailable: 1' \
   'unhealthyPodEvictionPolicy: IfHealthyBudget' \
   'selectPolicy: Disabled' \
   'periodSeconds: 2' \

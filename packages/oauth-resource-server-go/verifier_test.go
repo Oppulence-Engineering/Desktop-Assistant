@@ -467,6 +467,21 @@ func TestRemoteURLPolicyRejectsUnsafeURLs(t *testing.T) {
 	}
 }
 
+func TestPrivateHTTPJWKSRequiresExplicitDevelopmentOption(t *testing.T) {
+	base := oauthrs.Config{
+		IssuerURL: "https://issuer.example", Audience: "api",
+		JWKSURL: "http://10.255.255.1:1/jwks", AllowedJWKSOrigins: []string{"http://10.255.255.1:1"},
+		AllowLocalhostDevelopment: true, HTTPTimeout: time.Millisecond,
+	}
+	if _, err := oauthrs.New(context.Background(), base); err == nil || !strings.Contains(err.Error(), "HTTPS is required") {
+		t.Fatalf("private HTTP JWKS without explicit option error = %v", err)
+	}
+	base.AllowPrivateJWKSDevelopment = true
+	if _, err := oauthrs.New(context.Background(), base); err == nil || strings.Contains(err.Error(), "HTTPS is required") {
+		t.Fatalf("explicit private development JWKS did not reach the network policy: %v", err)
+	}
+}
+
 func TestUnknownKIDRefreshIsCoalescedAndNegativeCached(t *testing.T) {
 	var requests atomic.Int64
 	srv, key := jwksServer(t)
