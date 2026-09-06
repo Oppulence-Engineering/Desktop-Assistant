@@ -303,6 +303,19 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           faker.string.alpha({ length: { min: 10, max: 20 } }),
           undefined,
         ]),
+        categories: Array.from(
+          { length: faker.number.int({ min: 1, max: 10 }) },
+          (_, i) => i + 1,
+        ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+        companyDescription: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        companyEnrichedAt: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+          undefined,
+        ]),
+        companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
         displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
         engagement: faker.helpers.arrayElement([
           "unknown",
@@ -344,6 +357,10 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           "churned",
           "former_customer",
         ] as const),
+        linkedinUrl: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
         milestones: Array.from(
           { length: faker.number.int({ min: 1, max: 10 }) },
           (_, i) => i + 1,
@@ -445,6 +462,19 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           faker.string.alpha({ length: { min: 10, max: 20 } }),
           undefined,
         ]),
+        categories: Array.from(
+          { length: faker.number.int({ min: 1, max: 10 }) },
+          (_, i) => i + 1,
+        ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+        companyDescription: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        companyEnrichedAt: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+          undefined,
+        ]),
+        companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
         displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
         engagement: faker.helpers.arrayElement([
           "unknown",
@@ -486,6 +516,10 @@ export const getListRelationshipIdentityCandidatesResponseMock = (
           "churned",
           "former_customer",
         ] as const),
+        linkedinUrl: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
         milestones: Array.from(
           { length: faker.number.int({ min: 1, max: 10 }) },
           (_, i) => i + 1,
@@ -620,6 +654,18 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
     ]),
+    categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+      () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+    ),
+    companyDescription: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    companyEnrichedAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
     engagement: faker.helpers.arrayElement([
       "unknown",
@@ -661,6 +707,10 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       "churned",
       "former_customer",
     ] as const),
+    linkedinUrl: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
     milestones: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
@@ -756,6 +806,18 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
     ]),
+    categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+      () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+    ),
+    companyDescription: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    companyEnrichedAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
     engagement: faker.helpers.arrayElement([
       "unknown",
@@ -797,6 +859,10 @@ export const getGetRelationshipIdentityCandidateResponseMock = (
       "churned",
       "former_customer",
     ] as const),
+    linkedinUrl: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
     milestones: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
@@ -923,6 +989,18 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
     ]),
+    categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+      () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+    ),
+    companyDescription: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    companyEnrichedAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
     engagement: faker.helpers.arrayElement([
       "unknown",
@@ -964,6 +1042,10 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       "churned",
       "former_customer",
     ] as const),
+    linkedinUrl: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
     milestones: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
@@ -1059,6 +1141,18 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
     ]),
+    categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+      () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+    ),
+    companyDescription: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    companyEnrichedAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
     engagement: faker.helpers.arrayElement([
       "unknown",
@@ -1100,6 +1194,10 @@ export const getDecideRelationshipIdentityCandidateResponseMock = (
       "churned",
       "former_customer",
     ] as const),
+    linkedinUrl: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
     milestones: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
@@ -2084,6 +2182,19 @@ export const getListRelationshipsResponseMock = (
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
       ]),
+      categories: Array.from(
+        { length: faker.number.int({ min: 1, max: 10 }) },
+        (_, i) => i + 1,
+      ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+      companyDescription: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      companyEnrichedAt: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+        undefined,
+      ]),
+      companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
       displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
       engagement: faker.helpers.arrayElement([
         "unknown",
@@ -2125,6 +2236,10 @@ export const getListRelationshipsResponseMock = (
         "churned",
         "former_customer",
       ] as const),
+      linkedinUrl: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
       milestones: Array.from(
         { length: faker.number.int({ min: 1, max: 10 }) },
         (_, i) => i + 1,
@@ -2182,6 +2297,18 @@ export const getCreateRelationshipResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
+  categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ),
+  companyDescription: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  companyEnrichedAt: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
+  companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
   displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
   engagement: faker.helpers.arrayElement([
     "unknown",
@@ -2223,6 +2350,10 @@ export const getCreateRelationshipResponseMock = (
     "churned",
     "former_customer",
   ] as const),
+  linkedinUrl: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   milestones: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),
@@ -3121,6 +3252,19 @@ export const getGetRelationshipResponseMock = (
         faker.string.alpha({ length: { min: 10, max: 20 } }),
         undefined,
       ]),
+      categories: Array.from(
+        { length: faker.number.int({ min: 1, max: 10 }) },
+        (_, i) => i + 1,
+      ).map(() => faker.string.alpha({ length: { min: 10, max: 20 } })),
+      companyDescription: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      companyEnrichedAt: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+        undefined,
+      ]),
+      companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
       displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
       engagement: faker.helpers.arrayElement([
         "unknown",
@@ -3162,6 +3306,10 @@ export const getGetRelationshipResponseMock = (
         "churned",
         "former_customer",
       ] as const),
+      linkedinUrl: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
       milestones: Array.from(
         { length: faker.number.int({ min: 1, max: 10 }) },
         (_, i) => i + 1,
@@ -3229,6 +3377,18 @@ export const getRetractRelationshipAssertionResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
+  categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ),
+  companyDescription: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  companyEnrichedAt: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
+  companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
   displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
   engagement: faker.helpers.arrayElement([
     "unknown",
@@ -3270,6 +3430,10 @@ export const getRetractRelationshipAssertionResponseMock = (
     "churned",
     "former_customer",
   ] as const),
+  linkedinUrl: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   milestones: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),
@@ -3415,6 +3579,7 @@ export const getGetCommitmentEventsResponseMock = (
         "disputed",
         "blocked",
         "unblocked",
+        "corrected",
         "due_date_changed",
         "renegotiated",
         "fulfilled",
@@ -3673,6 +3838,18 @@ export const getCorrectConversationEvidenceResponseMock = (
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
     ]),
+    categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+      () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+    ),
+    companyDescription: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    companyEnrichedAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
     engagement: faker.helpers.arrayElement([
       "unknown",
@@ -3714,6 +3891,10 @@ export const getCorrectConversationEvidenceResponseMock = (
       "churned",
       "former_customer",
     ] as const),
+    linkedinUrl: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
     milestones: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
@@ -3965,6 +4146,18 @@ export const getDecideConversationChangeResponseMock = (
       faker.string.alpha({ length: { min: 10, max: 20 } }),
       undefined,
     ]),
+    categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+      () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+    ),
+    companyDescription: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    companyEnrichedAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
     displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
     engagement: faker.helpers.arrayElement([
       "unknown",
@@ -4006,6 +4199,10 @@ export const getDecideConversationChangeResponseMock = (
       "churned",
       "former_customer",
     ] as const),
+    linkedinUrl: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
     milestones: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
       () => faker.string.alpha({ length: { min: 10, max: 20 } }),
     ),
@@ -4108,6 +4305,18 @@ export const getCorrectRelationshipResponseMock = (
     faker.string.alpha({ length: { min: 10, max: 20 } }),
     undefined,
   ]),
+  categories: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ),
+  companyDescription: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  companyEnrichedAt: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
+  companyEnrichmentRefs: faker.helpers.arrayElement([{}, undefined]),
   displayName: faker.string.alpha({ length: { min: 10, max: 20 } }),
   engagement: faker.helpers.arrayElement([
     "unknown",
@@ -4149,6 +4358,10 @@ export const getCorrectRelationshipResponseMock = (
     "churned",
     "former_customer",
   ] as const),
+  linkedinUrl: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   milestones: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
     () => faker.string.alpha({ length: { min: 10, max: 20 } }),
   ),

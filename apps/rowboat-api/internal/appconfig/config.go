@@ -210,6 +210,9 @@ type Config struct {
 	// GoogleRedirectURI is the /oauth/google/callback URL registered in Google
 	// Cloud. Empty → derived from AppURL. Must match Google exactly.
 	GoogleRedirectURI string
+	// GoogleWebReturnURL sends browser-based OAuth flows back to the web app.
+	// Empty preserves the desktop custom-scheme callback.
+	GoogleWebReturnURL string
 
 	// Desktop deep-link scheme for connector callbacks (solomon-ai://...).
 	DesktopDeepLinkScheme string
@@ -788,6 +791,7 @@ func Load() Config {
 		GoogleTokenURL:              getenv("GOOGLE_TOKEN_URL", ""),
 		GoogleAuthorizeURL:          getenv("GOOGLE_AUTHORIZE_URL", ""),
 		GoogleRedirectURI:           getenv("GOOGLE_REDIRECT_URI", ""),
+		GoogleWebReturnURL:          getenv("GOOGLE_WEB_RETURN_URL", ""),
 
 		DesktopDeepLinkScheme:     getenv("DESKTOP_DEEPLINK_SCHEME", "solomon-ai"),
 		FreeTierCredits:           getint("FREE_TIER_CREDITS", 10000),
@@ -1347,6 +1351,11 @@ func (c Config) validateProduction() error {
 		"GOOGLE_REDIRECT_URI": c.GoogleRedirectURI,
 	} {
 		if err := validateProductionHTTPSURL(key, value); err != nil {
+			return err
+		}
+	}
+	if c.GoogleWebReturnURL != "" {
+		if err := validateProductionHTTPSURL("GOOGLE_WEB_RETURN_URL", c.GoogleWebReturnURL); err != nil {
 			return err
 		}
 	}

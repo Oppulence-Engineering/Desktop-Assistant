@@ -393,6 +393,30 @@ func TestRFCVerifierFailsClosedAndGenericIsExplicit(t *testing.T) {
 	}
 }
 
+func TestGenericVerifierCanExplicitlySkipAudienceValidation(t *testing.T) {
+	srv, key := jwksServer(t)
+	issuer := "https://api.workos.com"
+	v, err := oauthrs.NewGeneric(context.Background(), oauthrs.GenericConfig{
+		IssuerURL:                 issuer,
+		SkipAudienceValidation:    true,
+		JWKSURL:                   srv.URL,
+		AllowedJWKSOrigins:        []string{srv.URL},
+		AllowLocalhostDevelopment: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokenStr := sign(t, key, jwt.MapClaims{
+		"iss": issuer,
+		"sub": "user_123",
+		"iat": time.Now().Add(-time.Minute).Unix(),
+		"exp": time.Now().Add(time.Hour).Unix(),
+	})
+	if _, err := v.Verify(tokenStr); err != nil {
+		t.Fatalf("verify token without audience: %v", err)
+	}
+}
+
 func TestRFCVerifierRequiredOrganization(t *testing.T) {
 	srv, key := jwksServer(t)
 	v, err := oauthrs.New(context.Background(), oauthrs.Config{

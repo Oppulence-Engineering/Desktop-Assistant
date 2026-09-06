@@ -174,6 +174,104 @@ func (_u *RelationshipUpdate) AppendResourceRefs(v []string) *RelationshipUpdate
 	return _u
 }
 
+// SetCompanyCategories sets the "company_categories" field.
+func (_u *RelationshipUpdate) SetCompanyCategories(v []string) *RelationshipUpdate {
+	_u.mutation.SetCompanyCategories(v)
+	return _u
+}
+
+// AppendCompanyCategories appends value to the "company_categories" field.
+func (_u *RelationshipUpdate) AppendCompanyCategories(v []string) *RelationshipUpdate {
+	_u.mutation.AppendCompanyCategories(v)
+	return _u
+}
+
+// SetCompanyDescription sets the "company_description" field.
+func (_u *RelationshipUpdate) SetCompanyDescription(v string) *RelationshipUpdate {
+	_u.mutation.SetCompanyDescription(v)
+	return _u
+}
+
+// SetNillableCompanyDescription sets the "company_description" field if the given value is not nil.
+func (_u *RelationshipUpdate) SetNillableCompanyDescription(v *string) *RelationshipUpdate {
+	if v != nil {
+		_u.SetCompanyDescription(*v)
+	}
+	return _u
+}
+
+// ClearCompanyDescription clears the value of the "company_description" field.
+func (_u *RelationshipUpdate) ClearCompanyDescription() *RelationshipUpdate {
+	_u.mutation.ClearCompanyDescription()
+	return _u
+}
+
+// SetLinkedinURL sets the "linkedin_url" field.
+func (_u *RelationshipUpdate) SetLinkedinURL(v string) *RelationshipUpdate {
+	_u.mutation.SetLinkedinURL(v)
+	return _u
+}
+
+// SetNillableLinkedinURL sets the "linkedin_url" field if the given value is not nil.
+func (_u *RelationshipUpdate) SetNillableLinkedinURL(v *string) *RelationshipUpdate {
+	if v != nil {
+		_u.SetLinkedinURL(*v)
+	}
+	return _u
+}
+
+// ClearLinkedinURL clears the value of the "linkedin_url" field.
+func (_u *RelationshipUpdate) ClearLinkedinURL() *RelationshipUpdate {
+	_u.mutation.ClearLinkedinURL()
+	return _u
+}
+
+// SetCompanyEnrichmentRefs sets the "company_enrichment_refs" field.
+func (_u *RelationshipUpdate) SetCompanyEnrichmentRefs(v map[string][]string) *RelationshipUpdate {
+	_u.mutation.SetCompanyEnrichmentRefs(v)
+	return _u
+}
+
+// SetCompanyEnrichmentVersion sets the "company_enrichment_version" field.
+func (_u *RelationshipUpdate) SetCompanyEnrichmentVersion(v string) *RelationshipUpdate {
+	_u.mutation.SetCompanyEnrichmentVersion(v)
+	return _u
+}
+
+// SetNillableCompanyEnrichmentVersion sets the "company_enrichment_version" field if the given value is not nil.
+func (_u *RelationshipUpdate) SetNillableCompanyEnrichmentVersion(v *string) *RelationshipUpdate {
+	if v != nil {
+		_u.SetCompanyEnrichmentVersion(*v)
+	}
+	return _u
+}
+
+// ClearCompanyEnrichmentVersion clears the value of the "company_enrichment_version" field.
+func (_u *RelationshipUpdate) ClearCompanyEnrichmentVersion() *RelationshipUpdate {
+	_u.mutation.ClearCompanyEnrichmentVersion()
+	return _u
+}
+
+// SetCompanyEnrichedAt sets the "company_enriched_at" field.
+func (_u *RelationshipUpdate) SetCompanyEnrichedAt(v time.Time) *RelationshipUpdate {
+	_u.mutation.SetCompanyEnrichedAt(v)
+	return _u
+}
+
+// SetNillableCompanyEnrichedAt sets the "company_enriched_at" field if the given value is not nil.
+func (_u *RelationshipUpdate) SetNillableCompanyEnrichedAt(v *time.Time) *RelationshipUpdate {
+	if v != nil {
+		_u.SetCompanyEnrichedAt(*v)
+	}
+	return _u
+}
+
+// ClearCompanyEnrichedAt clears the value of the "company_enriched_at" field.
+func (_u *RelationshipUpdate) ClearCompanyEnrichedAt() *RelationshipUpdate {
+	_u.mutation.ClearCompanyEnrichedAt()
+	return _u
+}
+
 // SetSummary sets the "summary" field.
 func (_u *RelationshipUpdate) SetSummary(v string) *RelationshipUpdate {
 	_u.mutation.SetSummary(v)
@@ -1310,6 +1408,41 @@ func (_u *RelationshipUpdate) sqlSave(ctx context.Context) (_node int, err error
 			sqljson.Append(u, relationship.FieldResourceRefs, value)
 		})
 	}
+	if value, ok := _u.mutation.CompanyCategories(); ok {
+		_spec.SetField(relationship.FieldCompanyCategories, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedCompanyCategories(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, relationship.FieldCompanyCategories, value)
+		})
+	}
+	if value, ok := _u.mutation.CompanyDescription(); ok {
+		_spec.SetField(relationship.FieldCompanyDescription, field.TypeString, value)
+	}
+	if _u.mutation.CompanyDescriptionCleared() {
+		_spec.ClearField(relationship.FieldCompanyDescription, field.TypeString)
+	}
+	if value, ok := _u.mutation.LinkedinURL(); ok {
+		_spec.SetField(relationship.FieldLinkedinURL, field.TypeString, value)
+	}
+	if _u.mutation.LinkedinURLCleared() {
+		_spec.ClearField(relationship.FieldLinkedinURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.CompanyEnrichmentRefs(); ok {
+		_spec.SetField(relationship.FieldCompanyEnrichmentRefs, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.CompanyEnrichmentVersion(); ok {
+		_spec.SetField(relationship.FieldCompanyEnrichmentVersion, field.TypeString, value)
+	}
+	if _u.mutation.CompanyEnrichmentVersionCleared() {
+		_spec.ClearField(relationship.FieldCompanyEnrichmentVersion, field.TypeString)
+	}
+	if value, ok := _u.mutation.CompanyEnrichedAt(); ok {
+		_spec.SetField(relationship.FieldCompanyEnrichedAt, field.TypeTime, value)
+	}
+	if _u.mutation.CompanyEnrichedAtCleared() {
+		_spec.ClearField(relationship.FieldCompanyEnrichedAt, field.TypeTime)
+	}
 	if value, ok := _u.mutation.Summary(); ok {
 		_spec.SetField(relationship.FieldSummary, field.TypeString, value)
 	}
@@ -2399,6 +2532,104 @@ func (_u *RelationshipUpdateOne) SetResourceRefs(v []string) *RelationshipUpdate
 // AppendResourceRefs appends value to the "resource_refs" field.
 func (_u *RelationshipUpdateOne) AppendResourceRefs(v []string) *RelationshipUpdateOne {
 	_u.mutation.AppendResourceRefs(v)
+	return _u
+}
+
+// SetCompanyCategories sets the "company_categories" field.
+func (_u *RelationshipUpdateOne) SetCompanyCategories(v []string) *RelationshipUpdateOne {
+	_u.mutation.SetCompanyCategories(v)
+	return _u
+}
+
+// AppendCompanyCategories appends value to the "company_categories" field.
+func (_u *RelationshipUpdateOne) AppendCompanyCategories(v []string) *RelationshipUpdateOne {
+	_u.mutation.AppendCompanyCategories(v)
+	return _u
+}
+
+// SetCompanyDescription sets the "company_description" field.
+func (_u *RelationshipUpdateOne) SetCompanyDescription(v string) *RelationshipUpdateOne {
+	_u.mutation.SetCompanyDescription(v)
+	return _u
+}
+
+// SetNillableCompanyDescription sets the "company_description" field if the given value is not nil.
+func (_u *RelationshipUpdateOne) SetNillableCompanyDescription(v *string) *RelationshipUpdateOne {
+	if v != nil {
+		_u.SetCompanyDescription(*v)
+	}
+	return _u
+}
+
+// ClearCompanyDescription clears the value of the "company_description" field.
+func (_u *RelationshipUpdateOne) ClearCompanyDescription() *RelationshipUpdateOne {
+	_u.mutation.ClearCompanyDescription()
+	return _u
+}
+
+// SetLinkedinURL sets the "linkedin_url" field.
+func (_u *RelationshipUpdateOne) SetLinkedinURL(v string) *RelationshipUpdateOne {
+	_u.mutation.SetLinkedinURL(v)
+	return _u
+}
+
+// SetNillableLinkedinURL sets the "linkedin_url" field if the given value is not nil.
+func (_u *RelationshipUpdateOne) SetNillableLinkedinURL(v *string) *RelationshipUpdateOne {
+	if v != nil {
+		_u.SetLinkedinURL(*v)
+	}
+	return _u
+}
+
+// ClearLinkedinURL clears the value of the "linkedin_url" field.
+func (_u *RelationshipUpdateOne) ClearLinkedinURL() *RelationshipUpdateOne {
+	_u.mutation.ClearLinkedinURL()
+	return _u
+}
+
+// SetCompanyEnrichmentRefs sets the "company_enrichment_refs" field.
+func (_u *RelationshipUpdateOne) SetCompanyEnrichmentRefs(v map[string][]string) *RelationshipUpdateOne {
+	_u.mutation.SetCompanyEnrichmentRefs(v)
+	return _u
+}
+
+// SetCompanyEnrichmentVersion sets the "company_enrichment_version" field.
+func (_u *RelationshipUpdateOne) SetCompanyEnrichmentVersion(v string) *RelationshipUpdateOne {
+	_u.mutation.SetCompanyEnrichmentVersion(v)
+	return _u
+}
+
+// SetNillableCompanyEnrichmentVersion sets the "company_enrichment_version" field if the given value is not nil.
+func (_u *RelationshipUpdateOne) SetNillableCompanyEnrichmentVersion(v *string) *RelationshipUpdateOne {
+	if v != nil {
+		_u.SetCompanyEnrichmentVersion(*v)
+	}
+	return _u
+}
+
+// ClearCompanyEnrichmentVersion clears the value of the "company_enrichment_version" field.
+func (_u *RelationshipUpdateOne) ClearCompanyEnrichmentVersion() *RelationshipUpdateOne {
+	_u.mutation.ClearCompanyEnrichmentVersion()
+	return _u
+}
+
+// SetCompanyEnrichedAt sets the "company_enriched_at" field.
+func (_u *RelationshipUpdateOne) SetCompanyEnrichedAt(v time.Time) *RelationshipUpdateOne {
+	_u.mutation.SetCompanyEnrichedAt(v)
+	return _u
+}
+
+// SetNillableCompanyEnrichedAt sets the "company_enriched_at" field if the given value is not nil.
+func (_u *RelationshipUpdateOne) SetNillableCompanyEnrichedAt(v *time.Time) *RelationshipUpdateOne {
+	if v != nil {
+		_u.SetCompanyEnrichedAt(*v)
+	}
+	return _u
+}
+
+// ClearCompanyEnrichedAt clears the value of the "company_enriched_at" field.
+func (_u *RelationshipUpdateOne) ClearCompanyEnrichedAt() *RelationshipUpdateOne {
+	_u.mutation.ClearCompanyEnrichedAt()
 	return _u
 }
 
@@ -3567,6 +3798,41 @@ func (_u *RelationshipUpdateOne) sqlSave(ctx context.Context) (_node *Relationsh
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, relationship.FieldResourceRefs, value)
 		})
+	}
+	if value, ok := _u.mutation.CompanyCategories(); ok {
+		_spec.SetField(relationship.FieldCompanyCategories, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedCompanyCategories(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, relationship.FieldCompanyCategories, value)
+		})
+	}
+	if value, ok := _u.mutation.CompanyDescription(); ok {
+		_spec.SetField(relationship.FieldCompanyDescription, field.TypeString, value)
+	}
+	if _u.mutation.CompanyDescriptionCleared() {
+		_spec.ClearField(relationship.FieldCompanyDescription, field.TypeString)
+	}
+	if value, ok := _u.mutation.LinkedinURL(); ok {
+		_spec.SetField(relationship.FieldLinkedinURL, field.TypeString, value)
+	}
+	if _u.mutation.LinkedinURLCleared() {
+		_spec.ClearField(relationship.FieldLinkedinURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.CompanyEnrichmentRefs(); ok {
+		_spec.SetField(relationship.FieldCompanyEnrichmentRefs, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.CompanyEnrichmentVersion(); ok {
+		_spec.SetField(relationship.FieldCompanyEnrichmentVersion, field.TypeString, value)
+	}
+	if _u.mutation.CompanyEnrichmentVersionCleared() {
+		_spec.ClearField(relationship.FieldCompanyEnrichmentVersion, field.TypeString)
+	}
+	if value, ok := _u.mutation.CompanyEnrichedAt(); ok {
+		_spec.SetField(relationship.FieldCompanyEnrichedAt, field.TypeTime, value)
+	}
+	if _u.mutation.CompanyEnrichedAtCleared() {
+		_spec.ClearField(relationship.FieldCompanyEnrichedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Summary(); ok {
 		_spec.SetField(relationship.FieldSummary, field.TypeString, value)

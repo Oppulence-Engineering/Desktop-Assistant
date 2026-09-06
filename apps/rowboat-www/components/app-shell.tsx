@@ -9,14 +9,19 @@ import {
   Bell,
   Brain,
   BookOpen,
+  Buildings,
   CaretRight,
   CaretUpDown,
-  ChatsCircle,
+  ChartLineUp,
+  CheckSquare,
   Clock,
   Cpu,
   Folder,
   GearSix,
   HardDrives,
+  House,
+  ListChecks,
+  MagnifyingGlass,
   Monitor,
   Moon,
   Palette,
@@ -31,6 +36,7 @@ import {
   Sun,
   Tag,
   TerminalWindow,
+  Tray,
   Waveform,
   Wallet,
   type Icon as PhosphorIcon,
@@ -58,6 +64,31 @@ import { usePref } from "@/lib/console-prefs";
 import { cn } from "@/lib/utils";
 
 export type ResourceKind = "agent" | "config" | "run" | "task" | "taskrun";
+
+export type RevenueTab =
+  | "tasks"
+  | "notes"
+  | "commitments"
+  | "relationships"
+  | "people"
+  | "queue"
+  | "scans"
+  | "impact"
+  | "actions"
+  | "workspace";
+
+export const REVENUE_TAB_LABELS: Record<RevenueTab, string> = {
+  tasks: "Tasks",
+  notes: "Notes",
+  commitments: "Commitments",
+  relationships: "Companies",
+  people: "People",
+  queue: "Recovery",
+  scans: "Audits",
+  impact: "Impact",
+  actions: "Actions",
+  workspace: "Sources",
+};
 
 export type SettingsSection =
   | "overview"
@@ -327,7 +358,7 @@ function SidebarNavItem({
   return (
     <button
       className={cn(
-        "group/item flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 py-1 text-left text-sm text-primary/70 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200",
+        "group/item flex h-8 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200",
         active && "bg-background-200 text-primary dark:bg-background-200",
         className,
       )}
@@ -411,6 +442,8 @@ export function AppShellSidebar({
   onNavigateAgents,
   onNavigateScheduled,
   onNavigateRuns,
+  onOpenSearch,
+  activeRevenueTab = "commitments",
   activeResourceGroup,
   view = "chat",
   settingsSection = "overview",
@@ -427,10 +460,12 @@ export function AppShellSidebar({
   selected: { kind: ResourceKind; name: string } | null;
   onSelectResource?: SidebarSelect;
   onNavigateChat?: () => void;
-  onNavigateRevenue?: () => void;
+  onNavigateRevenue?: (tab: RevenueTab) => void;
   onNavigateAgents?: () => void;
   onNavigateScheduled?: () => void;
   onNavigateRuns?: () => void;
+  onOpenSearch?: () => void;
+  activeRevenueTab?: RevenueTab;
   activeResourceGroup?: "agents" | "scheduled" | "runs";
   view?: "chat" | "settings" | "revenue" | "workflows" | "agents";
   settingsSection?: SettingsSection;
@@ -457,6 +492,7 @@ export function AppShellSidebar({
     const load = async () => {
       try {
         const res = await dashboardFetch("/api/rowboat/v1/agents");
+        if (res.status === 404) return; // Agent runtime is optional when Temporal is not configured.
         if (!res.ok) throw new Error(`Could not load agents (${res.status})`);
         const data = await res.json();
         const names = Array.isArray(data.agents)
@@ -584,20 +620,22 @@ export function AppShellSidebar({
     <div
       className={cn(
         "absolute inset-y-0 left-0 z-30 flex h-full shrink-0 overflow-hidden border-r shadow-xl transition-all duration-200 ease-in-out md:relative md:shadow-none",
-        open ? "w-64" : "w-0 border-r-0",
+        open ? "w-[274px]" : "w-0 border-r-0",
         view === "settings" && "settings-rail",
       )}
     >
-      <div className="flex h-full w-64 shrink-0 flex-col bg-background-50/70 dark:bg-background-50">
-        <div className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-          <Image
-            alt=""
-            className="size-5"
-            height={20}
-            src="/marketing/oppulence-icon.png"
-            width={20}
-          />
-          <span className="text-sm font-medium tracking-tight text-primary">Oppulence</span>
+      <div className="flex h-full w-[274px] shrink-0 flex-col bg-background-50/70 dark:bg-background-50">
+        <div className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
+          <span className="relative size-6 overflow-hidden" aria-hidden="true">
+            <Image
+              alt=""
+              className="scale-[1.85] object-contain dark:invert"
+              fill
+              sizes="24px"
+              src="/marketing/oppulence-icon.png"
+            />
+          </span>
+          <span className="text-[15px] font-medium tracking-tight text-primary">Oppulence</span>
           <button
             aria-label="Close sidebar"
             className="ml-auto flex size-8 items-center justify-center rounded-md text-primary/50 hover:bg-background-100 hover:text-primary md:hidden"
@@ -644,19 +682,63 @@ export function AppShellSidebar({
             ))}
           </nav>
         ) : (
-          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2">
+          <nav className="no-scrollbar flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2">
+            <button
+              className="mb-1 flex h-8 w-full items-center gap-2 rounded-md border border-border bg-background px-2 text-left text-[13px] text-primary/65 transition-colors hover:bg-background-100 hover:text-primary"
+              onClick={onOpenSearch}
+              type="button"
+            >
+              <MagnifyingGlass className="size-3.5" />
+              <span>Search</span>
+              <span className="ml-auto rounded border border-border px-1 py-0.5 font-mono text-[10px] text-primary/40">
+                ⌘ K
+              </span>
+            </button>
             <SidebarNavItem
               active={view === "chat" && !selected}
-              icon={ChatsCircle}
-              label="Chat"
+              icon={House}
+              label="Home"
               onClick={onNavigateChat}
             />
+            {(
+              [
+                ["tasks", CheckSquare],
+                ["notes", BookOpen],
+                ["commitments", CheckSquare],
+                ["queue", Tray],
+                ["scans", MagnifyingGlass],
+                ["impact", ChartLineUp],
+                ["actions", ListChecks],
+              ] as const
+            ).map(([tab, icon]) => (
+              <SidebarNavItem
+                active={view === "revenue" && activeRevenueTab === tab}
+                icon={icon}
+                key={tab}
+                label={REVENUE_TAB_LABELS[tab]}
+                onClick={() => onNavigateRevenue?.(tab)}
+              />
+            ))}
+            <div className="px-2 pb-1 pt-3 text-[11px] font-medium text-primary/40">Records</div>
             <SidebarNavItem
-              active={view === "revenue"}
-              icon={AddressBook}
-              label="Relationships"
-              onClick={onNavigateRevenue}
+              active={view === "revenue" && activeRevenueTab === "relationships"}
+              icon={Buildings}
+              label={REVENUE_TAB_LABELS.relationships}
+              onClick={() => onNavigateRevenue?.("relationships")}
             />
+            <SidebarNavItem
+              active={view === "revenue" && activeRevenueTab === "people"}
+              icon={AddressBook}
+              label={REVENUE_TAB_LABELS.people}
+              onClick={() => onNavigateRevenue?.("people")}
+            />
+            <SidebarNavItem
+              active={view === "revenue" && activeRevenueTab === "workspace"}
+              icon={Plugs}
+              label={REVENUE_TAB_LABELS.workspace}
+              onClick={() => onNavigateRevenue?.("workspace")}
+            />
+            <div className="px-2 pb-1 pt-3 text-[11px] font-medium text-primary/40">Workspace</div>
             {groups.map((group) => (
               <Collapsible
                 key={group.key}

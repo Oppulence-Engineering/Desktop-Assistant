@@ -105,6 +105,20 @@ func TestListMessagesClampsLimit(t *testing.T) {
 	}
 }
 
+func TestGoogleAPIErrorIncludesProviderMessage(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"error":{"message":"Quota exceeded for quota metric."}}`))
+	}))
+	defer srv.Close()
+
+	c := New(Config{GmailBaseURL: srv.URL})
+	_, err := c.ListMessages(context.Background(), "tok", "", 1)
+	if err == nil || !strings.Contains(err.Error(), "Quota exceeded for quota metric.") {
+		t.Fatalf("error = %v, want provider detail", err)
+	}
+}
+
 func TestListEvents(t *testing.T) {
 	c, _ := mockGoogleReads(t)
 	events, err := c.ListEvents(context.Background(), "tok", CalendarQuery{

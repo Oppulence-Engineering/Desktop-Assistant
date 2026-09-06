@@ -74,13 +74,10 @@ func (b *googleSourceBackfiller) Backfill(
 			PrimaryEmail: summary.Counterparty,
 			ResourceRefs: []string{"gmail:thread:" + summary.ThreadID},
 			EventType:    "thread.snapshot", OccurredAt: occurredAt,
-			Summary: "Gmail thread observed: " + strings.TrimSpace(summary.Subject),
-			Payload: payload,
-			Participants: []RelationshipParticipantInput{{
-				DisplayName: coalesce(summary.CounterpartyName, summary.Counterparty),
-				Email:       summary.Counterparty, Role: "contact",
-			}},
-			Facts: payload,
+			Summary:      "Gmail thread observed: " + strings.TrimSpace(summary.Subject),
+			Payload:      payload,
+			Participants: summary.Counterparties,
+			Facts:        payload,
 		})
 		if adaptErr != nil {
 			return adaptErr

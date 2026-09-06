@@ -22,7 +22,7 @@ func (CommitmentEvent) Fields() []ent.Field {
 		field.Int("version").Positive(),
 		field.String("kind").Validate(oneOfRevenue("kind",
 			"proposed", "internally_confirmed", "offered", "accepted", "disputed",
-			"blocked", "unblocked", "due_date_changed", "renegotiated", "fulfilled",
+			"blocked", "unblocked", "corrected", "due_date_changed", "renegotiated", "fulfilled",
 			"cancelled", "superseded")),
 		field.String("actor_type").Validate(oneOfRevenue("actor_type",
 			"user", "source_fact", "deterministic_rule", "ai_candidate")),

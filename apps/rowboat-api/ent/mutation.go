@@ -65076,6 +65076,13 @@ type RelationshipMutation struct {
 	outbound_account_ref                       *string
 	resource_refs                              *[]string
 	appendresource_refs                        []string
+	company_categories                         *[]string
+	appendcompany_categories                   []string
+	company_description                        *string
+	linkedin_url                               *string
+	company_enrichment_refs                    *map[string][]string
+	company_enrichment_version                 *string
+	company_enriched_at                        *time.Time
 	summary                                    *string
 	last_touch_at                              *time.Time
 	next_action_at                             *time.Time
@@ -65657,6 +65664,289 @@ func (m *RelationshipMutation) AppendedResourceRefs() ([]string, bool) {
 func (m *RelationshipMutation) ResetResourceRefs() {
 	m.resource_refs = nil
 	m.appendresource_refs = nil
+}
+
+// SetCompanyCategories sets the "company_categories" field.
+func (m *RelationshipMutation) SetCompanyCategories(s []string) {
+	m.company_categories = &s
+	m.appendcompany_categories = nil
+}
+
+// CompanyCategories returns the value of the "company_categories" field in the mutation.
+func (m *RelationshipMutation) CompanyCategories() (r []string, exists bool) {
+	v := m.company_categories
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompanyCategories returns the old "company_categories" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldCompanyCategories(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompanyCategories is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompanyCategories requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompanyCategories: %w", err)
+	}
+	return oldValue.CompanyCategories, nil
+}
+
+// AppendCompanyCategories adds s to the "company_categories" field.
+func (m *RelationshipMutation) AppendCompanyCategories(s []string) {
+	m.appendcompany_categories = append(m.appendcompany_categories, s...)
+}
+
+// AppendedCompanyCategories returns the list of values that were appended to the "company_categories" field in this mutation.
+func (m *RelationshipMutation) AppendedCompanyCategories() ([]string, bool) {
+	if len(m.appendcompany_categories) == 0 {
+		return nil, false
+	}
+	return m.appendcompany_categories, true
+}
+
+// ResetCompanyCategories resets all changes to the "company_categories" field.
+func (m *RelationshipMutation) ResetCompanyCategories() {
+	m.company_categories = nil
+	m.appendcompany_categories = nil
+}
+
+// SetCompanyDescription sets the "company_description" field.
+func (m *RelationshipMutation) SetCompanyDescription(s string) {
+	m.company_description = &s
+}
+
+// CompanyDescription returns the value of the "company_description" field in the mutation.
+func (m *RelationshipMutation) CompanyDescription() (r string, exists bool) {
+	v := m.company_description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompanyDescription returns the old "company_description" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldCompanyDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompanyDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompanyDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompanyDescription: %w", err)
+	}
+	return oldValue.CompanyDescription, nil
+}
+
+// ClearCompanyDescription clears the value of the "company_description" field.
+func (m *RelationshipMutation) ClearCompanyDescription() {
+	m.company_description = nil
+	m.clearedFields[relationship.FieldCompanyDescription] = struct{}{}
+}
+
+// CompanyDescriptionCleared returns if the "company_description" field was cleared in this mutation.
+func (m *RelationshipMutation) CompanyDescriptionCleared() bool {
+	_, ok := m.clearedFields[relationship.FieldCompanyDescription]
+	return ok
+}
+
+// ResetCompanyDescription resets all changes to the "company_description" field.
+func (m *RelationshipMutation) ResetCompanyDescription() {
+	m.company_description = nil
+	delete(m.clearedFields, relationship.FieldCompanyDescription)
+}
+
+// SetLinkedinURL sets the "linkedin_url" field.
+func (m *RelationshipMutation) SetLinkedinURL(s string) {
+	m.linkedin_url = &s
+}
+
+// LinkedinURL returns the value of the "linkedin_url" field in the mutation.
+func (m *RelationshipMutation) LinkedinURL() (r string, exists bool) {
+	v := m.linkedin_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLinkedinURL returns the old "linkedin_url" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldLinkedinURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLinkedinURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLinkedinURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLinkedinURL: %w", err)
+	}
+	return oldValue.LinkedinURL, nil
+}
+
+// ClearLinkedinURL clears the value of the "linkedin_url" field.
+func (m *RelationshipMutation) ClearLinkedinURL() {
+	m.linkedin_url = nil
+	m.clearedFields[relationship.FieldLinkedinURL] = struct{}{}
+}
+
+// LinkedinURLCleared returns if the "linkedin_url" field was cleared in this mutation.
+func (m *RelationshipMutation) LinkedinURLCleared() bool {
+	_, ok := m.clearedFields[relationship.FieldLinkedinURL]
+	return ok
+}
+
+// ResetLinkedinURL resets all changes to the "linkedin_url" field.
+func (m *RelationshipMutation) ResetLinkedinURL() {
+	m.linkedin_url = nil
+	delete(m.clearedFields, relationship.FieldLinkedinURL)
+}
+
+// SetCompanyEnrichmentRefs sets the "company_enrichment_refs" field.
+func (m *RelationshipMutation) SetCompanyEnrichmentRefs(value map[string][]string) {
+	m.company_enrichment_refs = &value
+}
+
+// CompanyEnrichmentRefs returns the value of the "company_enrichment_refs" field in the mutation.
+func (m *RelationshipMutation) CompanyEnrichmentRefs() (r map[string][]string, exists bool) {
+	v := m.company_enrichment_refs
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompanyEnrichmentRefs returns the old "company_enrichment_refs" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldCompanyEnrichmentRefs(ctx context.Context) (v map[string][]string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompanyEnrichmentRefs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompanyEnrichmentRefs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompanyEnrichmentRefs: %w", err)
+	}
+	return oldValue.CompanyEnrichmentRefs, nil
+}
+
+// ResetCompanyEnrichmentRefs resets all changes to the "company_enrichment_refs" field.
+func (m *RelationshipMutation) ResetCompanyEnrichmentRefs() {
+	m.company_enrichment_refs = nil
+}
+
+// SetCompanyEnrichmentVersion sets the "company_enrichment_version" field.
+func (m *RelationshipMutation) SetCompanyEnrichmentVersion(s string) {
+	m.company_enrichment_version = &s
+}
+
+// CompanyEnrichmentVersion returns the value of the "company_enrichment_version" field in the mutation.
+func (m *RelationshipMutation) CompanyEnrichmentVersion() (r string, exists bool) {
+	v := m.company_enrichment_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompanyEnrichmentVersion returns the old "company_enrichment_version" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldCompanyEnrichmentVersion(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompanyEnrichmentVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompanyEnrichmentVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompanyEnrichmentVersion: %w", err)
+	}
+	return oldValue.CompanyEnrichmentVersion, nil
+}
+
+// ClearCompanyEnrichmentVersion clears the value of the "company_enrichment_version" field.
+func (m *RelationshipMutation) ClearCompanyEnrichmentVersion() {
+	m.company_enrichment_version = nil
+	m.clearedFields[relationship.FieldCompanyEnrichmentVersion] = struct{}{}
+}
+
+// CompanyEnrichmentVersionCleared returns if the "company_enrichment_version" field was cleared in this mutation.
+func (m *RelationshipMutation) CompanyEnrichmentVersionCleared() bool {
+	_, ok := m.clearedFields[relationship.FieldCompanyEnrichmentVersion]
+	return ok
+}
+
+// ResetCompanyEnrichmentVersion resets all changes to the "company_enrichment_version" field.
+func (m *RelationshipMutation) ResetCompanyEnrichmentVersion() {
+	m.company_enrichment_version = nil
+	delete(m.clearedFields, relationship.FieldCompanyEnrichmentVersion)
+}
+
+// SetCompanyEnrichedAt sets the "company_enriched_at" field.
+func (m *RelationshipMutation) SetCompanyEnrichedAt(t time.Time) {
+	m.company_enriched_at = &t
+}
+
+// CompanyEnrichedAt returns the value of the "company_enriched_at" field in the mutation.
+func (m *RelationshipMutation) CompanyEnrichedAt() (r time.Time, exists bool) {
+	v := m.company_enriched_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompanyEnrichedAt returns the old "company_enriched_at" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldCompanyEnrichedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompanyEnrichedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompanyEnrichedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompanyEnrichedAt: %w", err)
+	}
+	return oldValue.CompanyEnrichedAt, nil
+}
+
+// ClearCompanyEnrichedAt clears the value of the "company_enriched_at" field.
+func (m *RelationshipMutation) ClearCompanyEnrichedAt() {
+	m.company_enriched_at = nil
+	m.clearedFields[relationship.FieldCompanyEnrichedAt] = struct{}{}
+}
+
+// CompanyEnrichedAtCleared returns if the "company_enriched_at" field was cleared in this mutation.
+func (m *RelationshipMutation) CompanyEnrichedAtCleared() bool {
+	_, ok := m.clearedFields[relationship.FieldCompanyEnrichedAt]
+	return ok
+}
+
+// ResetCompanyEnrichedAt resets all changes to the "company_enriched_at" field.
+func (m *RelationshipMutation) ResetCompanyEnrichedAt() {
+	m.company_enriched_at = nil
+	delete(m.clearedFields, relationship.FieldCompanyEnrichedAt)
 }
 
 // SetSummary sets the "summary" field.
@@ -67583,7 +67873,7 @@ func (m *RelationshipMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RelationshipMutation) Fields() []string {
-	fields := make([]string, 0, 26)
+	fields := make([]string, 0, 32)
 	if m.created_at != nil {
 		fields = append(fields, relationship.FieldCreatedAt)
 	}
@@ -67610,6 +67900,24 @@ func (m *RelationshipMutation) Fields() []string {
 	}
 	if m.resource_refs != nil {
 		fields = append(fields, relationship.FieldResourceRefs)
+	}
+	if m.company_categories != nil {
+		fields = append(fields, relationship.FieldCompanyCategories)
+	}
+	if m.company_description != nil {
+		fields = append(fields, relationship.FieldCompanyDescription)
+	}
+	if m.linkedin_url != nil {
+		fields = append(fields, relationship.FieldLinkedinURL)
+	}
+	if m.company_enrichment_refs != nil {
+		fields = append(fields, relationship.FieldCompanyEnrichmentRefs)
+	}
+	if m.company_enrichment_version != nil {
+		fields = append(fields, relationship.FieldCompanyEnrichmentVersion)
+	}
+	if m.company_enriched_at != nil {
+		fields = append(fields, relationship.FieldCompanyEnrichedAt)
 	}
 	if m.summary != nil {
 		fields = append(fields, relationship.FieldSummary)
@@ -67688,6 +67996,18 @@ func (m *RelationshipMutation) Field(name string) (ent.Value, bool) {
 		return m.OutboundAccountRef()
 	case relationship.FieldResourceRefs:
 		return m.ResourceRefs()
+	case relationship.FieldCompanyCategories:
+		return m.CompanyCategories()
+	case relationship.FieldCompanyDescription:
+		return m.CompanyDescription()
+	case relationship.FieldLinkedinURL:
+		return m.LinkedinURL()
+	case relationship.FieldCompanyEnrichmentRefs:
+		return m.CompanyEnrichmentRefs()
+	case relationship.FieldCompanyEnrichmentVersion:
+		return m.CompanyEnrichmentVersion()
+	case relationship.FieldCompanyEnrichedAt:
+		return m.CompanyEnrichedAt()
 	case relationship.FieldSummary:
 		return m.Summary()
 	case relationship.FieldLastTouchAt:
@@ -67749,6 +68069,18 @@ func (m *RelationshipMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldOutboundAccountRef(ctx)
 	case relationship.FieldResourceRefs:
 		return m.OldResourceRefs(ctx)
+	case relationship.FieldCompanyCategories:
+		return m.OldCompanyCategories(ctx)
+	case relationship.FieldCompanyDescription:
+		return m.OldCompanyDescription(ctx)
+	case relationship.FieldLinkedinURL:
+		return m.OldLinkedinURL(ctx)
+	case relationship.FieldCompanyEnrichmentRefs:
+		return m.OldCompanyEnrichmentRefs(ctx)
+	case relationship.FieldCompanyEnrichmentVersion:
+		return m.OldCompanyEnrichmentVersion(ctx)
+	case relationship.FieldCompanyEnrichedAt:
+		return m.OldCompanyEnrichedAt(ctx)
 	case relationship.FieldSummary:
 		return m.OldSummary(ctx)
 	case relationship.FieldLastTouchAt:
@@ -67854,6 +68186,48 @@ func (m *RelationshipMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetResourceRefs(v)
+		return nil
+	case relationship.FieldCompanyCategories:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompanyCategories(v)
+		return nil
+	case relationship.FieldCompanyDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompanyDescription(v)
+		return nil
+	case relationship.FieldLinkedinURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLinkedinURL(v)
+		return nil
+	case relationship.FieldCompanyEnrichmentRefs:
+		v, ok := value.(map[string][]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompanyEnrichmentRefs(v)
+		return nil
+	case relationship.FieldCompanyEnrichmentVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompanyEnrichmentVersion(v)
+		return nil
+	case relationship.FieldCompanyEnrichedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompanyEnrichedAt(v)
 		return nil
 	case relationship.FieldSummary:
 		v, ok := value.(string)
@@ -68043,6 +68417,18 @@ func (m *RelationshipMutation) ClearedFields() []string {
 	if m.FieldCleared(relationship.FieldOutboundAccountRef) {
 		fields = append(fields, relationship.FieldOutboundAccountRef)
 	}
+	if m.FieldCleared(relationship.FieldCompanyDescription) {
+		fields = append(fields, relationship.FieldCompanyDescription)
+	}
+	if m.FieldCleared(relationship.FieldLinkedinURL) {
+		fields = append(fields, relationship.FieldLinkedinURL)
+	}
+	if m.FieldCleared(relationship.FieldCompanyEnrichmentVersion) {
+		fields = append(fields, relationship.FieldCompanyEnrichmentVersion)
+	}
+	if m.FieldCleared(relationship.FieldCompanyEnrichedAt) {
+		fields = append(fields, relationship.FieldCompanyEnrichedAt)
+	}
 	if m.FieldCleared(relationship.FieldSummary) {
 		fields = append(fields, relationship.FieldSummary)
 	}
@@ -68092,6 +68478,18 @@ func (m *RelationshipMutation) ClearField(name string) error {
 		return nil
 	case relationship.FieldOutboundAccountRef:
 		m.ClearOutboundAccountRef()
+		return nil
+	case relationship.FieldCompanyDescription:
+		m.ClearCompanyDescription()
+		return nil
+	case relationship.FieldLinkedinURL:
+		m.ClearLinkedinURL()
+		return nil
+	case relationship.FieldCompanyEnrichmentVersion:
+		m.ClearCompanyEnrichmentVersion()
+		return nil
+	case relationship.FieldCompanyEnrichedAt:
+		m.ClearCompanyEnrichedAt()
 		return nil
 	case relationship.FieldSummary:
 		m.ClearSummary()
@@ -68151,6 +68549,24 @@ func (m *RelationshipMutation) ResetField(name string) error {
 		return nil
 	case relationship.FieldResourceRefs:
 		m.ResetResourceRefs()
+		return nil
+	case relationship.FieldCompanyCategories:
+		m.ResetCompanyCategories()
+		return nil
+	case relationship.FieldCompanyDescription:
+		m.ResetCompanyDescription()
+		return nil
+	case relationship.FieldLinkedinURL:
+		m.ResetLinkedinURL()
+		return nil
+	case relationship.FieldCompanyEnrichmentRefs:
+		m.ResetCompanyEnrichmentRefs()
+		return nil
+	case relationship.FieldCompanyEnrichmentVersion:
+		m.ResetCompanyEnrichmentVersion()
+		return nil
+	case relationship.FieldCompanyEnrichedAt:
+		m.ResetCompanyEnrichedAt()
 		return nil
 	case relationship.FieldSummary:
 		m.ResetSummary()

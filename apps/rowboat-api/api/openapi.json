@@ -3543,6 +3543,7 @@
               "disputed",
               "blocked",
               "unblocked",
+              "corrected",
               "due_date_changed",
               "renegotiated",
               "fulfilled",
@@ -8560,6 +8561,22 @@
             },
             "type": "array"
           },
+          "company_categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "company_description": {
+            "type": "string"
+          },
+          "company_enriched_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "company_enrichment_version": {
+            "type": "string"
+          },
           "conversation_intelligence_artifacts": {
             "items": {
               "$ref": "#/components/schemas/ConversationIntelligenceArtifact"
@@ -8617,6 +8634,9 @@
             "type": "string"
           },
           "lifecycle": {
+            "type": "string"
+          },
+          "linkedin_url": {
             "type": "string"
           },
           "mail_threads": {
@@ -8755,6 +8775,7 @@
           "kind",
           "display_name",
           "resource_refs",
+          "company_categories",
           "status",
           "lifecycle",
           "engagement",
@@ -11802,6 +11823,32 @@
             "example": "example.com",
             "type": "string"
           },
+          "categories": {
+            "description": "Source-backed company categories.",
+            "items": {
+              "description": "Category.",
+              "example": "Artificial intelligence",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "companyDescription": {
+            "description": "Source-backed company description.",
+            "example": "Builds AI infrastructure for customer operations.",
+            "type": "string"
+          },
+          "companyEnrichedAt": {
+            "description": "When the company profile was last enriched.",
+            "example": "2026-09-06T08:00:00Z",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "companyEnrichmentRefs": {
+            "additionalProperties": true,
+            "description": "Citation URLs keyed by enriched company field.",
+            "type": "object"
+          },
           "displayName": {
             "description": "Human display name.",
             "example": "Jordan Buyer",
@@ -11858,6 +11905,11 @@
               "former_customer"
             ],
             "example": "evaluation",
+            "type": "string"
+          },
+          "linkedinUrl": {
+            "description": "Verified public LinkedIn company URL.",
+            "example": "https://www.linkedin.com/company/acme",
             "type": "string"
           },
           "milestones": {
@@ -11967,7 +12019,8 @@
           "projectorVersion",
           "risks",
           "milestones",
-          "resourceRefs"
+          "resourceRefs",
+          "categories"
         ],
         "type": "object"
       },
@@ -21385,6 +21438,7 @@
                       "disputed",
                       "blocked",
                       "unblocked",
+                      "corrected",
                       "due_date_changed",
                       "renegotiated",
                       "fulfilled",

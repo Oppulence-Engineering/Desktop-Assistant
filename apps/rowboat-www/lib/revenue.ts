@@ -29,6 +29,13 @@ import type {
   RelationshipGraph,
   RelationshipStateSnapshot,
   PersonDeletionReceipt,
+  CompanyResearchOutcome,
+  PersonResearchOutcome,
+  RelationshipPerson,
+  RelationshipPersonAttribute,
+  ResearchConsentState,
+  ResearchEstimate,
+  ResearchStatus,
 } from "@/types/revenue";
 
 export class RevenueAPIError extends Error {
@@ -40,6 +47,13 @@ export class RevenueAPIError extends Error {
     this.status = status;
     this.code = code;
   }
+}
+
+export function friendlyRevenueError(message: string) {
+  if (/gmail.*(?:returned 429|user-rate limit exceeded)/i.test(message)) {
+    return "Google is temporarily limiting Gmail reads for this account. Please try the audit again in about 15 minutes.";
+  }
+  return message;
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -69,6 +83,15 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 
 const post = (path: string, body?: unknown) =>
   call(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
+
+export function safeResearchCitationURL(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
 
 // --- workspace ---------------------------------------------------------------
 
@@ -166,6 +189,7 @@ export interface CreateActionInput {
   proposedMessage?: string;
   executionMode?: "draft" | "send";
   priorityScore?: number;
+  dueAt?: string;
 }
 
 export const createAction = (input: CreateActionInput) =>
@@ -179,6 +203,22 @@ export interface RelationshipFilters {
   health?: string;
   engagement?: string;
 }
+
+export const companyLinkedInURL = (
+  displayName: string,
+  resourceRefs: string[],
+  linkedinURL?: string,
+) => {
+  if (linkedinURL?.startsWith("https://www.linkedin.com/company/")) return linkedinURL;
+  const prefix = "linkedin:company:";
+  const linkedInRef = resourceRefs.find((ref) => ref.startsWith(prefix));
+  return linkedInRef
+    ? `https://www.linkedin.com/company/${encodeURIComponent(linkedInRef.slice(prefix.length))}`
+    : `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(displayName)}`;
+};
+
+export const interactionCountLabel = (count: number) =>
+  `${count} interaction${count === 1 ? "" : "s"}`;
 
 export async function listRelationships(
   filters: RelationshipFilters = {},
@@ -199,9 +239,7 @@ export interface RelationshipGraphRequest {
   asOf?: string;
 }
 
-export async function getRelationshipGraph(
-  input: RelationshipGraphRequest,
-): Promise<RelationshipGraph> {
+async function loadRelationshipGraph(input: RelationshipGraphRequest): Promise<RelationshipGraph> {
   const params = new URLSearchParams({ scope: input.scope });
   if (input.relationshipId) params.set("relationshipId", input.relationshipId);
   if (input.depth) params.set("depth", String(input.depth));
@@ -219,7 +257,123 @@ export async function getRelationshipGraph(
   return parsed.data;
 }
 
+export async function getRelationshipGraph(
+  input: RelationshipGraphRequest,
+): Promise<RelationshipGraph> {
+  try {
+    return await loadRelationshipGraph(input);
+  } catch (error) {
+    const legacyPortfolioEndpoint =
+      input.scope === "portfolio" &&
+      error instanceof RevenueAPIError &&
+      error.status === 400 &&
+      /relationshipId/i.test(error.message);
+    if (!legacyPortfolioEndpoint) throw error;
+
+    const relationships = await listRelationships();
+    const graphs = await Promise.all(
+      relationships.map((relationship) =>
+        loadRelationshipGraph({
+          ...input,
+          scope: "relationship",
+          relationshipId: relationship.id,
+        }),
+      ),
+    );
+    const generatedAt = graphs.reduce(
+      (latest, graph) => (graph.generatedAt > latest ? graph.generatedAt : latest),
+      new Date().toISOString(),
+    );
+    return RelationshipGraphSchema.parse({
+      contractVersion: "2026-08-01",
+      generatedAt,
+      asOf: input.asOf || generatedAt,
+      historical: Boolean(input.asOf),
+      scope: "portfolio",
+      depth: input.depth || 2,
+      nodes: [
+        ...new Map(graphs.flatMap((graph) => graph.nodes).map((node) => [node.id, node])).values(),
+      ],
+      edges: [
+        ...new Map(graphs.flatMap((graph) => graph.edges).map((edge) => [edge.id, edge])).values(),
+      ],
+      permissions: graphs.length
+        ? {
+            canView: graphs.every((graph) => graph.permissions.canView),
+            canContribute: graphs.every((graph) => graph.permissions.canContribute),
+            canApprove: graphs.every((graph) => graph.permissions.canApprove),
+            canExecute: graphs.every((graph) => graph.permissions.canExecute),
+            canSaveViews: graphs.every((graph) => graph.permissions.canSaveViews),
+          }
+        : {
+            canView: true,
+            canContribute: false,
+            canApprove: false,
+            canExecute: false,
+            canSaveViews: false,
+          },
+    });
+  }
+}
+
 export const getRelationship = (id: string) => call<RelationshipDetail>(`/relationships/${id}`);
+
+export async function listPersons(q = ""): Promise<RelationshipPerson[]> {
+  const params = new URLSearchParams({ limit: "500" });
+  if (q.trim()) params.set("q", q.trim());
+  const body = await call<{ persons: RelationshipPerson[] }>(
+    `/relationship-persons?${params.toString()}`,
+  );
+  return body.persons ?? [];
+}
+
+export const getPersonAttributes = (personId: string) =>
+  call<{ attributes: RelationshipPersonAttribute[] }>(
+    `/relationship-persons/${encodeURIComponent(personId)}/attributes`,
+  ).then((body) => body.attributes ?? []);
+
+export const getResearchStatus = () => call<ResearchStatus>("/research/status");
+
+export const setResearchConsent = (consented: boolean) =>
+  call<ResearchConsentState>("/research/consent", {
+    method: "PUT",
+    body: JSON.stringify({ consented }),
+  });
+
+export const getResearchEstimate = () => call<ResearchEstimate>("/research/people/estimate");
+
+export const getCompanyResearchEstimate = () =>
+  call<ResearchEstimate>("/research/companies/estimate");
+
+export const enrichPendingPersons = async (batchSize: number) => {
+  const { personIds } = await call<{ personIds: string[] }>("/research/people/pending");
+  const outcomes: PersonResearchOutcome[] = [];
+  const size = Math.max(1, Math.floor(batchSize));
+  for (let offset = 0; offset < personIds.length; offset += size) {
+    const result = await call<{ outcomes: PersonResearchOutcome[] }>("/research/people", {
+      method: "POST",
+      body: JSON.stringify({ personIds: personIds.slice(offset, offset + size) }),
+    });
+    outcomes.push(...(result.outcomes ?? []));
+  }
+  return { requested: personIds.length, outcomes };
+};
+
+export const enrichPendingCompanies = async (batchSize: number) => {
+  const { relationshipIds } = await call<{ relationshipIds: string[] }>(
+    "/research/companies/pending",
+  );
+  const outcomes: CompanyResearchOutcome[] = [];
+  const size = Math.max(1, Math.floor(batchSize));
+  for (let offset = 0; offset < relationshipIds.length; offset += size) {
+    const result = await call<{ outcomes: CompanyResearchOutcome[] }>("/research/companies", {
+      method: "POST",
+      body: JSON.stringify({ relationshipIds: relationshipIds.slice(offset, offset + size) }),
+    });
+    outcomes.push(...(result.outcomes ?? []));
+  }
+  return { requested: relationshipIds.length, outcomes };
+};
 
 export const deletePerson = (personId: string) =>
   call<PersonDeletionReceipt>(`/relationship-persons/${encodeURIComponent(personId)}`, {
@@ -323,7 +477,15 @@ export const runCommitmentRecovery = (id: string) =>
 export const appendCommitmentTransition = (
   relationshipId: string,
   commitmentId: string,
-  input: { kind: string; idempotencyKey: string; reason?: string; evidenceRefs?: string[] },
+  input: {
+    kind: string;
+    idempotencyKey: string;
+    reason?: string;
+    dueAt?: string;
+    action?: string;
+    blocker?: string;
+    evidenceRefs?: string[];
+  },
 ) =>
   post(
     `/relationships/${encodeURIComponent(relationshipId)}/commitments/${encodeURIComponent(commitmentId)}/transitions`,

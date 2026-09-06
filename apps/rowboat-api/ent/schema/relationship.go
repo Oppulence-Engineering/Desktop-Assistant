@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"entgo.io/contrib/entgql"
+	"entgo.io/contrib/entoas"
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -32,6 +34,14 @@ func (Relationship) Fields() []ent.Field {
 		// Deterministic identifiers may propose a link; ambiguous matches
 		// require user review and are never merged automatically.
 		field.JSON("resource_refs", []string{}).Default([]string{}),
+		field.JSON("company_categories", []string{}).Default([]string{}),
+		field.Text("company_description").Optional(),
+		field.String("linkedin_url").Optional(),
+		field.JSON("company_enrichment_refs", map[string][]string{}).
+			Default(map[string][]string{}).
+			Annotations(entgql.Skip(), entoas.Skip(true)),
+		field.String("company_enrichment_version").Optional(),
+		field.Time("company_enriched_at").Optional().Nillable(),
 		field.Text("summary").Optional(),
 		field.Time("last_touch_at").Optional().Nillable(),
 		field.Time("next_action_at").Optional().Nillable(),

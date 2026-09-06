@@ -34,6 +34,18 @@ const (
 	FieldOutboundAccountRef = "outbound_account_ref"
 	// FieldResourceRefs holds the string denoting the resource_refs field in the database.
 	FieldResourceRefs = "resource_refs"
+	// FieldCompanyCategories holds the string denoting the company_categories field in the database.
+	FieldCompanyCategories = "company_categories"
+	// FieldCompanyDescription holds the string denoting the company_description field in the database.
+	FieldCompanyDescription = "company_description"
+	// FieldLinkedinURL holds the string denoting the linkedin_url field in the database.
+	FieldLinkedinURL = "linkedin_url"
+	// FieldCompanyEnrichmentRefs holds the string denoting the company_enrichment_refs field in the database.
+	FieldCompanyEnrichmentRefs = "company_enrichment_refs"
+	// FieldCompanyEnrichmentVersion holds the string denoting the company_enrichment_version field in the database.
+	FieldCompanyEnrichmentVersion = "company_enrichment_version"
+	// FieldCompanyEnrichedAt holds the string denoting the company_enriched_at field in the database.
+	FieldCompanyEnrichedAt = "company_enriched_at"
 	// FieldSummary holds the string denoting the summary field in the database.
 	FieldSummary = "summary"
 	// FieldLastTouchAt holds the string denoting the last_touch_at field in the database.
@@ -271,6 +283,12 @@ var Columns = []string{
 	FieldOutboundLeadID,
 	FieldOutboundAccountRef,
 	FieldResourceRefs,
+	FieldCompanyCategories,
+	FieldCompanyDescription,
+	FieldLinkedinURL,
+	FieldCompanyEnrichmentRefs,
+	FieldCompanyEnrichmentVersion,
+	FieldCompanyEnrichedAt,
 	FieldSummary,
 	FieldLastTouchAt,
 	FieldNextActionAt,
@@ -338,6 +356,10 @@ var (
 	DisplayNameValidator func(string) error
 	// DefaultResourceRefs holds the default value on creation for the "resource_refs" field.
 	DefaultResourceRefs []string
+	// DefaultCompanyCategories holds the default value on creation for the "company_categories" field.
+	DefaultCompanyCategories []string
+	// DefaultCompanyEnrichmentRefs holds the default value on creation for the "company_enrichment_refs" field.
+	DefaultCompanyEnrichmentRefs map[string][]string
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
@@ -420,6 +442,26 @@ func ByOutboundLeadID(opts ...sql.OrderTermOption) OrderOption {
 // ByOutboundAccountRef orders the results by the outbound_account_ref field.
 func ByOutboundAccountRef(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOutboundAccountRef, opts...).ToFunc()
+}
+
+// ByCompanyDescription orders the results by the company_description field.
+func ByCompanyDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCompanyDescription, opts...).ToFunc()
+}
+
+// ByLinkedinURL orders the results by the linkedin_url field.
+func ByLinkedinURL(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLinkedinURL, opts...).ToFunc()
+}
+
+// ByCompanyEnrichmentVersion orders the results by the company_enrichment_version field.
+func ByCompanyEnrichmentVersion(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCompanyEnrichmentVersion, opts...).ToFunc()
+}
+
+// ByCompanyEnrichedAt orders the results by the company_enriched_at field.
+func ByCompanyEnrichedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCompanyEnrichedAt, opts...).ToFunc()
 }
 
 // BySummary orders the results by the summary field.

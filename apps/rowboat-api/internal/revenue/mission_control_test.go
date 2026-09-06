@@ -65,6 +65,46 @@ func TestMissionControlOwnsStateChangeEvidenceCompletenessAndAction(t *testing.T
 	}
 }
 
+func TestMissionControlHashIgnoresWallClockLag(t *testing.T) {
+	f := newFixture(t)
+	base := time.Date(2026, 7, 31, 19, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return base }
+	result, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{acmeObservation(base)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.ReportSourceSyncProgress(f.ctx, f.user, SourceSyncProgressInput{
+		Source: "hubspot", SourceAccountID: "default", Completed: 1, Total: 1, Done: true, OccurredAt: base,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	clock := base
+	f.svc.now = func() time.Time {
+		clock = clock.Add(2 * time.Second)
+		return clock
+	}
+	first, err := f.svc.MissionControl(f.ctx, f.user, result[0].Relationship.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := f.svc.MissionControl(f.ctx, f.user, result[0].Relationship.ID)
+	if err != nil || second.AggregateHash != first.AggregateHash {
+		t.Fatalf("wall-clock lag destabilized the aggregate: first=%s second=%+v err=%v", first.AggregateHash, second, err)
+	}
+}
+
+func TestMissionControlLoadsUnprojectedRelationship(t *testing.T) {
+	f := newFixture(t)
+	model, err := f.svc.MissionControl(f.ctx, f.user, f.relationship(t).ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if model.StateVersion != 0 || model.StateHash != "" || model.AggregateHash == "" {
+		t.Fatalf("unexpected unprojected aggregate: %+v", model)
+	}
+}
+
 func TestMissionControlAcknowledgementAndCorrectionBoundary(t *testing.T) {
 	f := newFixture(t)
 	base := time.Date(2026, 7, 31, 20, 0, 0, 0, time.UTC)

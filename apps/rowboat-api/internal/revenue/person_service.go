@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
@@ -58,7 +59,10 @@ func (s *Service) ListPersons(
 		))
 	}
 	return q.
-		Order(ent.Desc(person.FieldLastInteractionAt), ent.Asc(person.FieldDisplayName)).
+		Order(
+			person.ByLastInteractionAt(sql.OrderDesc(), sql.OrderNullsLast()),
+			person.ByDisplayName(),
+		).
 		Limit(limit).
 		All(ctx)
 }

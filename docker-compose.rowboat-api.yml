@@ -37,6 +37,19 @@ services:
       timeout: 3s
       retries: 20
 
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/rowboat-api/Dockerfile
+    image: rowboat-api:local
+    entrypoint: ["/rowboat-api-migrate"]
+    command: ["apply"]
+    environment:
+      DATABASE_URL: "postgres://rowboat:rowboat@postgres:5432/rowboat?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   devstack:
     image: rowboat-api:local
     entrypoint: ["/devstack"]
@@ -68,7 +81,7 @@ services:
       LOG_LEVEL: info
       DATABASE_URL: "postgres://rowboat:rowboat@postgres:5432/rowboat?sslmode=disable"
       REDIS_URL: "redis://redis:6379/0"
-      AUTO_MIGRATE: "true"
+      AUTO_MIGRATE: "false"
       DB_ENCRYPTION_KEY: "dev-encryption-key-32-bytes-min!!"
       APP_URL: "http://localhost:18080"
       # Auth = REAL WorkOS AuthKit (verified token shape: iss=https://api.workos.com,
@@ -82,6 +95,7 @@ services:
       # root .env; OPENAI_BASE_URL unset → api.openai.com). anthropic/* + google/*
       # still route to the devstack mock (no OpenRouter key), so those don't error.
       OPENAI_API_KEY: "${OPENAI_API_KEY:?set OPENAI_API_KEY in the root .env}"
+      PARALLEL_API_KEY: "${PARALLEL_API_KEY:-}"
       OPENROUTER_BASE_URL: "http://devstack:8090"
       OPENROUTER_API_KEY: "dev-dummy"
       # Webhook / internal shared secrets.
@@ -90,6 +104,7 @@ services:
       SLACK_SIGNING_SECRET: "dev-slack-signing-secret"
       GOOGLE_WEBHOOK_TOKEN: "dev-google-webhook-token"
       WEBHOOK_SIGNING_SECRET: "dev-webhook-secret"
+      CONNECTOR_ALLOW_LOCAL_ENTITLEMENT_DEVELOPMENT: "true"
       FREE_TIER_CREDITS: "10000"
       # Google OAuth broker → mock token endpoint on devstack. Dummy client
       # credentials satisfy the "configured" check so /v1/google-oauth/refresh
@@ -101,6 +116,7 @@ services:
       GOOGLE_OAUTH_CLIENT_ID: "${GOOGLE_CLIENT_ID:?set GOOGLE_CLIENT_ID in root .env}"
       GOOGLE_OAUTH_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET:?set GOOGLE_CLIENT_SECRET in root .env}"
       GOOGLE_REDIRECT_URI: "http://localhost:18080/oauth/google/callback"
+      GOOGLE_WEB_RETURN_URL: "http://localhost:3000/app/settings?settings=connections"
       # WorkOS sign-in broker → REAL WorkOS. client_id is public (literal); the
       # secret API key comes from the gitignored root .env (compose auto-loads
       # it for ${...} substitution). Both base URLs are api.workos.com in prod.
@@ -113,3 +129,5 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully

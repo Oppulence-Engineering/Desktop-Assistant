@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/mail"
@@ -16,8 +17,13 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailmessagemeta"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueleakscan"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
@@ -27,7 +33,10 @@ import (
 // Scan bounds (RFC 030 WP3 historical boundary). All hard caps: a scan can
 // finish early but never exceed them.
 const (
-	scanMaxThreads   = 100
+	// A first scan spends 10 Gmail quota units listing threads, then up to 60
+	// per thread (40 for metadata + 20 for the evidence body). Keep the scan
+	// below Gmail's 6,000-unit per-user-per-minute limit with room to spare.
+	scanMaxThreads   = 90
 	scanDeadline     = 2 * time.Minute
 	scanMaxActions   = 25
 	excerptMaxRunes  = 200
@@ -237,6 +246,11 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 	if err != nil {
 		return stats, err
 	}
+	backfilled, err := s.backfillIndexedThreadRelationships(ctx, u, ws, selfEmail, scan.LookbackDays)
+	if err != nil {
+		return stats, err
+	}
+	stats.relationships += backfilled
 
 	// Phase 1 — detect. Collect every candidate first so the action cap can
 	// keep the HIGHEST-priority candidates, not merely the first swept.
@@ -258,18 +272,50 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		// Layer 1 (RFC 031): record thread/message metadata for every swept
 		// thread, not just detector hits. Best-effort — indexing must not
 		// abort the scan.
-		if err := s.indexThread(ctx, u, sum); err != nil {
+		indexed, err := s.indexThread(ctx, u, sum)
+		if err != nil {
 			s.log.Debug("revenue: index thread", zap.Error(err))
 		}
+		rel, created, err := s.syncThreadRelationship(ctx, u, ws, sum)
+		if err != nil {
+			s.log.Warn("revenue: sync thread relationship", zap.Error(err))
+		} else {
+			if created {
+				stats.relationships++
+			}
+			if indexed != nil {
+				if err := indexed.Update().SetRelationship(rel).Exec(ctx); err != nil {
+					s.log.Debug("revenue: link indexed thread", zap.Error(err))
+				}
+			}
+		}
 		hit := detectThread(sum, now)
+		anchor := lastMessage(sum)
+		promiseText := anchor.Snippet
+		if body, err := s.MessageBody(ctx, u, anchor.ID); err == nil {
+			promiseText = body
+		}
+		promise := detectExplicitCommitment(sum, promiseText)
+		if hit == nil && promise != nil {
+			anchor.Snippet = promise.Text
+			hit = &detectorHit{
+				Detector:   "commitment_candidate",
+				Reason:     "An explicit promise in this message needs confirmation.",
+				Components: map[string]int{"commitment_urgency": 30, "evidence_quality": 20},
+				Anchor:     anchor,
+			}
+		}
 		if hit == nil {
 			revenuemetrics.DetectorCandidates.WithLabelValues("none", "skipped").Inc()
 			continue
 		}
+		hit.Commitment = promise
 		stats.candidates++
 		// Learn before the scan-wide sort so past outcomes can change which ten
 		// candidates are materialized, not merely decorate stored actions later.
-		hit.Components["outcome_learning"] = learning.result(hit.ActionType, "email").Lift
+		if hit.ActionType != "" {
+			hit.Components["outcome_learning"] = learning.result(hit.ActionType, "email").Lift
+		}
 		revenuemetrics.DetectorCandidates.WithLabelValues(hit.Detector, "candidate").Inc()
 		candidates = append(candidates, candidate{sum: sum, hit: hit})
 	}
@@ -313,79 +359,10 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 	if err != nil {
 		return false, false, false, err
 	}
-
-	// Resolve through the shared identity engine rather than matching the
-	// primary_email column directly.
-	//
-	// The old lookup was `PrimaryEmailEQ(...).First()`, on a column with only a
-	// non-unique index: on a collision it picked an arbitrary row, and it wrote
-	// neither identity anchors nor participants. So the scanner's relationships were
-	// invisible to every other source, and two rows sharing an address stayed
-	// silently forked. Going through the engine means a collision now surfaces as a
-	// reviewable candidate instead of a coin flip.
-	resolution := RelationshipObservationInput{
-		DisplayName:   coalesce(sum.CounterpartyName, sum.Counterparty),
-		PrimaryEmail:  normalizeEmail(sum.Counterparty),
-		AccountDomain: accountDomain(sum.Counterparty),
-		// The engine defaults to "company", which is right for domain-anchored
-		// account evidence and wrong for one human's mail thread.
-		PreferredKind: "person",
-		Source:        "gmail",
-		OccurredAt:    sum.LastAt,
-		ReceivedAt:    sum.LastAt,
-		Channel:       "email",
-		Direction:     directionOf(sum.LastOutbound),
-		Participants: []RelationshipParticipantInput{{
-			DisplayName: coalesce(sum.CounterpartyName, sum.Counterparty),
-			Email:       normalizeEmail(sum.Counterparty),
-		}},
-	}
-
-	// Anchor binding plus candidate creation must be atomic: a crash between them
-	// would leave an anchor with no reviewable record of the collision it caused.
-	tx, err := s.client.Tx(ctx)
+	resolution := threadRelationshipInput(sum)
+	rel, linkedPersons, createdRel, err := s.syncThreadRelationshipWithPeople(ctx, u, ws, sum)
 	if err != nil {
 		return false, false, false, err
-	}
-	txc := tx.Client()
-	rel, created, err := resolveObservationRelationship(ctx, txc, ws, u, resolution)
-	if err != nil {
-		_ = tx.Rollback()
-		return false, false, false, err
-	}
-	createdRel = created
-	linkedPersons := map[string]*ent.Person{}
-	for _, participant := range resolution.Participants {
-		if err = upsertRelationshipParticipant(ctx, txc, ws, u, rel, participant); err != nil {
-			_ = tx.Rollback()
-			return false, createdRel, false, err
-		}
-		// Linking and attribute writes are idempotent, so they run on every scan.
-		// The interaction count is not, and is deferred until the evidence row
-		// below proves this thread state has not been seen before.
-		if linkedPersons[participant.Email], err = linkParticipantPerson(
-			ctx, txc, ws, u, rel, nil, resolution, participant,
-		); err != nil {
-			_ = tx.Rollback()
-			return false, createdRel, false, err
-		}
-	}
-	if rel.LastTouchAt == nil || sum.LastAt.After(rel.LastTouchAt.UTC()) {
-		if rel, err = rel.Update().SetLastTouchAt(sum.LastAt.UTC()).Save(ctx); err != nil {
-			_ = tx.Rollback()
-			return false, createdRel, false, err
-		}
-	}
-	if err = tx.Commit(); err != nil {
-		return false, createdRel, false, err
-	}
-	// Entities returned inside a transaction carry that transaction's config, so
-	// using one after commit runs against a closed handle. Rebind them all.
-	rel = rel.Unwrap()
-	for email, person := range linkedPersons {
-		if person != nil {
-			linkedPersons[email] = person.Unwrap()
-		}
 	}
 
 	// An account whose identity is under review must not generate queue work: the
@@ -403,13 +380,14 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 	}
 
 	anchorHash := sha256.Sum256([]byte(hit.Anchor.ID + ":" + hit.Anchor.Snippet))
+	contentHash := "sha256:" + hex.EncodeToString(anchorHash[:])
 	ev, err := s.client.RevenueEvidence.Create().
 		SetWorkspace(ws).
 		SetUser(u).
 		SetSource("gmail").
 		SetSourceRecordID(sum.ThreadID).
 		SetSourceMessageID(hit.Anchor.ID).
-		SetContentHash("sha256:" + hex.EncodeToString(anchorHash[:])).
+		SetContentHash(contentHash).
 		SetExcerpt(truncateRunes(hit.Anchor.Snippet, excerptMaxRunes)).
 		SetOccurredAt(hit.Anchor.At).
 		SetObservedAt(s.now()).
@@ -419,7 +397,15 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 	case err == nil:
 		createdEv = true
 	case ent.IsConstraintError(err):
-		ev = nil // evidence already recorded on a prior run
+		ev, err = s.client.RevenueEvidence.Query().Where(
+			revenueevidence.SourceEQ("gmail"),
+			revenueevidence.SourceRecordIDEQ(sum.ThreadID),
+			revenueevidence.ContentHashEQ(contentHash),
+			revenueevidence.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+		).Only(ctx)
+		if err != nil {
+			return false, createdRel, false, err
+		}
 	default:
 		return false, createdRel, false, err
 	}
@@ -436,6 +422,14 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 				return false, createdRel, createdEv, err
 			}
 		}
+	}
+	if hit.Commitment != nil {
+		if err = s.materializeScannedCommitment(ctx, u, ws, rel, ev, *hit.Commitment); err != nil {
+			return false, createdRel, createdEv, err
+		}
+	}
+	if hit.ActionType == "" {
+		return false, createdRel, createdEv, nil
 	}
 
 	// Thread-scoped, NOT detector-scoped: a thread yields at most one queue
@@ -467,11 +461,214 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 		return false, createdRel, createdEv, err
 	}
 	createdAction = !existed
+	if existed {
+		if current, queryErr := action.QueryRelationship().Only(ctx); queryErr == nil && current.ID != rel.ID {
+			action, err = action.Update().SetRelationship(rel).Save(ctx)
+			if err != nil {
+				return false, createdRel, createdEv, err
+			}
+		}
+	}
 	if ev != nil {
 		// Best-effort evidence link; the action stands without it.
 		_ = s.client.RevenueAction.UpdateOneID(action.ID).AddEvidences(ev).Exec(ctx)
 	}
 	return createdAction, createdRel, createdEv, nil
+}
+
+func threadRelationshipInput(sum *threadSummary) RelationshipObservationInput {
+	domain := accountDomain(sum.Counterparty)
+	displayName, primaryEmail, kind := coalesce(sum.CounterpartyName, sum.Counterparty), normalizeEmail(sum.Counterparty), "person"
+	if domain != "" {
+		displayName, primaryEmail, kind = domain, "", "company"
+	}
+	return RelationshipObservationInput{
+		DisplayName: displayName, PrimaryEmail: primaryEmail, AccountDomain: domain,
+		PreferredKind: kind, Source: "gmail", OccurredAt: sum.LastAt, ReceivedAt: sum.LastAt,
+		Channel: "email", Direction: directionOf(sum.LastOutbound),
+		Participants: []RelationshipParticipantInput{{
+			DisplayName: coalesce(sum.CounterpartyName, sum.Counterparty),
+			Email:       normalizeEmail(sum.Counterparty), Role: "contact",
+		}},
+	}
+}
+
+func (s *Service) syncThreadRelationship(
+	ctx context.Context,
+	u *ent.User,
+	ws *ent.RevenueWorkspace,
+	sum *threadSummary,
+) (*ent.Relationship, bool, error) {
+	var primary *ent.Relationship
+	createdAny := false
+	for _, counterparty := range counterpartySummaries(sum) {
+		rel, _, created, err := s.syncThreadRelationshipWithPeople(ctx, u, ws, counterparty)
+		if err != nil {
+			return nil, createdAny, err
+		}
+		if primary == nil {
+			primary = rel
+		}
+		createdAny = createdAny || created
+	}
+	return primary, createdAny, nil
+}
+
+func (s *Service) syncThreadRelationshipWithPeople(
+	ctx context.Context,
+	u *ent.User,
+	ws *ent.RevenueWorkspace,
+	sum *threadSummary,
+) (*ent.Relationship, map[string]*ent.Person, bool, error) {
+	resolution := threadRelationshipInput(sum)
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	txc := tx.Client()
+	rel, created, err := resolveObservationRelationship(ctx, txc, ws, u, resolution)
+	if err != nil {
+		_ = tx.Rollback()
+		return nil, nil, false, err
+	}
+	linkedPersons := map[string]*ent.Person{}
+	for _, participant := range resolution.Participants {
+		if err = upsertRelationshipParticipant(ctx, txc, ws, u, rel, participant); err != nil {
+			_ = tx.Rollback()
+			return nil, nil, created, err
+		}
+		if linkedPersons[participant.Email], err = linkParticipantPerson(
+			ctx, txc, ws, u, rel, nil, resolution, participant,
+		); err != nil {
+			_ = tx.Rollback()
+			return nil, nil, created, err
+		}
+	}
+	if rel.LastTouchAt == nil || sum.LastAt.After(rel.LastTouchAt.UTC()) {
+		if rel, err = rel.Update().SetLastTouchAt(sum.LastAt.UTC()).Save(ctx); err != nil {
+			_ = tx.Rollback()
+			return nil, nil, created, err
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		return nil, nil, created, err
+	}
+	rel = rel.Unwrap()
+	for email, person := range linkedPersons {
+		if person != nil {
+			linkedPersons[email] = person.Unwrap()
+		}
+	}
+	return rel, linkedPersons, created, nil
+}
+
+func (s *Service) backfillIndexedThreadRelationships(
+	ctx context.Context,
+	u *ent.User,
+	ws *ent.RevenueWorkspace,
+	selfEmail string,
+	lookbackDays int,
+) (int, error) {
+	rows, err := s.client.MailThread.Query().Where(
+		mailthread.HasUserWith(user.IDEQ(u.ID)),
+		mailthread.LastActivityAtGTE(s.now().AddDate(0, 0, -lookbackDays)),
+	).WithRelationship().WithMessages(func(q *ent.MailMessageMetaQuery) {
+		q.Order(ent.Asc(mailmessagemeta.FieldOccurredAt))
+	}).All(ctx)
+	if err != nil {
+		return 0, err
+	}
+	created := 0
+	for _, row := range rows {
+		messages := make([]googleapi.GmailThreadMessage, 0, len(row.Edges.Messages))
+		for _, message := range row.Edges.Messages {
+			messages = append(messages, googleapi.GmailThreadMessage{
+				ID: message.ProviderMessageID, ThreadID: row.ProviderThreadID,
+				From: message.FromAddr, To: message.ToAddr, Subject: message.Subject,
+				Outbound: message.Direction == "outbound", At: message.OccurredAt,
+			})
+		}
+		sum := summarizeThread(selfEmail, messages)
+		if sum == nil || row.LastActivityAt == nil {
+			continue
+		}
+		rel, made, syncErr := s.syncThreadRelationship(ctx, u, ws, sum)
+		if syncErr != nil {
+			return created, syncErr
+		}
+		if err := row.Update().SetRelationship(rel).Exec(ctx); err != nil {
+			return created, err
+		}
+		if made {
+			created++
+		}
+	}
+	return created, nil
+}
+
+// materializeScannedCommitment records a review-required candidate and its
+// first immutable event. The evidence edge is the idempotency boundary.
+func (s *Service) materializeScannedCommitment(
+	ctx context.Context,
+	u *ent.User,
+	ws *ent.RevenueWorkspace,
+	rel *ent.Relationship,
+	ev *ent.RevenueEvidence,
+	draft scannedCommitment,
+) error {
+	exists, err := s.client.Commitment.Query().Where(
+		commitment.HasEvidencesWith(revenueevidence.IDEQ(ev.ID)),
+	).Exist(ctx)
+	if err != nil || exists {
+		return err
+	}
+	payload, err := json.Marshal(map[string]string{
+		"action":                     draft.Text,
+		"ownerParticipantRef":        draft.OwnerRef,
+		"counterpartyParticipantRef": draft.CounterpartyRef,
+	})
+	if err != nil {
+		return err
+	}
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	txc := tx.Client()
+	txws, err := txc.RevenueWorkspace.Get(ctx, ws.ID)
+	if err != nil {
+		return err
+	}
+	txu, err := txc.User.Get(ctx, u.ID)
+	if err != nil {
+		return err
+	}
+	txrel, err := txc.Relationship.Get(ctx, rel.ID)
+	if err != nil {
+		return err
+	}
+	txev, err := txc.RevenueEvidence.Get(ctx, ev.ID)
+	if err != nil {
+		return err
+	}
+	row, err := txc.Commitment.Create().
+		SetWorkspace(txws).SetRelationship(txrel).SetUser(txu).
+		SetDirection(draft.Direction).SetText(draft.Text).SetConfidence(1).
+		SetOwnerParticipantRef(draft.OwnerRef).SetCounterpartyParticipantRef(draft.CounterpartyRef).
+		SetSourcePhrase(draft.Text).SetAcceptance("candidate").SetCurrentEventVersion(1).
+		AddEvidences(txev).Save(ctx)
+	if err != nil {
+		return err
+	}
+	if _, err = txc.CommitmentEvent.Create().
+		SetWorkspace(txws).SetRelationship(txrel).SetUser(txu).SetCommitment(row).
+		SetSourceEventID("gmail-commitment:" + ev.ID.String()).SetVersion(1).SetKind("proposed").
+		SetActorType("deterministic_rule").SetActorRef("gmail-scan").SetOccurredAt(ev.OccurredAt.UTC()).
+		SetEvidenceRefs([]string{"revenue-evidence:" + ev.ID.String()}).SetPayloadJSON(string(payload)).Save(ctx); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // directionOf maps a thread's latest message onto the interaction direction the
@@ -497,6 +694,7 @@ type threadSummary struct {
 	OutboundCount    int
 	InboundCount     int
 	Messages         []googleapi.GmailThreadMessage
+	Counterparties   []RelationshipParticipantInput
 }
 
 // detectorHit is one detector's evidence-backed proposal.
@@ -507,14 +705,63 @@ type detectorHit struct {
 	ProposedMessage string
 	Components      map[string]int
 	Anchor          googleapi.GmailThreadMessage
+	Commitment      *scannedCommitment
+}
+
+type scannedCommitment struct {
+	Direction       string
+	Text            string
+	OwnerRef        string
+	CounterpartyRef string
 }
 
 var (
-	proposalRe = regexp.MustCompile(`(?i)\b(proposal|quote|quotation|pricing|estimate|contract|sow|statement of work|invoice)\b`)
-	followUpRe = regexp.MustCompile(`(?i)\b(follow up|follow-up|circle back|check back|touch base|reconnect|next (week|month|quarter))\b`)
-	introRe    = regexp.MustCompile(`(?i)\b(intro|introduc|referr|connect(ing)? you|looping in|cc'?ing)\b`)
-	askRe      = regexp.MustCompile(`(?i)(\?|can you|could you|would you|let me know|what do you think|any update|thoughts)`)
+	proposalRe           = regexp.MustCompile(`(?i)\b(proposal|quote|quotation|pricing|estimate|contract|sow|statement of work|invoice)\b`)
+	followUpRe           = regexp.MustCompile(`(?i)\b(follow up|follow-up|circle back|check back|touch base|reconnect|next (week|month|quarter))\b`)
+	introRe              = regexp.MustCompile(`(?i)\b(intro|introduc|referr|connect(ing)? you|looping in|cc'?ing)\b`)
+	askRe                = regexp.MustCompile(`(?i)(\?|can you|could you|would you|let me know|what do you think|any update|thoughts)`)
+	explicitCommitmentRe = regexp.MustCompile(`(?i)\b(i|we)(['’]ll|\s+(will|shall|commit(ted)? to|promise(d)? to|agree(d)? to))\s+(send|share|deliver|provide|complete|finish|review|schedule|book|call|email|follow up|update|prepare|resolve|fix|return|introduce|connect|pay|sign|submit|confirm)\b`)
 )
+
+func detectExplicitCommitment(sum *threadSummary, text string) *scannedCommitment {
+	message := lastMessage(sum)
+	quote := commitmentQuote(text)
+	if quote == "" {
+		return nil
+	}
+	direction, owner, counterparty := "promised_by_them", sum.Counterparty, "local-user"
+	if message.Outbound {
+		direction, owner, counterparty = "promised_by_me", "local-user", sum.Counterparty
+	}
+	return &scannedCommitment{
+		Direction: direction, Text: quote, OwnerRef: owner, CounterpartyRef: counterparty,
+	}
+}
+
+func commitmentQuote(text string) string {
+	// A plain-text Gmail body commonly includes the quoted thread. Only the
+	// newly authored portion can be attributed to this message's sender.
+	lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
+	newest := lines[:0]
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, ">") || (strings.HasPrefix(trimmed, "On ") && strings.HasSuffix(trimmed, " wrote:")) {
+			break
+		}
+		newest = append(newest, trimmed)
+	}
+	text = strings.Join(strings.Fields(strings.Join(newest, " ")), " ")
+	match := explicitCommitmentRe.FindStringIndex(text)
+	if match == nil {
+		return ""
+	}
+	start := strings.LastIndexAny(text[:match[0]], ".!?") + 1
+	end := len(text)
+	if i := strings.IndexAny(text[match[1]:], ".!?"); i >= 0 {
+		end = match[1] + i + 1
+	}
+	return truncateRunes(strings.TrimSpace(text[start:end]), excerptMaxRunes)
+}
 
 // summarizeThread derives the detector input for one thread. Returns nil for
 // threads with no external counterparty (self-mail, no-reply noise).
@@ -524,6 +771,7 @@ func summarizeThread(selfEmail string, msgs []googleapi.GmailThreadMessage) *thr
 	}
 	self := strings.ToLower(strings.TrimSpace(selfEmail))
 	sum := &threadSummary{ThreadID: msgs[0].ThreadID, Messages: msgs}
+	seen := map[string]int{}
 	for _, m := range msgs {
 		if m.At.After(sum.LastAt) {
 			sum.LastAt = m.At
@@ -532,25 +780,51 @@ func summarizeThread(selfEmail string, msgs []googleapi.GmailThreadMessage) *thr
 		if sum.Subject == "" && m.Subject != "" {
 			sum.Subject = m.Subject
 		}
-		var addr string
+		var header string
 		if m.Outbound {
 			sum.OutboundCount++
-			addr = m.To
+			header = m.To
 		} else {
 			sum.InboundCount++
-			addr = m.From
+			header = m.From
 		}
-		if sum.Counterparty == "" {
-			if email, name := parseAddress(addr); email != "" && email != self && !isNoReply(email) {
-				sum.Counterparty = email
-				sum.CounterpartyName = name
+		for _, participant := range parseAddresses(header) {
+			if participant.Email == self || isNoReply(participant.Email) {
+				continue
 			}
+			if index, ok := seen[participant.Email]; ok {
+				if sum.Counterparties[index].DisplayName == "" && participant.DisplayName != "" {
+					sum.Counterparties[index].DisplayName = participant.DisplayName
+				}
+				continue
+			}
+			seen[participant.Email] = len(sum.Counterparties)
+			sum.Counterparties = append(sum.Counterparties, participant)
 		}
 	}
-	if sum.Counterparty == "" || sum.LastAt.IsZero() {
+	if len(sum.Counterparties) == 0 || sum.LastAt.IsZero() {
 		return nil
 	}
+	sum.Counterparty = sum.Counterparties[0].Email
+	sum.CounterpartyName = sum.Counterparties[0].DisplayName
 	return sum
+}
+
+func counterpartySummaries(sum *threadSummary) []*threadSummary {
+	participants := sum.Counterparties
+	if len(participants) == 0 && sum.Counterparty != "" {
+		participants = []RelationshipParticipantInput{{
+			DisplayName: sum.CounterpartyName, Email: sum.Counterparty, Role: "contact",
+		}}
+	}
+	out := make([]*threadSummary, 0, len(participants))
+	for _, participant := range participants {
+		clone := *sum
+		clone.Counterparty = participant.Email
+		clone.CounterpartyName = participant.DisplayName
+		out = append(out, &clone)
+	}
+	return out
 }
 
 // detectThread runs the deterministic detectors in precedence order and
@@ -716,19 +990,27 @@ func lastMessage(sum *threadSummary) googleapi.GmailThreadMessage {
 
 func lastSnippet(sum *threadSummary) string { return lastMessage(sum).Snippet }
 
-func parseAddress(header string) (email, name string) {
-	addr, err := mail.ParseAddress(header)
+func parseAddresses(header string) []RelationshipParticipantInput {
+	parsed, err := mail.ParseAddressList(header)
 	if err != nil {
-		// Header may hold a bare list; take the first token that looks like
-		// an address.
-		for _, tok := range strings.FieldsFunc(header, func(r rune) bool { return r == ',' || r == ';' || r == ' ' }) {
-			if strings.Contains(tok, "@") {
-				return strings.ToLower(strings.Trim(tok, "<>")), ""
+		parsed = nil
+		for _, token := range strings.FieldsFunc(header, func(r rune) bool { return r == ',' || r == ';' }) {
+			if address, parseErr := mail.ParseAddress(strings.TrimSpace(token)); parseErr == nil {
+				parsed = append(parsed, address)
 			}
 		}
-		return "", ""
 	}
-	return strings.ToLower(addr.Address), strings.TrimSpace(addr.Name)
+	out := make([]RelationshipParticipantInput, 0, len(parsed))
+	for _, address := range parsed {
+		email := normalizeEmail(address.Address)
+		if email == "" {
+			continue
+		}
+		out = append(out, RelationshipParticipantInput{
+			DisplayName: strings.TrimSpace(address.Name), Email: email, Role: "contact",
+		})
+	}
+	return out
 }
 
 func isNoReply(email string) bool {
@@ -738,7 +1020,8 @@ func isNoReply(email string) bool {
 	}
 	local = strings.ReplaceAll(strings.ReplaceAll(local, "-", ""), "_", "")
 	return strings.Contains(local, "noreply") || strings.Contains(local, "donotreply") ||
-		strings.HasPrefix(local, "notifications") || strings.HasPrefix(local, "mailer")
+		strings.HasPrefix(local, "notifications") || strings.HasPrefix(local, "mailer") ||
+		(strings.HasPrefix(local, "org") && strings.Contains(local, "+t"))
 }
 
 func firstName(sum *threadSummary) string {

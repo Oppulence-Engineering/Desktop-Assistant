@@ -9,10 +9,8 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 )
 
-// The Gmail scanner used to match relationships by the primary_email column with
-// .First(), on a non-unique index: an arbitrary winner on collision, and no identity
-// anchors or participants written at all. Its accounts were therefore invisible to
-// every other source.
+// Gmail company mail is grouped by domain while the human sender remains a
+// participant. Public mailbox addresses remain person records.
 func TestScanHitAnchorsAndPopulatesTheRelationship(t *testing.T) {
 	f := newFixture(t)
 	now := time.Date(2026, 8, 4, 12, 0, 0, 0, time.UTC)
@@ -46,7 +44,7 @@ func TestScanHitAnchorsAndPopulatesTheRelationship(t *testing.T) {
 	rels, err := f.client.Relationship.Query().
 		Where(
 			relationship.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
-			relationship.PrimaryEmailEQ("sarah@acme.example"),
+			relationship.AccountDomainEQ("acme.example"),
 		).All(f.ctx)
 	if err != nil {
 		t.Fatalf("query: %v", err)
@@ -55,8 +53,8 @@ func TestScanHitAnchorsAndPopulatesTheRelationship(t *testing.T) {
 		t.Fatalf("expected 1 relationship, got %d", len(rels))
 	}
 	rel := rels[0]
-	if rel.Kind != "person" {
-		t.Fatalf("kind = %q, want person (PreferredKind must be honored)", rel.Kind)
+	if rel.Kind != "company" || rel.DisplayName != "acme.example" || rel.PrimaryEmail != "" {
+		t.Fatalf("company identity = %+v", rel)
 	}
 
 	// The whole point: durable anchors, so the next observation from any source
@@ -79,6 +77,33 @@ func TestScanHitAnchorsAndPopulatesTheRelationship(t *testing.T) {
 	// And the person layer picked it up.
 	if len(personsIn(t, f)) != 1 {
 		t.Fatalf("expected a canonical person for the scan counterparty")
+	}
+}
+
+func TestScanGroupsBusinessContactsByCompany(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 4, 12, 0, 0, 0, time.UTC)
+	hit := &detectorHit{
+		Detector: "waiting_on_me", ActionType: "warm_follow_up", Reason: "they asked",
+		ProposedMessage: "Following up.", Components: map[string]int{"recency": 1},
+	}
+	for i, email := range []string{"sarah@acme.example", "morgan@acme.example"} {
+		sum := &threadSummary{
+			ThreadID: email, Counterparty: email, CounterpartyName: []string{"Sarah Chen", "Morgan Lee"}[i],
+			LastAt: now.Add(time.Duration(i) * time.Minute), OutboundCount: 1, InboundCount: 1,
+		}
+		hit.Anchor = googleapi.GmailThreadMessage{ID: email, ThreadID: email, At: sum.LastAt, Snippet: "any update?"}
+		if _, _, _, err := f.svc.materializeHit(f.ctx, f.user, sum, hit); err != nil {
+			t.Fatalf("materialize %s: %v", email, err)
+		}
+	}
+	rel := f.client.Relationship.Query().Where(relationship.AccountDomainEQ("acme.example")).OnlyX(f.ctx)
+	if rel.Kind != "company" || rel.QueryParticipants().CountX(f.ctx) != 2 {
+		t.Fatalf("company=%s participants=%d", rel.Kind, rel.QueryParticipants().CountX(f.ctx))
+	}
+	personal := threadRelationshipInput(&threadSummary{Counterparty: "person@gmail.com", LastAt: now})
+	if personal.PreferredKind != "person" || personal.PrimaryEmail != "person@gmail.com" || personal.AccountDomain != "" {
+		t.Fatalf("public mailbox identity = %+v", personal)
 	}
 }
 
@@ -111,7 +136,7 @@ func TestScanHitIsIdempotentAcrossReruns(t *testing.T) {
 	count, err := f.client.Relationship.Query().
 		Where(
 			relationship.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
-			relationship.PrimaryEmailEQ("sarah@acme.example"),
+			relationship.AccountDomainEQ("acme.example"),
 		).Count(f.ctx)
 	if err != nil {
 		t.Fatalf("count: %v", err)

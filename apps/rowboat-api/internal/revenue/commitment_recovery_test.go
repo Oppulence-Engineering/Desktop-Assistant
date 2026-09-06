@@ -62,6 +62,55 @@ func TestCommitmentRecoveryDedupesGovernedActionAndStoresRanking(t *testing.T) {
 	}
 }
 
+func TestCommitmentRecoveryReevaluatesWhenSourceFreshnessChanges(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 3, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	rel, _ := recoveryCommitment(t, f, now)
+	if _, err := f.svc.ReportSourceAuthorization(f.ctx, f.user, "google", SourceAuthorizationInput{
+		SourceAccountID: "owner@example.com", State: "completed",
+		GrantedScopes: []string{scopeGmailReadonly, "https://www.googleapis.com/auth/calendar.events.readonly"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	first, err := f.svc.ReconcileDueCommitments(f.ctx, f.user, &rel.ID)
+	if err != nil || len(first) != 1 || first[0].Classification != "unknown_stale_sources" {
+		t.Fatalf("stale evaluation: %#v err=%v", first, err)
+	}
+	if _, err := f.svc.ReportSourceSyncProgress(f.ctx, f.user, SourceSyncProgressInput{
+		Source: "google", SourceAccountID: "owner@example.com", Done: true, OccurredAt: now,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	second, err := f.svc.ReconcileDueCommitments(f.ctx, f.user, &rel.ID)
+	if err != nil || len(second) != 1 || second[0].Classification != "forgotten" {
+		t.Fatalf("fresh evaluation: %#v err=%v", second, err)
+	}
+	if first[0].EvaluationID == second[0].EvaluationID {
+		t.Fatal("materially different recovery inputs reused an artifact id")
+	}
+}
+
+func TestCommitmentRecoverySkipsUnreviewedCandidates(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 3, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	rel := f.relationship(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.client.Commitment.Create().SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_me").SetText("Unreviewed extraction").SetConfidence(0.7).
+		SetDueAt(now.Add(time.Hour)).Save(f.ctx); err != nil {
+		t.Fatal(err)
+	}
+	evaluations, err := f.svc.ReconcileDueCommitments(f.ctx, f.user, &rel.ID)
+	if err != nil || len(evaluations) != 0 {
+		t.Fatalf("unreviewed candidates must not create recovery work: %#v err=%v", evaluations, err)
+	}
+}
+
 func TestFreshExplicitRecoveryEvidenceClosesCommitmentExactlyOnce(t *testing.T) {
 	f := newFixture(t)
 	now := time.Date(2026, 8, 3, 12, 0, 0, 0, time.UTC)

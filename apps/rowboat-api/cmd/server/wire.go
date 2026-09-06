@@ -123,6 +123,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	v, verr := oauthrs.NewGeneric(ctx, oauthrs.GenericConfig{
 		IssuerURL:                 cfg.TokenIssuer,
 		Audience:                  cfg.TokenAudience,
+		SkipAudienceValidation:    cfg.TokenAudience == "",
 		JWKSURL:                   cfg.JWKSURL,
 		AcceptableSkew:            60 * time.Second,
 		AllowLocalhostDevelopment: !cfg.IsProduction(),
@@ -263,6 +264,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		googleRedirect = strings.TrimRight(cfg.AppURL, "/") + "/oauth/google/callback"
 	}
 	googleH.SetOAuthFlow(cfg.GoogleAuthorizeURL, googleRedirect, cfg.DesktopDeepLinkScheme, nil)
+	googleH.SetWebReturnURL(cfg.GoogleWebReturnURL)
 	workosH := workosauth.New(cfg.WorkOSClientID, cfg.WorkOSAPIKey, cfg.WorkOSBaseURL, cfg.WorkOSAuthorizeBaseURL, log)
 	workosH.SetOutboundPolicy(vendorPolicy)
 	voiceCloudH := voicecloud.New(client, log)
@@ -323,7 +325,11 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	if err != nil {
 		return err
 	}
-	if err := registry.ConfigureProductEntitlementsJSON(cfg.ConnectorEntitlementURLsJSON, cfg.ConnectorEntitlementHMACKeysJSON); err != nil {
+	if err := registry.ConfigureProductEntitlementsJSONWithOptions(
+		cfg.ConnectorEntitlementURLsJSON,
+		cfg.ConnectorEntitlementHMACKeysJSON,
+		connectors.ProductEntitlementOptions{AllowLocalDevelopment: cfg.ConnectorAllowLocalEntitlementDevelopment},
+	); err != nil {
 		return fmt.Errorf("configure connector product entitlements: %w", err)
 	}
 	connectorsH := connectors.New(client, sealer, registry, connectors.Config{
@@ -552,6 +558,14 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		_, purgeErr := revenueSvc.PurgeMailIndex(ctx, u)
 		_, statusErr := revenueSvc.MarkSourceDisconnected(ctx, u, "google", "default")
 		return errors.Join(purgeErr, statusErr)
+	})
+	googleH.SetOnConnect(func(ctx context.Context, u *ent.User, accountEmail string, scopes []string) error {
+		_, err := revenueSvc.ReportSourceAuthorization(ctx, u, "google", revenue.SourceAuthorizationInput{
+			SourceAccountID: accountEmail,
+			State:           "completed",
+			GrantedScopes:   scopes,
+		})
+		return err
 	})
 
 	// Closed-loop action broker (RFC 023). Ships dark behind ACTIONS_ENABLED.

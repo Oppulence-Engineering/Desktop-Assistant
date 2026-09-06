@@ -488,6 +488,7 @@ export * from "./revenuePolicyDecisionStatus";
 export * from "./revenuePolicyDecisionSuppression";
 export * from "./revenuePolicyDecisionVerification";
 export * from "./revenueRelationship";
+export * from "./revenueRelationshipCompanyEnrichmentRefs";
 export * from "./revenueRelationshipEngagement";
 export * from "./revenueRelationshipHealth";
 export * from "./revenueRelationshipKind";

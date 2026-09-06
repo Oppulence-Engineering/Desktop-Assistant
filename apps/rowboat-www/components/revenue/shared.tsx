@@ -140,10 +140,8 @@ export function EmptyBlock({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-[2px] border border-dashed border-border py-16 text-center">
-      <div className="flex size-12 items-center justify-center rounded-full bg-background-200 text-primary/50 dark:bg-background-100">
-        {icon}
-      </div>
+    <div className="flex min-h-[70vh] flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
+      <div className="flex size-12 items-center justify-center text-primary/35">{icon}</div>
       <div>
         <h2 className="text-base font-medium text-primary">{title}</h2>
         {body ? <p className="mx-auto mt-1 max-w-sm text-sm text-primary/60">{body}</p> : null}

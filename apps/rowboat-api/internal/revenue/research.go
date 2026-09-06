@@ -124,7 +124,8 @@ type PersonResearchOutcome struct {
 
 // ResearchEstimate is what a bulk run will cost, before it runs.
 type ResearchEstimate struct {
-	People    int    `json:"people"`
+	People    int    `json:"people,omitempty"`
+	Companies int    `json:"companies,omitempty"`
 	Processor string `json:"processor"`
 	Credits   int    `json:"credits"`
 	// USD is the same number in the unit users think in. Credits are an
@@ -244,14 +245,7 @@ func (s *Service) EnrichPersons(
 			// Admission failures apply to the whole batch, not to one person:
 			// there is no point calling the vendor 24 more times to be told the
 			// same thing. Anything else is that person's problem alone.
-			if errors.Is(err, ErrCapabilityDisabled) ||
-				errors.Is(err, ErrResearchPlanRequired) ||
-				errors.Is(err, ErrResearchConsentRequired) ||
-				errors.Is(err, ErrResearchUnavailable) ||
-				errors.Is(err, quota.ErrInsufficientCredits) ||
-				errors.Is(err, quota.ErrDailyLimitExceeded) ||
-				errors.Is(err, quota.ErrMonthlyLimitExceeded) ||
-				errors.Is(err, quota.ErrSubscriptionNotActive) {
+			if isResearchAdmissionError(err) {
 				if len(outcomes) == 0 {
 					return nil, err
 				}
@@ -264,6 +258,17 @@ func (s *Service) EnrichPersons(
 		outcomes = append(outcomes, outcome)
 	}
 	return outcomes, nil
+}
+
+func isResearchAdmissionError(err error) bool {
+	return errors.Is(err, ErrCapabilityDisabled) ||
+		errors.Is(err, ErrResearchPlanRequired) ||
+		errors.Is(err, ErrResearchConsentRequired) ||
+		errors.Is(err, ErrResearchUnavailable) ||
+		errors.Is(err, quota.ErrInsufficientCredits) ||
+		errors.Is(err, quota.ErrDailyLimitExceeded) ||
+		errors.Is(err, quota.ErrMonthlyLimitExceeded) ||
+		errors.Is(err, quota.ErrSubscriptionNotActive)
 }
 
 // EnrichPerson enriches one person from the public web.
@@ -404,11 +409,11 @@ func (s *Service) researchCost(processor string) int {
 	return 250
 }
 
-// researchRequestID is the idempotency key for one person at one task-spec
+// researchRequestID is the idempotency key for one entity at one task-spec
 // version. Deterministic by construction: replaying a crashed bulk run must not
 // re-bill for people it already covered.
-func researchRequestID(personID uuid.UUID, taskSpecVersion string) uuid.UUID {
-	return uuid.NewSHA1(uuid.NameSpaceOID, []byte("parallel_task:"+personID.String()+":"+taskSpecVersion))
+func researchRequestID(entityID uuid.UUID, taskSpecVersion string) uuid.UUID {
+	return uuid.NewSHA1(uuid.NameSpaceOID, []byte("parallel_task:"+entityID.String()+":"+taskSpecVersion))
 }
 
 func (s *Service) refundResearch(ctx context.Context, charge *quota.Charge) {

@@ -5098,6 +5098,7 @@ export interface components {
         | "disputed"
         | "blocked"
         | "unblocked"
+        | "corrected"
         | "due_date_changed"
         | "renegotiated"
         | "fulfilled"
@@ -8406,6 +8407,11 @@ export interface components {
       commitment_dependencies?: components["schemas"]["CommitmentDependency"][];
       commitment_events?: components["schemas"]["CommitmentEvent"][];
       commitments?: components["schemas"]["Commitment"][];
+      company_categories: string[];
+      company_description?: string;
+      /** Format: date-time */
+      company_enriched_at?: string;
+      company_enrichment_version?: string;
       conversation_intelligence_artifacts?: components["schemas"]["ConversationIntelligenceArtifact"][];
       /**
        * Format: date-time
@@ -8431,6 +8437,7 @@ export interface components {
       /** Format: date-time */
       last_touch_at?: string;
       lifecycle: string;
+      linkedin_url?: string;
       mail_threads?: components["schemas"]["MailThread"][];
       milestones: string[];
       next_action?: string;
@@ -10518,6 +10525,23 @@ export interface components {
        * @example example.com
        */
       accountDomain?: string;
+      /** @description Source-backed company categories. */
+      categories: string[];
+      /**
+       * @description Source-backed company description.
+       * @example Builds AI infrastructure for customer operations.
+       */
+      companyDescription?: string;
+      /**
+       * Format: date-time
+       * @description When the company profile was last enriched.
+       * @example 2026-09-06T08:00:00Z
+       */
+      companyEnrichedAt?: string | null;
+      /** @description Citation URLs keyed by enriched company field. */
+      companyEnrichmentRefs?: {
+        [key: string]: unknown;
+      };
       /**
        * @description Human display name.
        * @example Jordan Buyer
@@ -10573,6 +10597,11 @@ export interface components {
         | "renewal"
         | "churned"
         | "former_customer";
+      /**
+       * @description Verified public LinkedIn company URL.
+       * @example https://www.linkedin.com/company/acme
+       */
+      linkedinUrl?: string;
       /** @description Reached relationship milestones. */
       milestones: string[];
       /**
@@ -17049,6 +17078,7 @@ export interface operations {
             | "disputed"
             | "blocked"
             | "unblocked"
+            | "corrected"
             | "due_date_changed"
             | "renegotiated"
             | "fulfilled"

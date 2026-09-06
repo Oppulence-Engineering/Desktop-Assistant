@@ -206,13 +206,13 @@ func commitmentState(row *ent.Commitment) string {
 
 func permittedCommitmentTransition(state, kind string) bool {
 	allowed := map[string]map[string]bool{
-		"candidate":            {"internally_confirmed": true, "cancelled": true, "superseded": true},
-		"internally_confirmed": {"offered": true, "accepted": true, "due_date_changed": true, "renegotiated": true, "fulfilled": true, "cancelled": true, "superseded": true},
-		"offered":              {"accepted": true, "disputed": true, "due_date_changed": true, "renegotiated": true, "cancelled": true, "superseded": true},
-		"open":                 {"disputed": true, "blocked": true, "due_date_changed": true, "renegotiated": true, "fulfilled": true, "cancelled": true, "superseded": true},
-		"blocked":              {"unblocked": true, "due_date_changed": true, "renegotiated": true, "fulfilled": true, "cancelled": true, "superseded": true},
-		"renegotiated":         {"accepted": true, "fulfilled": true, "cancelled": true, "superseded": true},
-		"disputed":             {"accepted": true, "cancelled": true, "superseded": true},
+		"candidate":            {"internally_confirmed": true, "corrected": true, "cancelled": true, "superseded": true},
+		"internally_confirmed": {"offered": true, "accepted": true, "corrected": true, "due_date_changed": true, "renegotiated": true, "fulfilled": true, "cancelled": true, "superseded": true},
+		"offered":              {"accepted": true, "disputed": true, "corrected": true, "due_date_changed": true, "renegotiated": true, "cancelled": true, "superseded": true},
+		"open":                 {"disputed": true, "blocked": true, "corrected": true, "due_date_changed": true, "renegotiated": true, "fulfilled": true, "cancelled": true, "superseded": true},
+		"blocked":              {"unblocked": true, "corrected": true, "due_date_changed": true, "renegotiated": true, "fulfilled": true, "cancelled": true, "superseded": true},
+		"renegotiated":         {"accepted": true, "corrected": true, "fulfilled": true, "cancelled": true, "superseded": true},
+		"disputed":             {"accepted": true, "corrected": true, "cancelled": true, "superseded": true},
 	}
 	return allowed[state][kind]
 }
@@ -243,6 +243,9 @@ func (s *Service) AppendCommitmentTransition(
 	}
 	if input.Kind == "renegotiated" && input.DueAt.IsZero() && strings.TrimSpace(input.Action) == "" {
 		return nil, fmt.Errorf("%w: renegotiation requires action or dueAt", ErrInvalidInput)
+	}
+	if input.Kind == "corrected" && input.DueAt.IsZero() && strings.TrimSpace(input.Action) == "" {
+		return nil, fmt.Errorf("%w: correction requires action or dueAt", ErrInvalidInput)
 	}
 	if len(input.EvidenceRefs) == 0 {
 		input.EvidenceRefs = []string{"user-transition:" + input.IdempotencyKey}
@@ -292,8 +295,15 @@ func (s *Service) AppendCommitmentTransition(
 		commitment.IDEQ(row.ID), commitment.CurrentEventVersionEQ(row.CurrentEventVersion),
 	).SetCurrentEventVersion(row.CurrentEventVersion + 1)
 	switch input.Kind {
-	case "internally_confirmed", "offered", "accepted", "disputed":
+	case "internally_confirmed":
+		update.SetAcceptance(input.Kind).SetUserConfirmed(true)
+	case "offered", "accepted", "disputed":
 		update.SetAcceptance(input.Kind)
+	case "corrected":
+		update.SetUserConfirmed(true)
+		if state == "candidate" {
+			update.SetAcceptance("internally_confirmed")
+		}
 	case "blocked":
 		update.SetBlocker(strings.TrimSpace(input.Blocker))
 		payload["blocker"] = strings.TrimSpace(input.Blocker)
