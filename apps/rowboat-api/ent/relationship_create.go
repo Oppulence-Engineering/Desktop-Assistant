@@ -146,6 +146,74 @@ func (_c *RelationshipCreate) SetResourceRefs(v []string) *RelationshipCreate {
 	return _c
 }
 
+// SetCompanyCategories sets the "company_categories" field.
+func (_c *RelationshipCreate) SetCompanyCategories(v []string) *RelationshipCreate {
+	_c.mutation.SetCompanyCategories(v)
+	return _c
+}
+
+// SetCompanyDescription sets the "company_description" field.
+func (_c *RelationshipCreate) SetCompanyDescription(v string) *RelationshipCreate {
+	_c.mutation.SetCompanyDescription(v)
+	return _c
+}
+
+// SetNillableCompanyDescription sets the "company_description" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableCompanyDescription(v *string) *RelationshipCreate {
+	if v != nil {
+		_c.SetCompanyDescription(*v)
+	}
+	return _c
+}
+
+// SetLinkedinURL sets the "linkedin_url" field.
+func (_c *RelationshipCreate) SetLinkedinURL(v string) *RelationshipCreate {
+	_c.mutation.SetLinkedinURL(v)
+	return _c
+}
+
+// SetNillableLinkedinURL sets the "linkedin_url" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableLinkedinURL(v *string) *RelationshipCreate {
+	if v != nil {
+		_c.SetLinkedinURL(*v)
+	}
+	return _c
+}
+
+// SetCompanyEnrichmentRefs sets the "company_enrichment_refs" field.
+func (_c *RelationshipCreate) SetCompanyEnrichmentRefs(v map[string][]string) *RelationshipCreate {
+	_c.mutation.SetCompanyEnrichmentRefs(v)
+	return _c
+}
+
+// SetCompanyEnrichmentVersion sets the "company_enrichment_version" field.
+func (_c *RelationshipCreate) SetCompanyEnrichmentVersion(v string) *RelationshipCreate {
+	_c.mutation.SetCompanyEnrichmentVersion(v)
+	return _c
+}
+
+// SetNillableCompanyEnrichmentVersion sets the "company_enrichment_version" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableCompanyEnrichmentVersion(v *string) *RelationshipCreate {
+	if v != nil {
+		_c.SetCompanyEnrichmentVersion(*v)
+	}
+	return _c
+}
+
+// SetCompanyEnrichedAt sets the "company_enriched_at" field.
+func (_c *RelationshipCreate) SetCompanyEnrichedAt(v time.Time) *RelationshipCreate {
+	_c.mutation.SetCompanyEnrichedAt(v)
+	return _c
+}
+
+// SetNillableCompanyEnrichedAt sets the "company_enriched_at" field if the given value is not nil.
+func (_c *RelationshipCreate) SetNillableCompanyEnrichedAt(v *time.Time) *RelationshipCreate {
+	if v != nil {
+		_c.SetCompanyEnrichedAt(*v)
+	}
+	return _c
+}
+
 // SetSummary sets the "summary" field.
 func (_c *RelationshipCreate) SetSummary(v string) *RelationshipCreate {
 	_c.mutation.SetSummary(v)
@@ -744,6 +812,14 @@ func (_c *RelationshipCreate) defaults() error {
 		v := relationship.DefaultResourceRefs
 		_c.mutation.SetResourceRefs(v)
 	}
+	if _, ok := _c.mutation.CompanyCategories(); !ok {
+		v := relationship.DefaultCompanyCategories
+		_c.mutation.SetCompanyCategories(v)
+	}
+	if _, ok := _c.mutation.CompanyEnrichmentRefs(); !ok {
+		v := relationship.DefaultCompanyEnrichmentRefs
+		_c.mutation.SetCompanyEnrichmentRefs(v)
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := relationship.DefaultStatus
 		_c.mutation.SetStatus(v)
@@ -816,6 +892,12 @@ func (_c *RelationshipCreate) check() error {
 	}
 	if _, ok := _c.mutation.ResourceRefs(); !ok {
 		return &ValidationError{Name: "resource_refs", err: errors.New(`ent: missing required field "Relationship.resource_refs"`)}
+	}
+	if _, ok := _c.mutation.CompanyCategories(); !ok {
+		return &ValidationError{Name: "company_categories", err: errors.New(`ent: missing required field "Relationship.company_categories"`)}
+	}
+	if _, ok := _c.mutation.CompanyEnrichmentRefs(); !ok {
+		return &ValidationError{Name: "company_enrichment_refs", err: errors.New(`ent: missing required field "Relationship.company_enrichment_refs"`)}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Relationship.status"`)}
@@ -956,6 +1038,30 @@ func (_c *RelationshipCreate) createSpec() (*Relationship, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.ResourceRefs(); ok {
 		_spec.SetField(relationship.FieldResourceRefs, field.TypeJSON, value)
 		_node.ResourceRefs = value
+	}
+	if value, ok := _c.mutation.CompanyCategories(); ok {
+		_spec.SetField(relationship.FieldCompanyCategories, field.TypeJSON, value)
+		_node.CompanyCategories = value
+	}
+	if value, ok := _c.mutation.CompanyDescription(); ok {
+		_spec.SetField(relationship.FieldCompanyDescription, field.TypeString, value)
+		_node.CompanyDescription = value
+	}
+	if value, ok := _c.mutation.LinkedinURL(); ok {
+		_spec.SetField(relationship.FieldLinkedinURL, field.TypeString, value)
+		_node.LinkedinURL = value
+	}
+	if value, ok := _c.mutation.CompanyEnrichmentRefs(); ok {
+		_spec.SetField(relationship.FieldCompanyEnrichmentRefs, field.TypeJSON, value)
+		_node.CompanyEnrichmentRefs = value
+	}
+	if value, ok := _c.mutation.CompanyEnrichmentVersion(); ok {
+		_spec.SetField(relationship.FieldCompanyEnrichmentVersion, field.TypeString, value)
+		_node.CompanyEnrichmentVersion = value
+	}
+	if value, ok := _c.mutation.CompanyEnrichedAt(); ok {
+		_spec.SetField(relationship.FieldCompanyEnrichedAt, field.TypeTime, value)
+		_node.CompanyEnrichedAt = &value
 	}
 	if value, ok := _c.mutation.Summary(); ok {
 		_spec.SetField(relationship.FieldSummary, field.TypeString, value)
@@ -1535,6 +1641,102 @@ func (u *RelationshipUpsert) UpdateResourceRefs() *RelationshipUpsert {
 	return u
 }
 
+// SetCompanyCategories sets the "company_categories" field.
+func (u *RelationshipUpsert) SetCompanyCategories(v []string) *RelationshipUpsert {
+	u.Set(relationship.FieldCompanyCategories, v)
+	return u
+}
+
+// UpdateCompanyCategories sets the "company_categories" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateCompanyCategories() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldCompanyCategories)
+	return u
+}
+
+// SetCompanyDescription sets the "company_description" field.
+func (u *RelationshipUpsert) SetCompanyDescription(v string) *RelationshipUpsert {
+	u.Set(relationship.FieldCompanyDescription, v)
+	return u
+}
+
+// UpdateCompanyDescription sets the "company_description" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateCompanyDescription() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldCompanyDescription)
+	return u
+}
+
+// ClearCompanyDescription clears the value of the "company_description" field.
+func (u *RelationshipUpsert) ClearCompanyDescription() *RelationshipUpsert {
+	u.SetNull(relationship.FieldCompanyDescription)
+	return u
+}
+
+// SetLinkedinURL sets the "linkedin_url" field.
+func (u *RelationshipUpsert) SetLinkedinURL(v string) *RelationshipUpsert {
+	u.Set(relationship.FieldLinkedinURL, v)
+	return u
+}
+
+// UpdateLinkedinURL sets the "linkedin_url" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateLinkedinURL() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldLinkedinURL)
+	return u
+}
+
+// ClearLinkedinURL clears the value of the "linkedin_url" field.
+func (u *RelationshipUpsert) ClearLinkedinURL() *RelationshipUpsert {
+	u.SetNull(relationship.FieldLinkedinURL)
+	return u
+}
+
+// SetCompanyEnrichmentRefs sets the "company_enrichment_refs" field.
+func (u *RelationshipUpsert) SetCompanyEnrichmentRefs(v map[string][]string) *RelationshipUpsert {
+	u.Set(relationship.FieldCompanyEnrichmentRefs, v)
+	return u
+}
+
+// UpdateCompanyEnrichmentRefs sets the "company_enrichment_refs" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateCompanyEnrichmentRefs() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldCompanyEnrichmentRefs)
+	return u
+}
+
+// SetCompanyEnrichmentVersion sets the "company_enrichment_version" field.
+func (u *RelationshipUpsert) SetCompanyEnrichmentVersion(v string) *RelationshipUpsert {
+	u.Set(relationship.FieldCompanyEnrichmentVersion, v)
+	return u
+}
+
+// UpdateCompanyEnrichmentVersion sets the "company_enrichment_version" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateCompanyEnrichmentVersion() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldCompanyEnrichmentVersion)
+	return u
+}
+
+// ClearCompanyEnrichmentVersion clears the value of the "company_enrichment_version" field.
+func (u *RelationshipUpsert) ClearCompanyEnrichmentVersion() *RelationshipUpsert {
+	u.SetNull(relationship.FieldCompanyEnrichmentVersion)
+	return u
+}
+
+// SetCompanyEnrichedAt sets the "company_enriched_at" field.
+func (u *RelationshipUpsert) SetCompanyEnrichedAt(v time.Time) *RelationshipUpsert {
+	u.Set(relationship.FieldCompanyEnrichedAt, v)
+	return u
+}
+
+// UpdateCompanyEnrichedAt sets the "company_enriched_at" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateCompanyEnrichedAt() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldCompanyEnrichedAt)
+	return u
+}
+
+// ClearCompanyEnrichedAt clears the value of the "company_enriched_at" field.
+func (u *RelationshipUpsert) ClearCompanyEnrichedAt() *RelationshipUpsert {
+	u.SetNull(relationship.FieldCompanyEnrichedAt)
+	return u
+}
+
 // SetSummary sets the "summary" field.
 func (u *RelationshipUpsert) SetSummary(v string) *RelationshipUpsert {
 	u.Set(relationship.FieldSummary, v)
@@ -1987,6 +2189,118 @@ func (u *RelationshipUpsertOne) SetResourceRefs(v []string) *RelationshipUpsertO
 func (u *RelationshipUpsertOne) UpdateResourceRefs() *RelationshipUpsertOne {
 	return u.Update(func(s *RelationshipUpsert) {
 		s.UpdateResourceRefs()
+	})
+}
+
+// SetCompanyCategories sets the "company_categories" field.
+func (u *RelationshipUpsertOne) SetCompanyCategories(v []string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetCompanyCategories(v)
+	})
+}
+
+// UpdateCompanyCategories sets the "company_categories" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateCompanyCategories() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateCompanyCategories()
+	})
+}
+
+// SetCompanyDescription sets the "company_description" field.
+func (u *RelationshipUpsertOne) SetCompanyDescription(v string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetCompanyDescription(v)
+	})
+}
+
+// UpdateCompanyDescription sets the "company_description" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateCompanyDescription() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateCompanyDescription()
+	})
+}
+
+// ClearCompanyDescription clears the value of the "company_description" field.
+func (u *RelationshipUpsertOne) ClearCompanyDescription() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearCompanyDescription()
+	})
+}
+
+// SetLinkedinURL sets the "linkedin_url" field.
+func (u *RelationshipUpsertOne) SetLinkedinURL(v string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetLinkedinURL(v)
+	})
+}
+
+// UpdateLinkedinURL sets the "linkedin_url" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateLinkedinURL() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateLinkedinURL()
+	})
+}
+
+// ClearLinkedinURL clears the value of the "linkedin_url" field.
+func (u *RelationshipUpsertOne) ClearLinkedinURL() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearLinkedinURL()
+	})
+}
+
+// SetCompanyEnrichmentRefs sets the "company_enrichment_refs" field.
+func (u *RelationshipUpsertOne) SetCompanyEnrichmentRefs(v map[string][]string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetCompanyEnrichmentRefs(v)
+	})
+}
+
+// UpdateCompanyEnrichmentRefs sets the "company_enrichment_refs" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateCompanyEnrichmentRefs() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateCompanyEnrichmentRefs()
+	})
+}
+
+// SetCompanyEnrichmentVersion sets the "company_enrichment_version" field.
+func (u *RelationshipUpsertOne) SetCompanyEnrichmentVersion(v string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetCompanyEnrichmentVersion(v)
+	})
+}
+
+// UpdateCompanyEnrichmentVersion sets the "company_enrichment_version" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateCompanyEnrichmentVersion() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateCompanyEnrichmentVersion()
+	})
+}
+
+// ClearCompanyEnrichmentVersion clears the value of the "company_enrichment_version" field.
+func (u *RelationshipUpsertOne) ClearCompanyEnrichmentVersion() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearCompanyEnrichmentVersion()
+	})
+}
+
+// SetCompanyEnrichedAt sets the "company_enriched_at" field.
+func (u *RelationshipUpsertOne) SetCompanyEnrichedAt(v time.Time) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetCompanyEnrichedAt(v)
+	})
+}
+
+// UpdateCompanyEnrichedAt sets the "company_enriched_at" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateCompanyEnrichedAt() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateCompanyEnrichedAt()
+	})
+}
+
+// ClearCompanyEnrichedAt clears the value of the "company_enriched_at" field.
+func (u *RelationshipUpsertOne) ClearCompanyEnrichedAt() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearCompanyEnrichedAt()
 	})
 }
 
@@ -2653,6 +2967,118 @@ func (u *RelationshipUpsertBulk) SetResourceRefs(v []string) *RelationshipUpsert
 func (u *RelationshipUpsertBulk) UpdateResourceRefs() *RelationshipUpsertBulk {
 	return u.Update(func(s *RelationshipUpsert) {
 		s.UpdateResourceRefs()
+	})
+}
+
+// SetCompanyCategories sets the "company_categories" field.
+func (u *RelationshipUpsertBulk) SetCompanyCategories(v []string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetCompanyCategories(v)
+	})
+}
+
+// UpdateCompanyCategories sets the "company_categories" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateCompanyCategories() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateCompanyCategories()
+	})
+}
+
+// SetCompanyDescription sets the "company_description" field.
+func (u *RelationshipUpsertBulk) SetCompanyDescription(v string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetCompanyDescription(v)
+	})
+}
+
+// UpdateCompanyDescription sets the "company_description" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateCompanyDescription() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateCompanyDescription()
+	})
+}
+
+// ClearCompanyDescription clears the value of the "company_description" field.
+func (u *RelationshipUpsertBulk) ClearCompanyDescription() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearCompanyDescription()
+	})
+}
+
+// SetLinkedinURL sets the "linkedin_url" field.
+func (u *RelationshipUpsertBulk) SetLinkedinURL(v string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetLinkedinURL(v)
+	})
+}
+
+// UpdateLinkedinURL sets the "linkedin_url" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateLinkedinURL() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateLinkedinURL()
+	})
+}
+
+// ClearLinkedinURL clears the value of the "linkedin_url" field.
+func (u *RelationshipUpsertBulk) ClearLinkedinURL() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearLinkedinURL()
+	})
+}
+
+// SetCompanyEnrichmentRefs sets the "company_enrichment_refs" field.
+func (u *RelationshipUpsertBulk) SetCompanyEnrichmentRefs(v map[string][]string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetCompanyEnrichmentRefs(v)
+	})
+}
+
+// UpdateCompanyEnrichmentRefs sets the "company_enrichment_refs" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateCompanyEnrichmentRefs() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateCompanyEnrichmentRefs()
+	})
+}
+
+// SetCompanyEnrichmentVersion sets the "company_enrichment_version" field.
+func (u *RelationshipUpsertBulk) SetCompanyEnrichmentVersion(v string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetCompanyEnrichmentVersion(v)
+	})
+}
+
+// UpdateCompanyEnrichmentVersion sets the "company_enrichment_version" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateCompanyEnrichmentVersion() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateCompanyEnrichmentVersion()
+	})
+}
+
+// ClearCompanyEnrichmentVersion clears the value of the "company_enrichment_version" field.
+func (u *RelationshipUpsertBulk) ClearCompanyEnrichmentVersion() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearCompanyEnrichmentVersion()
+	})
+}
+
+// SetCompanyEnrichedAt sets the "company_enriched_at" field.
+func (u *RelationshipUpsertBulk) SetCompanyEnrichedAt(v time.Time) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetCompanyEnrichedAt(v)
+	})
+}
+
+// UpdateCompanyEnrichedAt sets the "company_enriched_at" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateCompanyEnrichedAt() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateCompanyEnrichedAt()
+	})
+}
+
+// ClearCompanyEnrichedAt clears the value of the "company_enriched_at" field.
+func (u *RelationshipUpsertBulk) ClearCompanyEnrichedAt() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.ClearCompanyEnrichedAt()
 	})
 }
 

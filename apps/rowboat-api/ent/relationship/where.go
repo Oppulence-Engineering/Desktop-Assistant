@@ -96,6 +96,26 @@ func OutboundAccountRef(v string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldEQ(FieldOutboundAccountRef, v))
 }
 
+// CompanyDescription applies equality check predicate on the "company_description" field. It's identical to CompanyDescriptionEQ.
+func CompanyDescription(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldCompanyDescription, v))
+}
+
+// LinkedinURL applies equality check predicate on the "linkedin_url" field. It's identical to LinkedinURLEQ.
+func LinkedinURL(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldLinkedinURL, v))
+}
+
+// CompanyEnrichmentVersion applies equality check predicate on the "company_enrichment_version" field. It's identical to CompanyEnrichmentVersionEQ.
+func CompanyEnrichmentVersion(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldCompanyEnrichmentVersion, v))
+}
+
+// CompanyEnrichedAt applies equality check predicate on the "company_enriched_at" field. It's identical to CompanyEnrichedAtEQ.
+func CompanyEnrichedAt(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldCompanyEnrichedAt, v))
+}
+
 // Summary applies equality check predicate on the "summary" field. It's identical to SummaryEQ.
 func Summary(v string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldEQ(FieldSummary, v))
@@ -679,6 +699,281 @@ func OutboundAccountRefEqualFold(v string) predicate.Relationship {
 // OutboundAccountRefContainsFold applies the ContainsFold predicate on the "outbound_account_ref" field.
 func OutboundAccountRefContainsFold(v string) predicate.Relationship {
 	return predicate.Relationship(sql.FieldContainsFold(FieldOutboundAccountRef, v))
+}
+
+// CompanyDescriptionEQ applies the EQ predicate on the "company_description" field.
+func CompanyDescriptionEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldCompanyDescription, v))
+}
+
+// CompanyDescriptionNEQ applies the NEQ predicate on the "company_description" field.
+func CompanyDescriptionNEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldCompanyDescription, v))
+}
+
+// CompanyDescriptionIn applies the In predicate on the "company_description" field.
+func CompanyDescriptionIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldCompanyDescription, vs...))
+}
+
+// CompanyDescriptionNotIn applies the NotIn predicate on the "company_description" field.
+func CompanyDescriptionNotIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldCompanyDescription, vs...))
+}
+
+// CompanyDescriptionGT applies the GT predicate on the "company_description" field.
+func CompanyDescriptionGT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldCompanyDescription, v))
+}
+
+// CompanyDescriptionGTE applies the GTE predicate on the "company_description" field.
+func CompanyDescriptionGTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldCompanyDescription, v))
+}
+
+// CompanyDescriptionLT applies the LT predicate on the "company_description" field.
+func CompanyDescriptionLT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldCompanyDescription, v))
+}
+
+// CompanyDescriptionLTE applies the LTE predicate on the "company_description" field.
+func CompanyDescriptionLTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldCompanyDescription, v))
+}
+
+// CompanyDescriptionContains applies the Contains predicate on the "company_description" field.
+func CompanyDescriptionContains(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContains(FieldCompanyDescription, v))
+}
+
+// CompanyDescriptionHasPrefix applies the HasPrefix predicate on the "company_description" field.
+func CompanyDescriptionHasPrefix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasPrefix(FieldCompanyDescription, v))
+}
+
+// CompanyDescriptionHasSuffix applies the HasSuffix predicate on the "company_description" field.
+func CompanyDescriptionHasSuffix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasSuffix(FieldCompanyDescription, v))
+}
+
+// CompanyDescriptionIsNil applies the IsNil predicate on the "company_description" field.
+func CompanyDescriptionIsNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldIsNull(FieldCompanyDescription))
+}
+
+// CompanyDescriptionNotNil applies the NotNil predicate on the "company_description" field.
+func CompanyDescriptionNotNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotNull(FieldCompanyDescription))
+}
+
+// CompanyDescriptionEqualFold applies the EqualFold predicate on the "company_description" field.
+func CompanyDescriptionEqualFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEqualFold(FieldCompanyDescription, v))
+}
+
+// CompanyDescriptionContainsFold applies the ContainsFold predicate on the "company_description" field.
+func CompanyDescriptionContainsFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContainsFold(FieldCompanyDescription, v))
+}
+
+// LinkedinURLEQ applies the EQ predicate on the "linkedin_url" field.
+func LinkedinURLEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldLinkedinURL, v))
+}
+
+// LinkedinURLNEQ applies the NEQ predicate on the "linkedin_url" field.
+func LinkedinURLNEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldLinkedinURL, v))
+}
+
+// LinkedinURLIn applies the In predicate on the "linkedin_url" field.
+func LinkedinURLIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldLinkedinURL, vs...))
+}
+
+// LinkedinURLNotIn applies the NotIn predicate on the "linkedin_url" field.
+func LinkedinURLNotIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldLinkedinURL, vs...))
+}
+
+// LinkedinURLGT applies the GT predicate on the "linkedin_url" field.
+func LinkedinURLGT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldLinkedinURL, v))
+}
+
+// LinkedinURLGTE applies the GTE predicate on the "linkedin_url" field.
+func LinkedinURLGTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldLinkedinURL, v))
+}
+
+// LinkedinURLLT applies the LT predicate on the "linkedin_url" field.
+func LinkedinURLLT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldLinkedinURL, v))
+}
+
+// LinkedinURLLTE applies the LTE predicate on the "linkedin_url" field.
+func LinkedinURLLTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldLinkedinURL, v))
+}
+
+// LinkedinURLContains applies the Contains predicate on the "linkedin_url" field.
+func LinkedinURLContains(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContains(FieldLinkedinURL, v))
+}
+
+// LinkedinURLHasPrefix applies the HasPrefix predicate on the "linkedin_url" field.
+func LinkedinURLHasPrefix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasPrefix(FieldLinkedinURL, v))
+}
+
+// LinkedinURLHasSuffix applies the HasSuffix predicate on the "linkedin_url" field.
+func LinkedinURLHasSuffix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasSuffix(FieldLinkedinURL, v))
+}
+
+// LinkedinURLIsNil applies the IsNil predicate on the "linkedin_url" field.
+func LinkedinURLIsNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldIsNull(FieldLinkedinURL))
+}
+
+// LinkedinURLNotNil applies the NotNil predicate on the "linkedin_url" field.
+func LinkedinURLNotNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotNull(FieldLinkedinURL))
+}
+
+// LinkedinURLEqualFold applies the EqualFold predicate on the "linkedin_url" field.
+func LinkedinURLEqualFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEqualFold(FieldLinkedinURL, v))
+}
+
+// LinkedinURLContainsFold applies the ContainsFold predicate on the "linkedin_url" field.
+func LinkedinURLContainsFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContainsFold(FieldLinkedinURL, v))
+}
+
+// CompanyEnrichmentVersionEQ applies the EQ predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldCompanyEnrichmentVersion, v))
+}
+
+// CompanyEnrichmentVersionNEQ applies the NEQ predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionNEQ(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldCompanyEnrichmentVersion, v))
+}
+
+// CompanyEnrichmentVersionIn applies the In predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldCompanyEnrichmentVersion, vs...))
+}
+
+// CompanyEnrichmentVersionNotIn applies the NotIn predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionNotIn(vs ...string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldCompanyEnrichmentVersion, vs...))
+}
+
+// CompanyEnrichmentVersionGT applies the GT predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionGT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldCompanyEnrichmentVersion, v))
+}
+
+// CompanyEnrichmentVersionGTE applies the GTE predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionGTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldCompanyEnrichmentVersion, v))
+}
+
+// CompanyEnrichmentVersionLT applies the LT predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionLT(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldCompanyEnrichmentVersion, v))
+}
+
+// CompanyEnrichmentVersionLTE applies the LTE predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionLTE(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldCompanyEnrichmentVersion, v))
+}
+
+// CompanyEnrichmentVersionContains applies the Contains predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionContains(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContains(FieldCompanyEnrichmentVersion, v))
+}
+
+// CompanyEnrichmentVersionHasPrefix applies the HasPrefix predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionHasPrefix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasPrefix(FieldCompanyEnrichmentVersion, v))
+}
+
+// CompanyEnrichmentVersionHasSuffix applies the HasSuffix predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionHasSuffix(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldHasSuffix(FieldCompanyEnrichmentVersion, v))
+}
+
+// CompanyEnrichmentVersionIsNil applies the IsNil predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionIsNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldIsNull(FieldCompanyEnrichmentVersion))
+}
+
+// CompanyEnrichmentVersionNotNil applies the NotNil predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionNotNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotNull(FieldCompanyEnrichmentVersion))
+}
+
+// CompanyEnrichmentVersionEqualFold applies the EqualFold predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionEqualFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEqualFold(FieldCompanyEnrichmentVersion, v))
+}
+
+// CompanyEnrichmentVersionContainsFold applies the ContainsFold predicate on the "company_enrichment_version" field.
+func CompanyEnrichmentVersionContainsFold(v string) predicate.Relationship {
+	return predicate.Relationship(sql.FieldContainsFold(FieldCompanyEnrichmentVersion, v))
+}
+
+// CompanyEnrichedAtEQ applies the EQ predicate on the "company_enriched_at" field.
+func CompanyEnrichedAtEQ(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldEQ(FieldCompanyEnrichedAt, v))
+}
+
+// CompanyEnrichedAtNEQ applies the NEQ predicate on the "company_enriched_at" field.
+func CompanyEnrichedAtNEQ(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNEQ(FieldCompanyEnrichedAt, v))
+}
+
+// CompanyEnrichedAtIn applies the In predicate on the "company_enriched_at" field.
+func CompanyEnrichedAtIn(vs ...time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldIn(FieldCompanyEnrichedAt, vs...))
+}
+
+// CompanyEnrichedAtNotIn applies the NotIn predicate on the "company_enriched_at" field.
+func CompanyEnrichedAtNotIn(vs ...time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotIn(FieldCompanyEnrichedAt, vs...))
+}
+
+// CompanyEnrichedAtGT applies the GT predicate on the "company_enriched_at" field.
+func CompanyEnrichedAtGT(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGT(FieldCompanyEnrichedAt, v))
+}
+
+// CompanyEnrichedAtGTE applies the GTE predicate on the "company_enriched_at" field.
+func CompanyEnrichedAtGTE(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldGTE(FieldCompanyEnrichedAt, v))
+}
+
+// CompanyEnrichedAtLT applies the LT predicate on the "company_enriched_at" field.
+func CompanyEnrichedAtLT(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLT(FieldCompanyEnrichedAt, v))
+}
+
+// CompanyEnrichedAtLTE applies the LTE predicate on the "company_enriched_at" field.
+func CompanyEnrichedAtLTE(v time.Time) predicate.Relationship {
+	return predicate.Relationship(sql.FieldLTE(FieldCompanyEnrichedAt, v))
+}
+
+// CompanyEnrichedAtIsNil applies the IsNil predicate on the "company_enriched_at" field.
+func CompanyEnrichedAtIsNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldIsNull(FieldCompanyEnrichedAt))
+}
+
+// CompanyEnrichedAtNotNil applies the NotNil predicate on the "company_enriched_at" field.
+func CompanyEnrichedAtNotNil() predicate.Relationship {
+	return predicate.Relationship(sql.FieldNotNull(FieldCompanyEnrichedAt))
 }
 
 // SummaryEQ applies the EQ predicate on the "summary" field.

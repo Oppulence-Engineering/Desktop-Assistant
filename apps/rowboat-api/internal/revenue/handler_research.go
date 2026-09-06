@@ -29,6 +29,10 @@ func (h *Handler) MountResearch(r chi.Router) {
 		r.Get("/people/estimate", h.PersonEnrichmentEstimate)
 		r.Post("/people/{personId}", h.EnrichPerson)
 		r.Post("/people", h.EnrichPersons)
+		r.Get("/companies/pending", h.PendingCompanyEnrichment)
+		r.Get("/companies/estimate", h.CompanyEnrichmentEstimate)
+		r.Post("/companies/{relationshipId}", h.EnrichCompany)
+		r.Post("/companies", h.EnrichCompanies)
 		r.Post("/accounts/{relationshipId}/trigger", h.ResearchAccountTrigger)
 	})
 }
@@ -167,6 +171,68 @@ func (h *Handler) EnrichPersons(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	outcomes, err := h.svc.EnrichPersons(r.Context(), u, body.PersonIDs)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"outcomes": outcomes})
+}
+
+func (h *Handler) PendingCompanyEnrichment(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	ids, err := h.svc.PendingCompanyEnrichmentIDs(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"relationshipIds": ids})
+}
+
+func (h *Handler) CompanyEnrichmentEstimate(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	estimate, err := h.svc.EstimateCompanyEnrichment(r.Context(), u)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, estimate)
+}
+
+func (h *Handler) EnrichCompany(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	relationshipID, ok := pathUUID(w, r, "relationshipId")
+	if !ok {
+		return
+	}
+	outcome, err := h.svc.EnrichCompany(r.Context(), u, relationshipID)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	httpx.WriteJSON(w, http.StatusOK, outcome)
+}
+
+func (h *Handler) EnrichCompanies(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	var body struct {
+		RelationshipIDs []uuid.UUID `json:"relationshipIds"`
+	}
+	if !httpx.DecodeJSON(w, r, maxBody, &body) {
+		return
+	}
+	outcomes, err := h.svc.EnrichCompanies(r.Context(), u, body.RelationshipIDs)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return

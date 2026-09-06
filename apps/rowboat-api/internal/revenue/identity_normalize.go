@@ -23,7 +23,7 @@ import "strings"
 // organization.
 var publicMailboxDomains = map[string]struct{}{
 	"gmail.com": {}, "googlemail.com": {}, "outlook.com": {}, "hotmail.com": {},
-	"live.com": {}, "icloud.com": {}, "me.com": {}, "mac.com": {},
+	"live.com": {}, "msn.com": {}, "icloud.com": {}, "me.com": {}, "mac.com": {},
 	"yahoo.com": {}, "aol.com": {}, "proton.me": {}, "protonmail.com": {},
 }
 

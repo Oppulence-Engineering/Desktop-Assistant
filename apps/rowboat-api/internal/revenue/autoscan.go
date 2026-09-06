@@ -87,6 +87,7 @@ func (a *AutoScanner) sweep(ctx context.Context) {
 		Where(user.HasCommitmentsWith(
 			commitment.StatusEQ("open"),
 			commitment.DueAtLTE(a.svc.now().Add(72*time.Hour)),
+			commitment.Or(commitment.UserConfirmedEQ(true), commitment.AcceptanceNEQ("candidate")),
 		)).
 		Order(ent.Asc(user.FieldCreatedAt)).
 		Limit(a.cfg.MaxPerCycle).

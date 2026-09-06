@@ -31944,6 +31944,69 @@ type RelationshipWhereInput struct {
 	OutboundAccountRefEqualFold    *string  `json:"outboundAccountRefEqualFold,omitempty"`
 	OutboundAccountRefContainsFold *string  `json:"outboundAccountRefContainsFold,omitempty"`
 
+	// "company_description" field predicates.
+	CompanyDescription             *string  `json:"companyDescription,omitempty"`
+	CompanyDescriptionNEQ          *string  `json:"companyDescriptionNEQ,omitempty"`
+	CompanyDescriptionIn           []string `json:"companyDescriptionIn,omitempty"`
+	CompanyDescriptionNotIn        []string `json:"companyDescriptionNotIn,omitempty"`
+	CompanyDescriptionGT           *string  `json:"companyDescriptionGT,omitempty"`
+	CompanyDescriptionGTE          *string  `json:"companyDescriptionGTE,omitempty"`
+	CompanyDescriptionLT           *string  `json:"companyDescriptionLT,omitempty"`
+	CompanyDescriptionLTE          *string  `json:"companyDescriptionLTE,omitempty"`
+	CompanyDescriptionContains     *string  `json:"companyDescriptionContains,omitempty"`
+	CompanyDescriptionHasPrefix    *string  `json:"companyDescriptionHasPrefix,omitempty"`
+	CompanyDescriptionHasSuffix    *string  `json:"companyDescriptionHasSuffix,omitempty"`
+	CompanyDescriptionIsNil        bool     `json:"companyDescriptionIsNil,omitempty"`
+	CompanyDescriptionNotNil       bool     `json:"companyDescriptionNotNil,omitempty"`
+	CompanyDescriptionEqualFold    *string  `json:"companyDescriptionEqualFold,omitempty"`
+	CompanyDescriptionContainsFold *string  `json:"companyDescriptionContainsFold,omitempty"`
+
+	// "linkedin_url" field predicates.
+	LinkedinURL             *string  `json:"linkedinURL,omitempty"`
+	LinkedinURLNEQ          *string  `json:"linkedinURLNEQ,omitempty"`
+	LinkedinURLIn           []string `json:"linkedinURLIn,omitempty"`
+	LinkedinURLNotIn        []string `json:"linkedinURLNotIn,omitempty"`
+	LinkedinURLGT           *string  `json:"linkedinURLGT,omitempty"`
+	LinkedinURLGTE          *string  `json:"linkedinURLGTE,omitempty"`
+	LinkedinURLLT           *string  `json:"linkedinURLLT,omitempty"`
+	LinkedinURLLTE          *string  `json:"linkedinURLLTE,omitempty"`
+	LinkedinURLContains     *string  `json:"linkedinURLContains,omitempty"`
+	LinkedinURLHasPrefix    *string  `json:"linkedinURLHasPrefix,omitempty"`
+	LinkedinURLHasSuffix    *string  `json:"linkedinURLHasSuffix,omitempty"`
+	LinkedinURLIsNil        bool     `json:"linkedinURLIsNil,omitempty"`
+	LinkedinURLNotNil       bool     `json:"linkedinURLNotNil,omitempty"`
+	LinkedinURLEqualFold    *string  `json:"linkedinURLEqualFold,omitempty"`
+	LinkedinURLContainsFold *string  `json:"linkedinURLContainsFold,omitempty"`
+
+	// "company_enrichment_version" field predicates.
+	CompanyEnrichmentVersion             *string  `json:"companyEnrichmentVersion,omitempty"`
+	CompanyEnrichmentVersionNEQ          *string  `json:"companyEnrichmentVersionNEQ,omitempty"`
+	CompanyEnrichmentVersionIn           []string `json:"companyEnrichmentVersionIn,omitempty"`
+	CompanyEnrichmentVersionNotIn        []string `json:"companyEnrichmentVersionNotIn,omitempty"`
+	CompanyEnrichmentVersionGT           *string  `json:"companyEnrichmentVersionGT,omitempty"`
+	CompanyEnrichmentVersionGTE          *string  `json:"companyEnrichmentVersionGTE,omitempty"`
+	CompanyEnrichmentVersionLT           *string  `json:"companyEnrichmentVersionLT,omitempty"`
+	CompanyEnrichmentVersionLTE          *string  `json:"companyEnrichmentVersionLTE,omitempty"`
+	CompanyEnrichmentVersionContains     *string  `json:"companyEnrichmentVersionContains,omitempty"`
+	CompanyEnrichmentVersionHasPrefix    *string  `json:"companyEnrichmentVersionHasPrefix,omitempty"`
+	CompanyEnrichmentVersionHasSuffix    *string  `json:"companyEnrichmentVersionHasSuffix,omitempty"`
+	CompanyEnrichmentVersionIsNil        bool     `json:"companyEnrichmentVersionIsNil,omitempty"`
+	CompanyEnrichmentVersionNotNil       bool     `json:"companyEnrichmentVersionNotNil,omitempty"`
+	CompanyEnrichmentVersionEqualFold    *string  `json:"companyEnrichmentVersionEqualFold,omitempty"`
+	CompanyEnrichmentVersionContainsFold *string  `json:"companyEnrichmentVersionContainsFold,omitempty"`
+
+	// "company_enriched_at" field predicates.
+	CompanyEnrichedAt       *time.Time  `json:"companyEnrichedAt,omitempty"`
+	CompanyEnrichedAtNEQ    *time.Time  `json:"companyEnrichedAtNEQ,omitempty"`
+	CompanyEnrichedAtIn     []time.Time `json:"companyEnrichedAtIn,omitempty"`
+	CompanyEnrichedAtNotIn  []time.Time `json:"companyEnrichedAtNotIn,omitempty"`
+	CompanyEnrichedAtGT     *time.Time  `json:"companyEnrichedAtGT,omitempty"`
+	CompanyEnrichedAtGTE    *time.Time  `json:"companyEnrichedAtGTE,omitempty"`
+	CompanyEnrichedAtLT     *time.Time  `json:"companyEnrichedAtLT,omitempty"`
+	CompanyEnrichedAtLTE    *time.Time  `json:"companyEnrichedAtLTE,omitempty"`
+	CompanyEnrichedAtIsNil  bool        `json:"companyEnrichedAtIsNil,omitempty"`
+	CompanyEnrichedAtNotNil bool        `json:"companyEnrichedAtNotNil,omitempty"`
+
 	// "summary" field predicates.
 	Summary             *string  `json:"summary,omitempty"`
 	SummaryNEQ          *string  `json:"summaryNEQ,omitempty"`
@@ -32640,6 +32703,171 @@ func (i *RelationshipWhereInput) P() (predicate.Relationship, error) {
 	}
 	if i.OutboundAccountRefContainsFold != nil {
 		predicates = append(predicates, relationship.OutboundAccountRefContainsFold(*i.OutboundAccountRefContainsFold))
+	}
+	if i.CompanyDescription != nil {
+		predicates = append(predicates, relationship.CompanyDescriptionEQ(*i.CompanyDescription))
+	}
+	if i.CompanyDescriptionNEQ != nil {
+		predicates = append(predicates, relationship.CompanyDescriptionNEQ(*i.CompanyDescriptionNEQ))
+	}
+	if len(i.CompanyDescriptionIn) > 0 {
+		predicates = append(predicates, relationship.CompanyDescriptionIn(i.CompanyDescriptionIn...))
+	}
+	if len(i.CompanyDescriptionNotIn) > 0 {
+		predicates = append(predicates, relationship.CompanyDescriptionNotIn(i.CompanyDescriptionNotIn...))
+	}
+	if i.CompanyDescriptionGT != nil {
+		predicates = append(predicates, relationship.CompanyDescriptionGT(*i.CompanyDescriptionGT))
+	}
+	if i.CompanyDescriptionGTE != nil {
+		predicates = append(predicates, relationship.CompanyDescriptionGTE(*i.CompanyDescriptionGTE))
+	}
+	if i.CompanyDescriptionLT != nil {
+		predicates = append(predicates, relationship.CompanyDescriptionLT(*i.CompanyDescriptionLT))
+	}
+	if i.CompanyDescriptionLTE != nil {
+		predicates = append(predicates, relationship.CompanyDescriptionLTE(*i.CompanyDescriptionLTE))
+	}
+	if i.CompanyDescriptionContains != nil {
+		predicates = append(predicates, relationship.CompanyDescriptionContains(*i.CompanyDescriptionContains))
+	}
+	if i.CompanyDescriptionHasPrefix != nil {
+		predicates = append(predicates, relationship.CompanyDescriptionHasPrefix(*i.CompanyDescriptionHasPrefix))
+	}
+	if i.CompanyDescriptionHasSuffix != nil {
+		predicates = append(predicates, relationship.CompanyDescriptionHasSuffix(*i.CompanyDescriptionHasSuffix))
+	}
+	if i.CompanyDescriptionIsNil {
+		predicates = append(predicates, relationship.CompanyDescriptionIsNil())
+	}
+	if i.CompanyDescriptionNotNil {
+		predicates = append(predicates, relationship.CompanyDescriptionNotNil())
+	}
+	if i.CompanyDescriptionEqualFold != nil {
+		predicates = append(predicates, relationship.CompanyDescriptionEqualFold(*i.CompanyDescriptionEqualFold))
+	}
+	if i.CompanyDescriptionContainsFold != nil {
+		predicates = append(predicates, relationship.CompanyDescriptionContainsFold(*i.CompanyDescriptionContainsFold))
+	}
+	if i.LinkedinURL != nil {
+		predicates = append(predicates, relationship.LinkedinURLEQ(*i.LinkedinURL))
+	}
+	if i.LinkedinURLNEQ != nil {
+		predicates = append(predicates, relationship.LinkedinURLNEQ(*i.LinkedinURLNEQ))
+	}
+	if len(i.LinkedinURLIn) > 0 {
+		predicates = append(predicates, relationship.LinkedinURLIn(i.LinkedinURLIn...))
+	}
+	if len(i.LinkedinURLNotIn) > 0 {
+		predicates = append(predicates, relationship.LinkedinURLNotIn(i.LinkedinURLNotIn...))
+	}
+	if i.LinkedinURLGT != nil {
+		predicates = append(predicates, relationship.LinkedinURLGT(*i.LinkedinURLGT))
+	}
+	if i.LinkedinURLGTE != nil {
+		predicates = append(predicates, relationship.LinkedinURLGTE(*i.LinkedinURLGTE))
+	}
+	if i.LinkedinURLLT != nil {
+		predicates = append(predicates, relationship.LinkedinURLLT(*i.LinkedinURLLT))
+	}
+	if i.LinkedinURLLTE != nil {
+		predicates = append(predicates, relationship.LinkedinURLLTE(*i.LinkedinURLLTE))
+	}
+	if i.LinkedinURLContains != nil {
+		predicates = append(predicates, relationship.LinkedinURLContains(*i.LinkedinURLContains))
+	}
+	if i.LinkedinURLHasPrefix != nil {
+		predicates = append(predicates, relationship.LinkedinURLHasPrefix(*i.LinkedinURLHasPrefix))
+	}
+	if i.LinkedinURLHasSuffix != nil {
+		predicates = append(predicates, relationship.LinkedinURLHasSuffix(*i.LinkedinURLHasSuffix))
+	}
+	if i.LinkedinURLIsNil {
+		predicates = append(predicates, relationship.LinkedinURLIsNil())
+	}
+	if i.LinkedinURLNotNil {
+		predicates = append(predicates, relationship.LinkedinURLNotNil())
+	}
+	if i.LinkedinURLEqualFold != nil {
+		predicates = append(predicates, relationship.LinkedinURLEqualFold(*i.LinkedinURLEqualFold))
+	}
+	if i.LinkedinURLContainsFold != nil {
+		predicates = append(predicates, relationship.LinkedinURLContainsFold(*i.LinkedinURLContainsFold))
+	}
+	if i.CompanyEnrichmentVersion != nil {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionEQ(*i.CompanyEnrichmentVersion))
+	}
+	if i.CompanyEnrichmentVersionNEQ != nil {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionNEQ(*i.CompanyEnrichmentVersionNEQ))
+	}
+	if len(i.CompanyEnrichmentVersionIn) > 0 {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionIn(i.CompanyEnrichmentVersionIn...))
+	}
+	if len(i.CompanyEnrichmentVersionNotIn) > 0 {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionNotIn(i.CompanyEnrichmentVersionNotIn...))
+	}
+	if i.CompanyEnrichmentVersionGT != nil {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionGT(*i.CompanyEnrichmentVersionGT))
+	}
+	if i.CompanyEnrichmentVersionGTE != nil {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionGTE(*i.CompanyEnrichmentVersionGTE))
+	}
+	if i.CompanyEnrichmentVersionLT != nil {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionLT(*i.CompanyEnrichmentVersionLT))
+	}
+	if i.CompanyEnrichmentVersionLTE != nil {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionLTE(*i.CompanyEnrichmentVersionLTE))
+	}
+	if i.CompanyEnrichmentVersionContains != nil {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionContains(*i.CompanyEnrichmentVersionContains))
+	}
+	if i.CompanyEnrichmentVersionHasPrefix != nil {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionHasPrefix(*i.CompanyEnrichmentVersionHasPrefix))
+	}
+	if i.CompanyEnrichmentVersionHasSuffix != nil {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionHasSuffix(*i.CompanyEnrichmentVersionHasSuffix))
+	}
+	if i.CompanyEnrichmentVersionIsNil {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionIsNil())
+	}
+	if i.CompanyEnrichmentVersionNotNil {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionNotNil())
+	}
+	if i.CompanyEnrichmentVersionEqualFold != nil {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionEqualFold(*i.CompanyEnrichmentVersionEqualFold))
+	}
+	if i.CompanyEnrichmentVersionContainsFold != nil {
+		predicates = append(predicates, relationship.CompanyEnrichmentVersionContainsFold(*i.CompanyEnrichmentVersionContainsFold))
+	}
+	if i.CompanyEnrichedAt != nil {
+		predicates = append(predicates, relationship.CompanyEnrichedAtEQ(*i.CompanyEnrichedAt))
+	}
+	if i.CompanyEnrichedAtNEQ != nil {
+		predicates = append(predicates, relationship.CompanyEnrichedAtNEQ(*i.CompanyEnrichedAtNEQ))
+	}
+	if len(i.CompanyEnrichedAtIn) > 0 {
+		predicates = append(predicates, relationship.CompanyEnrichedAtIn(i.CompanyEnrichedAtIn...))
+	}
+	if len(i.CompanyEnrichedAtNotIn) > 0 {
+		predicates = append(predicates, relationship.CompanyEnrichedAtNotIn(i.CompanyEnrichedAtNotIn...))
+	}
+	if i.CompanyEnrichedAtGT != nil {
+		predicates = append(predicates, relationship.CompanyEnrichedAtGT(*i.CompanyEnrichedAtGT))
+	}
+	if i.CompanyEnrichedAtGTE != nil {
+		predicates = append(predicates, relationship.CompanyEnrichedAtGTE(*i.CompanyEnrichedAtGTE))
+	}
+	if i.CompanyEnrichedAtLT != nil {
+		predicates = append(predicates, relationship.CompanyEnrichedAtLT(*i.CompanyEnrichedAtLT))
+	}
+	if i.CompanyEnrichedAtLTE != nil {
+		predicates = append(predicates, relationship.CompanyEnrichedAtLTE(*i.CompanyEnrichedAtLTE))
+	}
+	if i.CompanyEnrichedAtIsNil {
+		predicates = append(predicates, relationship.CompanyEnrichedAtIsNil())
+	}
+	if i.CompanyEnrichedAtNotNil {
+		predicates = append(predicates, relationship.CompanyEnrichedAtNotNil())
 	}
 	if i.Summary != nil {
 		predicates = append(predicates, relationship.SummaryEQ(*i.Summary))

@@ -117,10 +117,11 @@ function eventText(event: CloudRunEvent): string {
   if (event.event && typeof event.event === "object") {
     const record = event.event as Record<string, unknown>;
     for (const key of ["message", "summary", "error", "content"]) {
-      if (typeof record[key] === "string") return record[key];
+      const value = record[key];
+      if (typeof value === "string") return value;
     }
   }
-  return JSON.stringify(event.event, null, 2);
+  return JSON.stringify(event.event, null, 2) ?? String(event.event);
 }
 
 function WorkflowTaskList({

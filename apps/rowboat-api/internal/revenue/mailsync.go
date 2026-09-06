@@ -60,8 +60,18 @@ func (s *Service) SyncMailFromPush(ctx context.Context, u *ent.User, pushHistory
 		if sum == nil {
 			continue
 		}
-		if ierr := s.indexThread(ctx, u, sum); ierr != nil {
+		thread, ierr := s.indexThread(ctx, u, sum)
+		if ierr != nil {
 			s.log.Debug("revenue: push index thread", zap.Error(ierr))
+			continue
+		}
+		rel, _, ierr := s.syncThreadRelationship(ctx, u, ws, sum)
+		if ierr != nil {
+			s.log.Debug("revenue: push sync relationship", zap.Error(ierr))
+			continue
+		}
+		if ierr = thread.Update().SetRelationship(rel).Exec(ctx); ierr != nil {
+			s.log.Debug("revenue: push link relationship", zap.Error(ierr))
 			continue
 		}
 		indexed++

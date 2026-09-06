@@ -41,6 +41,7 @@ type gmailStore struct {
 	mu      sync.Mutex
 	threads []*gmailThread
 	sent    int
+	drafted int
 }
 
 type gmailThread struct {
@@ -72,6 +73,7 @@ func registerGmailMock(mux *http.ServeMux) {
 	mux.HandleFunc("GET /gmail/v1/users/{userId}/history", gmailHistoryList)
 	mux.HandleFunc("POST /gmail/v1/users/{userId}/messages/send", gmailMessagesSend)
 	mux.HandleFunc("GET /gmail/v1/users/{userId}/drafts", gmailDraftsList)
+	mux.HandleFunc("POST /gmail/v1/users/{userId}/drafts", gmailDraftsCreate)
 	mux.HandleFunc("DELETE /gmail/v1/users/{userId}/drafts/{id}", gmailDraftsDelete)
 }
 
@@ -106,7 +108,7 @@ func newGmailStore() *gmailStore {
 				hoursAgo   int
 			}{
 				{"Dana Whitfield <dana@northwind.example>", "Hi,\n\nOur team has grown to 38 people and we'll cross 40 seats before the March renewal. Can you send updated pricing for the 40-seat tier, and confirm whether the annual discount still applies if we upgrade mid-term?\n\nWe'd like to get this signed off before end of quarter.\n\nThanks,\nDana", 4},
-				{"me <" + gmailMockUser + ">", "Dana,\n\nSending the updated sheet today. The annual discount carries over on a mid-term upgrade — we prorate the difference rather than restarting the term.\n\nBest", 2},
+				{"me <" + gmailMockUser + ">", "Dana,\n\nI will send the updated sheet today. The annual discount carries over on a mid-term upgrade — we prorate the difference rather than restarting the term.\n\nBest", 2},
 			},
 		},
 		{
@@ -193,6 +195,16 @@ func newGmailStore() *gmailStore {
 		th := &gmailThread{ID: seed.id, HistoryID: gmailHistoryID}
 		for i, m := range seed.messages {
 			labels := append([]string{}, seed.labels...)
+			to := gmailMockUser
+			if strings.HasPrefix(m.from, "me <") {
+				labels = []string{"SENT"}
+				for _, other := range seed.messages {
+					if !strings.HasPrefix(other.from, "me <") {
+						to = other.from
+						break
+					}
+				}
+			}
 			// Only the first message carries UNREAD, mirroring a thread where
 			// the user has already replied to later messages.
 			if i > 0 {
@@ -201,7 +213,7 @@ func newGmailStore() *gmailStore {
 			th.Messages = append(th.Messages, &gmailMessage{
 				ID:       fmt.Sprintf("%s_m%d", seed.id, i+1),
 				From:     m.from,
-				To:       gmailMockUser,
+				To:       to,
 				Subject:  seed.subject,
 				Date:     ago(m.hoursAgo),
 				Body:     m.body,
@@ -356,7 +368,7 @@ func gmailMessagesSend(w http.ResponseWriter, r *http.Request) {
 	// Decoded only to prove the caller produced a well-formed RFC 822 message;
 	// the content is not stored, and it is never logged — outbound drafts are
 	// the user's words.
-	if decoded, err := base64.URLEncoding.WithPadding(base64.NoPadding).DecodeString(body.Raw); err != nil {
+	if decoded, err := decodeGmailRaw(body.Raw); err != nil {
 		log.Printf("gmail-mock: send rejected, raw is not base64url")
 		gmailError(w, http.StatusBadRequest, "raw must be base64url-encoded")
 		return
@@ -378,8 +390,38 @@ func gmailDraftsList(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, map[string]any{"drafts": []any{}, "resultSizeEstimate": 0})
 }
 
+func gmailDraftsCreate(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Message struct {
+			Raw string `json:"raw"`
+		} `json:"message"`
+	}
+	if json.NewDecoder(r.Body).Decode(&body) != nil {
+		gmailError(w, http.StatusBadRequest, "malformed request body")
+		return
+	}
+	decoded, err := decodeGmailRaw(body.Message.Raw)
+	if err != nil || !strings.Contains(string(decoded), "To:") {
+		gmailError(w, http.StatusBadRequest, "draft must contain a base64url-encoded message with a To header")
+		return
+	}
+	gmail.mu.Lock()
+	gmail.drafted++
+	id := fmt.Sprintf("draft_%d", gmail.drafted)
+	gmail.mu.Unlock()
+	writeJSON(w, map[string]any{"id": id, "message": map[string]string{"id": "message_" + id}})
+}
+
 func gmailDraftsDelete(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func decodeGmailRaw(raw string) ([]byte, error) {
+	decoded, err := base64.URLEncoding.DecodeString(raw)
+	if err != nil {
+		decoded, err = base64.RawURLEncoding.DecodeString(raw)
+	}
+	return decoded, err
 }
 
 // --- query parsing ---------------------------------------------------------
@@ -387,6 +429,7 @@ func gmailDraftsDelete(w http.ResponseWriter, _ *http.Request) {
 // gmailQuery is the subset of Gmail search the desktop actually sends.
 type gmailQuery struct {
 	after       time.Time
+	sentOnly    bool
 	excludeSpam bool
 	excludeTrsh bool
 }
@@ -398,6 +441,8 @@ func parseGmailQuery(raw string) (gmailQuery, error) {
 	var q gmailQuery
 	for _, term := range strings.Fields(raw) {
 		switch {
+		case term == "in:sent":
+			q.sentOnly = true
 		case strings.HasPrefix(term, "after:"):
 			v := strings.TrimPrefix(term, "after:")
 			// Gmail accepts YYYY/MM/DD and epoch seconds.
@@ -410,6 +455,16 @@ func parseGmailQuery(raw string) (gmailQuery, error) {
 				return q, fmt.Errorf("unsupported after: value %q", v)
 			}
 			q.after = t
+		case strings.HasPrefix(term, "newer_than:"):
+			v := strings.TrimPrefix(term, "newer_than:")
+			if !strings.HasSuffix(v, "d") {
+				return q, fmt.Errorf("unsupported newer_than: value %q", v)
+			}
+			days, err := strconv.Atoi(strings.TrimSuffix(v, "d"))
+			if err != nil || days <= 0 || days > 3650 {
+				return q, fmt.Errorf("unsupported newer_than: value %q", v)
+			}
+			q.after = time.Now().UTC().Add(-time.Duration(days) * 24 * time.Hour)
 		case term == "-in:spam":
 			q.excludeSpam = true
 		case term == "-in:trash":
@@ -422,6 +477,9 @@ func parseGmailQuery(raw string) (gmailQuery, error) {
 }
 
 func (q gmailQuery) matches(t *gmailThread) bool {
+	if q.sentOnly && !threadHasLabel(t, "SENT") {
+		return false
+	}
 	if q.excludeSpam && threadHasLabel(t, "SPAM") {
 		return false
 	}

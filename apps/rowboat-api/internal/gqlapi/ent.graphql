@@ -9854,6 +9854,11 @@ type Relationship implements Node {
   outboundLeadID: String
   outboundAccountRef: String
   resourceRefs: [String!]!
+  companyCategories: [String!]!
+  companyDescription: String
+  linkedinURL: String
+  companyEnrichmentVersion: String
+  companyEnrichedAt: Time
   summary: String
   lastTouchAt: Time
   nextActionAt: Time
@@ -12665,6 +12670,73 @@ input RelationshipWhereInput {
   outboundAccountRefNotNil: Boolean
   outboundAccountRefEqualFold: String
   outboundAccountRefContainsFold: String
+  """
+  company_description field predicates
+  """
+  companyDescription: String
+  companyDescriptionNEQ: String
+  companyDescriptionIn: [String!]
+  companyDescriptionNotIn: [String!]
+  companyDescriptionGT: String
+  companyDescriptionGTE: String
+  companyDescriptionLT: String
+  companyDescriptionLTE: String
+  companyDescriptionContains: String
+  companyDescriptionHasPrefix: String
+  companyDescriptionHasSuffix: String
+  companyDescriptionIsNil: Boolean
+  companyDescriptionNotNil: Boolean
+  companyDescriptionEqualFold: String
+  companyDescriptionContainsFold: String
+  """
+  linkedin_url field predicates
+  """
+  linkedinURL: String
+  linkedinURLNEQ: String
+  linkedinURLIn: [String!]
+  linkedinURLNotIn: [String!]
+  linkedinURLGT: String
+  linkedinURLGTE: String
+  linkedinURLLT: String
+  linkedinURLLTE: String
+  linkedinURLContains: String
+  linkedinURLHasPrefix: String
+  linkedinURLHasSuffix: String
+  linkedinURLIsNil: Boolean
+  linkedinURLNotNil: Boolean
+  linkedinURLEqualFold: String
+  linkedinURLContainsFold: String
+  """
+  company_enrichment_version field predicates
+  """
+  companyEnrichmentVersion: String
+  companyEnrichmentVersionNEQ: String
+  companyEnrichmentVersionIn: [String!]
+  companyEnrichmentVersionNotIn: [String!]
+  companyEnrichmentVersionGT: String
+  companyEnrichmentVersionGTE: String
+  companyEnrichmentVersionLT: String
+  companyEnrichmentVersionLTE: String
+  companyEnrichmentVersionContains: String
+  companyEnrichmentVersionHasPrefix: String
+  companyEnrichmentVersionHasSuffix: String
+  companyEnrichmentVersionIsNil: Boolean
+  companyEnrichmentVersionNotNil: Boolean
+  companyEnrichmentVersionEqualFold: String
+  companyEnrichmentVersionContainsFold: String
+  """
+  company_enriched_at field predicates
+  """
+  companyEnrichedAt: Time
+  companyEnrichedAtNEQ: Time
+  companyEnrichedAtIn: [Time!]
+  companyEnrichedAtNotIn: [Time!]
+  companyEnrichedAtGT: Time
+  companyEnrichedAtGTE: Time
+  companyEnrichedAtLT: Time
+  companyEnrichedAtLTE: Time
+  companyEnrichedAtIsNil: Boolean
+  companyEnrichedAtNotNil: Boolean
   """
   summary field predicates
   """

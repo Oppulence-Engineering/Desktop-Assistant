@@ -9,6 +9,7 @@ const URLSchema = z
 
 const RuntimeConfigSchema = z.object({
   apiBaseUrl: URLSchema,
+  authApiBaseUrl: URLSchema,
   publicApiBaseUrl: URLSchema,
   sessionSecret: z.string().min(32),
   workosLogoutBaseUrl: URLSchema,
@@ -35,6 +36,7 @@ export function getAuthRuntimeConfig(): AuthRuntimeConfig {
     process.env.ROWBOAT_WWW_PUBLIC_API_BASE_URL ||
     process.env.ROWBOATX_PUBLIC_API_BASE_URL ||
     apiBaseUrl;
+  const authApiBaseUrl = process.env.ROWBOAT_WWW_AUTH_API_BASE_URL || apiBaseUrl;
   const sessionSecret =
     process.env.ROWBOAT_WWW_SESSION_SECRET ||
     process.env.AUTH_SECRET ||
@@ -42,6 +44,7 @@ export function getAuthRuntimeConfig(): AuthRuntimeConfig {
 
   return RuntimeConfigSchema.parse({
     apiBaseUrl,
+    authApiBaseUrl,
     publicApiBaseUrl,
     sessionSecret,
     workosLogoutBaseUrl:
@@ -57,10 +60,18 @@ export function getAuthRuntimeConfig(): AuthRuntimeConfig {
  * the proxy cannot be tricked into reaching arbitrary upstream paths.
  */
 export function rowboatApiURL(pathname: string, searchParams?: URLSearchParams): URL {
+  return apiURL(getAuthRuntimeConfig().apiBaseUrl, pathname, searchParams);
+}
+
+export function rowboatAuthApiURL(pathname: string, searchParams?: URLSearchParams): URL {
+  return apiURL(getAuthRuntimeConfig().authApiBaseUrl, pathname, searchParams);
+}
+
+function apiURL(baseUrl: string, pathname: string, searchParams?: URLSearchParams): URL {
   if (!pathname.startsWith("/")) {
     throw new Error("rowboatApiURL pathname must start with /");
   }
-  const url = new URL(pathname, getAuthRuntimeConfig().apiBaseUrl + "/");
+  const url = new URL(pathname, baseUrl + "/");
   if (searchParams) {
     for (const [key, value] of searchParams.entries()) {
       url.searchParams.append(key, value);
@@ -72,4 +83,8 @@ export function rowboatApiURL(pathname: string, searchParams?: URLSearchParams):
 /** Returns the configured server-side rowboat-api base URL for diagnostics. */
 export function rowboatApiBaseURL(): string {
   return getAuthRuntimeConfig().apiBaseUrl;
+}
+
+export function rowboatAuthApiBaseURL(): string {
+  return getAuthRuntimeConfig().authApiBaseUrl;
 }

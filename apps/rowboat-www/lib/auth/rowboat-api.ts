@@ -1,6 +1,6 @@
 import "server-only";
 
-import { rowboatApiBaseURL, rowboatApiURL } from "@/lib/auth/config";
+import { rowboatApiURL, rowboatAuthApiBaseURL, rowboatAuthApiURL } from "@/lib/auth/config";
 import { decodeUnverifiedWorkOSClaims } from "@/lib/auth/jwt";
 import {
   RowboatAPIErrorSchema,
@@ -24,8 +24,8 @@ async function parseJSON(res: Response): Promise<unknown> {
   }
 }
 
-async function rowboatFetch(pathname: string, init: RequestInit): Promise<Response> {
-  return fetch(rowboatApiURL(pathname), {
+async function rowboatFetch(url: URL, init: RequestInit): Promise<Response> {
+  return fetch(url, {
     ...init,
     cache: "no-store",
     headers: {
@@ -46,13 +46,18 @@ async function throwAPIError(res: Response, fallback: string): Promise<never> {
   throw new Error(message);
 }
 
+const refreshes = new Map<
+  string,
+  { expiresAt: number; promise: Promise<DashboardSessionCookie | null> }
+>();
+
 export async function getWorkOSLoginURL(input: {
   redirectURI: string;
   state: string;
   codeChallenge: string;
   provider?: string;
 }): Promise<string> {
-  const url = rowboatApiURL("/v1/auth/workos/login-url");
+  const url = rowboatAuthApiURL("/v1/auth/workos/login-url");
   url.searchParams.set("redirect_uri", input.redirectURI);
   url.searchParams.set("state", input.state);
   url.searchParams.set("code_challenge", input.codeChallenge);
@@ -68,9 +73,7 @@ export async function getWorkOSLoginURL(input: {
       signal: AbortSignal.timeout(15_000),
     });
   } catch {
-    throw new Error(
-      `Cannot reach rowboat-api at ${rowboatApiBaseURL()}. Start rowboat-api or set ROWBOAT_WWW_API_PROXY_URL.`,
-    );
+    throw new Error(`Cannot reach the auth API at ${rowboatAuthApiBaseURL()}.`);
   }
   if (!res.ok) {
     await throwAPIError(res, "could not start WorkOS sign-in");
@@ -82,7 +85,7 @@ export async function exchangeWorkOSCode(input: {
   code: string;
   codeVerifier: string;
 }): Promise<WorkOSTokenBundle> {
-  const res = await rowboatFetch("/v1/auth/workos/exchange", {
+  const res = await rowboatFetch(rowboatAuthApiURL("/v1/auth/workos/exchange"), {
     method: "POST",
     body: JSON.stringify({
       code: input.code,
@@ -95,20 +98,61 @@ export async function exchangeWorkOSCode(input: {
   return WorkOSTokenBundleSchema.parse(await parseJSON(res));
 }
 
-export async function refreshWorkOSSession(
+async function refreshWorkOSSessionOnce(
   session: DashboardSessionCookie,
 ): Promise<DashboardSessionCookie | null> {
-  if (!session.refreshToken) return null;
-  const res = await rowboatFetch("/v1/auth/workos/refresh", {
-    method: "POST",
-    body: JSON.stringify({ refreshToken: session.refreshToken }),
-  });
-  if (!res.ok) return null;
-  return sessionFromTokenBundle(WorkOSTokenBundleSchema.parse(await parseJSON(res)), session);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    let res: Response;
+    try {
+      res = await rowboatFetch(rowboatAuthApiURL("/v1/auth/workos/refresh"), {
+        method: "POST",
+        body: JSON.stringify({ refreshToken: session.refreshToken }),
+      });
+    } catch {
+      throw new Error("session refresh is temporarily unavailable");
+    }
+    if (res.ok) {
+      return sessionFromTokenBundle(WorkOSTokenBundleSchema.parse(await parseJSON(res)), session);
+    }
+    if (res.status === 400 || res.status === 401 || res.status === 403) return null;
+    if (res.status !== 429 || attempt === 1) {
+      throw new Error("session refresh is temporarily unavailable");
+    }
+    await res.body?.cancel();
+    const seconds = Number(res.headers.get("retry-after"));
+    await new Promise((resolve) =>
+      setTimeout(
+        resolve,
+        Number.isFinite(seconds) ? Math.min(Math.max(seconds * 1_000, 0), 5_000) : 1_000,
+      ),
+    );
+  }
+  return null;
+}
+
+/** Coalesces concurrent refreshes so a burst of dashboard requests cannot
+ * race the same rotating WorkOS refresh token. The short reuse window also
+ * covers requests that arrived before the browser stored the refreshed cookie.
+ */
+export function refreshWorkOSSession(
+  session: DashboardSessionCookie,
+): Promise<DashboardSessionCookie | null> {
+  const refreshToken = session.refreshToken;
+  if (!refreshToken) return Promise.resolve(null);
+  const cached = refreshes.get(refreshToken);
+  if (cached && cached.expiresAt > Date.now()) return cached.promise;
+
+  const promise = refreshWorkOSSessionOnce(session);
+  const entry = { expiresAt: Date.now() + 5_000, promise };
+  refreshes.set(refreshToken, entry);
+  setTimeout(() => {
+    if (refreshes.get(refreshToken) === entry) refreshes.delete(refreshToken);
+  }, 5_000);
+  return promise;
 }
 
 export async function fetchViewer(session: DashboardSessionCookie): Promise<ViewerResponse> {
-  const res = await rowboatFetch("/v1/me", {
+  const res = await rowboatFetch(rowboatApiURL("/v1/me"), {
     method: "GET",
     headers: { Authorization: `${session.tokenType} ${session.accessToken}` },
   });
@@ -121,7 +165,7 @@ export async function fetchViewer(session: DashboardSessionCookie): Promise<View
 export async function fetchViewerIdentity(
   session: DashboardSessionCookie,
 ): Promise<ViewerIdentityResponse> {
-  const res = await rowboatFetch("/api/auth/get-session", {
+  const res = await rowboatFetch(rowboatApiURL("/api/auth/get-session"), {
     method: "GET",
     headers: { Authorization: `${session.tokenType} ${session.accessToken}` },
   });

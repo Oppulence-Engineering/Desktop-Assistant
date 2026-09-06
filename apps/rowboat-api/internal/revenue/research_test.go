@@ -363,6 +363,53 @@ func TestEnrichPersonWritesCitedAttributesAndProjects(t *testing.T) {
 	}
 }
 
+func TestEnrichCompanyWritesOnlyCitedProfileFields(t *testing.T) {
+	vendor := &vendorStub{
+		content: map[string]any{
+			researchMatchField:     "high",
+			"industry_category":    "Artificial intelligence",
+			"company_description":  "Acme builds software for revenue teams.",
+			"linkedin_company_url": "https://www.linkedin.com/company/acme/about/",
+		},
+		basis: []map[string]any{
+			citedBasis("industry_category", "high"),
+			citedBasis("company_description", "high"),
+			citedBasis("linkedin_company_url", "high"),
+		},
+	}
+	rf := newResearchFixture(t, vendor)
+	rel, err := rf.svc.CreateRelationship(rf.ctx, rf.user, RelationshipInput{
+		Kind: "company", DisplayName: "Acme", AccountDomain: "acme.example",
+	})
+	if err != nil {
+		t.Fatalf("create company: %v", err)
+	}
+
+	outcome, err := rf.svc.EnrichCompany(rf.ctx, rf.user, rel.ID)
+	if err != nil {
+		t.Fatalf("EnrichCompany: %v", err)
+	}
+	if !outcome.Matched || outcome.Written != 3 {
+		t.Fatalf("outcome = %+v", outcome)
+	}
+	stored, err := rf.client.Relationship.Get(rf.ctx, rel.ID)
+	if err != nil {
+		t.Fatalf("reload company: %v", err)
+	}
+	if len(stored.CompanyCategories) != 1 || stored.CompanyCategories[0] != "Artificial intelligence" {
+		t.Fatalf("categories = %v", stored.CompanyCategories)
+	}
+	if stored.LinkedinURL != "https://www.linkedin.com/company/acme" {
+		t.Fatalf("linkedin = %q", stored.LinkedinURL)
+	}
+	if len(stored.CompanyEnrichmentRefs) != 3 {
+		t.Fatalf("citations = %v", stored.CompanyEnrichmentRefs)
+	}
+	if !strings.Contains(strings.Join(stored.ResourceRefs, ","), "linkedin:company:acme") {
+		t.Fatalf("resource refs = %v", stored.ResourceRefs)
+	}
+}
+
 // The ladder: a user correction beats research for the same dimension, and
 // research beats an ai_inference.
 func TestUserCorrectionBeatsExternalResearch(t *testing.T) {
@@ -699,6 +746,7 @@ func TestImplausiblyLongVendorValuesAreRefused(t *testing.T) {
 func TestTaskSpecVersionsArePinned(t *testing.T) {
 	const (
 		wantPerson  = "parallel/base@1bea8549f33c"
+		wantCompany = "parallel/base@ceb3a0a94789"
 		wantTrigger = "parallel/lite@596b6305"
 	)
 
@@ -706,6 +754,9 @@ func TestTaskSpecVersionsArePinned(t *testing.T) {
 		t.Fatalf("person task-spec version changed: got %q, want %q.\n"+
 			"Every already-enriched person becomes billable again at the new version. "+
 			"If that is intended, update the constant.", got, wantPerson)
+	}
+	if got := companyTaskSpecVersion(); got != wantCompany {
+		t.Fatalf("company task-spec version changed: got %q, want %q", got, wantCompany)
 	}
 
 	day := time.Date(2026, 8, 6, 0, 0, 0, 0, time.UTC)

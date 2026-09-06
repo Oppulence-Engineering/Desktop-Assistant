@@ -45,7 +45,7 @@ rowboat-www authenticates through rowboat-api's WorkOS AuthKit broker:
 
 1. `/api/auth/workos/login` creates a PKCE verifier/challenge and asks
    rowboat-api for `/v1/auth/workos/login-url`.
-2. WorkOS redirects back to `/api/auth/workos/callback`.
+2. WorkOS redirects back to `/api/auth/callback` (with `/api/auth/workos/callback` retained as an alias).
 3. rowboat-www validates the sealed PKCE state cookie, posts the code verifier
    to rowboat-api `/v1/auth/workos/exchange`, and stores the returned token
    bundle in a sealed HTTP-only cookie.
@@ -67,6 +67,7 @@ Required production env:
 ```bash
 ROWBOAT_WWW_API_PROXY_URL=https://api.oppulence.io
 ROWBOAT_WWW_PUBLIC_API_BASE_URL=https://api.oppulence.io
+ROWBOAT_WWW_AUTH_API_BASE_URL=https://api.oppulence.io
 ROWBOAT_WWW_SESSION_SECRET=<32+ random characters>
 ```
 

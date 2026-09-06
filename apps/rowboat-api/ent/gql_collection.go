@@ -6800,6 +6800,31 @@ func (_q *RelationshipQuery) collectField(ctx context.Context, oneNode bool, opC
 				selectedFields = append(selectedFields, relationship.FieldResourceRefs)
 				fieldSeen[relationship.FieldResourceRefs] = struct{}{}
 			}
+		case "companyCategories":
+			if _, ok := fieldSeen[relationship.FieldCompanyCategories]; !ok {
+				selectedFields = append(selectedFields, relationship.FieldCompanyCategories)
+				fieldSeen[relationship.FieldCompanyCategories] = struct{}{}
+			}
+		case "companyDescription":
+			if _, ok := fieldSeen[relationship.FieldCompanyDescription]; !ok {
+				selectedFields = append(selectedFields, relationship.FieldCompanyDescription)
+				fieldSeen[relationship.FieldCompanyDescription] = struct{}{}
+			}
+		case "linkedinURL":
+			if _, ok := fieldSeen[relationship.FieldLinkedinURL]; !ok {
+				selectedFields = append(selectedFields, relationship.FieldLinkedinURL)
+				fieldSeen[relationship.FieldLinkedinURL] = struct{}{}
+			}
+		case "companyEnrichmentVersion":
+			if _, ok := fieldSeen[relationship.FieldCompanyEnrichmentVersion]; !ok {
+				selectedFields = append(selectedFields, relationship.FieldCompanyEnrichmentVersion)
+				fieldSeen[relationship.FieldCompanyEnrichmentVersion] = struct{}{}
+			}
+		case "companyEnrichedAt":
+			if _, ok := fieldSeen[relationship.FieldCompanyEnrichedAt]; !ok {
+				selectedFields = append(selectedFields, relationship.FieldCompanyEnrichedAt)
+				fieldSeen[relationship.FieldCompanyEnrichedAt] = struct{}{}
+			}
 		case "summary":
 			if _, ok := fieldSeen[relationship.FieldSummary]; !ok {
 				selectedFields = append(selectedFields, relationship.FieldSummary)

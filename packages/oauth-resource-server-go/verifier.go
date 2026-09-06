@@ -29,8 +29,12 @@ const (
 
 // Config configures the fail-closed RFC 012 connector-token verifier.
 type Config struct {
-	IssuerURL                 string
-	Audience                  string
+	IssuerURL string
+	Audience  string
+	// SkipAudienceValidation is only for providers, such as WorkOS AuthKit,
+	// whose access tokens intentionally omit the aud claim. Issuer and
+	// signature validation remain mandatory.
+	SkipAudienceValidation    bool
 	JWKSURL                   string
 	RequiredOrganizationID    string
 	AcceptableSkew            time.Duration
@@ -47,7 +51,7 @@ type Config struct {
 }
 
 // GenericConfig configures an explicitly generic JWT verifier. Unlike Config,
-// actor claims are not required. IssuerURL and Audience are still mandatory.
+// actor claims are not required.
 type GenericConfig Config
 
 type Verifier struct {
@@ -75,14 +79,17 @@ type jwksRefresh struct {
 func New(ctx context.Context, cfg Config) (*Verifier, error) { return newVerifier(ctx, cfg, true) }
 
 // NewGeneric builds an explicitly generic verifier that does not require RFC 012
-// actor claims. Exact issuer and audience validation remains mandatory.
+// actor claims. Audience validation may only be disabled explicitly.
 func NewGeneric(ctx context.Context, cfg GenericConfig) (*Verifier, error) {
 	return newVerifier(ctx, Config(cfg), false)
 }
 
 func newVerifier(ctx context.Context, cfg Config, requireActor bool) (*Verifier, error) {
-	if strings.TrimSpace(cfg.IssuerURL) == "" || strings.TrimSpace(cfg.Audience) == "" {
-		return nil, errors.New("oauthrs: exact IssuerURL and Audience are required")
+	if requireActor && cfg.SkipAudienceValidation {
+		return nil, errors.New("oauthrs: primary RFC 012 verifier cannot skip audience validation")
+	}
+	if strings.TrimSpace(cfg.IssuerURL) == "" || (!cfg.SkipAudienceValidation && strings.TrimSpace(cfg.Audience) == "") {
+		return nil, errors.New("oauthrs: exact IssuerURL and Audience are required unless audience validation is explicitly disabled")
 	}
 	if cfg.AcceptableSkew < 0 || cfg.HTTPTimeout < 0 || cfg.MaxJWKSResponseBytes < 0 || cfg.JWKSCacheTTL < 0 || cfg.UnknownKIDCacheTTL < 0 || cfg.UnknownKIDRefreshCooldown < 0 {
 		return nil, errors.New("oauthrs: durations and response limits must not be negative")
@@ -154,7 +161,10 @@ func newVerifier(ctx context.Context, cfg Config, requireActor bool) (*Verifier,
 }
 
 func (v *Verifier) Verify(tokenString string) (*Claims, error) {
-	opts := []jwt.ParserOption{jwt.WithValidMethods(v.cfg.ValidMethods), jwt.WithExpirationRequired(), jwt.WithIssuedAt(), jwt.WithLeeway(v.cfg.AcceptableSkew), jwt.WithIssuer(v.cfg.IssuerURL), jwt.WithAudience(v.cfg.Audience)}
+	opts := []jwt.ParserOption{jwt.WithValidMethods(v.cfg.ValidMethods), jwt.WithExpirationRequired(), jwt.WithIssuedAt(), jwt.WithLeeway(v.cfg.AcceptableSkew), jwt.WithIssuer(v.cfg.IssuerURL)}
+	if !v.cfg.SkipAudienceValidation {
+		opts = append(opts, jwt.WithAudience(v.cfg.Audience))
+	}
 	tok, err := jwt.Parse(tokenString, v.keyfunc, opts...)
 	if err != nil {
 		return nil, classifyTokenError(err)

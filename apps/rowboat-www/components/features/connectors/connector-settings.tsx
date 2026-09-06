@@ -13,7 +13,15 @@ import {
   getListConnectorsUrl,
   getSetConnectionAPIKeyUrl,
 } from "@/lib/api/generated/client/connectors/connectors";
-import type { Connector, ConnectorScope } from "@/lib/api/generated/client/model";
+import type {
+  Connector,
+  ConnectorScope,
+  GoogleConnectionStatus,
+} from "@/lib/api/generated/client/model";
+import {
+  GetGoogleConnectionStatus200Response,
+  StartGoogleOAuth200Response,
+} from "@/lib/api/generated/zod/google-oauth/google-oauth";
 import { startHostedOAuth } from "@/lib/api/connectors/hosted-oauth";
 import { parseConnectorsResponse } from "@/lib/api/connectors/schema";
 import { dashboardFetch } from "@/lib/auth/client";
@@ -96,6 +104,102 @@ function ConnectorScopeList({ scopes }: { scopes: ConnectorScope[] }) {
         )}
       </div>
     </details>
+  );
+}
+
+function GoogleConnectionSettings() {
+  const [status, setStatus] = React.useState<GoogleConnectionStatus | null>(null);
+  const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const claimStarted = React.useRef(false);
+
+  const loadStatus = React.useCallback(async () => {
+    const response = await dashboardFetch("/api/rowboat/v1/google-oauth");
+    if (!response.ok) throw new Error(`Could not load Google status (${response.status})`);
+    setStatus(GetGoogleConnectionStatus200Response.parse(await response.json()));
+  }, []);
+
+  React.useEffect(() => {
+    loadStatus().catch(() => setError("Could not load Google connection status."));
+  }, [loadStatus]);
+
+  React.useEffect(() => {
+    const parameters = new URLSearchParams(window.location.search);
+    const session = parameters.get("google_session");
+    const outcome = parameters.get("google_status");
+    if (!session && !outcome) return;
+    parameters.delete("google_session");
+    parameters.delete("google_status");
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${parameters.size ? `?${parameters.toString()}` : ""}`,
+    );
+    if (claimStarted.current) return;
+    claimStarted.current = true;
+    if (!session || outcome !== "success") {
+      setError("Google authorization was not completed.");
+      return;
+    }
+    setBusy(true);
+    dashboardFetch("/api/rowboat/v1/google-oauth/claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session }),
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Could not claim Google connection (${response.status})`);
+        await loadStatus();
+      })
+      .catch(() => setError("Google authorization could not be saved."))
+      .finally(() => setBusy(false));
+  }, [loadStatus]);
+
+  const connect = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await dashboardFetch(
+        "/api/rowboat/v1/google-oauth/start?profile=commitments",
+        {
+          method: "POST",
+        },
+      );
+      if (!response.ok)
+        throw new Error(`Could not start Google authorization (${response.status})`);
+      const data = StartGoogleOAuth200Response.parse(await response.json());
+      const authorizeURL = safeAuthorizationURL(data.authorizeUrl);
+      if (!authorizeURL) throw new Error("Invalid Google authorization URL");
+      window.location.assign(authorizeURL.toString());
+    } catch {
+      setError("Google authorization could not be started.");
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="settings-panel mb-3 flex items-start justify-between gap-4 px-4 py-3">
+      <div>
+        <span className="flex items-center gap-2 text-sm font-medium text-primary">
+          Gmail &amp; Google Calendar
+          <Badge className="rounded-[2px]" variant="outline">
+            {status?.connected ? "Active" : "Required"}
+          </Badge>
+        </span>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Read recent correspondence and meetings to identify operational commitments.
+        </p>
+        {status?.accounts.map((account) => (
+          <p className="mt-1 font-mono text-[11px] text-primary/50" key={account.accountId}>
+            {account.accountId}
+          </p>
+        ))}
+        {error ? <p className="mt-1 font-mono text-xs text-destructive">{error}</p> : null}
+      </div>
+      <Button disabled={busy} onClick={connect} size="sm" variant="outline">
+        {busy ? "Connecting…" : status?.connected ? "Reconnect Google" : "Connect Google"}
+      </Button>
+    </div>
   );
 }
 
@@ -387,6 +491,7 @@ export function ConnectorSettings() {
           {OUTCOME_MESSAGES[notice.outcome]}
         </div>
       ) : null}
+      <GoogleConnectionSettings />
       <div className="settings-panel flex flex-col">
         {state === "loading" ? (
           <p className="p-4 text-sm text-muted-foreground">Loading connectors…</p>

@@ -19,7 +19,7 @@ export async function requireSession(returnTo = "/app"): Promise<DashboardSessio
   const cookieStore = await cookies();
   const session = readSessionCookieValue(cookieStore.get(SESSION_COOKIE)?.value);
 
-  if (!session || session.expiresAt <= Math.floor(Date.now() / 1000)) {
+  if (!session || (session.expiresAt <= Math.floor(Date.now() / 1000) && !session.refreshToken)) {
     const safeTarget = safeReturnTo(returnTo);
     redirect(`/api/auth/workos/login?return_to=${encodeURIComponent(safeTarget)}`);
   }

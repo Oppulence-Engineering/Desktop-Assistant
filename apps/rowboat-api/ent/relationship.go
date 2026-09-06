@@ -39,6 +39,18 @@ type Relationship struct {
 	OutboundAccountRef string `json:"outbound_account_ref,omitempty"`
 	// ResourceRefs holds the value of the "resource_refs" field.
 	ResourceRefs []string `json:"resource_refs,omitempty"`
+	// CompanyCategories holds the value of the "company_categories" field.
+	CompanyCategories []string `json:"company_categories,omitempty"`
+	// CompanyDescription holds the value of the "company_description" field.
+	CompanyDescription string `json:"company_description,omitempty"`
+	// LinkedinURL holds the value of the "linkedin_url" field.
+	LinkedinURL string `json:"linkedin_url,omitempty"`
+	// CompanyEnrichmentRefs holds the value of the "company_enrichment_refs" field.
+	CompanyEnrichmentRefs map[string][]string `json:"company_enrichment_refs,omitempty"`
+	// CompanyEnrichmentVersion holds the value of the "company_enrichment_version" field.
+	CompanyEnrichmentVersion string `json:"company_enrichment_version,omitempty"`
+	// CompanyEnrichedAt holds the value of the "company_enriched_at" field.
+	CompanyEnrichedAt *time.Time `json:"company_enriched_at,omitempty"`
 	// Summary holds the value of the "summary" field.
 	Summary string `json:"summary,omitempty"`
 	// LastTouchAt holds the value of the "last_touch_at" field.
@@ -350,13 +362,13 @@ func (*Relationship) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case relationship.FieldResourceRefs, relationship.FieldRisks, relationship.FieldMilestones:
+		case relationship.FieldResourceRefs, relationship.FieldCompanyCategories, relationship.FieldCompanyEnrichmentRefs, relationship.FieldRisks, relationship.FieldMilestones:
 			values[i] = new([]byte)
 		case relationship.FieldStateVersion, relationship.FieldProjectorVersion:
 			values[i] = new(sql.NullInt64)
-		case relationship.FieldKind, relationship.FieldDisplayName, relationship.FieldPrimaryEmail, relationship.FieldAccountDomain, relationship.FieldOutboundLeadID, relationship.FieldOutboundAccountRef, relationship.FieldSummary, relationship.FieldNextAction, relationship.FieldStatus, relationship.FieldLifecycle, relationship.FieldEngagement, relationship.FieldSentiment, relationship.FieldHealth, relationship.FieldStateReason, relationship.FieldStateHash:
+		case relationship.FieldKind, relationship.FieldDisplayName, relationship.FieldPrimaryEmail, relationship.FieldAccountDomain, relationship.FieldOutboundLeadID, relationship.FieldOutboundAccountRef, relationship.FieldCompanyDescription, relationship.FieldLinkedinURL, relationship.FieldCompanyEnrichmentVersion, relationship.FieldSummary, relationship.FieldNextAction, relationship.FieldStatus, relationship.FieldLifecycle, relationship.FieldEngagement, relationship.FieldSentiment, relationship.FieldHealth, relationship.FieldStateReason, relationship.FieldStateHash:
 			values[i] = new(sql.NullString)
-		case relationship.FieldCreatedAt, relationship.FieldUpdatedAt, relationship.FieldLastTouchAt, relationship.FieldNextActionAt, relationship.FieldProjectedAt, relationship.FieldLastChangedAt:
+		case relationship.FieldCreatedAt, relationship.FieldUpdatedAt, relationship.FieldCompanyEnrichedAt, relationship.FieldLastTouchAt, relationship.FieldNextActionAt, relationship.FieldProjectedAt, relationship.FieldLastChangedAt:
 			values[i] = new(sql.NullTime)
 		case relationship.FieldID:
 			values[i] = new(uuid.UUID)
@@ -440,6 +452,47 @@ func (_m *Relationship) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &_m.ResourceRefs); err != nil {
 					return fmt.Errorf("unmarshal field resource_refs: %w", err)
 				}
+			}
+		case relationship.FieldCompanyCategories:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field company_categories", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.CompanyCategories); err != nil {
+					return fmt.Errorf("unmarshal field company_categories: %w", err)
+				}
+			}
+		case relationship.FieldCompanyDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field company_description", values[i])
+			} else if value.Valid {
+				_m.CompanyDescription = value.String
+			}
+		case relationship.FieldLinkedinURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field linkedin_url", values[i])
+			} else if value.Valid {
+				_m.LinkedinURL = value.String
+			}
+		case relationship.FieldCompanyEnrichmentRefs:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field company_enrichment_refs", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.CompanyEnrichmentRefs); err != nil {
+					return fmt.Errorf("unmarshal field company_enrichment_refs: %w", err)
+				}
+			}
+		case relationship.FieldCompanyEnrichmentVersion:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field company_enrichment_version", values[i])
+			} else if value.Valid {
+				_m.CompanyEnrichmentVersion = value.String
+			}
+		case relationship.FieldCompanyEnrichedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field company_enriched_at", values[i])
+			} else if value.Valid {
+				_m.CompanyEnrichedAt = new(time.Time)
+				*_m.CompanyEnrichedAt = value.Time
 			}
 		case relationship.FieldSummary:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -731,6 +784,26 @@ func (_m *Relationship) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("resource_refs=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ResourceRefs))
+	builder.WriteString(", ")
+	builder.WriteString("company_categories=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CompanyCategories))
+	builder.WriteString(", ")
+	builder.WriteString("company_description=")
+	builder.WriteString(_m.CompanyDescription)
+	builder.WriteString(", ")
+	builder.WriteString("linkedin_url=")
+	builder.WriteString(_m.LinkedinURL)
+	builder.WriteString(", ")
+	builder.WriteString("company_enrichment_refs=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CompanyEnrichmentRefs))
+	builder.WriteString(", ")
+	builder.WriteString("company_enrichment_version=")
+	builder.WriteString(_m.CompanyEnrichmentVersion)
+	builder.WriteString(", ")
+	if v := _m.CompanyEnrichedAt; v != nil {
+		builder.WriteString("company_enriched_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("summary=")
 	builder.WriteString(_m.Summary)

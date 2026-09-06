@@ -1,8 +1,15 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 
-import { AppShellSidebar, SETTINGS_SECTIONS, type SettingsSection } from "@/components/app-shell";
+import {
+  AppShellSidebar,
+  REVENUE_TAB_LABELS,
+  SETTINGS_SECTIONS,
+  type RevenueTab,
+  type SettingsSection,
+} from "@/components/app-shell";
 import { AgentConfigurationForm } from "@/components/agents/agent-configuration-form";
 import { AuthGate, useAuthSession } from "@/components/auth-gate";
 import { CommandPalette } from "@/components/command-palette";
@@ -44,7 +51,15 @@ import {
   ArtifactTitle,
 } from "@/components/ai-elements/artifact";
 import { useState, useEffect, useRef, type ReactNode, useCallback, useMemo } from "react";
-import { CircleNotch, FloppyDisk, LockSimple, SidebarSimple } from "@phosphor-icons/react";
+import {
+  AddressBook,
+  CheckSquare,
+  CircleNotch,
+  FloppyDisk,
+  LockSimple,
+  SidebarSimple,
+  Tray,
+} from "@phosphor-icons/react";
 import {
   Select,
   SelectContent,
@@ -215,6 +230,7 @@ function PageBody({
   const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [view, setView] = useState<ProductView>(initialView);
+  const [revenueTab, setRevenueTab] = useState<RevenueTab>("commitments");
   const [workflowFocus, setWorkflowFocus] = useState<"scheduled" | "runs">("scheduled");
   const [settingsSection, setSettingsSection] = useState<SettingsSection>(initialSettingsSection);
   const [sessions, setSessions] = useState<SessionMeta[]>([]);
@@ -559,7 +575,7 @@ function PageBody({
             ref={textareaRef}
             onChange={(event) => setText(event.target.value)}
             value={text}
-            placeholder="Ask Oppulence"
+            placeholder="Ask about a client, commitment, or next step"
             className="min-h-[46px] max-h-[200px]"
           />
         </PromptInputBody>
@@ -1425,7 +1441,8 @@ function PageBody({
               navigateTo("chat");
               setSelectedResource(null);
             }}
-            onNavigateRevenue={() => {
+            onNavigateRevenue={(tab) => {
+              setRevenueTab(tab);
               navigateTo("revenue");
               setSelectedResource(null);
             }}
@@ -1443,6 +1460,7 @@ function PageBody({
               navigateTo("workflows");
               setSelectedResource(null);
             }}
+            onOpenSearch={() => setPaletteOpen(true)}
             onOpenSettings={(section) => {
               setSettingsSection(section);
               navigateTo("settings");
@@ -1462,6 +1480,7 @@ function PageBody({
                   ? workflowFocus
                   : undefined
             }
+            activeRevenueTab={revenueTab}
             activeRunId={runId}
             onNewChat={startNewChat}
             onOpenSession={openSession}
@@ -1509,25 +1528,33 @@ function PageBody({
                   {view === "settings"
                     ? SETTINGS_SECTIONS.find((s) => s.key === settingsSection)?.label || "Settings"
                     : view === "revenue"
-                      ? "Relationships"
+                      ? REVENUE_TAB_LABELS[revenueTab]
                       : view === "agents"
                         ? "Agents"
                         : view === "workflows"
                           ? workflowFocus === "runs"
                             ? "Runs"
                             : "Scheduled"
-                          : "Chat"}
+                          : "Home"}
                 </span>
               </div>
               {view !== "settings" ? (
-                <button
-                  className="hidden rounded-md border border-border/70 px-2 py-1 font-mono text-[11px] text-primary/45 transition-colors hover:bg-background-100 hover:text-primary md:block dark:hover:bg-background-200"
-                  onClick={() => setPaletteOpen(true)}
-                  title="Command palette"
-                  type="button"
-                >
-                  ⌘K
-                </button>
+                <div className="flex items-center gap-2">
+                  <Link
+                    className="hidden text-[13px] text-primary/55 transition-colors hover:text-primary md:inline-flex"
+                    href="/api/reference"
+                  >
+                    Help
+                  </Link>
+                  <button
+                    className="hidden h-8 items-center rounded-md border border-border bg-background px-3 text-[13px] text-primary transition-colors hover:bg-background-100 md:inline-flex"
+                    onClick={() => setPaletteOpen(true)}
+                    title="Command palette"
+                    type="button"
+                  >
+                    Ask Oppulence
+                  </button>
+                </div>
               ) : null}
             </header>
 
@@ -1538,8 +1565,10 @@ function PageBody({
                 session={session}
               />
             ) : view === "revenue" ? (
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-hidden">
                 <RevenuePanel
+                  tab={revenueTab}
+                  onTabChange={setRevenueTab}
                   onOpenConnectors={() => {
                     setSettingsSection("extensions");
                     navigateTo("settings");
@@ -1717,12 +1746,63 @@ function PageBody({
 
                   {/* Input area */}
                   {isEmptyConversation ? (
-                    <div className="absolute inset-0 flex items-center justify-center px-4 pb-16">
-                      <div className="w-full max-w-3xl space-y-6 text-center">
-                        <h1 className="text-2xl font-medium tracking-tight text-foreground">
-                          What can I help with?
+                    <div className="absolute inset-0 overflow-y-auto px-4">
+                      <div className="mx-auto w-full max-w-3xl pb-12 pt-20">
+                        <h1 className="text-lg font-medium tracking-tight text-foreground">
+                          Welcome back
                         </h1>
-                        {renderPromptInput()}
+                        <p className="mt-1 text-[13px] text-primary/50">
+                          Find the promises, relationship risks, and next steps that need attention.
+                        </p>
+                        <div className="mt-5">{renderPromptInput()}</div>
+                        <section className="mt-10">
+                          <h2 className="mb-2 text-[12px] font-medium text-primary/45">Today</h2>
+                          <div className="border-y border-border">
+                            {[
+                              {
+                                label: "Review commitments",
+                                detail: "Confirm promises, owners, evidence, and due dates",
+                                icon: CheckSquare,
+                                tab: "commitments" as const,
+                              },
+                              {
+                                label: "Resolve recovery drafts",
+                                detail: "Approve the next step before anything is sent",
+                                icon: Tray,
+                                tab: "queue" as const,
+                              },
+                              {
+                                label: "Check relationship health",
+                                detail: "See enriched context, risk, and the next best action",
+                                icon: AddressBook,
+                                tab: "relationships" as const,
+                              },
+                            ].map((item) => (
+                              <button
+                                aria-label={item.label}
+                                className="flex w-full items-center gap-3 border-b border-border px-2 py-3 text-left last:border-b-0 hover:bg-background-100/70"
+                                key={item.tab}
+                                onClick={() => {
+                                  setRevenueTab(item.tab);
+                                  navigateTo("revenue");
+                                }}
+                                type="button"
+                              >
+                                <span className="flex size-8 items-center justify-center rounded-md border border-border text-primary/50">
+                                  <item.icon className="size-4" />
+                                </span>
+                                <span className="min-w-0">
+                                  <span className="block text-[13px] font-medium text-primary">
+                                    {item.label}
+                                  </span>
+                                  <span className="block truncate text-[12px] text-primary/45">
+                                    {item.detail}
+                                  </span>
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </section>
                       </div>
                     </div>
                   ) : (

@@ -1409,32 +1409,38 @@ var schemaGraph = func() *sqlgraph.Schema {
 		},
 		Type: "Relationship",
 		Fields: map[string]*sqlgraph.FieldSpec{
-			relationship.FieldCreatedAt:          {Type: field.TypeTime, Column: relationship.FieldCreatedAt},
-			relationship.FieldUpdatedAt:          {Type: field.TypeTime, Column: relationship.FieldUpdatedAt},
-			relationship.FieldKind:               {Type: field.TypeString, Column: relationship.FieldKind},
-			relationship.FieldDisplayName:        {Type: field.TypeString, Column: relationship.FieldDisplayName},
-			relationship.FieldPrimaryEmail:       {Type: field.TypeString, Column: relationship.FieldPrimaryEmail},
-			relationship.FieldAccountDomain:      {Type: field.TypeString, Column: relationship.FieldAccountDomain},
-			relationship.FieldOutboundLeadID:     {Type: field.TypeString, Column: relationship.FieldOutboundLeadID},
-			relationship.FieldOutboundAccountRef: {Type: field.TypeString, Column: relationship.FieldOutboundAccountRef},
-			relationship.FieldResourceRefs:       {Type: field.TypeJSON, Column: relationship.FieldResourceRefs},
-			relationship.FieldSummary:            {Type: field.TypeString, Column: relationship.FieldSummary},
-			relationship.FieldLastTouchAt:        {Type: field.TypeTime, Column: relationship.FieldLastTouchAt},
-			relationship.FieldNextActionAt:       {Type: field.TypeTime, Column: relationship.FieldNextActionAt},
-			relationship.FieldNextAction:         {Type: field.TypeString, Column: relationship.FieldNextAction},
-			relationship.FieldStatus:             {Type: field.TypeString, Column: relationship.FieldStatus},
-			relationship.FieldLifecycle:          {Type: field.TypeString, Column: relationship.FieldLifecycle},
-			relationship.FieldEngagement:         {Type: field.TypeString, Column: relationship.FieldEngagement},
-			relationship.FieldSentiment:          {Type: field.TypeString, Column: relationship.FieldSentiment},
-			relationship.FieldHealth:             {Type: field.TypeString, Column: relationship.FieldHealth},
-			relationship.FieldStateReason:        {Type: field.TypeString, Column: relationship.FieldStateReason},
-			relationship.FieldStateVersion:       {Type: field.TypeInt, Column: relationship.FieldStateVersion},
-			relationship.FieldStateHash:          {Type: field.TypeString, Column: relationship.FieldStateHash},
-			relationship.FieldProjectorVersion:   {Type: field.TypeInt, Column: relationship.FieldProjectorVersion},
-			relationship.FieldProjectedAt:        {Type: field.TypeTime, Column: relationship.FieldProjectedAt},
-			relationship.FieldLastChangedAt:      {Type: field.TypeTime, Column: relationship.FieldLastChangedAt},
-			relationship.FieldRisks:              {Type: field.TypeJSON, Column: relationship.FieldRisks},
-			relationship.FieldMilestones:         {Type: field.TypeJSON, Column: relationship.FieldMilestones},
+			relationship.FieldCreatedAt:                {Type: field.TypeTime, Column: relationship.FieldCreatedAt},
+			relationship.FieldUpdatedAt:                {Type: field.TypeTime, Column: relationship.FieldUpdatedAt},
+			relationship.FieldKind:                     {Type: field.TypeString, Column: relationship.FieldKind},
+			relationship.FieldDisplayName:              {Type: field.TypeString, Column: relationship.FieldDisplayName},
+			relationship.FieldPrimaryEmail:             {Type: field.TypeString, Column: relationship.FieldPrimaryEmail},
+			relationship.FieldAccountDomain:            {Type: field.TypeString, Column: relationship.FieldAccountDomain},
+			relationship.FieldOutboundLeadID:           {Type: field.TypeString, Column: relationship.FieldOutboundLeadID},
+			relationship.FieldOutboundAccountRef:       {Type: field.TypeString, Column: relationship.FieldOutboundAccountRef},
+			relationship.FieldResourceRefs:             {Type: field.TypeJSON, Column: relationship.FieldResourceRefs},
+			relationship.FieldCompanyCategories:        {Type: field.TypeJSON, Column: relationship.FieldCompanyCategories},
+			relationship.FieldCompanyDescription:       {Type: field.TypeString, Column: relationship.FieldCompanyDescription},
+			relationship.FieldLinkedinURL:              {Type: field.TypeString, Column: relationship.FieldLinkedinURL},
+			relationship.FieldCompanyEnrichmentRefs:    {Type: field.TypeJSON, Column: relationship.FieldCompanyEnrichmentRefs},
+			relationship.FieldCompanyEnrichmentVersion: {Type: field.TypeString, Column: relationship.FieldCompanyEnrichmentVersion},
+			relationship.FieldCompanyEnrichedAt:        {Type: field.TypeTime, Column: relationship.FieldCompanyEnrichedAt},
+			relationship.FieldSummary:                  {Type: field.TypeString, Column: relationship.FieldSummary},
+			relationship.FieldLastTouchAt:              {Type: field.TypeTime, Column: relationship.FieldLastTouchAt},
+			relationship.FieldNextActionAt:             {Type: field.TypeTime, Column: relationship.FieldNextActionAt},
+			relationship.FieldNextAction:               {Type: field.TypeString, Column: relationship.FieldNextAction},
+			relationship.FieldStatus:                   {Type: field.TypeString, Column: relationship.FieldStatus},
+			relationship.FieldLifecycle:                {Type: field.TypeString, Column: relationship.FieldLifecycle},
+			relationship.FieldEngagement:               {Type: field.TypeString, Column: relationship.FieldEngagement},
+			relationship.FieldSentiment:                {Type: field.TypeString, Column: relationship.FieldSentiment},
+			relationship.FieldHealth:                   {Type: field.TypeString, Column: relationship.FieldHealth},
+			relationship.FieldStateReason:              {Type: field.TypeString, Column: relationship.FieldStateReason},
+			relationship.FieldStateVersion:             {Type: field.TypeInt, Column: relationship.FieldStateVersion},
+			relationship.FieldStateHash:                {Type: field.TypeString, Column: relationship.FieldStateHash},
+			relationship.FieldProjectorVersion:         {Type: field.TypeInt, Column: relationship.FieldProjectorVersion},
+			relationship.FieldProjectedAt:              {Type: field.TypeTime, Column: relationship.FieldProjectedAt},
+			relationship.FieldLastChangedAt:            {Type: field.TypeTime, Column: relationship.FieldLastChangedAt},
+			relationship.FieldRisks:                    {Type: field.TypeJSON, Column: relationship.FieldRisks},
+			relationship.FieldMilestones:               {Type: field.TypeJSON, Column: relationship.FieldMilestones},
 		},
 	}
 	graph.Nodes[51] = &sqlgraph.Node{
@@ -12874,6 +12880,36 @@ func (f *RelationshipFilter) WhereOutboundAccountRef(p entql.StringP) {
 // WhereResourceRefs applies the entql json.RawMessage predicate on the resource_refs field.
 func (f *RelationshipFilter) WhereResourceRefs(p entql.BytesP) {
 	f.Where(p.Field(relationship.FieldResourceRefs))
+}
+
+// WhereCompanyCategories applies the entql json.RawMessage predicate on the company_categories field.
+func (f *RelationshipFilter) WhereCompanyCategories(p entql.BytesP) {
+	f.Where(p.Field(relationship.FieldCompanyCategories))
+}
+
+// WhereCompanyDescription applies the entql string predicate on the company_description field.
+func (f *RelationshipFilter) WhereCompanyDescription(p entql.StringP) {
+	f.Where(p.Field(relationship.FieldCompanyDescription))
+}
+
+// WhereLinkedinURL applies the entql string predicate on the linkedin_url field.
+func (f *RelationshipFilter) WhereLinkedinURL(p entql.StringP) {
+	f.Where(p.Field(relationship.FieldLinkedinURL))
+}
+
+// WhereCompanyEnrichmentRefs applies the entql json.RawMessage predicate on the company_enrichment_refs field.
+func (f *RelationshipFilter) WhereCompanyEnrichmentRefs(p entql.BytesP) {
+	f.Where(p.Field(relationship.FieldCompanyEnrichmentRefs))
+}
+
+// WhereCompanyEnrichmentVersion applies the entql string predicate on the company_enrichment_version field.
+func (f *RelationshipFilter) WhereCompanyEnrichmentVersion(p entql.StringP) {
+	f.Where(p.Field(relationship.FieldCompanyEnrichmentVersion))
+}
+
+// WhereCompanyEnrichedAt applies the entql time.Time predicate on the company_enriched_at field.
+func (f *RelationshipFilter) WhereCompanyEnrichedAt(p entql.TimeP) {
+	f.Where(p.Field(relationship.FieldCompanyEnrichedAt))
 }
 
 // WhereSummary applies the entql string predicate on the summary field.

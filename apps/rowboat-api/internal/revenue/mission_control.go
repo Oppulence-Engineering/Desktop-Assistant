@@ -156,11 +156,16 @@ func (s *Service) MissionControl(ctx context.Context, u *ent.User, relationshipI
 		if err != nil {
 			return nil, err
 		}
-		stable, err := s.client.Relationship.Query().Where(
+		query := s.client.Relationship.Query().Where(
 			relationship.IDEQ(relationshipID),
 			relationship.StateVersionEQ(model.StateVersion),
-			relationship.StateHashEQ(model.StateHash),
-		).Exist(ctx)
+		)
+		if model.StateHash == "" {
+			query = query.Where(relationship.StateHashIsNil())
+		} else {
+			query = query.Where(relationship.StateHashEQ(model.StateHash))
+		}
+		stable, err := query.Exist(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -186,6 +191,12 @@ func (s *Service) MissionControl(ctx context.Context, u *ent.User, relationshipI
 // consecutive equal hashes, catching source, identity, action, review, and
 // projection races rather than validating only the relationship row.
 func missionControlAggregateHash(model *MissionControlReadModel) (string, error) {
+	completeness := model.Completeness
+	completeness.Sources = append([]MissionControlSourceCoverage(nil), completeness.Sources...)
+	for index := range completeness.Sources {
+		// Wall-clock lag changes during a read; completeness and source state are the material boundary.
+		completeness.Sources[index].LagSeconds = 0
+	}
 	payload := struct {
 		StateVersion                 int                                        `json:"stateVersion"`
 		StateHash                    string                                     `json:"stateHash"`
@@ -203,7 +214,7 @@ func missionControlAggregateHash(model *MissionControlReadModel) (string, error)
 		ProjectorVersion:             model.ProjectorVersion,
 		PreviousReviewedStateVersion: model.PreviousReviewedStateVersion,
 		ChangedSinceReview:           model.ChangedSinceReview, Changes: model.Changes,
-		Evidence: model.Evidence, Completeness: model.Completeness,
+		Evidence: model.Evidence, Completeness: completeness,
 		ActiveRecommendation: model.ActiveRecommendation, Pending: model.Pending,
 		Capabilities: model.Capabilities,
 	}

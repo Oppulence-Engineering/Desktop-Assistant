@@ -20,11 +20,11 @@ func TestScanPopulatesMailIndex(t *testing.T) {
 	}
 	waitScan(t, f, scan.ID)
 
-	// scanFixtureThreads has three threads; two have an external counterparty
+	// scanFixtureThreads has four threads; three have an external counterparty
 	// (the noreply one is skipped by summarizeThread).
 	threads := f.client.MailThread.Query().Where(mailthread.HasUserWith(user.IDEQ(f.user.ID))).CountX(f.ctx)
-	if threads != 2 {
-		t.Fatalf("expected 2 indexed threads, got %d", threads)
+	if threads != 3 {
+		t.Fatalf("expected 3 indexed threads, got %d", threads)
 	}
 	msgs := f.client.MailMessageMeta.Query().Where(mailmessagemeta.HasUserWith(user.IDEQ(f.user.ID))).CountX(f.ctx)
 	if msgs < 2 {
@@ -40,7 +40,7 @@ func TestScanPopulatesMailIndex(t *testing.T) {
 	// A rerun is idempotent: no duplicate threads/messages.
 	scan2, _ := f.svc.StartScan(f.ctx, f.user, 90)
 	waitScan(t, f, scan2.ID)
-	if got := f.client.MailThread.Query().Where(mailthread.HasUserWith(user.IDEQ(f.user.ID))).CountX(f.ctx); got != 2 {
+	if got := f.client.MailThread.Query().Where(mailthread.HasUserWith(user.IDEQ(f.user.ID))).CountX(f.ctx); got != 3 {
 		t.Fatalf("rerun must not duplicate threads, got %d", got)
 	}
 }

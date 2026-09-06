@@ -126,6 +126,9 @@ func TestDefiniteFailureIsRetryable(t *testing.T) {
 	if sent.ExecutionStatus != ExecSent {
 		t.Fatalf("retry must send, got %s", sent.ExecutionStatus)
 	}
+	if sent.ExecutionError != "" {
+		t.Fatalf("successful retry retained stale error: %q", sent.ExecutionError)
+	}
 }
 
 // R2/R3 concurrency: one workspace per owner. CurrentWorkspace is idempotent,

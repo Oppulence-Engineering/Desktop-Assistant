@@ -2510,6 +2510,12 @@ var (
 		{Name: "outbound_lead_id", Type: field.TypeString, Nullable: true},
 		{Name: "outbound_account_ref", Type: field.TypeString, Nullable: true},
 		{Name: "resource_refs", Type: field.TypeJSON},
+		{Name: "company_categories", Type: field.TypeJSON},
+		{Name: "company_description", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "linkedin_url", Type: field.TypeString, Nullable: true},
+		{Name: "company_enrichment_refs", Type: field.TypeJSON},
+		{Name: "company_enrichment_version", Type: field.TypeString, Nullable: true},
+		{Name: "company_enriched_at", Type: field.TypeTime, Nullable: true},
 		{Name: "summary", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "last_touch_at", Type: field.TypeTime, Nullable: true},
 		{Name: "next_action_at", Type: field.TypeTime, Nullable: true},
@@ -2538,13 +2544,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "relationships_revenue_workspaces_relationships",
-				Columns:    []*schema.Column{RelationshipsColumns[27]},
+				Columns:    []*schema.Column{RelationshipsColumns[33]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "relationships_users_relationships",
-				Columns:    []*schema.Column{RelationshipsColumns[28]},
+				Columns:    []*schema.Column{RelationshipsColumns[34]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -2553,12 +2559,12 @@ var (
 			{
 				Name:    "relationship_primary_email_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipsColumns[5], RelationshipsColumns[27]},
+				Columns: []*schema.Column{RelationshipsColumns[5], RelationshipsColumns[33]},
 			},
 			{
 				Name:    "relationship_status_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipsColumns[14], RelationshipsColumns[27]},
+				Columns: []*schema.Column{RelationshipsColumns[20], RelationshipsColumns[33]},
 			},
 		},
 	}

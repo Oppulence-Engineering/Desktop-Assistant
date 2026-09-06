@@ -1,5 +1,7 @@
 import ProductDashboardClient from "../product-dashboard-client";
 
+export const instant = false;
+
 export default async function SettingsPage({
   searchParams,
 }: {

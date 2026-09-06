@@ -76,11 +76,15 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	scopes := h.scopes
+	if r.URL.Query().Get("profile") == "commitments" {
+		scopes = commitmentScopes
+	}
 	q := url.Values{}
 	q.Set("client_id", h.secrets.GoogleOAuthClientID())
 	q.Set("redirect_uri", h.redirectURI)
 	q.Set("response_type", "code")
-	q.Set("scope", strings.Join(h.scopes, " "))
+	q.Set("scope", strings.Join(scopes, " "))
 	q.Set("access_type", "offline") // request a refresh_token
 	q.Set("prompt", "consent")      // force refresh_token issuance on re-consent
 	// NOTE: deliberately NOT setting include_granted_scopes — it unions in every
@@ -220,13 +224,25 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 // the desktop claims the parked tokens with its bearer. An HTML page is used
 // because a bare 302 to a custom scheme is unreliable across browsers.
 func (h *Handler) deepLink(w http.ResponseWriter, state, status string) {
-	target := h.deepLinkScheme + "://oauth/google/done?session=" + url.QueryEscape(state) + "&status=" + status
+	target := h.completionTarget(state, status)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'nonce-"+state+"'; base-uri 'none'; frame-ancestors 'none'")
 	_, _ = io.WriteString(w, "<!doctype html><meta charset=utf-8><title>Rowboat</title>"+
 		"<script nonce="+jsString(state)+">location.href="+jsString(target)+"</script>"+
 		"<p style=\"font:14px system-ui;margin:3rem\">Returning to Rowboat… "+
 		"<a href="+jsString(target)+">Click here</a> if it doesn't open automatically.</p>")
+}
+
+func (h *Handler) completionTarget(state, status string) string {
+	if h.webReturnURL == "" {
+		return h.deepLinkScheme + "://oauth/google/done?session=" + url.QueryEscape(state) + "&status=" + status
+	}
+	target, _ := url.Parse(h.webReturnURL)
+	query := target.Query()
+	query.Set("google_session", state)
+	query.Set("google_status", status)
+	target.RawQuery = query.Encode()
+	return target.String()
 }
 
 func (h *Handler) errorPage(w http.ResponseWriter, code int, msg string) {

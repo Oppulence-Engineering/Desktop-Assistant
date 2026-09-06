@@ -123,8 +123,8 @@ func (e *GmailExecutor) SweepThreads(ctx context.Context, userID uuid.UUID, look
 	if err != nil {
 		return nil, "", err
 	}
-	// Sent-anchored query: every revenue-relevant thread has at least one
-	// outbound message, and it keeps newsletter/notification noise out.
+	// Sent-anchored query: every managed relationship has at least one outbound
+	// message, and it keeps newsletters and notification traffic out.
 	// With a cursor, bound the lower edge by the last freshness timestamp
 	// (Gmail's after: is second-granularity) so a recurring scan only reads
 	// new mail; the first scan uses the full lookback window.

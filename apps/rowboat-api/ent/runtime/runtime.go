@@ -2814,54 +2814,62 @@ func init() {
 	relationshipDescResourceRefs := relationshipFields[6].Descriptor()
 	// relationship.DefaultResourceRefs holds the default value on creation for the resource_refs field.
 	relationship.DefaultResourceRefs = relationshipDescResourceRefs.Default.([]string)
+	// relationshipDescCompanyCategories is the schema descriptor for company_categories field.
+	relationshipDescCompanyCategories := relationshipFields[7].Descriptor()
+	// relationship.DefaultCompanyCategories holds the default value on creation for the company_categories field.
+	relationship.DefaultCompanyCategories = relationshipDescCompanyCategories.Default.([]string)
+	// relationshipDescCompanyEnrichmentRefs is the schema descriptor for company_enrichment_refs field.
+	relationshipDescCompanyEnrichmentRefs := relationshipFields[10].Descriptor()
+	// relationship.DefaultCompanyEnrichmentRefs holds the default value on creation for the company_enrichment_refs field.
+	relationship.DefaultCompanyEnrichmentRefs = relationshipDescCompanyEnrichmentRefs.Default.(map[string][]string)
 	// relationshipDescStatus is the schema descriptor for status field.
-	relationshipDescStatus := relationshipFields[11].Descriptor()
+	relationshipDescStatus := relationshipFields[17].Descriptor()
 	// relationship.DefaultStatus holds the default value on creation for the status field.
 	relationship.DefaultStatus = relationshipDescStatus.Default.(string)
 	// relationship.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	relationship.StatusValidator = relationshipDescStatus.Validators[0].(func(string) error)
 	// relationshipDescLifecycle is the schema descriptor for lifecycle field.
-	relationshipDescLifecycle := relationshipFields[12].Descriptor()
+	relationshipDescLifecycle := relationshipFields[18].Descriptor()
 	// relationship.DefaultLifecycle holds the default value on creation for the lifecycle field.
 	relationship.DefaultLifecycle = relationshipDescLifecycle.Default.(string)
 	// relationship.LifecycleValidator is a validator for the "lifecycle" field. It is called by the builders before save.
 	relationship.LifecycleValidator = relationshipDescLifecycle.Validators[0].(func(string) error)
 	// relationshipDescEngagement is the schema descriptor for engagement field.
-	relationshipDescEngagement := relationshipFields[13].Descriptor()
+	relationshipDescEngagement := relationshipFields[19].Descriptor()
 	// relationship.DefaultEngagement holds the default value on creation for the engagement field.
 	relationship.DefaultEngagement = relationshipDescEngagement.Default.(string)
 	// relationship.EngagementValidator is a validator for the "engagement" field. It is called by the builders before save.
 	relationship.EngagementValidator = relationshipDescEngagement.Validators[0].(func(string) error)
 	// relationshipDescSentiment is the schema descriptor for sentiment field.
-	relationshipDescSentiment := relationshipFields[14].Descriptor()
+	relationshipDescSentiment := relationshipFields[20].Descriptor()
 	// relationship.DefaultSentiment holds the default value on creation for the sentiment field.
 	relationship.DefaultSentiment = relationshipDescSentiment.Default.(string)
 	// relationship.SentimentValidator is a validator for the "sentiment" field. It is called by the builders before save.
 	relationship.SentimentValidator = relationshipDescSentiment.Validators[0].(func(string) error)
 	// relationshipDescHealth is the schema descriptor for health field.
-	relationshipDescHealth := relationshipFields[15].Descriptor()
+	relationshipDescHealth := relationshipFields[21].Descriptor()
 	// relationship.DefaultHealth holds the default value on creation for the health field.
 	relationship.DefaultHealth = relationshipDescHealth.Default.(string)
 	// relationship.HealthValidator is a validator for the "health" field. It is called by the builders before save.
 	relationship.HealthValidator = relationshipDescHealth.Validators[0].(func(string) error)
 	// relationshipDescStateVersion is the schema descriptor for state_version field.
-	relationshipDescStateVersion := relationshipFields[17].Descriptor()
+	relationshipDescStateVersion := relationshipFields[23].Descriptor()
 	// relationship.DefaultStateVersion holds the default value on creation for the state_version field.
 	relationship.DefaultStateVersion = relationshipDescStateVersion.Default.(int)
 	// relationship.StateVersionValidator is a validator for the "state_version" field. It is called by the builders before save.
 	relationship.StateVersionValidator = relationshipDescStateVersion.Validators[0].(func(int) error)
 	// relationshipDescProjectorVersion is the schema descriptor for projector_version field.
-	relationshipDescProjectorVersion := relationshipFields[19].Descriptor()
+	relationshipDescProjectorVersion := relationshipFields[25].Descriptor()
 	// relationship.DefaultProjectorVersion holds the default value on creation for the projector_version field.
 	relationship.DefaultProjectorVersion = relationshipDescProjectorVersion.Default.(int)
 	// relationship.ProjectorVersionValidator is a validator for the "projector_version" field. It is called by the builders before save.
 	relationship.ProjectorVersionValidator = relationshipDescProjectorVersion.Validators[0].(func(int) error)
 	// relationshipDescRisks is the schema descriptor for risks field.
-	relationshipDescRisks := relationshipFields[22].Descriptor()
+	relationshipDescRisks := relationshipFields[28].Descriptor()
 	// relationship.DefaultRisks holds the default value on creation for the risks field.
 	relationship.DefaultRisks = relationshipDescRisks.Default.([]string)
 	// relationshipDescMilestones is the schema descriptor for milestones field.
-	relationshipDescMilestones := relationshipFields[23].Descriptor()
+	relationshipDescMilestones := relationshipFields[29].Descriptor()
 	// relationship.DefaultMilestones holds the default value on creation for the milestones field.
 	relationship.DefaultMilestones = relationshipDescMilestones.Default.([]string)
 	// relationshipDescID is the schema descriptor for id field.
