@@ -80,11 +80,6 @@ function apiURL(baseUrl: string, pathname: string, searchParams?: URLSearchParam
   return url;
 }
 
-/** Returns the configured server-side rowboat-api base URL for diagnostics. */
-export function rowboatApiBaseURL(): string {
-  return getAuthRuntimeConfig().apiBaseUrl;
-}
-
 export function rowboatAuthApiBaseURL(): string {
   return getAuthRuntimeConfig().authApiBaseUrl;
 }

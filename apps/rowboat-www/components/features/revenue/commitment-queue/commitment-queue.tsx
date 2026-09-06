@@ -137,7 +137,7 @@ function nextAction(state: string, missing: string[], urgency: CommitmentQueueIt
   return "Watch connected sources for fulfillment or a reply.";
 }
 
-export function buildCommitmentQueue(graph: RelationshipGraph, now = new Date()) {
+function buildCommitmentQueue(graph: RelationshipGraph, now = new Date()) {
   const nodes = new Map(graph.nodes.map((node) => [node.id, node]));
   const ownerByCommitment = new Map<string, RelationshipGraphNode>();
   for (const edge of graph.edges) {

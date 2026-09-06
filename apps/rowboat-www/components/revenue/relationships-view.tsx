@@ -177,7 +177,7 @@ const companyName = (relationship: RevenueRelationship) => {
 const formatResearchCost = (usd: number) =>
   usd < 0.01 ? "less than a cent" : `$${usd.toFixed(2)}`;
 
-export function RelationshipEnrichment({
+function RelationshipEnrichment({
   onError,
   onNotice,
   onChanged,
