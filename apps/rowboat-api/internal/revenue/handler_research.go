@@ -178,6 +178,7 @@ func (h *Handler) EnrichPersons(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"outcomes": outcomes})
 }
 
+// PendingCompanyEnrichment handles GET /v1/research/companies/pending.
 func (h *Handler) PendingCompanyEnrichment(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -191,6 +192,7 @@ func (h *Handler) PendingCompanyEnrichment(w http.ResponseWriter, r *http.Reques
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"relationshipIds": ids})
 }
 
+// CompanyEnrichmentEstimate handles GET /v1/research/companies/estimate.
 func (h *Handler) CompanyEnrichmentEstimate(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -204,6 +206,7 @@ func (h *Handler) CompanyEnrichmentEstimate(w http.ResponseWriter, r *http.Reque
 	httpx.WriteJSON(w, http.StatusOK, estimate)
 }
 
+// EnrichCompany handles POST /v1/research/companies/{relationshipId}.
 func (h *Handler) EnrichCompany(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {
@@ -221,6 +224,7 @@ func (h *Handler) EnrichCompany(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteJSON(w, http.StatusOK, outcome)
 }
 
+// EnrichCompanies handles POST /v1/research/companies.
 func (h *Handler) EnrichCompanies(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {

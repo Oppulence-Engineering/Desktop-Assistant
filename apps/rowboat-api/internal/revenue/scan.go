@@ -819,10 +819,10 @@ func counterpartySummaries(sum *threadSummary) []*threadSummary {
 	}
 	out := make([]*threadSummary, 0, len(participants))
 	for _, participant := range participants {
-		copy := *sum
-		copy.Counterparty = participant.Email
-		copy.CounterpartyName = participant.DisplayName
-		out = append(out, &copy)
+		clone := *sum
+		clone.Counterparty = participant.Email
+		clone.CounterpartyName = participant.DisplayName
+		out = append(out, &clone)
 	}
 	return out
 }
@@ -989,14 +989,6 @@ func lastMessage(sum *threadSummary) googleapi.GmailThreadMessage {
 }
 
 func lastSnippet(sum *threadSummary) string { return lastMessage(sum).Snippet }
-
-func parseAddress(header string) (email, name string) {
-	addresses := parseAddresses(header)
-	if len(addresses) == 0 {
-		return "", ""
-	}
-	return addresses[0].Email, addresses[0].DisplayName
-}
 
 func parseAddresses(header string) []RelationshipParticipantInput {
 	parsed, err := mail.ParseAddressList(header)

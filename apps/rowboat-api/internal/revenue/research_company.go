@@ -20,6 +20,7 @@ import (
 
 const companyResearchProcessor = parallel.ProcessorBase
 
+// CompanyResearchOutcome reports the fields accepted from a company research run.
 type CompanyResearchOutcome struct {
 	RelationshipID uuid.UUID `json:"relationshipId"`
 	Matched        bool      `json:"matched"`
@@ -29,6 +30,7 @@ type CompanyResearchOutcome struct {
 	Replayed       bool      `json:"replayed"`
 }
 
+// EstimateCompanyEnrichment returns the cost of enriching pending company records.
 func (s *Service) EstimateCompanyEnrichment(ctx context.Context, u *ent.User) (*ResearchEstimate, error) {
 	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
 	if err != nil {
@@ -48,6 +50,7 @@ func (s *Service) EstimateCompanyEnrichment(ctx context.Context, u *ent.User) (*
 	}, nil
 }
 
+// PendingCompanyEnrichmentIDs returns company records not processed by the current task version.
 func (s *Service) PendingCompanyEnrichmentIDs(ctx context.Context, u *ent.User) ([]uuid.UUID, error) {
 	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
 	if err != nil {
@@ -79,6 +82,7 @@ func (s *Service) pendingResearchCompanyIDs(ctx context.Context, ws *ent.Revenue
 	return ids, nil
 }
 
+// EnrichCompanies enriches one bounded batch of company records.
 func (s *Service) EnrichCompanies(ctx context.Context, u *ent.User, ids []uuid.UUID) ([]*CompanyResearchOutcome, error) {
 	if len(ids) == 0 {
 		return nil, fmt.Errorf("%w: no companies to enrich", ErrInvalidInput)
@@ -104,6 +108,7 @@ func (s *Service) EnrichCompanies(ctx context.Context, u *ent.User, ids []uuid.U
 	return outcomes, nil
 }
 
+// EnrichCompany enriches one company record with cited Parallel research.
 func (s *Service) EnrichCompany(ctx context.Context, u *ent.User, relationshipID uuid.UUID) (*CompanyResearchOutcome, error) {
 	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceContribute)
 	if err != nil {
