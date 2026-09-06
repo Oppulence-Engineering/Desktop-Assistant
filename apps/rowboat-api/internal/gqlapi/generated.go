@@ -978,6 +978,10 @@ type ComplexityRoot struct {
 		CommitmentDependencies            func(childComplexity int) int
 		CommitmentEvents                  func(childComplexity int) int
 		Commitments                       func(childComplexity int) int
+		CompanyCategories                 func(childComplexity int) int
+		CompanyDescription                func(childComplexity int) int
+		CompanyEnrichedAt                 func(childComplexity int) int
+		CompanyEnrichmentVersion          func(childComplexity int) int
 		ConversationIntelligenceArtifacts func(childComplexity int) int
 		CreatedAt                         func(childComplexity int) int
 		DisplayName                       func(childComplexity int) int
@@ -991,6 +995,7 @@ type ComplexityRoot struct {
 		LastChangedAt                     func(childComplexity int) int
 		LastTouchAt                       func(childComplexity int) int
 		Lifecycle                         func(childComplexity int) int
+		LinkedinURL                       func(childComplexity int) int
 		MailThreads                       func(childComplexity int) int
 		Milestones                        func(childComplexity int) int
 		NextAction                        func(childComplexity int) int
@@ -6201,6 +6206,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Relationship.Commitments(childComplexity), true
+	case "Relationship.companyCategories":
+		if e.ComplexityRoot.Relationship.CompanyCategories == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Relationship.CompanyCategories(childComplexity), true
+	case "Relationship.companyDescription":
+		if e.ComplexityRoot.Relationship.CompanyDescription == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Relationship.CompanyDescription(childComplexity), true
+	case "Relationship.companyEnrichedAt":
+		if e.ComplexityRoot.Relationship.CompanyEnrichedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Relationship.CompanyEnrichedAt(childComplexity), true
+	case "Relationship.companyEnrichmentVersion":
+		if e.ComplexityRoot.Relationship.CompanyEnrichmentVersion == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Relationship.CompanyEnrichmentVersion(childComplexity), true
 	case "Relationship.conversationIntelligenceArtifacts":
 		if e.ComplexityRoot.Relationship.ConversationIntelligenceArtifacts == nil {
 			break
@@ -6279,6 +6308,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Relationship.Lifecycle(childComplexity), true
+	case "Relationship.linkedinURL":
+		if e.ComplexityRoot.Relationship.LinkedinURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Relationship.LinkedinURL(childComplexity), true
 	case "Relationship.mailThreads":
 		if e.ComplexityRoot.Relationship.MailThreads == nil {
 			break
@@ -11350,6 +11385,16 @@ func (ec *executionContext) childFields_Relationship(ctx context.Context, field 
 		return ec.fieldContext_Relationship_outboundAccountRef(ctx, field)
 	case "resourceRefs":
 		return ec.fieldContext_Relationship_resourceRefs(ctx, field)
+	case "companyCategories":
+		return ec.fieldContext_Relationship_companyCategories(ctx, field)
+	case "companyDescription":
+		return ec.fieldContext_Relationship_companyDescription(ctx, field)
+	case "linkedinURL":
+		return ec.fieldContext_Relationship_linkedinURL(ctx, field)
+	case "companyEnrichmentVersion":
+		return ec.fieldContext_Relationship_companyEnrichmentVersion(ctx, field)
+	case "companyEnrichedAt":
+		return ec.fieldContext_Relationship_companyEnrichedAt(ctx, field)
 	case "summary":
 		return ec.fieldContext_Relationship_summary(ctx, field)
 	case "lastTouchAt":
@@ -32018,6 +32063,121 @@ func (ec *executionContext) _Relationship_resourceRefs(ctx context.Context, fiel
 }
 func (ec *executionContext) fieldContext_Relationship_resourceRefs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("Relationship", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Relationship_companyCategories(ctx context.Context, field graphql.CollectedField, obj *ent.Relationship) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Relationship_companyCategories(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CompanyCategories, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v []string) graphql.Marshaler {
+			return ec.marshalNString2ᚕstringᚄ(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_Relationship_companyCategories(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Relationship", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Relationship_companyDescription(ctx context.Context, field graphql.CollectedField, obj *ent.Relationship) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Relationship_companyDescription(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CompanyDescription, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Relationship_companyDescription(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Relationship", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Relationship_linkedinURL(ctx context.Context, field graphql.CollectedField, obj *ent.Relationship) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Relationship_linkedinURL(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.LinkedinURL, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Relationship_linkedinURL(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Relationship", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Relationship_companyEnrichmentVersion(ctx context.Context, field graphql.CollectedField, obj *ent.Relationship) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Relationship_companyEnrichmentVersion(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CompanyEnrichmentVersion, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v string) graphql.Marshaler {
+			return ec.marshalOString2string(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Relationship_companyEnrichmentVersion(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Relationship", field, false, false, errors.New("field of type String does not have child fields"))
+}
+
+func (ec *executionContext) _Relationship_companyEnrichedAt(ctx context.Context, field graphql.CollectedField, obj *ent.Relationship) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_Relationship_companyEnrichedAt(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CompanyEnrichedAt, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v *time.Time) graphql.Marshaler {
+			return ec.marshalOTime2ᚖtimeᚐTime(ctx, selections, v)
+		},
+		true,
+		false,
+	)
+}
+func (ec *executionContext) fieldContext_Relationship_companyEnrichedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("Relationship", field, false, false, errors.New("field of type Time does not have child fields"))
 }
 
 func (ec *executionContext) _Relationship_summary(ctx context.Context, field graphql.CollectedField, obj *ent.Relationship) (ret graphql.Marshaler) {
@@ -104117,7 +104277,7 @@ func (ec *executionContext) unmarshalInputRelationshipWhereInput(ctx context.Con
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "kind", "kindNEQ", "kindIn", "kindNotIn", "kindGT", "kindGTE", "kindLT", "kindLTE", "kindContains", "kindHasPrefix", "kindHasSuffix", "kindEqualFold", "kindContainsFold", "displayName", "displayNameNEQ", "displayNameIn", "displayNameNotIn", "displayNameGT", "displayNameGTE", "displayNameLT", "displayNameLTE", "displayNameContains", "displayNameHasPrefix", "displayNameHasSuffix", "displayNameEqualFold", "displayNameContainsFold", "accountDomain", "accountDomainNEQ", "accountDomainIn", "accountDomainNotIn", "accountDomainGT", "accountDomainGTE", "accountDomainLT", "accountDomainLTE", "accountDomainContains", "accountDomainHasPrefix", "accountDomainHasSuffix", "accountDomainIsNil", "accountDomainNotNil", "accountDomainEqualFold", "accountDomainContainsFold", "outboundLeadID", "outboundLeadIDNEQ", "outboundLeadIDIn", "outboundLeadIDNotIn", "outboundLeadIDGT", "outboundLeadIDGTE", "outboundLeadIDLT", "outboundLeadIDLTE", "outboundLeadIDContains", "outboundLeadIDHasPrefix", "outboundLeadIDHasSuffix", "outboundLeadIDIsNil", "outboundLeadIDNotNil", "outboundLeadIDEqualFold", "outboundLeadIDContainsFold", "outboundAccountRef", "outboundAccountRefNEQ", "outboundAccountRefIn", "outboundAccountRefNotIn", "outboundAccountRefGT", "outboundAccountRefGTE", "outboundAccountRefLT", "outboundAccountRefLTE", "outboundAccountRefContains", "outboundAccountRefHasPrefix", "outboundAccountRefHasSuffix", "outboundAccountRefIsNil", "outboundAccountRefNotNil", "outboundAccountRefEqualFold", "outboundAccountRefContainsFold", "summary", "summaryNEQ", "summaryIn", "summaryNotIn", "summaryGT", "summaryGTE", "summaryLT", "summaryLTE", "summaryContains", "summaryHasPrefix", "summaryHasSuffix", "summaryIsNil", "summaryNotNil", "summaryEqualFold", "summaryContainsFold", "lastTouchAt", "lastTouchAtNEQ", "lastTouchAtIn", "lastTouchAtNotIn", "lastTouchAtGT", "lastTouchAtGTE", "lastTouchAtLT", "lastTouchAtLTE", "lastTouchAtIsNil", "lastTouchAtNotNil", "nextActionAt", "nextActionAtNEQ", "nextActionAtIn", "nextActionAtNotIn", "nextActionAtGT", "nextActionAtGTE", "nextActionAtLT", "nextActionAtLTE", "nextActionAtIsNil", "nextActionAtNotNil", "nextAction", "nextActionNEQ", "nextActionIn", "nextActionNotIn", "nextActionGT", "nextActionGTE", "nextActionLT", "nextActionLTE", "nextActionContains", "nextActionHasPrefix", "nextActionHasSuffix", "nextActionIsNil", "nextActionNotNil", "nextActionEqualFold", "nextActionContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "lifecycle", "lifecycleNEQ", "lifecycleIn", "lifecycleNotIn", "lifecycleGT", "lifecycleGTE", "lifecycleLT", "lifecycleLTE", "lifecycleContains", "lifecycleHasPrefix", "lifecycleHasSuffix", "lifecycleEqualFold", "lifecycleContainsFold", "engagement", "engagementNEQ", "engagementIn", "engagementNotIn", "engagementGT", "engagementGTE", "engagementLT", "engagementLTE", "engagementContains", "engagementHasPrefix", "engagementHasSuffix", "engagementEqualFold", "engagementContainsFold", "sentiment", "sentimentNEQ", "sentimentIn", "sentimentNotIn", "sentimentGT", "sentimentGTE", "sentimentLT", "sentimentLTE", "sentimentContains", "sentimentHasPrefix", "sentimentHasSuffix", "sentimentEqualFold", "sentimentContainsFold", "health", "healthNEQ", "healthIn", "healthNotIn", "healthGT", "healthGTE", "healthLT", "healthLTE", "healthContains", "healthHasPrefix", "healthHasSuffix", "healthEqualFold", "healthContainsFold", "stateReason", "stateReasonNEQ", "stateReasonIn", "stateReasonNotIn", "stateReasonGT", "stateReasonGTE", "stateReasonLT", "stateReasonLTE", "stateReasonContains", "stateReasonHasPrefix", "stateReasonHasSuffix", "stateReasonIsNil", "stateReasonNotNil", "stateReasonEqualFold", "stateReasonContainsFold", "stateVersion", "stateVersionNEQ", "stateVersionIn", "stateVersionNotIn", "stateVersionGT", "stateVersionGTE", "stateVersionLT", "stateVersionLTE", "stateHash", "stateHashNEQ", "stateHashIn", "stateHashNotIn", "stateHashGT", "stateHashGTE", "stateHashLT", "stateHashLTE", "stateHashContains", "stateHashHasPrefix", "stateHashHasSuffix", "stateHashIsNil", "stateHashNotNil", "stateHashEqualFold", "stateHashContainsFold", "projectorVersion", "projectorVersionNEQ", "projectorVersionIn", "projectorVersionNotIn", "projectorVersionGT", "projectorVersionGTE", "projectorVersionLT", "projectorVersionLTE", "projectedAt", "projectedAtNEQ", "projectedAtIn", "projectedAtNotIn", "projectedAtGT", "projectedAtGTE", "projectedAtLT", "projectedAtLTE", "projectedAtIsNil", "projectedAtNotNil", "lastChangedAt", "lastChangedAtNEQ", "lastChangedAtIn", "lastChangedAtNotIn", "lastChangedAtGT", "lastChangedAtGTE", "lastChangedAtLT", "lastChangedAtLTE", "lastChangedAtIsNil", "lastChangedAtNotNil", "hasWorkspace", "hasWorkspaceWith", "hasUser", "hasUserWith", "hasCommitments", "hasCommitmentsWith", "hasCommitmentEvents", "hasCommitmentEventsWith", "hasCommitmentDependencies", "hasCommitmentDependenciesWith", "hasConversationIntelligenceArtifacts", "hasConversationIntelligenceArtifactsWith", "hasActions", "hasActionsWith", "hasEvidences", "hasEvidencesWith", "hasMailThreads", "hasMailThreadsWith", "hasParticipants", "hasParticipantsWith", "hasIdentities", "hasIdentitiesWith", "hasPersonInteractionStats", "hasPersonInteractionStatsWith", "hasObservations", "hasObservationsWith", "hasAssertions", "hasAssertionsWith", "hasSnapshots", "hasSnapshotsWith", "hasProjectionJobs", "hasProjectionJobsWith", "hasTrustEvents", "hasTrustEventsWith", "hasProposedIdentityCandidates", "hasProposedIdentityCandidatesWith", "hasExistingIdentityCandidates", "hasExistingIdentityCandidatesWith", "hasReviewAcknowledgements", "hasReviewAcknowledgementsWith", "hasAttentionItems", "hasAttentionItemsWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "kind", "kindNEQ", "kindIn", "kindNotIn", "kindGT", "kindGTE", "kindLT", "kindLTE", "kindContains", "kindHasPrefix", "kindHasSuffix", "kindEqualFold", "kindContainsFold", "displayName", "displayNameNEQ", "displayNameIn", "displayNameNotIn", "displayNameGT", "displayNameGTE", "displayNameLT", "displayNameLTE", "displayNameContains", "displayNameHasPrefix", "displayNameHasSuffix", "displayNameEqualFold", "displayNameContainsFold", "accountDomain", "accountDomainNEQ", "accountDomainIn", "accountDomainNotIn", "accountDomainGT", "accountDomainGTE", "accountDomainLT", "accountDomainLTE", "accountDomainContains", "accountDomainHasPrefix", "accountDomainHasSuffix", "accountDomainIsNil", "accountDomainNotNil", "accountDomainEqualFold", "accountDomainContainsFold", "outboundLeadID", "outboundLeadIDNEQ", "outboundLeadIDIn", "outboundLeadIDNotIn", "outboundLeadIDGT", "outboundLeadIDGTE", "outboundLeadIDLT", "outboundLeadIDLTE", "outboundLeadIDContains", "outboundLeadIDHasPrefix", "outboundLeadIDHasSuffix", "outboundLeadIDIsNil", "outboundLeadIDNotNil", "outboundLeadIDEqualFold", "outboundLeadIDContainsFold", "outboundAccountRef", "outboundAccountRefNEQ", "outboundAccountRefIn", "outboundAccountRefNotIn", "outboundAccountRefGT", "outboundAccountRefGTE", "outboundAccountRefLT", "outboundAccountRefLTE", "outboundAccountRefContains", "outboundAccountRefHasPrefix", "outboundAccountRefHasSuffix", "outboundAccountRefIsNil", "outboundAccountRefNotNil", "outboundAccountRefEqualFold", "outboundAccountRefContainsFold", "companyDescription", "companyDescriptionNEQ", "companyDescriptionIn", "companyDescriptionNotIn", "companyDescriptionGT", "companyDescriptionGTE", "companyDescriptionLT", "companyDescriptionLTE", "companyDescriptionContains", "companyDescriptionHasPrefix", "companyDescriptionHasSuffix", "companyDescriptionIsNil", "companyDescriptionNotNil", "companyDescriptionEqualFold", "companyDescriptionContainsFold", "linkedinURL", "linkedinURLNEQ", "linkedinURLIn", "linkedinURLNotIn", "linkedinURLGT", "linkedinURLGTE", "linkedinURLLT", "linkedinURLLTE", "linkedinURLContains", "linkedinURLHasPrefix", "linkedinURLHasSuffix", "linkedinURLIsNil", "linkedinURLNotNil", "linkedinURLEqualFold", "linkedinURLContainsFold", "companyEnrichmentVersion", "companyEnrichmentVersionNEQ", "companyEnrichmentVersionIn", "companyEnrichmentVersionNotIn", "companyEnrichmentVersionGT", "companyEnrichmentVersionGTE", "companyEnrichmentVersionLT", "companyEnrichmentVersionLTE", "companyEnrichmentVersionContains", "companyEnrichmentVersionHasPrefix", "companyEnrichmentVersionHasSuffix", "companyEnrichmentVersionIsNil", "companyEnrichmentVersionNotNil", "companyEnrichmentVersionEqualFold", "companyEnrichmentVersionContainsFold", "companyEnrichedAt", "companyEnrichedAtNEQ", "companyEnrichedAtIn", "companyEnrichedAtNotIn", "companyEnrichedAtGT", "companyEnrichedAtGTE", "companyEnrichedAtLT", "companyEnrichedAtLTE", "companyEnrichedAtIsNil", "companyEnrichedAtNotNil", "summary", "summaryNEQ", "summaryIn", "summaryNotIn", "summaryGT", "summaryGTE", "summaryLT", "summaryLTE", "summaryContains", "summaryHasPrefix", "summaryHasSuffix", "summaryIsNil", "summaryNotNil", "summaryEqualFold", "summaryContainsFold", "lastTouchAt", "lastTouchAtNEQ", "lastTouchAtIn", "lastTouchAtNotIn", "lastTouchAtGT", "lastTouchAtGTE", "lastTouchAtLT", "lastTouchAtLTE", "lastTouchAtIsNil", "lastTouchAtNotNil", "nextActionAt", "nextActionAtNEQ", "nextActionAtIn", "nextActionAtNotIn", "nextActionAtGT", "nextActionAtGTE", "nextActionAtLT", "nextActionAtLTE", "nextActionAtIsNil", "nextActionAtNotNil", "nextAction", "nextActionNEQ", "nextActionIn", "nextActionNotIn", "nextActionGT", "nextActionGTE", "nextActionLT", "nextActionLTE", "nextActionContains", "nextActionHasPrefix", "nextActionHasSuffix", "nextActionIsNil", "nextActionNotNil", "nextActionEqualFold", "nextActionContainsFold", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "lifecycle", "lifecycleNEQ", "lifecycleIn", "lifecycleNotIn", "lifecycleGT", "lifecycleGTE", "lifecycleLT", "lifecycleLTE", "lifecycleContains", "lifecycleHasPrefix", "lifecycleHasSuffix", "lifecycleEqualFold", "lifecycleContainsFold", "engagement", "engagementNEQ", "engagementIn", "engagementNotIn", "engagementGT", "engagementGTE", "engagementLT", "engagementLTE", "engagementContains", "engagementHasPrefix", "engagementHasSuffix", "engagementEqualFold", "engagementContainsFold", "sentiment", "sentimentNEQ", "sentimentIn", "sentimentNotIn", "sentimentGT", "sentimentGTE", "sentimentLT", "sentimentLTE", "sentimentContains", "sentimentHasPrefix", "sentimentHasSuffix", "sentimentEqualFold", "sentimentContainsFold", "health", "healthNEQ", "healthIn", "healthNotIn", "healthGT", "healthGTE", "healthLT", "healthLTE", "healthContains", "healthHasPrefix", "healthHasSuffix", "healthEqualFold", "healthContainsFold", "stateReason", "stateReasonNEQ", "stateReasonIn", "stateReasonNotIn", "stateReasonGT", "stateReasonGTE", "stateReasonLT", "stateReasonLTE", "stateReasonContains", "stateReasonHasPrefix", "stateReasonHasSuffix", "stateReasonIsNil", "stateReasonNotNil", "stateReasonEqualFold", "stateReasonContainsFold", "stateVersion", "stateVersionNEQ", "stateVersionIn", "stateVersionNotIn", "stateVersionGT", "stateVersionGTE", "stateVersionLT", "stateVersionLTE", "stateHash", "stateHashNEQ", "stateHashIn", "stateHashNotIn", "stateHashGT", "stateHashGTE", "stateHashLT", "stateHashLTE", "stateHashContains", "stateHashHasPrefix", "stateHashHasSuffix", "stateHashIsNil", "stateHashNotNil", "stateHashEqualFold", "stateHashContainsFold", "projectorVersion", "projectorVersionNEQ", "projectorVersionIn", "projectorVersionNotIn", "projectorVersionGT", "projectorVersionGTE", "projectorVersionLT", "projectorVersionLTE", "projectedAt", "projectedAtNEQ", "projectedAtIn", "projectedAtNotIn", "projectedAtGT", "projectedAtGTE", "projectedAtLT", "projectedAtLTE", "projectedAtIsNil", "projectedAtNotNil", "lastChangedAt", "lastChangedAtNEQ", "lastChangedAtIn", "lastChangedAtNotIn", "lastChangedAtGT", "lastChangedAtGTE", "lastChangedAtLT", "lastChangedAtLTE", "lastChangedAtIsNil", "lastChangedAtNotNil", "hasWorkspace", "hasWorkspaceWith", "hasUser", "hasUserWith", "hasCommitments", "hasCommitmentsWith", "hasCommitmentEvents", "hasCommitmentEventsWith", "hasCommitmentDependencies", "hasCommitmentDependenciesWith", "hasConversationIntelligenceArtifacts", "hasConversationIntelligenceArtifactsWith", "hasActions", "hasActionsWith", "hasEvidences", "hasEvidencesWith", "hasMailThreads", "hasMailThreadsWith", "hasParticipants", "hasParticipantsWith", "hasIdentities", "hasIdentitiesWith", "hasPersonInteractionStats", "hasPersonInteractionStatsWith", "hasObservations", "hasObservationsWith", "hasAssertions", "hasAssertionsWith", "hasSnapshots", "hasSnapshotsWith", "hasProjectionJobs", "hasProjectionJobsWith", "hasTrustEvents", "hasTrustEventsWith", "hasProposedIdentityCandidates", "hasProposedIdentityCandidatesWith", "hasExistingIdentityCandidates", "hasExistingIdentityCandidatesWith", "hasReviewAcknowledgements", "hasReviewAcknowledgementsWith", "hasAttentionItems", "hasAttentionItemsWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -104810,6 +104970,391 @@ func (ec *executionContext) unmarshalInputRelationshipWhereInput(ctx context.Con
 				return it, err
 			}
 			it.OutboundAccountRefContainsFold = data
+		case "companyDescription":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescription"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescription = data
+		case "companyDescriptionNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionNEQ = data
+		case "companyDescriptionIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionIn = data
+		case "companyDescriptionNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionNotIn = data
+		case "companyDescriptionGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionGT = data
+		case "companyDescriptionGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionGTE = data
+		case "companyDescriptionLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionLT = data
+		case "companyDescriptionLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionLTE = data
+		case "companyDescriptionContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionContains = data
+		case "companyDescriptionHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionHasPrefix = data
+		case "companyDescriptionHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionHasSuffix = data
+		case "companyDescriptionIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionIsNil = data
+		case "companyDescriptionNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionNotNil = data
+		case "companyDescriptionEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionEqualFold = data
+		case "companyDescriptionContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyDescriptionContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyDescriptionContainsFold = data
+		case "linkedinURL":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURL"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURL = data
+		case "linkedinURLNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLNEQ = data
+		case "linkedinURLIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLIn = data
+		case "linkedinURLNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLNotIn = data
+		case "linkedinURLGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLGT = data
+		case "linkedinURLGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLGTE = data
+		case "linkedinURLLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLLT = data
+		case "linkedinURLLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLLTE = data
+		case "linkedinURLContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLContains = data
+		case "linkedinURLHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLHasPrefix = data
+		case "linkedinURLHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLHasSuffix = data
+		case "linkedinURLIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLIsNil = data
+		case "linkedinURLNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLNotNil = data
+		case "linkedinURLEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLEqualFold = data
+		case "linkedinURLContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("linkedinURLContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.LinkedinURLContainsFold = data
+		case "companyEnrichmentVersion":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersion"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersion = data
+		case "companyEnrichmentVersionNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionNEQ"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionNEQ = data
+		case "companyEnrichmentVersionIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionIn = data
+		case "companyEnrichmentVersionNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionNotIn"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionNotIn = data
+		case "companyEnrichmentVersionGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionGT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionGT = data
+		case "companyEnrichmentVersionGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionGTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionGTE = data
+		case "companyEnrichmentVersionLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionLT"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionLT = data
+		case "companyEnrichmentVersionLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionLTE"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionLTE = data
+		case "companyEnrichmentVersionContains":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionContains"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionContains = data
+		case "companyEnrichmentVersionHasPrefix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionHasPrefix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionHasPrefix = data
+		case "companyEnrichmentVersionHasSuffix":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionHasSuffix"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionHasSuffix = data
+		case "companyEnrichmentVersionIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionIsNil = data
+		case "companyEnrichmentVersionNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionNotNil = data
+		case "companyEnrichmentVersionEqualFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionEqualFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionEqualFold = data
+		case "companyEnrichmentVersionContainsFold":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichmentVersionContainsFold"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichmentVersionContainsFold = data
+		case "companyEnrichedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichedAt"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichedAt = data
+		case "companyEnrichedAtNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichedAtNEQ"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichedAtNEQ = data
+		case "companyEnrichedAtIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichedAtIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichedAtIn = data
+		case "companyEnrichedAtNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichedAtNotIn"))
+			data, err := ec.unmarshalOTime2ᚕtimeᚐTimeᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichedAtNotIn = data
+		case "companyEnrichedAtGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichedAtGT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichedAtGT = data
+		case "companyEnrichedAtGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichedAtGTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichedAtGTE = data
+		case "companyEnrichedAtLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichedAtLT"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichedAtLT = data
+		case "companyEnrichedAtLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichedAtLTE"))
+			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichedAtLTE = data
+		case "companyEnrichedAtIsNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichedAtIsNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichedAtIsNil = data
+		case "companyEnrichedAtNotNil":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("companyEnrichedAtNotNil"))
+			data, err := ec.unmarshalOBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CompanyEnrichedAtNotNil = data
 		case "summary":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("summary"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -129227,6 +129772,19 @@ func (ec *executionContext) _Relationship(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "companyCategories":
+			out.Values[i] = ec._Relationship_companyCategories(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "companyDescription":
+			out.Values[i] = ec._Relationship_companyDescription(ctx, field, obj)
+		case "linkedinURL":
+			out.Values[i] = ec._Relationship_linkedinURL(ctx, field, obj)
+		case "companyEnrichmentVersion":
+			out.Values[i] = ec._Relationship_companyEnrichmentVersion(ctx, field, obj)
+		case "companyEnrichedAt":
+			out.Values[i] = ec._Relationship_companyEnrichedAt(ctx, field, obj)
 		case "summary":
 			out.Values[i] = ec._Relationship_summary(ctx, field, obj)
 		case "lastTouchAt":
