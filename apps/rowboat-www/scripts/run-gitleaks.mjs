@@ -9,7 +9,13 @@
 import { execFileSync, spawnSync } from "node:child_process";
 
 const GITLEAKS = "github.com/zricethezav/gitleaks/v8@v8.30.1";
-const BASE_CANDIDATES = ["origin/main", "main"];
+const pullRequestBase = process.env.GITHUB_BASE_REF;
+const BASE_CANDIDATES = [
+  pullRequestBase && `origin/${pullRequestBase}`,
+  pullRequestBase,
+  "origin/main",
+  "main",
+].filter(Boolean);
 
 function git(args) {
   return execFileSync("git", args, { encoding: "utf8" }).trim();
