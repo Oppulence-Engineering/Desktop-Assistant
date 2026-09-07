@@ -1435,12 +1435,7 @@ export const pricingPlans = [
     period: "",
     description:
       "See what is slipping. A weekly report of the deals, invoices, and clients going quiet.",
-    features: [
-      "Weekly slip report",
-      "Dollar amounts on each finding",
-      "Links to the source email",
-      "Job-change alerts on your ten closest contacts",
-    ],
+    features: ["Weekly slip report", "Dollar amounts on each finding", "Links to the source email"],
     ctaLabel: "Get the report",
     ctaHref: "/book-a-demo",
   },
