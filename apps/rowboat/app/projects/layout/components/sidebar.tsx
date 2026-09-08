@@ -169,8 +169,8 @@ export default function Sidebar({
                   ${collapsed ? "py-3" : "gap-3 px-4 py-2.5 justify-start"}
                 `}
               >
-                {collapsed && <Image src={logoOnly} alt="Rowboat" width={32} height={32} />}
-                {!collapsed && <Image src={logo} alt="Rowboat" height={32} />}
+                {collapsed && <Image src={logoOnly} alt="Oppulence" width={32} height={32} />}
+                {!collapsed && <Image src={logo} alt="Oppulence" height={32} />}
               </Link>
             </Tooltip>
           </div>
