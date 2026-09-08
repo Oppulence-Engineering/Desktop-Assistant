@@ -7090,6 +7090,7 @@
     height: 96px;
     align-items: center;
     justify-content: center;
+    gap: 10px;
     background: var(--attio-soft);
     color: #9aa4b1;
     font-size: 18px;
@@ -7097,19 +7098,29 @@
     letter-spacing: -0.019em;
   }
 
+  /* Attio's cells carry a 20px mark beside the name, not bare text. */
+  .sm-attio-logo-grid svg {
+    width: 20px;
+    height: 20px;
+    color: #aab3bf;
+  }
+
   /* Shared section rhythm. Attio alternates #ffffff and #fafafb bands and
      uses one 40px/44px heading scale for every section below the hero. */
+  /* Attio's section rhythm is asymmetric: 152px above the head, 80px below
+     the content. Symmetric padding is what made our page feel evenly spaced
+     rather than top-weighted like the reference. */
   .sm-attio-platform,
   .sm-attio-guarantees,
   .sm-attio-steps {
     background: var(--attio-soft);
-    padding-block: clamp(88px, 8.4vw, 136px);
+    padding-block: clamp(80px, 8.8vw, 152px) clamp(56px, 4.6vw, 80px);
   }
 
   .sm-attio-setup,
   .sm-attio-suite {
     background: #ffffff;
-    padding-block: clamp(88px, 8.4vw, 136px);
+    padding-block: clamp(80px, 8.8vw, 152px) clamp(56px, 4.6vw, 80px);
   }
 
   /* Attio closes on a near-black band, not another white one. */
@@ -7155,7 +7166,8 @@
 
   .sm-attio-section-head {
     display: grid;
-    gap: 16px;
+    justify-items: start;
+    gap: 24px;
     max-width: 896px;
   }
 
@@ -7170,9 +7182,11 @@
     letter-spacing: -0.01em;
   }
 
+  /* Attio holds every section heading at a fixed 40px/44px rather than
+     scaling it fluidly, so the hero stays the only large type on the page. */
   .sm-attio-home h2 {
     max-width: 896px;
-    font-size: clamp(1.85rem, 2.4vw, 2.5rem);
+    font-size: 40px;
     font-weight: 500;
     letter-spacing: -0.01em;
     line-height: 1.1;
@@ -7184,6 +7198,31 @@
 
   .sm-attio-home h2 > span + span {
     color: var(--attio-muted);
+  }
+
+  /* Attio's secondary head link: 32px tall, 12px label, hairline border. */
+  .sm-attio-home .sm-attio-head-link {
+    display: inline-flex;
+    min-height: 32px;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #cad0d9;
+    background: #ffffff;
+    padding: 0 6px 0 10px;
+    color: #2e3238;
+    font-size: 12px;
+    font-weight: 500;
+    transition: border-color 140ms ease;
+  }
+
+  .sm-attio-home .sm-attio-head-link:hover {
+    border-color: #aab6c2;
+  }
+
+  .sm-attio-head-link svg {
+    width: 13px;
+    height: 13px;
+    color: #8b96a1;
   }
 
   /* Platform: Attio's sticky capability rail beside hairline-separated rows.
@@ -7584,8 +7623,13 @@
   /* Connectivity: centred copy over a wrapped integration wall. */
   /* Governance: Attio's stat block. Blue left rule, 32px value, muted label,
      and no card chrome. */
+  .sm-attio-guarantees .sm-attio-section-head {
+    max-width: 464px;
+  }
+
   .sm-attio-guarantee-grid {
     gap: 32px 24px;
+    margin-top: clamp(44px, 4.6vw, 68px);
   }
 
   .sm-attio-guarantee-grid article {
@@ -7621,15 +7665,39 @@
 
   .sm-attio-step-grid article {
     align-content: start;
-    gap: 6px;
+    gap: 0;
     border: 0;
     border-left: 1px solid var(--attio-line);
     background: none;
-    padding: 28px 28px 0;
+    padding: 28px 0 0;
+  }
+
+  .sm-attio-step-copy {
+    display: grid;
+    flex-grow: 1;
+    gap: 6px;
+    padding-inline: 24px;
+  }
+
+  /* Attio closes each changelog column with a 56px strip of hairline ticks. */
+  .sm-attio-step-rule {
+    height: 56px;
+    margin-top: 24px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--attio-line) 0,
+      var(--attio-line) 1px,
+      rgb(0 0 0 / 0%) 1px,
+      rgb(0 0 0 / 0%) 12px
+    );
+    mask-image: linear-gradient(180deg, rgb(0 0 0 / 0%) 0%, #000000 100%);
   }
 
   .sm-attio-step-grid article:first-child {
     border-left: 0;
+  }
+
+  .sm-attio-step-grid article:first-child .sm-attio-step-copy {
     padding-left: 0;
   }
 
@@ -7781,6 +7849,14 @@
       padding: 24px 0 0;
     }
 
+    .sm-attio-step-copy {
+      padding-inline: 0;
+    }
+
+    .sm-attio-step-rule {
+      display: none;
+    }
+
     .sm-attio-context-grid article:first-child,
     .sm-attio-step-grid article:first-child,
     .sm-attio-home .sm-attio-suite-grid a:first-child {
@@ -7793,7 +7869,7 @@
     }
 
     .sm-attio-home h2,
-    .sm-attio-connect h3 {
+    .sm-attio-dark-connect h2 {
       font-size: clamp(1.75rem, 8vw, 2.15rem);
     }
   }

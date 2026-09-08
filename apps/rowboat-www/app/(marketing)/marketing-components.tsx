@@ -718,7 +718,13 @@ const homepageGuarantees = [
   { value: "Every record", label: "exportable, and yours to take" },
 ] as const;
 
-const homepageSources = ["Email", "Calendar", "Meetings", "CRM", "Billing"] as const;
+const homepageSources = [
+  { label: "Email", icon: EnvelopeIcon },
+  { label: "Calendar", icon: CalendarDotsIcon },
+  { label: "Meetings", icon: HeadsetIcon },
+  { label: "CRM", icon: BriefcaseIcon },
+  { label: "Billing", icon: ChartLineIcon },
+] as const;
 
 /* Section headings mirror attio.com: one ink-coloured lead sentence followed by
    muted supporting sentences inside the same 40px/44px block. */
@@ -731,11 +737,27 @@ function AttioHeading({ lead, rest }: { lead: string; rest?: string }) {
   );
 }
 
-function AttioSectionHead({ label, lead, rest }: { label: string; lead: string; rest?: string }) {
+function AttioSectionHead({
+  cta,
+  label,
+  lead,
+  rest,
+}: {
+  cta?: { href: string; label: string };
+  label: string;
+  lead: string;
+  rest?: string;
+}) {
   return (
     <div className="sm-attio-section-head">
       <p className="sm-attio-section-label">{label}</p>
       <AttioHeading lead={lead} rest={rest} />
+      {cta ? (
+        <Link className="sm-attio-head-link" href={cta.href}>
+          {cta.label}
+          <ArrowRightIcon aria-hidden="true" />
+        </Link>
+      ) : null}
     </div>
   );
 }
@@ -787,9 +809,15 @@ export function HomePage() {
       <section aria-label="Connected sources" className="sm-attio-logo-band">
         <div className="sm-attio-shell">
           <div className="sm-attio-logo-grid">
-            {homepageSources.map((source) => (
-              <div key={source}>{source}</div>
-            ))}
+            {homepageSources.map((source) => {
+              const Icon = source.icon;
+              return (
+                <div key={source.label}>
+                  <Icon aria-hidden="true" />
+                  {source.label}
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -891,6 +919,7 @@ export function HomePage() {
       <section className="sm-attio-suite" id="products">
         <div className="sm-attio-shell">
           <AttioSectionHead
+            cta={{ href: "/products", label: "View all" }}
             label="Suite"
             lead="Work where the relationship happens."
             rest="Web for the team queue. Desktop beside the work. Voice for capture. The same record underneath."
@@ -911,6 +940,7 @@ export function HomePage() {
       <section className="sm-attio-steps">
         <div className="sm-attio-shell">
           <AttioSectionHead
+            cta={{ href: "/product", label: "See the ledger" }}
             label="How it works"
             lead="Better as you use it."
             rest="Every approved move sharpens the record, so next week's answer is closer than this week's."
@@ -918,9 +948,12 @@ export function HomePage() {
           <div className="sm-attio-step-grid">
             {homeSteps.map((step, index) => (
               <article key={step.title}>
-                <span>{`Step 0${index + 1}`}</span>
-                <h3>{step.title}</h3>
-                <p>{step.body}</p>
+                <div className="sm-attio-step-copy">
+                  <span>{`Step 0${index + 1}`}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.body}</p>
+                </div>
+                <div aria-hidden="true" className="sm-attio-step-rule" />
               </article>
             ))}
           </div>
