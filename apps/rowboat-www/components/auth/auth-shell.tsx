@@ -31,7 +31,7 @@ const STATS = ["Every account, always current", "Evidence behind every action"];
 // text and attribution together, and don't ship a quote we can't source.
 const TESTIMONIAL = {
   quote:
-    "I stopped doing the Monday morning scramble. I open it, I can see which accounts moved and what I missed, and the reasoning is right there so I'm not guessing. It's not magic, but it's the first thing that's stayed accurate past week two.",
+    "The Monday scramble is gone. Open it and the accounts that moved are already surfaced, with the reasoning attached, so nothing is a guess. It's not magic — it's just the first tool here that stayed accurate past week two.",
   name: "Design partner",
   title: "Head of Customer Success, B2B SaaS",
   avatar: "/marketing/oppulence-icon.png",
