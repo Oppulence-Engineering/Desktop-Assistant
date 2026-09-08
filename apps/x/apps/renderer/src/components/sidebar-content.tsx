@@ -541,7 +541,7 @@ function SyncStatusBar({ voiceRecording }: { voiceRecording?: VoiceNoteStatus | 
                 {relationshipSources.map((source) => (
                   <div
                     key={`${source.source}:${source.sourceAccountId}`}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-border px-2.5 py-2"
+                    className="flex items-center justify-between gap-3 rounded-none border border-border px-2.5 py-2"
                   >
                     <div className="min-w-0">
                       <p className="truncate text-xs font-medium capitalize">{source.source}</p>
@@ -585,7 +585,7 @@ function SyncStatusBar({ voiceRecording }: { voiceRecording?: VoiceNoteStatus | 
                     <span className="shrink-0">
                       <span
                         className={cn(
-                          "inline-block rounded-md px-1 py-0.5 text-[10px] font-medium leading-none",
+                          "inline-block rounded-none px-1 py-0.5 text-[10px] font-medium leading-none",
                           event.level === "error"
                             ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                             : event.level === "warn"
@@ -1134,7 +1134,7 @@ export function SidebarContentPanel({
                             onToggleMeetingRecording?.();
                           }}
                           onMouseDown={(e) => e.stopPropagation()}
-                          className="flex aspect-square w-5 items-center justify-center rounded-md text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                          className="flex aspect-square w-5 items-center justify-center rounded-none text-destructive hover:bg-destructive/10 disabled:opacity-50"
                         >
                           {meetingIsBusy ? (
                             <LoaderIcon className="size-4 animate-spin" />
@@ -1164,7 +1164,7 @@ export function SidebarContentPanel({
                             triggerMeetingCapture(previewMeeting, false);
                           }}
                           onMouseDown={(e) => e.stopPropagation()}
-                          className="flex aspect-square w-5 items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          className="flex aspect-square w-5 items-center justify-center rounded-none text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         >
                           <Mic className="size-4" />
                         </button>
@@ -1182,7 +1182,7 @@ export function SidebarContentPanel({
                               triggerMeetingCapture(previewMeeting, true);
                             }}
                             onMouseDown={(e) => e.stopPropagation()}
-                            className="flex aspect-square w-5 items-center justify-center rounded-md text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            className="flex aspect-square w-5 items-center justify-center rounded-none text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                           >
                             <Video className="size-4" />
                           </button>
@@ -1376,7 +1376,7 @@ export function SidebarContentPanel({
               title="Connect Accounts"
               data-tour-target="connections"
               className={cn(
-                "flex items-center gap-2 rounded-lg py-1 text-xs text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                "flex items-center gap-2 rounded-none py-1 text-xs text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 isCollapsed ? "size-8 justify-center px-0" : "w-full px-2",
               )}
             >
@@ -1440,7 +1440,7 @@ export function SidebarContentPanel({
               title={updateWaiting ? "Settings — update available" : "Settings"}
               data-tour-target="settings"
               className={cn(
-                "flex items-center gap-2 rounded-lg py-1 text-xs text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                "flex items-center gap-2 rounded-none py-1 text-xs text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 isCollapsed ? "size-8 justify-center px-0" : "w-full px-2",
               )}
             >

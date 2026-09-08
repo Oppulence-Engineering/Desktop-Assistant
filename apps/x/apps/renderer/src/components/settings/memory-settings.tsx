@@ -314,7 +314,7 @@ function MemorySearchPanel() {
           {hits.map((hit) => (
             <li
               key={`${hit.path}${hit.headingAnchor}`}
-              className="rounded-lg border border-border/60 p-3"
+              className="rounded-none border border-border/60 p-3"
             >
               <p className="settings-row-label truncate text-xs">{hit.path}</p>
               <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{hit.snippet}</p>

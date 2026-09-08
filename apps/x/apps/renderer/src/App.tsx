@@ -800,7 +800,7 @@ function ContentHeader({
             type="button"
             onClick={onNavigateBack}
             disabled={!canNavigateBack}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-30 disabled:pointer-events-none"
+            className="flex h-8 w-8 items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-30 disabled:pointer-events-none"
             aria-label="Go back"
           >
             <ChevronLeftIcon className="size-5" />
@@ -809,7 +809,7 @@ function ContentHeader({
             type="button"
             onClick={onNavigateForward}
             disabled={!canNavigateForward}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-30 disabled:pointer-events-none"
+            className="flex h-8 w-8 items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-30 disabled:pointer-events-none"
             aria-label="Go forward"
           >
             <ChevronRightIcon className="size-5" />
@@ -6764,7 +6764,7 @@ function App() {
                 <img alt="" className="titlebar-brand-mark" src="/logo-only.png" />
               </span>
               Oppulence
-              <span className="rounded-sm bg-[var(--rowboat-attention)] px-1.5 py-0.5 text-[10px] font-medium text-white">
+              <span className="rounded-none bg-[var(--rowboat-attention)] px-1.5 py-0.5 text-[10px] font-medium text-white">
                 AI
               </span>
             </span>
@@ -6947,7 +6947,7 @@ function App() {
                               }
                             }}
                             className={cn(
-                              "titlebar-no-drag flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors self-center shrink-0",
+                              "titlebar-no-drag flex h-8 w-8 items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-foreground transition-colors self-center shrink-0",
                               versionHistoryPath && "bg-accent text-foreground",
                             )}
                             aria-label="Version history"
@@ -6977,7 +6977,7 @@ function App() {
                           <button
                             type="button"
                             onClick={handleNewChatTab}
-                            className="titlebar-no-drag flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors self-center shrink-0"
+                            className="titlebar-no-drag flex h-8 w-8 items-center justify-center rounded-none text-muted-foreground hover:bg-accent hover:text-foreground transition-colors self-center shrink-0"
                             aria-label="New chat"
                           >
                             <Plus className="size-5" />
@@ -7037,7 +7037,7 @@ function App() {
                             aria-hidden={!action}
                             aria-label={action?.label}
                             className={cn(
-                              "titlebar-no-drag flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors -mr-1 self-center shrink-0",
+                              "titlebar-no-drag flex h-8 w-8 items-center justify-center rounded-none text-muted-foreground transition-colors -mr-1 self-center shrink-0",
                               action
                                 ? "hover:bg-accent hover:text-foreground"
                                 : "invisible pointer-events-none",

@@ -1511,7 +1511,7 @@ function PageBody({
               <div className="flex items-center gap-2">
                 <button
                   aria-label="Toggle sidebar"
-                  className="flex size-7 items-center justify-center rounded-md text-primary/60 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300"
+                  className="flex size-7 items-center justify-center rounded-none text-primary/60 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300"
                   onClick={toggleSidebar}
                   title="Toggle sidebar  ["
                   type="button"
@@ -1547,7 +1547,7 @@ function PageBody({
                     Help
                   </Link>
                   <button
-                    className="hidden h-8 items-center rounded-md border border-border bg-background px-3 text-[13px] text-primary transition-colors hover:bg-background-100 md:inline-flex"
+                    className="hidden h-8 items-center rounded-none border border-border bg-background px-3 text-[13px] text-primary transition-colors hover:bg-background-100 md:inline-flex"
                     onClick={() => setPaletteOpen(true)}
                     title="Command palette"
                     type="button"
@@ -1680,7 +1680,7 @@ function PageBody({
                           } else if (item.type === "approval") {
                             return (
                               <div
-                                className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"
+                                className="rounded-none border border-amber-500/30 bg-amber-500/5 p-4"
                                 key={item.id}
                               >
                                 <p className="text-sm font-medium text-primary">
@@ -1788,7 +1788,7 @@ function PageBody({
                                 }}
                                 type="button"
                               >
-                                <span className="flex size-8 items-center justify-center rounded-md border border-border text-primary/50">
+                                <span className="flex size-8 items-center justify-center rounded-none border border-border text-primary/50">
                                   <item.icon className="size-4" />
                                 </span>
                                 <span className="min-w-0">

@@ -189,9 +189,9 @@
 }
 
 .settings-workspace .rounded,
-.settings-workspace .rounded-md,
-.settings-workspace .rounded-lg,
-.settings-workspace .rounded-xl {
+.settings-workspace .rounded-none,
+.settings-workspace .rounded-none,
+.settings-workspace .rounded-none {
   border-radius: 8px;
 }
 

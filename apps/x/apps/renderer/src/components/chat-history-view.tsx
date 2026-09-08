@@ -91,7 +91,7 @@ export function ChatHistoryView({
       <div className="flex-1 overflow-y-auto">
         {sortedRuns.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center px-8 text-center">
-            <span className="flex size-12 items-center justify-center rounded-2xl border border-border bg-muted/30">
+            <span className="flex size-12 items-center justify-center rounded-none border border-border bg-muted/30">
               <MessageSquare className="size-5 text-muted-foreground" />
             </span>
             <h2 className="mt-4 text-sm font-medium text-foreground">Your conversations will live here</h2>

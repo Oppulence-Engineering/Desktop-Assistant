@@ -92,7 +92,7 @@ function MarketingIcon({
     <span
       className={cn(
         "marketing-icon-frame",
-        compact ? "size-7 rounded-md" : "size-9 rounded-[8px]",
+        compact ? "size-7 rounded-none" : "size-9 rounded-[8px]",
         iconToneClasses[tone],
         className,
       )}
@@ -1603,7 +1603,7 @@ function DesktopScreenshotPreview({
       <div className="relative z-10 flex min-w-0 flex-1 items-center justify-center p-2 sm:p-6">
         <Image
           alt={alt}
-          className="marketing-preview-image w-full min-w-0 max-w-6xl rounded-md border border-primary/10 bg-background object-cover shadow-2xl shadow-black/30"
+          className="marketing-preview-image w-full min-w-0 max-w-6xl rounded-none border border-primary/10 bg-background object-cover shadow-2xl shadow-black/30"
           height={1000}
           priority={src === desktopScreenshots.home}
           sizes="(max-width: 768px) 100vw, 1120px"
@@ -1679,7 +1679,7 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
 
             return (
               <article
-                className="marketing-surface flex gap-3 rounded-md border px-4 py-3"
+                className="marketing-surface flex gap-3 rounded-none border px-4 py-3"
                 key={bullet}
               >
                 <MarketingIcon compact icon={icon} tone={tone} />

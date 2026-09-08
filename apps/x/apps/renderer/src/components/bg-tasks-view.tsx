@@ -920,9 +920,9 @@ function CloudRunTraceOverview({
     : undefined;
 
   return (
-    <section className="overflow-hidden rounded-md border border-border bg-background">
+    <section className="overflow-hidden rounded-none border border-border bg-background">
       <div className="flex items-start gap-3 px-3 py-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted/30">
+        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-none border border-border bg-muted/30">
           <Workflow className="size-4 text-muted-foreground" />
         </div>
         <div className="min-w-0 flex-1">
@@ -1029,7 +1029,7 @@ function CloudRunTraceEvent({
       </div>
 
       <div className="min-w-0 pb-3">
-        <div className="rounded-md border border-border/80 bg-background px-3 py-2.5">
+        <div className="rounded-none border border-border/80 bg-background px-3 py-2.5">
           <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-start">
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-2">

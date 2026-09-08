@@ -318,7 +318,7 @@ export function CommitmentQueue({
           <SelectTrigger className="h-8 w-40" aria-label="Filter commitments">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="app-shell rounded-md">
+          <SelectContent className="app-shell rounded-none">
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="review">Needs review</SelectItem>
             <SelectItem value="due">Due soon or overdue</SelectItem>
@@ -422,7 +422,7 @@ export function CommitmentQueue({
       {error ? (
         <div
           role="alert"
-          className="m-3 rounded-md border border-destructive/40 p-3 text-sm text-destructive"
+          className="m-3 rounded-none border border-destructive/40 p-3 text-sm text-destructive"
         >
           {error}
         </div>
@@ -483,21 +483,21 @@ export function CommitmentQueue({
               <p className="mb-2 text-[12px] text-primary/45">Learn more</p>
               <div className="grid gap-2 sm:grid-cols-2">
                 <button
-                  className="flex h-[72px] items-center gap-3 rounded-lg border border-border bg-background-50 px-3 text-left text-[13px] text-primary/80 transition-colors hover:bg-background-100"
+                  className="flex h-[72px] items-center gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] text-primary/80 transition-colors hover:bg-background-100"
                   onClick={onOpenAccounts}
                   type="button"
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-border bg-background text-primary/45">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-none border border-border bg-background text-primary/45">
                     <Check className="size-4" />
                   </span>
                   Confirm promises with exact evidence
                 </button>
                 <button
-                  className="flex h-[72px] items-center gap-3 rounded-lg border border-border bg-background-50 px-3 text-left text-[13px] text-primary/80 transition-colors hover:bg-background-100"
+                  className="flex h-[72px] items-center gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] text-primary/80 transition-colors hover:bg-background-100"
                   onClick={onOpenRecoveryQueue}
                   type="button"
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-md border border-border bg-background text-primary/45">
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-none border border-border bg-background text-primary/45">
                     <ArrowClockwise className="size-4" />
                   </span>
                   Approve recovery before anything is sent
@@ -639,7 +639,7 @@ export function CommitmentQueue({
           <aside className="flex w-[320px] shrink-0 flex-col border-r border-border bg-background">
             <div className="flex h-12 items-center gap-2 border-b border-border px-3">
               <button
-                className="flex size-8 items-center justify-center rounded-md text-primary/50 hover:bg-background-100 hover:text-primary"
+                className="flex size-8 items-center justify-center rounded-none text-primary/50 hover:bg-background-100 hover:text-primary"
                 onClick={() => setSelected(null)}
                 type="button"
                 aria-label="Close commitment"
@@ -650,7 +650,7 @@ export function CommitmentQueue({
             </div>
             <div className="border-b border-border p-4">
               <div className="flex items-start gap-3">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#3478f6] text-white">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-none bg-[#3478f6] text-white">
                   <Plugs className="size-4" />
                 </div>
                 <div className="min-w-0">
@@ -727,7 +727,7 @@ export function CommitmentQueue({
           </aside>
           <div className="min-w-0 flex-1 overflow-y-auto">
             <div className="flex h-12 items-center gap-2 border-b border-border px-4">
-              <span className="rounded-md bg-background-200 px-3 py-1.5 text-[13px] font-medium text-primary">
+              <span className="rounded-none bg-background-200 px-3 py-1.5 text-[13px] font-medium text-primary">
                 Overview
               </span>
               <span className="px-2 text-[13px] text-primary/45">Evidence</span>
@@ -767,13 +767,13 @@ export function CommitmentQueue({
                   <h3 className="text-sm font-medium text-primary/60">Supporting evidence</h3>
                   <span className="text-[12px] text-primary/40">Exact quote</span>
                 </div>
-                <blockquote className="mt-3 rounded-lg border border-border bg-background-50 p-4 text-[14px] leading-6 text-primary/75">
+                <blockquote className="mt-3 rounded-none border border-border bg-background-50 p-4 text-[14px] leading-6 text-primary/75">
                   {selected.quote ? `“${selected.quote}”` : "No exact quote is attached yet."}
                 </blockquote>
               </section>
               <section className="mt-8">
                 <h3 className="text-sm font-medium text-primary/60">Next action</h3>
-                <div className="mt-3 rounded-lg border border-border p-4">
+                <div className="mt-3 rounded-none border border-border p-4">
                   <p className="text-[14px] text-primary">{selected.nextAction}</p>
                   {selected.missingEvidence.length > 0 ? (
                     <p className="mt-2 flex items-center gap-1.5 text-[12px] text-amber-400">
@@ -914,7 +914,7 @@ export function CommitmentQueue({
 
 function DetailCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-h-24 rounded-lg border border-border bg-background-50 p-3">
+    <div className="min-h-24 rounded-none border border-border bg-background-50 p-3">
       <p className="text-[12px] text-primary/45">{label}</p>
       <p className="mt-5 text-[14px] font-medium text-primary">{value}</p>
     </div>

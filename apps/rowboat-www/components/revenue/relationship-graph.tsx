@@ -146,8 +146,8 @@ const nodeTone = (node: RelationshipGraphNode) =>
 const nodeShape = (kind: RelationshipGraphNode["kind"]) => {
   if (kind === "person") return "rounded-full";
   if (kind === "risk") return "rounded-none";
-  if (kind === "milestone") return "rounded-lg";
-  if (kind === "source") return "rounded-xl";
+  if (kind === "milestone") return "rounded-none";
+  if (kind === "source") return "rounded-none";
   return "rounded-[2px]";
 };
 
@@ -653,7 +653,7 @@ function Inspector({
                   variant="outline"
                   size="xs"
                   onClick={() => onSelectNode(other.id)}
-                  className="h-auto w-full justify-start rounded-lg px-2 py-1.5 text-left"
+                  className="h-auto w-full justify-start rounded-none px-2 py-1.5 text-left"
                 >
                   <NodeIcon kind={other.kind} />
                   <span className="min-w-0 flex-1 truncate">{other.label}</span>
