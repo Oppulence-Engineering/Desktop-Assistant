@@ -1623,10 +1623,9 @@ export const platformPages: PlatformPage[] = [
           "Works in any application, not just ours",
           "Filler words and false starts cleaned up automatically",
           "A second hotkey dictates in one language and pastes another",
-          "Teach it your customer names and acronyms so it stops mangling them",
         ],
         screenshot: "/marketing/voice-hotkeys.png",
-        alt: "Oppulence Voice hotkeys for dictation, the voice agent, translation, and meeting mode",
+        alt: "Oppulence Voice hotkey settings for dictation, the voice agent, translation, and meeting mode",
       },
       {
         title: "It writes down your meetings.",
@@ -1638,6 +1637,17 @@ export const platformPages: PlatformPage[] = [
         ],
         screenshot: "/marketing/voice-integrations.png",
         alt: "Oppulence Voice integrations connecting Google Calendar, the API, MCP, and the CLI",
+      },
+      {
+        title: "It learns your customers\u2019 names.",
+        body: "Every account list is full of words no general model has heard: company names, product codenames, the acronym your team invented last quarter. Add them once and they stop coming out garbled.",
+        bullets: [
+          "Names, tools, and acronyms it should always get right",
+          "Snippets expand a phrase into boilerplate you type constantly",
+          "Import a list instead of adding them one by one",
+        ],
+        screenshot: "/marketing/voice-dictionary.png",
+        alt: "The Oppulence Voice dictionary holding customer names and acronyms",
       },
       {
         title: "The audio can stay on your laptop.",

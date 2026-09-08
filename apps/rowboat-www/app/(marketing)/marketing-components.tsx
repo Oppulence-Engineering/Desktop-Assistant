@@ -642,60 +642,6 @@ const relationshipCatalog = [
   },
 ] as const;
 
-const operatingLoop = [
-  [
-    "01 / CONNECT",
-    "It reads what already happened.",
-    "Connect email, calendar, meetings, and CRM. Oppulence builds the relationship history from work your team already did.",
-  ],
-  [
-    "02 / REVIEW",
-    "See what changed and why it matters.",
-    "Your queue highlights the relationships worth attention and links each recommendation back to its source.",
-  ],
-  [
-    "03 / APPROVE",
-    "Nothing goes out without you.",
-    "Edit, approve, snooze, or reject the next move. Replies, meetings, and outcomes make the relationship history sharper.",
-  ],
-] as const;
-
-const useCases = [
-  {
-    eyebrow: "Founder-led sales",
-    title: "The deal that just went quiet.",
-    body: "That proposal you sent, the intro someone offered, the person who was keen and then stopped writing. We surface it and tell you why it's worth another go now.",
-  },
-  {
-    eyebrow: "Customer success and accounts",
-    title: "Walk into the renewal already knowing.",
-    body: "See what you promised, what changed, and which accounts deserve a real reply before the renewal or next check-in.",
-  },
-  {
-    eyebrow: "Partnerships and services",
-    title: "Relationships that outlast the paperwork.",
-    body: "Long engagements collect decisions, intros, and favours owed in both directions. That history stays readable years later, whoever is running the account.",
-  },
-] as const;
-
-function SectionMarker({ label }: { label: string }) {
-  return (
-    <div className="sm-section-marker">
-      <span>{label}</span>
-    </div>
-  );
-}
-
-const homepageSources = [
-  "Gmail",
-  "Calendar",
-  "Meetings",
-  "CRM",
-  "Notes",
-  "Voice",
-  "Browser",
-] as const;
-
 const homepageProblems = [
   {
     label: "Quiet deals",
@@ -720,609 +666,339 @@ const homepageProof = [
   "Built around your existing systems",
 ] as const;
 
+const homepageStats = [
+  {
+    value: "3–5",
+    label: "relationships worth reviewing each week",
+    detail: "A short queue of accounts where silence, a missed promise, or a money-state change makes the next move worth attention.",
+  },
+  {
+    value: "read-only",
+    label: "first pass across your work systems",
+    detail: "Start by connecting email, calendar, meetings, notes, and CRM history without changing the source systems.",
+  },
+  {
+    value: "approve",
+    label: "before anything reaches a customer",
+    detail: "Oppulence prepares the next move, but a person edits, approves, snoozes, or rejects it before action.",
+  },
+  {
+    value: "source",
+    label: "attached to every material claim",
+    detail: "Each finding points back to the email, call, note, or CRM change it came from, so the recommendation can be checked.",
+  },
+] as const;
+
+const homepageResearchNotes = [
+  {
+    number: "01",
+    title: "Why CRMs forget the promises that actually move deals.",
+    body: "The highest-value customer facts usually live in a thread, a call, or a side note, not in a field someone remembers to update.",
+    href: "/blog",
+  },
+  {
+    number: "02",
+    title: "A relationship queue beats another dashboard.",
+    body: "The job is not to show everything. The job is to name the few accounts where attention today can save revenue later.",
+    href: "/product",
+  },
+  {
+    number: "03",
+    title: "Evidence is the interface for trust.",
+    body: "Teams only act on AI recommendations when they can inspect the source, correct the model, and keep ownership of the next step.",
+    href: "/customers",
+  },
+] as const;
+
 export function HomePage() {
   const individualPlans = pricingPlans.filter((plan) =>
     ["Watch", "Chase", "Intelligence"].includes(plan.name),
   );
 
   return (
-    <div className="op-home">
-      <section className="op-hero">
-        <div className="op-hero-copy">
-          <Link className="op-pill" href="/product">
-            Account Mission Control is live <ArrowRightIcon aria-hidden="true" />
-          </Link>
-          <h1>Know which customer relationships need you today.</h1>
-          <p>
-            Oppulence reads your team&rsquo;s email, calendar, meetings, and CRM history, then turns
-            scattered context into the next relationship move, with the evidence attached.
-          </p>
-          <div className="op-actions">
-            <Link className="op-button op-button-primary" href="/sign-up">
-              Start building <ArrowRightIcon aria-hidden="true" />
-            </Link>
-            <Link className="op-button op-button-secondary" href="#how-it-works">
-              See how it works
-            </Link>
-          </div>
-          <div className="op-proof-row" aria-label="Product promises">
-            {homepageProof.map((item) => (
-              <span key={item}>{item}</span>
-            ))}
-          </div>
+    <div className="sm-memory-home">
+      <aside aria-label="Landing page sections" className="sm-memory-rail">
+        <nav>
+          <a className="is-active" href="#mission">
+            <span aria-hidden="true" />
+            Mission
+          </a>
+          <a href="#what-we-do">What we do</a>
+          <a href="#in-production">In production</a>
+          <a href="#research">Research</a>
+          <a href="#pricing">Pricing</a>
+        </nav>
+        <div className="sm-memory-rail-divider" />
+        <div className="sm-memory-rail-links">
+          <Link href="/blog">Blog</Link>
+          <Link href="/pricing">Pricing</Link>
+          <Link href="/product">Product</Link>
+          <Link href="/customers">Customers</Link>
         </div>
-        <div className="op-hero-visual" aria-label="Oppulence relationship queue preview">
-          <div className="op-browser-bar">
-            <span />
-            <span />
-            <span />
-            <strong>Relationship queue</strong>
-          </div>
-          <Image
-            alt="Oppulence relationship queue showing accounts that need action"
-            height={960}
-            priority
-            sizes="(max-width: 900px) 100vw, 560px"
-            src="/marketing/relationship-desktop.png"
-            width={1440}
-          />
-          <div className="op-insight-card">
-            <span>Today</span>
-            <strong>3 relationships need attention</strong>
-            <p>Each one links back to the email, meeting, or CRM change that explains why.</p>
-          </div>
-        </div>
-      </section>
+      </aside>
 
-      <section className="op-source-band" aria-label="Supported context sources">
-        <p>Connect the systems your team already uses</p>
-        <div>
-          {homepageSources.map((source) => (
-            <span key={source}>{source}</span>
-          ))}
-        </div>
-      </section>
+      <div className="sm-memory-main">
+        <section className="sm-memory-mission" id="mission">
+          <div className="sm-memory-mission-copy">
+            <div className="sm-memory-announcement">
+              <span>
+                <i aria-hidden="true" />
+                Account Mission Control is live.
+              </span>
+              <Link href="/product">
+                Read the overview <ArrowRightIcon aria-hidden="true" />
+              </Link>
+            </div>
 
-      <section className="op-section op-problem">
-        <div className="op-section-header">
-          <span>The problem</span>
-          <h2>Important customer context is everywhere except the place you need it.</h2>
-          <p>
-            The work is already written down. It is just scattered across inboxes, calls, notes,
-            calendars, and CRM fields nobody keeps current.
-          </p>
-        </div>
-        <div className="op-card-grid op-card-grid-three">
-          {homepageProblems.map((item) => (
-            <article className="op-card" key={item.label}>
-              <p>{item.label}</p>
-              <h3>{item.title}</h3>
-              <span>{item.body}</span>
-            </article>
-          ))}
-        </div>
-      </section>
+            <h1>
+              <span className="sm-memory-title-brand">
+                <Image
+                  alt=""
+                  aria-hidden="true"
+                  className="sm-memory-title-icon"
+                  height={46}
+                  priority
+                  src="/marketing/oppulence-icon.png"
+                  width={46}
+                />
+                oppulence
+              </span>{" "}
+              is building the default memory engine for customer-facing teams.
+            </h1>
 
-      <section className="op-section op-product" id="how-it-works">
-        <div className="op-product-copy">
-          <span>How it works</span>
-          <h2>Connect your systems. Get the queue. Approve the next move.</h2>
-          <p>
-            It watches for silence, missed promises, departed contacts, renewal risk, and
-            money-state changes, then explains what happened and suggests a move for approval.
-          </p>
-          <div className="op-feature-list">
+            <p className="sm-memory-subhead">
+              Available through the web app, desktop assistant, and the tools your team
+              already uses.
+            </p>
+
+            <div className="sm-memory-actions">
+              <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
+                <span aria-hidden="true">
+                  <Image alt="" height={18} src="/marketing/oppulence-icon.png" width={18} />
+                </span>
+                Build with Oppulence
+              </Link>
+              <Link className="sm-memory-button" href="#what-we-do">
+                What it does <ArrowRightIcon aria-hidden="true" />
+              </Link>
+              <Link className="sm-memory-button" href="/pricing">
+                Pricing <ArrowRightIcon aria-hidden="true" />
+              </Link>
+            </div>
+
+            <div aria-label="Product promises" className="sm-memory-proof-row">
+              {homepageProof.map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+
+            <figure className="sm-memory-blueprint">
+              <Image
+                alt="Connected work systems feeding one Oppulence relationship model"
+                height={1254}
+                priority
+                sizes="(max-width: 760px) 92vw, 660px"
+                src="/marketing/relationship-system/observe.webp"
+                unoptimized
+                width={1254}
+              />
+            </figure>
+
+            <div className="sm-memory-prose">
+              <p>
+                The useful layer for customer-facing AI is not another CRM field. It is{" "}
+                <Link href="/product">relationship memory</Link> that works across email,
+                calendar, meetings, notes, browser context, and the actual history of the
+                account.
+              </p>
+              <h2>Pipeline is no longer the constraint.</h2>
+              <p>
+                Your team already created the data. The problem is that it is scattered across
+                tools, people, and time. Oppulence reads that history, keeps the state of each
+                relationship current, and brings the right context back when a customer needs
+                attention.
+              </p>
+            </div>
+          </div>
+
+          <RelationshipMemoryDiagram />
+        </section>
+
+        <section className="sm-memory-section" id="what-we-do">
+          <header className="sm-memory-section-head">
+            <p>What we do</p>
+            <h2>Memory that turns scattered customer history into the next move.</h2>
+          </header>
+          <div className="sm-memory-do-grid">
             {relationshipCatalog.map((item) => (
               <article key={item.label}>
-                <small>{item.kicker}</small>
+                <p>{item.kicker}</p>
                 <h3>{item.title}</h3>
-                <p>{item.body}</p>
+                <span>{item.body}</span>
+                <ul>
+                  {item.bullets.map((bullet) => (
+                    <li key={bullet}>{bullet}</li>
+                  ))}
+                </ul>
               </article>
             ))}
           </div>
-        </div>
-        <div className="op-product-shot">
-          <Image
-            alt="Oppulence account intelligence dashboard"
-            fill
-            sizes="(max-width: 900px) 100vw, 620px"
-            src="/marketing/relationship-desktop-detail.png"
-          />
-        </div>
-      </section>
+        </section>
 
-      <section className="op-section op-trust">
-        <div className="op-section-header">
-          <span>Built for trust</span>
-          <h2>You can always see where the answer came from.</h2>
-          <p>
-            Every recommendation stays tied to the source material. If the system is wrong, correct
-            it and the record gets sharper.
-          </p>
-        </div>
-        <div className="op-trust-grid">
-          <article>
-            <Image
-              alt="Evidence detail view in Oppulence"
-              height={960}
-              sizes="(max-width: 900px) 100vw, 520px"
-              src="/marketing/relationship-web-detail.png"
-              width={1440}
-            />
-            <h3>Click through to the actual email.</h3>
-            <p>Every event, change, and suggestion stays wired to the thing it came from.</p>
-          </article>
-          <article>
-            <Image
-              alt="Relationship health list in Oppulence"
-              height={960}
-              sizes="(max-width: 900px) 100vw, 520px"
-              src="/marketing/relationship-web-list.png"
-              width={1440}
-            />
-            <h3>Nothing goes out without you.</h3>
-            <p>Approve, edit, snooze, or reject the next move. The history stays inspectable.</p>
-          </article>
-        </div>
-      </section>
-
-      <section className="op-section op-pricing" id="pricing">
-        <div className="op-section-header op-pricing-header">
-          <span>Pricing</span>
-          <h2>Start small. Upgrade when the queue is worth it.</h2>
-          <p>From a free weekly report to full account intelligence for active teams.</p>
-        </div>
-        <div className="op-plan-grid">
-          {individualPlans.map((plan) => (
-            <article className={cn("op-plan", plan.recommended && "is-featured")} key={plan.name}>
-              <div>
-                <h3>{plan.name}</h3>
-                {plan.recommended ? <span>Most picked</span> : null}
+        <section className="sm-memory-section" id="in-production">
+          <header className="sm-memory-section-head sm-memory-section-head-split">
+            <div>
+              <p>In production</p>
+              <h2>Designed for real accounts, not demo data.</h2>
+            </div>
+            <span>
+              Connect the systems once. Oppulence keeps a living account record, watches for
+              change, and explains why a relationship is worth your attention now.
+            </span>
+          </header>
+          <div className="sm-memory-stats-grid">
+            {homepageStats.map((item) => (
+              <article key={item.label}>
+                <strong>{item.value}</strong>
+                <p>{item.label}</p>
+                <span>{item.detail}</span>
+              </article>
+            ))}
+          </div>
+          <div className="sm-memory-signal-table" role="table" aria-label="Customer signals Oppulence monitors">
+            <div role="row">
+              <span role="columnheader">Signal</span>
+              <span role="columnheader">Why it matters</span>
+              <span role="columnheader">Action</span>
+            </div>
+            {homepageProblems.map((item) => (
+              <div key={item.label} role="row">
+                <span role="cell">{item.label}</span>
+                <span role="cell">{item.title}</span>
+                <span role="cell">{item.body}</span>
               </div>
-              <p>{plan.description}</p>
-              <strong>
-                {plan.price}
-                <small>{plan.period}</small>
-              </strong>
-              <Link
-                className={cn(
-                  "op-button",
-                  plan.recommended ? "op-button-primary" : "op-button-secondary",
-                )}
-                href={plan.ctaHref}
-              >
-                {plan.ctaLabel}
+            ))}
+          </div>
+        </section>
+
+        <section className="sm-memory-section" id="research">
+          <header className="sm-memory-section-head sm-memory-section-head-split">
+            <div>
+              <p>Research</p>
+              <h2>The operating notes behind relationship intelligence.</h2>
+            </div>
+            <Link className="sm-memory-text-link" href="/blog">
+              All notes <ArrowRightIcon aria-hidden="true" />
+            </Link>
+          </header>
+          <div className="sm-memory-research-list">
+            {homepageResearchNotes.map((note) => (
+              <Link href={note.href} key={note.number}>
+                <span>{note.number}</span>
+                <strong>{note.title}</strong>
+                <p>{note.body}</p>
+                <ArrowRightIcon aria-hidden="true" />
               </Link>
-              <ul>
-                {plan.features.map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
-            </article>
-          ))}
-        </div>
-        <Link className="op-text-link" href="/pricing">
-          See full pricing and plan details <ArrowRightIcon aria-hidden="true" />
-        </Link>
-      </section>
+            ))}
+          </div>
+        </section>
 
-      <section className="op-section op-faq">
-        <div className="op-section-header op-section-header-compact">
-          <span>FAQ</span>
-          <h2>The stuff people usually ask.</h2>
-        </div>
-        <div className="op-faq-list">
-          {homeFaqs.map((item, index) => (
-            <details key={item.question} open={index === 0 ? true : undefined}>
-              <summary>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                {item.question}
-                <strong aria-hidden="true">+</strong>
-              </summary>
-              <p>{item.answer}</p>
-            </details>
-          ))}
-        </div>
-      </section>
+        <section className="sm-memory-section" id="pricing">
+          <header className="sm-memory-section-head sm-memory-section-head-split">
+            <div>
+              <p>Pricing</p>
+              <h2>Start with the deals already slipping.</h2>
+            </div>
+            <span>Clear monthly plans, from a free weekly report to full account intelligence.</span>
+          </header>
+          <div className="sm-memory-plan-grid">
+            {individualPlans.map((plan) => (
+              <article className={cn(plan.recommended && "is-featured")} key={plan.name}>
+                <div>
+                  <h3>{plan.name}</h3>
+                  {plan.recommended ? <span>Most picked</span> : null}
+                </div>
+                <p>{plan.description}</p>
+                <strong>
+                  {plan.price}
+                  <small>{plan.period}</small>
+                </strong>
+                <Link
+                  className={cn(
+                    "sm-memory-button",
+                    plan.recommended && "sm-memory-button-primary",
+                  )}
+                  href={plan.ctaHref}
+                >
+                  {plan.ctaLabel}
+                </Link>
+                <ul>
+                  {plan.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
 
-      <section className="op-final">
-        <div>
-          <span>Oppulence</span>
-          <h2>Find the customer context your team has been missing.</h2>
-          <p>
-            Connect your work systems and start with the relationships that need attention today.
-          </p>
-        </div>
-        <Link className="op-button op-button-light" href="/sign-up">
-          Start building <ArrowRightIcon aria-hidden="true" />
-        </Link>
-      </section>
+        <section className="sm-memory-section sm-memory-faq" id="faq">
+          <header className="sm-memory-section-head sm-memory-section-head-split">
+            <div>
+              <p>FAQ</p>
+              <h2>The stuff people usually ask.</h2>
+            </div>
+          </header>
+          <div className="sm-memory-faq-list">
+            {homeFaqs.map((item, index) => (
+              <details key={item.question} open={index === 0 ? true : undefined}>
+                <summary>
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  {item.question}
+                  <strong aria-hidden="true">+</strong>
+                </summary>
+                <p>{item.answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="sm-memory-final">
+          <h2>Give every account a memory.</h2>
+          <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
+            Start building <ArrowRightIcon aria-hidden="true" />
+          </Link>
+        </section>
+      </div>
     </div>
   );
 }
 
-function RelationshipHomeHero() {
+function RelationshipMemoryDiagram() {
   return (
-    <section className="sm-hero">
-      <div className="sm-hero-copy">
-        <Link className="sm-announcement" href="/product">
-          <span>New</span>
-          Account Mission Control is live
-          <ArrowRightIcon aria-hidden="true" />
-        </Link>
-        <h1 aria-label="You’re losing deals you already won.">
-          <span aria-hidden="true" className="sm-hero-title-wide">
-            You&rsquo;re losing deals you{" "}
-            <Image
-              alt=""
-              className="sm-inline-mark"
-              height={58}
-              src="/marketing/oppulence-icon.png"
-              width={58}
-            />{" "}
-            already won<span className="sm-hero-title-period">.</span>
-          </span>
-          <span aria-hidden="true" className="sm-hero-title-mobile">
-            You&rsquo;re losing
-            <br />
-            deals you{" "}
-            <Image
-              alt=""
-              className="sm-inline-mark"
-              height={58}
-              src="/marketing/oppulence-icon.png"
-              width={58}
-            />{" "}
-            already won<span className="sm-hero-title-period">.</span>
-          </span>
-        </h1>
-        <p>
-          That thing you promised on a call back in March. The renewal that&rsquo;s been quiet for a
-          month and a half. The champion who left and nobody noticed. It&rsquo;s all sitting in your
-          inbox somewhere. Oppulence actually reads it, and tells you who needs you today.
-        </p>
-        <div className="sm-hero-actions">
-          <Link className="sm-button sm-button-blue" href="/sign-up">
-            Start building <ArrowRightIcon aria-hidden="true" />
-          </Link>
-        </div>
-        <Link className="sm-command" href="/app">
-          <span>$</span>
-          ask Oppulence what changed this week
-          <ArrowRightIcon aria-hidden="true" />
-        </Link>
-        <Link className="sm-personal-link" href="/product">
-          Explore relationship intelligence <ArrowRightIcon aria-hidden="true" />
-        </Link>
-      </div>
-      <div className="sm-source-strip" role="group" aria-label="Supported evidence sources">
-        <p>Built around the systems your team already uses</p>
-        <div>
-          {[
-            "Gmail",
-            "Google Calendar",
-            "Slack",
-            "HubSpot",
-            "Meetings",
-            "Notes",
-            "Voice",
-            "Browser",
-          ].map((source) => (
-            <span key={source}>{source}</span>
-          ))}
-        </div>
-      </div>
-      <div className="sm-hero-art">
-        <Image
-          alt="Connected work systems feeding one Oppulence relationship model"
-          height={1254}
-          priority
-          sizes="(max-width: 760px) 95vw, 900px"
-          src="/marketing/relationship-system/observe.webp"
-          unoptimized
-          width={1254}
-        />
-        <Image
-          alt=""
-          aria-hidden="true"
-          className="sm-hero-art-mark"
-          height={84}
-          src="/marketing/oppulence-icon.png"
-          width={84}
-        />
-      </div>
-    </section>
-  );
-}
-
-/**
- * States the problem before any product claim. Everything here is a failure
- * mode a customer-facing team recognizes from their own week, not a category
- * description.
- */
-function TheProblemSection() {
-  return (
-    <section className="sm-section sm-problem">
-      <SectionMarker label="The problem" />
-      <header className="sm-section-intro">
-        <h2>It&rsquo;s all written down. Nobody has time to read it.</h2>
-        <p>
-          One account can span a couple thousand emails, a year of calls, and whatever made it into
-          the CRM. So people wing it from memory five minutes before the call and hope they
-          didn&rsquo;t forget anything.
-        </p>
-      </header>
-      <div className="sm-problem-grid">
-        {[
-          {
-            stat: "Monday morning",
-            title: "You start the week guessing.",
-            body: "Half an hour scrolling your inbox and the pipeline report, trying to work out what moved over the weekend and who\u2019s been waiting on you since Thursday.",
-          },
-          {
-            stat: "Six weeks later",
-            title: "Quiet accounts look fine.",
-            body: "Nothing pings you when a deal goes cold or your main contact stops writing back. You find out on the renewal call, once they\u2019ve already decided.",
-          },
-          {
-            stat: "Never written down",
-            title: "You said you\u2019d send that thing.",
-            body: "It came up on a call, or halfway down a thread. It never made it into a field anywhere, so the moment everyone moved on it stopped existing.",
-          },
-          {
-            stat: "Every handoff",
-            title: "The context walks out the door.",
-            body: "Someone changes territory or leaves, and two years of knowing this account goes with them. Whoever picks it up starts from nothing.",
-          },
-        ].map((item) => (
-          <article key={item.title}>
-            <p className="sm-problem-stat">{item.stat}</p>
-            <h3>{item.title}</h3>
-            <p>{item.body}</p>
-          </article>
-        ))}
-      </div>
-      <p className="sm-problem-turn">
-        Every CRM ever made has one fix for this: type more. Nobody does. So we built something that
-        just reads the work you already did.
-      </p>
-    </section>
-  );
-}
-
-function ProductCatalogSection() {
-  return (
-    <section className="sm-section sm-catalog" id="product">
-      <SectionMarker label="What Oppulence does" />
-      <header className="sm-section-intro">
-        <h2>Everything you&rsquo;d do yourself, if you had the time.</h2>
-        <p>
-          It watches the accounts, spots what changed, tells you why that matters, and writes the
-          follow-up. You decide if it goes.
-        </p>
-      </header>
-      <fieldset className="sm-catalog-fieldset">
-        <legend className="sr-only">Explore Oppulence capabilities</legend>
-        <div className="sm-catalog-shell">
-          <div className="sm-catalog-tabs">
-            {relationshipCatalog.map((item, index) => (
-              <label className="sm-catalog-tab" htmlFor={`catalog-${index + 1}`} key={item.label}>
-                <input
-                  aria-label={item.label}
-                  className="sm-catalog-radio sr-only"
-                  defaultChecked={index === 0}
-                  id={`catalog-${index + 1}`}
-                  name="relationship-catalog"
-                  type="radio"
-                />
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                {item.label}
-              </label>
-            ))}
-          </div>
-          <div className="sm-catalog-panels">
-            {relationshipCatalog.map((item, index) => (
-              <article
-                className={`sm-catalog-panel sm-catalog-panel-${index + 1}`}
-                key={item.title}
-              >
-                <div className="sm-catalog-panel-copy">
-                  <p>{item.kicker}</p>
-                  <h3>{item.title}</h3>
-                  <p>{item.body}</p>
-                  <ul>
-                    {item.bullets.map((bullet) => (
-                      <li key={bullet}>{bullet}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="sm-catalog-image">
-                  <Image
-                    alt={`Oppulence product view for ${item.label}`}
-                    fill
-                    sizes="(max-width: 860px) 100vw, 780px"
-                    src={item.src}
-                  />
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </fieldset>
-    </section>
-  );
-}
-
-function HowItWorksSection() {
-  return (
-    <section className="sm-section sm-how" id="how-it-works">
-      <SectionMarker label="How it works" />
-      <div className="sm-how-grid">
-        <div className="sm-how-copy">
-          <h2>How it actually works.</h2>
-          <p>
-            Watch the work, sort fact from guess, keep one picture of the account, say what changed,
-            suggest a move, wait for you. Every step leaves a record.
-          </p>
-        </div>
-        <div className="sm-loop-list">
-          {operatingLoop.map(([eyebrow, title, body]) => (
-            <article key={eyebrow}>
-              <p>{eyebrow}</p>
-              <h3>{title}</h3>
-              <span>{body}</span>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function TrustSection() {
-  return (
-    <section className="sm-section sm-trust">
-      <SectionMarker label="Built for trust" />
-      <header className="sm-section-intro">
-        <h2>If you can&rsquo;t check it, you won&rsquo;t trust it.</h2>
-        <p>
-          Oppulence is designed to say what it knows, where it learned it, and what is still
-          missing.
-        </p>
-      </header>
-      <div className="sm-trust-cards">
-        <article>
-          <div className="sm-trust-image">
-            <Image
-              alt="Oppulence account detail with evidence and source health"
-              fill
-              sizes="(max-width: 800px) 100vw, 650px"
-              src="/marketing/relationship-web-detail.png"
-            />
-          </div>
-          <h3>Click through to the actual email.</h3>
-          <p>
-            Every event, change, and suggestion stays wired to the thing it came from. You can go
-            look.
-          </p>
-        </article>
-        <article>
-          <div className="sm-trust-image">
-            <Image
-              alt="Oppulence account list with qualitative relationship health"
-              fill
-              sizes="(max-width: 800px) 100vw, 650px"
-              src="/marketing/relationship-web-list.png"
-            />
-          </div>
-          <h3>Tell it when it&rsquo;s wrong.</h3>
-          <p>
-            Your correction beats whatever the system thought. You can undo it, and there&rsquo;s a
-            record of who changed what.
-          </p>
-        </article>
-      </div>
-    </section>
-  );
-}
-
-function UseCasesSection() {
-  return (
-    <section className="sm-section sm-use-cases" id="use-cases">
-      <SectionMarker label="Use cases" />
-      <header className="sm-section-intro">
-        <h2>Money you already earned, kept.</h2>
-        <p>
-          Different teams, same story. The relationship lasts longer than the tool, the territory,
-          or whoever used to remember it.
-        </p>
-      </header>
-      <nav aria-label="Use case navigation" className="sm-use-case-nav">
-        {useCases.map((_, index) => (
-          <a aria-label={`View use case ${index + 1}`} href={`#use-case-${index + 1}`} key={index}>
-            {String(index + 1).padStart(2, "0")}
-          </a>
-        ))}
-      </nav>
-      <div aria-label="Use cases" className="sm-use-case-track" role="region">
-        {useCases.map((item, index) => (
-          <article id={`use-case-${index + 1}`} key={item.eyebrow}>
-            <p>{item.eyebrow}</p>
-            <h3>{item.title}</h3>
-            <span>{item.body}</span>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function PricingSection() {
-  const individualPlans = pricingPlans.filter((plan) =>
-    ["Watch", "Chase", "Intelligence"].includes(plan.name),
-  );
-
-  return (
-    <section className="sm-section sm-pricing" id="pricing">
-      <SectionMarker label="Pricing" />
-      <header className="sm-centered-intro">
-        <h2>Start with the deals already slipping.</h2>
-        <p>Clear monthly plans—from a free weekly report to full account intelligence.</p>
-      </header>
-      <div className="sm-plan-grid">
-        {individualPlans.map((plan) => (
-          <article className={cn(plan.recommended && "is-featured")} key={plan.name}>
-            <div>
-              <h3>{plan.name}</h3>
-              {plan.recommended ? <span>Most picked</span> : null}
-            </div>
-            <p>{plan.description}</p>
-            <strong>
-              {plan.price}
-              <small>{plan.period}</small>
-            </strong>
-            <Link
-              className={cn("sm-button", plan.recommended ? "sm-button-blue" : "sm-button-light")}
-              href={plan.ctaHref}
-            >
-              {plan.ctaLabel}
-            </Link>
-            <ul>
-              {plan.features.map((feature) => (
-                <li key={feature}>{feature}</li>
-              ))}
-            </ul>
-          </article>
-        ))}
-      </div>
-      <Link className="sm-pricing-link" href="/pricing">
-        See full pricing and plan details <ArrowRightIcon aria-hidden="true" />
-      </Link>
-    </section>
-  );
-}
-
-function RelationshipFaqSection() {
-  return (
-    <section className="sm-section sm-faq">
-      <SectionMarker label="FAQ" />
-      <header className="sm-section-intro">
-        <h2>The stuff people usually ask.</h2>
-        <p>What teams ask before connecting their customer systems.</p>
-      </header>
-      <div className="sm-faq-list">
-        {homeFaqs.map((item, index) => (
-          <details key={item.question} open={index === 0 ? true : undefined}>
-            <summary>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              {item.question}
-              <strong aria-hidden="true">+</strong>
-            </summary>
-            <p>{item.answer}</p>
-          </details>
-        ))}
-      </div>
-    </section>
+    <aside aria-label="How Oppulence turns raw relationship data into customer context" className="sm-memory-diagram">
+      <pre>{`        raw relationship data
+              │
+              ▼
+┌── oppulence ─────────────────────┐
+│                                  │
+│  ┌───────────────┐               │
+│  │ account model │◀───────┐      │
+│  └───────────────┘        │      │
+│    read  │                │      │
+│    merge │                │      │
+│    infer │       prior    │      │
+│    verify▼       context  │      │
+│  ┌───────────────┐        │      │
+│  │ relationship  │────────┘      │
+│  │ memory vN+1   │               │
+│  └───────────────┘               │
+│          │                       │
+└──────────┼───────────────────────┘
+           │ inject before action
+           ▼
+     next move, with evidence`}</pre>
+    </aside>
   );
 }
 
