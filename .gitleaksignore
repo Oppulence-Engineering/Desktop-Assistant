@@ -70,3 +70,7 @@ b4b21c708f84f9cffe25d8ac228dec16ff934bae:apps/rowboat-api/internal/gqlapi/genera
 b4b21c708f84f9cffe25d8ac228dec16ff934bae:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-id:104280
 f8923b30feabfb7635b8a3086e32d12e0be2f902:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-secret:88804
 f8923b30feabfb7635b8a3086e32d12e0be2f902:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-id:88804
+df4c6020bbba9f8fb6b534af030a274e47818ecd:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-secret:104280
+df4c6020bbba9f8fb6b534af030a274e47818ecd:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-id:104280
+2b7793adfdaa50a0287dac3a4852be86a5c5e50e:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-secret:88804
+2b7793adfdaa50a0287dac3a4852be86a5c5e50e:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-id:88804
