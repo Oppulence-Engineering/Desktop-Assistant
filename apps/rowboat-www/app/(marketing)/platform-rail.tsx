@@ -90,7 +90,13 @@ export function PlatformRail({ items }: { items: readonly PlatformRailItem[] }) 
               </h3>
             </div>
             <figure className="sm-attio-row-media">
-              <Image alt={item.alt} height={1120} src={item.src} width={1680} />
+              <Image
+                alt={item.alt}
+                height={960}
+                sizes="(max-width: 1000px) 100vw, 1043px"
+                src={item.src}
+                width={1440}
+              />
             </figure>
           </article>
         ))}

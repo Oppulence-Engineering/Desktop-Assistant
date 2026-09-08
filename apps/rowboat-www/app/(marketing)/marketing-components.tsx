@@ -846,10 +846,10 @@ export function HomePage() {
           </Link>
           <figure className="sm-attio-setup-media">
             <Image
-              alt="Oppulence connecting email, calendar, and billing sources"
-              height={1120}
+              alt="Oppulence connecting Gmail, calendar, CRM, and billing in settings"
+              height={960}
               src={desktopScreenshots.connections}
-              width={1680}
+              width={1440}
             />
           </figure>
         </div>
@@ -988,11 +988,11 @@ function AttioProductWindow() {
         </div>
         <Image
           alt="Oppulence account mission control ranking accounts by what changed and what is owed"
-          height={1600}
+          height={960}
           priority
-          sizes="(max-width: 760px) 100vw, 1240px"
+          sizes="(max-width: 760px) 100vw, 1296px"
           src="/marketing/relationship-web-list.png"
-          width={2400}
+          width={1440}
         />
       </div>
     </figure>
@@ -1113,14 +1113,32 @@ const platformRowSummaries = [
   "It checks the contact, the policy, and the money, then waits for your approval before anything leaves your name.",
 ] as const;
 
+/* Each row needs a screenshot that shows the thing the copy claims. The
+   product-page images did not: row one pointed at a Notes folder list, and
+   the connections dialog was reused for both row three and self-building. */
+const platformRowMedia = [
+  {
+    src: "/marketing/relationship-web-detail.png",
+    alt: "An account record showing the promised security review, its evidence timeline, and what changed",
+  },
+  {
+    src: "/marketing/relationship-desktop.png",
+    alt: "Accounts ranked by what needs action now, each with its health and the change that triggered it",
+  },
+  {
+    src: "/marketing/relationship-desktop-detail.png",
+    alt: "A drafted follow-up held at an approve or reject gate, with the evidence behind it in view",
+  },
+] as const;
+
 const platformRailItems: PlatformRailItem[] = linearHomeSections.map((section, index) => ({
   id: ["find-the-loose-ends", "run-every-account", "act-with-guardrails"][index] ?? `row-${index}`,
   nav: ["Find the loose ends", "Run every account", "Act with guardrails"][index] ?? section.label,
   title: section.title,
   description: platformRowSummaries[index] ?? section.description,
   label: section.label,
-  src: section.src,
-  alt: section.alt,
+  src: platformRowMedia[index]?.src ?? section.src,
+  alt: platformRowMedia[index]?.alt ?? section.alt,
 }));
 
 function LinearProductSection({
