@@ -88,11 +88,10 @@ From `apps/rowboat-api`, run:
 ./scripts/fly-deploy.sh <app-name>
 ```
 
-For a production deployment, dispatch **Deploy rowboat-api to Fly.io** from
-GitHub Actions. The workflow uses the protected `production` environment,
-deploys the same script non-interactively, verifies Fly health checks, and
-smoke-tests `/healthz` and `/readyz`. It is manual by design so the existing
-Kubernetes production workflow cannot race a Fly rollout during migration.
+Relevant changes merged into `main` automatically run **Deploy rowboat-api to
+Fly.io**. The workflow can also be dispatched manually, uses the protected
+`production` environment, deploys the same script non-interactively, verifies
+Fly health checks, and smoke-tests `/healthz` and `/readyz`.
 
 The script builds with the repository root as Docker context, runs versioned
 database migrations once in a temporary release Machine, rolls out the three

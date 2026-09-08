@@ -1,6 +1,16 @@
 name: Deploy rowboat-www to Fly.io
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/rowboat-www/**"
+      - "packages/ui/**"
+      - "packages/relationship-contract/**"
+      - "packages/eslint-plugin-oppulence-web/**"
+      - "charts/rowboat-www/**"
+      - "scripts/rowboat-www-smoke.sh"
+      - ".github/workflows/rowboat-www-fly-deploy.yml"
   workflow_dispatch:
 
 permissions:

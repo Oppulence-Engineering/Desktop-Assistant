@@ -43,6 +43,8 @@ const result = spawnSync(
     "run",
     GITLEAKS,
     "git",
+    "--config",
+    "../../.gitleaks.toml",
     "--gitleaks-ignore-path",
     "../../.gitleaksignore",
     "--redact",

@@ -61,6 +61,9 @@ func TestFlyDeploymentWorkflowContract(t *testing.T) {
 	workflow := readRepositoryFile(t, root, "../../.github/workflows/rowboat-api-fly-deploy.yml")
 
 	for _, required := range []string{
+		`push:`,
+		`branches: [main]`,
+		`- "apps/rowboat-api/**"`,
 		`workflow_dispatch:`,
 		`environment: production`,
 		`ROWBOAT_API_FLY_API_TOKEN`,

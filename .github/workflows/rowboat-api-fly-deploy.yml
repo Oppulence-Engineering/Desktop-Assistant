@@ -1,6 +1,14 @@
 name: Deploy rowboat-api to Fly.io
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/rowboat-api/**"
+      - "packages/oauth-resource-server-go/**"
+      - "charts/rowboat-api/**"
+      - "docs/trustworthy-first-account-beta/**"
+      - ".github/workflows/rowboat-api-fly-deploy.yml"
   workflow_dispatch:
 
 permissions:
