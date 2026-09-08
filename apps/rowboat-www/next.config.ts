@@ -69,6 +69,9 @@ const nextConfig: NextConfig = {
       // The booking page was removed; "talk to us" now goes through email.
       // Pricing is the closest landing spot for anyone holding an old link.
       { source: "/book-a-demo", destination: "/pricing", permanent: true },
+      // /voice was a feature essay; the product page for Voice lives at
+      // /voice-app alongside /web and /desktop.
+      { source: "/voice", destination: "/voice-app", permanent: true },
     ];
   },
   async headers() {

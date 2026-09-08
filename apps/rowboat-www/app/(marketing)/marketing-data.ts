@@ -103,14 +103,24 @@ export const featureLinks: LinkItem[] = [
 
 export const productLinks: LinkItem[] = [
   {
-    label: "Relationship intelligence",
-    href: "/product",
-    description: "See how living relationship state becomes evidence-backed action",
+    label: "Oppulence Web",
+    href: "/web",
+    description: "Your whole book of business in a browser, nothing to install",
+  },
+  {
+    label: "Oppulence Desktop",
+    href: "/desktop",
+    description: "The native app that sits next to the work on Mac, Windows, and Linux",
   },
   {
     label: "Oppulence Voice",
-    href: "/voice",
-    description: "Capture voice locally and send consented evidence into relationship memory",
+    href: "/voice-app",
+    description: "Talk through what happened and let it land on the account",
+  },
+  {
+    label: "Relationship intelligence",
+    href: "/product",
+    description: "See how living relationship state becomes evidence-backed action",
   },
   {
     label: "Account Mission Control",
@@ -955,26 +965,6 @@ export const primaryPages: MarketingPage[] = [
     ctaHref: CONTACT_HREF,
   },
   {
-    path: "voice",
-    eyebrow: "Oppulence Voice",
-    title: "The best part of a call is the bit nobody writes down.",
-    description:
-      "Voice records and transcribes right on your laptop, so what people actually said becomes part of the account history instead of evaporating. Nothing leaves your machine until you say so.",
-    category: "product",
-    bullets: [
-      "Capture dictation, notes, and meeting context locally before deciding what leaves the device.",
-      "Synchronize encrypted artifacts through the Oppulence cloud without storing plaintext note content in the relay.",
-      "Hand approved captures to Rowboat with source identity, consent, provenance, and idempotency attached.",
-    ],
-    proof: [
-      "Local-first transcription and capture",
-      "Explicit consent at the Rowboat handoff",
-      "Source-backed, idempotent relationship evidence",
-    ],
-    ctaLabel: "Read the Oppulence Voice docs",
-    ctaHref: "https://docs.oppulence.io",
-  },
-  {
     path: "ai-documentation-agent",
     eyebrow: "Revenue Action Queue",
     title: "Know who needs attention, why now, and what to do next.",
@@ -1487,3 +1477,199 @@ export const pricingPlans = [
     ctaHref: CONTACT_HREF,
   },
 ];
+
+/**
+ * The three ways people actually run Oppulence. Each gets its own page at
+ * /web, /desktop, and /voice-app so the nav can point at a product rather than
+ * a feature essay. Desktop and Voice both ship an installer, so their pages
+ * carry the download chooser.
+ */
+export type PlatformPage = {
+  slug: string;
+  name: string;
+  eyebrow: string;
+  title: string;
+  lede: string;
+  /** Shown as a one-line answer to "what is this, concretely?" */
+  summary: string;
+  screenshot: string;
+  screenshotAlt: string;
+  /** Whether the page shows the desktop installer picker. */
+  download: boolean;
+  sections: {
+    title: string;
+    body: string;
+    bullets: string[];
+    screenshot: string;
+    alt: string;
+  }[];
+  specs: { term: string; detail: string }[];
+};
+
+export const platformPages: PlatformPage[] = [
+  {
+    slug: "web",
+    name: "Oppulence Web",
+    eyebrow: "Oppulence Web",
+    title: "The whole book of business, in a browser tab.",
+    lede: "Open it Monday morning and the accounts that moved over the weekend are already at the top, with the reason why and a draft reply waiting. Nothing to install, and it keeps working when your laptop is shut.",
+    summary:
+      "Runs in the cloud. Best for managers, shared queues, and anyone who lives in a browser.",
+    screenshot: "/marketing/relationship-web-list.png",
+    screenshotAlt: "Oppulence Web showing the account list with relationship health",
+    download: false,
+    sections: [
+      {
+        title: "The list you actually work from.",
+        body: "Every account you own, sorted by which ones need a person today. Each row says what changed, when it changed, and how much is riding on it.",
+        bullets: [
+          "Ranked by what moved, not by last touch date",
+          "Filter to your patch, your team, or the whole book",
+          "Click any account for the full history behind it",
+        ],
+        screenshot: "/marketing/relationship-web-list.png",
+        alt: "Ranked account list in Oppulence Web",
+      },
+      {
+        title: "Open an account and see the receipts.",
+        body: "The promises, the objections, who has gone quiet, who just joined the thread. Every claim links back to the email or meeting it came from, so you can check before you act.",
+        bullets: [
+          "One timeline across email, calendar, Slack, and CRM",
+          "Commitments in both directions, with dates",
+          "Anything stale or missing is labelled, not hidden",
+        ],
+        screenshot: "/marketing/relationship-web-detail.png",
+        alt: "Account detail view with linked source evidence",
+      },
+      {
+        title: "It keeps watching while you sleep.",
+        body: "Background runs in the cloud notice replies, meetings, and money changes as they land, so Monday's list is already right before you open it.",
+        bullets: [
+          "Scheduled and event-driven runs",
+          "No machine to leave switched on",
+          "Same history the desktop app sees",
+        ],
+        screenshot: "/marketing/desktop-background-tasks.png",
+        alt: "Background task runs keeping account state current",
+      },
+    ],
+    specs: [
+      { term: "Runs on", detail: "Any modern browser. Nothing to install." },
+      { term: "Sign in with", detail: "Google, through your existing work account." },
+      { term: "Best for", detail: "Shared queues, managers, and reviewing a whole book." },
+      { term: "Works offline", detail: "No. Use the desktop app if you need local access." },
+    ],
+  },
+  {
+    slug: "desktop",
+    name: "Oppulence Desktop",
+    eyebrow: "Oppulence Desktop",
+    title: "It sits next to the work instead of in another tab.",
+    lede: "Same accounts, same history, except it is right there while you write the email, sit in the meeting, or dig through a doc. Some things never leave your machine, which matters more than people admit.",
+    summary: "A native Mac, Windows, and Linux app. Best for the person doing the work all day.",
+    screenshot: "/marketing/desktop-home.png",
+    screenshotAlt: "Oppulence Desktop home view",
+    download: true,
+    sections: [
+      {
+        title: "Ask about an account without leaving what you are doing.",
+        body: "Pull up who this person is, what you last promised them, and what they pushed back on, without hunting through six months of thread.",
+        bullets: [
+          "Full account history, one keystroke away",
+          "Answers cite the message they came from",
+          "Works against the same state as the web app",
+        ],
+        screenshot: "/marketing/desktop-chat.png",
+        alt: "Oppulence Desktop conversational view over account history",
+      },
+      {
+        title: "Meetings stop evaporating.",
+        body: "Join the call, get a brief beforehand from the real history, and afterwards keep what was agreed instead of a summary nobody reads.",
+        bullets: [
+          "Pre-call brief built from the account, not a template",
+          "Commitments pulled out of what was said",
+          "Recording and transcription stay on your machine",
+        ],
+        screenshot: "/marketing/desktop-meetings.png",
+        alt: "Meeting capture and brief in Oppulence Desktop",
+      },
+      {
+        title: "Your own notes count as evidence too.",
+        body: "The doc you keep on a key account, the thing a colleague told you in passing. Local knowledge feeds the same picture, and stays yours.",
+        bullets: [
+          "Local files searched alongside connected sources",
+          "You choose what syncs and what stays put",
+          "Corrections you make beat whatever it inferred",
+        ],
+        screenshot: "/marketing/desktop-knowledge.png",
+        alt: "Local knowledge and notes in Oppulence Desktop",
+      },
+    ],
+    specs: [
+      { term: "Runs on", detail: "macOS (Apple silicon and Intel), Windows, and Linux." },
+      { term: "Install size", detail: "Signed installer. DMG, EXE, DEB, or RPM." },
+      { term: "Offline", detail: "Local notes, capture, and search work without a connection." },
+      { term: "Updates", detail: "Ships with the app. You do not have to chase releases." },
+    ],
+  },
+  {
+    slug: "voice-app",
+    name: "Oppulence Voice",
+    eyebrow: "Oppulence Voice",
+    title: "The best part of a call is the bit nobody writes down.",
+    lede: "Talk through what happened straight after a call and it becomes part of the account, in your words, with the commitments pulled out. Transcription happens on your laptop. Nothing goes anywhere until you say so.",
+    summary:
+      "Local voice capture inside the desktop app. Best for people who talk more than they type.",
+    screenshot: "/marketing/desktop-meetings.png",
+    screenshotAlt: "Oppulence Voice capture and transcription",
+    download: true,
+    sections: [
+      {
+        title: "Say it once, in the car, and it lands.",
+        body: "Two minutes of talking after a meeting beats twenty minutes of CRM admin that evening, which realistically was not going to happen anyway.",
+        bullets: [
+          "Dictate a debrief and it attaches to the account",
+          "Promises and next steps get pulled out for you",
+          "No forms, no fields, no dropdown for sentiment",
+        ],
+        screenshot: "/marketing/desktop-meetings.png",
+        alt: "Voice debrief attached to an account",
+      },
+      {
+        title: "It runs on your machine.",
+        body: "Transcription happens locally. Audio does not get shipped off somewhere to be processed and quietly retained by a vendor you have never heard of.",
+        bullets: [
+          "On-device transcription, not a cloud upload",
+          "Nothing leaves until you approve it",
+          "What does sync is encrypted, and the relay never sees plaintext",
+        ],
+        screenshot: "/marketing/desktop-knowledge.png",
+        alt: "Local-first transcription and consent controls",
+      },
+      {
+        title: "You decide what becomes a record.",
+        body: "Some of what you say after a call is thinking out loud. Review the capture, cut what should not stick, then send the rest into the account history.",
+        bullets: [
+          "Review before anything is shared",
+          "Consent recorded with the handoff",
+          "Delete a capture and it is actually gone",
+        ],
+        screenshot: "/marketing/desktop-connections.png",
+        alt: "Consent and review before voice evidence is shared",
+      },
+    ],
+    specs: [
+      { term: "Runs on", detail: "Inside Oppulence Desktop, on macOS, Windows, and Linux." },
+      { term: "Transcription", detail: "On your device. Audio is not uploaded to transcribe." },
+      { term: "Leaves your machine", detail: "Only what you approve, encrypted in transit." },
+      {
+        term: "Meeting recording",
+        detail: "You are responsible for consent where laws require it.",
+      },
+    ],
+  },
+];
+
+export function getPlatformPage(slug: string) {
+  return platformPages.find((page) => page.slug === slug);
+}

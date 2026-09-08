@@ -30,6 +30,7 @@ import type { ReactNode } from "react";
 
 import { Button } from "@oppulence/ui/components/button";
 import { cn } from "@/lib/utils";
+import { DesktopDownloadChooser } from "./desktop-download-chooser";
 import {
   CONTACT_HREF,
   alternativeLinks,
@@ -44,7 +45,9 @@ import {
   toolLinks,
   type FeatureDetail,
   type LinkItem,
+  platformPages,
   type MarketingPage,
+  type PlatformPage,
 } from "./marketing-data";
 import { MarketingEffects } from "./marketing-effects";
 
@@ -1016,7 +1019,7 @@ function WhatWeDoSection() {
             See relationship intelligence <ArrowRightIcon aria-hidden="true" />
           </small>
         </Link>
-        <Link className="sm-offer sm-offer-blue" href="/voice">
+        <Link className="sm-offer sm-offer-blue" href="/desktop">
           <span>For work in motion</span>
           <h3>Oppulence Desktop</h3>
           <p>
@@ -1667,6 +1670,103 @@ function DesktopScreenshotPreview({
           width={1440}
         />
       </div>
+    </div>
+  );
+}
+
+/**
+ * One of the three ways to run Oppulence (web, desktop, voice). Same shape for
+ * all three so they read as siblings; the installer picker only appears for
+ * the two that actually ship a binary.
+ */
+export function PlatformProductPage({ page }: { page: PlatformPage }) {
+  return (
+    <div className="sm-platform">
+      <section className="sm-platform-hero">
+        <p className="sm-platform-eyebrow">{page.eyebrow}</p>
+        <h1>{page.title}</h1>
+        <p className="sm-platform-lede">{page.lede}</p>
+        <div className="sm-platform-actions">
+          {page.download ? (
+            <DesktopDownloadChooser />
+          ) : (
+            <>
+              <Link className="sm-button sm-button-blue" href="/sign-up">
+                Start free <ArrowRightIcon aria-hidden="true" />
+              </Link>
+              <Link className="sm-button sm-button-light" href="/app">
+                Open the dashboard
+              </Link>
+            </>
+          )}
+        </div>
+        <p className="sm-platform-summary">{page.summary}</p>
+      </section>
+
+      <div className="sm-platform-shot">
+        <Image
+          alt={page.screenshotAlt}
+          height={1200}
+          sizes="(max-width: 1100px) 100vw, 1100px"
+          src={page.screenshot}
+          width={1900}
+        />
+      </div>
+
+      {page.sections.map((section, index) => (
+        <section className="sm-platform-section" key={section.title}>
+          <div className="sm-platform-section-copy">
+            <p className="sm-platform-index">{String(index + 1).padStart(2, "0")}</p>
+            <h2>{section.title}</h2>
+            <p>{section.body}</p>
+            <ul>
+              {section.bullets.map((bullet) => (
+                <li key={bullet}>{bullet}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="sm-platform-section-shot">
+            <Image
+              alt={section.alt}
+              height={900}
+              sizes="(max-width: 900px) 100vw, 620px"
+              src={section.screenshot}
+              width={1400}
+            />
+          </div>
+        </section>
+      ))}
+
+      <section className="sm-platform-specs">
+        <h2>The practical bits.</h2>
+        <dl>
+          {page.specs.map((spec) => (
+            <div key={spec.term}>
+              <dt>{spec.term}</dt>
+              <dd>{spec.detail}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <section className="sm-platform-siblings">
+        <h2>The other two.</h2>
+        <div>
+          {platformPages
+            .filter((other) => other.slug !== page.slug)
+            .map((other) => (
+              <Link href={`/${other.slug}`} key={other.slug}>
+                <strong>{other.name}</strong>
+                <span>{other.summary}</span>
+                <small>
+                  Take a look <ArrowRightIcon aria-hidden="true" />
+                </small>
+              </Link>
+            ))}
+        </div>
+      </section>
+
+      <RelationshipFinalCta />
     </div>
   );
 }

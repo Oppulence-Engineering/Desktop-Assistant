@@ -7123,3 +7123,251 @@
     }
   }
 }
+
+/* Product pages for the three ways to run Oppulence: web, desktop, voice. */
+@layer utilities {
+  .sm-platform-hero {
+    padding: clamp(48px, 8vw, 96px) 0 0;
+    max-width: 880px;
+  }
+
+  .sm-platform-eyebrow {
+    color: var(--sm-blue);
+    font-family: var(--font-marketing-mono), monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .sm-platform-hero h1 {
+    margin-top: 18px;
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    color: var(--sm-ink);
+  }
+
+  .sm-platform-lede {
+    margin-top: 22px;
+    max-width: 680px;
+    color: var(--sm-muted);
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  .sm-platform-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 34px;
+  }
+
+  .sm-platform-summary {
+    margin-top: 20px;
+    color: var(--sm-muted);
+    font-size: 14px;
+  }
+
+  .sm-platform-shot {
+    position: relative;
+    margin-top: 56px;
+    overflow: hidden;
+    border: 1px solid var(--sm-line);
+    background: var(--sm-soft);
+  }
+
+  .sm-platform-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .sm-platform-section {
+    display: grid;
+    gap: 32px;
+    align-items: center;
+    border-top: 1px solid var(--sm-line);
+    padding: clamp(48px, 7vw, 88px) 0;
+  }
+
+  .sm-platform-index {
+    color: var(--sm-muted);
+    font-family: var(--font-marketing-mono), monospace;
+    font-size: 12px;
+  }
+
+  .sm-platform-section-copy h2 {
+    margin-top: 14px;
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    color: var(--sm-ink);
+  }
+
+  .sm-platform-section-copy > p {
+    margin-top: 14px;
+    max-width: 520px;
+    color: var(--sm-muted);
+    font-size: 16px;
+    line-height: 1.62;
+  }
+
+  .sm-platform-section-copy ul {
+    display: grid;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .sm-platform-section-copy li {
+    position: relative;
+    padding-left: 20px;
+    color: var(--sm-ink);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .sm-platform-section-copy li::before {
+    content: "";
+    position: absolute;
+    top: 0.68em;
+    left: 0;
+    width: 8px;
+    height: 1px;
+    background: var(--sm-blue);
+  }
+
+  .sm-platform-section-shot {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--sm-line);
+    background: var(--sm-soft);
+  }
+
+  .sm-platform-section-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .sm-platform-specs {
+    border-top: 1px solid var(--sm-line);
+    padding: clamp(48px, 7vw, 80px) 0;
+  }
+
+  .sm-platform-specs h2,
+  .sm-platform-siblings h2 {
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    color: var(--sm-ink);
+  }
+
+  .sm-platform-specs dl {
+    display: grid;
+    gap: 1px;
+    margin-top: 32px;
+    background: var(--sm-line);
+    border: 1px solid var(--sm-line);
+  }
+
+  .sm-platform-specs dl > div {
+    display: grid;
+    gap: 6px;
+    background: #ffffff;
+    padding: 22px 24px;
+  }
+
+  .sm-platform-specs dt {
+    color: var(--sm-muted);
+    font-family: var(--font-marketing-mono), monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .sm-platform-specs dd {
+    margin: 0;
+    color: var(--sm-ink);
+    font-size: 15.5px;
+    line-height: 1.55;
+  }
+
+  .sm-platform-siblings {
+    border-top: 1px solid var(--sm-line);
+    padding: clamp(48px, 7vw, 80px) 0;
+  }
+
+  .sm-platform-siblings > div {
+    display: grid;
+    gap: 16px;
+    margin-top: 30px;
+  }
+
+  .sm-platform-siblings a {
+    display: grid;
+    gap: 8px;
+    border: 1px solid var(--sm-line);
+    padding: 26px 28px;
+    text-decoration: none;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .sm-platform-siblings a:hover {
+    border-color: var(--sm-blue);
+    background: var(--sm-soft);
+  }
+
+  .sm-platform-siblings strong {
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--sm-ink);
+  }
+
+  .sm-platform-siblings span {
+    color: var(--sm-muted);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .sm-platform-siblings small {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--sm-blue);
+    font-size: 13.5px;
+  }
+
+  .sm-platform-siblings small svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  @media (min-width: 900px) {
+    .sm-platform-section {
+      grid-template-columns: 1fr 1.1fr;
+      gap: 64px;
+    }
+
+    .sm-platform-section:nth-child(even) .sm-platform-section-copy {
+      order: 2;
+    }
+
+    .sm-platform-specs dl {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .sm-platform-siblings > div {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+}
