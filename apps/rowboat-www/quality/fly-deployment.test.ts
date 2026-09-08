@@ -24,4 +24,10 @@ describe("Fly.io deployment contract", () => {
   it("preserves the two-instance availability floor", () => {
     expect(flyWorkflow).toContain('flyctl scale count 2 --app "${FLY_APP_NAME}" --yes');
   });
+
+  it("deploys relevant main branch changes automatically", () => {
+    expect(flyWorkflow).toContain("push:");
+    expect(flyWorkflow).toContain("branches: [main]");
+    expect(flyWorkflow).toContain('      - "apps/rowboat-www/**"');
+  });
 });

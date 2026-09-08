@@ -30,8 +30,8 @@ named Fly App.
 
 ## GitHub Actions setup
 
-The `Deploy rowboat-www to Fly.io` workflow is manual so it cannot race the existing Kubernetes
-production deployment. Configure the GitHub `production` environment with:
+The `Deploy rowboat-www to Fly.io` workflow deploys automatically when relevant changes land on
+`main`; it can also be started manually. Configure the GitHub `production` environment with:
 
 - `FLY_API_TOKEN` secret: an app-scoped deploy token from
   `fly tokens create deploy --app oppulence-rowboat-www --expiry 720h`. Rotate it before the
