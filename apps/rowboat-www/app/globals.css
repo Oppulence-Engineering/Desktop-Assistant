@@ -6774,7 +6774,9 @@
   .sm-attio-home {
     --attio-blue: #245bc2;
     --attio-ink: #1c1d1f;
-    --attio-muted: #6f7988;
+    /* #6f7988 measured 4.22:1 on the soft band, under the 4.5:1 AA floor.
+       #5a6473 keeps the same cool hue at 5.74:1. */
+    --attio-muted: #5a6473;
     --attio-faint: #8b96a1;
     --attio-line: #e4e7ec;
     --attio-chip: #e8f0ff;
@@ -6958,7 +6960,7 @@
   .sm-attio-hero-copy > p {
     max-width: 487px;
     margin-top: 36px;
-    color: #6c7b8a;
+    color: #5a6473;
     font-size: 18px;
     font-weight: 500;
     line-height: 1.3;
