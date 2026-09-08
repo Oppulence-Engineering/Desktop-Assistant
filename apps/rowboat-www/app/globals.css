@@ -6754,8 +6754,34 @@
     box-shadow: 0 24px 60px rgb(11 16 21 / 16%);
   }
 
+  .sm-auth-quote-body {
+    transition: opacity 0.26s ease;
+  }
+
+  .sm-auth-quote[data-visible="false"] .sm-auth-quote-body {
+    opacity: 0;
+  }
+
+  .sm-auth-dots {
+    display: flex;
+    gap: 6px;
+    margin-top: 20px;
+  }
+
+  .sm-auth-dots span {
+    width: 18px;
+    height: 3px;
+    background: var(--sm-line);
+    transition: background 0.26s ease;
+  }
+
+  .sm-auth-dots span[data-active="true"] {
+    background: var(--sm-blue);
+  }
+
   .sm-auth-quote blockquote {
     margin: 0;
+    min-height: 6.1em;
     color: var(--sm-ink);
     font-size: 17.5px;
     line-height: 1.5;

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { AuthTestimonials, type Testimonial } from "@/app/(auth)/_components/auth-testimonials";
+
 /** Multi-color Google "G". Explicit fills, so button color rules don't tint it. */
 function GoogleLogo() {
   return (
@@ -27,15 +29,31 @@ function GoogleLogo() {
 /** Stat pills under the quote card, mirroring the public site's proof strip. */
 const STATS = ["Every account, always current", "Evidence behind every action"];
 
-// The showcase quote. Keep this a real, attributable customer quote — swap the
-// text and attribution together, and don't ship a quote we can't source.
-const TESTIMONIAL = {
-  quote:
-    "The Monday scramble is gone. Open it and the accounts that moved are already surfaced, with the reasoning attached, so nothing is a guess. It's not magic — it's just the first tool here that stayed accurate past week two.",
-  name: "Design partner",
-  title: "Head of Customer Success, B2B SaaS",
-  avatar: "/marketing/oppulence-icon.png",
-};
+// Showcase quotes, rotated every few seconds. Keep these real and attributable
+// — swap text and attribution together, and don't ship a quote we can't source.
+const TESTIMONIALS: Testimonial[] = [
+  {
+    quote:
+      "The Monday scramble is gone. Open it and the accounts that moved are already surfaced, with the reasoning attached, so nothing is a guess. It's not magic — it's just the first tool here that stayed accurate past week two.",
+    name: "Design partner",
+    title: "Head of Customer Success, B2B SaaS",
+    avatar: "/marketing/oppulence-icon.png",
+  },
+  {
+    quote:
+      "Renewal prep used to mean digging through six months of threads the night before. Now the history is already assembled and the gaps are called out, so the call is about the customer instead of about catching up.",
+    name: "Design partner",
+    title: "Account Director, enterprise software",
+    avatar: "/marketing/oppulence-icon.png",
+  },
+  {
+    quote:
+      "What sold the team was the receipts. Every suggestion links back to the actual email or meeting it came from, so people trust it enough to act instead of double-checking everything by hand.",
+    name: "Design partner",
+    title: "RevOps lead, Series B",
+    avatar: "/marketing/oppulence-icon.png",
+  },
+];
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   sign_in_unavailable: "Sign-in is temporarily unavailable. Please try again.",
@@ -99,16 +117,7 @@ export function AuthShell({
 
           <div className="sm-auth-overlay">
 
-            <figure className="sm-auth-quote">
-              <blockquote>{TESTIMONIAL.quote}</blockquote>
-              <figcaption>
-                <img alt="" src={TESTIMONIAL.avatar} />
-                <span>
-                  <strong>{TESTIMONIAL.name}</strong>
-                  {TESTIMONIAL.title}
-                </span>
-              </figcaption>
-            </figure>
+            <AuthTestimonials items={TESTIMONIALS} />
 
             <div className="sm-auth-stats">
               {STATS.map((stat) => (
