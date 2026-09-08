@@ -839,7 +839,7 @@ export function HomePage() {
           <AttioSectionHead
             label="Self-building"
             lead="Live from day one."
-            rest="Connect your inbox and calendar. Oppulence reads the last 60 to 90 days and builds the ledger around your accounts, before you ask it a single question."
+            rest="Connect your inbox and calendar. Oppulence reads the last 90 days and builds the ledger around your accounts, before you ask it anything."
           />
           <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
             Get the report

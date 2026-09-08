@@ -7190,6 +7190,7 @@
     font-weight: 500;
     letter-spacing: -0.01em;
     line-height: 1.1;
+    text-wrap: balance;
   }
 
   .sm-attio-home h2 > span:first-child {
@@ -7343,6 +7344,12 @@
 
   .sm-attio-setup .sm-attio-section-label {
     justify-self: center;
+  }
+
+  /* Attio runs this heading to 926px so it lands on three lines, not five. */
+  .sm-attio-setup .sm-attio-section-head,
+  .sm-attio-setup h2 {
+    max-width: 926px;
   }
 
   .sm-attio-setup .sm-attio-btn-primary {
