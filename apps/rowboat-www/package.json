@@ -30,7 +30,8 @@
     "ui:add": "node scripts/add-ui-component.mjs",
     "verify": "node scripts/run-verify.mjs default",
     "verify:ci": "node scripts/run-verify.mjs ci",
-    "verify:fast": "node scripts/run-verify.mjs fast"
+    "verify:fast": "node scripts/run-verify.mjs fast",
+    "dev:local": "bash scripts/dev-local.sh"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

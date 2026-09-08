@@ -26,10 +26,9 @@ function GoogleLogo() {
   );
 }
 
-const FEATURES = [
-  "Maintains living customer relationship state",
-  "Shows what changed and why it matters",
-  "Prepares evidence-backed actions for approval",
+const HIGHLIGHTS = [
+  "Every account, always current",
+  "Evidence before every action",
 ];
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
@@ -55,56 +54,40 @@ export function AuthShell({
     : `/sign-up?${new URLSearchParams({ return_to: returnTo })}`;
 
   return (
-    <main className="app-shell grid min-h-svh bg-background lg:grid-cols-2">
+    <main className="app-shell grid min-h-svh bg-muted/30 lg:grid-cols-2">
       {/* Form panel */}
-      <div className="flex flex-col px-6 py-8 sm:px-10">
-        <Link className="flex items-center gap-2.5" href="/">
-          <img alt="" className="size-6" src="/marketing/oppulence-icon.png" />
-          <span className="font-display text-lg text-foreground">Oppulence</span>
-        </Link>
+      <div className="flex items-center justify-center px-6 py-12 sm:px-10">
+        <div className="flex w-full max-w-sm flex-col gap-8">
+          <Link className="flex items-center gap-2.5" href="/">
+            <img alt="" className="size-7" src="/marketing/oppulence-icon.png" />
+            <span className="font-display text-2xl tracking-tight text-foreground">Oppulence</span>
+          </Link>
 
-        <div className="flex flex-1 items-center justify-center py-10">
-          <div className="flex w-full max-w-sm flex-col gap-6">
-            <div className="space-y-2">
-              <p className="font-mono text-xs text-oppulence-orange">
-                {isSignUp ? "[get started]" : "[welcome back]"}
-              </p>
-              <h1 className="font-display text-3xl text-foreground">
-                {isSignUp ? "Create your account" : "Sign in"}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {isSignUp
-                  ? "Continue with Google — your first sign-in creates your workspace."
-                  : "Continue with Google to access your workspace."}
-              </p>
+          <div className="space-y-2">
+            <h1 className="font-display text-3xl leading-tight text-foreground">
+              Your relationship layer awaits
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {isSignUp
+                ? "Create an account to get started. Your first sign-in builds your workspace."
+                : "Sign in or create an account to get started."}
+            </p>
+          </div>
+
+          {errorMessage ? (
+            <div className="rounded-[2px] border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {errorMessage}
             </div>
+          ) : null}
 
-            {errorMessage ? (
-              <div className="rounded-[2px] border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {errorMessage}
-              </div>
-            ) : null}
-
-            <Button asChild className="h-11 w-full" size="lg" variant="outline">
+          <div className="space-y-3">
+            <Button asChild className="h-12 w-full bg-background" size="lg" variant="outline">
               <a href={loginHref}>
                 <GoogleLogo />
                 {isSignUp ? "Sign up with Google" : "Continue with Google"}
               </a>
             </Button>
-
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              By continuing you agree to our{" "}
-              <Link className="text-primary underline-offset-4 hover:underline" href="/terms">
-                Terms
-              </Link>{" "}
-              and{" "}
-              <Link className="text-primary underline-offset-4 hover:underline" href="/privacy">
-                Privacy Policy
-              </Link>
-              .
-            </p>
-
-            <div className="border-t pt-5 text-sm text-muted-foreground">
+            <p className="text-center text-xs text-muted-foreground">
               {isSignUp ? "Already have an account? " : "Don't have an account? "}
               <Link
                 className="font-medium text-primary underline-offset-4 hover:underline"
@@ -112,55 +95,71 @@ export function AuthShell({
               >
                 {isSignUp ? "Sign in" : "Sign up"}
               </Link>
+            </p>
+          </div>
+
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            By continuing, you agree to our{" "}
+            <Link className="underline underline-offset-4" href="/terms">
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link className="underline underline-offset-4" href="/privacy">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        </div>
+      </div>
+
+      {/* Showcase panel */}
+      <div className="relative hidden p-6 lg:block">
+        <div className="relative h-full overflow-hidden rounded-2xl bg-[#0b0b0c]">
+          <img
+            alt=""
+            className="absolute inset-0 size-full scale-105 object-cover opacity-60 blur-[3px]"
+            src="/marketing/relationship-desktop.png"
+          />
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(11,11,12,0.55) 0%, rgba(11,11,12,0.85) 100%), radial-gradient(60% 50% at 80% 0%, rgba(240,110,40,0.25), transparent 70%)",
+            }}
+          />
+
+          <div className="relative flex h-full flex-col items-center justify-center gap-6 p-10">
+            <div className="w-full max-w-lg rounded-2xl bg-background p-7 shadow-2xl">
+              <p className="font-display text-xl leading-snug text-foreground">
+                Every customer relationship, kept current — and the next action already prepared,
+                with the evidence behind it.
+              </p>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Not another CRM to update. A system that watches the work and tells you what
+                changed.
+              </p>
+              <div className="mt-6 flex items-center gap-3 border-t pt-4">
+                <img alt="" className="size-9 rounded-full" src="/marketing/oppulence-icon.png" />
+                <div className="text-sm">
+                  <p className="font-medium text-foreground">Oppulence</p>
+                  <p className="text-muted-foreground">Relationship intelligence</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-3">
+              {HIGHLIGHTS.map((highlight) => (
+                <span
+                  className="rounded-full bg-white/10 px-4 py-2 text-sm text-white backdrop-blur"
+                  key={highlight}
+                >
+                  {highlight}
+                </span>
+              ))}
             </div>
           </div>
         </div>
-
-        {/* Mobile-only tagline (brand panel is hidden below lg) */}
-        <p className="font-mono text-xs text-primary/40 lg:hidden">relationship intelligence</p>
-      </div>
-
-      {/* Brand panel — always dark, regardless of theme */}
-      <div className="relative hidden overflow-hidden bg-[#0b0b0c] lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(60% 50% at 80% 0%, rgba(240,110,40,0.16), transparent 70%)",
-          }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: "radial-gradient(rgba(255,255,255,0.8) 1px, transparent 1px)",
-            backgroundSize: "22px 22px",
-          }}
-        />
-        <div className="relative flex items-center gap-2.5">
-          <img alt="" className="size-6" src="/marketing/oppulence-icon.png" />
-          <span className="font-display text-lg text-white">Oppulence</span>
-        </div>
-
-        <div className="relative max-w-md space-y-6">
-          <p className="font-mono text-xs text-oppulence-orange">[relationship intelligence]</p>
-          <h2 className="font-display text-4xl leading-tight text-white">
-            Know every customer relationship. Know what needs action.
-          </h2>
-          <ul className="space-y-3">
-            {FEATURES.map((feature) => (
-              <li className="flex items-start gap-2.5 text-sm text-white/70" key={feature}>
-                <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-oppulence-orange" />
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <p className="relative font-mono text-xs text-white/30">
-          A Playbook Media product · oppulence.io
-        </p>
       </div>
     </main>
   );
