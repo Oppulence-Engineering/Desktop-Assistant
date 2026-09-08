@@ -10,8 +10,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly" as const,
       priority: route === "product" ? 0.9 : 0.7,
     })),
-    // The three product pages: web, desktop, and voice.
-    ...["web", "desktop", "voice-app"].map((route) => ({
+    // Product suite pages.
+    ...["products", "web", "desktop", "voice-app"].map((route) => ({
       url: `https://oppulence.io/${route}`,
       changeFrequency: "monthly" as const,
       priority: 0.9,

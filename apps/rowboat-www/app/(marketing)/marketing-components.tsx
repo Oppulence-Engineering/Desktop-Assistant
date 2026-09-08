@@ -62,11 +62,56 @@ const integrationGroups = [
 ];
 
 const mobileNavLinks = [
-  { label: "How it works", href: "/#how-it-works" },
+  { label: "Products", href: "/products" },
+  { label: "How it works", href: "/product" },
   { label: "Integrations", href: "/integrations" },
   { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
 ];
+
+const suiteDropdownLinks = [
+  {
+    label: "Products overview",
+    href: "/products",
+    description: "Web, Desktop, Voice, and the ledger underneath.",
+  },
+  {
+    label: "Commitment Ledger",
+    href: "/product",
+    description: "What was promised, what is owed, and what changed.",
+  },
+  ...platformPages.map((platform) => ({
+    label: platform.name,
+    href: `/${platform.slug}`,
+    description: platform.summary,
+  })),
+  {
+    label: "Integrations",
+    href: "/integrations",
+    description: "Email, calendar, meetings, CRM, docs, and tickets.",
+  },
+] as const;
+
+const productSuiteCards = [
+  {
+    eyebrow: "Core",
+    title: "Commitment Ledger",
+    body: "The record of what was promised, owed, and changed.",
+    href: "/product",
+    cta: "See the ledger",
+    src: "/marketing/relationship-system/observe.webp",
+    alt: "Connected systems feeding the Oppulence commitment ledger",
+  },
+  ...platformPages.map((platform) => ({
+    eyebrow: platform.eyebrow.replace("Oppulence ", ""),
+    title: platform.name,
+    body: platform.summary,
+    href: `/${platform.slug}`,
+    cta: "Open product",
+    src: platform.screenshot,
+    alt: platform.screenshotAlt,
+  })),
+] as const;
 
 type IconTone = "neutral" | "blue" | "green" | "orange" | "yellow";
 
@@ -411,14 +456,11 @@ function MobileMenu() {
           </Link>
         ))}
         <p className="sm-mobile-kicker">Products</p>
-        {platformPages.map((platform) => (
-          <Link className="sm-mobile-product" href={`/${platform.slug}`} key={platform.slug}>
-            {platform.name}
+        {suiteDropdownLinks.slice(0, 5).map((item) => (
+          <Link className="sm-mobile-product" href={item.href} key={item.href}>
+            {item.label}
           </Link>
         ))}
-        <Link className="sm-mobile-product" href="/product">
-          How it all works
-        </Link>
         <div className="mt-auto grid gap-2 pt-8">
           <Link className="sm-button sm-button-light" href="/sign-in">
             Sign in
@@ -443,25 +485,19 @@ export function TopBar() {
         </div>
 
         <nav aria-label="Primary navigation" className="sm-desktop-nav hidden lg:flex">
-          {/* One Products menu, led by the three ways to run Oppulence. A
-              separate "Product" link next to a "Products" menu read as two
-              different things when it was really one. */}
           <details className="sm-nav-products" data-marketing-dropdown>
             <summary>Products</summary>
             <div className="linear-dropdown-panel sm-product-menu">
-              {platformPages.map((platform) => (
-                <Link href={`/${platform.slug}`} key={platform.slug}>
-                  <span>{platform.name}</span>
-                  <small>{platform.summary}</small>
+              <p className="sm-product-menu-kicker">Oppulence suite</p>
+              {suiteDropdownLinks.map((item) => (
+                <Link href={item.href} key={item.href}>
+                  <span>{item.label}</span>
+                  <small>{item.description}</small>
                 </Link>
               ))}
-              <Link href="/product">
-                <span>How it all works</span>
-                <small>The commitment ledger behind all three</small>
-              </Link>
             </div>
           </details>
-          <Link href="/#how-it-works">How it works</Link>
+          <Link href="/product">How it works</Link>
           <Link href="/integrations">Integrations</Link>
           <Link href="/pricing">Pricing</Link>
           <Link href="/blog">Blog</Link>
@@ -608,111 +644,70 @@ export function ProductPage({ page }: { page: MarketingPage }) {
   );
 }
 
+export function ProductsPage() {
+  return (
+    <div className="sm-products-page">
+      <section className="sm-products-hero">
+        <p className="linear-eyebrow">[products]</p>
+        <h1>One commitment ledger. Three ways to use it.</h1>
+        <p>
+          Web for the team queue. Desktop beside the work. Voice for capture. The same record
+          underneath.
+        </p>
+        <div>
+          <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
+            Get the report <ArrowRightIcon aria-hidden="true" />
+          </Link>
+          <Link className="sm-memory-button" href="/product">
+            See the ledger <ArrowRightIcon aria-hidden="true" />
+          </Link>
+        </div>
+      </section>
+
+      <section aria-label="Oppulence product suite" className="sm-products-grid">
+        {productSuiteCards.map((product) => (
+          <Link className="sm-products-card" href={product.href} key={product.href}>
+            <div>
+              <span>{product.eyebrow}</span>
+              <ArrowRightIcon aria-hidden="true" />
+            </div>
+            <h2>{product.title}</h2>
+            <p>{product.body}</p>
+            <figure>
+              <Image alt={product.alt} height={760} src={product.src} width={980} />
+            </figure>
+            <strong>{product.cta}</strong>
+          </Link>
+        ))}
+      </section>
+    </div>
+  );
+}
+
 const relationshipCatalog = [
   {
     label: "What we owe",
-    kicker: "01 · OUTBOUND",
-    title: "What we owe.",
-    body: "Delivery dates, scope changes, concessions, and process promises become records with owner, due condition, state, and source.",
-    bullets: ["Sorted by risk and date", "Owner, state, evidence"],
-    src: "/marketing/relationship-desktop.png",
+    kicker: "01",
+    title: "Promises made.",
+    body: "Delivery dates, concessions, scope changes.",
   },
   {
     label: "What they owe us",
-    kicker: "02 · INBOUND",
-    title: "What they owe us.",
-    body: "Customer prerequisites, vendor credits, partner deliverables, and other inbound obligations sit in the same register.",
-    bullets: ["Inbound obligations by account", "Recoverable value still visible"],
-    src: "/marketing/relationship-web-detail.png",
+    kicker: "02",
+    title: "Promises owed.",
+    body: "Prerequisites, credits, partner deliverables.",
   },
   {
     label: "What changed",
-    kicker: "03 · STATE",
-    title: "What changed.",
-    body: "Each commitment moves through open, at risk, met, missed, renegotiated, waived, or disputed without losing the source trail.",
-    bullets: ["History supersedes, never erases", "AI proposes, humans approve"],
-    src: "/marketing/relationship-desktop-detail.png",
-  },
-] as const;
-
-const homepageProblems = [
-  {
-    label: "Orphaned promise",
-    title: "A commitment exists in one person's sent folder and nowhere else.",
-    body: "Oppulence turns the source message, meeting, or document into a commitment record with owner, counterparty, due condition, state, and evidence.",
-  },
-  {
-    label: "Late discovery",
-    title: "Delivery learns about a commitment after the date has passed.",
-    body: "The register shows what was promised, when it changed, and which obligations are at risk before a renewal, QBR, or escalation.",
-  },
-  {
-    label: "Unenforced inbound",
-    title: "A vendor, partner, or customer owes something and nobody tracks it.",
-    body: "Inbound obligations live beside outbound ones, so recoverable value is not lost just because it was promised in the other direction.",
-  },
-  {
-    label: "Undefended dispute",
-    title: "Arguments about what was agreed happen from memory and screenshots.",
-    body: "Export the obligation, state history, and verbatim cited evidence as a standalone record for the conversation that matters.",
+    kicker: "03",
+    title: "Proof attached.",
+    body: "Open, at risk, met, disputed, cited.",
   },
 ] as const;
 
 const homepageProof = ["What we owe", "What they owe us", "Every claim cited"] as const;
 
-const homepageStats = [
-  {
-    value: "90 days",
-    label: "of promises surfaced in the first report",
-    detail:
-      "Connect the evidence streams and get the commitments your team made recently that have no evidence of fulfilment.",
-  },
-  {
-    value: "5 views",
-    label: "what we owe, what they owe us, what changed, by account, by owner",
-    detail:
-      "The register is built for renewals, QBRs, escalations, handovers, and weekly portfolio review.",
-  },
-  {
-    value: "0 guesses",
-    label: "dates and claims require source evidence",
-    detail:
-      "Missing due dates are recorded as unspecified. Low-confidence extractions go to review instead of being asserted.",
-  },
-  {
-    value: "export",
-    label: "the record when the conversation leaves the tool",
-    detail:
-      "A commitment record carries the obligation, state history, timestamped authors, and verbatim cited evidence.",
-  },
-] as const;
-
-const homepageResearchNotes = [
-  {
-    number: "01",
-    title: "Businesses run on promises that no system records.",
-    body: "Delivery dates, scope changes, concessions, and SLAs are created in conversation, kept by someone else, and noticed only when broken.",
-    href: "/product",
-  },
-  {
-    number: "02",
-    title: "The seam between systems is where commitments live.",
-    body: "CRM, CLM, ticketing, meeting notes, and email AI each hold a fragment. The obligation spans all of them.",
-    href: "/integrations",
-  },
-  {
-    number: "03",
-    title: "The wedge is the report; the retention is the ledger.",
-    body: "The Open Promises report proves value in a day. The accumulated, corrected obligation history compounds over time.",
-    href: "/customers",
-  },
-] as const;
-
 export function HomePage() {
-  const individualPlans = pricingPlans.filter((plan) =>
-    ["Watch", "Chase", "Intelligence"].includes(plan.name),
-  );
-
   return (
     <div className="sm-memory-home">
       <aside aria-label="Landing page sections" className="sm-memory-rail">
@@ -721,18 +716,10 @@ export function HomePage() {
             <span aria-hidden="true" />
             Mission
           </a>
-          <a href="#what-we-do">What we do</a>
-          <a href="#in-production">The register</a>
-          <a href="#research">Read this first</a>
-          <a href="#pricing">Pricing</a>
-        </nav>
-        <div className="sm-memory-rail-divider" />
-        <div className="sm-memory-rail-links">
-          <Link href="/blog">Blog</Link>
+          <a href="#what-we-do">The register</a>
+          <Link href="/products">Products</Link>
           <Link href="/pricing">Pricing</Link>
-          <Link href="/product">Product</Link>
-          <Link href="/customers">Customers</Link>
-        </div>
+        </nav>
       </aside>
 
       <div className="sm-memory-main">
@@ -743,8 +730,8 @@ export function HomePage() {
                 <i aria-hidden="true" />
                 The Commitment Ledger is live.
               </span>
-              <Link href="/product">
-                Read the product brief <ArrowRightIcon aria-hidden="true" />
+              <Link href="/products">
+                View the suite <ArrowRightIcon aria-hidden="true" />
               </Link>
             </div>
 
@@ -765,7 +752,7 @@ export function HomePage() {
             </h1>
 
             <p className="sm-memory-subhead">
-              What you owe, what they owe, what changed, and the proof behind it.
+              What you owe. What they owe. What changed. Every claim cited.
             </p>
 
             <div className="sm-memory-actions">
@@ -778,8 +765,8 @@ export function HomePage() {
               <Link className="sm-memory-button" href="#what-we-do">
                 See the register <ArrowRightIcon aria-hidden="true" />
               </Link>
-              <Link className="sm-memory-button" href="/pricing">
-                Pricing <ArrowRightIcon aria-hidden="true" />
+              <Link className="sm-memory-button" href="/products">
+                Products <ArrowRightIcon aria-hidden="true" />
               </Link>
             </div>
 
@@ -806,11 +793,6 @@ export function HomePage() {
                 Your CRM records what you <strong>sold</strong>. Oppulence records what you{" "}
                 <strong>owe</strong>.
               </p>
-              <h2>Promises in. Evidence out.</h2>
-              <p>
-                Email, meetings, CRM, tickets, and docs become cited observations. Humans approve
-                the record before it leaves the system.
-              </p>
             </div>
           </div>
 
@@ -820,7 +802,7 @@ export function HomePage() {
         <section className="sm-memory-section" id="what-we-do">
           <header className="sm-memory-section-head">
             <p>What we do</p>
-            <h2>A two-sided register of commitments.</h2>
+            <h2>One ledger. Three questions.</h2>
           </header>
           <div className="sm-memory-do-grid">
             {relationshipCatalog.map((item) => (
@@ -828,142 +810,15 @@ export function HomePage() {
                 <p>{item.kicker}</p>
                 <h3>{item.title}</h3>
                 <span>{item.body}</span>
-                <ul>
-                  {item.bullets.map((bullet) => (
-                    <li key={bullet}>{bullet}</li>
-                  ))}
-                </ul>
               </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="sm-memory-section" id="in-production">
-          <header className="sm-memory-section-head sm-memory-section-head-split">
-            <div>
-              <p>In production</p>
-              <h2>The first screen is already populated.</h2>
-            </div>
-            <span>
-              Connect sources and get the Open Promises report: recent commitments with no evidence
-              of fulfilment, plus the exact source that created each one.
-            </span>
-          </header>
-          <div className="sm-memory-stats-grid">
-            {homepageStats.map((item) => (
-              <article key={item.label}>
-                <strong>{item.value}</strong>
-                <p>{item.label}</p>
-                <span>{item.detail}</span>
-              </article>
-            ))}
-          </div>
-          <div
-            className="sm-memory-signal-table"
-            role="table"
-            aria-label="Commitment failures Oppulence monitors"
-          >
-            <div role="row">
-              <span role="columnheader">Failure</span>
-              <span role="columnheader">What it looks like</span>
-              <span role="columnheader">What Oppulence does</span>
-            </div>
-            {homepageProblems.map((item) => (
-              <div key={item.label} role="row">
-                <span role="cell">{item.label}</span>
-                <span role="cell">{item.title}</span>
-                <span role="cell">{item.body}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="sm-memory-section" id="research">
-          <header className="sm-memory-section-head sm-memory-section-head-split">
-            <div>
-              <p>Read this first</p>
-              <h2>Read the product thesis.</h2>
-            </div>
-            <Link className="sm-memory-text-link" href="/blog">
-              More on the product <ArrowRightIcon aria-hidden="true" />
-            </Link>
-          </header>
-          <div className="sm-memory-research-list">
-            {homepageResearchNotes.map((note) => (
-              <Link href={note.href} key={note.number}>
-                <span>{note.number}</span>
-                <strong>{note.title}</strong>
-                <p>{note.body}</p>
-                <ArrowRightIcon aria-hidden="true" />
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <section className="sm-memory-section" id="pricing">
-          <header className="sm-memory-section-head sm-memory-section-head-split">
-            <div>
-              <p>Pricing</p>
-              <h2>Priced for the team that makes and keeps promises.</h2>
-            </div>
-            <span>
-              A single unmet commitment that contributes to losing one customer costs more than a
-              year of the product.
-            </span>
-          </header>
-          <div className="sm-memory-plan-grid">
-            {individualPlans.map((plan) => (
-              <article className={cn(plan.recommended && "is-featured")} key={plan.name}>
-                <div>
-                  <h3>{plan.name}</h3>
-                  {plan.recommended ? <span>Most picked</span> : null}
-                </div>
-                <p>{plan.description}</p>
-                <strong>
-                  {plan.price}
-                  <small>{plan.period}</small>
-                </strong>
-                <Link
-                  className={cn("sm-memory-button", plan.recommended && "sm-memory-button-primary")}
-                  href={plan.ctaHref}
-                >
-                  {plan.ctaLabel}
-                </Link>
-                <ul>
-                  {plan.features.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="sm-memory-section sm-memory-faq" id="faq">
-          <header className="sm-memory-section-head sm-memory-section-head-split">
-            <div>
-              <p>FAQ</p>
-              <h2>What teams ask before trusting a commitment ledger.</h2>
-            </div>
-          </header>
-          <div className="sm-memory-faq-list">
-            {homeFaqs.map((item, index) => (
-              <details key={item.question} open={index === 0 ? true : undefined}>
-                <summary>
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  {item.question}
-                  <strong aria-hidden="true">+</strong>
-                </summary>
-                <p>{item.answer}</p>
-              </details>
             ))}
           </div>
         </section>
 
         <section className="sm-memory-final">
-          <h2>Track the promise, not just the deal.</h2>
+          <h2>Know what is owed.</h2>
           <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
-            Start building <ArrowRightIcon aria-hidden="true" />
+            Get the report <ArrowRightIcon aria-hidden="true" />
           </Link>
         </section>
       </div>
@@ -977,27 +832,16 @@ function RelationshipMemoryDiagram() {
       aria-label="How Oppulence turns raw evidence streams into a commitment ledger"
       className="sm-memory-diagram"
     >
-      <pre>{`        raw evidence streams
-              │
-              ▼
-┌── oppulence commitment ledger ───┐
-│                                  │
-│  ┌───────────────┐               │
-│  │ observations  │──cited source │
-│  └───────────────┘               │
-│          │                       │
-│          ▼                       │
-│  ┌───────────────┐               │
-│  │ commitments   │◀──corrections │
-│  │ we owe / owed │               │
-│  └───────────────┘               │
-│          │                       │
-│          ▼                       │
-│  open · at risk · met · disputed │
-└──────────┼───────────────────────┘
-           │ exportable record
-           ▼
-  renewal, escalation, or handover`}</pre>
+      <pre>{` raw evidence
+      │
+      ▼
+┌─ oppulence ─┐
+│ observe     │
+│ commit      │
+│ prove       │
+└──────┬──────┘
+       ▼
+ what is owed`}</pre>
     </aside>
   );
 }
@@ -1181,29 +1025,6 @@ function HomeStepVisual({ index }: { index: number }) {
     </div>
   );
 }
-
-const homeFaqs = [
-  {
-    question: "Is Oppulence another CRM?",
-    answer:
-      "No. Your CRM tracks the deal, stage, and amount. Oppulence tracks the commitments around the deal: what was promised, who owns it, what evidence proves it, and what is at risk now.",
-  },
-  {
-    question: "What counts as a commitment?",
-    answer:
-      "A commitment is an obligation by an identifiable party to an identifiable counterparty, with a concrete substance, a due date or due condition, and a citable source. If the evidence is missing, we do not assert it.",
-  },
-  {
-    question: "Will it send messages without me?",
-    answer:
-      "No. AI can propose a next action, but deterministic code owns state and every external email, Slack, or CRM action waits for a recorded human approval.",
-  },
-  {
-    question: "What happens to my data?",
-    answer:
-      "Raw evidence is encrypted, tenant-isolated, and retained only for the ledger's purpose. Every claim remains traceable to source evidence, and customers can export their full ledger with evidence.",
-  },
-];
 
 function FinalCta() {
   return (

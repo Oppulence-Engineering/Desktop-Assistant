@@ -4946,10 +4946,20 @@
     top: 46px;
     right: 0;
     display: grid;
-    width: 320px;
+    width: 360px;
     border: 1px solid var(--sm-line);
     background: #ffffff;
     box-shadow: 0 20px 50px rgb(18 35 52 / 14%);
+  }
+
+  .sm-product-menu-kicker {
+    border-bottom: 1px solid var(--sm-line);
+    padding: 10px 15px 8px;
+    color: #7d8893;
+    font-family: var(--font-marketing-mono), "DM Mono", ui-monospace, monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
   .sm-product-menu a {
@@ -6140,6 +6150,180 @@
     text-transform: uppercase;
   }
 
+  .sm-products-page {
+    display: grid;
+    gap: 0;
+    padding: clamp(76px, 10vw, 118px) 0 clamp(72px, 9vw, 112px);
+  }
+
+  .sm-products-hero {
+    display: grid;
+    max-width: 860px;
+    gap: 22px;
+    margin-inline: auto;
+    padding-inline: 24px;
+    text-align: center;
+  }
+
+  .sm-products-hero .linear-eyebrow {
+    justify-self: center;
+  }
+
+  .sm-products-hero h1,
+  .sm-products-card h2 {
+    font-family:
+      var(--font-marketing-display), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.045em;
+  }
+
+  .sm-products-hero h1 {
+    color: var(--sm-ink);
+    font-size: clamp(3rem, 6vw, 5.7rem);
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
+  .sm-products-hero > p:not(.linear-eyebrow) {
+    max-width: 600px;
+    margin-inline: auto;
+    color: var(--sm-muted);
+    font-size: clamp(1rem, 1.6vw, 1.25rem);
+    line-height: 1.55;
+    text-wrap: balance;
+  }
+
+  .sm-products-hero > div {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .sm-products-grid {
+    display: grid;
+    width: min(1120px, calc(100% - 48px));
+    margin: clamp(56px, 8vw, 88px) auto 0;
+    border-top: 1px solid var(--sm-line);
+    border-left: 1px solid var(--sm-line);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sm-products-card {
+    display: grid;
+    min-height: 430px;
+    align-content: start;
+    border-right: 1px solid var(--sm-line);
+    border-bottom: 1px solid var(--sm-line);
+    background: #ffffff;
+    padding: 24px;
+    text-decoration: none;
+    transition:
+      background 150ms ease,
+      color 150ms ease;
+  }
+
+  .sm-products-card:hover {
+    background: #f5f9ff;
+  }
+
+  .sm-products-card > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--sm-blue);
+    font-family: var(--font-marketing-mono), "DM Mono", ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .sm-products-card > div svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .sm-products-card h2 {
+    margin-top: 22px;
+    color: var(--sm-ink);
+    font-size: clamp(1.7rem, 3vw, 2.55rem);
+    line-height: 1.04;
+  }
+
+  .sm-products-card p {
+    max-width: 420px;
+    margin-top: 13px;
+    color: var(--sm-muted);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .sm-products-card figure {
+    display: grid;
+    height: 184px;
+    place-items: center;
+    overflow: hidden;
+    margin-top: 24px;
+    background: #112b8b;
+  }
+
+  .sm-products-card figure img {
+    width: 84%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .sm-products-card:first-child figure img {
+    filter: brightness(1.24) contrast(1.14) saturate(0.35);
+    mix-blend-mode: screen;
+  }
+
+  .sm-products-card strong {
+    margin-top: 20px;
+    color: var(--sm-ink);
+    font-family: var(--font-marketing-mono), "DM Mono", ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 760px) {
+    .sm-products-page {
+      padding: 64px 0 72px;
+    }
+
+    .sm-products-hero {
+      gap: 18px;
+      padding-inline: 20px;
+      text-align: left;
+    }
+
+    .sm-products-hero .linear-eyebrow {
+      justify-self: start;
+    }
+
+    .sm-products-hero h1 {
+      font-size: clamp(2.55rem, 14vw, 4rem);
+    }
+
+    .sm-products-hero > div,
+    .sm-products-hero .sm-memory-button {
+      width: 100%;
+    }
+
+    .sm-products-grid {
+      width: calc(100% - 40px);
+      margin-top: 42px;
+      grid-template-columns: 1fr;
+    }
+
+    .sm-products-card {
+      min-height: 0;
+      padding: 22px 20px;
+    }
+  }
+
   @media (max-width: 1023px) {
     html[data-marketing-menu-open] {
       overflow: hidden;
@@ -6624,7 +6808,8 @@
   .sm-memory-home h2,
   .sm-memory-home h3,
   .sm-memory-final h2 {
-    font-family: var(--font-marketing-display), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    font-family:
+      var(--font-marketing-display), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
     font-weight: 600;
     letter-spacing: -0.045em;
   }
@@ -6867,7 +7052,7 @@
     height: 278px;
     place-items: center;
     overflow: hidden;
-    margin: 62px 0 48px;
+    margin: 56px 0 34px;
     background: #112b8b;
   }
 
@@ -6882,7 +7067,7 @@
 
   .sm-memory-prose {
     max-width: 655px;
-    padding-bottom: 66px;
+    padding-bottom: 44px;
   }
 
   .sm-memory-prose p {
@@ -6917,7 +7102,8 @@
     overflow-x: auto;
     padding-top: 2px;
     color: #101720;
-    font-family: var(--font-marketing-mono), "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-family:
+      var(--font-marketing-mono), "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: clamp(10px, 0.88vw, 12px);
     line-height: 1.45;
   }
@@ -6936,7 +7122,7 @@
     display: grid;
     max-width: 880px;
     gap: 18px;
-    padding: 52px 0 38px;
+    padding: 44px 0 30px;
   }
 
   .sm-memory-section-head-split {
@@ -6989,9 +7175,9 @@
   }
 
   .sm-memory-do-grid article {
-    min-height: 332px;
+    min-height: 190px;
     border-right: 1px solid var(--mem-line);
-    padding: 32px 30px;
+    padding: 28px 30px;
   }
 
   .sm-memory-do-grid article:last-child {
@@ -6999,14 +7185,14 @@
   }
 
   .sm-memory-do-grid h3 {
-    margin-top: 18px;
-    font-size: clamp(1.55rem, 2.1vw, 2rem);
+    margin-top: 16px;
+    font-size: clamp(1.35rem, 1.75vw, 1.65rem);
     line-height: 1.1;
   }
 
   .sm-memory-do-grid article > span {
     display: block;
-    margin-top: 16px;
+    margin-top: 12px;
     color: var(--mem-muted);
     font-size: 14px;
     line-height: 1.58;
@@ -7050,7 +7236,8 @@
   .sm-memory-stats-grid strong {
     display: block;
     color: var(--mem-blue);
-    font-family: var(--font-marketing-display), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    font-family:
+      var(--font-marketing-display), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
     font-size: clamp(1.8rem, 2.8vw, 2.55rem);
     font-weight: 600;
     letter-spacing: -0.04em;
@@ -7143,7 +7330,8 @@
 
   .sm-memory-research-list strong {
     max-width: 620px;
-    font-family: var(--font-marketing-display), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    font-family:
+      var(--font-marketing-display), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
     font-size: clamp(1.2rem, 1.7vw, 1.55rem);
     font-weight: 600;
     line-height: 1.15;
@@ -7216,7 +7404,8 @@
 
   .sm-memory-plan-grid article > strong {
     margin: 22px 0;
-    font-family: var(--font-marketing-display), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    font-family:
+      var(--font-marketing-display), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
     font-size: 35px;
     font-weight: 600;
     letter-spacing: -0.045em;
@@ -7261,7 +7450,8 @@
     align-items: center;
     gap: 18px;
     padding: 0 0;
-    font-family: var(--font-marketing-display), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    font-family:
+      var(--font-marketing-display), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
     font-size: 18px;
     font-weight: 600;
     grid-template-columns: 42px 1fr auto;
@@ -7304,12 +7494,12 @@
     justify-content: space-between;
     gap: 28px;
     border-top: 1px solid var(--mem-line);
-    padding: 82px 0 74px;
+    padding: 56px 0 58px;
   }
 
   .sm-memory-final h2 {
     max-width: 720px;
-    font-size: clamp(2.8rem, 5vw, 4.7rem);
+    font-size: clamp(2.35rem, 4vw, 3.6rem);
     line-height: 0.98;
   }
 
@@ -7323,6 +7513,14 @@
     width: 100%;
     max-width: none;
     padding-inline: 34px clamp(32px, 5.8vw, 90px);
+  }
+
+  .sm-site:has(.sm-memory-home) .sm-footer-links {
+    display: none;
+  }
+
+  .sm-site:has(.sm-memory-home) .sm-footer-bottom {
+    border-top: 1px solid var(--mem-line);
   }
 
   @media (max-width: 1180px) {
@@ -7516,6 +7714,7 @@
     .sm-memory-do-grid article,
     .sm-memory-plan-grid article,
     .sm-memory-stats-grid article {
+      min-height: 0;
       padding: 26px 0;
     }
 
@@ -7565,7 +7764,7 @@
     }
 
     .sm-memory-final h2 {
-      font-size: clamp(2.65rem, 13vw, 3.45rem);
+      font-size: clamp(2.35rem, 11vw, 3rem);
     }
   }
 

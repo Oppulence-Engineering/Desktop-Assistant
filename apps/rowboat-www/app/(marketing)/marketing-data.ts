@@ -97,6 +97,11 @@ export const featureLinks: LinkItem[] = [
 
 export const productLinks: LinkItem[] = [
   {
+    label: "Products",
+    href: "/products",
+    description: "The full Oppulence suite",
+  },
+  {
     label: "Oppulence Web",
     href: "/web",
     description: "Your whole book of business in a browser, nothing to install",
@@ -112,9 +117,9 @@ export const productLinks: LinkItem[] = [
     description: "Dictate into any app and get your meetings written down",
   },
   {
-    label: "Relationship intelligence",
+    label: "Commitment Ledger",
     href: "/product",
-    description: "See how living relationship state becomes evidence-backed action",
+    description: "What was promised, what is owed, and what changed",
   },
   {
     label: "Account Mission Control",
