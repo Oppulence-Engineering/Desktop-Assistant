@@ -113,6 +113,30 @@ const productSuiteCards = [
   })),
 ] as const;
 
+type MemoryRailLink = {
+  label: string;
+  href: string;
+  active?: boolean;
+};
+
+const homeRailLinks: MemoryRailLink[] = [
+  { label: "Mission", href: "#mission", active: true },
+  { label: "The register", href: "#what-we-do" },
+  { label: "Products", href: "/products" },
+  { label: "Pricing", href: "/pricing" },
+];
+
+const productRailLinks: MemoryRailLink[] = [
+  { label: "Products", href: "/products", active: true },
+  { label: "Commitment Ledger", href: "/product" },
+  ...platformPages.map((platform) => ({
+    label: platform.name.replace("Oppulence ", ""),
+    href: `/${platform.slug}`,
+  })),
+  { label: "Integrations", href: "/integrations" },
+  { label: "Pricing", href: "/pricing" },
+];
+
 type IconTone = "neutral" | "blue" | "green" | "orange" | "yellow";
 
 const iconToneClasses: Record<IconTone, string> = {
@@ -646,40 +670,46 @@ export function ProductPage({ page }: { page: MarketingPage }) {
 
 export function ProductsPage() {
   return (
-    <div className="sm-products-page">
-      <section className="sm-products-hero">
-        <p className="linear-eyebrow">[products]</p>
-        <h1>One commitment ledger. Three ways to use it.</h1>
-        <p>
-          Web for the team queue. Desktop beside the work. Voice for capture. The same record
-          underneath.
-        </p>
-        <div>
-          <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
-            Get the report <ArrowRightIcon aria-hidden="true" />
-          </Link>
-          <Link className="sm-memory-button" href="/product">
-            See the ledger <ArrowRightIcon aria-hidden="true" />
-          </Link>
-        </div>
-      </section>
+    <div className="sm-memory-home sm-products-shell">
+      <MemoryRail ariaLabel="Products navigation" links={productRailLinks} />
 
-      <section aria-label="Oppulence product suite" className="sm-products-grid">
-        {productSuiteCards.map((product) => (
-          <Link className="sm-products-card" href={product.href} key={product.href}>
+      <div className="sm-memory-main">
+        <div className="sm-products-page">
+          <section className="sm-products-hero">
+            <p className="linear-eyebrow">[products]</p>
+            <h1>One commitment ledger. Three ways to use it.</h1>
+            <p>
+              Web for the team queue. Desktop beside the work. Voice for capture. The same record
+              underneath.
+            </p>
             <div>
-              <span>{product.eyebrow}</span>
-              <ArrowRightIcon aria-hidden="true" />
+              <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
+                Get the report <ArrowRightIcon aria-hidden="true" />
+              </Link>
+              <Link className="sm-memory-button" href="/product">
+                See the ledger <ArrowRightIcon aria-hidden="true" />
+              </Link>
             </div>
-            <h2>{product.title}</h2>
-            <p>{product.body}</p>
-            <figure>
-              <Image alt={product.alt} height={760} src={product.src} width={980} />
-            </figure>
-            <strong>{product.cta}</strong>
-          </Link>
-        ))}
-      </section>
+          </section>
+
+          <section aria-label="Oppulence product suite" className="sm-products-grid">
+            {productSuiteCards.map((product) => (
+              <Link className="sm-products-card" href={product.href} key={product.href}>
+                <div>
+                  <span>{product.eyebrow}</span>
+                  <ArrowRightIcon aria-hidden="true" />
+                </div>
+                <h2>{product.title}</h2>
+                <p>{product.body}</p>
+                <figure>
+                  <Image alt={product.alt} height={760} src={product.src} width={980} />
+                </figure>
+                <strong>{product.cta}</strong>
+              </Link>
+            ))}
+          </section>
+        </div>
+      </div>
     </div>
   );
 }
@@ -710,17 +740,7 @@ const homepageProof = ["What we owe", "What they owe us", "Every claim cited"] a
 export function HomePage() {
   return (
     <div className="sm-memory-home">
-      <aside aria-label="Landing page sections" className="sm-memory-rail">
-        <nav>
-          <a className="is-active" href="#mission">
-            <span aria-hidden="true" />
-            Mission
-          </a>
-          <a href="#what-we-do">The register</a>
-          <Link href="/products">Products</Link>
-          <Link href="/pricing">Pricing</Link>
-        </nav>
-      </aside>
+      <MemoryRail ariaLabel="Landing page sections" links={homeRailLinks} />
 
       <div className="sm-memory-main">
         <section className="sm-memory-mission" id="mission">
@@ -823,6 +843,37 @@ export function HomePage() {
         </section>
       </div>
     </div>
+  );
+}
+
+function MemoryRail({ ariaLabel, links }: { ariaLabel: string; links: readonly MemoryRailLink[] }) {
+  return (
+    <aside aria-label={ariaLabel} className="sm-memory-rail">
+      <nav>
+        {links.map((link) => {
+          const content = (
+            <>
+              {link.active ? <span aria-hidden="true" /> : null}
+              {link.label}
+            </>
+          );
+
+          return link.href.startsWith("#") ? (
+            <a className={link.active ? "is-active" : undefined} href={link.href} key={link.href}>
+              {content}
+            </a>
+          ) : (
+            <Link
+              className={link.active ? "is-active" : undefined}
+              href={link.href}
+              key={link.href}
+            >
+              {content}
+            </Link>
+          );
+        })}
+      </nav>
+    </aside>
   );
 }
 

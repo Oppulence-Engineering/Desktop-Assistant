@@ -6887,6 +6887,38 @@
     padding: 68px clamp(32px, 5.8vw, 90px) 0 34px;
   }
 
+  .sm-products-shell .sm-memory-main {
+    padding-top: 72px;
+  }
+
+  .sm-products-shell .sm-products-page {
+    padding: 0 0 clamp(72px, 8vw, 104px);
+  }
+
+  .sm-products-shell .sm-products-hero {
+    max-width: 770px;
+    margin-inline: 0;
+    padding-inline: 0;
+    text-align: left;
+  }
+
+  .sm-products-shell .sm-products-hero .linear-eyebrow {
+    justify-self: start;
+  }
+
+  .sm-products-shell .sm-products-hero > p:not(.linear-eyebrow) {
+    margin-inline: 0;
+  }
+
+  .sm-products-shell .sm-products-hero > div {
+    justify-content: flex-start;
+  }
+
+  .sm-products-shell .sm-products-grid {
+    width: min(100%, 1120px);
+    margin-inline: 0;
+  }
+
   .sm-memory-mission {
     display: grid;
     align-items: start;
@@ -7597,6 +7629,14 @@
 
     .sm-memory-main {
       padding: 42px 20px 0;
+    }
+
+    .sm-products-shell .sm-memory-main {
+      padding-top: 42px;
+    }
+
+    .sm-products-shell .sm-products-grid {
+      width: 100%;
     }
 
     .sm-memory-mission,
