@@ -12,6 +12,7 @@ import (
 	atlasmigrate "ariga.io/atlas/sql/migrate"
 	_ "ariga.io/atlas/sql/postgres" // register the Atlas PostgreSQL driver
 	"ariga.io/atlas/sql/sqlclient"
+	"github.com/lib/pq"
 )
 
 const (
@@ -221,12 +222,19 @@ func (r *postgresRevisions) init(ctx context.Context) error {
 }
 
 func (r *postgresRevisions) ReadRevision(ctx context.Context, version string) (*atlasmigrate.Revision, error) {
-	row := r.db.QueryRowContext(ctx, revisionSelect+` WHERE version = $1`, version)
+	row := r.db.QueryRowContext(ctx, revisionByVersionQuery(version))
 	revision, err := scanRevision(row.Scan)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, atlasmigrate.ErrRevisionNotExist
 	}
 	return revision, err
+}
+
+// Transaction poolers can switch server connections between the describe and
+// execute phases of an unnamed prepared statement. A quoted literal keeps this
+// single-value lookup on PostgreSQL's simple query path.
+func revisionByVersionQuery(version string) string {
+	return revisionSelect + ` WHERE version = ` + pq.QuoteLiteral(version)
 }
 
 func (r *postgresRevisions) ReadRevisions(ctx context.Context) ([]*atlasmigrate.Revision, error) {

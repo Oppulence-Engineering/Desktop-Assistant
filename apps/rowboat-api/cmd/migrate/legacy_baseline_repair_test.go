@@ -35,3 +35,10 @@ func TestLegacyBaselineRepairCoversCutoverGap(t *testing.T) {
 		}
 	}
 }
+
+func TestRevisionByVersionQueryQuotesLiteral(t *testing.T) {
+	query := revisionByVersionQuery(`2026' OR true--`)
+	if !strings.HasSuffix(query, ` WHERE version = '2026'' OR true--'`) {
+		t.Fatalf("unsafe revision query: %s", query)
+	}
+}
