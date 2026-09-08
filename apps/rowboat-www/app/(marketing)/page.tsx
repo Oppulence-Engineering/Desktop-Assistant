@@ -4,7 +4,7 @@ import { HomePage } from "./marketing-components";
 
 const TITLE = "Oppulence — The Commitment Ledger";
 const DESCRIPTION =
-  "Oppulence is the independent record of what your business promised and what was promised to you, proven by evidence across the systems where promises are actually made.";
+  "Oppulence is the independent record of business promises: what you owe, what they owe, what changed, and the proof behind it.";
 
 export const metadata: Metadata = {
   title: TITLE,

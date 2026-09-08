@@ -613,34 +613,25 @@ const relationshipCatalog = [
   {
     label: "What we owe",
     kicker: "01 · OUTBOUND",
-    title: "Know what your business promised.",
-    body: "Oppulence extracts delivery dates, scope changes, commercial concessions, and process promises from the conversations where they were actually made.",
-    bullets: [
-      "Outbound obligations by risk, then by date",
-      "Owner, due condition, state, confidence, and evidence",
-    ],
+    title: "What we owe.",
+    body: "Delivery dates, scope changes, concessions, and process promises become records with owner, due condition, state, and source.",
+    bullets: ["Sorted by risk and date", "Owner, state, evidence"],
     src: "/marketing/relationship-desktop.png",
   },
   {
     label: "What they owe us",
     kicker: "02 · INBOUND",
-    title: "Track the promises made back to you.",
-    body: "Customer prerequisites, vendor credits, partner deliverables, and other inbound obligations sit in the same register instead of being quietly forfeited.",
-    bullets: [
-      "Two-sided obligations across each account",
-      "Recoverable value that your CRM does not model",
-    ],
+    title: "What they owe us.",
+    body: "Customer prerequisites, vendor credits, partner deliverables, and other inbound obligations sit in the same register.",
+    bullets: ["Inbound obligations by account", "Recoverable value still visible"],
     src: "/marketing/relationship-web-detail.png",
   },
   {
     label: "What changed",
     kicker: "03 · STATE",
-    title: "See slippage before it becomes a dispute.",
-    body: "Every commitment moves through governed states: open, at risk, met, missed, renegotiated, waived, or disputed, with the source trail kept intact.",
-    bullets: [
-      "Renegotiation supersedes, but never erases",
-      "AI proposes, deterministic code tracks, humans approve",
-    ],
+    title: "What changed.",
+    body: "Each commitment moves through open, at risk, met, missed, renegotiated, waived, or disputed without losing the source trail.",
+    bullets: ["History supersedes, never erases", "AI proposes, humans approve"],
     src: "/marketing/relationship-desktop-detail.png",
   },
 ] as const;
@@ -668,11 +659,7 @@ const homepageProblems = [
   },
 ] as const;
 
-const homepageProof = [
-  "Two-sided commitment register",
-  "Every claim cited",
-  "No external action without approval",
-] as const;
+const homepageProof = ["What we owe", "What they owe us", "Every claim cited"] as const;
 
 const homepageStats = [
   {
@@ -775,12 +762,11 @@ export function HomePage() {
                 />
                 oppulence
               </span>{" "}
-              is the independent record of what your business promised and what was promised to you.
+              is the independent record of business promises.
             </h1>
 
             <p className="sm-memory-subhead">
-              It tracks commitments to outcomes, proves every claim with source evidence, and shows
-              what is at risk right now.
+              What you owe, what they owe, what changed, and the proof behind it.
             </p>
 
             <div className="sm-memory-actions">
@@ -788,10 +774,10 @@ export function HomePage() {
                 <span aria-hidden="true">
                   <Image alt="" height={18} src="/marketing/oppulence-icon.png" width={18} />
                 </span>
-                Get the Open Promises report
+                Get the report
               </Link>
               <Link className="sm-memory-button" href="#what-we-do">
-                See what it tracks <ArrowRightIcon aria-hidden="true" />
+                See the register <ArrowRightIcon aria-hidden="true" />
               </Link>
               <Link className="sm-memory-button" href="/pricing">
                 Pricing <ArrowRightIcon aria-hidden="true" />
@@ -818,15 +804,13 @@ export function HomePage() {
 
             <div className="sm-memory-prose">
               <p>
-                Every company has a system of record for what it <strong>sold</strong>. None has a
-                system of record for what it <strong>owes</strong>. Oppulence is that{" "}
-                <Link href="/product">commitment ledger</Link>.
+                Your CRM records what you <strong>sold</strong>. Oppulence records what you{" "}
+                <strong>owe</strong>.
               </p>
-              <h2>Your CRM tracks the deal. We track the promise and prove it.</h2>
+              <h2>Promises in. Evidence out.</h2>
               <p>
-                Integrations are evidence streams. Oppulence appends immutable observations,
-                extracts the commitments inside them, tracks each one to an outcome, and links every
-                state change back to the source.
+                Email, meetings, CRM, tickets, and docs become cited observations. Humans approve
+                the record before it leaves the system.
               </p>
             </div>
           </div>
@@ -837,7 +821,7 @@ export function HomePage() {
         <section className="sm-memory-section" id="what-we-do">
           <header className="sm-memory-section-head">
             <p>What we do</p>
-            <h2>A live, two-sided register of commitments.</h2>
+            <h2>A two-sided register of commitments.</h2>
           </header>
           <div className="sm-memory-do-grid">
             {relationshipCatalog.map((item) => (
@@ -862,9 +846,8 @@ export function HomePage() {
               <h2>The first screen is already populated.</h2>
             </div>
             <span>
-              Connect a prospect&rsquo;s sources and hand them the Open Promises report: the
-              commitments made in the last 90 days that have no evidence of fulfilment, with the
-              exact message that created each one.
+              Connect sources and get the Open Promises report: recent commitments with no evidence
+              of fulfilment, plus the exact source that created each one.
             </span>
           </header>
           <div className="sm-memory-stats-grid">
@@ -900,7 +883,7 @@ export function HomePage() {
           <header className="sm-memory-section-head sm-memory-section-head-split">
             <div>
               <p>Read this first</p>
-              <h2>The customer-facing thesis behind the commitment ledger.</h2>
+              <h2>Read the product thesis.</h2>
             </div>
             <Link className="sm-memory-text-link" href="/blog">
               More on the product <ArrowRightIcon aria-hidden="true" />
