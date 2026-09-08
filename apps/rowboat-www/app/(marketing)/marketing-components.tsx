@@ -504,11 +504,10 @@ export function Footer() {
         <div className="sm-footer-statement">
           <InlineLogo prominent />
           <h2>
-            Relationship intelligence
-            <br />
-            for customer-facing teams.
+            The commitment ledger <br />
+            for business promises.
           </h2>
-          <p>One living model. Every source. Every next move explained.</p>
+          <p>What you owe. What they owe. Every claim cited.</p>
         </div>
         <div className="sm-footer-links">
           <LinearFooterGroup items={productLinks.slice(0, 6)} title="Product" />

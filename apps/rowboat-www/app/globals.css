@@ -6064,16 +6064,16 @@
   }
 
   .sm-footer-shell {
-    padding-top: 52px;
+    padding-top: 40px;
     padding-bottom: 24px;
   }
 
   .sm-footer-statement {
     display: grid;
     align-items: end;
-    gap: 16px 64px;
-    padding: 0 32px 46px;
-    grid-template-columns: 1.1fr 0.65fr;
+    gap: 14px 56px;
+    padding: 0 32px 34px;
+    grid-template-columns: 1fr 0.7fr;
   }
 
   .sm-footer-statement > span {
@@ -6082,15 +6082,17 @@
   }
 
   .sm-footer-statement h2 {
-    max-width: 620px;
-    font-size: clamp(1.75rem, 2.4vw, 2.25rem);
-    line-height: 1.12;
+    max-width: 520px;
+    font-size: clamp(1.35rem, 1.55vw, 1.65rem);
+    line-height: 1.14;
   }
 
   .sm-footer-statement > p {
+    max-width: 360px;
+    justify-self: end;
     color: var(--sm-muted);
-    font-size: 14px;
-    line-height: 1.55;
+    font-size: 13px;
+    line-height: 1.5;
   }
 
   .sm-footer-links {
@@ -6535,11 +6537,15 @@
     }
 
     .sm-footer-shell {
-      padding-top: 48px;
+      padding-top: 36px;
     }
 
     .sm-footer-statement {
-      padding: 0 20px 36px;
+      padding: 0 20px 30px;
+    }
+
+    .sm-footer-statement > p {
+      justify-self: start;
     }
 
     .sm-footer .linear-footer-column {
