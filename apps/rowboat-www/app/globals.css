@@ -7416,7 +7416,8 @@
     z-index: 1;
   }
 
-  .sm-attio-wordmark {
+  /* Scoped past `.sm-attio-home h2`, which otherwise pins this to 40px. */
+  .sm-attio-home .sm-attio-wordmark {
     max-width: 100%;
     color: #fafafb;
     font-size: clamp(2.6rem, 5.55vw, 6rem);
