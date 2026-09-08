@@ -7184,8 +7184,10 @@
 
   /* Attio holds every section heading at a fixed 40px/44px rather than
      scaling it fluidly, so the hero stays the only large type on the page. */
+  /* Attio caps section headings at 880px and keeps them to two or three
+     lines. Anything longer stops reading as a headline. */
   .sm-attio-home h2 {
-    max-width: 896px;
+    max-width: 880px;
     font-size: 40px;
     font-weight: 500;
     letter-spacing: -0.01em;
@@ -7619,8 +7621,10 @@
   /* Connectivity: centred copy over a wrapped integration wall. */
   /* Governance: Attio's stat block. Blue left rule, 32px value, muted label,
      and no card chrome. */
+  /* Attio caps this column at 464px but lets the heading itself run to 880px,
+     so the copy still breaks over three lines rather than four. */
   .sm-attio-guarantees .sm-attio-section-head {
-    max-width: 464px;
+    max-width: 640px;
   }
 
   .sm-attio-guarantee-grid {

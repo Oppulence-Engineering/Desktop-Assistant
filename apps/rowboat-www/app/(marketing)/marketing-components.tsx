@@ -827,7 +827,7 @@ export function HomePage() {
           <AttioSectionHead
             label="Platform"
             lead="The record that never forgets."
-            rest="Catches the promise made on a call. Flags the renewal before it slips. Hands you the evidence before you ask."
+            rest="Catches the promise made on a call. Flags the renewal before it slips."
           />
 
           <PlatformRail items={platformRailItems} />
@@ -839,7 +839,7 @@ export function HomePage() {
           <AttioSectionHead
             label="Self-building"
             lead="Live from day one."
-            rest="Connect your inbox and calendar. Oppulence reads the last 90 days and builds the ledger around your accounts, before you ask it anything."
+            rest="Connect your inbox and calendar. Oppulence reads the last 90 days and builds the ledger before you ask it anything."
           />
           <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
             Get the report
@@ -903,7 +903,7 @@ export function HomePage() {
           <AttioSectionHead
             label="Governance"
             lead="Run it at any scale."
-            rest="Production-grade for your team, and for anything acting on your behalf."
+            rest="Production-grade for your team and its agents."
           />
           <div className="sm-attio-guarantee-grid">
             {homepageGuarantees.map((item) => (
@@ -922,7 +922,7 @@ export function HomePage() {
             cta={{ href: "/products", label: "View all" }}
             label="Suite"
             lead="Work where the relationship happens."
-            rest="Web for the team queue. Desktop beside the work. Voice for capture. The same record underneath."
+            rest="Web for the queue, desktop beside the work, voice for capture."
           />
           <div className="sm-attio-suite-grid">
             {productSuiteCards.map((product) => (
@@ -943,7 +943,7 @@ export function HomePage() {
             cta={{ href: "/product", label: "See the ledger" }}
             label="How it works"
             lead="Better as you use it."
-            rest="Every approved move sharpens the record, so next week's answer is closer than this week's."
+            rest="Every approved move sharpens the record underneath it."
           />
           <div className="sm-attio-step-grid">
             {homeSteps.map((step, index) => (
