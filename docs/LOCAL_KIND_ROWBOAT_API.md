@@ -169,8 +169,19 @@ make api-up                           # live OpenRouter (costs credits)
 ```
 
 If `api-up` fails its background-task check with `llm upstream returned status
-402`, the OpenRouter account is out of prepaid credits — it is a balance, not a
-rate limit. Check the balance with:
+402`, the OpenRouter account is short on prepaid credits — it is a balance, not
+a rate limit. OpenRouter reserves the full `max_tokens` up front, so the cutoff
+depends on request size rather than on the balance alone: with a near-zero
+balance a small request still succeeds while a large one is refused.
+
+```text
+max_tokens=8     -> 200
+max_tokens=512   -> 200
+max_tokens=4096  -> 402 "requested up to 4096 tokens, but can only afford 1329"
+```
+
+That is why the desktop and background-task paths fail first: they ask for the
+largest completions. Check the balance with:
 
 ```bash
 curl -s https://openrouter.ai/api/v1/credits \
