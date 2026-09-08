@@ -709,11 +709,12 @@ const relationshipCatalog = [
   },
 ] as const;
 
-const homepageProof = [
-  "Every source linked",
-  "Approval before action",
-  "Exportable history",
+const homepageGuarantees = [
+  { value: "Every source", label: "linked back to the original evidence" },
+  { value: "Every action", label: "waits for your approval" },
+  { value: "Every record", label: "exportable, and yours to take" },
 ] as const;
+
 const homepageSources = ["Email", "Calendar", "Meetings", "CRM", "Billing"] as const;
 
 /* Section headings mirror attio.com: one ink-coloured lead sentence followed by
@@ -782,9 +783,9 @@ export function HomePage() {
 
       <section aria-label="Connected sources" className="sm-attio-logo-band">
         <div className="sm-attio-shell">
-          <div className="sm-attio-logo-strip">
+          <div className="sm-attio-logo-grid">
             {homepageSources.map((source) => (
-              <span key={source}>{source}</span>
+              <div key={source}>{source}</div>
             ))}
           </div>
         </div>
@@ -867,9 +868,10 @@ export function HomePage() {
             rest="Production-grade for your team, and for anything acting on your behalf."
           />
           <div className="sm-attio-guarantee-grid">
-            {homepageProof.map((item) => (
-              <article key={item}>
-                <strong>{item}</strong>
+            {homepageGuarantees.map((item) => (
+              <article key={item.label}>
+                <strong>{item.value}</strong>
+                <span>{item.label}</span>
               </article>
             ))}
           </div>
@@ -906,7 +908,7 @@ export function HomePage() {
           <div className="sm-attio-step-grid">
             {homeSteps.map((step, index) => (
               <article key={step.title}>
-                <span>{`0${index + 1}`}</span>
+                <span>{`Step 0${index + 1}`}</span>
                 <h3>{step.title}</h3>
                 <p>{step.body}</p>
               </article>

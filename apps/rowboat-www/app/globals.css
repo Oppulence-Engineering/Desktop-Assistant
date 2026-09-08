@@ -6848,12 +6848,20 @@
     font-size: 14px;
   }
 
-  /* Attio's container: 1440px max, flat 24px gutter (content starts at x=168
-     on a 1728px viewport). No fluid padding. */
+  /* Attio frames every section with vertical hairlines: a 1440px container
+     with a 24px gutter leaves a 1392px frame whose edges carry the rules
+     (x=168 and x=1560 at 1728px). Content is then inset one column of the
+     24-column grid, so it starts at x=226. */
   .sm-attio-shell {
-    width: min(100%, 1440px);
+    width: min(100%, 1392px);
     margin-inline: auto;
-    padding-inline: 24px;
+    border-inline: 1px solid var(--attio-line);
+    padding-inline: clamp(20px, 4.1667%, 58px);
+  }
+
+  /* The hero is full-bleed over its gradient, so it opts out of the rules. */
+  .sm-attio-hero > .sm-attio-shell {
+    border-inline: 0;
   }
 
   /* Hero: measurements mirror attio.com at 1728px (pill 30px, h1 4vw/0.95,
@@ -6888,7 +6896,7 @@
         rgb(255 255 255 / 0%) 1px,
         rgb(255 255 255 / 0%) 8px
       ),
-      radial-gradient(90% 80% at 50% 100%, #e6ecff 0%, #bccbff 45%, #86a0ee 100%);
+      radial-gradient(90% 80% at 50% 100%, #eef2ff 0%, #d5deff 52%, #a9bcf2 100%);
     background-repeat: no-repeat, repeat, no-repeat;
     background-position:
       50% 0,
@@ -6898,6 +6906,9 @@
       400% 150%,
       8px 100%,
       100% 100%;
+    /* Attio's glow never reaches the viewport edge; the wide radial plus this
+       taper keeps the stripes from banding along the sides. */
+    mask-image: radial-gradient(120% 100% at 50% 100%, #000000 42%, rgb(0 0 0 / 0%) 88%);
   }
 
   .sm-attio-hero-copy {
@@ -7056,24 +7067,32 @@
     object-position: top center;
   }
 
-  /* Logo band: quiet strip between the hero and the platform story. */
+  /* Logo band: Attio's 5-cell grid where a 1px gap over a line-coloured
+     background draws the hairlines between 96px cells. */
   .sm-attio-logo-band {
-    border-top: 1px solid var(--attio-line);
-    border-bottom: 1px solid var(--attio-line);
     background: var(--attio-soft);
-    padding-block: 56px;
   }
 
-  .sm-attio-logo-strip {
+  .sm-attio-logo-band > .sm-attio-shell {
+    padding-inline: 0;
+  }
+
+  .sm-attio-logo-grid {
+    display: grid;
+    gap: 1px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    border-block: 1px solid var(--attio-line);
+    background: var(--attio-line);
+  }
+
+  .sm-attio-logo-grid > div {
     display: flex;
-    flex-wrap: wrap;
+    height: 96px;
+    align-items: center;
     justify-content: center;
-    gap: clamp(28px, 4.6vw, 72px);
-  }
-
-  .sm-attio-logo-strip span {
+    background: var(--attio-soft);
     color: #9aa4b1;
-    font-size: 19px;
+    font-size: 18px;
     font-weight: 500;
     letter-spacing: -0.019em;
   }
@@ -7090,10 +7109,42 @@
 
   .sm-attio-setup,
   .sm-attio-connect,
-  .sm-attio-suite,
-  .sm-attio-final {
+  .sm-attio-suite {
     background: #ffffff;
     padding-block: clamp(88px, 8.4vw, 136px);
+  }
+
+  /* Attio closes on a near-black band, not another white one. */
+  .sm-attio-final {
+    background: #101010;
+    padding-block: clamp(88px, 8.4vw, 120px);
+  }
+
+  .sm-attio-final > .sm-attio-shell {
+    border-inline-color: #2a2a2a;
+  }
+
+  .sm-attio-final .sm-attio-btn {
+    border-color: #3a3a3a;
+    background: #101010;
+    color: #f3f4f6;
+  }
+
+  .sm-attio-final .sm-attio-btn:hover {
+    border-color: #555555;
+    background: #1a1a1a;
+  }
+
+  .sm-attio-final .sm-attio-btn-primary {
+    border-color: #ffffff;
+    background: #ffffff;
+    color: #101010;
+  }
+
+  .sm-attio-final .sm-attio-btn-primary:hover {
+    border-color: #e6e6e6;
+    background: #e6e6e6;
+    color: #101010;
   }
 
   .sm-attio-platform,
@@ -7320,9 +7371,10 @@
   }
 
   .sm-attio-suite-grid {
-    grid-template-columns: repeat(auto-fit, minmax(272px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
+  /* Attio divides column groups with hairlines rather than boxing each item. */
   .sm-attio-context-grid article,
   .sm-attio-guarantee-grid article,
   .sm-attio-step-grid article,
@@ -7330,13 +7382,22 @@
     display: grid;
     align-content: start;
     gap: 8px;
-    border: 1px solid var(--attio-line);
-    border-radius: 0;
-    background: #ffffff;
-    padding: 24px;
-    transition:
-      border-color 140ms ease,
-      box-shadow 140ms ease;
+    border: 0;
+    border-left: 1px solid var(--attio-line);
+    background: none;
+    padding: 0 32px;
+    transition: color 140ms ease;
+  }
+
+  .sm-attio-context-grid,
+  .sm-attio-home .sm-attio-suite-grid {
+    gap: 0;
+  }
+
+  .sm-attio-context-grid article:first-child,
+  .sm-attio-home .sm-attio-suite-grid a:first-child {
+    border-left: 0;
+    padding-left: 0;
   }
 
   .sm-attio-context-grid article > span,
@@ -7368,21 +7429,25 @@
 
   .sm-attio-home .sm-attio-suite-grid a {
     position: relative;
-    padding-right: 46px;
+    padding-right: 48px;
   }
 
-  .sm-attio-home .sm-attio-suite-grid a:hover {
-    border-color: #cbd6e2;
-    box-shadow: 0 12px 30px rgb(17 34 56 / 7%);
+  .sm-attio-home .sm-attio-suite-grid a:hover strong {
+    color: var(--attio-blue);
   }
 
   .sm-attio-suite-grid a svg {
     position: absolute;
-    top: 24px;
-    right: 22px;
+    top: 2px;
+    right: 32px;
     width: 15px;
     height: 15px;
     color: #aeb8c4;
+    transition: transform 140ms ease;
+  }
+
+  .sm-attio-home .sm-attio-suite-grid a:hover svg {
+    transform: translateX(3px);
   }
 
   /* Connectivity: centred copy over a wrapped integration wall. */
@@ -7426,23 +7491,57 @@
     font-weight: 500;
   }
 
-  /* Governance: three flat guarantees, no card chrome. */
+  /* Governance: Attio's stat block. Blue left rule, 32px value, muted label,
+     and no card chrome. */
+  .sm-attio-guarantee-grid {
+    gap: 32px 24px;
+  }
+
   .sm-attio-guarantee-grid article {
     justify-items: start;
-    border-radius: 0;
-    padding: 26px 24px;
+    gap: 6px;
+    border: 0;
+    border-left: 2px solid var(--attio-blue);
+    background: none;
+    padding: 0 0 0 24px;
   }
 
   .sm-attio-guarantee-grid strong {
     color: var(--attio-ink);
-    font-size: 19px;
+    font-size: 32px;
     font-weight: 500;
-    letter-spacing: -0.014em;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+
+  .sm-attio-guarantee-grid span {
+    color: var(--attio-muted);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  /* How it works: Attio's changelog columns, divided by hairlines only. */
+  .sm-attio-step-grid {
+    gap: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sm-attio-step-grid article {
+    gap: 10px;
+    border: 0;
+    border-left: 1px solid var(--attio-line);
+    background: none;
+    padding: 0 32px;
+  }
+
+  .sm-attio-step-grid article:first-child {
+    border-left: 0;
+    padding-left: 0;
   }
 
   .sm-attio-step-grid article > span {
     color: #a4aeba;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
   }
 
@@ -7454,8 +7553,15 @@
   }
 
   .sm-attio-final h2 {
-    font-size: clamp(2rem, 3vw, 2.75rem);
-    letter-spacing: -0.018em;
+    max-width: 720px;
+    color: #ffffff;
+    font-size: clamp(2.1rem, 3.24vw, 3.5rem);
+    letter-spacing: -0.015em;
+    line-height: 1;
+  }
+
+  .sm-attio-final h2 > span:first-child {
+    color: #ffffff;
   }
 
   @media (max-width: 1000px) {
@@ -7504,6 +7610,12 @@
     .sm-attio-suite-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .sm-attio-context-grid article:nth-child(odd),
+    .sm-attio-home .sm-attio-suite-grid a:nth-child(odd) {
+      border-left: 0;
+      padding-left: 0;
+    }
   }
 
   @media (max-width: 720px) {
@@ -7545,6 +7657,29 @@
     .sm-attio-step-grid,
     .sm-attio-suite-grid {
       grid-template-columns: 1fr;
+    }
+
+    .sm-attio-logo-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sm-attio-context-grid article,
+    .sm-attio-step-grid article,
+    .sm-attio-home .sm-attio-suite-grid a {
+      border-left: 0;
+      border-top: 1px solid var(--attio-line);
+      padding: 24px 0 0;
+    }
+
+    .sm-attio-context-grid article:first-child,
+    .sm-attio-step-grid article:first-child,
+    .sm-attio-home .sm-attio-suite-grid a:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .sm-attio-suite-grid a svg {
+      right: 0;
     }
 
     .sm-attio-home h2,
