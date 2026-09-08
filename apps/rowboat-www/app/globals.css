@@ -7795,6 +7795,14 @@
     }
   }
 
+  @media (max-width: 1000px) {
+    /* Attio drops the vertical rules below lg (max-lg:border-none); at narrow
+       widths they collide with the screen edge. */
+    .sm-attio-shell {
+      border-inline: 0;
+    }
+  }
+
   @media (max-width: 720px) {
     .sm-attio-hero {
       padding-top: 108px;
