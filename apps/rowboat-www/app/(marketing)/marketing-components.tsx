@@ -24,6 +24,7 @@ import SparkleIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import StackIcon from "@mui/icons-material/LayersOutlined";
 import TrayIcon from "@mui/icons-material/InboxOutlined";
 import Image from "next/image";
+import { PlatformRail, type PlatformRailItem } from "./platform-rail";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -100,13 +101,6 @@ type MemoryRailLink = {
   href: string;
   active?: boolean;
 };
-
-const homeRailLinks: MemoryRailLink[] = [
-  { label: "Mission", href: "#mission", active: true },
-  { label: "The register", href: "#what-we-do" },
-  { label: "Products", href: "/products" },
-  { label: "Pricing", href: "/pricing" },
-];
 
 const productRailLinks: MemoryRailLink[] = [
   { label: "Products", href: "/products" },
@@ -696,133 +690,267 @@ export function ProductsPage() {
 
 const relationshipCatalog = [
   {
-    label: "What we owe",
+    label: "Read",
     kicker: "01",
-    title: "Promises made.",
-    body: "Delivery dates, concessions, scope changes.",
+    title: "Find every promise.",
+    body: "Email, meetings, CRM, and billing become one account trail.",
   },
   {
-    label: "What they owe us",
+    label: "Resolve",
     kicker: "02",
-    title: "Promises owed.",
-    body: "Prerequisites, credits, partner deliverables.",
+    title: "Show what is owed.",
+    body: "What you owe, what they owe, what changed, and what is at risk.",
   },
   {
-    label: "What changed",
+    label: "Act",
     kicker: "03",
-    title: "Proof attached.",
-    body: "Open, at risk, met, disputed, cited.",
+    title: "Explain the next move.",
+    body: "Every recommendation comes with the source and approval boundary.",
   },
 ] as const;
 
-const homepageProof = ["What we owe", "What they owe us", "Every claim cited"] as const;
+const homepageProof = [
+  "Every source linked",
+  "Approval before action",
+  "Exportable history",
+] as const;
+const homepageSources = ["Email", "Calendar", "Meetings", "CRM", "Billing"] as const;
+
+/* Section headings mirror attio.com: one ink-coloured lead sentence followed by
+   muted supporting sentences inside the same 40px/44px block. */
+function AttioHeading({ lead, rest }: { lead: string; rest?: string }) {
+  return (
+    <h2>
+      <span>{lead}</span>
+      {rest ? <span>{` ${rest}`}</span> : null}
+    </h2>
+  );
+}
+
+function AttioSectionHead({ label, lead, rest }: { label: string; lead: string; rest?: string }) {
+  return (
+    <div className="sm-attio-section-head">
+      <p className="sm-attio-section-label">{label}</p>
+      <AttioHeading lead={lead} rest={rest} />
+    </div>
+  );
+}
+
+const homepageStack = [
+  "Gmail",
+  "Google Calendar",
+  "Outlook",
+  "HubSpot",
+  "Salesforce",
+  "Stripe",
+  "Slack",
+  "Zoom",
+] as const;
 
 export function HomePage() {
   return (
-    <div className="sm-memory-home">
-      <MemoryRail ariaLabel="Landing page sections" links={homeRailLinks} />
+    <div className="sm-attio-home">
+      <section className="sm-attio-hero" id="mission">
+        <div className="sm-attio-shell sm-attio-hero-copy">
+          <Link className="sm-attio-announcement" href="/products">
+            The Commitment Ledger is live
+            <ArrowRightIcon aria-hidden="true" />
+          </Link>
 
-      <div className="sm-memory-main">
-        <section className="sm-memory-mission" id="mission">
-          <div className="sm-memory-mission-copy">
-            <div className="sm-memory-announcement">
-              <span>
-                <i aria-hidden="true" />
-                The Commitment Ledger is live.
-              </span>
-              <Link href="/products">
-                View the suite <ArrowRightIcon aria-hidden="true" />
-              </Link>
-            </div>
+          <h1>Every promise, on the record.</h1>
+          <p>
+            Oppulence is the ledger that tracks what you owe, what they owe, and what changed across
+            every account.
+          </p>
 
-            <h1>
-              <span className="sm-memory-title-brand">
-                <Image
-                  alt=""
-                  aria-hidden="true"
-                  className="sm-memory-title-icon"
-                  height={46}
-                  priority
-                  src="/marketing/oppulence-icon.png"
-                  width={46}
-                />
-                oppulence
-              </span>{" "}
-              is the independent record of business promises.
-            </h1>
-
-            <p className="sm-memory-subhead">
-              What you owe. What they owe. What changed. Every claim cited.
-            </p>
-
-            <div className="sm-memory-actions">
-              <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
-                <span aria-hidden="true">
-                  <Image alt="" height={18} src="/marketing/oppulence-icon.png" width={18} />
-                </span>
-                Get the report
-              </Link>
-              <Link className="sm-memory-button" href="#what-we-do">
-                See the register <ArrowRightIcon aria-hidden="true" />
-              </Link>
-              <Link className="sm-memory-button" href="/products">
-                Products <ArrowRightIcon aria-hidden="true" />
-              </Link>
-            </div>
-
-            <div aria-label="Product promises" className="sm-memory-proof-row">
-              {homepageProof.map((item) => (
-                <span key={item}>{item}</span>
-              ))}
-            </div>
-
-            <figure className="sm-memory-blueprint">
-              <Image
-                alt="Connected work systems feeding one Oppulence commitment ledger"
-                height={1254}
-                priority
-                sizes="(max-width: 760px) 92vw, 660px"
-                src="/marketing/relationship-system/observe.webp"
-                unoptimized
-                width={1254}
-              />
-            </figure>
-
-            <div className="sm-memory-prose">
-              <p>
-                Your CRM records what you <strong>sold</strong>. Oppulence records what you{" "}
-                <strong>owe</strong>.
-              </p>
-            </div>
+          <div className="sm-attio-actions">
+            <Link className="sm-attio-btn" href="/pricing">
+              Talk to sales
+            </Link>
+            <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
+              Get the report
+            </Link>
           </div>
+        </div>
 
-          <RelationshipMemoryDiagram />
-        </section>
+        <div className="sm-attio-stage">
+          <div className="sm-attio-shell">
+            <AttioProductWindow />
+          </div>
+        </div>
+      </section>
 
-        <section className="sm-memory-section" id="what-we-do">
-          <header className="sm-memory-section-head">
-            <p>What we do</p>
-            <h2>One ledger. Three questions.</h2>
-          </header>
-          <div className="sm-memory-do-grid">
+      <section aria-label="Connected sources" className="sm-attio-logo-band">
+        <div className="sm-attio-shell">
+          <div className="sm-attio-logo-strip">
+            {homepageSources.map((source) => (
+              <span key={source}>{source}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="sm-attio-platform" id="what-we-do">
+        <div className="sm-attio-shell">
+          <AttioSectionHead
+            label="Platform"
+            lead="The record that never forgets."
+            rest="Catches the promise made on a call. Flags the renewal before it slips. Hands you the evidence before you ask."
+          />
+
+          <PlatformRail items={platformRailItems} />
+        </div>
+      </section>
+
+      <section className="sm-attio-setup">
+        <div className="sm-attio-shell">
+          <AttioSectionHead
+            label="Self-building"
+            lead="Live from day one."
+            rest="Connect your inbox and calendar. Oppulence reads the last 60 to 90 days and builds the ledger around your accounts, before you ask it a single question."
+          />
+          <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
+            Get the report
+          </Link>
+          <figure className="sm-attio-setup-media">
+            <Image
+              alt="Oppulence connecting email, calendar, and billing sources"
+              height={1120}
+              src={desktopScreenshots.connections}
+              width={1680}
+            />
+          </figure>
+        </div>
+      </section>
+
+      <section className="sm-attio-context">
+        <div className="sm-attio-shell">
+          <p className="sm-attio-section-label">The only ledger with</p>
+          <p className="sm-attio-wordmark">Relationship Memory</p>
+          <AttioHeading
+            lead="All of the history, none of the noise."
+            rest="Every promise, objection, reply, meeting, and outcome makes the next move more specific and more trusted."
+          />
+          <div className="sm-attio-context-grid">
             {relationshipCatalog.map((item) => (
               <article key={item.label}>
-                <p>{item.kicker}</p>
+                <span>{item.label}</span>
                 <h3>{item.title}</h3>
-                <span>{item.body}</span>
+                <p>{item.body}</p>
               </article>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="sm-memory-final">
+      <section className="sm-attio-connect">
+        <div className="sm-attio-shell">
+          <p className="sm-attio-section-label">Connectivity</p>
+          <h3>Your whole stack, connected.</h3>
+          <p className="sm-attio-connect-body">
+            Oppulence reads the systems the relationship already lives in, and writes back only
+            where you approve it.
+          </p>
+          <div className="sm-attio-connect-grid">
+            {homepageStack.map((tool) => (
+              <span key={tool}>{tool}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="sm-attio-guarantees">
+        <div className="sm-attio-shell">
+          <AttioSectionHead
+            label="Governance"
+            lead="Run it at any scale."
+            rest="Production-grade for your team, and for anything acting on your behalf."
+          />
+          <div className="sm-attio-guarantee-grid">
+            {homepageProof.map((item) => (
+              <article key={item}>
+                <strong>{item}</strong>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="sm-attio-suite" id="products">
+        <div className="sm-attio-shell">
+          <AttioSectionHead
+            label="Suite"
+            lead="Work where the relationship happens."
+            rest="Web for the team queue. Desktop beside the work. Voice for capture. The same record underneath."
+          />
+          <div className="sm-attio-suite-grid">
+            {productSuiteCards.map((product) => (
+              <Link href={product.href} key={product.href}>
+                <span>{product.eyebrow}</span>
+                <strong>{product.title}</strong>
+                <p>{product.body}</p>
+                <ArrowRightIcon aria-hidden="true" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="sm-attio-steps">
+        <div className="sm-attio-shell">
+          <AttioSectionHead
+            label="How it works"
+            lead="Better as you use it."
+            rest="Every approved move sharpens the record, so next week's answer is closer than this week's."
+          />
+          <div className="sm-attio-step-grid">
+            {homeSteps.map((step, index) => (
+              <article key={step.title}>
+                <span>{`0${index + 1}`}</span>
+                <h3>{step.title}</h3>
+                <p>{step.body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="sm-attio-final">
+        <div className="sm-attio-shell">
           <h2>Know what is owed.</h2>
-          <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
-            Get the report <ArrowRightIcon aria-hidden="true" />
-          </Link>
-        </section>
-      </div>
+          <div className="sm-attio-actions">
+            <Link className="sm-attio-btn" href="/products">
+              See the suite
+            </Link>
+            <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
+              Get the report
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
+  );
+}
+
+function AttioProductWindow() {
+  return (
+    <figure className="sm-attio-product-window">
+      <div className="sm-attio-product-inner">
+        <div className="sm-attio-product-chrome">
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </div>
+        <Image
+          alt="Oppulence account mission control ranking accounts by what changed and what is owed"
+          height={1600}
+          priority
+          sizes="(max-width: 760px) 100vw, 1240px"
+          src="/marketing/relationship-web-list.png"
+          width={2400}
+        />
+      </div>
+    </figure>
   );
 }
 
@@ -867,26 +995,6 @@ function MemoryRail({ ariaLabel, links }: { ariaLabel: string; links: readonly M
           );
         })}
       </nav>
-    </aside>
-  );
-}
-
-function RelationshipMemoryDiagram() {
-  return (
-    <aside
-      aria-label="How Oppulence turns raw evidence streams into a commitment ledger"
-      className="sm-memory-diagram"
-    >
-      <pre>{` raw evidence
-      │
-      ▼
-┌─ oppulence ─┐
-│ observe     │
-│ commit      │
-│ prove       │
-└──────┬──────┘
-       ▼
- what is owed`}</pre>
     </aside>
   );
 }
@@ -950,6 +1058,17 @@ const linearHomeSections = [
     ],
   },
 ] as const;
+
+const platformRailItems: PlatformRailItem[] = linearHomeSections.map((section, index) => ({
+  id: ["find-the-loose-ends", "run-every-account", "act-with-guardrails"][index] ?? `row-${index}`,
+  nav: ["Find the loose ends", "Run every account", "Act with guardrails"][index] ?? section.label,
+  title: section.title,
+  description: section.description,
+  label: section.label,
+  bullets: section.bullets,
+  src: section.src,
+  alt: section.alt,
+}));
 
 function LinearProductSection({
   index,
