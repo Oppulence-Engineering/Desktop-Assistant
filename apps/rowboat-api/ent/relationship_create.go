@@ -186,6 +186,12 @@ func (_c *RelationshipCreate) SetCompanyEnrichmentRefs(v map[string][]string) *R
 	return _c
 }
 
+// SetCompanyEnrichmentData sets the "company_enrichment_data" field.
+func (_c *RelationshipCreate) SetCompanyEnrichmentData(v map[string]string) *RelationshipCreate {
+	_c.mutation.SetCompanyEnrichmentData(v)
+	return _c
+}
+
 // SetCompanyEnrichmentVersion sets the "company_enrichment_version" field.
 func (_c *RelationshipCreate) SetCompanyEnrichmentVersion(v string) *RelationshipCreate {
 	_c.mutation.SetCompanyEnrichmentVersion(v)
@@ -820,6 +826,10 @@ func (_c *RelationshipCreate) defaults() error {
 		v := relationship.DefaultCompanyEnrichmentRefs
 		_c.mutation.SetCompanyEnrichmentRefs(v)
 	}
+	if _, ok := _c.mutation.CompanyEnrichmentData(); !ok {
+		v := relationship.DefaultCompanyEnrichmentData
+		_c.mutation.SetCompanyEnrichmentData(v)
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := relationship.DefaultStatus
 		_c.mutation.SetStatus(v)
@@ -898,6 +908,9 @@ func (_c *RelationshipCreate) check() error {
 	}
 	if _, ok := _c.mutation.CompanyEnrichmentRefs(); !ok {
 		return &ValidationError{Name: "company_enrichment_refs", err: errors.New(`ent: missing required field "Relationship.company_enrichment_refs"`)}
+	}
+	if _, ok := _c.mutation.CompanyEnrichmentData(); !ok {
+		return &ValidationError{Name: "company_enrichment_data", err: errors.New(`ent: missing required field "Relationship.company_enrichment_data"`)}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Relationship.status"`)}
@@ -1054,6 +1067,10 @@ func (_c *RelationshipCreate) createSpec() (*Relationship, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.CompanyEnrichmentRefs(); ok {
 		_spec.SetField(relationship.FieldCompanyEnrichmentRefs, field.TypeJSON, value)
 		_node.CompanyEnrichmentRefs = value
+	}
+	if value, ok := _c.mutation.CompanyEnrichmentData(); ok {
+		_spec.SetField(relationship.FieldCompanyEnrichmentData, field.TypeJSON, value)
+		_node.CompanyEnrichmentData = value
 	}
 	if value, ok := _c.mutation.CompanyEnrichmentVersion(); ok {
 		_spec.SetField(relationship.FieldCompanyEnrichmentVersion, field.TypeString, value)
@@ -1701,6 +1718,18 @@ func (u *RelationshipUpsert) UpdateCompanyEnrichmentRefs() *RelationshipUpsert {
 	return u
 }
 
+// SetCompanyEnrichmentData sets the "company_enrichment_data" field.
+func (u *RelationshipUpsert) SetCompanyEnrichmentData(v map[string]string) *RelationshipUpsert {
+	u.Set(relationship.FieldCompanyEnrichmentData, v)
+	return u
+}
+
+// UpdateCompanyEnrichmentData sets the "company_enrichment_data" field to the value that was provided on create.
+func (u *RelationshipUpsert) UpdateCompanyEnrichmentData() *RelationshipUpsert {
+	u.SetExcluded(relationship.FieldCompanyEnrichmentData)
+	return u
+}
+
 // SetCompanyEnrichmentVersion sets the "company_enrichment_version" field.
 func (u *RelationshipUpsert) SetCompanyEnrichmentVersion(v string) *RelationshipUpsert {
 	u.Set(relationship.FieldCompanyEnrichmentVersion, v)
@@ -2259,6 +2288,20 @@ func (u *RelationshipUpsertOne) SetCompanyEnrichmentRefs(v map[string][]string) 
 func (u *RelationshipUpsertOne) UpdateCompanyEnrichmentRefs() *RelationshipUpsertOne {
 	return u.Update(func(s *RelationshipUpsert) {
 		s.UpdateCompanyEnrichmentRefs()
+	})
+}
+
+// SetCompanyEnrichmentData sets the "company_enrichment_data" field.
+func (u *RelationshipUpsertOne) SetCompanyEnrichmentData(v map[string]string) *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetCompanyEnrichmentData(v)
+	})
+}
+
+// UpdateCompanyEnrichmentData sets the "company_enrichment_data" field to the value that was provided on create.
+func (u *RelationshipUpsertOne) UpdateCompanyEnrichmentData() *RelationshipUpsertOne {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateCompanyEnrichmentData()
 	})
 }
 
@@ -3037,6 +3080,20 @@ func (u *RelationshipUpsertBulk) SetCompanyEnrichmentRefs(v map[string][]string)
 func (u *RelationshipUpsertBulk) UpdateCompanyEnrichmentRefs() *RelationshipUpsertBulk {
 	return u.Update(func(s *RelationshipUpsert) {
 		s.UpdateCompanyEnrichmentRefs()
+	})
+}
+
+// SetCompanyEnrichmentData sets the "company_enrichment_data" field.
+func (u *RelationshipUpsertBulk) SetCompanyEnrichmentData(v map[string]string) *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.SetCompanyEnrichmentData(v)
+	})
+}
+
+// UpdateCompanyEnrichmentData sets the "company_enrichment_data" field to the value that was provided on create.
+func (u *RelationshipUpsertBulk) UpdateCompanyEnrichmentData() *RelationshipUpsertBulk {
+	return u.Update(func(s *RelationshipUpsert) {
+		s.UpdateCompanyEnrichmentData()
 	})
 }
 

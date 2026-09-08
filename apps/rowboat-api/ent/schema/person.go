@@ -57,6 +57,8 @@ func (Person) Fields() []ent.Field {
 		// "we were never told", not as an assertion of anything.
 		field.String("seniority").Optional(),
 		field.String("location").Optional(),
+		field.String("linkedin_url").Optional(),
+		field.String("department").Optional(),
 		// Projected from the employment_status attribute so the attention
 		// detectors can filter on it without joining attributes per relationship.
 		// `departed` exists to stop the product nagging a user to chase someone

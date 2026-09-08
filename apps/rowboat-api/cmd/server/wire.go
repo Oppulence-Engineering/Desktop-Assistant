@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -116,17 +117,25 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// (e.g. local dev with no IdP), the service still starts and authed routes
 	// return 503 until the IdP is reachable.
 	var verifier *oauthrs.Verifier
+	var allowedJWKSOrigins []string
+	if !cfg.IsProduction() {
+		if u, err := url.Parse(cfg.JWKSURL); err == nil && u.Scheme != "" && u.Host != "" {
+			allowedJWKSOrigins = []string{u.Scheme + "://" + u.Host}
+		}
+	}
 	// Pass the long-lived server ctx (NOT a soon-cancelled one): it drives the
 	// background JWKS refresh goroutine, which must outlive boot so the verifier
 	// can pick up the IdP's rotated signing keys. oauthrs.New bounds its own
 	// boot-time HTTP fetches internally, so this won't hang startup.
 	v, verr := oauthrs.NewGeneric(ctx, oauthrs.GenericConfig{
-		IssuerURL:                 cfg.TokenIssuer,
-		Audience:                  cfg.TokenAudience,
-		SkipAudienceValidation:    cfg.TokenAudience == "",
-		JWKSURL:                   cfg.JWKSURL,
-		AcceptableSkew:            60 * time.Second,
-		AllowLocalhostDevelopment: !cfg.IsProduction(),
+		IssuerURL:                   cfg.TokenIssuer,
+		Audience:                    cfg.TokenAudience,
+		SkipAudienceValidation:      cfg.TokenAudience == "",
+		JWKSURL:                     cfg.JWKSURL,
+		AllowedJWKSOrigins:          allowedJWKSOrigins,
+		AcceptableSkew:              60 * time.Second,
+		AllowLocalhostDevelopment:   !cfg.IsProduction(),
+		AllowPrivateJWKSDevelopment: !cfg.IsProduction(),
 	})
 	if verr != nil {
 		log.Warn("auth verifier unavailable; authed routes will return 503 until JWKS is reachable", zap.Error(verr))

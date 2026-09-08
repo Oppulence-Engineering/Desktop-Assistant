@@ -54127,6 +54127,8 @@ type PersonMutation struct {
 	locale                           *string
 	seniority                        *string
 	location                         *string
+	linkedin_url                     *string
+	department                       *string
 	employment_status                *string
 	attributes_version               *int
 	addattributes_version            *int
@@ -54871,6 +54873,104 @@ func (m *PersonMutation) LocationCleared() bool {
 func (m *PersonMutation) ResetLocation() {
 	m.location = nil
 	delete(m.clearedFields, person.FieldLocation)
+}
+
+// SetLinkedinURL sets the "linkedin_url" field.
+func (m *PersonMutation) SetLinkedinURL(s string) {
+	m.linkedin_url = &s
+}
+
+// LinkedinURL returns the value of the "linkedin_url" field in the mutation.
+func (m *PersonMutation) LinkedinURL() (r string, exists bool) {
+	v := m.linkedin_url
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLinkedinURL returns the old "linkedin_url" field's value of the Person entity.
+// If the Person object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonMutation) OldLinkedinURL(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLinkedinURL is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLinkedinURL requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLinkedinURL: %w", err)
+	}
+	return oldValue.LinkedinURL, nil
+}
+
+// ClearLinkedinURL clears the value of the "linkedin_url" field.
+func (m *PersonMutation) ClearLinkedinURL() {
+	m.linkedin_url = nil
+	m.clearedFields[person.FieldLinkedinURL] = struct{}{}
+}
+
+// LinkedinURLCleared returns if the "linkedin_url" field was cleared in this mutation.
+func (m *PersonMutation) LinkedinURLCleared() bool {
+	_, ok := m.clearedFields[person.FieldLinkedinURL]
+	return ok
+}
+
+// ResetLinkedinURL resets all changes to the "linkedin_url" field.
+func (m *PersonMutation) ResetLinkedinURL() {
+	m.linkedin_url = nil
+	delete(m.clearedFields, person.FieldLinkedinURL)
+}
+
+// SetDepartment sets the "department" field.
+func (m *PersonMutation) SetDepartment(s string) {
+	m.department = &s
+}
+
+// Department returns the value of the "department" field in the mutation.
+func (m *PersonMutation) Department() (r string, exists bool) {
+	v := m.department
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDepartment returns the old "department" field's value of the Person entity.
+// If the Person object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PersonMutation) OldDepartment(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDepartment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDepartment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDepartment: %w", err)
+	}
+	return oldValue.Department, nil
+}
+
+// ClearDepartment clears the value of the "department" field.
+func (m *PersonMutation) ClearDepartment() {
+	m.department = nil
+	m.clearedFields[person.FieldDepartment] = struct{}{}
+}
+
+// DepartmentCleared returns if the "department" field was cleared in this mutation.
+func (m *PersonMutation) DepartmentCleared() bool {
+	_, ok := m.clearedFields[person.FieldDepartment]
+	return ok
+}
+
+// ResetDepartment resets all changes to the "department" field.
+func (m *PersonMutation) ResetDepartment() {
+	m.department = nil
+	delete(m.clearedFields, person.FieldDepartment)
 }
 
 // SetEmploymentStatus sets the "employment_status" field.
@@ -55843,7 +55943,7 @@ func (m *PersonMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PersonMutation) Fields() []string {
-	fields := make([]string, 0, 24)
+	fields := make([]string, 0, 26)
 	if m.created_at != nil {
 		fields = append(fields, person.FieldCreatedAt)
 	}
@@ -55882,6 +55982,12 @@ func (m *PersonMutation) Fields() []string {
 	}
 	if m.location != nil {
 		fields = append(fields, person.FieldLocation)
+	}
+	if m.linkedin_url != nil {
+		fields = append(fields, person.FieldLinkedinURL)
+	}
+	if m.department != nil {
+		fields = append(fields, person.FieldDepartment)
 	}
 	if m.employment_status != nil {
 		fields = append(fields, person.FieldEmploymentStatus)
@@ -55950,6 +56056,10 @@ func (m *PersonMutation) Field(name string) (ent.Value, bool) {
 		return m.Seniority()
 	case person.FieldLocation:
 		return m.Location()
+	case person.FieldLinkedinURL:
+		return m.LinkedinURL()
+	case person.FieldDepartment:
+		return m.Department()
 	case person.FieldEmploymentStatus:
 		return m.EmploymentStatus()
 	case person.FieldAttributesVersion:
@@ -56007,6 +56117,10 @@ func (m *PersonMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldSeniority(ctx)
 	case person.FieldLocation:
 		return m.OldLocation(ctx)
+	case person.FieldLinkedinURL:
+		return m.OldLinkedinURL(ctx)
+	case person.FieldDepartment:
+		return m.OldDepartment(ctx)
 	case person.FieldEmploymentStatus:
 		return m.OldEmploymentStatus(ctx)
 	case person.FieldAttributesVersion:
@@ -56128,6 +56242,20 @@ func (m *PersonMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetLocation(v)
+		return nil
+	case person.FieldLinkedinURL:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLinkedinURL(v)
+		return nil
+	case person.FieldDepartment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDepartment(v)
 		return nil
 	case person.FieldEmploymentStatus:
 		v, ok := value.(string)
@@ -56302,6 +56430,12 @@ func (m *PersonMutation) ClearedFields() []string {
 	if m.FieldCleared(person.FieldLocation) {
 		fields = append(fields, person.FieldLocation)
 	}
+	if m.FieldCleared(person.FieldLinkedinURL) {
+		fields = append(fields, person.FieldLinkedinURL)
+	}
+	if m.FieldCleared(person.FieldDepartment) {
+		fields = append(fields, person.FieldDepartment)
+	}
 	if m.FieldCleared(person.FieldAttributesHash) {
 		fields = append(fields, person.FieldAttributesHash)
 	}
@@ -56360,6 +56494,12 @@ func (m *PersonMutation) ClearField(name string) error {
 		return nil
 	case person.FieldLocation:
 		m.ClearLocation()
+		return nil
+	case person.FieldLinkedinURL:
+		m.ClearLinkedinURL()
+		return nil
+	case person.FieldDepartment:
+		m.ClearDepartment()
 		return nil
 	case person.FieldAttributesHash:
 		m.ClearAttributesHash()
@@ -56425,6 +56565,12 @@ func (m *PersonMutation) ResetField(name string) error {
 		return nil
 	case person.FieldLocation:
 		m.ResetLocation()
+		return nil
+	case person.FieldLinkedinURL:
+		m.ResetLinkedinURL()
+		return nil
+	case person.FieldDepartment:
+		m.ResetDepartment()
 		return nil
 	case person.FieldEmploymentStatus:
 		m.ResetEmploymentStatus()
@@ -65081,6 +65227,7 @@ type RelationshipMutation struct {
 	company_description                        *string
 	linkedin_url                               *string
 	company_enrichment_refs                    *map[string][]string
+	company_enrichment_data                    *map[string]string
 	company_enrichment_version                 *string
 	company_enriched_at                        *time.Time
 	summary                                    *string
@@ -65849,6 +65996,42 @@ func (m *RelationshipMutation) OldCompanyEnrichmentRefs(ctx context.Context) (v 
 // ResetCompanyEnrichmentRefs resets all changes to the "company_enrichment_refs" field.
 func (m *RelationshipMutation) ResetCompanyEnrichmentRefs() {
 	m.company_enrichment_refs = nil
+}
+
+// SetCompanyEnrichmentData sets the "company_enrichment_data" field.
+func (m *RelationshipMutation) SetCompanyEnrichmentData(value map[string]string) {
+	m.company_enrichment_data = &value
+}
+
+// CompanyEnrichmentData returns the value of the "company_enrichment_data" field in the mutation.
+func (m *RelationshipMutation) CompanyEnrichmentData() (r map[string]string, exists bool) {
+	v := m.company_enrichment_data
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompanyEnrichmentData returns the old "company_enrichment_data" field's value of the Relationship entity.
+// If the Relationship object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RelationshipMutation) OldCompanyEnrichmentData(ctx context.Context) (v map[string]string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompanyEnrichmentData is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompanyEnrichmentData requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompanyEnrichmentData: %w", err)
+	}
+	return oldValue.CompanyEnrichmentData, nil
+}
+
+// ResetCompanyEnrichmentData resets all changes to the "company_enrichment_data" field.
+func (m *RelationshipMutation) ResetCompanyEnrichmentData() {
+	m.company_enrichment_data = nil
 }
 
 // SetCompanyEnrichmentVersion sets the "company_enrichment_version" field.
@@ -67873,7 +68056,7 @@ func (m *RelationshipMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RelationshipMutation) Fields() []string {
-	fields := make([]string, 0, 32)
+	fields := make([]string, 0, 33)
 	if m.created_at != nil {
 		fields = append(fields, relationship.FieldCreatedAt)
 	}
@@ -67912,6 +68095,9 @@ func (m *RelationshipMutation) Fields() []string {
 	}
 	if m.company_enrichment_refs != nil {
 		fields = append(fields, relationship.FieldCompanyEnrichmentRefs)
+	}
+	if m.company_enrichment_data != nil {
+		fields = append(fields, relationship.FieldCompanyEnrichmentData)
 	}
 	if m.company_enrichment_version != nil {
 		fields = append(fields, relationship.FieldCompanyEnrichmentVersion)
@@ -68004,6 +68190,8 @@ func (m *RelationshipMutation) Field(name string) (ent.Value, bool) {
 		return m.LinkedinURL()
 	case relationship.FieldCompanyEnrichmentRefs:
 		return m.CompanyEnrichmentRefs()
+	case relationship.FieldCompanyEnrichmentData:
+		return m.CompanyEnrichmentData()
 	case relationship.FieldCompanyEnrichmentVersion:
 		return m.CompanyEnrichmentVersion()
 	case relationship.FieldCompanyEnrichedAt:
@@ -68077,6 +68265,8 @@ func (m *RelationshipMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldLinkedinURL(ctx)
 	case relationship.FieldCompanyEnrichmentRefs:
 		return m.OldCompanyEnrichmentRefs(ctx)
+	case relationship.FieldCompanyEnrichmentData:
+		return m.OldCompanyEnrichmentData(ctx)
 	case relationship.FieldCompanyEnrichmentVersion:
 		return m.OldCompanyEnrichmentVersion(ctx)
 	case relationship.FieldCompanyEnrichedAt:
@@ -68214,6 +68404,13 @@ func (m *RelationshipMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCompanyEnrichmentRefs(v)
+		return nil
+	case relationship.FieldCompanyEnrichmentData:
+		v, ok := value.(map[string]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompanyEnrichmentData(v)
 		return nil
 	case relationship.FieldCompanyEnrichmentVersion:
 		v, ok := value.(string)
@@ -68561,6 +68758,9 @@ func (m *RelationshipMutation) ResetField(name string) error {
 		return nil
 	case relationship.FieldCompanyEnrichmentRefs:
 		m.ResetCompanyEnrichmentRefs()
+		return nil
+	case relationship.FieldCompanyEnrichmentData:
+		m.ResetCompanyEnrichmentData()
 		return nil
 	case relationship.FieldCompanyEnrichmentVersion:
 		m.ResetCompanyEnrichmentVersion()

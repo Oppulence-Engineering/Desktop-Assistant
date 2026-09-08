@@ -20,6 +20,7 @@ export interface Person {
   attributes_version: number;
   /** Row creation timestamp. */
   created_at: string;
+  department?: string;
   display_name: string;
   employment_status: string;
   existing_merge_candidates?: PersonMergeCandidate[];
@@ -29,6 +30,7 @@ export interface Person {
   identities?: PersonIdentity[];
   interaction_stats?: PersonInteractionStat[];
   last_interaction_at?: string;
+  linkedin_url?: string;
   locale?: string;
   location?: string;
   merged_at?: string;

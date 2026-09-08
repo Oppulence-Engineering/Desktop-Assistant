@@ -7854,6 +7854,8 @@ type Person implements Node {
   locale: String
   seniority: String
   location: String
+  linkedinURL: String
+  department: String
   employmentStatus: String!
   attributesVersion: Int!
   attributesHash: String
@@ -9100,6 +9102,42 @@ input PersonWhereInput {
   locationNotNil: Boolean
   locationEqualFold: String
   locationContainsFold: String
+  """
+  linkedin_url field predicates
+  """
+  linkedinURL: String
+  linkedinURLNEQ: String
+  linkedinURLIn: [String!]
+  linkedinURLNotIn: [String!]
+  linkedinURLGT: String
+  linkedinURLGTE: String
+  linkedinURLLT: String
+  linkedinURLLTE: String
+  linkedinURLContains: String
+  linkedinURLHasPrefix: String
+  linkedinURLHasSuffix: String
+  linkedinURLIsNil: Boolean
+  linkedinURLNotNil: Boolean
+  linkedinURLEqualFold: String
+  linkedinURLContainsFold: String
+  """
+  department field predicates
+  """
+  department: String
+  departmentNEQ: String
+  departmentIn: [String!]
+  departmentNotIn: [String!]
+  departmentGT: String
+  departmentGTE: String
+  departmentLT: String
+  departmentLTE: String
+  departmentContains: String
+  departmentHasPrefix: String
+  departmentHasSuffix: String
+  departmentIsNil: Boolean
+  departmentNotNil: Boolean
+  departmentEqualFold: String
+  departmentContainsFold: String
   """
   employment_status field predicates
   """

@@ -28,7 +28,7 @@ type Table struct {
 	ExaPerQuery  int                  `json:"exaPerQuery"`  // flat credits per search
 	// ResearchTasks is credits per Parallel Task run, keyed by processor
 	// (RFC 039). Published 2026-08 list prices: lite $5/1k, base $10/1k,
-	// core $25/1k — so 50, 100 and 250 credits at $0.0001 each.
+	// core $25/1k, pro $100/1k — so 50, 100, 250 and 1,000 credits at $0.0001 each.
 	ResearchTasks map[string]int `json:"researchTasks"`
 }
 
@@ -82,6 +82,7 @@ func DefaultTable() *Table {
 			"lite": 50,
 			"base": 100,
 			"core": 250,
+			"pro":  1000,
 		},
 	}
 }

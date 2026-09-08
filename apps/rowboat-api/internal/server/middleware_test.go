@@ -100,3 +100,19 @@ func TestRequireJSONContentTypeAllowsOnlySlackInteractivityForm(t *testing.T) {
 		})
 	}
 }
+
+func TestRequestTimeoutExemptsOnlyLongRunningResearchWrites(t *testing.T) {
+	for _, tc := range []struct {
+		path string
+		want bool
+	}{
+		{path: "/v1/research/people", want: true},
+		{path: "/v1/research/companies", want: true},
+		{path: "/v1/research/people/estimate", want: false},
+		{path: "/v1/research/companies/pending", want: false},
+	} {
+		if got := skipRequestTimeout(tc.path); got != tc.want {
+			t.Fatalf("skipRequestTimeout(%q) = %t, want %t", tc.path, got, tc.want)
+		}
+	}
+}

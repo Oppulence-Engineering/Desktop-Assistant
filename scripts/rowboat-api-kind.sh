@@ -318,6 +318,32 @@ deploy_chart() {
   # nothing because every reader trusts it.
   write_port_env
   sync_infisical_cli_secret
+  local migration_image="$(image_repository):$(image_tag)"
+  local migration_pod="rowboat-api-migrate"
+  kubectl delete pod -n "$NAMESPACE" "$migration_pod" --ignore-not-found --wait=true >/dev/null
+  kubectl run "$migration_pod" -n "$NAMESPACE" \
+    --restart=Never \
+    --image="$migration_image" \
+    --image-pull-policy=IfNotPresent \
+    --overrides="{\"spec\":{\"containers\":[{\"name\":\"${migration_pod}\",\"image\":\"${migration_image}\",\"imagePullPolicy\":\"IfNotPresent\",\"command\":[\"/rowboat-api-migrate\",\"apply\"],\"envFrom\":[{\"secretRef\":{\"name\":\"${INFISICAL_SYNC_SECRET}\"}}]}]}}" >/dev/null
+  local migration_phase=""
+  for _ in $(seq 1 90); do
+    migration_phase="$(kubectl get pod -n "$NAMESPACE" "$migration_pod" -o jsonpath='{.status.phase}')"
+    case "$migration_phase" in
+      Running|Succeeded|Failed) break ;;
+    esac
+    sleep 2
+  done
+  case "$migration_phase" in
+    Running|Succeeded|Failed) ;;
+    *) echo "local PostgreSQL migration did not start" >&2; exit 1 ;;
+  esac
+  kubectl logs -n "$NAMESPACE" -f "$migration_pod"
+  if [[ "$(kubectl get pod -n "$NAMESPACE" "$migration_pod" -o jsonpath='{.status.phase}')" != "Succeeded" ]]; then
+    echo "local PostgreSQL migration failed" >&2
+    exit 1
+  fi
+  kubectl delete pod -n "$NAMESPACE" "$migration_pod" --wait=true >/dev/null
   local api_origin="http://localhost:${API_PORT}"
   local devstack_origin="http://localhost:${DEVSTACK_PORT}"
   local cors_origins="http://localhost:3000\\,http://localhost:5173\\,${api_origin}"

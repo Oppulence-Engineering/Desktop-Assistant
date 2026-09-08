@@ -40,6 +40,9 @@ func (Relationship) Fields() []ent.Field {
 		field.JSON("company_enrichment_refs", map[string][]string{}).
 			Default(map[string][]string{}).
 			Annotations(entgql.Skip(), entoas.Skip(true)),
+		field.JSON("company_enrichment_data", map[string]string{}).
+			Default(map[string]string{}).
+			Annotations(entgql.Skip(), entoas.Skip(true)),
 		field.String("company_enrichment_version").Optional(),
 		field.Time("company_enriched_at").Optional().Nillable(),
 		field.Text("summary").Optional(),

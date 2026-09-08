@@ -7,6 +7,7 @@
  */
 import type { RevenueImpactByDetectorItem } from "./revenueImpactByDetectorItem";
 import type { RevenueImpactOutcomes } from "./revenueImpactOutcomes";
+import type { RevenueImpactRiskReasonsItem } from "./revenueImpactRiskReasonsItem";
 
 /**
  * Aggregate ROI picture for the caller's revenue queue: how many open loops were surfaced, how they were triaged, how many were acted on, and what came back.
@@ -14,14 +15,20 @@ import type { RevenueImpactOutcomes } from "./revenueImpactOutcomes";
 export interface RevenueImpact {
   /** Actions approved. */
   approved: number;
+  /** Distinct relationships with at least one open attention item. */
+  atRiskRelationships: number;
   /** Per-detector contribution. */
   byDetector?: RevenueImpactByDetectorItem[];
+  /** Distinct relationships with a critical open attention item. */
+  criticalRelationships: number;
   /** Actions dismissed. */
   dismissed?: number;
   /** Actions executed (draft created or email sent). */
   executed: number;
   /** Actions marked handled. */
   handled: number;
+  /** Whole days the oldest open commitment is overdue. */
+  longestOverdueDays: number;
   /** Deals marked lost. */
   lost?: number;
   /**
@@ -35,6 +42,16 @@ export interface RevenueImpact {
   open: number;
   /** Raw outcome-kind counts. */
   outcomes?: RevenueImpactOutcomes;
+  /** Overdue commitments promised by the counterparty. */
+  overdueByThem: number;
+  /** Overdue commitments promised by the user or their team. */
+  overdueByUs: number;
+  /** Confirmed or accepted open commitments past due. */
+  overdueCommitments: number;
+  /** Deterministic 0-100 portfolio exposure score from each account's highest open risk. */
+  portfolioRiskScore: number;
+  /** Active relationships in the portfolio. */
+  relationships: number;
   /** Replies observed. */
   replied?: number;
   /**
@@ -42,6 +59,8 @@ export interface RevenueImpact {
    * @nullable
    */
   replyRate?: number | null;
+  /** Deterministic reasons currently exposing relationships. */
+  riskReasons: RevenueImpactRiskReasonsItem[];
   /** Actions snoozed. */
   snoozed?: number;
   /** Total actions ever surfaced. */

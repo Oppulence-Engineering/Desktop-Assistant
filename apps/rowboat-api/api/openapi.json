@@ -7674,6 +7674,9 @@
             "format": "date-time",
             "type": "string"
           },
+          "department": {
+            "type": "string"
+          },
           "display_name": {
             "type": "string"
           },
@@ -7710,6 +7713,9 @@
           },
           "last_interaction_at": {
             "format": "date-time",
+            "type": "string"
+          },
+          "linkedin_url": {
             "type": "string"
           },
           "locale": {
@@ -11434,6 +11440,11 @@
             "example": 18,
             "type": "integer"
           },
+          "atRiskRelationships": {
+            "description": "Distinct relationships with at least one open attention item.",
+            "example": 7,
+            "type": "integer"
+          },
           "byDetector": {
             "description": "Per-detector contribution.",
             "items": {
@@ -11459,6 +11470,11 @@
             },
             "type": "array"
           },
+          "criticalRelationships": {
+            "description": "Distinct relationships with a critical open attention item.",
+            "example": 2,
+            "type": "integer"
+          },
           "dismissed": {
             "description": "Actions dismissed.",
             "example": 11,
@@ -11472,6 +11488,11 @@
           "handled": {
             "description": "Actions marked handled.",
             "example": 20,
+            "type": "integer"
+          },
+          "longestOverdueDays": {
+            "description": "Whole days the oldest open commitment is overdue.",
+            "example": 12,
             "type": "integer"
           },
           "lost": {
@@ -11500,6 +11521,31 @@
             "description": "Raw outcome-kind counts.",
             "type": "object"
           },
+          "overdueByThem": {
+            "description": "Overdue commitments promised by the counterparty.",
+            "example": 2,
+            "type": "integer"
+          },
+          "overdueByUs": {
+            "description": "Overdue commitments promised by the user or their team.",
+            "example": 3,
+            "type": "integer"
+          },
+          "overdueCommitments": {
+            "description": "Confirmed or accepted open commitments past due.",
+            "example": 5,
+            "type": "integer"
+          },
+          "portfolioRiskScore": {
+            "description": "Deterministic 0-100 portfolio exposure score from each account's highest open risk.",
+            "example": 31,
+            "type": "integer"
+          },
+          "relationships": {
+            "description": "Active relationships in the portfolio.",
+            "example": 24,
+            "type": "integer"
+          },
           "replied": {
             "description": "Replies observed.",
             "example": 6,
@@ -11510,6 +11556,27 @@
             "example": 0.38,
             "nullable": true,
             "type": "number"
+          },
+          "riskReasons": {
+            "description": "Deterministic reasons currently exposing relationships.",
+            "items": {
+              "description": "Relationship risk reason.",
+              "properties": {
+                "reason": {
+                  "description": "Stable reason code.",
+                  "example": "unanswered_proposal",
+                  "type": "string"
+                },
+                "relationships": {
+                  "description": "Distinct affected relationships.",
+                  "example": 3,
+                  "type": "integer"
+                }
+              },
+              "required": ["reason", "relationships"],
+              "type": "object"
+            },
+            "type": "array"
           },
           "snoozed": {
             "description": "Actions snoozed.",
@@ -11527,7 +11594,22 @@
             "type": "integer"
           }
         },
-        "required": ["surfaced", "open", "handled", "approved", "executed"],
+        "required": [
+          "surfaced",
+          "open",
+          "handled",
+          "approved",
+          "executed",
+          "relationships",
+          "atRiskRelationships",
+          "criticalRelationships",
+          "portfolioRiskScore",
+          "overdueCommitments",
+          "overdueByUs",
+          "overdueByThem",
+          "longestOverdueDays",
+          "riskReasons"
+        ],
         "type": "object"
       },
       "RevenueLeakScan": {
@@ -11843,6 +11925,11 @@
             "format": "date-time",
             "nullable": true,
             "type": "string"
+          },
+          "companyEnrichmentData": {
+            "additionalProperties": true,
+            "description": "Cited public-web company facts keyed by enrichment field.",
+            "type": "object"
           },
           "companyEnrichmentRefs": {
             "additionalProperties": true,

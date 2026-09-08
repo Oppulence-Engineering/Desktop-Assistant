@@ -247,6 +247,46 @@ func (_u *PersonUpdate) ClearLocation() *PersonUpdate {
 	return _u
 }
 
+// SetLinkedinURL sets the "linkedin_url" field.
+func (_u *PersonUpdate) SetLinkedinURL(v string) *PersonUpdate {
+	_u.mutation.SetLinkedinURL(v)
+	return _u
+}
+
+// SetNillableLinkedinURL sets the "linkedin_url" field if the given value is not nil.
+func (_u *PersonUpdate) SetNillableLinkedinURL(v *string) *PersonUpdate {
+	if v != nil {
+		_u.SetLinkedinURL(*v)
+	}
+	return _u
+}
+
+// ClearLinkedinURL clears the value of the "linkedin_url" field.
+func (_u *PersonUpdate) ClearLinkedinURL() *PersonUpdate {
+	_u.mutation.ClearLinkedinURL()
+	return _u
+}
+
+// SetDepartment sets the "department" field.
+func (_u *PersonUpdate) SetDepartment(v string) *PersonUpdate {
+	_u.mutation.SetDepartment(v)
+	return _u
+}
+
+// SetNillableDepartment sets the "department" field if the given value is not nil.
+func (_u *PersonUpdate) SetNillableDepartment(v *string) *PersonUpdate {
+	if v != nil {
+		_u.SetDepartment(*v)
+	}
+	return _u
+}
+
+// ClearDepartment clears the value of the "department" field.
+func (_u *PersonUpdate) ClearDepartment() *PersonUpdate {
+	_u.mutation.ClearDepartment()
+	return _u
+}
+
 // SetEmploymentStatus sets the "employment_status" field.
 func (_u *PersonUpdate) SetEmploymentStatus(v string) *PersonUpdate {
 	_u.mutation.SetEmploymentStatus(v)
@@ -842,6 +882,18 @@ func (_u *PersonUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.LocationCleared() {
 		_spec.ClearField(person.FieldLocation, field.TypeString)
 	}
+	if value, ok := _u.mutation.LinkedinURL(); ok {
+		_spec.SetField(person.FieldLinkedinURL, field.TypeString, value)
+	}
+	if _u.mutation.LinkedinURLCleared() {
+		_spec.ClearField(person.FieldLinkedinURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.Department(); ok {
+		_spec.SetField(person.FieldDepartment, field.TypeString, value)
+	}
+	if _u.mutation.DepartmentCleared() {
+		_spec.ClearField(person.FieldDepartment, field.TypeString)
+	}
 	if value, ok := _u.mutation.EmploymentStatus(); ok {
 		_spec.SetField(person.FieldEmploymentStatus, field.TypeString, value)
 	}
@@ -1401,6 +1453,46 @@ func (_u *PersonUpdateOne) SetNillableLocation(v *string) *PersonUpdateOne {
 // ClearLocation clears the value of the "location" field.
 func (_u *PersonUpdateOne) ClearLocation() *PersonUpdateOne {
 	_u.mutation.ClearLocation()
+	return _u
+}
+
+// SetLinkedinURL sets the "linkedin_url" field.
+func (_u *PersonUpdateOne) SetLinkedinURL(v string) *PersonUpdateOne {
+	_u.mutation.SetLinkedinURL(v)
+	return _u
+}
+
+// SetNillableLinkedinURL sets the "linkedin_url" field if the given value is not nil.
+func (_u *PersonUpdateOne) SetNillableLinkedinURL(v *string) *PersonUpdateOne {
+	if v != nil {
+		_u.SetLinkedinURL(*v)
+	}
+	return _u
+}
+
+// ClearLinkedinURL clears the value of the "linkedin_url" field.
+func (_u *PersonUpdateOne) ClearLinkedinURL() *PersonUpdateOne {
+	_u.mutation.ClearLinkedinURL()
+	return _u
+}
+
+// SetDepartment sets the "department" field.
+func (_u *PersonUpdateOne) SetDepartment(v string) *PersonUpdateOne {
+	_u.mutation.SetDepartment(v)
+	return _u
+}
+
+// SetNillableDepartment sets the "department" field if the given value is not nil.
+func (_u *PersonUpdateOne) SetNillableDepartment(v *string) *PersonUpdateOne {
+	if v != nil {
+		_u.SetDepartment(*v)
+	}
+	return _u
+}
+
+// ClearDepartment clears the value of the "department" field.
+func (_u *PersonUpdateOne) ClearDepartment() *PersonUpdateOne {
+	_u.mutation.ClearDepartment()
 	return _u
 }
 
@@ -2028,6 +2120,18 @@ func (_u *PersonUpdateOne) sqlSave(ctx context.Context) (_node *Person, err erro
 	}
 	if _u.mutation.LocationCleared() {
 		_spec.ClearField(person.FieldLocation, field.TypeString)
+	}
+	if value, ok := _u.mutation.LinkedinURL(); ok {
+		_spec.SetField(person.FieldLinkedinURL, field.TypeString, value)
+	}
+	if _u.mutation.LinkedinURLCleared() {
+		_spec.ClearField(person.FieldLinkedinURL, field.TypeString)
+	}
+	if value, ok := _u.mutation.Department(); ok {
+		_spec.SetField(person.FieldDepartment, field.TypeString, value)
+	}
+	if _u.mutation.DepartmentCleared() {
+		_spec.ClearField(person.FieldDepartment, field.TypeString)
 	}
 	if value, ok := _u.mutation.EmploymentStatus(); ok {
 		_spec.SetField(person.FieldEmploymentStatus, field.TypeString, value)

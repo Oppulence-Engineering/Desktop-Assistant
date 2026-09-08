@@ -47,7 +47,7 @@ const (
 	// personResearchProcessor is the `base` tier: ~5 fields at $10/1k, which is
 	// exactly the shape of the person task below. `core` buys depth this task
 	// has no use for; `lite` cannot cover the fields.
-	personResearchProcessor = parallel.ProcessorBase
+	personResearchProcessor = parallel.ProcessorPro
 
 	// maxResearchBatch bounds one bulk request. The desktop chunks a workspace
 	// sweep into batches of this size and retries a failed chunk; per-person
@@ -79,11 +79,19 @@ const (
 // with no dimension has nowhere to go, and a dimension with no citation
 // requirement is not evidence.
 var personResearchDimensions = map[string]string{
-	"title":      "title",
-	"org_name":   "org_name",
-	"org_domain": "org_domain",
-	"seniority":  "seniority",
-	"location":   "location",
+	"title":            "title",
+	"org_name":         "org_name",
+	"org_domain":       "org_domain",
+	"seniority":        "seniority",
+	"location":         "location",
+	"linkedin_url":     "linkedin_url",
+	"department":       "department",
+	"bio":              "bio",
+	"responsibilities": "responsibilities",
+	"work_history":     "work_history",
+	"education":        "education",
+	"expertise":        "expertise",
+	"recent_activity":  "recent_activity",
 }
 
 // ResearchConfig wires the vendor client and the billing gate onto the service.
@@ -92,8 +100,8 @@ var personResearchDimensions = map[string]string{
 type ResearchConfig struct {
 	Client *parallel.Client
 	Gate   *quota.Gate
-	// Costs maps a processor to credits per run. 1 credit = $0.0001, so `base`
-	// at $10/1k is 100 credits.
+	// Costs maps a processor to credits per run. 1 credit = $0.0001, so `pro`
+	// at $100/1k is 1,000 credits.
 	Costs  map[string]int
 	Limits quota.SpendLimits
 }
@@ -140,7 +148,7 @@ type ResearchEstimate struct {
 // has not been enriched at the current task-spec version.
 //
 // This exists because the tail is where bulk enrichment breaks: 5,000 people at
-// `base` is $50 in one click. A spinner and a bill is not an acceptable design
+// `pro` is $500 in one click. A spinner and a bill is not an acceptable design
 // for that, so the count and the price are computed before anything is spent.
 func (s *Service) EstimatePersonEnrichment(ctx context.Context, u *ent.User) (*ResearchEstimate, error) {
 	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
@@ -312,7 +320,7 @@ func (s *Service) EnrichPerson(
 
 	// Reserve before calling. The request id is derived from the person and the
 	// task-spec version, so a retry after a crash replays the same reservation
-	// instead of buying the same five fields twice.
+	// instead of buying the same research twice.
 	cost := s.researchCost(personResearchProcessor)
 	charge, err := s.research.Gate.Reserve(
 		ctx, "parallel_task", cost, researchRequestID(p.ID, version), s.research.Limits,
@@ -494,6 +502,38 @@ func personResearchSchema() map[string]any {
 				"type":        "string",
 				"description": "City and country the person currently works from.",
 			},
+			"linkedin_url": map[string]any{
+				"type":        "string",
+				"description": "Verified public LinkedIn profile URL for this exact person. Empty if unavailable.",
+			},
+			"department": map[string]any{
+				"type":        "string",
+				"description": "Current business function or department, such as Sales, Engineering, Finance, or Operations.",
+			},
+			"bio": map[string]any{
+				"type":        "string",
+				"description": "Two concise sentences summarizing the person's current professional focus and relevant background.",
+			},
+			"responsibilities": map[string]any{
+				"type":        "string",
+				"description": "Concise summary of publicly evidenced responsibilities and buying influence; do not infer beyond sources.",
+			},
+			"work_history": map[string]any{
+				"type":        "string",
+				"description": "Up to five prior roles in reverse chronological order, formatted as Company — Title — Years and separated by semicolons.",
+			},
+			"education": map[string]any{
+				"type":        "string",
+				"description": "Publicly stated degrees, fields, and institutions, separated by semicolons.",
+			},
+			"expertise": map[string]any{
+				"type":        "string",
+				"description": "Publicly evidenced professional skills or areas of expertise, comma-separated.",
+			},
+			"recent_activity": map[string]any{
+				"type":        "string",
+				"description": "Material public professional activity or role changes from the last 12 months, with dates where available. Empty if none is found.",
+			},
 		},
 		"required":             []string{researchMatchField},
 		"additionalProperties": false,
@@ -556,6 +596,13 @@ func personAttributesFromResult(
 			rejected = append(rejected, field+": value is implausibly long")
 			continue
 		}
+		if field == "linkedin_url" {
+			value = canonicalLinkedInPersonURL(value)
+			if value == "" {
+				rejected = append(rejected, field+": invalid LinkedIn profile URL")
+				continue
+			}
+		}
 		basis, ok := result.BasisFor(field)
 		if !ok {
 			rejected = append(rejected, field+": no basis returned")
@@ -586,6 +633,22 @@ func personAttributesFromResult(
 		})
 	}
 	return inputs, true, rejected
+}
+
+func canonicalLinkedInPersonURL(raw string) string {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil || parsed.Scheme != "https" || parsed.User != nil || parsed.Port() != "" {
+		return ""
+	}
+	host := strings.ToLower(parsed.Hostname())
+	if host != "linkedin.com" && host != "www.linkedin.com" {
+		return ""
+	}
+	parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+	if len(parts) < 2 || parts[0] != "in" || parts[1] == "" {
+		return ""
+	}
+	return "https://www.linkedin.com/in/" + parts[1]
 }
 
 // researchConfidence coerces the vendor's categorical confidence onto the

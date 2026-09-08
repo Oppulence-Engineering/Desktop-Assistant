@@ -2,9 +2,13 @@ package revenue
 
 import (
 	"context"
+	"sort"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionoutcome"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipattentionitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 )
@@ -14,15 +18,24 @@ import (
 // what came back. It is the ROI view's data source (RFC 030 product quality
 // metrics). Everything here is scoped to the caller by the tenant interceptors.
 type Impact struct {
-	Surfaced  int            // total actions ever created
-	Open      int            // queue_status = open
-	Handled   int            // queue_status = handled
-	Snoozed   int            // queue_status = snoozed
-	Dismissed int            // queue_status = dismissed
-	Approved  int            // approval_status = approved
-	Executed  int            // execution_status = sent (draft created or email sent)
-	Outcomes  map[string]int // outcome kind -> count
-	Detectors []DetectorStat // per-detector surfaced/handled
+	Surfaced              int            // total actions ever created
+	Open                  int            // queue_status = open
+	Handled               int            // queue_status = handled
+	Snoozed               int            // queue_status = snoozed
+	Dismissed             int            // queue_status = dismissed
+	Approved              int            // approval_status = approved
+	Executed              int            // execution_status = sent (draft created or email sent)
+	Outcomes              map[string]int // outcome kind -> count
+	Detectors             []DetectorStat // per-detector surfaced/handled
+	Relationships         int
+	AtRiskRelationships   int
+	CriticalRelationships int
+	PortfolioRiskScore    int
+	OverdueCommitments    int
+	OverdueByUs           int
+	OverdueByThem         int
+	LongestOverdueDays    int
+	RiskReasons           []RiskStat
 }
 
 // DetectorStat is one detector's contribution.
@@ -30,6 +43,12 @@ type DetectorStat struct {
 	Detector string `json:"detector"`
 	Surfaced int    `json:"surfaced"`
 	Handled  int    `json:"handled"`
+}
+
+// RiskStat shows how many live account alerts share one deterministic reason.
+type RiskStat struct {
+	Reason        string `json:"reason"`
+	Relationships int    `json:"relationships"`
 }
 
 // Impact computes the aggregate stats for the caller.
@@ -116,6 +135,81 @@ func (s *Service) Impact(ctx context.Context, u *ent.User) (*Impact, error) {
 			Surfaced: r.N,
 			Handled:  handled[r.Detector],
 		})
+	}
+
+	if imp.Relationships, err = s.client.Relationship.Query().Where(
+		relationship.HasUserWith(user.IDEQ(uid)),
+		relationship.StatusNEQ("archived"),
+	).Count(ctx); err != nil {
+		return nil, err
+	}
+	items, err := s.client.RelationshipAttentionItem.Query().Where(
+		relationshipattentionitem.HasUserWith(user.IDEQ(uid)),
+		relationshipattentionitem.StatusEQ("open"),
+	).WithRelationship().All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	maxScore := map[string]int{}
+	critical := map[string]struct{}{}
+	byReason := map[string]map[string]struct{}{}
+	for _, item := range items {
+		rel := item.Edges.Relationship
+		if rel == nil {
+			continue
+		}
+		id := rel.ID.String()
+		maxScore[id] = max(maxScore[id], item.RankScore)
+		if item.UrgencyBand == "critical" {
+			critical[id] = struct{}{}
+		}
+		if byReason[item.ReasonCode] == nil {
+			byReason[item.ReasonCode] = map[string]struct{}{}
+		}
+		byReason[item.ReasonCode][id] = struct{}{}
+	}
+	imp.AtRiskRelationships = len(maxScore)
+	imp.CriticalRelationships = len(critical)
+	if imp.Relationships > 0 {
+		total := 0
+		for _, score := range maxScore {
+			total += score
+		}
+		imp.PortfolioRiskScore = (total + imp.Relationships/2) / imp.Relationships
+	}
+	for reason, ids := range byReason {
+		imp.RiskReasons = append(imp.RiskReasons, RiskStat{Reason: reason, Relationships: len(ids)})
+	}
+	sort.Slice(imp.RiskReasons, func(i, j int) bool {
+		if imp.RiskReasons[i].Relationships != imp.RiskReasons[j].Relationships {
+			return imp.RiskReasons[i].Relationships > imp.RiskReasons[j].Relationships
+		}
+		return imp.RiskReasons[i].Reason < imp.RiskReasons[j].Reason
+	})
+
+	now := s.now().UTC()
+	overdue, err := s.client.Commitment.Query().Where(
+		commitment.HasUserWith(user.IDEQ(uid)),
+		commitment.StatusEQ("open"),
+		commitment.DueAtNotNil(),
+		commitment.DueAtLTE(now),
+	).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, promised := range overdue {
+		if !promised.UserConfirmed && promised.Acceptance == "candidate" {
+			continue
+		}
+		imp.OverdueCommitments++
+		switch promised.Direction {
+		case "promised_by_me":
+			imp.OverdueByUs++
+		case "promised_by_them":
+			imp.OverdueByThem++
+		}
+		days := max(1, int(now.Sub(promised.DueAt.UTC()).Hours()/24))
+		imp.LongestOverdueDays = max(imp.LongestOverdueDays, days)
 	}
 	return imp, nil
 }

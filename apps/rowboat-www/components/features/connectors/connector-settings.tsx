@@ -212,6 +212,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
   const unsupportedReason = hostedOAuthUnsupportedReason(connector);
   const connectedAt = displayDate(connector.connectedAt);
   const lastUsedAt = displayDate(connector.lastUsedAt);
+  const isHubSpot = connector.name === "hubspot";
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -233,7 +234,14 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apiKey }),
       });
-      if (!response.ok) throw new Error(`Saving key failed (${response.status})`);
+      if (!response.ok) {
+        const problem = (await response.json().catch(() => null)) as { detail?: unknown } | null;
+        throw new Error(
+          typeof problem?.detail === "string"
+            ? problem.detail
+            : `Connection failed (${response.status})`,
+        );
+      }
       setApiKey("");
       setKeyOpen(false);
     });
@@ -345,7 +353,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
               size="sm"
               variant="outline"
             >
-              {keyOpen ? "Cancel" : "Add API key"}
+              {keyOpen ? "Cancel" : isHubSpot ? "Connect HubSpot" : "Add API key"}
             </Button>
           ) : connector.authType === "oauth" ? (
             <form
@@ -417,12 +425,13 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
           <Input
             className="max-w-sm"
             onChange={(event) => setApiKey(event.target.value)}
-            placeholder="Vendor API key"
+            aria-label={isHubSpot ? "HubSpot private app token" : "Vendor API key"}
+            placeholder={isHubSpot ? "HubSpot private app token" : "Vendor API key"}
             type="password"
             value={apiKey}
           />
           <Button disabled={!apiKey.trim() || busy} onClick={saveKey} size="sm">
-            {busy ? "Saving…" : "Save key"}
+            {busy ? "Connecting…" : isHubSpot ? "Connect" : "Save key"}
           </Button>
         </div>
       ) : null}

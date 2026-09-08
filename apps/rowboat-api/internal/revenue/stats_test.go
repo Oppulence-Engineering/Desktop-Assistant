@@ -3,6 +3,7 @@ package revenue
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 )
@@ -14,6 +15,16 @@ func TestImpactAggregates(t *testing.T) {
 	a1 := f.action(t, ExecModeDraft)
 	_ = f.action(t, ExecModeDraft) // stays open
 	a3 := f.action(t, ExecModeDraft)
+	now := time.Date(2026, 9, 6, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	rel := a1.QueryRelationship().OnlyX(f.ctx)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.client.Commitment.Create().SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_me").SetText("Send security review").SetStatus("open").
+		SetDueAt(now.Add(-72 * time.Hour)).SetConfidence(1).SetUserConfirmed(true).SaveX(f.ctx)
 
 	if _, err := f.svc.Approve(f.ctx, f.user, a1.ID, false); err != nil {
 		t.Fatalf("approve: %v", err)
@@ -56,6 +67,12 @@ func TestImpactAggregates(t *testing.T) {
 	}
 	if len(imp.Detectors) == 0 {
 		t.Fatal("expected per-detector breakdown")
+	}
+	if imp.Relationships != 3 || imp.AtRiskRelationships < 1 || imp.PortfolioRiskScore <= 0 || imp.PortfolioRiskScore > 100 {
+		t.Fatalf("relationship exposure = %+v", imp)
+	}
+	if imp.OverdueCommitments != 1 || imp.OverdueByUs != 1 || imp.LongestOverdueDays != 3 {
+		t.Fatalf("commitment exposure = %+v", imp)
 	}
 	// Tenant isolation: a second user sees an empty impact.
 	other := newUser(t, f.client, "z@x.co", "user_z")

@@ -197,6 +197,34 @@ func (_c *PersonCreate) SetNillableLocation(v *string) *PersonCreate {
 	return _c
 }
 
+// SetLinkedinURL sets the "linkedin_url" field.
+func (_c *PersonCreate) SetLinkedinURL(v string) *PersonCreate {
+	_c.mutation.SetLinkedinURL(v)
+	return _c
+}
+
+// SetNillableLinkedinURL sets the "linkedin_url" field if the given value is not nil.
+func (_c *PersonCreate) SetNillableLinkedinURL(v *string) *PersonCreate {
+	if v != nil {
+		_c.SetLinkedinURL(*v)
+	}
+	return _c
+}
+
+// SetDepartment sets the "department" field.
+func (_c *PersonCreate) SetDepartment(v string) *PersonCreate {
+	_c.mutation.SetDepartment(v)
+	return _c
+}
+
+// SetNillableDepartment sets the "department" field if the given value is not nil.
+func (_c *PersonCreate) SetNillableDepartment(v *string) *PersonCreate {
+	if v != nil {
+		_c.SetDepartment(*v)
+	}
+	return _c
+}
+
 // SetEmploymentStatus sets the "employment_status" field.
 func (_c *PersonCreate) SetEmploymentStatus(v string) *PersonCreate {
 	_c.mutation.SetEmploymentStatus(v)
@@ -715,6 +743,14 @@ func (_c *PersonCreate) createSpec() (*Person, *sqlgraph.CreateSpec) {
 		_spec.SetField(person.FieldLocation, field.TypeString, value)
 		_node.Location = value
 	}
+	if value, ok := _c.mutation.LinkedinURL(); ok {
+		_spec.SetField(person.FieldLinkedinURL, field.TypeString, value)
+		_node.LinkedinURL = value
+	}
+	if value, ok := _c.mutation.Department(); ok {
+		_spec.SetField(person.FieldDepartment, field.TypeString, value)
+		_node.Department = value
+	}
 	if value, ok := _c.mutation.EmploymentStatus(); ok {
 		_spec.SetField(person.FieldEmploymentStatus, field.TypeString, value)
 		_node.EmploymentStatus = value
@@ -1136,6 +1172,42 @@ func (u *PersonUpsert) UpdateLocation() *PersonUpsert {
 // ClearLocation clears the value of the "location" field.
 func (u *PersonUpsert) ClearLocation() *PersonUpsert {
 	u.SetNull(person.FieldLocation)
+	return u
+}
+
+// SetLinkedinURL sets the "linkedin_url" field.
+func (u *PersonUpsert) SetLinkedinURL(v string) *PersonUpsert {
+	u.Set(person.FieldLinkedinURL, v)
+	return u
+}
+
+// UpdateLinkedinURL sets the "linkedin_url" field to the value that was provided on create.
+func (u *PersonUpsert) UpdateLinkedinURL() *PersonUpsert {
+	u.SetExcluded(person.FieldLinkedinURL)
+	return u
+}
+
+// ClearLinkedinURL clears the value of the "linkedin_url" field.
+func (u *PersonUpsert) ClearLinkedinURL() *PersonUpsert {
+	u.SetNull(person.FieldLinkedinURL)
+	return u
+}
+
+// SetDepartment sets the "department" field.
+func (u *PersonUpsert) SetDepartment(v string) *PersonUpsert {
+	u.Set(person.FieldDepartment, v)
+	return u
+}
+
+// UpdateDepartment sets the "department" field to the value that was provided on create.
+func (u *PersonUpsert) UpdateDepartment() *PersonUpsert {
+	u.SetExcluded(person.FieldDepartment)
+	return u
+}
+
+// ClearDepartment clears the value of the "department" field.
+func (u *PersonUpsert) ClearDepartment() *PersonUpsert {
+	u.SetNull(person.FieldDepartment)
 	return u
 }
 
@@ -1604,6 +1676,48 @@ func (u *PersonUpsertOne) UpdateLocation() *PersonUpsertOne {
 func (u *PersonUpsertOne) ClearLocation() *PersonUpsertOne {
 	return u.Update(func(s *PersonUpsert) {
 		s.ClearLocation()
+	})
+}
+
+// SetLinkedinURL sets the "linkedin_url" field.
+func (u *PersonUpsertOne) SetLinkedinURL(v string) *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetLinkedinURL(v)
+	})
+}
+
+// UpdateLinkedinURL sets the "linkedin_url" field to the value that was provided on create.
+func (u *PersonUpsertOne) UpdateLinkedinURL() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateLinkedinURL()
+	})
+}
+
+// ClearLinkedinURL clears the value of the "linkedin_url" field.
+func (u *PersonUpsertOne) ClearLinkedinURL() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearLinkedinURL()
+	})
+}
+
+// SetDepartment sets the "department" field.
+func (u *PersonUpsertOne) SetDepartment(v string) *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetDepartment(v)
+	})
+}
+
+// UpdateDepartment sets the "department" field to the value that was provided on create.
+func (u *PersonUpsertOne) UpdateDepartment() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateDepartment()
+	})
+}
+
+// ClearDepartment clears the value of the "department" field.
+func (u *PersonUpsertOne) ClearDepartment() *PersonUpsertOne {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearDepartment()
 	})
 }
 
@@ -2270,6 +2384,48 @@ func (u *PersonUpsertBulk) UpdateLocation() *PersonUpsertBulk {
 func (u *PersonUpsertBulk) ClearLocation() *PersonUpsertBulk {
 	return u.Update(func(s *PersonUpsert) {
 		s.ClearLocation()
+	})
+}
+
+// SetLinkedinURL sets the "linkedin_url" field.
+func (u *PersonUpsertBulk) SetLinkedinURL(v string) *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetLinkedinURL(v)
+	})
+}
+
+// UpdateLinkedinURL sets the "linkedin_url" field to the value that was provided on create.
+func (u *PersonUpsertBulk) UpdateLinkedinURL() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateLinkedinURL()
+	})
+}
+
+// ClearLinkedinURL clears the value of the "linkedin_url" field.
+func (u *PersonUpsertBulk) ClearLinkedinURL() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearLinkedinURL()
+	})
+}
+
+// SetDepartment sets the "department" field.
+func (u *PersonUpsertBulk) SetDepartment(v string) *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.SetDepartment(v)
+	})
+}
+
+// UpdateDepartment sets the "department" field to the value that was provided on create.
+func (u *PersonUpsertBulk) UpdateDepartment() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.UpdateDepartment()
+	})
+}
+
+// ClearDepartment clears the value of the "department" field.
+func (u *PersonUpsertBulk) ClearDepartment() *PersonUpsertBulk {
+	return u.Update(func(s *PersonUpsert) {
+		s.ClearDepartment()
 	})
 }
 

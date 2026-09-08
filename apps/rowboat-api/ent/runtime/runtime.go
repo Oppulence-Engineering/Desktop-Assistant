@@ -2311,31 +2311,31 @@ func init() {
 	// person.DefaultAliases holds the default value on creation for the aliases field.
 	person.DefaultAliases = personDescAliases.Default.([]string)
 	// personDescEmploymentStatus is the schema descriptor for employment_status field.
-	personDescEmploymentStatus := personFields[11].Descriptor()
+	personDescEmploymentStatus := personFields[13].Descriptor()
 	// person.DefaultEmploymentStatus holds the default value on creation for the employment_status field.
 	person.DefaultEmploymentStatus = personDescEmploymentStatus.Default.(string)
 	// person.EmploymentStatusValidator is a validator for the "employment_status" field. It is called by the builders before save.
 	person.EmploymentStatusValidator = personDescEmploymentStatus.Validators[0].(func(string) error)
 	// personDescAttributesVersion is the schema descriptor for attributes_version field.
-	personDescAttributesVersion := personFields[12].Descriptor()
+	personDescAttributesVersion := personFields[14].Descriptor()
 	// person.DefaultAttributesVersion holds the default value on creation for the attributes_version field.
 	person.DefaultAttributesVersion = personDescAttributesVersion.Default.(int)
 	// person.AttributesVersionValidator is a validator for the "attributes_version" field. It is called by the builders before save.
 	person.AttributesVersionValidator = personDescAttributesVersion.Validators[0].(func(int) error)
 	// personDescProjectorVersion is the schema descriptor for projector_version field.
-	personDescProjectorVersion := personFields[14].Descriptor()
+	personDescProjectorVersion := personFields[16].Descriptor()
 	// person.DefaultProjectorVersion holds the default value on creation for the projector_version field.
 	person.DefaultProjectorVersion = personDescProjectorVersion.Default.(int)
 	// person.ProjectorVersionValidator is a validator for the "projector_version" field. It is called by the builders before save.
 	person.ProjectorVersionValidator = personDescProjectorVersion.Validators[0].(func(int) error)
 	// personDescStatus is the schema descriptor for status field.
-	personDescStatus := personFields[16].Descriptor()
+	personDescStatus := personFields[18].Descriptor()
 	// person.DefaultStatus holds the default value on creation for the status field.
 	person.DefaultStatus = personDescStatus.Default.(string)
 	// person.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	person.StatusValidator = personDescStatus.Validators[0].(func(string) error)
 	// personDescRelationshipCount is the schema descriptor for relationship_count field.
-	personDescRelationshipCount := personFields[21].Descriptor()
+	personDescRelationshipCount := personFields[23].Descriptor()
 	// person.DefaultRelationshipCount holds the default value on creation for the relationship_count field.
 	person.DefaultRelationshipCount = personDescRelationshipCount.Default.(int)
 	// person.RelationshipCountValidator is a validator for the "relationship_count" field. It is called by the builders before save.
@@ -2822,54 +2822,58 @@ func init() {
 	relationshipDescCompanyEnrichmentRefs := relationshipFields[10].Descriptor()
 	// relationship.DefaultCompanyEnrichmentRefs holds the default value on creation for the company_enrichment_refs field.
 	relationship.DefaultCompanyEnrichmentRefs = relationshipDescCompanyEnrichmentRefs.Default.(map[string][]string)
+	// relationshipDescCompanyEnrichmentData is the schema descriptor for company_enrichment_data field.
+	relationshipDescCompanyEnrichmentData := relationshipFields[11].Descriptor()
+	// relationship.DefaultCompanyEnrichmentData holds the default value on creation for the company_enrichment_data field.
+	relationship.DefaultCompanyEnrichmentData = relationshipDescCompanyEnrichmentData.Default.(map[string]string)
 	// relationshipDescStatus is the schema descriptor for status field.
-	relationshipDescStatus := relationshipFields[17].Descriptor()
+	relationshipDescStatus := relationshipFields[18].Descriptor()
 	// relationship.DefaultStatus holds the default value on creation for the status field.
 	relationship.DefaultStatus = relationshipDescStatus.Default.(string)
 	// relationship.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	relationship.StatusValidator = relationshipDescStatus.Validators[0].(func(string) error)
 	// relationshipDescLifecycle is the schema descriptor for lifecycle field.
-	relationshipDescLifecycle := relationshipFields[18].Descriptor()
+	relationshipDescLifecycle := relationshipFields[19].Descriptor()
 	// relationship.DefaultLifecycle holds the default value on creation for the lifecycle field.
 	relationship.DefaultLifecycle = relationshipDescLifecycle.Default.(string)
 	// relationship.LifecycleValidator is a validator for the "lifecycle" field. It is called by the builders before save.
 	relationship.LifecycleValidator = relationshipDescLifecycle.Validators[0].(func(string) error)
 	// relationshipDescEngagement is the schema descriptor for engagement field.
-	relationshipDescEngagement := relationshipFields[19].Descriptor()
+	relationshipDescEngagement := relationshipFields[20].Descriptor()
 	// relationship.DefaultEngagement holds the default value on creation for the engagement field.
 	relationship.DefaultEngagement = relationshipDescEngagement.Default.(string)
 	// relationship.EngagementValidator is a validator for the "engagement" field. It is called by the builders before save.
 	relationship.EngagementValidator = relationshipDescEngagement.Validators[0].(func(string) error)
 	// relationshipDescSentiment is the schema descriptor for sentiment field.
-	relationshipDescSentiment := relationshipFields[20].Descriptor()
+	relationshipDescSentiment := relationshipFields[21].Descriptor()
 	// relationship.DefaultSentiment holds the default value on creation for the sentiment field.
 	relationship.DefaultSentiment = relationshipDescSentiment.Default.(string)
 	// relationship.SentimentValidator is a validator for the "sentiment" field. It is called by the builders before save.
 	relationship.SentimentValidator = relationshipDescSentiment.Validators[0].(func(string) error)
 	// relationshipDescHealth is the schema descriptor for health field.
-	relationshipDescHealth := relationshipFields[21].Descriptor()
+	relationshipDescHealth := relationshipFields[22].Descriptor()
 	// relationship.DefaultHealth holds the default value on creation for the health field.
 	relationship.DefaultHealth = relationshipDescHealth.Default.(string)
 	// relationship.HealthValidator is a validator for the "health" field. It is called by the builders before save.
 	relationship.HealthValidator = relationshipDescHealth.Validators[0].(func(string) error)
 	// relationshipDescStateVersion is the schema descriptor for state_version field.
-	relationshipDescStateVersion := relationshipFields[23].Descriptor()
+	relationshipDescStateVersion := relationshipFields[24].Descriptor()
 	// relationship.DefaultStateVersion holds the default value on creation for the state_version field.
 	relationship.DefaultStateVersion = relationshipDescStateVersion.Default.(int)
 	// relationship.StateVersionValidator is a validator for the "state_version" field. It is called by the builders before save.
 	relationship.StateVersionValidator = relationshipDescStateVersion.Validators[0].(func(int) error)
 	// relationshipDescProjectorVersion is the schema descriptor for projector_version field.
-	relationshipDescProjectorVersion := relationshipFields[25].Descriptor()
+	relationshipDescProjectorVersion := relationshipFields[26].Descriptor()
 	// relationship.DefaultProjectorVersion holds the default value on creation for the projector_version field.
 	relationship.DefaultProjectorVersion = relationshipDescProjectorVersion.Default.(int)
 	// relationship.ProjectorVersionValidator is a validator for the "projector_version" field. It is called by the builders before save.
 	relationship.ProjectorVersionValidator = relationshipDescProjectorVersion.Validators[0].(func(int) error)
 	// relationshipDescRisks is the schema descriptor for risks field.
-	relationshipDescRisks := relationshipFields[28].Descriptor()
+	relationshipDescRisks := relationshipFields[29].Descriptor()
 	// relationship.DefaultRisks holds the default value on creation for the risks field.
 	relationship.DefaultRisks = relationshipDescRisks.Default.([]string)
 	// relationshipDescMilestones is the schema descriptor for milestones field.
-	relationshipDescMilestones := relationshipFields[29].Descriptor()
+	relationshipDescMilestones := relationshipFields[30].Descriptor()
 	// relationship.DefaultMilestones holds the default value on creation for the milestones field.
 	relationship.DefaultMilestones = relationshipDescMilestones.Default.([]string)
 	// relationshipDescID is the schema descriptor for id field.

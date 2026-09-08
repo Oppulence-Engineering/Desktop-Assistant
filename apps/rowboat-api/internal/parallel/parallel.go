@@ -36,11 +36,13 @@ var ErrNotConfigured = errors.New("parallel: not configured")
 var ErrRunFailed = errors.New("parallel: task run failed")
 
 // Processor names a Task API tier. Cost per the published 2026-08 rates:
-// lite $5/1k (~2 fields), base $10/1k (~5 fields), core $25/1k (~10 fields).
+// lite $5/1k (~2 fields), base $10/1k (~5 fields), core $25/1k (~10 fields),
+// pro $100/1k (broad, cross-referenced research).
 const (
 	ProcessorLite = "lite"
 	ProcessorBase = "base"
 	ProcessorCore = "core"
+	ProcessorPro  = "pro"
 )
 
 // Processors is the allowlist. An unrecognised processor is refused before the
@@ -50,6 +52,7 @@ var Processors = map[string]bool{
 	ProcessorLite: true,
 	ProcessorBase: true,
 	ProcessorCore: true,
+	ProcessorPro:  true,
 }
 
 // Citation is one piece of evidence for one field.
@@ -142,7 +145,7 @@ func New(cfg Config) *Client {
 		cfg.ResultPollInterval = 2 * time.Second
 	}
 	if cfg.ResultPollAttempts <= 0 {
-		cfg.ResultPollAttempts = 30
+		cfg.ResultPollAttempts = 300
 	}
 	return &Client{
 		http:               outbound.NewClient(cfg.Policy),

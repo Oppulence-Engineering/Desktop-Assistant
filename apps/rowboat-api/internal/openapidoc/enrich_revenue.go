@@ -44,6 +44,7 @@ func addRevenueSchemas(schemas obj) {
 		"companyDescription":    stringSchema("Source-backed company description.", "Builds AI infrastructure for customer operations."),
 		"linkedinUrl":           stringSchema("Verified public LinkedIn company URL.", "https://www.linkedin.com/company/acme"),
 		"companyEnrichmentRefs": freeFormSchema("Citation URLs keyed by enriched company field."),
+		"companyEnrichmentData": freeFormSchema("Cited public-web company facts keyed by enrichment field."),
 		"companyEnrichedAt":     stringSchema("When the company profile was last enriched.", "2026-09-06T08:00:00Z", obj{"format": "date-time"}, nullable()),
 	}, "id", "kind", "displayName", "status", "lifecycle", "engagement", "sentiment", "health", "stateVersion", "projectorVersion", "risks", "milestones", "resourceRefs", "categories")
 
@@ -493,26 +494,38 @@ func addRevenueSchemas(schemas obj) {
 	}, "id", "revision", "revisionHash", "status", "evaluatedAt", "expiresAt")
 
 	schemas["RevenueImpact"] = objectSchema("Aggregate ROI picture for the caller's revenue queue: how many open loops were surfaced, how they were triaged, how many were acted on, and what came back.", obj{
-		"surfaced":       intSchema("Total actions ever surfaced.", 42),
-		"open":           intSchema("Actions currently open.", 8),
-		"handled":        intSchema("Actions marked handled.", 20),
-		"snoozed":        intSchema("Actions snoozed.", 3),
-		"dismissed":      intSchema("Actions dismissed.", 11),
-		"approved":       intSchema("Actions approved.", 18),
-		"executed":       intSchema("Actions executed (draft created or email sent).", 16),
-		"replied":        intSchema("Replies observed.", 6),
-		"meetingsBooked": intSchema("Meetings booked.", 2),
-		"won":            intSchema("Deals marked won.", 1),
-		"lost":           intSchema("Deals marked lost.", 1),
-		"replyRate":      obj{"type": "number", "nullable": true, "description": "Reply rate = replied / executed; null with no denominator.", "example": 0.38},
-		"meetingRate":    obj{"type": "number", "nullable": true, "description": "Meeting rate = meetings / executed; null with no denominator.", "example": 0.12},
-		"outcomes":       freeFormSchema("Raw outcome-kind counts."),
+		"surfaced":              intSchema("Total actions ever surfaced.", 42),
+		"open":                  intSchema("Actions currently open.", 8),
+		"handled":               intSchema("Actions marked handled.", 20),
+		"snoozed":               intSchema("Actions snoozed.", 3),
+		"dismissed":             intSchema("Actions dismissed.", 11),
+		"approved":              intSchema("Actions approved.", 18),
+		"executed":              intSchema("Actions executed (draft created or email sent).", 16),
+		"replied":               intSchema("Replies observed.", 6),
+		"meetingsBooked":        intSchema("Meetings booked.", 2),
+		"won":                   intSchema("Deals marked won.", 1),
+		"lost":                  intSchema("Deals marked lost.", 1),
+		"replyRate":             obj{"type": "number", "nullable": true, "description": "Reply rate = replied / executed; null with no denominator.", "example": 0.38},
+		"meetingRate":           obj{"type": "number", "nullable": true, "description": "Meeting rate = meetings / executed; null with no denominator.", "example": 0.12},
+		"outcomes":              freeFormSchema("Raw outcome-kind counts."),
+		"relationships":         intSchema("Active relationships in the portfolio.", 24),
+		"atRiskRelationships":   intSchema("Distinct relationships with at least one open attention item.", 7),
+		"criticalRelationships": intSchema("Distinct relationships with a critical open attention item.", 2),
+		"portfolioRiskScore":    intSchema("Deterministic 0-100 portfolio exposure score from each account's highest open risk.", 31),
+		"overdueCommitments":    intSchema("Confirmed or accepted open commitments past due.", 5),
+		"overdueByUs":           intSchema("Overdue commitments promised by the user or their team.", 3),
+		"overdueByThem":         intSchema("Overdue commitments promised by the counterparty.", 2),
+		"longestOverdueDays":    intSchema("Whole days the oldest open commitment is overdue.", 12),
+		"riskReasons": arraySchema("Deterministic reasons currently exposing relationships.", objectSchema("Relationship risk reason.", obj{
+			"reason":        stringSchema("Stable reason code.", "unanswered_proposal"),
+			"relationships": intSchema("Distinct affected relationships.", 3),
+		}, "reason", "relationships")),
 		"byDetector": arraySchema("Per-detector contribution.", objectSchema("Detector stat.", obj{
 			"detector": stringSchema("Detector.", "unanswered_proposal"),
 			"surfaced": intSchema("Surfaced by this detector.", 12),
 			"handled":  intSchema("Handled from this detector.", 7),
 		})),
-	}, "surfaced", "open", "handled", "approved", "executed")
+	}, "surfaced", "open", "handled", "approved", "executed", "relationships", "atRiskRelationships", "criticalRelationships", "portfolioRiskScore", "overdueCommitments", "overdueByUs", "overdueByThem", "longestOverdueDays", "riskReasons")
 
 	schemas["RevenueDigest"] = objectSchema("The proactive digest content: the top open loops plus running impact counts. This is what the scheduled digest email is built from.", obj{
 		"generatedAt":    stringSchema("When composed.", "2026-07-23T09:00:00Z", obj{"format": "date-time"}),

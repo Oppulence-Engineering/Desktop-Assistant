@@ -35,6 +35,7 @@ describe("workspace record notes", () => {
           observation("event-2", "2026-09-02T12:00:00Z", "note", {
             noteId: "note-1",
             title: "Updated",
+            liveLinked: true,
           }),
           observation("event-3", "2026-09-03T12:00:00Z", "note", {
             noteId: "note-2",
@@ -48,7 +49,11 @@ describe("workspace record notes", () => {
     );
 
     expect(notes).toHaveLength(1);
-    expect(notes[0]).toMatchObject({ externalId: "note-1", title: "Updated" });
+    expect(notes[0]).toMatchObject({
+      externalId: "note-1",
+      title: "Updated",
+      liveLinked: true,
+    });
   });
 
   it("keeps Plate blocks readable in note previews", () => {

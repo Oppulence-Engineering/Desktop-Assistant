@@ -501,6 +501,14 @@ func TestLoadRegistryRejectsInvalidMCPPolicies(t *testing.T) {
 func TestNativeConnectorDoesNotMintMCPToken(t *testing.T) {
 	client, u, h := setup(t, connectors.DefaultRegistry())
 	authed := auth.WithUser(context.Background(), u)
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL.Path != "/integrations/v1/me" || r.Header.Get("Authorization") != "Bearer pat-test" {
+			t.Fatalf("unexpected HubSpot validation request: %s %s auth=%q", r.Method, r.URL.Path, r.Header.Get("Authorization"))
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer provider.Close()
+	h.SetHubSpotBaseURL(provider.URL)
 
 	keyRec := httptest.NewRecorder()
 	h.SetAPIKey(keyRec, httptest.NewRequest(http.MethodPost, "/v1/connections/hubspot/api-key", strings.NewReader(`{"apiKey":"pat-test"}`)).
@@ -517,6 +525,38 @@ func TestNativeConnectorDoesNotMintMCPToken(t *testing.T) {
 		WithContext(withParam(authed, "name", "hubspot")))
 	if tokenRec.Code != http.StatusBadRequest || !strings.Contains(tokenRec.Body.String(), "unsupported_transport") {
 		t.Fatalf("native MCP token response: %d %s", tokenRec.Code, tokenRec.Body.String())
+	}
+}
+
+func TestHubSpotCredentialFailureDoesNotPersistConnection(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		provider   int
+		wantStatus int
+		wantCode   string
+	}{
+		{name: "rejected", provider: http.StatusUnauthorized, wantStatus: http.StatusBadRequest, wantCode: "invalid_api_key"},
+		{name: "unavailable", provider: http.StatusServiceUnavailable, wantStatus: http.StatusBadGateway, wantCode: "upstream_error"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client, u, h := setup(t, connectors.DefaultRegistry())
+			authed := auth.WithUser(context.Background(), u)
+			provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(tc.provider)
+			}))
+			defer provider.Close()
+			h.SetHubSpotBaseURL(provider.URL)
+
+			rec := httptest.NewRecorder()
+			h.SetAPIKey(rec, httptest.NewRequest(http.MethodPost, "/v1/connections/hubspot/api-key", strings.NewReader(`{"apiKey":"pat-test"}`)).
+				WithContext(withParam(authed, "name", "hubspot")))
+			if rec.Code != tc.wantStatus || !strings.Contains(rec.Body.String(), tc.wantCode) {
+				t.Fatalf("response: %d %s", rec.Code, rec.Body.String())
+			}
+			if client.MCPConnection.Query().CountX(authed) != 0 || client.ConnectorAuditEvent.Query().CountX(authed) != 0 {
+				t.Fatal("failed HubSpot validation persisted connector state")
+			}
+		})
 	}
 }
 

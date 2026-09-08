@@ -159,6 +159,8 @@ func RequestTimeout(timeout time.Duration) func(http.Handler) http.Handler {
 
 func skipRequestTimeout(path string) bool {
 	return strings.HasPrefix(path, "/v1/llm/") ||
+		path == "/v1/research/people" ||
+		path == "/v1/research/companies" ||
 		strings.HasSuffix(path, "/events") ||
 		strings.HasSuffix(path, "/events/stream")
 }

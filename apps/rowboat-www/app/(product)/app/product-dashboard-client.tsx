@@ -1534,7 +1534,7 @@ function PageBody({
                         : view === "workflows"
                           ? workflowFocus === "runs"
                             ? "Runs"
-                            : "Scheduled"
+                            : "Workflows"
                           : "Home"}
                 </span>
               </div>

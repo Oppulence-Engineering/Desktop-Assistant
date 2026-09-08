@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"sort"
 	"strings"
 
 	"github.com/google/uuid"
@@ -18,7 +19,30 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/parallel"
 )
 
-const companyResearchProcessor = parallel.ProcessorBase
+const companyResearchProcessor = parallel.ProcessorPro
+
+var companyResearchFields = map[string]string{
+	"linkedin_company_url": "Verified public LinkedIn company page URL. Empty if unavailable.",
+	"industry_category":    "Concise primary industry category. Empty if unavailable.",
+	"subindustry":          "Specific subindustry or market category. Empty if unavailable.",
+	"company_description":  "A concise 1-3 sentence summary of the company's operations, mission, and offerings.",
+	"headquarters":         "Headquarters city, state or region, and country. Empty if unavailable.",
+	"founded_year":         "Four-digit year the company was founded. Empty if unavailable.",
+	"employee_range":       "Current employee count or standardized employee range with the observation year.",
+	"ownership":            "Ownership status such as private, public, subsidiary, nonprofit, or acquired.",
+	"stock_ticker":         "Public stock exchange and ticker. Empty for non-public companies.",
+	"funding_summary":      "Total public funding plus the latest disclosed round amount, type, and date.",
+	"revenue_range":        "Most recent publicly supported annual revenue figure or estimated range with year.",
+	"business_model":       "Concise description of how the company makes money.",
+	"products":             "Principal products or services, comma-separated.",
+	"customer_segments":    "Primary customer segments or industries served, comma-separated.",
+	"technologies":         "Publicly evidenced core technologies or technology categories, comma-separated.",
+	"key_executives":       "Current key executives formatted as Name — Title and separated by semicolons.",
+	"recent_news":          "Up to three material company events from the last 12 months with dates.",
+	"growth_signals":       "Current hiring, expansion, funding, product-launch, partnership, or contraction signals with dates.",
+	"website_url":          "Official HTTPS company website URL.",
+	"social_urls":          "Official public social profile URLs other than LinkedIn, comma-separated.",
+}
 
 // CompanyResearchOutcome reports the fields accepted from a company research run.
 type CompanyResearchOutcome struct {
@@ -165,10 +189,25 @@ func (s *Service) EnrichCompany(ctx context.Context, u *ent.User, relationshipID
 	for field, refs := range profile.citations {
 		citations[field] = refs
 	}
+	enrichmentData := make(map[string]string, len(rel.CompanyEnrichmentData)+len(profile.data))
+	for field, value := range rel.CompanyEnrichmentData {
+		enrichmentData[field] = value
+	}
+	for field, value := range profile.data {
+		enrichmentData[field] = value
+	}
+	enrichmentRefs := make(map[string][]string, len(rel.CompanyEnrichmentRefs)+len(citations))
+	for field, refs := range rel.CompanyEnrichmentRefs {
+		enrichmentRefs[field] = refs
+	}
+	for field, refs := range citations {
+		enrichmentRefs[field] = refs
+	}
 	update := rel.Update().
 		SetCompanyEnrichmentVersion(version).
 		SetCompanyEnrichedAt(s.now().UTC()).
-		SetCompanyEnrichmentRefs(citations)
+		SetCompanyEnrichmentRefs(enrichmentRefs).
+		SetCompanyEnrichmentData(enrichmentData)
 	if profile.category != "" {
 		update.SetCompanyCategories([]string{profile.category})
 	}
@@ -196,6 +235,7 @@ func replayedCompanyOutcome(rel *ent.Relationship, version string) *CompanyResea
 	profile := companyProfile{
 		citations: rel.CompanyEnrichmentRefs, category: strings.Join(rel.CompanyCategories, ", "),
 		description: rel.CompanyDescription, linkedinURL: rel.LinkedinURL,
+		data: rel.CompanyEnrichmentData,
 	}
 	return &CompanyResearchOutcome{
 		RelationshipID: rel.ID, Matched: rel.CompanyEnrichmentVersion == version && profile.written() > 0,
@@ -212,23 +252,17 @@ func companyResearchAnchor(rel *ent.Relationship) (map[string]any, error) {
 }
 
 func companyResearchSchema() map[string]any {
-	return map[string]any{
-		"type": "object",
-		"properties": map[string]any{
-			researchMatchField: map[string]any{
-				"type": "string", "enum": []string{"high", "medium", "low"},
-				"description": "How certain you are that the sources describe the company at this exact domain.",
-			},
-			"linkedin_company_url": map[string]any{
-				"type": "string", "description": "Verified public LinkedIn company page URL. Empty if unavailable.",
-			},
-			"industry_category": map[string]any{
-				"type": "string", "description": "Concise 1-3 word industry category. Empty if unavailable.",
-			},
-			"company_description": map[string]any{
-				"type": "string", "description": "Exactly one sentence describing the company. Empty if unavailable.",
-			},
+	properties := map[string]any{
+		researchMatchField: map[string]any{
+			"type": "string", "enum": []string{"high", "medium", "low"},
+			"description": "How certain you are that the sources describe the company at this exact domain.",
 		},
+	}
+	for field, description := range companyResearchFields {
+		properties[field] = map[string]any{"type": "string", "description": description}
+	}
+	return map[string]any{
+		"type": "object", "properties": properties,
 		"required": []string{researchMatchField}, "additionalProperties": false,
 	}
 }
@@ -247,9 +281,13 @@ type companyProfile struct {
 	description string
 	linkedinURL string
 	citations   map[string][]string
+	data        map[string]string
 }
 
 func (p companyProfile) written() int {
+	if len(p.data) > 0 {
+		return len(p.data)
+	}
 	n := 0
 	for _, value := range []string{p.category, p.description, p.linkedinURL} {
 		if value != "" {
@@ -265,7 +303,7 @@ func (p companyProfile) linkedinRef() string {
 }
 
 func companyProfileFromResult(result *parallel.TaskResult) (companyProfile, bool, []string) {
-	profile := companyProfile{citations: map[string][]string{}}
+	profile := companyProfile{citations: map[string][]string{}, data: map[string]string{}}
 	if result == nil {
 		return profile, false, []string{"vendor returned no result"}
 	}
@@ -277,7 +315,12 @@ func companyProfileFromResult(result *parallel.TaskResult) (companyProfile, bool
 		return profile, false, []string{"company match confidence is " + match + "; nothing stored"}
 	}
 	rejected := []string{}
-	for _, field := range []string{"industry_category", "company_description", "linkedin_company_url"} {
+	fields := make([]string, 0, len(companyResearchFields))
+	for field := range companyResearchFields {
+		fields = append(fields, field)
+	}
+	sort.Strings(fields)
+	for _, field := range fields {
 		value := strings.TrimSpace(stringValue(result.Content[field]))
 		if value == "" {
 			continue
@@ -312,12 +355,19 @@ func companyProfileFromResult(result *parallel.TaskResult) (companyProfile, bool
 				rejected = append(rejected, field+": invalid LinkedIn company URL")
 				continue
 			}
+			value = profile.linkedinURL
+		default:
+			if len([]rune(value)) > maxVendorValueRunes {
+				rejected = append(rejected, field+": value is implausibly long")
+				continue
+			}
 		}
 		urls := make([]string, 0, len(citations))
 		for _, citation := range citations {
 			urls = append(urls, citation.URL)
 		}
 		profile.citations[field] = urls
+		profile.data[field] = value
 	}
 	return profile, true, rejected
 }

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "@oppulence/ui/product-system.css";
+@import "@xyflow/react/dist/style.css";
 
 @source "../../../packages/ui/src/**/*.{ts,tsx}";
 

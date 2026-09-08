@@ -4,7 +4,7 @@ import "client-only";
 
 import * as React from "react";
 import type { Value } from "platejs";
-import { Plate, PlateContent, usePlateEditor } from "platejs/react";
+import { Plate, PlateContent, createPlatePlugin, usePlateEditor } from "platejs/react";
 import {
   ArrowsOut,
   ArrowClockwise,
@@ -23,8 +23,13 @@ import {
   Note,
   NotePencil,
   Plus,
+  Quotes,
   SlidersHorizontal,
   SquaresFour,
+  TextB,
+  TextHOne,
+  TextItalic,
+  TextUnderline,
   User,
   X,
 } from "@phosphor-icons/react";
@@ -53,16 +58,19 @@ import {
   createRelationship,
   dismissAction,
   getPersonAttributes,
+  getRelationship,
   getRelationshipTimeline,
   ingestRelationshipObservations,
   listActions,
   listPersons,
   listRelationships,
   relativeTime,
+  safeResearchCitationURL,
 } from "@/lib/revenue";
 import type {
   RelationshipPerson,
   RelationshipPersonAttribute,
+  RelationshipDetail,
   RevenueAction,
   RevenueRelationship,
 } from "@/types/revenue";
@@ -79,6 +87,18 @@ const initials = (name: string) =>
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+
+const notePlugins = [
+  createPlatePlugin({ key: "bold", node: { isLeaf: true }, render: { as: "strong" } }),
+  createPlatePlugin({ key: "italic", node: { isLeaf: true }, render: { as: "em" } }),
+  createPlatePlugin({ key: "underline", node: { isLeaf: true }, render: { as: "u" } }),
+  createPlatePlugin({ key: "h2", node: { isElement: true, type: "h2" }, render: { as: "h2" } }),
+  createPlatePlugin({
+    key: "blockquote",
+    node: { isElement: true, type: "blockquote" },
+    render: { as: "blockquote" },
+  }),
+];
 
 function SearchBar({
   label,
@@ -204,7 +224,7 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
       ) : (
         <div className="min-w-0 flex-1 overflow-auto">
           <table
-            className="w-full min-w-[900px] table-fixed border-collapse text-left"
+            className="w-full min-w-[1180px] table-fixed border-collapse text-left"
             aria-label="People"
           >
             <thead className="sticky top-0 z-10 bg-background">
@@ -219,8 +239,11 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                 <th className="w-[250px] border-r border-border px-3">Person</th>
                 <th className="w-[210px] border-r border-border px-3">Company</th>
                 <th className="w-36 border-r border-border px-3">Role</th>
+                <th className="w-36 border-r border-border px-3">Department</th>
+                <th className="w-40 border-r border-border px-3">Location</th>
                 <th className="w-36 border-r border-border px-3">Last interaction</th>
                 <th className="w-28 border-r border-border px-3 text-center">Relationships</th>
+                <th className="w-28 border-r border-border px-3">LinkedIn</th>
                 <th className="px-3">Enrichment</th>
               </tr>
             </thead>
@@ -263,11 +286,31 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                   <td className="truncate border-r border-border px-3 text-[12px] text-primary/60">
                     {person.title || person.seniority || "—"}
                   </td>
+                  <td className="truncate border-r border-border px-3 text-[12px] text-primary/60">
+                    {person.department || "—"}
+                  </td>
+                  <td className="truncate border-r border-border px-3 text-[12px] text-primary/60">
+                    {person.location || "—"}
+                  </td>
                   <td className="border-r border-border px-3 text-[12px] text-primary/50">
                     {person.lastInteractionAt ? relativeTime(person.lastInteractionAt) : "—"}
                   </td>
                   <td className="border-r border-border px-3 text-center text-[12px] text-primary/60">
                     {person.relationshipCount}
+                  </td>
+                  <td className="truncate border-r border-border px-3 text-[12px]">
+                    {person.linkedinUrl ? (
+                      <a
+                        className="text-primary/60 underline-offset-2 hover:text-primary hover:underline"
+                        href={person.linkedinUrl}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        View profile
+                      </a>
+                    ) : (
+                      <span className="text-primary/35">—</span>
+                    )}
                   </td>
                   <td className="truncate px-3 text-[12px] text-primary/50">
                     {person.location ||
@@ -400,7 +443,9 @@ function PersonSheet({
               ["Company", person.orgName || person.orgDomain],
               ["Role", person.title],
               ["Seniority", person.seniority],
+              ["Department", person.department],
               ["Location", person.location],
+              ["LinkedIn", person.linkedinUrl],
               ["Timezone", person.timezone],
               [
                 "Last interaction",
@@ -434,6 +479,21 @@ function PersonSheet({
                   <p className="mt-1 text-[11px] text-primary/40">
                     {attribute.source} · {relativeTime(attribute.observedAt)}
                   </p>
+                  {(attribute.citations ?? [])
+                    .map((citation) => safeResearchCitationURL(citation.url))
+                    .filter((url): url is string => Boolean(url))
+                    .slice(0, 2)
+                    .map((url, index) => (
+                      <a
+                        className="mr-3 mt-1 inline-block text-[11px] text-primary/55 underline-offset-2 hover:underline"
+                        href={url}
+                        key={url}
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        Verify source {index + 1}
+                      </a>
+                    ))}
                 </li>
               ))}
             </ul>
@@ -705,14 +765,49 @@ function NoteDialog({
   );
   const [content, setContent] = React.useState<Value>(() => plateValue(note));
   const [meetingLinked, setMeetingLinked] = React.useState(Boolean(note?.meetingLinked));
+  const [liveLinked, setLiveLinked] = React.useState(note?.liveLinked ?? true);
+  const [liveRecord, setLiveRecord] = React.useState<RelationshipDetail | null>(null);
+  const [liveUpdatedAt, setLiveUpdatedAt] = React.useState<string | null>(null);
   const [maximized, setMaximized] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [saveState, setSaveState] = React.useState<"saved" | "saving" | "error">("saved");
   const lastSaved = React.useRef(
-    note ? JSON.stringify([title, relationshipId, content, meetingLinked]) : "",
+    note ? JSON.stringify([title, relationshipId, content, meetingLinked, liveLinked]) : "",
   );
-  const editor = usePlateEditor({ value: content });
-  const snapshot = JSON.stringify([title, relationshipId, content, meetingLinked]);
+  const editor = usePlateEditor({ plugins: notePlugins, value: content });
+  const snapshot = JSON.stringify([title, relationshipId, content, meetingLinked, liveLinked]);
+
+  const refreshLiveRecord = React.useCallback(async () => {
+    if (!relationshipId || !liveLinked) {
+      setLiveRecord(null);
+      return;
+    }
+    const detail = await getRelationship(relationshipId);
+    setLiveRecord(detail);
+    setLiveUpdatedAt(new Date().toISOString());
+  }, [liveLinked, relationshipId]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const detail = await getRelationship(relationshipId);
+        if (!cancelled) {
+          setLiveRecord(detail);
+          setLiveUpdatedAt(new Date().toISOString());
+        }
+      } catch {
+        if (!cancelled) setLiveRecord(null);
+      }
+    };
+    if (!liveLinked || !relationshipId) return;
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [liveLinked, relationshipId]);
 
   const publish = React.useCallback(
     async (eventType: "note" | "note_deleted") => {
@@ -731,7 +826,14 @@ function NoteDialog({
             summary: title.trim() || "Untitled note",
             normalizedFacts:
               eventType === "note"
-                ? { noteId, title: title.trim() || "Untitled note", body, content, meetingLinked }
+                ? {
+                    noteId,
+                    title: title.trim() || "Untitled note",
+                    body,
+                    content,
+                    meetingLinked,
+                    liveLinked,
+                  }
                 : { noteId },
           },
         ]);
@@ -745,7 +847,7 @@ function NoteDialog({
         return false;
       }
     },
-    [content, meetingLinked, noteId, onError, onSaved, relationshipId, snapshot, title],
+    [content, liveLinked, meetingLinked, noteId, onError, onSaved, relationshipId, snapshot, title],
   );
 
   React.useEffect(() => {
@@ -878,11 +980,110 @@ function NoteDialog({
               <CalendarBlank className="size-4" />
               {meetingLinked ? "Meeting linked" : "Link a meeting"}
             </button>
+            <button
+              type="button"
+              className="flex items-center gap-2 hover:text-white"
+              onClick={() => setLiveLinked((value) => !value)}
+            >
+              <ArrowClockwise className={`size-4 ${liveLinked ? "text-cyan-400" : ""}`} />
+              {liveLinked ? "Live account context" : "Make this note live"}
+            </button>
+          </div>
+          {liveLinked ? (
+            <section
+              aria-live="polite"
+              className="mt-6 border border-white/10 bg-white/[0.025]"
+              data-capability="live-record-note"
+            >
+              <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
+                <div>
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-cyan-300/80">
+                    Live account context
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-white/35">
+                    Auto-refreshes every 30 seconds without changing your writing
+                  </p>
+                </div>
+                <button
+                  aria-label="Refresh live account context"
+                  className="flex size-7 items-center justify-center border border-white/10 hover:bg-white/5 hover:text-white"
+                  onClick={() => void refreshLiveRecord().catch(() => setLiveRecord(null))}
+                  type="button"
+                >
+                  <ArrowClockwise className="size-3.5" />
+                </button>
+              </div>
+              {liveRecord ? (
+                <div className="grid grid-cols-2 gap-px bg-white/10 text-[12px] md:grid-cols-4">
+                  {[
+                    ["Health", liveRecord.relationship.health.replaceAll("_", " ")],
+                    ["Open commitments", String(liveRecord.relationship.commitmentCount ?? 0)],
+                    [
+                      "Last interaction",
+                      liveRecord.relationship.lastTouchAt
+                        ? relativeTime(liveRecord.relationship.lastTouchAt)
+                        : "No activity",
+                    ],
+                    [
+                      "Next action",
+                      liveRecord.relationship.nextAction ||
+                        liveRecord.relationship.stateReason ||
+                        "Not established",
+                    ],
+                  ].map(([label, value]) => (
+                    <div className="min-w-0 bg-[#17181a] p-3" key={label}>
+                      <p className="text-[10px] uppercase tracking-wide text-white/35">{label}</p>
+                      <p className="mt-1 truncate capitalize text-white/70">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="px-3 py-4 text-[12px] text-white/35">
+                  Loading current account state…
+                </p>
+              )}
+              {liveRecord?.relationship.risks.length ? (
+                <p className="border-t border-white/10 px-3 py-2 text-[11px] text-amber-200/70">
+                  {liveRecord.relationship.risks.length} open risk
+                  {liveRecord.relationship.risks.length === 1 ? "" : "s"}:{" "}
+                  {liveRecord.relationship.risks.join(" · ")}
+                </p>
+              ) : null}
+              {liveUpdatedAt ? (
+                <p className="sr-only">Live context updated {relativeTime(liveUpdatedAt)}</p>
+              ) : null}
+            </section>
+          ) : null}
+          <div className="mt-6 flex items-center gap-1 border-y border-white/10 py-1">
+            {[
+              { label: "Bold", icon: TextB, run: () => editor.tf.toggleMark("bold") },
+              { label: "Italic", icon: TextItalic, run: () => editor.tf.toggleMark("italic") },
+              {
+                label: "Underline",
+                icon: TextUnderline,
+                run: () => editor.tf.toggleMark("underline"),
+              },
+              { label: "Heading", icon: TextHOne, run: () => editor.tf.toggleBlock("h2") },
+              { label: "Quote", icon: Quotes, run: () => editor.tf.toggleBlock("blockquote") },
+            ].map(({ label, icon: Icon, run }) => (
+              <button
+                aria-label={label}
+                className="flex size-8 items-center justify-center text-white/50 hover:bg-white/5 hover:text-white"
+                key={label}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  run();
+                }}
+                type="button"
+              >
+                <Icon className="size-4" />
+              </button>
+            ))}
           </div>
           <Plate editor={editor} onChange={({ value }) => setContent(value)}>
             <PlateContent
               aria-label="Note content"
-              className="mt-8 min-h-24 text-[14px] leading-6 text-white/80 outline-none [&_[data-slate-placeholder]]:text-white/38"
+              className="mt-6 min-h-24 text-[14px] leading-6 text-white/80 outline-none [&_.slate-blockquote]:my-3 [&_.slate-blockquote]:border-l-2 [&_.slate-blockquote]:border-cyan-400/40 [&_.slate-blockquote]:pl-3 [&_.slate-blockquote]:text-white/60 [&_.slate-h2]:my-3 [&_.slate-h2]:text-xl [&_.slate-h2]:font-semibold [&_[data-slate-placeholder]]:text-white/38"
               placeholder="Start typing your note"
             />
           </Plate>

@@ -207,6 +207,7 @@ type relationshipDTO struct {
 	CompanyDescription    string              `json:"companyDescription,omitempty"`
 	LinkedInURL           string              `json:"linkedinUrl,omitempty"`
 	CompanyEnrichmentRefs map[string][]string `json:"companyEnrichmentRefs,omitempty"`
+	CompanyEnrichmentData map[string]string   `json:"companyEnrichmentData,omitempty"`
 	CompanyEnrichedAt     *time.Time          `json:"companyEnrichedAt,omitempty"`
 }
 
@@ -239,6 +240,7 @@ func relationshipToDTO(rel *ent.Relationship) relationshipDTO {
 		CompanyDescription:    rel.CompanyDescription,
 		LinkedInURL:           rel.LinkedinURL,
 		CompanyEnrichmentRefs: rel.CompanyEnrichmentRefs,
+		CompanyEnrichmentData: rel.CompanyEnrichmentData,
 		CompanyEnrichedAt:     rel.CompanyEnrichedAt,
 	}
 }
@@ -283,9 +285,11 @@ type personDTO struct {
 	// Projected from cloud-research attributes (RFC 039). Empty for every
 	// workspace that never enables research, which is why they are omitempty
 	// rather than always present: "" here means nobody ever told us.
-	Seniority string `json:"seniority,omitempty"`
-	Location  string `json:"location,omitempty"`
-	Status    string `json:"status"`
+	Seniority   string `json:"seniority,omitempty"`
+	Location    string `json:"location,omitempty"`
+	LinkedInURL string `json:"linkedinUrl,omitempty"`
+	Department  string `json:"department,omitempty"`
+	Status      string `json:"status"`
 	// Whether their mail still reaches them. Surfaced so the UI can say a contact
 	// has left rather than silently ranking the account as merely quiet.
 	EmploymentStatus   string  `json:"employmentStatus,omitempty"`
@@ -307,6 +311,8 @@ func personToDTO(p *ent.Person) *personDTO {
 		Aliases:           p.Aliases,
 		Seniority:         p.Seniority,
 		Location:          p.Location,
+		LinkedInURL:       p.LinkedinURL,
+		Department:        p.Department,
 		PrimaryEmail:      p.PrimaryEmail,
 		Title:             p.Title,
 		OrgName:           p.OrgName,
@@ -1296,10 +1302,19 @@ type impactDTO struct {
 	Won       int `json:"won"`
 	Lost      int `json:"lost"`
 	// Rates are fractions in [0,1]; null when there is no denominator yet.
-	ReplyRate   *float64       `json:"replyRate"`
-	MeetingRate *float64       `json:"meetingRate"`
-	Outcomes    map[string]int `json:"outcomes"`
-	ByDetector  []DetectorStat `json:"byDetector"`
+	ReplyRate             *float64       `json:"replyRate"`
+	MeetingRate           *float64       `json:"meetingRate"`
+	Outcomes              map[string]int `json:"outcomes"`
+	ByDetector            []DetectorStat `json:"byDetector"`
+	Relationships         int            `json:"relationships"`
+	AtRiskRelationships   int            `json:"atRiskRelationships"`
+	CriticalRelationships int            `json:"criticalRelationships"`
+	PortfolioRiskScore    int            `json:"portfolioRiskScore"`
+	OverdueCommitments    int            `json:"overdueCommitments"`
+	OverdueByUs           int            `json:"overdueByUs"`
+	OverdueByThem         int            `json:"overdueByThem"`
+	LongestOverdueDays    int            `json:"longestOverdueDays"`
+	RiskReasons           []RiskStat     `json:"riskReasons"`
 }
 
 func ratio(num, den int) *float64 {
@@ -1324,21 +1339,30 @@ func (h *Handler) Impact(w http.ResponseWriter, r *http.Request) {
 	replied := imp.OutcomeCount("replied")
 	meetings := imp.OutcomeCount("meeting_booked")
 	dto := impactDTO{
-		Surfaced:    imp.Surfaced,
-		Open:        imp.Open,
-		Handled:     imp.Handled,
-		Snoozed:     imp.Snoozed,
-		Dismissed:   imp.Dismissed,
-		Approved:    imp.Approved,
-		Executed:    imp.Executed,
-		Replied:     replied,
-		Meetings:    meetings,
-		Won:         imp.OutcomeCount("won"),
-		Lost:        imp.OutcomeCount("lost"),
-		ReplyRate:   ratio(replied, imp.Executed),
-		MeetingRate: ratio(meetings, imp.Executed),
-		Outcomes:    imp.Outcomes,
-		ByDetector:  imp.Detectors,
+		Surfaced:              imp.Surfaced,
+		Open:                  imp.Open,
+		Handled:               imp.Handled,
+		Snoozed:               imp.Snoozed,
+		Dismissed:             imp.Dismissed,
+		Approved:              imp.Approved,
+		Executed:              imp.Executed,
+		Replied:               replied,
+		Meetings:              meetings,
+		Won:                   imp.OutcomeCount("won"),
+		Lost:                  imp.OutcomeCount("lost"),
+		ReplyRate:             ratio(replied, imp.Executed),
+		MeetingRate:           ratio(meetings, imp.Executed),
+		Outcomes:              imp.Outcomes,
+		ByDetector:            imp.Detectors,
+		Relationships:         imp.Relationships,
+		AtRiskRelationships:   imp.AtRiskRelationships,
+		CriticalRelationships: imp.CriticalRelationships,
+		PortfolioRiskScore:    imp.PortfolioRiskScore,
+		OverdueCommitments:    imp.OverdueCommitments,
+		OverdueByUs:           imp.OverdueByUs,
+		OverdueByThem:         imp.OverdueByThem,
+		LongestOverdueDays:    imp.LongestOverdueDays,
+		RiskReasons:           imp.RiskReasons,
 	}
 	httpx.WriteJSON(w, http.StatusOK, dto)
 }

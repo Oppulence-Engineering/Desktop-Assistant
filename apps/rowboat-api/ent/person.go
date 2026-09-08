@@ -47,6 +47,10 @@ type Person struct {
 	Seniority string `json:"seniority,omitempty"`
 	// Location holds the value of the "location" field.
 	Location string `json:"location,omitempty"`
+	// LinkedinURL holds the value of the "linkedin_url" field.
+	LinkedinURL string `json:"linkedin_url,omitempty"`
+	// Department holds the value of the "department" field.
+	Department string `json:"department,omitempty"`
 	// EmploymentStatus holds the value of the "employment_status" field.
 	EmploymentStatus string `json:"employment_status,omitempty"`
 	// AttributesVersion holds the value of the "attributes_version" field.
@@ -196,7 +200,7 @@ func (*Person) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case person.FieldAttributesVersion, person.FieldProjectorVersion, person.FieldRelationshipCount:
 			values[i] = new(sql.NullInt64)
-		case person.FieldDisplayName, person.FieldPrimaryEmail, person.FieldTitle, person.FieldOrgName, person.FieldOrgDomain, person.FieldPhone, person.FieldTimezone, person.FieldLocale, person.FieldSeniority, person.FieldLocation, person.FieldEmploymentStatus, person.FieldAttributesHash, person.FieldStatus:
+		case person.FieldDisplayName, person.FieldPrimaryEmail, person.FieldTitle, person.FieldOrgName, person.FieldOrgDomain, person.FieldPhone, person.FieldTimezone, person.FieldLocale, person.FieldSeniority, person.FieldLocation, person.FieldLinkedinURL, person.FieldDepartment, person.FieldEmploymentStatus, person.FieldAttributesHash, person.FieldStatus:
 			values[i] = new(sql.NullString)
 		case person.FieldCreatedAt, person.FieldUpdatedAt, person.FieldProjectedAt, person.FieldMergedAt, person.FieldFirstInteractionAt, person.FieldLastInteractionAt:
 			values[i] = new(sql.NullTime)
@@ -306,6 +310,18 @@ func (_m *Person) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field location", values[i])
 			} else if value.Valid {
 				_m.Location = value.String
+			}
+		case person.FieldLinkedinURL:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field linkedin_url", values[i])
+			} else if value.Valid {
+				_m.LinkedinURL = value.String
+			}
+		case person.FieldDepartment:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field department", values[i])
+			} else if value.Valid {
+				_m.Department = value.String
 			}
 		case person.FieldEmploymentStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -504,6 +520,12 @@ func (_m *Person) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("location=")
 	builder.WriteString(_m.Location)
+	builder.WriteString(", ")
+	builder.WriteString("linkedin_url=")
+	builder.WriteString(_m.LinkedinURL)
+	builder.WriteString(", ")
+	builder.WriteString("department=")
+	builder.WriteString(_m.Department)
 	builder.WriteString(", ")
 	builder.WriteString("employment_status=")
 	builder.WriteString(_m.EmploymentStatus)

@@ -2096,6 +2096,8 @@ var (
 		{Name: "locale", Type: field.TypeString, Nullable: true},
 		{Name: "seniority", Type: field.TypeString, Nullable: true},
 		{Name: "location", Type: field.TypeString, Nullable: true},
+		{Name: "linkedin_url", Type: field.TypeString, Nullable: true},
+		{Name: "department", Type: field.TypeString, Nullable: true},
 		{Name: "employment_status", Type: field.TypeString, Default: "unknown"},
 		{Name: "attributes_version", Type: field.TypeInt, Default: 0},
 		{Name: "attributes_hash", Type: field.TypeString, Nullable: true},
@@ -2118,13 +2120,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "relationship_persons_revenue_workspaces_relationship_persons",
-				Columns:    []*schema.Column{RelationshipPersonsColumns[25]},
+				Columns:    []*schema.Column{RelationshipPersonsColumns[27]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "relationship_persons_users_relationship_persons",
-				Columns:    []*schema.Column{RelationshipPersonsColumns[26]},
+				Columns:    []*schema.Column{RelationshipPersonsColumns[28]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -2133,17 +2135,17 @@ var (
 			{
 				Name:    "person_status_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipPersonsColumns[19], RelationshipPersonsColumns[25]},
+				Columns: []*schema.Column{RelationshipPersonsColumns[21], RelationshipPersonsColumns[27]},
 			},
 			{
 				Name:    "person_last_interaction_at_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipPersonsColumns[23], RelationshipPersonsColumns[25]},
+				Columns: []*schema.Column{RelationshipPersonsColumns[25], RelationshipPersonsColumns[27]},
 			},
 			{
 				Name:    "person_primary_email_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipPersonsColumns[5], RelationshipPersonsColumns[25]},
+				Columns: []*schema.Column{RelationshipPersonsColumns[5], RelationshipPersonsColumns[27]},
 			},
 		},
 	}
@@ -2514,6 +2516,7 @@ var (
 		{Name: "company_description", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "linkedin_url", Type: field.TypeString, Nullable: true},
 		{Name: "company_enrichment_refs", Type: field.TypeJSON},
+		{Name: "company_enrichment_data", Type: field.TypeJSON},
 		{Name: "company_enrichment_version", Type: field.TypeString, Nullable: true},
 		{Name: "company_enriched_at", Type: field.TypeTime, Nullable: true},
 		{Name: "summary", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -2544,13 +2547,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "relationships_revenue_workspaces_relationships",
-				Columns:    []*schema.Column{RelationshipsColumns[33]},
+				Columns:    []*schema.Column{RelationshipsColumns[34]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "relationships_users_relationships",
-				Columns:    []*schema.Column{RelationshipsColumns[34]},
+				Columns:    []*schema.Column{RelationshipsColumns[35]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -2559,12 +2562,12 @@ var (
 			{
 				Name:    "relationship_primary_email_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipsColumns[5], RelationshipsColumns[33]},
+				Columns: []*schema.Column{RelationshipsColumns[5], RelationshipsColumns[34]},
 			},
 			{
 				Name:    "relationship_status_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RelationshipsColumns[20], RelationshipsColumns[33]},
+				Columns: []*schema.Column{RelationshipsColumns[21], RelationshipsColumns[34]},
 			},
 		},
 	}
