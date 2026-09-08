@@ -941,9 +941,9 @@ export const primaryPages: MarketingPage[] = [
   {
     path: "product",
     eyebrow: "Product",
-    title: "Relationship memory that turns into action.",
+    title: "Nobody remembers what you promised in March. Oppulence does.",
     description:
-      "Oppulence remembers what was promised, what changed, and what happened next across every commercial relationship. It finds the open loops that put revenue at risk and prepares the next move for approval.",
+      "Every commitment, objection, and open loop from your email, calendar, meetings, and CRM, kept current without anyone typing it in. Oppulence surfaces the accounts that are slipping and drafts the next move for you to approve.",
     category: "product",
     bullets: [
       "Build a living ledger of promises, objections, chases, and outcomes from the systems you already use.",
@@ -957,9 +957,9 @@ export const primaryPages: MarketingPage[] = [
   {
     path: "voice",
     eyebrow: "Oppulence Voice",
-    title: "Private voice capture for living relationship memory.",
+    title: "The best context from a call is the part nobody writes down.",
     description:
-      "Oppulence Voice transcribes on your device, keeps local capture under your control, and sends only explicitly consented evidence into Rowboat workflows.",
+      "Oppulence Voice captures and transcribes on your device, so what was actually said becomes part of the account history. Nothing leaves your machine until you say it can.",
     category: "product",
     bullets: [
       "Capture dictation, notes, and meeting context locally before deciding what leaves the device.",

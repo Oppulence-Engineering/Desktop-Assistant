@@ -1400,7 +1400,7 @@ function RelationshipFinalCta() {
 
 const linearHomeSections = [
   {
-    title: "Turn fragmented evidence into living relationship state.",
+    title: "Every promise and open loop, found without anyone typing it in.",
     description:
       "Oppulence scans the last 60–90 days of email, calendar, and billing to build a living ledger of promises, proposals, invoices, and open loops. It finds where a valuable relationship lost its next step, with the dollar amount and source attached.",
     label: "Relationship State Engine",
