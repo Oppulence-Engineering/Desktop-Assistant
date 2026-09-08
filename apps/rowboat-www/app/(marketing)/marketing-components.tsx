@@ -18,7 +18,6 @@ import MagnifyingGlassIcon from "@mui/icons-material/SearchOutlined";
 import MonitorIcon from "@mui/icons-material/DesktopWindowsOutlined";
 import NetworkIcon from "@mui/icons-material/HubOutlined";
 import PathIcon from "@mui/icons-material/RouteOutlined";
-import PlayIcon from "@mui/icons-material/PlayCircleOutlined";
 import PlugsConnectedIcon from "@mui/icons-material/CableOutlined";
 import SealCheckIcon from "@mui/icons-material/VerifiedOutlined";
 import SparkleIcon from "@mui/icons-material/AutoAwesomeOutlined";
@@ -32,7 +31,6 @@ import { Button } from "@oppulence/ui/components/button";
 import { cn } from "@/lib/utils";
 import { DesktopDownloadChooser } from "./desktop-download-chooser";
 import {
-  CONTACT_HREF,
   alternativeLinks,
   blogPages,
   customerPages,
@@ -521,7 +519,6 @@ export function Footer() {
               { label: "Privacy", href: "/privacy" },
               { label: "Terms", href: "/terms" },
               { label: "Responsible disclosure", href: "/responsible-disclosure" },
-              { label: "Talk to the team", href: CONTACT_HREF },
             ]}
             title="Company"
           />
@@ -614,94 +611,52 @@ export function ProductPage({ page }: { page: MarketingPage }) {
 
 const relationshipCatalog = [
   {
-    label: "Living relationship state",
-    kicker: "01 · MODEL",
-    title: "One current truth for every customer account.",
-    body: "Lifecycle, engagement, sentiment, health, participants, commitments, risks, and milestones stay current as new evidence arrives.",
+    label: "Know who needs attention",
+    kicker: "01 · PRIORITIZE",
+    title: "See the relationships most likely to slip.",
+    body: "Oppulence turns email, calendar, meetings, and CRM history into a short list of accounts that need attention now.",
     bullets: [
-      "Qualitative health, never an opaque score",
-      "Every state is correctable and replayable",
+      "A focused queue instead of another dashboard",
+      "Promises, risks, and quiet accounts in one place",
     ],
-    src: "/marketing/relationship-web-list.png",
-  },
-  {
-    label: "Account Mission Control",
-    kicker: "02 · PRIORITIZE",
-    title: "Know which relationship needs action now.",
-    body: "A ranked queue explains what changed, what is at stake, and the safest valuable next move across your book of business.",
-    bullets: ["Portfolio-level attention queue", "Human-readable reasons and source links"],
     src: "/marketing/relationship-desktop.png",
   },
   {
-    label: "Conversation intelligence",
-    kicker: "03 · UNDERSTAND",
-    title: "Turn every conversation into durable follow-through.",
-    body: "Meetings, email, notes, and voice become bilateral commitments, objections, risks, and next steps instead of another pile of summaries.",
-    bullets: ["Commitment and decision extraction", "Meeting briefs grounded in account history"],
-    src: "/marketing/desktop-meetings.png",
-  },
-  {
-    label: "Evidence graph",
-    kicker: "04 · EXPLAIN",
-    title: "Every conclusion keeps its receipt.",
-    body: "Source facts, deterministic rules, AI inferences, and user corrections retain provenance, confidence, freshness, and review state.",
-    bullets: [
-      "Evidence attached to material claims",
-      "Missing and ambiguous evidence stays visible",
-    ],
+    label: "Understand why",
+    kicker: "02 · EXPLAIN",
+    title: "Every recommendation shows its evidence.",
+    body: "See what changed, what is at stake, and the email or meeting behind the recommendation before deciding what to do.",
+    bullets: ["Source links on every material claim", "Missing or uncertain context stays visible"],
     src: "/marketing/relationship-web-detail.png",
   },
   {
-    label: "Connected sources",
-    kicker: "05 · OBSERVE",
-    title: "The systems around the relationship become observers.",
-    body: "Gmail, Calendar, Slack, HubSpot, meetings, notes, voice, browser context, and direct corrections feed one durable account history.",
-    bullets: ["Source identity, health, and freshness", "Provider-neutral observation contract"],
-    src: "/marketing/desktop-connections.png",
-  },
-  {
-    label: "Governed actions",
-    kicker: "06 · ACT",
-    title: "AI proposes. Your team decides.",
-    body: "Oppulence drafts the next move, runs policy checks, and waits. Approved email, Slack, and CRM actions execute against an exact reviewed revision.",
-    bullets: ["Human approval before external action", "Idempotent execution with receipts"],
+    label: "Approve the next move",
+    kicker: "03 · ACT",
+    title: "Review the follow-up before anything is sent.",
+    body: "Oppulence prepares the next move with the relevant history attached. You can edit, approve, snooze, or reject it.",
+    bullets: [
+      "Human approval before external action",
+      "Replies and outcomes improve future suggestions",
+    ],
     src: "/marketing/relationship-desktop-detail.png",
-  },
-  {
-    label: "Always-on workflows",
-    kicker: "07 · LEARN",
-    title: "The relationship keeps moving while clients are closed.",
-    body: "Scheduled and event-driven cloud runs watch for changes, while replies, meetings, edits, corrections, and outcomes improve the next recommendation.",
-    bullets: ["Cloud-safe background runtime", "Web and desktop share the same state"],
-    src: "/marketing/desktop-background-tasks.png",
   },
 ] as const;
 
 const operatingLoop = [
   [
-    "01 / OBSERVE",
+    "01 / CONNECT",
     "It reads what already happened.",
-    "Email, calendar, CRM, meetings, notes, calls, and browser context, as they come in. Nothing gets rewritten after the fact.",
+    "Connect email, calendar, meetings, and CRM. Oppulence builds the relationship history from work your team already did.",
   ],
   [
-    "02 / ASSERT",
-    "It knows what it knows.",
-    "What a system told us, what a rule worked out, what the model guessed, and what you corrected are kept apart on purpose.",
+    "02 / REVIEW",
+    "See what changed and why it matters.",
+    "Your queue highlights the relationships worth attention and links each recommendation back to its source.",
   ],
   [
-    "03 / PROJECT",
-    "One picture of the account.",
-    "All of it resolves into where the relationship stands: who is involved, what was promised, what looks shaky.",
-  ],
-  [
-    "04 / EXPLAIN + RECOMMEND",
-    "What changed, and what to do about it.",
-    "Every suggestion comes with the reason, the emails or meetings behind it, how sure it is, and what it could not see.",
-  ],
-  [
-    "05 / APPROVE + ACT + LEARN",
+    "03 / APPROVE",
     "Nothing goes out without you.",
-    "You approve the exact action. What comes back, replies, meetings, edits, goes into the same history and makes it sharper.",
+    "Edit, approve, snooze, or reject the next move. Replies, meetings, and outcomes make the relationship history sharper.",
   ],
 ] as const;
 
@@ -712,14 +667,9 @@ const useCases = [
     body: "That proposal you sent, the intro someone offered, the person who was keen and then stopped writing. We surface it and tell you why it's worth another go now.",
   },
   {
-    eyebrow: "Customer success",
+    eyebrow: "Customer success and accounts",
     title: "Walk into the renewal already knowing.",
-    body: "What you promised, what they pushed back on, who stopped showing up to calls, and who quietly joined. All in one place, with the receipts.",
-  },
-  {
-    eyebrow: "Account management",
-    title: "Work the list, not the dashboard.",
-    body: "Instead of another activity chart, you get a short list of accounts that actually changed this week and deserve a real reply today.",
+    body: "See what you promised, what changed, and which accounts deserve a real reply before the renewal or next check-in.",
   },
   {
     eyebrow: "Partnerships and services",
@@ -728,30 +678,10 @@ const useCases = [
   },
 ] as const;
 
-const platformPrinciples = [
-  [
-    "Evidence before inference",
-    "Every material state and recommendation points back to the source that supports it.",
-  ],
-  [
-    "Visible uncertainty",
-    "Stale, missing, conflicting, and still-processing evidence are explicit states—not silent guesses.",
-  ],
-  [
-    "Human authority",
-    "Corrections outrank automation. External actions require policy evaluation and approval.",
-  ],
-  [
-    "Equal clients",
-    "Web and desktop share the same relationship contract, history, corrections, and approvals.",
-  ],
-] as const;
-
-function SectionMarker({ index, label }: { index: string; label: string }) {
+function SectionMarker({ label }: { label: string }) {
   return (
     <div className="sm-section-marker">
       <span>{label}</span>
-      <span>[{index}/10]</span>
     </div>
   );
 }
@@ -762,12 +692,9 @@ export function HomePage() {
       <RelationshipHomeHero />
       <TheProblemSection />
       <ProductCatalogSection />
-      <WhatWeDoSection />
       <HowItWorksSection />
       <TrustSection />
       <UseCasesSection />
-      <EnterpriseSection />
-      <PrinciplesSection />
       <PricingSection />
       <RelationshipFaqSection />
       <RelationshipFinalCta />
@@ -819,9 +746,6 @@ function RelationshipHomeHero() {
           <Link className="sm-button sm-button-blue" href="/sign-up">
             Start building <ArrowRightIcon aria-hidden="true" />
           </Link>
-          <a className="sm-button sm-button-light" href={CONTACT_HREF}>
-            Talk to the team
-          </a>
         </div>
         <Link className="sm-command" href="/app">
           <span>$</span>
@@ -880,7 +804,7 @@ function RelationshipHomeHero() {
 function TheProblemSection() {
   return (
     <section className="sm-section sm-problem">
-      <SectionMarker index="1" label="The problem" />
+      <SectionMarker label="The problem" />
       <header className="sm-section-intro">
         <h2>It&rsquo;s all written down. Nobody has time to read it.</h2>
         <p>
@@ -930,7 +854,7 @@ function TheProblemSection() {
 function ProductCatalogSection() {
   return (
     <section className="sm-section sm-catalog" id="product">
-      <SectionMarker index="2" label="Product catalog" />
+      <SectionMarker label="What Oppulence does" />
       <header className="sm-section-intro">
         <h2>Everything you&rsquo;d do yourself, if you had the time.</h2>
         <p>
@@ -990,97 +914,10 @@ function ProductCatalogSection() {
   );
 }
 
-function WhatWeDoSection() {
-  return (
-    <section className="sm-section sm-what-we-do">
-      <SectionMarker index="3" label="What we do" />
-      <header className="sm-centered-intro">
-        <h2>
-          You keep the relationship.
-          <br />
-          We&rsquo;ll keep track of it.
-        </h2>
-        <p>Plug in the tools you already use. We do the reading, and we show our work.</p>
-      </header>
-      <div className="sm-offer-grid">
-        <Link className="sm-offer sm-offer-dark" href="/product">
-          <span>For customer-facing teams</span>
-          <h3>Account Mission Control</h3>
-          <p>
-            A living, explainable view of every account and the next move that deserves attention.
-          </p>
-          <dl>
-            <div>
-              <dt>4</dt>
-              <dd>questions answered</dd>
-            </div>
-            <div>
-              <dt>8</dt>
-              <dd>steps in the loop</dd>
-            </div>
-            <div>
-              <dt>2</dt>
-              <dd>equal clients</dd>
-            </div>
-          </dl>
-          <small>
-            See relationship intelligence <ArrowRightIcon aria-hidden="true" />
-          </small>
-        </Link>
-        <Link className="sm-offer sm-offer-blue" href="/desktop">
-          <span>For work in motion</span>
-          <h3>Oppulence Desktop</h3>
-          <p>
-            Local knowledge, meetings, voice, browser context, and native execution connected to the
-            same account history.
-          </p>
-          <div className="sm-offer-products">
-            <span>
-              Meetings<small>capture</small>
-            </span>
-            <span>
-              Voice<small>local-first</small>
-            </span>
-            <span>
-              Knowledge<small>searchable</small>
-            </span>
-            <span>
-              Actions<small>governed</small>
-            </span>
-          </div>
-          <small>
-            Explore the desktop node <ArrowRightIcon aria-hidden="true" />
-          </small>
-        </Link>
-      </div>
-      <div className="sm-comparison">
-        <article>
-          <p>A normal CRM</p>
-          <h3>Keeps a list of names and deals.</h3>
-          <ul>
-            <li>Stages someone remembered to update</li>
-            <li>Conversations scattered across inboxes</li>
-            <li>Plenty of activity, no explanation</li>
-          </ul>
-        </article>
-        <article>
-          <p>Oppulence</p>
-          <h3>Keeps track of the relationship.</h3>
-          <ul>
-            <li>Updates itself as things actually happen</li>
-            <li>Promises, people, risk, and how it ended</li>
-            <li>From noticing to doing, in one place</li>
-          </ul>
-        </article>
-      </div>
-    </section>
-  );
-}
-
 function HowItWorksSection() {
   return (
     <section className="sm-section sm-how" id="how-it-works">
-      <SectionMarker index="4" label="How it works" />
+      <SectionMarker label="How it works" />
       <div className="sm-how-grid">
         <div className="sm-how-copy">
           <h2>How it actually works.</h2>
@@ -1088,13 +925,6 @@ function HowItWorksSection() {
             Watch the work, sort fact from guess, keep one picture of the account, say what changed,
             suggest a move, wait for you. Every step leaves a record.
           </p>
-          <div className="sm-api-window">
-            <div>
-              <span>relationship-state</span>
-              <span>LIVE</span>
-            </div>
-            <pre>{`GET  /v1/relationships/{id}\nGET  /v1/relationships/{id}/evidence\nPOST /v1/relationships/{id}/recommendations`}</pre>
-          </div>
         </div>
         <div className="sm-loop-list">
           {operatingLoop.map(([eyebrow, title, body]) => (
@@ -1113,7 +943,7 @@ function HowItWorksSection() {
 function TrustSection() {
   return (
     <section className="sm-section sm-trust">
-      <SectionMarker index="5" label="Built for truth" />
+      <SectionMarker label="Built for trust" />
       <header className="sm-section-intro">
         <h2>If you can&rsquo;t check it, you won&rsquo;t trust it.</h2>
         <p>
@@ -1153,39 +983,6 @@ function TrustSection() {
           </p>
         </article>
       </div>
-      <div
-        className="sm-trust-table"
-        role="table"
-        aria-label="Relationship intelligence responsibility model"
-      >
-        <div role="row">
-          <span role="columnheader">Question</span>
-          <span role="columnheader">System answer</span>
-          <span role="columnheader">Authority</span>
-        </div>
-        {[
-          [
-            "What is the state?",
-            "Qualitative lifecycle, health, and engagement",
-            "Deterministic projection",
-          ],
-          ["What changed?", "Material state transition with time and source", "Versioned history"],
-          [
-            "What supports it?",
-            "Linked facts, inference, confidence, and freshness",
-            "Evidence graph",
-          ],
-          ["What needs action?", "Ranked recommendation and reason", "Human-approved action"],
-        ].map((row) => (
-          <div role="row" key={row[0]}>
-            {row.map((cell) => (
-              <span role="cell" key={cell}>
-                {cell}
-              </span>
-            ))}
-          </div>
-        ))}
-      </div>
     </section>
   );
 }
@@ -1193,7 +990,7 @@ function TrustSection() {
 function UseCasesSection() {
   return (
     <section className="sm-section sm-use-cases" id="use-cases">
-      <SectionMarker index="6" label="Use cases" />
+      <SectionMarker label="Use cases" />
       <header className="sm-section-intro">
         <h2>Money you already earned, kept.</h2>
         <p>
@@ -1214,108 +1011,21 @@ function UseCasesSection() {
             <p>{item.eyebrow}</p>
             <h3>{item.title}</h3>
             <span>{item.body}</span>
-            <Link href="/product">
-              <small>Powered by the same relationship state</small>
-            </Link>
           </article>
         ))}
-      </div>
-    </section>
-  );
-}
-
-function EnterpriseSection() {
-  return (
-    <section className="sm-section sm-enterprise">
-      <SectionMarker index="7" label="Everywhere you work" />
-      <header className="sm-centered-intro">
-        <h2>Same brain, wherever you&rsquo;re working.</h2>
-        <p>
-          Web and desktop see the same history and obey the same rules. Nothing is second-class.
-        </p>
-      </header>
-      <div className="sm-enterprise-grid">
-        {[
-          [
-            "01 / WEB",
-            "Portfolio mission control.",
-            "Review accounts, coordinate the team, inspect evidence, correct state, and approve next moves.",
-          ],
-          [
-            "02 / DESKTOP",
-            "Context where work happens.",
-            "Bring local knowledge, meetings, voice notes, browser context, and native execution into the same model.",
-          ],
-          [
-            "03 / CLOUD",
-            "Always-on observation.",
-            "Scheduled and event-driven workflows continue to ingest, project, and watch while clients are closed.",
-          ],
-        ].map(([eyebrow, title, body]) => (
-          <article key={eyebrow}>
-            <p>{eyebrow}</p>
-            <h3>{title}</h3>
-            <span>{body}</span>
-          </article>
-        ))}
-      </div>
-      <div className="sm-security-grid">
-        {[
-          ["Encrypted", "Raw observation payloads are sealed at rest."],
-          ["Tenant-scoped", "Identity and relationship data stay workspace-bound."],
-          ["Reviewable", "Corrections, approvals, and execution leave an audit trail."],
-          ["Replaceable", "Connectors can change; the relationship history remains the asset."],
-        ].map(([title, body]) => (
-          <article key={title}>
-            <strong>{title}</strong>
-            <p>{body}</p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function PrinciplesSection() {
-  return (
-    <section className="sm-section sm-principles">
-      <SectionMarker index="8" label="Product principles" />
-      <div className="sm-principles-grid">
-        <div>
-          <h2>You should be able to argue with it.</h2>
-          <p>
-            A suggestion is worthless if you can&rsquo;t see where it came from, tell it it&rsquo;s
-            wrong, and decide what happens next.
-          </p>
-          <Image
-            alt="Oppulence governed recommendation ready for review"
-            height={960}
-            sizes="(max-width: 800px) 100vw, 620px"
-            src="/marketing/relationship-desktop-detail.png"
-            width={1440}
-          />
-        </div>
-        <div>
-          {platformPrinciples.map(([title, body], index) => (
-            <article key={title}>
-              <span>0{index + 1}</span>
-              <h3>{title}</h3>
-              <p>{body}</p>
-            </article>
-          ))}
-        </div>
       </div>
     </section>
   );
 }
 
 function PricingSection() {
-  const individualPlans = pricingPlans.slice(0, 4);
-  const teamPlan = pricingPlans[4];
+  const individualPlans = pricingPlans.filter((plan) =>
+    ["Watch", "Chase", "Intelligence"].includes(plan.name),
+  );
 
   return (
     <section className="sm-section sm-pricing" id="pricing">
-      <SectionMarker index="9" label="Pricing" />
+      <SectionMarker label="Pricing" />
       <header className="sm-centered-intro">
         <h2>Start with the deals already slipping.</h2>
         <p>Clear monthly plans—from a free weekly report to full account intelligence.</p>
@@ -1346,22 +1056,6 @@ function PricingSection() {
           </article>
         ))}
       </div>
-      {teamPlan ? (
-        <aside className="sm-team-plan">
-          <div>
-            <p>Teams</p>
-            <h3>{teamPlan.description}</h3>
-          </div>
-          <ul>
-            {teamPlan.features.map((feature) => (
-              <li key={feature}>{feature}</li>
-            ))}
-          </ul>
-          <Link className="sm-button sm-button-blue" href={teamPlan.ctaHref}>
-            {teamPlan.ctaLabel}
-          </Link>
-        </aside>
-      ) : null}
       <Link className="sm-pricing-link" href="/pricing">
         See full pricing and plan details <ArrowRightIcon aria-hidden="true" />
       </Link>
@@ -1372,7 +1066,7 @@ function PricingSection() {
 function RelationshipFaqSection() {
   return (
     <section className="sm-section sm-faq">
-      <SectionMarker index="10" label="FAQ" />
+      <SectionMarker label="FAQ" />
       <header className="sm-section-intro">
         <h2>The stuff people usually ask.</h2>
         <p>What teams ask before connecting their customer systems.</p>
@@ -1403,11 +1097,7 @@ function RelationshipFinalCta() {
         <Link className="sm-button sm-button-blue" href="/sign-up">
           Start building <ArrowRightIcon aria-hidden="true" />
         </Link>
-        <a className="sm-button sm-button-light" href={CONTACT_HREF}>
-          Talk to the team
-        </a>
       </div>
-      <p>OBSERVE · EXPLAIN · RECOMMEND · APPROVE · ACT · LEARN</p>
     </section>
   );
 }
@@ -1584,11 +1274,6 @@ const homeFaqs = [
       "No. Your CRM stays the system of record. Oppulence is the relationship-memory layer around it: the conversations, promises, objections, and outcomes that explain what should happen next.",
   },
   {
-    question: "What is relationship memory?",
-    answer:
-      "It is a living record of what was promised, what changed, what happened next, and which open loop still matters for each person, company, client, opportunity, referral, or partner. Oppulence keeps that record tied to source evidence and turns it into a reviewable next action.",
-  },
-  {
     question: "Is this a cold-email tool?",
     answer:
       "No. Oppulence sends zero cold email. It only works the warm relationships you already have: ghosted proposals, quiet clients, unpaid invoices, and neglected referrals.",
@@ -1597,16 +1282,6 @@ const homeFaqs = [
     question: "Will it send messages without me?",
     answer:
       "No. Each message waits for your click. Actions that touch money need a second confirmation. You can approve, edit, snooze, or reject anything in the queue.",
-  },
-  {
-    question: "How does it decide what matters?",
-    answer:
-      "It looks at the relationship history, the commitment that was made, the dollar value at stake, and the time since the last reply. Each recommendation shows its evidence.",
-  },
-  {
-    question: "What does it cost?",
-    answer:
-      "Watch is free: a weekly report of what is slipping, with dollar amounts. Chase is $99 per month: drafted nudges, one-click approval, and recovery receipts. One saved deal pays for years.",
   },
   {
     question: "What happens to my data?",
@@ -1625,9 +1300,9 @@ function FinalCta() {
         action, and the evidence behind the recommended next move.
       </p>
       <div className="flex flex-col items-center gap-3 sm:flex-row">
-        <a className="linear-button-primary !h-10 !px-5" href={CONTACT_HREF}>
-          See account mission control
-        </a>
+        <Link className="linear-button-primary !h-10 !px-5" href="/sign-up">
+          Start building
+        </Link>
         <Link className="linear-button-secondary !h-10 !px-5" href="/product">
           Explore relationship intelligence
         </Link>
@@ -1835,7 +1510,8 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
           <div className="linear-subpage-description">
             <p>{page.description}</p>
             <FeatureActionButtons
-              primary={page.ctaLabel ?? "Book a Revenue Leak Scan"}
+              primary={page.ctaLabel ?? "Start building"}
+              primaryHref={page.ctaHref ?? "/sign-up"}
               secondary="See product"
             />
           </div>
@@ -1962,7 +1638,7 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
             </div>
             <div className="flex flex-wrap gap-3">
               <Button asChild className="marketing-cta-primary">
-                <a href={page.ctaHref ?? CONTACT_HREF}>{page.ctaLabel ?? "Talk to the team"}</a>
+                <Link href={page.ctaHref ?? "/sign-up"}>{page.ctaLabel ?? "Start building"}</Link>
               </Button>
               <Button asChild className="marketing-cta-secondary" variant="ghost">
                 <Link href="/app">Open action queue</Link>
@@ -1999,10 +1675,12 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
 }
 
 function FeatureActionButtons({
-  primary = "Book a Revenue Leak Scan",
+  primary = "Start building",
+  primaryHref = "/sign-up",
   secondary = "See product",
 }: {
   primary?: string;
+  primaryHref?: string;
   secondary?: string;
 }) {
   return (
@@ -2011,10 +1689,10 @@ function FeatureActionButtons({
         asChild
         className="marketing-cta-primary h-12 border border-transparent px-6 font-medium text-sm has-[>svg]:px-4"
       >
-        <a href={CONTACT_HREF}>
+        <Link href={primaryHref}>
           {primary}
           <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
-        </a>
+        </Link>
       </Button>
       <Button
         asChild
@@ -2040,10 +1718,10 @@ function PageShell({ page, children }: { page: MarketingPage; children: ReactNod
             <p>{page.description}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild className="marketing-cta-primary">
-                <a href={page.ctaHref ?? CONTACT_HREF}>
-                  {page.ctaLabel ?? "Talk to the team"}
+                <Link href={page.ctaHref ?? "/sign-up"}>
+                  {page.ctaLabel ?? "Start building"}
                   <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
-                </a>
+                </Link>
               </Button>
               <Button asChild className="marketing-cta-secondary" variant="outline">
                 <Link href="/app">Open action queue</Link>
@@ -2308,10 +1986,10 @@ export function CustomerIndexPage({ page }: { page: MarketingPage }) {
             have a story worth telling, it will live here. No placeholder logos in the meantime.
           </p>
           <Button asChild className="marketing-cta-primary mt-1">
-            <a href={CONTACT_HREF}>
+            <Link href="/sign-up">
               Become an early customer
               <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
-            </a>
+            </Link>
           </Button>
         </section>
       </PageShell>

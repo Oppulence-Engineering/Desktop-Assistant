@@ -5,12 +5,6 @@ export type LinkItem = {
   external?: boolean;
 };
 
-/**
- * Where "talk to us" CTAs point. There is no booking page: interest goes
- * straight to the team's inbox.
- */
-export const CONTACT_HREF = "mailto:hello@oppulence.io?subject=Oppulence";
-
 export type MarketingPage = {
   path: string;
   eyebrow: string;
@@ -136,11 +130,6 @@ export const productLinks: LinkItem[] = [
     label: "Pricing",
     href: "/pricing",
     description: "Choose the plan for monitored relationships, team access, and governance",
-  },
-  {
-    label: "Talk to the team",
-    href: CONTACT_HREF,
-    description: "Find the warm revenue slipping through your existing relationships",
   },
   {
     label: "Dashboard",
@@ -961,8 +950,8 @@ export const primaryPages: MarketingPage[] = [
       "Approve the next action and let replies, meetings, edits, and revenue outcomes improve the memory.",
     ],
     proof: baseProof,
-    ctaLabel: "Book a Revenue Leak Scan",
-    ctaHref: CONTACT_HREF,
+    ctaLabel: "Start building",
+    ctaHref: "/sign-up",
   },
   {
     path: "ai-documentation-agent",
@@ -1008,7 +997,8 @@ export const primaryPages: MarketingPage[] = [
       "Turn the best findings into a short, ranked revenue action queue.",
     ],
     proof: baseProof,
-    ctaLabel: "Book a Revenue Leak Scan",
+    ctaLabel: "Start building",
+    ctaHref: "/sign-up",
   },
   {
     path: "api-documentation-software",
@@ -1147,7 +1137,8 @@ export const primaryPages: MarketingPage[] = [
       "Scale into live notes, triggers, and controlled tool actions.",
     ],
     proof: baseProof,
-    ctaLabel: "Book a demo",
+    ctaLabel: "Start building",
+    ctaHref: "/sign-up",
   },
   {
     path: "multilingual-knowledge-base",
@@ -1345,8 +1336,8 @@ export const blogPages: MarketingPage[] = blogSlugs.map((slug) => ({
     "Where source evidence, policy, approval, execution, and outcomes fit.",
   ],
   proof: baseProof,
-  ctaLabel: "Book a Revenue Leak Scan",
-  ctaHref: "/ai-help-center",
+  ctaLabel: "Start building",
+  ctaHref: "/sign-up",
 }));
 
 export const customerPages: MarketingPage[] = customerSlugs.map((slug) => ({
@@ -1417,7 +1408,7 @@ export const pricingPlans = [
       "See what is slipping. A weekly report of the deals, invoices, and clients going quiet.",
     features: ["Weekly slip report", "Dollar amounts on each finding", "Links to the source email"],
     ctaLabel: "Get the report",
-    ctaHref: CONTACT_HREF,
+    ctaHref: "/sign-up",
   },
   {
     name: "Starter",
@@ -1469,12 +1460,12 @@ export const pricingPlans = [
   },
   {
     name: "Teams",
-    price: "Talk to us",
+    price: "$249+",
     period: "",
     description: "A shared queue and governance for small revenue teams.",
     features: ["Everything in Intelligence", "Shared action queue", "Roles and audit trail"],
-    ctaLabel: "Talk to us",
-    ctaHref: CONTACT_HREF,
+    ctaLabel: "Start building",
+    ctaHref: "/sign-up",
   },
 ];
 
@@ -1621,7 +1612,8 @@ export const platformPages: PlatformPage[] = [
     lede: "Hit a hotkey, say the thing, and the words appear in whatever app you are in \u2014 the email, the CRM box, the doc. It also sits in your meetings and writes them down. Transcription can run entirely on your machine, so the audio never leaves.",
     summary: "A standalone dictation and meeting app for macOS, Windows, and Linux.",
     screenshot: "/marketing/voice-transcription.png",
-    screenshotAlt: "Oppulence Voice speech-to-text settings offering cloud, bring-your-own-key, local on-device, and self-hosted engines",
+    screenshotAlt:
+      "Oppulence Voice speech-to-text settings offering cloud, bring-your-own-key, local on-device, and self-hosted engines",
     download: true,
     sections: [
       {

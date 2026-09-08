@@ -5861,7 +5861,7 @@
     display: grid;
     border-top: 1px solid var(--sm-line);
     border-bottom: 1px solid var(--sm-line);
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .sm-plan-grid article {
@@ -6234,18 +6234,6 @@
     .sm-loop-list {
       border-top: 1px solid var(--sm-line);
       border-left: 0;
-    }
-
-    .sm-plan-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .sm-plan-grid article:nth-child(2) {
-      border-right: 0;
-    }
-
-    .sm-plan-grid article:nth-child(-n + 2) {
-      border-bottom: 1px solid var(--sm-line);
     }
   }
 

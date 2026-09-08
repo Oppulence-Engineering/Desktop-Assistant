@@ -30,8 +30,8 @@ const contentSecurityPolicy = [
   `script-src 'self' 'unsafe-inline' ${plainChat.script}${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
   `style-src 'self' 'unsafe-inline' ${plainChat.style}`,
   `img-src 'self' data: blob: ${plainChat.img.join(" ")}`,
-  `font-src 'self' data: ${plainChat.style}`,
-  `connect-src 'self' https://us.i.posthog.com ${plainChat.connect.join(" ")}`,
+  `font-src 'self' data: ${plainChat.style} ${plainChat.script}`,
+  `connect-src 'self' https://api.workos.com https://us.i.posthog.com ${plainChat.connect.join(" ")}`,
   "frame-src 'self' https://api.oppulence.io https://api.x.staging.oppulence.io",
   "frame-ancestors 'self'",
   "base-uri 'self'",
@@ -66,8 +66,7 @@ const nextConfig: NextConfig = {
     return [
       { source: "/legal/terms-of-service", destination: "/terms", permanent: true },
       { source: "/legal/privacy-policy", destination: "/privacy", permanent: true },
-      // The booking page was removed; "talk to us" now goes through email.
-      // Pricing is the closest landing spot for anyone holding an old link.
+      // Preserve old external links while keeping the current experience self-serve.
       { source: "/book-a-demo", destination: "/pricing", permanent: true },
       // /voice was a feature essay; the product page for Voice lives at
       // /voice-app alongside /web and /desktop.
