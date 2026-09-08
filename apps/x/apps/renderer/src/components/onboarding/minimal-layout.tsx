@@ -48,7 +48,7 @@ export function MinimalOnboardingLayout({
       >
         <div className="absolute left-7 top-7 flex items-center gap-3">
           <span className="flex size-9 items-center justify-center border border-white/14 bg-white/[0.03]">
-            <img src="/logo-only.png" alt="" className="size-5 invert" />
+            <img src="/logo-only.png" alt="" className="size-5" />
           </span>
           <span className="text-sm font-medium text-white/86">{PRODUCT_NAME}</span>
         </div>

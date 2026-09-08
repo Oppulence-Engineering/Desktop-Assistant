@@ -30,7 +30,7 @@ export function ProductSignInButton({
       ].join(" ")}
     >
       <span className="flex min-w-0 items-center gap-2.5">
-        <img src="/logo-only.png" alt="" className="size-4 shrink-0 invert" />
+        <img src="/logo-only.png" alt="" className="size-4 shrink-0" />
         <span className="truncate">{label}</span>
       </span>
       {connected ? (

@@ -1382,9 +1382,7 @@
     padding-inline: 8px;
   }
 
-  .linear-logo img {
-    filter: invert(1);
-  }
+  /* Brand mark is now a full-color asset; inverting it would wreck the palette. */
 
   .linear-nav-link,
   .linear-nav-trigger {
@@ -3814,10 +3812,7 @@
       color: #ffffff;
     }
 
-    .linear-logo img,
-    .linear-footer img {
-      filter: invert(1);
-    }
+    /* Brand mark is now a full-color asset; inverting it would wreck the palette. */
   }
 
   /*
@@ -5217,7 +5212,6 @@
     position: absolute;
     width: 62px;
     height: 62px;
-    filter: invert(1);
   }
 
   .sm-section {

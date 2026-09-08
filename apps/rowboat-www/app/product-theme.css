@@ -681,9 +681,7 @@
   width: 38px;
 }
 
-.dark .oppulence-compact-lockup__mark-image {
-  filter: invert(1);
-}
+/* Brand mark is now a full-color asset; inverting it would wreck the palette. */
 
 .oppulence-compact-lockup__wordmark {
   color: var(--foreground);
