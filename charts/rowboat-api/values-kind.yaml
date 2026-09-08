@@ -79,6 +79,17 @@ config:
   CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:18080
   GRAPHQL_INTROSPECTION_ENABLED: "true"
 
+  # Route every gateway-bound runtime through OpenRouter's gpt-4.1 instead of
+  # the Anthropic code defaults (claude-sonnet-4-5 for the agent/cloud runtimes,
+  # claude-haiku-4-5 for the event router). These three are the only *_MODEL
+  # knobs that reach the LLM gateway. gpt-4.1 is already priced and advertised
+  # by /v1/llm/models, so the desktop can select it too. It is also cheaper per
+  # 1K (20/80 vs Sonnet's 30/150), which matters because the gateway reserves
+  # the whole max_tokens up front against the prepaid balance.
+  AGENT_RUNTIME_MODEL: openai/gpt-4.1
+  CLOUD_RUNTIME_MODEL: openai/gpt-4.1
+  CLOUD_EVENTS_ROUTER_MODEL: openai/gpt-4.1
+
   # Host-reachable URLs are what the desktop sees through kind port mappings.
   APP_URL: http://localhost:18080
   OIDC_ISSUER_URL: http://localhost:18090
