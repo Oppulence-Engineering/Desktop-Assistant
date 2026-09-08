@@ -5423,6 +5423,16 @@ func (_q *PersonQuery) collectField(ctx context.Context, oneNode bool, opCtx *gr
 				selectedFields = append(selectedFields, person.FieldLocation)
 				fieldSeen[person.FieldLocation] = struct{}{}
 			}
+		case "linkedinURL":
+			if _, ok := fieldSeen[person.FieldLinkedinURL]; !ok {
+				selectedFields = append(selectedFields, person.FieldLinkedinURL)
+				fieldSeen[person.FieldLinkedinURL] = struct{}{}
+			}
+		case "department":
+			if _, ok := fieldSeen[person.FieldDepartment]; !ok {
+				selectedFields = append(selectedFields, person.FieldDepartment)
+				fieldSeen[person.FieldDepartment] = struct{}{}
+			}
 		case "employmentStatus":
 			if _, ok := fieldSeen[person.FieldEmploymentStatus]; !ok {
 				selectedFields = append(selectedFields, person.FieldEmploymentStatus)
@@ -6799,6 +6809,31 @@ func (_q *RelationshipQuery) collectField(ctx context.Context, oneNode bool, opC
 			if _, ok := fieldSeen[relationship.FieldResourceRefs]; !ok {
 				selectedFields = append(selectedFields, relationship.FieldResourceRefs)
 				fieldSeen[relationship.FieldResourceRefs] = struct{}{}
+			}
+		case "companyCategories":
+			if _, ok := fieldSeen[relationship.FieldCompanyCategories]; !ok {
+				selectedFields = append(selectedFields, relationship.FieldCompanyCategories)
+				fieldSeen[relationship.FieldCompanyCategories] = struct{}{}
+			}
+		case "companyDescription":
+			if _, ok := fieldSeen[relationship.FieldCompanyDescription]; !ok {
+				selectedFields = append(selectedFields, relationship.FieldCompanyDescription)
+				fieldSeen[relationship.FieldCompanyDescription] = struct{}{}
+			}
+		case "linkedinURL":
+			if _, ok := fieldSeen[relationship.FieldLinkedinURL]; !ok {
+				selectedFields = append(selectedFields, relationship.FieldLinkedinURL)
+				fieldSeen[relationship.FieldLinkedinURL] = struct{}{}
+			}
+		case "companyEnrichmentVersion":
+			if _, ok := fieldSeen[relationship.FieldCompanyEnrichmentVersion]; !ok {
+				selectedFields = append(selectedFields, relationship.FieldCompanyEnrichmentVersion)
+				fieldSeen[relationship.FieldCompanyEnrichmentVersion] = struct{}{}
+			}
+		case "companyEnrichedAt":
+			if _, ok := fieldSeen[relationship.FieldCompanyEnrichedAt]; !ok {
+				selectedFields = append(selectedFields, relationship.FieldCompanyEnrichedAt)
+				fieldSeen[relationship.FieldCompanyEnrichedAt] = struct{}{}
 			}
 		case "summary":
 			if _, ok := fieldSeen[relationship.FieldSummary]; !ok {

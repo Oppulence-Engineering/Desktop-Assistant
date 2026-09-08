@@ -19,6 +19,7 @@ export const AppendCommitmentTransitionBodyKind = {
   disputed: "disputed",
   blocked: "blocked",
   unblocked: "unblocked",
+  corrected: "corrected",
   due_date_changed: "due_date_changed",
   renegotiated: "renegotiated",
   fulfilled: "fulfilled",

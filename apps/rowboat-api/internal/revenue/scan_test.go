@@ -118,6 +118,56 @@ func TestDetectSkipsFreshAndNoise(t *testing.T) {
 	}
 }
 
+func TestSummarizeThreadCollectsEveryExternalRecipient(t *testing.T) {
+	sum := summarizeThread(selfAddr, []googleapi.GmailThreadMessage{
+		msg("tm", selfAddr, `Avery <avery@acme.example>, Bea <bea@gmail.com>, no-reply@alerts.example`, "Intro", "connecting you", true, day(2)),
+	})
+	if sum == nil || len(sum.Counterparties) != 2 {
+		t.Fatalf("counterparties = %+v", sum)
+	}
+	if sum.Counterparties[0].Email != "avery@acme.example" || sum.Counterparties[1].Email != "bea@gmail.com" {
+		t.Fatalf("unexpected counterparties: %+v", sum.Counterparties)
+	}
+	if accountDomain("person@msn.com") != "" {
+		t.Fatal("msn.com must remain a person mailbox, not a company")
+	}
+}
+
+func TestDetectExplicitCommitment(t *testing.T) {
+	outbound := summarizeThread(selfAddr, []googleapi.GmailThreadMessage{
+		msg("tc1", selfAddr, "buyer@example.com", "Launch", "I'll send the final launch plan tomorrow.", true, day(1)),
+	})
+	got := detectExplicitCommitment(outbound, lastSnippet(outbound))
+	if got == nil || got.Direction != "promised_by_me" || got.OwnerRef != "local-user" || got.CounterpartyRef != "buyer@example.com" {
+		t.Fatalf("outbound commitment: %+v", got)
+	}
+	if got.Text != "I'll send the final launch plan tomorrow." {
+		t.Fatalf("exact commitment quote: %q", got.Text)
+	}
+
+	inbound := summarizeThread(selfAddr, []googleapi.GmailThreadMessage{
+		msg("tc2", "buyer@example.com", selfAddr, "Contract", "We will sign the agreement Friday.", false, day(1)),
+	})
+	got = detectExplicitCommitment(inbound, lastSnippet(inbound))
+	if got == nil || got.Direction != "promised_by_them" || got.OwnerRef != "buyer@example.com" || got.CounterpartyRef != "local-user" {
+		t.Fatalf("inbound commitment: %+v", got)
+	}
+
+	negative := summarizeThread(selfAddr, []googleapi.GmailThreadMessage{
+		msg("tc3", selfAddr, "buyer@example.com", "Launch", "I will not send this yet. Will you review it?", true, day(1)),
+	})
+	if got := detectExplicitCommitment(negative, lastSnippet(negative)); got != nil {
+		t.Fatalf("negated promise must not become a candidate: %+v", got)
+	}
+}
+
+func TestCommitmentQuoteIgnoresQuotedReply(t *testing.T) {
+	text := "Thanks, that works.\n\nOn Thu, Sep 3, 2026 at 9:00 AM Buyer wrote:\n> I'll send the agreement tomorrow."
+	if got := commitmentQuote(text); got != "" {
+		t.Fatalf("quoted promise must not be attributed to the reply sender: %q", got)
+	}
+}
+
 // --- scan end-to-end ---------------------------------------------------------
 
 func scanFixtureThreads() [][]googleapi.GmailThreadMessage {
@@ -127,6 +177,9 @@ func scanFixtureThreads() [][]googleapi.GmailThreadMessage {
 		},
 		{ // waiting on me
 			msg("tw", "Casey Lee <casey@corp.com>", selfAddr, "Contract", "could you confirm the start date?", false, day(6)),
+		},
+		{ // fresh explicit promise: commitment candidate, not a recovery action
+			msg("tc", selfAddr, "client@example.org", "Launch plan", "I'll send the final launch plan tomorrow.", true, day(1)),
 		},
 		{ // noise
 			msg("tn", "no-reply@bank.com", selfAddr, "Statement", "your statement is ready", false, day(20)),
@@ -161,11 +214,11 @@ func TestScanCreatesEvidenceBackedActions(t *testing.T) {
 	if scan.Status != "completed" {
 		t.Fatalf("scan failed: %s", scan.Error)
 	}
-	if scan.ThreadsSeen != 3 || scan.CandidatesSeen != 2 || scan.ActionsCreated != 2 {
+	if scan.ThreadsSeen != 4 || scan.CandidatesSeen != 3 || scan.ActionsCreated != 2 {
 		t.Fatalf("counts: threads=%d candidates=%d actions=%d",
 			scan.ThreadsSeen, scan.CandidatesSeen, scan.ActionsCreated)
 	}
-	if scan.RelationshipsCreated != 2 || scan.EvidencesCreated != 2 {
+	if scan.RelationshipsCreated != 3 || scan.EvidencesCreated != 3 {
 		t.Fatalf("side rows: rel=%d ev=%d", scan.RelationshipsCreated, scan.EvidencesCreated)
 	}
 
@@ -186,6 +239,16 @@ func TestScanCreatesEvidenceBackedActions(t *testing.T) {
 		if a.Reason == "" || a.RecipientEmail == "" {
 			t.Fatalf("action missing evidence-backed fields: %+v", a)
 		}
+	}
+	promise, err := f.client.Commitment.Query().WithEvents().WithEvidences().Only(f.ctx)
+	if err != nil {
+		t.Fatalf("commitment candidate: %v", err)
+	}
+	if promise.Direction != "promised_by_me" || promise.UserConfirmed || promise.Acceptance != "candidate" || promise.SourcePhrase == "" {
+		t.Fatalf("commitment fields: %+v", promise)
+	}
+	if len(promise.Edges.Events) != 1 || promise.Edges.Events[0].Kind != "proposed" || len(promise.Edges.Evidences) != 1 {
+		t.Fatalf("commitment provenance: events=%d evidences=%d", len(promise.Edges.Events), len(promise.Edges.Evidences))
 	}
 
 	// Rerun: everything dedupes, nothing new is created.
@@ -213,6 +276,45 @@ func TestScanCreatesEvidenceBackedActions(t *testing.T) {
 	actions, _ = f.svc.ListActions(f.ctx, f.user, ListFilter{})
 	if len(actions) != 2 {
 		t.Fatalf("queue must not grow on rerun: %d", len(actions))
+	}
+	if count := f.client.Commitment.Query().CountX(f.ctx); count != 1 {
+		t.Fatalf("commitments must not grow on rerun: %d", count)
+	}
+}
+
+func TestScanDetectsCommitmentFromActualBody(t *testing.T) {
+	f := newFixture(t)
+	f.svc.SetSweeper(&fakeSweeper{threads: [][]googleapi.GmailThreadMessage{{
+		msg("body-thread", selfAddr, "buyer@example.com", "Launch", "Details attached.", true, day(1)),
+	}}, email: selfAddr})
+	fetcher := &fakeBodyFetcher{body: "Quick update. I'll send the signed launch plan tomorrow. Thanks."}
+	f.svc.SetBodyFetcher(fetcher, newSealer(t), time.Hour)
+
+	scan, err := f.svc.StartScan(f.ctx, f.user, 90)
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		scan, err = f.svc.GetScan(f.ctx, scan.ID)
+		if err != nil {
+			t.Fatalf("get: %v", err)
+		}
+		if scan.Status == "completed" || scan.Status == "failed" {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("scan did not finish")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if scan.Status != "completed" || fetcher.calls != 1 {
+		t.Fatalf("scan=%s body fetches=%d error=%s", scan.Status, fetcher.calls, scan.Error)
+	}
+	promise := f.client.Commitment.Query().WithEvidences().OnlyX(f.ctx)
+	if promise.SourcePhrase != "I'll send the signed launch plan tomorrow." || len(promise.Edges.Evidences) != 1 ||
+		promise.Edges.Evidences[0].Excerpt != promise.SourcePhrase {
+		t.Fatalf("body-backed commitment: phrase=%q evidence=%+v", promise.SourcePhrase, promise.Edges.Evidences)
 	}
 }
 

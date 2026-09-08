@@ -70,4 +70,14 @@ describe("browser session route", () => {
       expiresAt: session.expiresAt,
     });
   });
+
+  it("keeps the cookie when a refresh service is temporarily unavailable", async () => {
+    mocks.shouldRefreshSession.mockReturnValue(true);
+    mocks.refreshWorkOSSession.mockRejectedValue(new Error("rate limited"));
+
+    const response = await GET(new NextRequest("https://oppulence.io/api/auth/session"));
+
+    expect(response.status).toBe(503);
+    expect(mocks.clearAuthCookies).not.toHaveBeenCalled();
+  });
 });

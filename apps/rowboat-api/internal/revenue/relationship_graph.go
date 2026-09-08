@@ -470,6 +470,11 @@ func buildRelationshipGraphDTO(aggregate *RelationshipGraphAggregate, generatedA
 				Metadata: map[string]any{
 					"direction": item.Direction, "acceptance": item.Acceptance,
 					"blocker": item.Blocker, "userConfirmed": item.UserConfirmed,
+					"ownerParticipantRef":        item.OwnerParticipantRef,
+					"counterpartyParticipantRef": item.CounterpartyParticipantRef,
+					"beneficiaryParticipantRef":  item.BeneficiaryParticipantRef,
+					"duePhrase":                  item.DuePhrase, "dueTimezone": item.DueTimezone,
+					"currentEventVersion": item.CurrentEventVersion,
 				},
 			}
 			addEdge("has_commitment", "has commitment", relationshipNodeID, commitmentNodeID, true, confidenceRef, evidenceRefs)

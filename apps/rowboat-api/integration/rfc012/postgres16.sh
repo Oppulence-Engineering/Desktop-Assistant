@@ -142,8 +142,9 @@ PRODUCT_PRINCIPALS_JSON="[{\"principal\":\"dev-product-service\",\"connectors\":
 
 echo 'JCODE_CHECKPOINT {"message":"Starting disposable PostgreSQL 16"}'
 docker run -d --rm --name "$PG_NAME" -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=rowboat_rfc012 -p "127.0.0.1:${PG_PORT}:5432" postgres:16-alpine >/dev/null
-for _ in $(seq 1 90); do docker exec "$PG_NAME" pg_isready -U postgres -d rowboat_rfc012 >/dev/null 2>&1 && break; sleep 1; done
-docker exec "$PG_NAME" pg_isready -U postgres -d rowboat_rfc012 >/dev/null
+# TCP becomes ready only after the image's temporary initialization server exits.
+for _ in $(seq 1 90); do docker exec "$PG_NAME" pg_isready -h 127.0.0.1 -U postgres -d rowboat_rfc012 >/dev/null 2>&1 && break; sleep 1; done
+docker exec "$PG_NAME" pg_isready -h 127.0.0.1 -U postgres -d rowboat_rfc012 >/dev/null
 docker exec "$PG_NAME" psql -U postgres -d rowboat_rfc012 -c 'CREATE EXTENSION IF NOT EXISTS pgcrypto' >/dev/null
 DATABASE_URL="postgres://postgres:postgres@127.0.0.1:${PG_PORT}/rowboat_rfc012?sslmode=disable"
 DATABASE_URL="$DATABASE_URL" AUTO_MIGRATE=false go run ./cmd/migrate apply >"$SCRATCH/migrate.log" 2>&1

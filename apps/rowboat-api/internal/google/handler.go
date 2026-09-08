@@ -41,12 +41,14 @@ type Handler struct {
 	authorizeURL   string
 	redirectURI    string // must exactly match a redirect URI registered in Google Cloud
 	deepLinkScheme string // desktop custom scheme (rowboat)
+	webReturnURL   string // optional browser return URL
 	scopes         []string
 
 	// onDisconnect runs when a user disconnects Google, after the connection is
 	// deleted — used to purge derived data (e.g. the RFC 031 mail index) so the
 	// "your mail stays yours, disconnect anytime" promise is mechanically true.
 	onDisconnect func(ctx context.Context, u *ent.User) error
+	onConnect    func(ctx context.Context, u *ent.User, accountEmail string, scopes []string) error
 }
 
 var errGoogleAccountOwned = errors.New("google account is already connected to another user")
@@ -124,6 +126,14 @@ var defaultScopes = []string{
 	"https://www.googleapis.com/auth/drive.file",
 }
 
+var commitmentScopes = []string{
+	"openid", "email", "profile",
+	"https://www.googleapis.com/auth/gmail.readonly",
+	"https://www.googleapis.com/auth/gmail.compose",
+	"https://www.googleapis.com/auth/gmail.send",
+	"https://www.googleapis.com/auth/calendar.events.readonly",
+}
+
 // SetOutboundPolicy applies the shared outbound vendor policy.
 func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
 	policy.Name = "google-oauth"
@@ -134,6 +144,11 @@ func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
 // purge derived data such as the mail index).
 func (h *Handler) SetOnDisconnect(fn func(ctx context.Context, u *ent.User) error) {
 	h.onDisconnect = fn
+}
+
+// SetOnConnect installs a callback run after a Google credential is persisted.
+func (h *Handler) SetOnConnect(fn func(context.Context, *ent.User, string, []string) error) {
+	h.onConnect = fn
 }
 
 // Disconnect removes the user's Google connection and purges data derived from
@@ -180,6 +195,15 @@ func (h *Handler) SetOAuthFlow(authorizeURL, redirectURI, deepLinkScheme string,
 	}
 	if len(scopes) > 0 {
 		h.scopes = scopes
+	}
+}
+
+// SetWebReturnURL configures the browser return target. Invalid or non-HTTP
+// values fail closed to the desktop deep link.
+func (h *Handler) SetWebReturnURL(raw string) {
+	u, err := url.Parse(raw)
+	if err == nil && u.Host != "" && (u.Scheme == "http" || u.Scheme == "https") {
+		h.webReturnURL = u.String()
 	}
 }
 
@@ -368,7 +392,8 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if payload.RefreshToken != "" {
-		if err := h.persistConnection(ctx, u, payload.RefreshToken, splitScope(payload.Scope), payload.AccountEmail); err != nil {
+		scopes := splitScope(payload.Scope)
+		if err := h.persistConnection(ctx, u, payload.RefreshToken, scopes, payload.AccountEmail); err != nil {
 			if errors.Is(err, errGoogleAccountOwned) {
 				httpx.Error(w, http.StatusConflict, "google account is already connected to another account", "account_already_connected")
 				return
@@ -376,6 +401,11 @@ func (h *Handler) Claim(w http.ResponseWriter, r *http.Request) {
 			h.log.Warn("claim: persist connection", zap.Error(err))
 			httpx.Error(w, http.StatusInternalServerError, "could not store google connection", "internal_error")
 			return
+		}
+		if h.onConnect != nil {
+			if err := h.onConnect(ctx, u, payload.AccountEmail, scopes); err != nil {
+				h.log.Warn("claim: update relationship source", zap.Error(err))
+			}
 		}
 	}
 

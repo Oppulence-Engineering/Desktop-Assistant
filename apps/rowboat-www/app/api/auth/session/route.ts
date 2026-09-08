@@ -16,7 +16,15 @@ export async function GET(request: NextRequest) {
 
   let refreshed = false;
   if (shouldRefreshSession(session)) {
-    const next = await refreshWorkOSSession(session);
+    let next: Awaited<ReturnType<typeof refreshWorkOSSession>>;
+    try {
+      next = await refreshWorkOSSession(session);
+    } catch {
+      return NextResponse.json(
+        { error: "session refresh is temporarily unavailable", code: "session_unavailable" },
+        { status: 503 },
+      );
+    }
     if (!next) {
       const response = NextResponse.json({ authenticated: false }, { status: 401 });
       clearAuthCookies(response);

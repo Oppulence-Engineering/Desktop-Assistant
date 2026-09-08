@@ -591,6 +591,12 @@ func TestLocalModeDraftWorksSendFailsClosed(t *testing.T) {
 	if executed.ExecutionStatus != ExecSent {
 		t.Fatalf("draft execute: %s", executed.ExecutionStatus)
 	}
+	draftedEvents, err := f.client.RevenueOutboxEvent.Query().
+		Where(revenueoutboxevent.EventTypeEQ("revenue.action.drafted.v1")).
+		Count(f.ctx)
+	if err != nil || draftedEvents != 1 {
+		t.Fatalf("draft audit event: count=%d err=%v", draftedEvents, err)
+	}
 
 	send := f.action(t, ExecModeSend)
 	// Send approval needs a decision, which needs a facade evaluate — and even
@@ -703,6 +709,26 @@ func TestCreateActionDedupes(t *testing.T) {
 	}
 }
 
+func TestManualActionsWithoutDedupeKeyRemainDistinct(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	in := ActionInput{
+		RelationshipID: rel.ID, ActionType: "follow_up_task", Channel: "task",
+		Reason: "Follow up", PriorityScore: 10,
+	}
+	first, err := f.svc.CreateAction(f.ctx, f.user, in)
+	if err != nil {
+		t.Fatalf("create first task: %v", err)
+	}
+	second, err := f.svc.CreateAction(f.ctx, f.user, in)
+	if err != nil {
+		t.Fatalf("create second task: %v", err)
+	}
+	if first.ID == second.ID {
+		t.Fatal("separate manual tasks must not collapse into one action")
+	}
+}
+
 // Tenancy: another user cannot read or mutate the owner's rows.
 func TestCrossTenantDenied(t *testing.T) {
 	f := newFixture(t)
@@ -783,6 +809,9 @@ func TestListDefaultsToTopTenOpen(t *testing.T) {
 	}
 	if actions[0].PriorityScore < actions[len(actions)-1].PriorityScore {
 		t.Fatal("queue must be ordered by priority descending")
+	}
+	if listed, err := actions[0].Edges.RelationshipOrErr(); err != nil || listed.ID != rel.ID {
+		t.Fatalf("queue action must include relationship context: relationship=%v err=%v", listed, err)
 	}
 }
 

@@ -65,3 +65,12 @@ c8c6a346895eb5b30532916c8a6667f288cf4b3a:apps/rowboat-api/migrations/postgres/at
 095a65b20378206e6aba0b5f8451ff2ddba2c11a:apps/rowboat-api/integration/rfc012/postgres16.sh:generic-api-key:138
 # RFC 012 deterministic entitlement-readiness acceptance fixture.
 882da331e093db4845af5db876c5a6540b74fe68:apps/rowboat-api/integration/rfc012/postgres16.sh:generic-api-key:219
+# Generated GraphQL field-name table; these are LinkedIn URL filter names, not credentials.
+b4b21c708f84f9cffe25d8ac228dec16ff934bae:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-secret:104280
+b4b21c708f84f9cffe25d8ac228dec16ff934bae:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-id:104280
+f8923b30feabfb7635b8a3086e32d12e0be2f902:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-secret:88804
+f8923b30feabfb7635b8a3086e32d12e0be2f902:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-id:88804
+df4c6020bbba9f8fb6b534af030a274e47818ecd:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-secret:104280
+df4c6020bbba9f8fb6b534af030a274e47818ecd:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-id:104280
+2b7793adfdaa50a0287dac3a4852be86a5c5e50e:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-secret:88804
+2b7793adfdaa50a0287dac3a4852be86a5c5e50e:apps/rowboat-api/internal/gqlapi/generated.go:linkedin-client-id:88804

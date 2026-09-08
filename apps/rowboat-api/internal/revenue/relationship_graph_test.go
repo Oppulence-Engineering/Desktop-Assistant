@@ -70,6 +70,41 @@ func TestRelationshipGraphRejectsFutureHistoricalBoundary(t *testing.T) {
 	}
 }
 
+func TestRelationshipGraphCommitmentCarriesQueueMetadata(t *testing.T) {
+	f := newFixture(t)
+	rel := f.relationship(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	row, err := f.client.Commitment.Create().SetWorkspace(ws).SetRelationship(rel).SetUser(f.user).
+		SetDirection("promised_by_me").SetText("Send the security packet").SetConfidence(1).
+		SetOwnerParticipantRef("owner@example.com").SetCounterpartyParticipantRef("buyer@example.com").
+		SetBeneficiaryParticipantRef("buyer@example.com").SetDuePhrase("Friday").
+		SetDueTimezone("America/New_York").SetCurrentEventVersion(3).Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	aggregate, err := f.svc.RelationshipGraph(f.ctx, f.user, RelationshipGraphFilter{
+		Scope: "relationship", RelationshipID: &rel.ID, Depth: 1, AsOf: f.svc.now(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dto := buildRelationshipGraphDTO(aggregate, f.svc.now())
+	for _, node := range dto.Nodes {
+		if node.ID != "commitment:"+row.ID.String() {
+			continue
+		}
+		if node.Metadata["counterpartyParticipantRef"] != "buyer@example.com" ||
+			node.Metadata["currentEventVersion"] != 3 {
+			t.Fatalf("commitment queue metadata missing: %#v", node.Metadata)
+		}
+		return
+	}
+	t.Fatal("commitment node missing")
+}
+
 func TestRelationshipGraphHistoricalBoundaryUsesEligibleActionRevision(t *testing.T) {
 	f := newFixture(t)
 	rel := f.relationship(t)

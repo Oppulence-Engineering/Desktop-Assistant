@@ -93,6 +93,27 @@ func TestThreadsListHonoursInboxLabel(t *testing.T) {
 	}
 }
 
+func TestThreadsListSupportsRevenueScanQuery(t *testing.T) {
+	srv := gmailServer(t)
+	ids := threadIDs(t, getJSON(t, srv, "/gmail/v1/users/me/threads?q=in%3Asent+newer_than%3A90d"))
+	if len(ids) != 1 || ids[0] != "t_renewal" {
+		t.Fatalf("sent scan ids = %v, want [t_renewal]", ids)
+	}
+
+	body := getJSON(t, srv, "/gmail/v1/users/me/threads/t_renewal")
+	second := body["messages"].([]any)[1].(map[string]any)
+	labels := second["labelIds"].([]any)
+	if len(labels) != 1 || labels[0] != "SENT" {
+		t.Fatalf("outbound labels = %v, want [SENT]", labels)
+	}
+	for _, raw := range second["payload"].(map[string]any)["headers"].([]any) {
+		header := raw.(map[string]any)
+		if header["name"] == "To" && !strings.Contains(header["value"].(string), "dana@northwind.example") {
+			t.Fatalf("outbound To = %q", header["value"])
+		}
+	}
+}
+
 // An unimplemented operator must fail loudly. Silently ignoring it would return
 // a superset and let a broken filter pass as working.
 func TestUnsupportedQueryTermIsRejected(t *testing.T) {
@@ -213,6 +234,19 @@ func TestSendRejectsMalformedRawAndAcceptsValid(t *testing.T) {
 	_ = json.NewDecoder(good.Body).Decode(&out)
 	if out["threadId"] != "t_renewal" {
 		t.Fatalf("threadId not echoed: %v", out["threadId"])
+	}
+
+	paddedRaw := base64.URLEncoding.EncodeToString(
+		[]byte("To: dana@northwind.example\r\nSubject: Re: renewal\r\n\r\nSending today."))
+	draftPayload, _ := json.Marshal(map[string]any{"message": map[string]string{"raw": paddedRaw}})
+	draft, err := srv.Client().Post(srv.URL+"/gmail/v1/users/me/drafts",
+		"application/json", strings.NewReader(string(draftPayload)))
+	if err != nil {
+		t.Fatalf("draft: %v", err)
+	}
+	defer func() { _ = draft.Body.Close() }()
+	if draft.StatusCode != http.StatusOK {
+		t.Fatalf("valid draft: status = %d", draft.StatusCode)
 	}
 }
 

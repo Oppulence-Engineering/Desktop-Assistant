@@ -45,11 +45,18 @@ type Config struct {
 	OAuthLegacyStateWrite bool
 }
 
+var (
+	errInvalidHubSpotCredential = errors.New("HubSpot rejected the private app token")
+	errHubSpotUnavailable       = errors.New("HubSpot could not verify the private app token")
+)
+
 // Handler serves the connector + connection endpoints.
 type Handler struct {
 	client                  *ent.Client
 	sealer                  *crypto.Sealer
 	registry                *Registry
+	hubspotHTTP             *outbound.Client
+	hubspotBaseURL          string
 	resourceTokens          ResourceTokenIssuer
 	ory                     *oryClient
 	cfg                     Config
@@ -90,12 +97,14 @@ func New(client *ent.Client, sealer *crypto.Sealer, registry *Registry, cfg Conf
 		cfg.DeepLinkScheme = "solomon-ai"
 	}
 	h := &Handler{
-		client:   client,
-		sealer:   sealer,
-		registry: registry,
-		ory:      newOryClient(cfg.OryPublicURL, cfg.OryBrokerClientID, cfg.OryBrokerClientSecret),
-		cfg:      cfg,
-		log:      log,
+		client:         client,
+		sealer:         sealer,
+		registry:       registry,
+		hubspotHTTP:    outbound.NewClient(outbound.Policy{Name: "hubspot-credential-validation", Timeout: 15 * time.Second, MaxResponseBytes: 1 << 20}),
+		hubspotBaseURL: "https://api.hubapi.com",
+		ory:            newOryClient(cfg.OryPublicURL, cfg.OryBrokerClientID, cfg.OryBrokerClientSecret),
+		cfg:            cfg,
+		log:            log,
 	}
 	h.custody = newCredentialCustodySupervisor(log, 4, 64)
 	h.refresh.custody = h.custody
@@ -127,9 +136,18 @@ func (h *Handler) SetOryBaseURL(u string) {
 	h.ory = newOryClient(u, h.cfg.OryBrokerClientID, h.cfg.OryBrokerClientSecret)
 }
 
+// SetHubSpotBaseURL overrides the HubSpot API origin for contract tests.
+func (h *Handler) SetHubSpotBaseURL(u string) {
+	if strings.TrimSpace(u) != "" {
+		h.hubspotBaseURL = strings.TrimRight(strings.TrimSpace(u), "/")
+	}
+}
+
 // SetOutboundPolicy applies the shared outbound vendor policy to Ory calls.
 func (h *Handler) SetOutboundPolicy(policy outbound.Policy) {
 	h.ory.setOutboundPolicy(policy)
+	policy.Name = "hubspot-credential-validation"
+	h.hubspotHTTP = outbound.NewClient(policy)
 }
 
 func (h *Handler) commitCallback(tx *ent.Tx) error {
@@ -1083,6 +1101,17 @@ func (h *Handler) SetAPIKey(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusForbidden, "connector entitlement denied", reason)
 		return
 	}
+	apiKey := strings.TrimSpace(req.APIKey)
+	if err := h.validateAPIKey(r.Context(), name, apiKey); err != nil {
+		switch {
+		case errors.Is(err, errInvalidHubSpotCredential):
+			httpx.Error(w, http.StatusBadRequest, errInvalidHubSpotCredential.Error(), "invalid_api_key")
+		default:
+			h.log.Warn("validate api key connector", zap.String("connector", name), zap.Error(err))
+			httpx.Error(w, http.StatusBadGateway, errHubSpotUnavailable.Error(), "upstream_error")
+		}
+		return
+	}
 	operationStartedAt := time.Now().UTC()
 	tx, err := h.client.Tx(auth.WithUser(r.Context(), u))
 	if err != nil {
@@ -1090,7 +1119,7 @@ func (h *Handler) SetAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() { _ = tx.Rollback() }()
-	connection, err := h.upsertAPIKeyConnection(auth.WithUser(r.Context(), u), tx.Client(), u, c, strings.TrimSpace(req.APIKey), operationStartedAt)
+	connection, err := h.upsertAPIKeyConnection(auth.WithUser(r.Context(), u), tx.Client(), u, c, apiKey, operationStartedAt)
 	if err != nil {
 		h.log.Error("persist api key connector", zap.Error(err))
 		if errors.Is(err, errConnectorCredentialSuperseded) {
@@ -1112,6 +1141,29 @@ func (h *Handler) SetAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"connected": true})
+}
+
+func (h *Handler) validateAPIKey(ctx context.Context, name, apiKey string) error {
+	if name != "hubspot" {
+		return nil
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.hubspotBaseURL+"/integrations/v1/me", nil)
+	if err != nil {
+		return fmt.Errorf("%w: request: %w", errHubSpotUnavailable, err)
+	}
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	resp, err := h.hubspotHTTP.Do(req)
+	if err != nil {
+		return fmt.Errorf("%w: provider request: %w", errHubSpotUnavailable, err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		return nil
+	}
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		return errInvalidHubSpotCredential
+	}
+	return fmt.Errorf("%w: status %d", errHubSpotUnavailable, resp.StatusCode)
 }
 
 // AuthorizeAPIKeyGrant creates an explicit step-up-backed authorization grant

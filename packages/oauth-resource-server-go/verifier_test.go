@@ -393,6 +393,30 @@ func TestRFCVerifierFailsClosedAndGenericIsExplicit(t *testing.T) {
 	}
 }
 
+func TestGenericVerifierCanExplicitlySkipAudienceValidation(t *testing.T) {
+	srv, key := jwksServer(t)
+	issuer := "https://api.workos.com"
+	v, err := oauthrs.NewGeneric(context.Background(), oauthrs.GenericConfig{
+		IssuerURL:                 issuer,
+		SkipAudienceValidation:    true,
+		JWKSURL:                   srv.URL,
+		AllowedJWKSOrigins:        []string{srv.URL},
+		AllowLocalhostDevelopment: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokenStr := sign(t, key, jwt.MapClaims{
+		"iss": issuer,
+		"sub": "user_123",
+		"iat": time.Now().Add(-time.Minute).Unix(),
+		"exp": time.Now().Add(time.Hour).Unix(),
+	})
+	if _, err := v.Verify(tokenStr); err != nil {
+		t.Fatalf("verify token without audience: %v", err)
+	}
+}
+
 func TestRFCVerifierRequiredOrganization(t *testing.T) {
 	srv, key := jwksServer(t)
 	v, err := oauthrs.New(context.Background(), oauthrs.Config{
@@ -440,6 +464,21 @@ func TestRemoteURLPolicyRejectsUnsafeURLs(t *testing.T) {
 		if _, err := oauthrs.New(context.Background(), cfg); err == nil {
 			t.Fatalf("unsafe JWKS URL accepted: %s", raw)
 		}
+	}
+}
+
+func TestPrivateHTTPJWKSRequiresExplicitDevelopmentOption(t *testing.T) {
+	base := oauthrs.Config{
+		IssuerURL: "https://issuer.example", Audience: "api",
+		JWKSURL: "http://10.255.255.1:1/jwks", AllowedJWKSOrigins: []string{"http://10.255.255.1:1"},
+		AllowLocalhostDevelopment: true, HTTPTimeout: time.Millisecond,
+	}
+	if _, err := oauthrs.New(context.Background(), base); err == nil || !strings.Contains(err.Error(), "HTTPS is required") {
+		t.Fatalf("private HTTP JWKS without explicit option error = %v", err)
+	}
+	base.AllowPrivateJWKSDevelopment = true
+	if _, err := oauthrs.New(context.Background(), base); err == nil || strings.Contains(err.Error(), "HTTPS is required") {
+		t.Fatalf("explicit private development JWKS did not reach the network policy: %v", err)
 	}
 }
 

@@ -585,8 +585,9 @@ func loadWorkerConnectorRegistry(cfg appconfig.Config) (*connectors.Registry, er
 	if err != nil {
 		return nil, fmt.Errorf("load connector registry: %w", err)
 	}
-	if err := registry.ConfigureProductEntitlementsJSON(
+	if err := registry.ConfigureProductEntitlementsJSONWithOptions(
 		cfg.ConnectorEntitlementURLsJSON, cfg.ConnectorEntitlementHMACKeysJSON,
+		connectors.ProductEntitlementOptions{AllowLocalDevelopment: cfg.ConnectorAllowLocalEntitlementDevelopment},
 	); err != nil {
 		return nil, fmt.Errorf("configure connector product entitlements: %w", err)
 	}

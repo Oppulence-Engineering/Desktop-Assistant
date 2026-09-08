@@ -94,6 +94,14 @@ func (c *Client) doJSON(req *http.Request, token string, out any) error {
 		return err
 	}
 	if resp.StatusCode >= http.StatusBadRequest {
+		var payload struct {
+			Error struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if json.Unmarshal(respBody, &payload) == nil && strings.TrimSpace(payload.Error.Message) != "" {
+			return fmt.Errorf("google api %s returned %d: %s", req.URL.Path, resp.StatusCode, strings.TrimSpace(payload.Error.Message))
+		}
 		return fmt.Errorf("google api %s returned %d", req.URL.Path, resp.StatusCode)
 	}
 	if out == nil {

@@ -108,8 +108,8 @@ export function QueueView({
   const empty = !loading && actions.length === 0;
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="flex min-h-full w-full min-w-0 flex-col">
+      <div className="flex min-h-12 flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
         <div className="flex items-center gap-2">
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger size="sm" className="w-36">
@@ -131,16 +131,18 @@ export function QueueView({
       </div>
 
       {loading ? (
-        <ListSkeleton />
+        <div className="p-3">
+          <ListSkeleton />
+        </div>
       ) : empty ? (
         filter === "open" ? (
           <EmptyBlock
             icon={<MagnifyingGlass className="size-6" />}
-            title="No open loops"
-            body="Run a scan to surface unanswered proposals, promised follow-ups, and warm relationships that went quiet."
+            title="No recovery drafts"
+            body="Run a Promise Leak Audit or draft recovery from a confirmed commitment."
           >
             <Button size="sm" onClick={onScan} disabled={scanning}>
-              {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />} Run scan
+              {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />} Run audit
             </Button>
           </EmptyBlock>
         ) : (
@@ -150,7 +152,7 @@ export function QueueView({
           />
         )
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-3 p-3">
           {actions.map((action) => (
             <li key={action.id}>
               <ActionCard

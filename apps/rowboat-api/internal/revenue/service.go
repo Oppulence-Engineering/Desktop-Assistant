@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
@@ -640,6 +641,9 @@ func (s *Service) ListRelationshipsFiltered(
 		WithActions(func(q *ent.RevenueActionQuery) {
 			q.Where(revenueaction.QueueStatusEQ(QueueOpen))
 		}).
+		WithParticipants().
+		WithMailThreads().
+		WithCommitments().
 		Order(ent.Desc(relationship.FieldUpdatedAt)).
 		Limit(relationshipListLimit).
 		All(ctx)
@@ -654,6 +658,9 @@ func (s *Service) GetRelationship(ctx context.Context, id uuid.UUID) (*ent.Relat
 		// show one enriched human rather than a bare name and address.
 		WithParticipants(func(q *ent.RelationshipParticipantQuery) {
 			q.WithPerson()
+		}).
+		WithMailThreads(func(q *ent.MailThreadQuery) {
+			q.Order(ent.Desc(mailthread.FieldLastActivityAt))
 		}).
 		WithActions(func(q *ent.RevenueActionQuery) {
 			q.WithEvidences().Order(
@@ -740,7 +747,11 @@ func (s *Service) CreateAction(ctx context.Context, u *ent.User, in ActionInput)
 		}
 	}
 	if in.DedupeKey == "" {
-		in.DedupeKey = fmt.Sprintf("%s:%s:%s:%s", in.Detector, in.ActionType, in.Channel, rel.ID)
+		if in.Detector == DetectorManual {
+			in.DedupeKey = "manual:" + uuid.NewString()
+		} else {
+			in.DedupeKey = fmt.Sprintf("%s:%s:%s:%s", in.Detector, in.ActionType, in.Channel, rel.ID)
+		}
 	}
 	if in.PriorityScore < 0 {
 		in.PriorityScore = 0
@@ -882,7 +893,8 @@ func (s *Service) ListActions(ctx context.Context, u *ent.User, f ListFilter) ([
 	if status != "all" {
 		q = q.Where(revenueaction.QueueStatusEQ(status))
 	}
-	return q.Order(ent.Desc(revenueaction.FieldPriorityScore), ent.Asc(revenueaction.FieldCreatedAt)).
+	return q.WithRelationship().
+		Order(ent.Desc(revenueaction.FieldPriorityScore), ent.Asc(revenueaction.FieldCreatedAt)).
 		Limit(limit).
 		All(ctx)
 }
@@ -1637,6 +1649,7 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 		upd := s.client.RevenueAction.Update().
 			Where(revenueaction.IDEQ(action.ID)).
 			SetExecutionStatus(ExecSent).
+			ClearExecutionError().
 			SetExecutedAt(s.now()).
 			SetQueueStatus(QueueHandled).
 			SetHandledAt(s.now())
@@ -1650,8 +1663,12 @@ func (s *Service) Execute(ctx context.Context, u *ent.User, id uuid.UUID) (*ent.
 			return nil, err
 		}
 		revenuemetrics.Executions.WithLabelValues(action.ExecutionOwner, ExecSent, action.Channel).Inc()
-		_ = s.appendOutbox(ctx, s.client, ws, u, "revenue.action.sent.v1", action.ID,
-			"sent:"+idem, map[string]any{"revision": action.Revision}, s.now())
+		eventType, eventKey := "revenue.action.sent.v1", "sent:"
+		if action.ExecutionMode == ExecModeDraft {
+			eventType, eventKey = "revenue.action.drafted.v1", "drafted:"
+		}
+		_ = s.appendOutbox(ctx, s.client, ws, u, eventType, action.ID,
+			eventKey+idem, map[string]any{"revision": action.Revision}, s.now())
 		_ = appendTrustEvent(ctx, s.client, ws, u, TrustEventInput{
 			Name: "action_executed", Outcome: "succeeded", ReasonCode: "provider_receipt",
 			CorrelationID: idem, Channel: action.Channel, OccurredAt: s.now(), Action: action,

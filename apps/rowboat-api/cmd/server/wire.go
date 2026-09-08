@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -116,16 +117,25 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// (e.g. local dev with no IdP), the service still starts and authed routes
 	// return 503 until the IdP is reachable.
 	var verifier *oauthrs.Verifier
+	var allowedJWKSOrigins []string
+	if !cfg.IsProduction() {
+		if u, err := url.Parse(cfg.JWKSURL); err == nil && u.Scheme != "" && u.Host != "" {
+			allowedJWKSOrigins = []string{u.Scheme + "://" + u.Host}
+		}
+	}
 	// Pass the long-lived server ctx (NOT a soon-cancelled one): it drives the
 	// background JWKS refresh goroutine, which must outlive boot so the verifier
 	// can pick up the IdP's rotated signing keys. oauthrs.New bounds its own
 	// boot-time HTTP fetches internally, so this won't hang startup.
 	v, verr := oauthrs.NewGeneric(ctx, oauthrs.GenericConfig{
-		IssuerURL:                 cfg.TokenIssuer,
-		Audience:                  cfg.TokenAudience,
-		JWKSURL:                   cfg.JWKSURL,
-		AcceptableSkew:            60 * time.Second,
-		AllowLocalhostDevelopment: !cfg.IsProduction(),
+		IssuerURL:                   cfg.TokenIssuer,
+		Audience:                    cfg.TokenAudience,
+		SkipAudienceValidation:      cfg.TokenAudience == "",
+		JWKSURL:                     cfg.JWKSURL,
+		AllowedJWKSOrigins:          allowedJWKSOrigins,
+		AcceptableSkew:              60 * time.Second,
+		AllowLocalhostDevelopment:   !cfg.IsProduction(),
+		AllowPrivateJWKSDevelopment: !cfg.IsProduction(),
 	})
 	if verr != nil {
 		log.Warn("auth verifier unavailable; authed routes will return 503 until JWKS is reachable", zap.Error(verr))
@@ -263,6 +273,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		googleRedirect = strings.TrimRight(cfg.AppURL, "/") + "/oauth/google/callback"
 	}
 	googleH.SetOAuthFlow(cfg.GoogleAuthorizeURL, googleRedirect, cfg.DesktopDeepLinkScheme, nil)
+	googleH.SetWebReturnURL(cfg.GoogleWebReturnURL)
 	workosH := workosauth.New(cfg.WorkOSClientID, cfg.WorkOSAPIKey, cfg.WorkOSBaseURL, cfg.WorkOSAuthorizeBaseURL, log)
 	workosH.SetOutboundPolicy(vendorPolicy)
 	voiceCloudH := voicecloud.New(client, log)
@@ -323,7 +334,11 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	if err != nil {
 		return err
 	}
-	if err := registry.ConfigureProductEntitlementsJSON(cfg.ConnectorEntitlementURLsJSON, cfg.ConnectorEntitlementHMACKeysJSON); err != nil {
+	if err := registry.ConfigureProductEntitlementsJSONWithOptions(
+		cfg.ConnectorEntitlementURLsJSON,
+		cfg.ConnectorEntitlementHMACKeysJSON,
+		connectors.ProductEntitlementOptions{AllowLocalDevelopment: cfg.ConnectorAllowLocalEntitlementDevelopment},
+	); err != nil {
 		return fmt.Errorf("configure connector product entitlements: %w", err)
 	}
 	connectorsH := connectors.New(client, sealer, registry, connectors.Config{
@@ -552,6 +567,14 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		_, purgeErr := revenueSvc.PurgeMailIndex(ctx, u)
 		_, statusErr := revenueSvc.MarkSourceDisconnected(ctx, u, "google", "default")
 		return errors.Join(purgeErr, statusErr)
+	})
+	googleH.SetOnConnect(func(ctx context.Context, u *ent.User, accountEmail string, scopes []string) error {
+		_, err := revenueSvc.ReportSourceAuthorization(ctx, u, "google", revenue.SourceAuthorizationInput{
+			SourceAccountID: accountEmail,
+			State:           "completed",
+			GrantedScopes:   scopes,
+		})
+		return err
 	})
 
 	// Closed-loop action broker (RFC 023). Ships dark behind ACTIONS_ENABLED.

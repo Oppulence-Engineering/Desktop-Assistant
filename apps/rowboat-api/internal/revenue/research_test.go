@@ -104,8 +104,12 @@ func newResearchFixture(t *testing.T, vendor *vendorStub) *researchFixture {
 			ResultPollInterval: time.Millisecond,
 			ResultPollAttempts: 3,
 		}),
-		Gate:  quota.New(f.client, zap.NewNop()),
-		Costs: map[string]int{parallel.ProcessorBase: 100, parallel.ProcessorLite: 50},
+		Gate: quota.New(f.client, zap.NewNop()),
+		Costs: map[string]int{
+			parallel.ProcessorLite: 50,
+			parallel.ProcessorBase: 100,
+			parallel.ProcessorPro:  1000,
+		},
 	})
 	return &researchFixture{fixture: f, vendor: vendor, person: seedResearchPerson(t, f)}
 }
@@ -324,11 +328,17 @@ func TestEnrichPersonWritesCitedAttributesAndProjects(t *testing.T) {
 			"title":            "VP Engineering",
 			"seniority":        "vp",
 			"location":         "Berlin, Germany",
+			"department":       "Engineering",
+			"linkedin_url":     "https://www.linkedin.com/in/sarah-chen/details/",
+			"bio":              "Engineering leader focused on reliable data systems.",
 		},
 		basis: []map[string]any{
 			citedBasis("title", "high"),
 			citedBasis("seniority", "high"),
 			citedBasis("location", "medium"),
+			citedBasis("department", "high"),
+			citedBasis("linkedin_url", "high"),
+			citedBasis("bio", "medium"),
 		},
 	}
 	rf := newResearchFixture(t, vendor)
@@ -337,13 +347,13 @@ func TestEnrichPersonWritesCitedAttributesAndProjects(t *testing.T) {
 	if err != nil {
 		t.Fatalf("EnrichPerson: %v", err)
 	}
-	if !outcome.Matched || outcome.Written != 3 {
+	if !outcome.Matched || outcome.Written != 6 {
 		t.Fatalf("outcome = %+v", outcome)
 	}
 
 	rows := rf.attributes(t)
-	if len(rows) != 3 {
-		t.Fatalf("wrote %d attributes, want 3", len(rows))
+	if len(rows) != 6 {
+		t.Fatalf("wrote %d attributes, want 6", len(rows))
 	}
 	for _, row := range rows {
 		if row.CitationsJSON == "" {
@@ -358,8 +368,74 @@ func TestEnrichPersonWritesCitedAttributesAndProjects(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reload person: %v", err)
 	}
-	if refreshed.Seniority != "vp" || refreshed.Location != "Berlin, Germany" {
-		t.Fatalf("research did not project: seniority=%q location=%q", refreshed.Seniority, refreshed.Location)
+	if refreshed.Seniority != "vp" || refreshed.Location != "Berlin, Germany" ||
+		refreshed.Department != "Engineering" || refreshed.LinkedinURL != "https://www.linkedin.com/in/sarah-chen" {
+		t.Fatalf("research did not project the rich profile: %+v", refreshed)
+	}
+}
+
+func TestEnrichCompanyWritesOnlyCitedProfileFields(t *testing.T) {
+	vendor := &vendorStub{
+		content: map[string]any{
+			researchMatchField:     "high",
+			"industry_category":    "Artificial intelligence",
+			"company_description":  "Acme builds software for revenue teams.",
+			"linkedin_company_url": "https://www.linkedin.com/company/acme/about/",
+			"headquarters":         "San Francisco, California, United States",
+			"employee_range":       "201-500 employees (2026)",
+			"funding_summary":      "$80M total; Series C, $35M, 2025-10-10",
+		},
+		basis: []map[string]any{
+			citedBasis("industry_category", "high"),
+			citedBasis("company_description", "high"),
+			citedBasis("linkedin_company_url", "high"),
+			citedBasis("headquarters", "high"),
+			citedBasis("employee_range", "medium"),
+			citedBasis("funding_summary", "high"),
+		},
+	}
+	rf := newResearchFixture(t, vendor)
+	rel, err := rf.svc.CreateRelationship(rf.ctx, rf.user, RelationshipInput{
+		Kind: "company", DisplayName: "Acme", AccountDomain: "acme.example",
+	})
+	if err != nil {
+		t.Fatalf("create company: %v", err)
+	}
+	rel, err = rel.Update().
+		SetCompanyEnrichmentData(map[string]string{"ownership": "Private"}).
+		SetCompanyEnrichmentRefs(map[string][]string{"ownership": {"https://acme.example/about"}}).
+		Save(rf.ctx)
+	if err != nil {
+		t.Fatalf("seed existing profile: %v", err)
+	}
+
+	outcome, err := rf.svc.EnrichCompany(rf.ctx, rf.user, rel.ID)
+	if err != nil {
+		t.Fatalf("EnrichCompany: %v", err)
+	}
+	if !outcome.Matched || outcome.Written != 6 {
+		t.Fatalf("outcome = %+v", outcome)
+	}
+	stored, err := rf.client.Relationship.Get(rf.ctx, rel.ID)
+	if err != nil {
+		t.Fatalf("reload company: %v", err)
+	}
+	if len(stored.CompanyCategories) != 1 || stored.CompanyCategories[0] != "Artificial intelligence" {
+		t.Fatalf("categories = %v", stored.CompanyCategories)
+	}
+	if stored.LinkedinURL != "https://www.linkedin.com/company/acme" {
+		t.Fatalf("linkedin = %q", stored.LinkedinURL)
+	}
+	if len(stored.CompanyEnrichmentRefs) != 7 || stored.CompanyEnrichmentRefs["ownership"][0] != "https://acme.example/about" {
+		t.Fatalf("citations = %v", stored.CompanyEnrichmentRefs)
+	}
+	if stored.CompanyEnrichmentData["headquarters"] != "San Francisco, California, United States" ||
+		stored.CompanyEnrichmentData["employee_range"] == "" || stored.CompanyEnrichmentData["funding_summary"] == "" ||
+		stored.CompanyEnrichmentData["ownership"] != "Private" {
+		t.Fatalf("rich company profile = %v", stored.CompanyEnrichmentData)
+	}
+	if !strings.Contains(strings.Join(stored.ResourceRefs, ","), "linkedin:company:acme") {
+		t.Fatalf("resource refs = %v", stored.ResourceRefs)
 	}
 }
 
@@ -435,8 +511,8 @@ func TestResearchSettlesOnceAndReplaysForFree(t *testing.T) {
 	if _, err := rf.svc.EnrichPerson(rf.ctx, rf.user, rf.person.ID); err != nil {
 		t.Fatalf("first enrich: %v", err)
 	}
-	if spent := creditsSpent(t, rf.fixture); spent != 100 {
-		t.Fatalf("first enrich spent %d credits, want 100", spent)
+	if spent := creditsSpent(t, rf.fixture); spent != 1000 {
+		t.Fatalf("first enrich spent %d credits, want 1000", spent)
 	}
 
 	// Re-running the same person at the same task-spec version is idempotent:
@@ -451,7 +527,7 @@ func TestResearchSettlesOnceAndReplaysForFree(t *testing.T) {
 	if vendor.runs != 1 {
 		t.Fatalf("vendor was called %d times for one person", vendor.runs)
 	}
-	if spent := creditsSpent(t, rf.fixture); spent != 100 {
+	if spent := creditsSpent(t, rf.fixture); spent != 1000 {
 		t.Fatalf("a replay changed the bill to %d credits", spent)
 	}
 }
@@ -473,8 +549,8 @@ func TestUnmatchedResearchStillSettles(t *testing.T) {
 	if len(rf.attributes(t)) != 0 {
 		t.Fatal("an unmatched result wrote attributes")
 	}
-	if spent := creditsSpent(t, rf.fixture); spent != 100 {
-		t.Fatalf("unmatched run spent %d credits, want 100", spent)
+	if spent := creditsSpent(t, rf.fixture); spent != 1000 {
+		t.Fatalf("unmatched run spent %d credits, want 1000", spent)
 	}
 }
 
@@ -489,11 +565,11 @@ func TestEstimateBeforeBulkRun(t *testing.T) {
 	if err != nil {
 		t.Fatalf("estimate: %v", err)
 	}
-	if estimate.People != 1 || estimate.Credits != 100 {
+	if estimate.People != 1 || estimate.Credits != 1000 {
 		t.Fatalf("estimate = %+v", estimate)
 	}
-	if estimate.USD != 0.01 {
-		t.Fatalf("estimate priced %v USD for one base task, want 0.01", estimate.USD)
+	if estimate.USD != 0.1 {
+		t.Fatalf("estimate priced %v USD for one pro task, want 0.10", estimate.USD)
 	}
 
 	if _, err := rf.svc.EnrichPerson(rf.ctx, rf.user, rf.person.ID); err != nil {
@@ -504,7 +580,7 @@ func TestEstimateBeforeBulkRun(t *testing.T) {
 		t.Fatalf("estimate after: %v", err)
 	}
 	// Already enriched at this task-spec version: a second bulk run must not
-	// offer to charge for the same five fields again.
+	// offer to charge for the same research again.
 	if after.People != 0 || after.Credits != 0 {
 		t.Fatalf("estimate after enrichment = %+v", after)
 	}
@@ -698,7 +774,8 @@ func TestImplausiblyLongVendorValuesAreRefused(t *testing.T) {
 // becomes billable again.
 func TestTaskSpecVersionsArePinned(t *testing.T) {
 	const (
-		wantPerson  = "parallel/base@1bea8549f33c"
+		wantPerson  = "parallel/pro@4e63107de048"
+		wantCompany = "parallel/pro@996299c79b25"
 		wantTrigger = "parallel/lite@596b6305"
 	)
 
@@ -706,6 +783,9 @@ func TestTaskSpecVersionsArePinned(t *testing.T) {
 		t.Fatalf("person task-spec version changed: got %q, want %q.\n"+
 			"Every already-enriched person becomes billable again at the new version. "+
 			"If that is intended, update the constant.", got, wantPerson)
+	}
+	if got := companyTaskSpecVersion(); got != wantCompany {
+		t.Fatalf("company task-spec version changed: got %q, want %q", got, wantCompany)
 	}
 
 	day := time.Date(2026, 8, 6, 0, 0, 0, 0, time.UTC)
@@ -921,10 +1001,14 @@ func TestPersonDTOCarriesResearchProjectedFields(t *testing.T) {
 			researchMatchField: "high",
 			"seniority":        "executive",
 			"location":         "San Francisco, United States",
+			"department":       "Sales",
+			"linkedin_url":     "https://www.linkedin.com/in/sarah-chen",
 		},
 		basis: []map[string]any{
 			citedBasis("seniority", "high"),
 			citedBasis("location", "medium"),
+			citedBasis("department", "high"),
+			citedBasis("linkedin_url", "high"),
 		},
 	}
 	rf := newResearchFixture(t, vendor)
@@ -946,5 +1030,8 @@ func TestPersonDTOCarriesResearchProjectedFields(t *testing.T) {
 	}
 	if dto.Location != "San Francisco, United States" {
 		t.Fatalf("personDTO dropped location: %q", dto.Location)
+	}
+	if dto.Department != "Sales" || dto.LinkedInURL != "https://www.linkedin.com/in/sarah-chen" {
+		t.Fatalf("personDTO dropped rich fields: %+v", dto)
 	}
 }

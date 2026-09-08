@@ -67,8 +67,10 @@ type RecommendationEvaluation struct {
 	SampleScope      string                 `json:"sampleScope"`
 }
 
-func recoveryID(row *ent.Commitment, window string) string {
-	sum := sha256.Sum256([]byte(fmt.Sprintf("%s:%d:%s:commitment-recovery-v1", row.ID, row.CurrentEventVersion, window)))
+func recoveryID(row *ent.Commitment, window, classification string, evidenceRefs, staleSources []string) string {
+	sum := sha256.Sum256([]byte(fmt.Sprintf("%s:%d:%s:%s:%s:%s:commitment-recovery-v1",
+		row.ID, row.CurrentEventVersion, window, classification,
+		strings.Join(evidenceRefs, ","), strings.Join(staleSources, ","))))
 	return "recovery:" + hex.EncodeToString(sum[:12])
 }
 
@@ -294,6 +296,7 @@ func (s *Service) ReconcileDueCommitments(
 	now := s.now().UTC()
 	predicates := []predicate.Commitment{
 		commitment.StatusEQ("open"), commitment.DueAtLTE(now.Add(72 * time.Hour)),
+		commitment.Or(commitment.UserConfirmedEQ(true), commitment.AcceptanceNEQ("candidate")),
 		commitment.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
 	}
 	if relationshipID != nil {
@@ -307,6 +310,7 @@ func (s *Service) ReconcileDueCommitments(
 	if err != nil {
 		return nil, err
 	}
+	staleSources = sortedUniqueStrings(staleSources)
 	result := make([]CommitmentRecoveryEvaluation, 0, len(rows))
 	for _, row := range rows {
 		rel, edgeErr := row.Edges.RelationshipOrErr()
@@ -328,9 +332,10 @@ func (s *Service) ReconcileDueCommitments(
 		for _, item := range evidence {
 			refs = append(refs, item.EvidenceRef)
 		}
+		refs = sortedUniqueStrings(refs)
 		window := now.Format("2006-01-02")
 		evaluation := CommitmentRecoveryEvaluation{
-			EvaluationID: recoveryID(row, window), CommitmentID: row.ID.String(),
+			EvaluationID: recoveryID(row, window, classification, refs, staleSources), CommitmentID: row.ID.String(),
 			CommitmentVersion: row.CurrentEventVersion, RecoveryWindow: window,
 			ReconcilerVersion: "commitment-recovery-v1", Classification: classification,
 			EvidenceRefs: refs, StaleSources: append([]string(nil), staleSources...),

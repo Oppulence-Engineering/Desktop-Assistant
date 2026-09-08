@@ -24,9 +24,8 @@ import {
   DialogTitle,
 } from "@oppulence/ui/components/dialog";
 import { Textarea } from "@oppulence/ui/components/textarea";
-import { cn } from "@/lib/utils";
 import { capture, ActionEvents } from "@/lib/analytics";
-import { ActionAPIError, approve, execute, getAudit, listPending, reject } from "@/lib/actions";
+import { ActionAPIError, approve, execute, listPending, reject } from "@/lib/actions";
 import { EmptyBlock, errMessage, ListSkeleton } from "@/components/revenue/shared";
 import { ActionAuditSheet } from "@/components/actions/audit-sheet";
 import type { ActionProposal, ActionStatus } from "@/types/actions";
@@ -174,22 +173,24 @@ export function ActionsView() {
   };
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-4">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-medium text-primary">Actions</h1>
-          <p className="mt-0.5 text-sm text-primary/60">
-            Closed-loop finance actions your agents propose. Approve one to issue a single-use,
-            scoped token and execute it against the product — money never moves without it.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => void load()} className="gap-1.5">
+    <div className="flex min-h-full w-full min-w-0 flex-col">
+      <header className="flex min-h-12 items-center justify-between gap-4 border-b border-border px-3 py-2">
+        <p className="min-w-0 flex-1 truncate text-[13px] text-primary/55">
+          Closed-loop finance actions your agents propose. Approve one to issue a single-use, scoped
+          token and execute it against the product — money never moves without it.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void load()}
+          className="shrink-0 gap-1.5"
+        >
           <ArrowClockwise weight="bold" /> Refresh
         </Button>
       </header>
 
       {error ? (
-        <div className="flex items-start gap-2 rounded-[2px] border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
+        <div className="m-3 flex items-start gap-2 rounded-[2px] border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-sm text-amber-700 dark:text-amber-300">
           <WarningCircle weight="fill" className="mt-0.5 shrink-0" />
           <span>{error}</span>
         </div>
@@ -210,7 +211,7 @@ export function ActionsView() {
           body="When an agent proposes a finance action — advancing a dunning step, marking a dispute — it lands here for your approval."
         />
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-3 p-3">
           {proposals.map((p) => {
             const verb = busy[p.id];
             const heldToken = tokens.current[p.id];

@@ -8,7 +8,8 @@ import { getWorkOSLoginURL } from "@/lib/auth/rowboat-api";
 export async function GET(request: NextRequest) {
   const returnTo = safeReturnTo(request.nextUrl.searchParams.get("return_to"));
   const pkce = createPKCECookie(returnTo);
-  const redirectURI = new URL("/api/auth/workos/callback", publicOrigin(request)).toString();
+  const origin = publicOrigin(request);
+  const redirectURI = new URL("/api/auth/callback", origin).toString();
 
   try {
     const url = await getWorkOSLoginURL({
@@ -23,8 +24,9 @@ export async function GET(request: NextRequest) {
     setPKCECookie(response, pkce);
     return response;
   } catch {
-    const fallback = new URL("/sign-in", publicOrigin(request));
+    const fallback = new URL("/sign-in", origin);
     fallback.searchParams.set("error", "sign_in_unavailable");
+    fallback.searchParams.set("return_to", returnTo);
     return NextResponse.redirect(fallback);
   }
 }

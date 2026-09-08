@@ -34,6 +34,10 @@ export interface Relationship {
   commitment_dependencies?: CommitmentDependency[];
   commitment_events?: CommitmentEvent[];
   commitments?: Commitment[];
+  company_categories: string[];
+  company_description?: string;
+  company_enriched_at?: string;
+  company_enrichment_version?: string;
   conversation_intelligence_artifacts?: ConversationIntelligenceArtifact[];
   /** Row creation timestamp. */
   created_at: string;
@@ -49,6 +53,7 @@ export interface Relationship {
   last_changed_at?: string;
   last_touch_at?: string;
   lifecycle: string;
+  linkedin_url?: string;
   mail_threads?: MailThread[];
   milestones: string[];
   next_action?: string;

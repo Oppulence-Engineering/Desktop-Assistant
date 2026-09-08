@@ -54,7 +54,8 @@ config:
   HTTP_ADDR: ":8080"
   METRICS_ADDR: ":9090"
   GRPC_ADDR: ":8081"
-  AUTO_MIGRATE: "true"
+  AUTO_MIGRATE: "false"
+  CONNECTOR_ALLOW_LOCAL_ENTITLEMENT_DEVELOPMENT: "true"
   # Keep the three local processes (API, worker, scheduler) from collectively
   # exhausting the in-cluster Postgres while the Electron app fans out startup
   # requests. Production keeps the code defaults unless explicitly overridden.

@@ -3,22 +3,24 @@
 import * as React from "react";
 import {
   ArrowClockwise,
-  CalendarBlank,
+  CaretRight,
   CheckCircle,
   CircleNotch,
   Clock,
   Cloud,
+  Gear,
+  MagnifyingGlass,
   Pause,
   Play,
   Plus,
   Robot,
+  SlidersHorizontal,
   Warning,
   XCircle,
 } from "@phosphor-icons/react";
 
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@oppulence/ui/components/card";
 import {
   Dialog,
   DialogContent,
@@ -43,13 +45,14 @@ import { Separator } from "@oppulence/ui/components/separator";
 import { Switch } from "@oppulence/ui/components/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import { Textarea } from "@oppulence/ui/components/textarea";
-
+import { VisualWorkflowBuilder } from "@/components/features/workflows/visual-workflow-builder/visual-workflow-builder";
 import {
   cancelCloudRun,
+  compileVisualWorkflow,
   createCloudTask,
   ensureFirstPartyWorkflows,
-  getCloudSchedule,
   getCloudRun,
+  getCloudSchedule,
   instantiateCloudTemplate,
   listCloudRunEvents,
   listCloudRuns,
@@ -57,6 +60,7 @@ import {
   listCloudTemplates,
   retryCloudRun,
   taskCron,
+  taskVisualWorkflow,
   triggerCloudRun,
   updateCloudTask,
   type CloudRun,
@@ -66,12 +70,25 @@ import {
   type CloudSchedule,
   type CloudTask,
   type CloudTaskTemplate,
+  type VisualWorkflowDefinition,
+  type WorkflowActionKind,
 } from "@/lib/cloud-workflows";
 import { cn } from "@/lib/utils";
 
 type FilterValue<T extends string> = T | "all";
+type EditorTab = "editor" | "runs" | "settings";
 
 const terminalStatuses = new Set<CloudRunStatus>(["succeeded", "failed", "stopped"]);
+const defaultVisualWorkflow = (): VisualWorkflowDefinition => ({
+  version: 1,
+  trigger: { kind: "communication" },
+  actions: ["review-account", "draft-email"],
+  objective: "",
+  stepConfig: {
+    "action:0": { scope: "matching-record" },
+    "action:1": { recipient: "promise-recipient", tone: "concise" },
+  },
+});
 
 function formatDate(value?: string | null): string {
   if (!value) return "—";
@@ -117,65 +134,61 @@ function eventText(event: CloudRunEvent): string {
   if (event.event && typeof event.event === "object") {
     const record = event.event as Record<string, unknown>;
     for (const key of ["message", "summary", "error", "content"]) {
-      if (typeof record[key] === "string") return record[key];
+      const value = record[key];
+      if (typeof value === "string") return value;
     }
   }
-  return JSON.stringify(event.event, null, 2);
+  return JSON.stringify(event.event, null, 2) ?? String(event.event);
 }
 
-function WorkflowTaskList({
-  tasks,
-  selectedSlug,
-  onSelect,
-}: {
-  tasks: CloudTask[];
-  selectedSlug?: string;
-  onSelect: (task: CloudTask) => void;
-}) {
-  const firstParty = tasks.filter((task) => task.systemManaged);
-  const custom = tasks.filter((task) => !task.systemManaged);
-  const group = (label: string, rows: CloudTask[]) => (
-    <div className="space-y-1.5" key={label}>
-      <div className="flex items-center justify-between px-2 pt-2">
-        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-          {label}
-        </p>
-        <span className="text-xs text-muted-foreground">{rows.length}</span>
-      </div>
-      {rows.map((task) => (
-        <Button
-          className={cn(
-            "h-auto w-full justify-start rounded-lg px-2.5 py-2.5 text-left",
-            selectedSlug === task.slug && "bg-muted",
-          )}
-          key={task.id}
-          onClick={() => onSelect(task)}
-          variant="ghost"
-        >
-          <span
-            className={cn(
-              "mt-0.5 size-2 shrink-0 rounded-full",
-              task.active ? "bg-emerald-500" : "bg-muted-foreground/40",
-            )}
-          />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-medium">{task.name}</span>
-            <span className="mt-0.5 block truncate text-xs font-normal text-muted-foreground">
-              {taskCron(task) || "Manual"}
-            </span>
-          </span>
-        </Button>
-      ))}
-    </div>
-  );
-  return (
-    <ScrollArea className="min-h-0 flex-1 px-1">
-      <div className="space-y-3 pb-4">
-        {group("Oppulence workflows", firstParty)}
-        {custom.length ? group("Custom workflows", custom) : null}
-      </div>
-    </ScrollArea>
-  );
+function scheduleLabel(task: CloudTask): string {
+  const cron = taskCron(task);
+  const labels: Record<string, string> = {
+    "*/15 * * * *": "Every 15 minutes",
+    "*/30 * * * *": "Every 30 minutes",
+    "0 9 * * *": "Every day at 9:00 AM",
+    "0 9 * * 1-5": "Weekdays at 9:00 AM",
+    "0 8 * * *": "Every day at 8:00 AM",
+    "0 8 * * 1": "Every Monday at 8:00 AM",
+  };
+  if (cron) return labels[cron] ?? "Recurring schedule";
+  const visual = taskVisualWorkflow(task);
+  switch (visual?.trigger.kind) {
+    case "communication":
+      return "When communication arrives";
+    case "profile-change":
+      return "When a profile is enriched";
+    case "relationship-risk":
+      return "When relationship risk changes";
+    case "commitment-risk":
+      return "When a commitment needs recovery";
+    default:
+      return "Manual start";
+  }
+}
+
+function inferredManagedActions(task: CloudTask): WorkflowActionKind[] {
+  if (task.slug.includes("post-meeting"))
+    return ["review-account", "update-crm-note", "create-crm-task"];
+  if (task.slug.includes("pre-brief")) return ["review-account", "write-brief"];
+  if (task.slug.includes("recommendation")) return ["review-account", "create-crm-task"];
+  if (task.slug.includes("connector")) return ["review-account", "write-brief"];
+  return ["review-account", "write-brief"];
+}
+
+function workflowForTask(task: CloudTask): VisualWorkflowDefinition {
+  const visual = taskVisualWorkflow(task);
+  if (visual) return visual;
+  return {
+    version: 1,
+    trigger: taskCron(task) ? { kind: "schedule", cronExpr: taskCron(task) } : { kind: "manual" },
+    actions: inferredManagedActions(task),
+    objective: `${task.name} keeps relationship intelligence current and surfaces the next evidence-backed action.`,
+  };
+}
+
+function workflowStepCount(task: CloudTask): number {
+  return workflowForTask(task).actions.length + 1;
 }
 
 function CreateWorkflowDialog({
@@ -187,8 +200,7 @@ function CreateWorkflowDialog({
 }) {
   const [open, setOpen] = React.useState(false);
   const [name, setName] = React.useState("");
-  const [instructions, setInstructions] = React.useState("");
-  const [cron, setCron] = React.useState("");
+  const [objective, setObjective] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -196,17 +208,18 @@ function CreateWorkflowDialog({
     setBusy(true);
     setError(null);
     try {
+      const definition = { ...defaultVisualWorkflow(), objective: objective.trim() };
+      const compiled = compileVisualWorkflow(definition);
       const task = await createCloudTask({
-        name,
-        instructions,
-        active: true,
-        cronExpr: cron.trim() || undefined,
+        name: name.trim(),
+        instructions: compiled.instructions,
+        active: false,
+        triggers: compiled.triggers,
       });
       onCreated(task);
       setOpen(false);
       setName("");
-      setInstructions("");
-      setCron("");
+      setObjective("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not create workflow");
     } finally {
@@ -231,96 +244,86 @@ function CreateWorkflowDialog({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button className="rounded-full" size="sm">
+        <Button className="rounded-none" size="sm">
           <Plus className="size-4" /> New workflow
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="rounded-none sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Create a cloud workflow</DialogTitle>
+          <DialogTitle>Create workflow</DialogTitle>
           <DialogDescription>
-            Run on Oppulence even when the desktop app is closed.
+            Start with a focused objective, then configure the trigger and actions on the canvas.
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="custom">
-          <TabsList className="w-full" variant="line">
-            <TabsTrigger value="custom">Custom</TabsTrigger>
+          <TabsList className="w-full rounded-none" variant="line">
+            <TabsTrigger value="custom">Start from scratch</TabsTrigger>
             <TabsTrigger value="templates">Templates</TabsTrigger>
           </TabsList>
-          <TabsContent className="space-y-4 pt-3" value="custom">
-            <div className="space-y-2">
-              <Label htmlFor="workflow-name">Name</Label>
+          <TabsContent className="space-y-4 pt-4" value="custom">
+            <div className="space-y-1.5">
+              <Label htmlFor="workflow-name">Workflow name</Label>
               <Input
+                className="rounded-none"
                 id="workflow-name"
                 onChange={(event) => setName(event.target.value)}
-                placeholder="Renewal risk review"
+                placeholder="Recover at-risk commitments"
                 value={name}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="workflow-instructions">Instructions</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="workflow-objective">What should happen?</Label>
               <Textarea
-                id="workflow-instructions"
-                onChange={(event) => setInstructions(event.target.value)}
-                placeholder="Explain what evidence to inspect and what artifact to produce."
-                rows={6}
-                value={instructions}
+                className="min-h-28 rounded-none"
+                id="workflow-objective"
+                onChange={(event) => setObjective(event.target.value)}
+                placeholder="When a customer promise is at risk, review the account and draft a concise recovery email for approval."
+                value={objective}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="workflow-cron">
-                Cron schedule <span className="font-normal text-muted-foreground">(optional)</span>
-              </Label>
-              <Input
-                className="font-mono"
-                id="workflow-cron"
-                onChange={(event) => setCron(event.target.value)}
-                placeholder="0 9 * * 1-5"
-                value={cron}
-              />
-            </div>
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            {error ? <p className="text-xs text-destructive">{error}</p> : null}
             <DialogFooter>
-              <Button disabled={busy || !name.trim() || !instructions.trim()} onClick={create}>
-                {busy ? (
-                  <CircleNotch className="size-4 animate-spin" />
-                ) : (
-                  <Cloud className="size-4" />
-                )}{" "}
-                Create
+              <Button
+                className="rounded-none"
+                disabled={busy || !name.trim() || !objective.trim()}
+                onClick={create}
+              >
+                {busy ? <CircleNotch className="animate-spin" /> : <Cloud />} Create draft
               </Button>
             </DialogFooter>
           </TabsContent>
-          <TabsContent className="pt-3" value="templates">
+          <TabsContent className="pt-4" value="templates">
             <ScrollArea className="h-80 pr-3">
-              <div className="space-y-2">
+              <div className="divide-y divide-border border border-border">
                 {templates
                   .filter((template) => !template.firstParty)
                   .map((template) => (
-                    <Card key={template.slug}>
-                      <CardHeader className="gap-1 p-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <CardTitle className="text-sm">{template.name}</CardTitle>
-                            <CardDescription className="mt-1 text-xs">
-                              {template.description}
-                            </CardDescription>
-                          </div>
-                          <Button
-                            disabled={busy}
-                            onClick={() => instantiate(template)}
-                            size="sm"
-                            variant="outline"
-                          >
-                            Add
-                          </Button>
-                        </div>
-                      </CardHeader>
-                    </Card>
+                    <div className="flex items-start justify-between gap-4 p-3" key={template.slug}>
+                      <div>
+                        <p className="text-[13px] font-medium">{template.name}</p>
+                        <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
+                          {template.description}
+                        </p>
+                      </div>
+                      <Button
+                        className="rounded-none"
+                        disabled={busy}
+                        onClick={() => void instantiate(template)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        Use
+                      </Button>
+                    </div>
                   ))}
+                {templates.filter((template) => !template.firstParty).length === 0 ? (
+                  <p className="p-6 text-center text-xs text-muted-foreground">
+                    No custom templates are available yet.
+                  </p>
+                ) : null}
               </div>
             </ScrollArea>
-            {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
+            {error ? <p className="mt-3 text-xs text-destructive">{error}</p> : null}
           </TabsContent>
         </Tabs>
       </DialogContent>
@@ -328,171 +331,125 @@ function CreateWorkflowDialog({
   );
 }
 
-function TaskInspector({
-  task,
-  schedule,
+function WorkflowLibrary({
+  tasks,
+  runs,
+  templates,
   busy,
-  onRun,
-  onUpdate,
+  onCreated,
+  onRefresh,
+  onSelect,
 }: {
-  task: CloudTask;
-  schedule: CloudSchedule | null;
+  tasks: CloudTask[];
+  runs: CloudRun[];
+  templates: CloudTaskTemplate[];
   busy: boolean;
-  onRun: () => void;
-  onUpdate: (patch: {
-    active?: boolean;
-    cronExpr?: string;
-    instructions?: string;
-  }) => Promise<void>;
+  onCreated: (task: CloudTask) => void;
+  onRefresh: () => void;
+  onSelect: (task: CloudTask) => void;
 }) {
-  const [cron, setCron] = React.useState(taskCron(task));
-  const [instructions, setInstructions] = React.useState(task.instructions);
-  const editable = !task.systemManaged;
-  const dirty = editable && (cron !== taskCron(task) || instructions !== task.instructions);
+  const [query, setQuery] = React.useState("");
+  const filtered = tasks.filter((task) =>
+    `${task.name} ${scheduleLabel(task)}`.toLowerCase().includes(query.trim().toLowerCase()),
+  );
 
   return (
-    <ScrollArea className="min-h-0 flex-1">
-      <div className="space-y-5 p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              {task.systemManaged ? (
-                <Badge variant="secondary">
-                  <Robot className="size-3" /> Oppulence managed
-                </Badge>
-              ) : null}
-              <Badge className={statusTone(task.scheduleSyncState)} variant="outline">
-                {task.scheduleSyncState}
-              </Badge>
-            </div>
-            <h2 className="text-2xl font-medium tracking-[-0.15px]">{task.name}</h2>
-            <p className="mt-1 font-mono text-xs text-muted-foreground">{task.slug}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 rounded-full border px-3 py-1.5">
-              <span className="text-xs text-muted-foreground">Active</span>
-              <Switch
-                checked={task.active}
-                disabled={busy}
-                onCheckedChange={(active) => void onUpdate({ active })}
-                size="sm"
-              />
-            </div>
-            <Button className="rounded-full" disabled={busy || !task.active} onClick={onRun}>
-              {busy ? (
-                <CircleNotch className="size-4 animate-spin" />
-              ) : (
-                <Play className="size-4" weight="fill" />
-              )}{" "}
-              Run now
-            </Button>
-          </div>
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
+        <Button className="rounded-none" size="sm" variant="outline">
+          Sorted by Last published
+        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            aria-label="Refresh workflows"
+            className="rounded-none"
+            disabled={busy}
+            onClick={onRefresh}
+            size="icon-sm"
+            variant="ghost"
+          >
+            <ArrowClockwise className={cn(busy && "animate-spin")} />
+          </Button>
+          <Button className="rounded-none" disabled size="sm" variant="outline">
+            <SlidersHorizontal /> View settings
+          </Button>
+          <CreateWorkflowDialog onCreated={onCreated} templates={templates} />
         </div>
-
-        {schedule ? (
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Card>
-              <CardHeader className="p-4">
-                <CardDescription>Schedule health</CardDescription>
-                <CardTitle className="flex items-center gap-2 text-sm">
-                  <StatusIcon status={schedule.health} /> {schedule.health}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="p-4">
-                <CardDescription>Mechanism</CardDescription>
-                <CardTitle className="text-sm">{schedule.mechanism.replaceAll("_", " ")}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card>
-              <CardHeader className="p-4">
-                <CardDescription>Next run</CardDescription>
-                <CardTitle className="text-sm">{formatDate(schedule.nextDueAt)}</CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-        ) : null}
-
-        <Separator />
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
-          <div className="space-y-2">
-            <Label htmlFor="task-instructions">Instructions</Label>
-            <Textarea
-              disabled={!editable}
-              id="task-instructions"
-              onChange={(event) => setInstructions(event.target.value)}
-              rows={10}
-              value={instructions}
-            />
-            {task.systemManaged ? (
-              <p className="text-xs text-muted-foreground">
-                Version {task.templateVersion} is maintained by Oppulence. You can pause it without
-                losing its definition.
-              </p>
-            ) : null}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="task-cron">Cron schedule</Label>
-            <Input
-              className="font-mono"
-              disabled={!editable}
-              id="task-cron"
-              onChange={(event) => setCron(event.target.value)}
-              value={cron}
-            />
-            <p className="text-xs leading-5 text-muted-foreground">
-              Times use the workflow timezone. Empty schedules remain manual.
-            </p>
-          </div>
-        </div>
-        {editable ? (
-          <div className="flex justify-end">
-            <Button
-              disabled={!dirty || busy}
-              onClick={() => void onUpdate({ cronExpr: cron, instructions })}
-              variant="outline"
-            >
-              Save definition
-            </Button>
-          </div>
-        ) : null}
-
-        <Separator />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <p className="text-xs text-muted-foreground">Last run</p>
-            <p className="mt-1 text-sm">{formatDate(task.lastRunAt)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Execution</p>
-            <p className="mt-1 text-sm uppercase">{task.executionTarget}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Trigger sources</p>
-            <p className="mt-1 text-sm">{schedule?.triggerSources.join(", ") || "Manual"}</p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Definition updated</p>
-            <p className="mt-1 text-sm">{formatDate(task.updatedAt)}</p>
-          </div>
-        </div>
-        {task.lastRunSummary ? (
-          <Card>
-            <CardHeader className="p-4">
-              <CardDescription>Latest summary</CardDescription>
-              <CardTitle className="text-sm font-normal leading-6">{task.lastRunSummary}</CardTitle>
-            </CardHeader>
-          </Card>
-        ) : null}
-        {task.scheduleSyncError || task.lastRunError ? (
-          <div className="flex gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
-            <Warning className="mt-0.5 size-4 shrink-0" />
-            {task.scheduleSyncError || task.lastRunError}
-          </div>
-        ) : null}
       </div>
-    </ScrollArea>
+      <div className="flex h-11 shrink-0 items-center border-b border-border px-3">
+        <MagnifyingGlass className="mr-2 size-4 text-muted-foreground" />
+        <Input
+          aria-label="Search workflows"
+          className="h-8 max-w-md rounded-none border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search workflows"
+          value={query}
+        />
+      </div>
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="min-w-[760px]">
+          <div className="grid h-9 grid-cols-[minmax(260px,1.5fr)_minmax(190px,1fr)_110px_110px_150px_32px] items-center border-b border-border px-4 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+            <span>Workflow</span>
+            <span>Starts</span>
+            <span>Steps</span>
+            <span>Status</span>
+            <span>Last run</span>
+            <span />
+          </div>
+          {filtered.map((task) => {
+            const lastRun = runs.find((run) => run.slug === task.slug);
+            return (
+              <button
+                className="grid min-h-14 w-full grid-cols-[minmax(260px,1.5fr)_minmax(190px,1fr)_110px_110px_150px_32px] items-center border-b border-border px-4 text-left transition-colors hover:bg-muted/35"
+                key={task.id}
+                onClick={() => onSelect(task)}
+                type="button"
+              >
+                <span className="min-w-0">
+                  <span className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "size-2 shrink-0",
+                        task.active ? "bg-emerald-500" : "bg-muted-foreground/35",
+                      )}
+                    />
+                    <span className="truncate text-[13px] font-medium">{task.name}</span>
+                    {task.systemManaged ? (
+                      <Badge className="rounded-none text-[9px]" variant="secondary">
+                        Oppulence
+                      </Badge>
+                    ) : null}
+                  </span>
+                  <span className="ml-4.5 mt-0.5 block truncate text-[11px] text-muted-foreground">
+                    {taskVisualWorkflow(task)?.objective || "Always-on relationship intelligence"}
+                  </span>
+                </span>
+                <span className="truncate text-[12px] text-muted-foreground">
+                  {scheduleLabel(task)}
+                </span>
+                <span className="text-[12px] text-muted-foreground">
+                  {workflowStepCount(task)} steps
+                </span>
+                <span className="text-[12px]">{task.active ? "Live" : "Draft"}</span>
+                <span className="text-[12px] text-muted-foreground">
+                  {lastRun ? formatDate(lastRun.createdAt) : "Never"}
+                </span>
+                <CaretRight className="size-4 text-muted-foreground" />
+              </button>
+            );
+          })}
+          {filtered.length === 0 ? (
+            <div className="flex min-h-72 flex-col items-center justify-center px-6 text-center">
+              <Cloud className="size-8 text-muted-foreground" />
+              <h2 className="mt-4 text-[15px] font-medium">No workflows found</h2>
+              <p className="mt-1 text-[12px] text-muted-foreground">
+                Try another search or create a workflow from scratch.
+              </p>
+            </div>
+          ) : null}
+        </div>
+      </ScrollArea>
+    </div>
   );
 }
 
@@ -518,11 +475,11 @@ function RunInspector({
       </div>
     );
   return (
-    <div className="border-t">
+    <div>
       <div className="space-y-3 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <Badge className={statusTone(run.status)} variant="outline">
+            <Badge className={cn("rounded-none", statusTone(run.status))} variant="outline">
               <StatusIcon status={run.status} /> {run.status}
             </Badge>
             <p className="mt-2 truncate font-mono text-xs text-muted-foreground" title={run.runId}>
@@ -533,13 +490,19 @@ function RunInspector({
             {!terminalStatuses.has(run.status) &&
             run.executor === "api" &&
             Boolean(run.temporalWorkflowId) ? (
-              <Button disabled={busy} onClick={onCancel} size="sm" variant="outline">
+              <Button
+                className="rounded-none"
+                disabled={busy}
+                onClick={onCancel}
+                size="sm"
+                variant="outline"
+              >
                 Cancel
               </Button>
             ) : null}
             {(run.status === "failed" || run.status === "stopped") &&
             taskExecutionTarget === "api" ? (
-              <Button disabled={busy} onClick={onRetry} size="sm">
+              <Button className="rounded-none" disabled={busy} onClick={onRetry} size="sm">
                 Retry
               </Button>
             ) : null}
@@ -572,10 +535,10 @@ function RunInspector({
           </div>
         </div>
         {run.summary ? (
-          <p className="rounded-md bg-muted p-2.5 text-xs leading-5">{run.summary}</p>
+          <p className="border border-border p-2.5 text-xs leading-5">{run.summary}</p>
         ) : null}
         {run.error ? (
-          <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2.5 text-xs leading-5 text-destructive">
+          <p className="border border-destructive/30 bg-destructive/5 p-2.5 text-xs leading-5 text-destructive">
             {run.errorCode ? `${run.errorCode}: ` : ""}
             {run.error}
           </p>
@@ -583,17 +546,17 @@ function RunInspector({
       </div>
       <Separator />
       <div className="p-4">
-        <p className="mb-3 text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+        <p className="mb-3 text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
           Transcript
         </p>
         <ScrollArea className="h-64 pr-3">
           <ol className="space-y-3">
             {events.map((event) => (
               <li className="grid grid-cols-[28px_minmax(0,1fr)] gap-2 text-xs" key={event.id}>
-                <span className="flex size-7 items-center justify-center rounded-full border bg-background font-mono text-[10px]">
+                <span className="flex size-7 items-center justify-center border border-border bg-background font-mono text-[10px]">
                   {event.seq}
                 </span>
-                <div className="min-w-0 rounded-md border p-2.5">
+                <div className="min-w-0 border border-border p-2.5">
                   <div className="flex justify-between gap-2">
                     <span className="font-medium">{event.type}</span>
                     <time className="text-muted-foreground">{formatDate(event.receivedAt)}</time>
@@ -610,6 +573,387 @@ function RunInspector({
           </ol>
         </ScrollArea>
       </div>
+    </div>
+  );
+}
+
+function WorkflowRuns({
+  runs,
+  selectedRun,
+  events,
+  busy,
+  tasks,
+  nextCursor,
+  statusFilter,
+  triggerFilter,
+  executorFilter,
+  onStatusFilter,
+  onTriggerFilter,
+  onExecutorFilter,
+  onSelectRun,
+  onLoadMore,
+  onCancel,
+  onRetry,
+}: {
+  runs: CloudRun[];
+  selectedRun: CloudRun | null;
+  events: CloudRunEvent[];
+  busy: boolean;
+  tasks: CloudTask[];
+  nextCursor?: string;
+  statusFilter: FilterValue<CloudRunStatus>;
+  triggerFilter: FilterValue<CloudRunTrigger>;
+  executorFilter: "api" | "desktop" | "all";
+  onStatusFilter: (value: FilterValue<CloudRunStatus>) => void;
+  onTriggerFilter: (value: FilterValue<CloudRunTrigger>) => void;
+  onExecutorFilter: (value: "api" | "desktop" | "all") => void;
+  onSelectRun: (run: CloudRun) => void;
+  onLoadMore: () => void;
+  onCancel: () => void;
+  onRetry: () => void;
+}) {
+  const selectedTask = tasks.find((task) => task.slug === selectedRun?.slug);
+  return (
+    <div className="grid h-full min-h-0 grid-cols-[minmax(340px,0.8fr)_minmax(420px,1.2fr)]">
+      <section className="flex min-h-0 flex-col border-r border-border">
+        <div className="grid grid-cols-3 gap-2 border-b border-border p-3">
+          <Select
+            onValueChange={(value) => onStatusFilter(value as FilterValue<CloudRunStatus>)}
+            value={statusFilter}
+          >
+            <SelectTrigger className="rounded-none" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="all">All status</SelectItem>
+              {(["queued", "running", "succeeded", "failed", "stopped"] as const).map((value) => (
+                <SelectItem className="rounded-none" key={value} value={value}>
+                  {value}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            onValueChange={(value) => onTriggerFilter(value as FilterValue<CloudRunTrigger>)}
+            value={triggerFilter}
+          >
+            <SelectTrigger className="rounded-none" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="all">All triggers</SelectItem>
+              {(["manual", "cron", "window", "event", "retry"] as const).map((value) => (
+                <SelectItem className="rounded-none" key={value} value={value}>
+                  {value}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            onValueChange={(value) => onExecutorFilter(value as "api" | "desktop" | "all")}
+            value={executorFilter}
+          >
+            <SelectTrigger className="rounded-none" size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="all">All runtimes</SelectItem>
+              <SelectItem value="api">Cloud</SelectItem>
+              <SelectItem value="desktop">Desktop</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <ScrollArea className="min-h-0 flex-1">
+          <div>
+            {runs.map((run) => (
+              <button
+                className={cn(
+                  "flex min-h-14 w-full items-center gap-3 border-b border-border px-3 text-left hover:bg-muted/35",
+                  selectedRun?.runId === run.runId && "bg-muted/50",
+                )}
+                key={run.id}
+                onClick={() => onSelectRun(run)}
+                type="button"
+              >
+                <StatusIcon status={run.status} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[12px] font-medium">
+                    {tasks.find((task) => task.slug === run.slug)?.name || run.slug}
+                  </span>
+                  <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                    {run.trigger} · {formatDate(run.createdAt)}
+                  </span>
+                </span>
+                <CaretRight className="size-4 text-muted-foreground" />
+              </button>
+            ))}
+            {runs.length === 0 ? (
+              <p className="p-10 text-center text-xs text-muted-foreground">
+                No runs match these filters.
+              </p>
+            ) : null}
+            {nextCursor ? (
+              <Button
+                className="w-full rounded-none"
+                onClick={onLoadMore}
+                size="sm"
+                variant="ghost"
+              >
+                Load more
+              </Button>
+            ) : null}
+          </div>
+        </ScrollArea>
+      </section>
+      <ScrollArea className="min-h-0">
+        <RunInspector
+          busy={busy}
+          events={events}
+          onCancel={onCancel}
+          onRetry={onRetry}
+          run={selectedRun}
+          taskExecutionTarget={selectedTask?.executionTarget}
+        />
+      </ScrollArea>
+    </div>
+  );
+}
+
+function WorkflowEditor({
+  task,
+  schedule,
+  runs,
+  selectedRun,
+  events,
+  busy,
+  onBack,
+  onRun,
+  onSelectRun,
+  onCancel,
+  onRetry,
+  onUpdate,
+}: {
+  task: CloudTask;
+  schedule: CloudSchedule | null;
+  runs: CloudRun[];
+  selectedRun: CloudRun | null;
+  events: CloudRunEvent[];
+  busy: boolean;
+  onBack: () => void;
+  onRun: () => void;
+  onSelectRun: (run: CloudRun) => void;
+  onCancel: () => void;
+  onRetry: () => void;
+  onUpdate: (patch: {
+    active?: boolean;
+    instructions?: string;
+    name?: string;
+    triggers?: Record<string, unknown>;
+  }) => Promise<void>;
+}) {
+  const editable = !task.systemManaged;
+  const original = workflowForTask(task);
+  const [tab, setTab] = React.useState<EditorTab>("editor");
+  const [name, setName] = React.useState(task.name);
+  const [workflow, setWorkflow] = React.useState(original);
+  const dirty =
+    editable &&
+    (name.trim() !== task.name || JSON.stringify(workflow) !== JSON.stringify(original));
+  const taskRuns = runs.filter((run) => run.slug === task.slug);
+
+  const save = async () => {
+    const compiled = compileVisualWorkflow(workflow);
+    await onUpdate({
+      name: name.trim(),
+      instructions: compiled.instructions,
+      triggers: compiled.triggers,
+    });
+  };
+
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-background">
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
+        <div className="flex min-w-0 items-center gap-2 text-[13px]">
+          <Button className="rounded-none px-1.5" onClick={onBack} size="sm" variant="ghost">
+            Workflows
+          </Button>
+          <CaretRight className="size-3 text-muted-foreground" />
+          <span className="truncate font-medium">{task.name}</span>
+          {task.systemManaged ? <Robot className="size-3.5 text-muted-foreground" /> : null}
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge className="rounded-none" variant={task.active ? "secondary" : "outline"}>
+            {task.active ? "Live" : "Draft"}
+          </Badge>
+          <Switch
+            aria-label="Workflow live status"
+            checked={task.active}
+            disabled={busy}
+            onCheckedChange={(active) => void onUpdate({ active })}
+            size="sm"
+          />
+          {editable ? (
+            <Button
+              className="rounded-none"
+              disabled={!dirty || busy || !name.trim()}
+              onClick={() => void save()}
+              size="sm"
+              variant="outline"
+            >
+              {busy ? <CircleNotch className="animate-spin" /> : null} Save
+            </Button>
+          ) : null}
+          <Button
+            className="rounded-none"
+            disabled={busy || !task.active}
+            onClick={onRun}
+            size="sm"
+          >
+            <Play weight="fill" /> Run now
+          </Button>
+        </div>
+      </div>
+      <div className="flex h-10 shrink-0 items-center gap-5 border-b border-border px-3">
+        {(["editor", "runs", "settings"] as const).map((value) => (
+          <button
+            className={cn(
+              "flex h-full items-center gap-1.5 border-b text-[12px] capitalize",
+              tab === value
+                ? "border-foreground text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground",
+            )}
+            key={value}
+            onClick={() => setTab(value)}
+            type="button"
+          >
+            {value === "settings" ? <Gear className="size-3.5" /> : null}
+            {value}
+            {value === "runs" ? (
+              <Badge className="rounded-none text-[9px]" variant="secondary">
+                {taskRuns.length}
+              </Badge>
+            ) : null}
+          </button>
+        ))}
+      </div>
+
+      {tab === "editor" ? (
+        <VisualWorkflowBuilder
+          aria-label={`${task.name} workflow editor`}
+          disabled={!editable}
+          onChange={setWorkflow}
+          value={workflow}
+        />
+      ) : tab === "runs" ? (
+        <div className="grid min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)]">
+          <ScrollArea className="min-h-0 border-r border-border">
+            {taskRuns.map((run) => (
+              <button
+                className={cn(
+                  "flex min-h-14 w-full items-center gap-3 border-b border-border px-3 text-left hover:bg-muted/35",
+                  selectedRun?.runId === run.runId && "bg-muted/50",
+                )}
+                key={run.id}
+                onClick={() => onSelectRun(run)}
+                type="button"
+              >
+                <StatusIcon status={run.status} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[12px] font-medium">{run.status}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {run.trigger} · {formatDate(run.createdAt)}
+                  </span>
+                </span>
+                <CaretRight className="size-4 text-muted-foreground" />
+              </button>
+            ))}
+            {taskRuns.length === 0 ? (
+              <p className="p-8 text-center text-xs text-muted-foreground">No runs yet.</p>
+            ) : null}
+          </ScrollArea>
+          <ScrollArea className="min-h-0">
+            <RunInspector
+              busy={busy}
+              events={events}
+              onCancel={onCancel}
+              onRetry={onRetry}
+              run={selectedRun}
+              taskExecutionTarget={task.executionTarget}
+            />
+          </ScrollArea>
+        </div>
+      ) : (
+        <ScrollArea className="min-h-0 flex-1">
+          <div className="mx-auto max-w-2xl space-y-7 px-6 py-7">
+            <div>
+              <h2 className="text-[15px] font-medium">Workflow settings</h2>
+              <p className="mt-1 text-[12px] text-muted-foreground">
+                Keep the operational details simple. The cloud runtime handles scheduling and
+                execution.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="workflow-editor-name">Name</Label>
+              <Input
+                className="rounded-none"
+                disabled={!editable}
+                id="workflow-editor-name"
+                onChange={(event) => setName(event.target.value)}
+                value={name}
+              />
+            </div>
+            <div className="grid grid-cols-2 border border-border">
+              <div className="border-r border-border p-4">
+                <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                  Starts
+                </p>
+                <p className="mt-2 text-[13px]">{scheduleLabel(task)}</p>
+              </div>
+              <div className="p-4">
+                <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                  Next run
+                </p>
+                <p className="mt-2 text-[13px]">{formatDate(schedule?.nextDueAt)}</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between border-y border-border py-4">
+              <div>
+                <p className="text-[13px] font-medium">Run in Oppulence Cloud</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Runs continue even when the desktop app is closed.
+                </p>
+              </div>
+              <Badge
+                className={cn(
+                  "rounded-none",
+                  statusTone(schedule?.health || task.scheduleSyncState),
+                )}
+                variant="outline"
+              >
+                <StatusIcon status={schedule?.health || task.scheduleSyncState} />{" "}
+                {schedule?.health || task.scheduleSyncState}
+              </Badge>
+            </div>
+            {task.systemManaged ? (
+              <p className="text-[11px] text-muted-foreground">
+                This workflow is maintained by Oppulence. You can pause it, inspect it, and run it
+                on demand.
+              </p>
+            ) : null}
+            {editable ? (
+              <div className="flex justify-end">
+                <Button
+                  className="rounded-none"
+                  disabled={!dirty || busy || !name.trim()}
+                  onClick={() => void save()}
+                >
+                  Save settings
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        </ScrollArea>
+      )}
     </div>
   );
 }
@@ -631,6 +975,9 @@ export function CloudWorkflowsView({
   const [selectedRun, setSelectedRun] = React.useState<CloudRun | null>(null);
   const [events, setEvents] = React.useState<CloudRunEvent[]>([]);
   const [schedule, setSchedule] = React.useState<CloudSchedule | null>(null);
+  const [screen, setScreen] = React.useState<"library" | "editor" | "runs">(
+    initialSlug ? "editor" : focus === "runs" ? "runs" : "library",
+  );
   const [statusFilter, setStatusFilter] = React.useState<FilterValue<CloudRunStatus>>("all");
   const [triggerFilter, setTriggerFilter] = React.useState<FilterValue<CloudRunTrigger>>("all");
   const [executorFilter, setExecutorFilter] = React.useState<"api" | "desktop" | "all">("all");
@@ -638,7 +985,7 @@ export function CloudWorkflowsView({
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const selectedTask = tasks.find((task) => task.slug === selectedSlug) || tasks[0];
+  const selectedTask = tasks.find((task) => task.slug === selectedSlug);
   const selectedTaskSlug = selectedTask?.slug;
   const selectedTaskRevision = selectedTask?.revision;
   const selectedRunID = selectedRun?.runId;
@@ -659,27 +1006,22 @@ export function CloudWorkflowsView({
         executor: executorFilter,
         cursor,
       });
-      setRuns((current) => {
-        if (!append) return result.runs;
-        return [...new Map([...current, ...result.runs].map((run) => [run.id, run])).values()];
-      });
+      setRuns((current) =>
+        append
+          ? [...new Map([...current, ...result.runs].map((run) => [run.id, run])).values()]
+          : result.runs,
+      );
       setSelectedRun((current) => {
         if (!current)
           return initialRunId
             ? result.runs.find((run) => run.runId === initialRunId) || null
-            : focus === "runs"
-              ? result.runs[0] || null
-              : null;
+            : null;
         return result.runs.find((run) => run.runId === current.runId) || current;
       });
       setNextCursor(result.nextCursor);
     },
-    [executorFilter, focus, initialRunId, statusFilter, triggerFilter],
+    [executorFilter, initialRunId, statusFilter, triggerFilter],
   );
-
-  React.useEffect(() => {
-    if (selectedRunSlug) setSelectedSlug(selectedRunSlug);
-  }, [selectedRunSlug]);
 
   const loadDefinitions = React.useCallback(async () => {
     setError(null);
@@ -704,27 +1046,16 @@ export function CloudWorkflowsView({
   }, [loadDefinitions, loadRuns]);
 
   React.useEffect(() => {
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (!cancelled) void loadDefinitions();
-    });
-    return () => {
-      cancelled = true;
-    };
+    queueMicrotask(() => void loadDefinitions());
   }, [loadDefinitions]);
 
   React.useEffect(() => {
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (cancelled) return;
-      void loadRuns().catch((cause) => {
-        if (!cancelled)
-          setError(cause instanceof Error ? cause.message : "Could not load workflow runs");
-      });
-    });
-    return () => {
-      cancelled = true;
-    };
+    queueMicrotask(
+      () =>
+        void loadRuns().catch((cause) =>
+          setError(cause instanceof Error ? cause.message : "Could not load workflow runs"),
+        ),
+    );
   }, [loadRuns]);
 
   React.useEffect(() => {
@@ -744,9 +1075,9 @@ export function CloudWorkflowsView({
   }, [initialRunId, initialSlug, selectRun]);
 
   React.useEffect(() => {
-    if (!selectedTaskSlug) return;
+    if (!selectedTaskSlug || screen !== "editor") return;
     let cancelled = false;
-    getCloudSchedule(selectedTaskSlug)
+    void getCloudSchedule(selectedTaskSlug)
       .then((value) => {
         if (!cancelled) setSchedule(value);
       })
@@ -757,7 +1088,7 @@ export function CloudWorkflowsView({
     return () => {
       cancelled = true;
     };
-  }, [selectedTaskRevision, selectedTaskSlug]);
+  }, [screen, selectedTaskRevision, selectedTaskSlug]);
 
   React.useEffect(() => {
     if (!selectedRunID || !selectedRunSlug || !selectedRunStatus) return;
@@ -773,9 +1104,8 @@ export function CloudWorkflowsView({
           setSelectedRun(nextRun);
         }
       } catch (cause) {
-        if (!cancelled) {
+        if (!cancelled)
           setError(cause instanceof Error ? cause.message : "Could not refresh workflow run");
-        }
       }
     };
     void load();
@@ -817,216 +1147,117 @@ export function CloudWorkflowsView({
   if (loading)
     return (
       <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
-        <CircleNotch className="size-4 animate-spin" /> Loading cloud workflows
+        <CircleNotch className="size-4 animate-spin" /> Loading workflows
       </div>
     );
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Cloud className="size-5 text-oppulence-orange" weight="fill" />
-            <h1 className="text-sm font-medium">
-              {focus === "runs" ? "Workflow runs" : "Scheduled workflows"}
-            </h1>
-            <Badge variant="secondary">
-              {focus === "runs"
-                ? `${runs.length} recent`
-                : `${tasks.filter((task) => task.active).length} active`}
-            </Badge>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {focus === "runs"
-              ? "Inspect execution status, progress, transcripts, failures, and retries."
-              : "Manage always-on relationship intelligence, schedules, and execution controls."}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button disabled={busy} onClick={() => void refresh()} size="sm" variant="outline">
-            <ArrowClockwise className={cn("size-4", busy && "animate-spin")} /> Refresh
-          </Button>
-          {focus === "scheduled" ? (
-            <CreateWorkflowDialog
-              onCreated={(task) => {
-                replaceTask(task);
-                void loadRuns();
-              }}
-              templates={templates}
-            />
-          ) : null}
-        </div>
-      </div>
+    <div className="flex h-full min-h-0 flex-col bg-background text-[13px]">
       {error ? (
-        <div className="flex shrink-0 items-center gap-2 border-b border-destructive/30 bg-destructive/5 px-5 py-2 text-xs text-destructive">
-          <Warning className="size-4" />
-          {error}
+        <div className="flex shrink-0 items-center gap-2 border-b border-destructive/30 bg-destructive/5 px-4 py-2 text-xs text-destructive">
+          <Warning className="size-4" /> {error}
         </div>
       ) : null}
-      <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[260px_minmax(520px,1fr)_390px]">
-        <aside className="flex min-h-0 flex-col border-r bg-muted/10">
-          <WorkflowTaskList
-            onSelect={(task) => {
-              setSelectedSlug(task.slug);
-              selectRun(null);
-              setSchedule(null);
-            }}
-            selectedSlug={selectedTask?.slug}
-            tasks={tasks}
-          />
-        </aside>
-        <section className="flex min-h-0 flex-col border-r">
-          {selectedTask ? (
-            <TaskInspector
-              key={`${selectedTask.id}:${selectedTask.revision}`}
-              busy={busy}
-              onRun={() =>
-                void perform(async () => {
-                  const run = await triggerCloudRun(
-                    selectedTask.slug,
-                    "Started from the web workflow console.",
-                  );
-                  selectRun(run);
-                  await loadRuns();
-                })
-              }
-              onUpdate={(patch) =>
-                perform(async () => {
-                  replaceTask(await updateCloudTask(selectedTask, patch));
-                })
-              }
-              schedule={schedule}
-              task={selectedTask}
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              No workflows are provisioned.
-            </div>
-          )}
-        </section>
-        <aside className="flex min-h-0 flex-col bg-muted/5">
-          <div className="border-b p-3">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CalendarBlank className="size-4" />
-                <p className="text-sm font-medium">Cloud Runs</p>
-              </div>
-              <span className="text-xs text-muted-foreground">{runs.length}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <Select
-                onValueChange={(value) => setStatusFilter(value as FilterValue<CloudRunStatus>)}
-                value={statusFilter}
-              >
-                <SelectTrigger size="sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All status</SelectItem>
-                  {["queued", "running", "succeeded", "failed", "stopped"].map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {value}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                onValueChange={(value) => setTriggerFilter(value as FilterValue<CloudRunTrigger>)}
-                value={triggerFilter}
-              >
-                <SelectTrigger size="sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All triggers</SelectItem>
-                  {["manual", "cron", "window", "event", "retry"].map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {value}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                onValueChange={(value) => setExecutorFilter(value as "api" | "desktop" | "all")}
-                value={executorFilter}
-              >
-                <SelectTrigger size="sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All runtimes</SelectItem>
-                  <SelectItem value="api">API</SelectItem>
-                  <SelectItem value="desktop">Desktop</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <ScrollArea className="max-h-[42%] min-h-52 border-b">
-            <div className="space-y-1 p-2">
-              {runs.map((run) => (
-                <Button
-                  className={cn(
-                    "h-auto w-full justify-start rounded-lg px-2.5 py-2 text-left",
-                    selectedRun?.runId === run.runId && "bg-muted",
-                  )}
-                  key={run.id}
-                  onClick={() => selectRun(run)}
-                  variant="ghost"
-                >
-                  <StatusIcon status={run.status} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-medium">
-                      {tasks.find((task) => task.slug === run.slug)?.name || run.slug}
-                    </span>
-                    <span className="mt-0.5 block text-[11px] font-normal text-muted-foreground">
-                      {run.trigger} · {formatDate(run.createdAt)}
-                    </span>
-                  </span>
-                </Button>
-              ))}
-              {runs.length === 0 ? (
-                <div className="p-6 text-center text-xs text-muted-foreground">
-                  No runs match these filters.
-                </div>
-              ) : null}
-              {nextCursor ? (
-                <Button
-                  className="w-full"
-                  onClick={() => void loadRuns(nextCursor, true)}
-                  size="sm"
-                  variant="ghost"
-                >
-                  Load more
-                </Button>
-              ) : null}
-            </div>
-          </ScrollArea>
-          <ScrollArea className="min-h-0 flex-1">
-            <RunInspector
-              busy={busy}
-              events={events}
-              onCancel={() =>
-                selectedRun &&
-                void perform(async () => {
-                  const run = await cancelCloudRun(selectedRun);
-                  selectRun(run);
-                  await loadRuns();
-                })
-              }
-              onRetry={() =>
-                selectedRun &&
-                void perform(async () => {
-                  const run = await retryCloudRun(selectedRun);
-                  selectRun(run);
-                  await loadRuns();
-                })
-              }
-              run={selectedRun}
-              taskExecutionTarget={selectedTask?.executionTarget}
-            />
-          </ScrollArea>
-        </aside>
-      </div>
+
+      {screen === "library" ? (
+        <WorkflowLibrary
+          busy={busy}
+          onCreated={(task) => {
+            replaceTask(task);
+            setSchedule(null);
+            setScreen("editor");
+          }}
+          onRefresh={() => void refresh()}
+          onSelect={(task) => {
+            setSelectedSlug(task.slug);
+            selectRun(null);
+            setSchedule(null);
+            setScreen("editor");
+          }}
+          runs={runs}
+          tasks={tasks}
+          templates={templates}
+        />
+      ) : screen === "runs" ? (
+        <WorkflowRuns
+          busy={busy}
+          events={events}
+          executorFilter={executorFilter}
+          nextCursor={nextCursor}
+          onCancel={() =>
+            selectedRun &&
+            void perform(async () => {
+              selectRun(await cancelCloudRun(selectedRun));
+              await loadRuns();
+            })
+          }
+          onExecutorFilter={setExecutorFilter}
+          onLoadMore={() => nextCursor && void loadRuns(nextCursor, true)}
+          onRetry={() =>
+            selectedRun &&
+            void perform(async () => {
+              selectRun(await retryCloudRun(selectedRun));
+              await loadRuns();
+            })
+          }
+          onSelectRun={selectRun}
+          onStatusFilter={setStatusFilter}
+          onTriggerFilter={setTriggerFilter}
+          runs={runs}
+          selectedRun={selectedRun}
+          statusFilter={statusFilter}
+          tasks={tasks}
+          triggerFilter={triggerFilter}
+        />
+      ) : selectedTask ? (
+        <WorkflowEditor
+          busy={busy}
+          events={events}
+          key={`${selectedTask.id}:${selectedTask.revision}`}
+          onBack={() => {
+            selectRun(null);
+            setScreen("library");
+          }}
+          onCancel={() =>
+            selectedRun &&
+            void perform(async () => {
+              selectRun(await cancelCloudRun(selectedRun));
+              await loadRuns();
+            })
+          }
+          onRetry={() =>
+            selectedRun &&
+            void perform(async () => {
+              selectRun(await retryCloudRun(selectedRun));
+              await loadRuns();
+            })
+          }
+          onRun={() =>
+            void perform(async () => {
+              const run = await triggerCloudRun(
+                selectedTask.slug,
+                "Started from the visual workflow editor.",
+              );
+              selectRun(run);
+              await loadRuns();
+            })
+          }
+          onSelectRun={selectRun}
+          onUpdate={(patch) =>
+            perform(async () => {
+              replaceTask(await updateCloudTask(selectedTask, patch));
+            })
+          }
+          runs={runs}
+          schedule={schedule}
+          selectedRun={selectedRun}
+          task={selectedTask}
+        />
+      ) : (
+        <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+          No workflow selected.
+        </div>
+      )}
     </div>
   );
 }

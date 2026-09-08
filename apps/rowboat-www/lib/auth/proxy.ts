@@ -64,7 +64,18 @@ export async function getAuthorizedSession(request: NextRequest): Promise<Author
   }
 
   if (shouldRefreshSession(session)) {
-    const refreshed = await refreshWorkOSSession(session);
+    let refreshed: Awaited<ReturnType<typeof refreshWorkOSSession>>;
+    try {
+      refreshed = await refreshWorkOSSession(session);
+    } catch {
+      return {
+        ok: false,
+        response: NextResponse.json(
+          { error: "session refresh is temporarily unavailable", code: "session_unavailable" },
+          { status: 503 },
+        ),
+      };
+    }
     if (!refreshed) {
       const response = NextResponse.json(
         { error: "session expired", code: "unauthorized" },

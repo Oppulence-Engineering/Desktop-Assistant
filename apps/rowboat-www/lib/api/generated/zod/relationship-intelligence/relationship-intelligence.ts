@@ -468,6 +468,25 @@ export const ListRelationshipIdentityCandidates200Response = zod
             existingRelationship: zod
               .strictObject({
                 accountDomain: zod.string().optional().describe("Account domain."),
+                categories: zod
+                  .array(zod.string().describe("Category."))
+                  .describe("Source-backed company categories."),
+                companyDescription: zod
+                  .string()
+                  .optional()
+                  .describe("Source-backed company description."),
+                companyEnrichedAt: zod.iso
+                  .datetime({ offset: true })
+                  .nullish()
+                  .describe("When the company profile was last enriched."),
+                companyEnrichmentData: zod
+                  .record(zod.string(), zod.unknown())
+                  .optional()
+                  .describe("Cited public-web company facts keyed by enrichment field."),
+                companyEnrichmentRefs: zod
+                  .record(zod.string(), zod.unknown())
+                  .optional()
+                  .describe("Citation URLs keyed by enriched company field."),
                 displayName: zod.string().describe("Human display name."),
                 engagement: zod
                   .enum(["unknown", "increasing", "steady", "declining", "dormant"])
@@ -499,6 +518,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                     "former_customer",
                   ])
                   .describe("Commercial lifecycle."),
+                linkedinUrl: zod
+                  .string()
+                  .optional()
+                  .describe("Verified public LinkedIn company URL."),
                 milestones: zod
                   .array(zod.string().describe("Milestone."))
                   .describe("Reached relationship milestones."),
@@ -594,6 +617,25 @@ export const ListRelationshipIdentityCandidates200Response = zod
             proposedRelationship: zod
               .strictObject({
                 accountDomain: zod.string().optional().describe("Account domain."),
+                categories: zod
+                  .array(zod.string().describe("Category."))
+                  .describe("Source-backed company categories."),
+                companyDescription: zod
+                  .string()
+                  .optional()
+                  .describe("Source-backed company description."),
+                companyEnrichedAt: zod.iso
+                  .datetime({ offset: true })
+                  .nullish()
+                  .describe("When the company profile was last enriched."),
+                companyEnrichmentData: zod
+                  .record(zod.string(), zod.unknown())
+                  .optional()
+                  .describe("Cited public-web company facts keyed by enrichment field."),
+                companyEnrichmentRefs: zod
+                  .record(zod.string(), zod.unknown())
+                  .optional()
+                  .describe("Citation URLs keyed by enriched company field."),
                 displayName: zod.string().describe("Human display name."),
                 engagement: zod
                   .enum(["unknown", "increasing", "steady", "declining", "dormant"])
@@ -625,6 +667,10 @@ export const ListRelationshipIdentityCandidates200Response = zod
                     "former_customer",
                   ])
                   .describe("Commercial lifecycle."),
+                linkedinUrl: zod
+                  .string()
+                  .optional()
+                  .describe("Verified public LinkedIn company URL."),
                 milestones: zod
                   .array(zod.string().describe("Milestone."))
                   .describe("Reached relationship milestones."),
@@ -772,6 +818,22 @@ export const GetRelationshipIdentityCandidate200Response = zod
     existingRelationship: zod
       .strictObject({
         accountDomain: zod.string().optional().describe("Account domain."),
+        categories: zod
+          .array(zod.string().describe("Category."))
+          .describe("Source-backed company categories."),
+        companyDescription: zod.string().optional().describe("Source-backed company description."),
+        companyEnrichedAt: zod.iso
+          .datetime({ offset: true })
+          .nullish()
+          .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
+        companyEnrichmentRefs: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
@@ -800,6 +862,7 @@ export const GetRelationshipIdentityCandidate200Response = zod
             "former_customer",
           ])
           .describe("Commercial lifecycle."),
+        linkedinUrl: zod.string().optional().describe("Verified public LinkedIn company URL."),
         milestones: zod
           .array(zod.string().describe("Milestone."))
           .describe("Reached relationship milestones."),
@@ -885,6 +948,22 @@ export const GetRelationshipIdentityCandidate200Response = zod
     proposedRelationship: zod
       .strictObject({
         accountDomain: zod.string().optional().describe("Account domain."),
+        categories: zod
+          .array(zod.string().describe("Category."))
+          .describe("Source-backed company categories."),
+        companyDescription: zod.string().optional().describe("Source-backed company description."),
+        companyEnrichedAt: zod.iso
+          .datetime({ offset: true })
+          .nullish()
+          .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
+        companyEnrichmentRefs: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
@@ -913,6 +992,7 @@ export const GetRelationshipIdentityCandidate200Response = zod
             "former_customer",
           ])
           .describe("Commercial lifecycle."),
+        linkedinUrl: zod.string().optional().describe("Verified public LinkedIn company URL."),
         milestones: zod
           .array(zod.string().describe("Milestone."))
           .describe("Reached relationship milestones."),
@@ -1059,6 +1139,22 @@ export const DecideRelationshipIdentityCandidate200Response = zod
     existingRelationship: zod
       .strictObject({
         accountDomain: zod.string().optional().describe("Account domain."),
+        categories: zod
+          .array(zod.string().describe("Category."))
+          .describe("Source-backed company categories."),
+        companyDescription: zod.string().optional().describe("Source-backed company description."),
+        companyEnrichedAt: zod.iso
+          .datetime({ offset: true })
+          .nullish()
+          .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
+        companyEnrichmentRefs: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
@@ -1087,6 +1183,7 @@ export const DecideRelationshipIdentityCandidate200Response = zod
             "former_customer",
           ])
           .describe("Commercial lifecycle."),
+        linkedinUrl: zod.string().optional().describe("Verified public LinkedIn company URL."),
         milestones: zod
           .array(zod.string().describe("Milestone."))
           .describe("Reached relationship milestones."),
@@ -1172,6 +1269,22 @@ export const DecideRelationshipIdentityCandidate200Response = zod
     proposedRelationship: zod
       .strictObject({
         accountDomain: zod.string().optional().describe("Account domain."),
+        categories: zod
+          .array(zod.string().describe("Category."))
+          .describe("Source-backed company categories."),
+        companyDescription: zod.string().optional().describe("Source-backed company description."),
+        companyEnrichedAt: zod.iso
+          .datetime({ offset: true })
+          .nullish()
+          .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
+        companyEnrichmentRefs: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
@@ -1200,6 +1313,7 @@ export const DecideRelationshipIdentityCandidate200Response = zod
             "former_customer",
           ])
           .describe("Commercial lifecycle."),
+        linkedinUrl: zod.string().optional().describe("Verified public LinkedIn company URL."),
         milestones: zod
           .array(zod.string().describe("Milestone."))
           .describe("Reached relationship milestones."),
@@ -2588,6 +2702,25 @@ export const ListRelationships200Response = zod
         zod
           .strictObject({
             accountDomain: zod.string().optional().describe("Account domain."),
+            categories: zod
+              .array(zod.string().describe("Category."))
+              .describe("Source-backed company categories."),
+            companyDescription: zod
+              .string()
+              .optional()
+              .describe("Source-backed company description."),
+            companyEnrichedAt: zod.iso
+              .datetime({ offset: true })
+              .nullish()
+              .describe("When the company profile was last enriched."),
+            companyEnrichmentData: zod
+              .record(zod.string(), zod.unknown())
+              .optional()
+              .describe("Cited public-web company facts keyed by enrichment field."),
+            companyEnrichmentRefs: zod
+              .record(zod.string(), zod.unknown())
+              .optional()
+              .describe("Citation URLs keyed by enriched company field."),
             displayName: zod.string().describe("Human display name."),
             engagement: zod
               .enum(["unknown", "increasing", "steady", "declining", "dormant"])
@@ -2619,6 +2752,7 @@ export const ListRelationships200Response = zod
                 "former_customer",
               ])
               .describe("Commercial lifecycle."),
+            linkedinUrl: zod.string().optional().describe("Verified public LinkedIn company URL."),
             milestones: zod
               .array(zod.string().describe("Milestone."))
               .describe("Reached relationship milestones."),
@@ -2702,6 +2836,22 @@ export const CreateRelationshipBody = zod
 export const CreateRelationship201Response = zod
   .strictObject({
     accountDomain: zod.string().optional().describe("Account domain."),
+    categories: zod
+      .array(zod.string().describe("Category."))
+      .describe("Source-backed company categories."),
+    companyDescription: zod.string().optional().describe("Source-backed company description."),
+    companyEnrichedAt: zod.iso
+      .datetime({ offset: true })
+      .nullish()
+      .describe("When the company profile was last enriched."),
+    companyEnrichmentData: zod
+      .record(zod.string(), zod.unknown())
+      .optional()
+      .describe("Cited public-web company facts keyed by enrichment field."),
+    companyEnrichmentRefs: zod
+      .record(zod.string(), zod.unknown())
+      .optional()
+      .describe("Citation URLs keyed by enriched company field."),
     displayName: zod.string().describe("Human display name."),
     engagement: zod
       .enum(["unknown", "increasing", "steady", "declining", "dormant"])
@@ -2730,6 +2880,7 @@ export const CreateRelationship201Response = zod
         "former_customer",
       ])
       .describe("Commercial lifecycle."),
+    linkedinUrl: zod.string().optional().describe("Verified public LinkedIn company URL."),
     milestones: zod
       .array(zod.string().describe("Milestone."))
       .describe("Reached relationship milestones."),
@@ -3761,6 +3912,22 @@ export const GetRelationship200Response = zod
     relationship: zod
       .strictObject({
         accountDomain: zod.string().optional().describe("Account domain."),
+        categories: zod
+          .array(zod.string().describe("Category."))
+          .describe("Source-backed company categories."),
+        companyDescription: zod.string().optional().describe("Source-backed company description."),
+        companyEnrichedAt: zod.iso
+          .datetime({ offset: true })
+          .nullish()
+          .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
+        companyEnrichmentRefs: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
@@ -3789,6 +3956,7 @@ export const GetRelationship200Response = zod
             "former_customer",
           ])
           .describe("Commercial lifecycle."),
+        linkedinUrl: zod.string().optional().describe("Verified public LinkedIn company URL."),
         milestones: zod
           .array(zod.string().describe("Milestone."))
           .describe("Reached relationship milestones."),
@@ -3965,6 +4133,22 @@ export const RetractRelationshipAssertionBody = zod
 export const RetractRelationshipAssertion200Response = zod
   .strictObject({
     accountDomain: zod.string().optional().describe("Account domain."),
+    categories: zod
+      .array(zod.string().describe("Category."))
+      .describe("Source-backed company categories."),
+    companyDescription: zod.string().optional().describe("Source-backed company description."),
+    companyEnrichedAt: zod.iso
+      .datetime({ offset: true })
+      .nullish()
+      .describe("When the company profile was last enriched."),
+    companyEnrichmentData: zod
+      .record(zod.string(), zod.unknown())
+      .optional()
+      .describe("Cited public-web company facts keyed by enrichment field."),
+    companyEnrichmentRefs: zod
+      .record(zod.string(), zod.unknown())
+      .optional()
+      .describe("Citation URLs keyed by enriched company field."),
     displayName: zod.string().describe("Human display name."),
     engagement: zod
       .enum(["unknown", "increasing", "steady", "declining", "dormant"])
@@ -3993,6 +4177,7 @@ export const RetractRelationshipAssertion200Response = zod
         "former_customer",
       ])
       .describe("Commercial lifecycle."),
+    linkedinUrl: zod.string().optional().describe("Verified public LinkedIn company URL."),
     milestones: zod
       .array(zod.string().describe("Milestone."))
       .describe("Reached relationship milestones."),
@@ -4342,6 +4527,7 @@ export const GetCommitmentEvents200Response = zod
                 "disputed",
                 "blocked",
                 "unblocked",
+                "corrected",
                 "due_date_changed",
                 "renegotiated",
                 "fulfilled",
@@ -4431,6 +4617,7 @@ export const AppendCommitmentTransitionBody = zod
         "disputed",
         "blocked",
         "unblocked",
+        "corrected",
         "due_date_changed",
         "renegotiated",
         "fulfilled",
@@ -4848,6 +5035,22 @@ export const CorrectConversationEvidence201Response = zod
     relationship: zod
       .strictObject({
         accountDomain: zod.string().optional().describe("Account domain."),
+        categories: zod
+          .array(zod.string().describe("Category."))
+          .describe("Source-backed company categories."),
+        companyDescription: zod.string().optional().describe("Source-backed company description."),
+        companyEnrichedAt: zod.iso
+          .datetime({ offset: true })
+          .nullish()
+          .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
+        companyEnrichmentRefs: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
@@ -4876,6 +5079,7 @@ export const CorrectConversationEvidence201Response = zod
             "former_customer",
           ])
           .describe("Commercial lifecycle."),
+        linkedinUrl: zod.string().optional().describe("Verified public LinkedIn company URL."),
         milestones: zod
           .array(zod.string().describe("Milestone."))
           .describe("Reached relationship milestones."),
@@ -5213,6 +5417,22 @@ export const DecideConversationChange201Response = zod
     relationship: zod
       .strictObject({
         accountDomain: zod.string().optional().describe("Account domain."),
+        categories: zod
+          .array(zod.string().describe("Category."))
+          .describe("Source-backed company categories."),
+        companyDescription: zod.string().optional().describe("Source-backed company description."),
+        companyEnrichedAt: zod.iso
+          .datetime({ offset: true })
+          .nullish()
+          .describe("When the company profile was last enriched."),
+        companyEnrichmentData: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Cited public-web company facts keyed by enrichment field."),
+        companyEnrichmentRefs: zod
+          .record(zod.string(), zod.unknown())
+          .optional()
+          .describe("Citation URLs keyed by enriched company field."),
         displayName: zod.string().describe("Human display name."),
         engagement: zod
           .enum(["unknown", "increasing", "steady", "declining", "dormant"])
@@ -5241,6 +5461,7 @@ export const DecideConversationChange201Response = zod
             "former_customer",
           ])
           .describe("Commercial lifecycle."),
+        linkedinUrl: zod.string().optional().describe("Verified public LinkedIn company URL."),
         milestones: zod
           .array(zod.string().describe("Milestone."))
           .describe("Reached relationship milestones."),
@@ -5612,6 +5833,22 @@ export const CorrectRelationshipBody = zod
 export const CorrectRelationship201Response = zod
   .strictObject({
     accountDomain: zod.string().optional().describe("Account domain."),
+    categories: zod
+      .array(zod.string().describe("Category."))
+      .describe("Source-backed company categories."),
+    companyDescription: zod.string().optional().describe("Source-backed company description."),
+    companyEnrichedAt: zod.iso
+      .datetime({ offset: true })
+      .nullish()
+      .describe("When the company profile was last enriched."),
+    companyEnrichmentData: zod
+      .record(zod.string(), zod.unknown())
+      .optional()
+      .describe("Cited public-web company facts keyed by enrichment field."),
+    companyEnrichmentRefs: zod
+      .record(zod.string(), zod.unknown())
+      .optional()
+      .describe("Citation URLs keyed by enriched company field."),
     displayName: zod.string().describe("Human display name."),
     engagement: zod
       .enum(["unknown", "increasing", "steady", "declining", "dormant"])
@@ -5640,6 +5877,7 @@ export const CorrectRelationship201Response = zod
         "former_customer",
       ])
       .describe("Commercial lifecycle."),
+    linkedinUrl: zod.string().optional().describe("Verified public LinkedIn company URL."),
     milestones: zod
       .array(zod.string().describe("Milestone."))
       .describe("Reached relationship milestones."),

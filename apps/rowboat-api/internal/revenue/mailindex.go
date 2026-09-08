@@ -20,7 +20,7 @@ const quietAfter = 30 * 24 * time.Hour
 // only — direction, participants, timestamps, subject, labels — never bodies
 // or snippets. Idempotent: reruns update the thread and skip already-indexed
 // messages. Best-effort; a failure here must not abort a scan.
-func (s *Service) indexThread(ctx context.Context, u *ent.User, sum *threadSummary) error {
+func (s *Service) indexThread(ctx context.Context, u *ent.User, sum *threadSummary) (*ent.MailThread, error) {
 	now := s.now()
 	var replyState string
 	lastDir := "outbound"
@@ -75,11 +75,11 @@ func (s *Service) indexThread(ctx context.Context, u *ent.User, sum *threadSumma
 					).Only(ctx)
 			}
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 	case err != nil:
-		return err
+		return nil, err
 	default:
 		thread, err = existing.Update().
 			SetSubject(sum.Subject).
@@ -91,7 +91,7 @@ func (s *Service) indexThread(ctx context.Context, u *ent.User, sum *threadSumma
 			SetInboundCount(sum.InboundCount).
 			Save(ctx)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -123,10 +123,10 @@ func (s *Service) indexThread(ctx context.Context, u *ent.User, sum *threadSumma
 		}
 		// Skip already-indexed messages (unique on (user, message id)).
 		if err := create.Exec(ctx); err != nil && !ent.IsConstraintError(err) {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return thread, nil
 }
 
 // PurgeMailIndex deletes the caller's Layer-1/2/3 mail data (RFC 031 retention:

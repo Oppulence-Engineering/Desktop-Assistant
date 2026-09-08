@@ -849,12 +849,14 @@ func handleMint(w http.ResponseWriter, r *http.Request) {
 // /v1/google-oauth/refresh + /oauth/google/callback succeed in dev. Returns a
 // fake access + refresh token bundle.
 func handleGoogleTokenMock(w http.ResponseWriter, _ *http.Request) {
+	idPayload, _ := json.Marshal(map[string]string{"email": gmailMockUser})
 	writeJSON(w, map[string]any{
 		"access_token":  "ya29.mock-" + time.Now().Format("150405"),
 		"refresh_token": "1//mock-refresh-" + time.Now().Format("150405"),
 		"expires_in":    3600,
-		"scope":         "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.events.readonly",
+		"scope":         "openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.events.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file",
 		"token_type":    "Bearer",
+		"id_token":      "mock." + base64.RawURLEncoding.EncodeToString(idPayload) + ".mock",
 	})
 }
 

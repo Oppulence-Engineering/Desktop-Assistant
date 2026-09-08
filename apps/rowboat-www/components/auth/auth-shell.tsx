@@ -32,6 +32,10 @@ const FEATURES = [
   "Prepares evidence-backed actions for approval",
 ];
 
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  sign_in_unavailable: "Sign-in is temporarily unavailable. Please try again.",
+};
+
 export function AuthShell({
   mode,
   error,
@@ -42,6 +46,9 @@ export function AuthShell({
   returnTo: string;
 }) {
   const isSignUp = mode === "sign-up";
+  const errorMessage = error
+    ? AUTH_ERROR_MESSAGES[error] || "We couldn't complete sign-in. Please try again."
+    : undefined;
   const loginHref = `/api/auth/workos/login?${new URLSearchParams({ return_to: returnTo })}`;
   const crossHref = isSignUp
     ? `/sign-in?${new URLSearchParams({ return_to: returnTo })}`
@@ -72,9 +79,9 @@ export function AuthShell({
               </p>
             </div>
 
-            {error ? (
+            {errorMessage ? (
               <div className="rounded-[2px] border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {error}
+                {errorMessage}
               </div>
             ) : null}
 

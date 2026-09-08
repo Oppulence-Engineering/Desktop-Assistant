@@ -124,6 +124,9 @@ export interface RevenueRelationship {
   lastTouchAt?: string;
   nextActionAt?: string;
   openActions?: number;
+  peopleCount?: number;
+  emailThreadCount?: number;
+  commitmentCount?: number;
   nextAction?: string;
   lifecycle: RelationshipLifecycle;
   engagement: RelationshipEngagement;
@@ -137,6 +140,13 @@ export interface RevenueRelationship {
   lastChangedAt?: string;
   risks: string[];
   milestones: string[];
+  resourceRefs: string[];
+  categories: string[];
+  companyDescription?: string;
+  linkedinUrl?: string;
+  companyEnrichmentRefs?: Record<string, string[]>;
+  companyEnrichmentData?: Record<string, string>;
+  companyEnrichedAt?: string;
 }
 
 export interface RelationshipParticipant {
@@ -148,11 +158,89 @@ export interface RelationshipParticipant {
   active: boolean;
   externalRefs: string[];
   personId?: string;
-  person?: {
-    id: string;
-    displayName: string;
-    employmentStatus?: "unknown" | "active" | "departed";
-  };
+  person?: RelationshipPerson;
+}
+
+export interface RelationshipPerson {
+  id: string;
+  displayName: string;
+  aliases: string[];
+  primaryEmail?: string;
+  title?: string;
+  orgName?: string;
+  orgDomain?: string;
+  timezone?: string;
+  locale?: string;
+  seniority?: string;
+  location?: string;
+  linkedinUrl?: string;
+  department?: string;
+  status: string;
+  employmentStatus?: "unknown" | "active" | "departed";
+  relationshipCount: number;
+  firstInteractionAt?: string;
+  lastInteractionAt?: string;
+  attributesVersion: number;
+}
+
+export interface RelationshipPersonAttribute {
+  id: string;
+  dimension: string;
+  value: string;
+  sourceType: string;
+  source: string;
+  extractor: string;
+  status: string;
+  confidence: number;
+  reason?: string;
+  observedAt: string;
+  validFrom: string;
+  validTo?: string;
+  citations?: Array<{
+    title?: string;
+    url: string;
+    excerpts?: string[];
+  }>;
+}
+
+export interface ResearchConsentState {
+  consented: boolean;
+  consentedAt?: string;
+}
+
+export interface ResearchStatus {
+  available: boolean;
+  allowed: boolean;
+  reason?: string;
+  requiredPlan: string;
+  consent: ResearchConsentState;
+}
+
+export interface ResearchEstimate {
+  people?: number;
+  companies?: number;
+  processor: string;
+  credits: number;
+  usd: number;
+  batchSize: number;
+}
+
+export interface CompanyResearchOutcome {
+  relationshipId: string;
+  matched: boolean;
+  runId?: string;
+  written: number;
+  rejected?: string[];
+  replayed: boolean;
+}
+
+export interface PersonResearchOutcome {
+  personId: string;
+  matched: boolean;
+  runId?: string;
+  written: number;
+  rejected?: string[];
+  replayed: boolean;
 }
 
 export interface PersonDeletionReceipt {
@@ -496,6 +584,15 @@ export interface RelationshipDetail {
   actions: RevenueAction[];
   recommendations: RevenueAction[];
   participants: RelationshipParticipant[];
+  emailThreads: Array<{
+    id: string;
+    subject?: string;
+    counterpartyEmail?: string;
+    replyState: "needs_reply" | "awaiting_reply" | "quiet";
+    lastDirection?: "inbound" | "outbound";
+    lastActivityAt?: string;
+    messageCount: number;
+  }>;
   commitments: RelationshipCommitment[];
   commitmentDependencies: CommitmentDependency[];
   intelligence?: RelationshipIntelligence;
@@ -863,6 +960,15 @@ export interface RevenueImpact {
   meetingRate: number | null;
   outcomes: Record<string, number>;
   byDetector: DetectorStat[];
+  relationships: number;
+  atRiskRelationships: number;
+  criticalRelationships: number;
+  portfolioRiskScore: number;
+  overdueCommitments: number;
+  overdueByUs: number;
+  overdueByThem: number;
+  longestOverdueDays: number;
+  riskReasons: Array<{ reason: string; relationships: number }>;
 }
 
 export const RelationshipGraphNodeKindSchema = z.enum([

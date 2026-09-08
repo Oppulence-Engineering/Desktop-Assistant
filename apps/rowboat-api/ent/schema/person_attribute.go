@@ -48,7 +48,8 @@ func (PersonAttribute) Fields() []ent.Field {
 				// nobody writes their seniority band or city in a signature block
 				// reliably enough to assert it, and the whole point of the tier is
 				// that these arrive with a URL attached.
-				"seniority", "location")),
+				"seniority", "location", "linkedin_url", "department", "bio",
+				"responsibilities", "work_history", "education", "expertise", "recent_activity")),
 		field.Text("value").NotEmpty().Sensitive(),
 		field.String("source_type").
 			Validate(oneOfRevenue("source_type",

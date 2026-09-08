@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChartLineUp, EnvelopeSimple } from "@phosphor-icons/react";
+import { ChartLineUp, EnvelopeSimple, WarningDiamond } from "@phosphor-icons/react";
 
 import { DETECTOR_LABELS, getDigest, getImpact } from "@/lib/revenue";
 import { EmptyBlock, errMessage, ListSkeleton } from "@/components/revenue/shared";
@@ -26,7 +26,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
   if (loading) return <ListSkeleton rows={2} />;
   if (!data) return null;
 
-  if (data.surfaced === 0) {
+  if (data.surfaced === 0 && data.atRiskRelationships === 0 && data.overdueCommitments === 0) {
     return (
       <EmptyBlock
         icon={<ChartLineUp className="size-6" />}
@@ -47,10 +47,63 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
   const maxFunnel = Math.max(...funnel.map((f) => f.value), 1);
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-6">
+    <div className="flex min-h-full w-full min-w-0 flex-col gap-6">
+      <section className="border border-border" data-capability="relationship-impact">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-4">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
+              Relationship exposure
+            </p>
+            <h2 className="mt-1 text-base font-semibold text-primary">
+              What missed communication is putting at risk now
+            </h2>
+            <p className="mt-1 max-w-3xl text-xs text-primary/50">
+              The score is deterministic: each account contributes its highest open risk rank,
+              divided across the active portfolio. No invented contract or pipeline value.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-primary/50">
+            <WarningDiamond className="size-4 text-amber-500" /> Updated from live account state
+          </div>
+        </div>
+        <div className="grid grid-cols-2 divide-x divide-y divide-border md:grid-cols-4 md:divide-y-0">
+          <Stat label="Portfolio risk score" value={`${data.portfolioRiskScore}/100`} />
+          <Stat
+            label={`At-risk accounts of ${data.relationships}`}
+            value={data.atRiskRelationships}
+          />
+          <Stat label="Critical accounts" value={data.criticalRelationships} />
+          <Stat label="Overdue promises" value={data.overdueCommitments} />
+        </div>
+        <div className="grid border-t border-border md:grid-cols-[1fr_1fr] md:divide-x md:divide-border">
+          <dl className="space-y-2 p-4 text-sm">
+            <Line label="Promises missed by us" value={data.overdueByUs} />
+            <Line label="Promises missed by them" value={data.overdueByThem} />
+            <Line label="Longest overdue" value={data.longestOverdueDays} suffix=" days" />
+          </dl>
+          <div className="border-t border-border p-4 md:border-t-0">
+            <p className="mb-2 text-xs font-medium text-primary/55">Why accounts are exposed</p>
+            {data.riskReasons.length ? (
+              <ul className="space-y-1.5 text-sm">
+                {data.riskReasons.slice(0, 5).map((risk) => (
+                  <li className="flex items-center justify-between gap-3" key={risk.reason}>
+                    <span className="text-primary/60">
+                      {DETECTOR_LABELS[risk.reason] ?? risk.reason.replaceAll("_", " ")}
+                    </span>
+                    <span className="tabular-nums text-primary/80">{risk.relationships}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-primary/40">No active relationship risks.</p>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* weekly digest preview — the same summary the email is built from */}
       {digest && digest.top.length > 0 ? (
-        <section className="rounded-[2px] border border-border p-4">
+        <section className="rounded-none border border-border p-4">
           <div className="mb-2 flex items-center gap-2">
             <EnvelopeSimple weight="fill" className="size-4 text-primary/55" />
             <span className="text-sm font-medium text-primary">Your weekly digest</span>
@@ -83,15 +136,15 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
       </div>
 
       {/* funnel */}
-      <section className="rounded-[2px] border border-border p-4">
+      <section className="rounded-none border border-border p-4">
         <h3 className="mb-3 text-sm font-medium text-primary">From surfaced to booked</h3>
         <ul className="flex flex-col gap-2">
           {funnel.map((f) => (
             <li key={f.label} className="flex items-center gap-3">
               <span className="w-28 shrink-0 text-xs text-primary/55">{f.label}</span>
-              <div className="h-5 flex-1 overflow-hidden rounded-[2px] bg-background-100 dark:bg-background-100/50">
+              <div className="h-5 flex-1 overflow-hidden rounded-none bg-background-100 dark:bg-background-100/50">
                 <div
-                  className="h-full rounded-[2px] bg-oppulence-orange/70"
+                  className="h-full rounded-none bg-oppulence-orange/70"
                   style={{ width: `${Math.max(2, (f.value / maxFunnel) * 100)}%` }}
                 />
               </div>
@@ -105,7 +158,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
 
       {/* triage split + wins */}
       <div className="grid gap-3 sm:grid-cols-2">
-        <section className="rounded-[2px] border border-border p-4">
+        <section className="rounded-none border border-border p-4">
           <h3 className="mb-3 text-sm font-medium text-primary">Triage</h3>
           <dl className="flex flex-col gap-1.5 text-sm">
             <Line label="Open" value={data.open} />
@@ -114,7 +167,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
             <Line label="Dismissed" value={data.dismissed} />
           </dl>
         </section>
-        <section className="rounded-[2px] border border-border p-4">
+        <section className="rounded-none border border-border p-4">
           <h3 className="mb-3 text-sm font-medium text-primary">Outcomes</h3>
           <dl className="flex flex-col gap-1.5 text-sm">
             <Line label="Replied" value={data.replied} />
@@ -127,7 +180,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
 
       {/* per-detector */}
       {data.byDetector.length > 0 ? (
-        <section className="rounded-[2px] border border-border p-4">
+        <section className="rounded-none border border-border p-4">
           <h3 className="mb-3 text-sm font-medium text-primary">Which signals pay off</h3>
           <table className="w-full text-sm">
             <thead>
@@ -163,7 +216,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
 
 function Stat({ label, value, tone }: { label: string; value: number | string; tone?: "good" }) {
   return (
-    <div className="rounded-[2px] border border-border p-3">
+    <div className="p-3">
       <div
         className={cn(
           "text-2xl font-semibold tabular-nums",
@@ -177,7 +230,17 @@ function Stat({ label, value, tone }: { label: string; value: number | string; t
   );
 }
 
-function Line({ label, value, tone }: { label: string; value: number; tone?: "good" }) {
+function Line({
+  label,
+  value,
+  tone,
+  suffix = "",
+}: {
+  label: string;
+  value: number;
+  tone?: "good";
+  suffix?: string;
+}) {
   return (
     <div className="flex items-center justify-between">
       <dt className="text-primary/55">{label}</dt>
@@ -190,6 +253,7 @@ function Line({ label, value, tone }: { label: string; value: number; tone?: "go
         )}
       >
         {value}
+        {suffix}
       </dd>
     </div>
   );

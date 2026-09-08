@@ -176,57 +176,72 @@ func (h *Handler) workspaceDTO(ws *ent.RevenueWorkspace) workspaceDTO {
 }
 
 type relationshipDTO struct {
-	ID               string     `json:"id"`
-	Kind             string     `json:"kind"`
-	DisplayName      string     `json:"displayName"`
-	PrimaryEmail     string     `json:"primaryEmail,omitempty"`
-	AccountDomain    string     `json:"accountDomain,omitempty"`
-	Summary          string     `json:"summary,omitempty"`
-	Status           string     `json:"status"`
-	LastTouchAt      *time.Time `json:"lastTouchAt,omitempty"`
-	NextActionAt     *time.Time `json:"nextActionAt,omitempty"`
-	OpenActions      int        `json:"openActions,omitempty"`
-	NextAction       string     `json:"nextAction,omitempty"`
-	Lifecycle        string     `json:"lifecycle"`
-	Engagement       string     `json:"engagement"`
-	Sentiment        string     `json:"sentiment"`
-	Health           string     `json:"health"`
-	StateReason      string     `json:"stateReason,omitempty"`
-	StateVersion     int        `json:"stateVersion"`
-	StateHash        string     `json:"stateHash,omitempty"`
-	ProjectorVersion int        `json:"projectorVersion"`
-	ProjectedAt      *time.Time `json:"projectedAt,omitempty"`
-	LastChangedAt    *time.Time `json:"lastChangedAt,omitempty"`
-	Risks            []string   `json:"risks"`
-	Milestones       []string   `json:"milestones"`
-	ResourceRefs     []string   `json:"resourceRefs"`
+	ID                    string              `json:"id"`
+	Kind                  string              `json:"kind"`
+	DisplayName           string              `json:"displayName"`
+	PrimaryEmail          string              `json:"primaryEmail,omitempty"`
+	AccountDomain         string              `json:"accountDomain,omitempty"`
+	Summary               string              `json:"summary,omitempty"`
+	Status                string              `json:"status"`
+	LastTouchAt           *time.Time          `json:"lastTouchAt,omitempty"`
+	NextActionAt          *time.Time          `json:"nextActionAt,omitempty"`
+	OpenActions           int                 `json:"openActions,omitempty"`
+	PeopleCount           int                 `json:"peopleCount"`
+	EmailThreadCount      int                 `json:"emailThreadCount"`
+	CommitmentCount       int                 `json:"commitmentCount"`
+	NextAction            string              `json:"nextAction,omitempty"`
+	Lifecycle             string              `json:"lifecycle"`
+	Engagement            string              `json:"engagement"`
+	Sentiment             string              `json:"sentiment"`
+	Health                string              `json:"health"`
+	StateReason           string              `json:"stateReason,omitempty"`
+	StateVersion          int                 `json:"stateVersion"`
+	StateHash             string              `json:"stateHash,omitempty"`
+	ProjectorVersion      int                 `json:"projectorVersion"`
+	ProjectedAt           *time.Time          `json:"projectedAt,omitempty"`
+	LastChangedAt         *time.Time          `json:"lastChangedAt,omitempty"`
+	Risks                 []string            `json:"risks"`
+	Milestones            []string            `json:"milestones"`
+	ResourceRefs          []string            `json:"resourceRefs"`
+	Categories            []string            `json:"categories"`
+	CompanyDescription    string              `json:"companyDescription,omitempty"`
+	LinkedInURL           string              `json:"linkedinUrl,omitempty"`
+	CompanyEnrichmentRefs map[string][]string `json:"companyEnrichmentRefs,omitempty"`
+	CompanyEnrichmentData map[string]string   `json:"companyEnrichmentData,omitempty"`
+	CompanyEnrichedAt     *time.Time          `json:"companyEnrichedAt,omitempty"`
 }
 
 func relationshipToDTO(rel *ent.Relationship) relationshipDTO {
 	return relationshipDTO{
-		ID:               rel.ID.String(),
-		Kind:             rel.Kind,
-		DisplayName:      rel.DisplayName,
-		PrimaryEmail:     rel.PrimaryEmail,
-		AccountDomain:    rel.AccountDomain,
-		Summary:          rel.Summary,
-		Status:           rel.Status,
-		LastTouchAt:      rel.LastTouchAt,
-		NextActionAt:     rel.NextActionAt,
-		NextAction:       rel.NextAction,
-		Lifecycle:        rel.Lifecycle,
-		Engagement:       rel.Engagement,
-		Sentiment:        rel.Sentiment,
-		Health:           rel.Health,
-		StateReason:      rel.StateReason,
-		StateVersion:     rel.StateVersion,
-		StateHash:        rel.StateHash,
-		ProjectorVersion: rel.ProjectorVersion,
-		ProjectedAt:      rel.ProjectedAt,
-		LastChangedAt:    rel.LastChangedAt,
-		Risks:            append([]string{}, rel.Risks...),
-		Milestones:       append([]string{}, rel.Milestones...),
-		ResourceRefs:     append([]string{}, rel.ResourceRefs...),
+		ID:                    rel.ID.String(),
+		Kind:                  rel.Kind,
+		DisplayName:           rel.DisplayName,
+		PrimaryEmail:          rel.PrimaryEmail,
+		AccountDomain:         rel.AccountDomain,
+		Summary:               rel.Summary,
+		Status:                rel.Status,
+		LastTouchAt:           rel.LastTouchAt,
+		NextActionAt:          rel.NextActionAt,
+		NextAction:            rel.NextAction,
+		Lifecycle:             rel.Lifecycle,
+		Engagement:            rel.Engagement,
+		Sentiment:             rel.Sentiment,
+		Health:                rel.Health,
+		StateReason:           rel.StateReason,
+		StateVersion:          rel.StateVersion,
+		StateHash:             rel.StateHash,
+		ProjectorVersion:      rel.ProjectorVersion,
+		ProjectedAt:           rel.ProjectedAt,
+		LastChangedAt:         rel.LastChangedAt,
+		Risks:                 append([]string{}, rel.Risks...),
+		Milestones:            append([]string{}, rel.Milestones...),
+		ResourceRefs:          append([]string{}, rel.ResourceRefs...),
+		Categories:            append([]string{}, rel.CompanyCategories...),
+		CompanyDescription:    rel.CompanyDescription,
+		LinkedInURL:           rel.LinkedinURL,
+		CompanyEnrichmentRefs: rel.CompanyEnrichmentRefs,
+		CompanyEnrichmentData: rel.CompanyEnrichmentData,
+		CompanyEnrichedAt:     rel.CompanyEnrichedAt,
 	}
 }
 
@@ -242,6 +257,16 @@ type participantDTO struct {
 	// has not reached yet, so clients must treat it as optional.
 	PersonID string     `json:"personId,omitempty"`
 	Person   *personDTO `json:"person,omitempty"`
+}
+
+type mailThreadDTO struct {
+	ID                string     `json:"id"`
+	Subject           string     `json:"subject,omitempty"`
+	CounterpartyEmail string     `json:"counterpartyEmail,omitempty"`
+	ReplyState        string     `json:"replyState"`
+	LastDirection     string     `json:"lastDirection,omitempty"`
+	LastActivityAt    *time.Time `json:"lastActivityAt,omitempty"`
+	MessageCount      int        `json:"messageCount"`
 }
 
 // personDTO is the workspace-canonical human. Every enrichment field is projected
@@ -260,9 +285,11 @@ type personDTO struct {
 	// Projected from cloud-research attributes (RFC 039). Empty for every
 	// workspace that never enables research, which is why they are omitempty
 	// rather than always present: "" here means nobody ever told us.
-	Seniority string `json:"seniority,omitempty"`
-	Location  string `json:"location,omitempty"`
-	Status    string `json:"status"`
+	Seniority   string `json:"seniority,omitempty"`
+	Location    string `json:"location,omitempty"`
+	LinkedInURL string `json:"linkedinUrl,omitempty"`
+	Department  string `json:"department,omitempty"`
+	Status      string `json:"status"`
 	// Whether their mail still reaches them. Surfaced so the UI can say a contact
 	// has left rather than silently ranking the account as merely quiet.
 	EmploymentStatus   string  `json:"employmentStatus,omitempty"`
@@ -284,6 +311,8 @@ func personToDTO(p *ent.Person) *personDTO {
 		Aliases:           p.Aliases,
 		Seniority:         p.Seniority,
 		Location:          p.Location,
+		LinkedInURL:       p.LinkedinURL,
+		Department:        p.Department,
 		PrimaryEmail:      p.PrimaryEmail,
 		Title:             p.Title,
 		OrgName:           p.OrgName,
@@ -785,6 +814,15 @@ func relationshipToDTOWithOpen(rel *ent.Relationship) relationshipDTO {
 	if actions, err := rel.Edges.ActionsOrErr(); err == nil {
 		dto.OpenActions = len(actions)
 	}
+	if participants, err := rel.Edges.ParticipantsOrErr(); err == nil {
+		dto.PeopleCount = len(participants)
+	}
+	if threads, err := rel.Edges.MailThreadsOrErr(); err == nil {
+		dto.EmailThreadCount = len(threads)
+	}
+	if commitments, err := rel.Edges.CommitmentsOrErr(); err == nil {
+		dto.CommitmentCount = len(commitments)
+	}
 	return dto
 }
 
@@ -1264,10 +1302,19 @@ type impactDTO struct {
 	Won       int `json:"won"`
 	Lost      int `json:"lost"`
 	// Rates are fractions in [0,1]; null when there is no denominator yet.
-	ReplyRate   *float64       `json:"replyRate"`
-	MeetingRate *float64       `json:"meetingRate"`
-	Outcomes    map[string]int `json:"outcomes"`
-	ByDetector  []DetectorStat `json:"byDetector"`
+	ReplyRate             *float64       `json:"replyRate"`
+	MeetingRate           *float64       `json:"meetingRate"`
+	Outcomes              map[string]int `json:"outcomes"`
+	ByDetector            []DetectorStat `json:"byDetector"`
+	Relationships         int            `json:"relationships"`
+	AtRiskRelationships   int            `json:"atRiskRelationships"`
+	CriticalRelationships int            `json:"criticalRelationships"`
+	PortfolioRiskScore    int            `json:"portfolioRiskScore"`
+	OverdueCommitments    int            `json:"overdueCommitments"`
+	OverdueByUs           int            `json:"overdueByUs"`
+	OverdueByThem         int            `json:"overdueByThem"`
+	LongestOverdueDays    int            `json:"longestOverdueDays"`
+	RiskReasons           []RiskStat     `json:"riskReasons"`
 }
 
 func ratio(num, den int) *float64 {
@@ -1292,21 +1339,30 @@ func (h *Handler) Impact(w http.ResponseWriter, r *http.Request) {
 	replied := imp.OutcomeCount("replied")
 	meetings := imp.OutcomeCount("meeting_booked")
 	dto := impactDTO{
-		Surfaced:    imp.Surfaced,
-		Open:        imp.Open,
-		Handled:     imp.Handled,
-		Snoozed:     imp.Snoozed,
-		Dismissed:   imp.Dismissed,
-		Approved:    imp.Approved,
-		Executed:    imp.Executed,
-		Replied:     replied,
-		Meetings:    meetings,
-		Won:         imp.OutcomeCount("won"),
-		Lost:        imp.OutcomeCount("lost"),
-		ReplyRate:   ratio(replied, imp.Executed),
-		MeetingRate: ratio(meetings, imp.Executed),
-		Outcomes:    imp.Outcomes,
-		ByDetector:  imp.Detectors,
+		Surfaced:              imp.Surfaced,
+		Open:                  imp.Open,
+		Handled:               imp.Handled,
+		Snoozed:               imp.Snoozed,
+		Dismissed:             imp.Dismissed,
+		Approved:              imp.Approved,
+		Executed:              imp.Executed,
+		Replied:               replied,
+		Meetings:              meetings,
+		Won:                   imp.OutcomeCount("won"),
+		Lost:                  imp.OutcomeCount("lost"),
+		ReplyRate:             ratio(replied, imp.Executed),
+		MeetingRate:           ratio(meetings, imp.Executed),
+		Outcomes:              imp.Outcomes,
+		ByDetector:            imp.Detectors,
+		Relationships:         imp.Relationships,
+		AtRiskRelationships:   imp.AtRiskRelationships,
+		CriticalRelationships: imp.CriticalRelationships,
+		PortfolioRiskScore:    imp.PortfolioRiskScore,
+		OverdueCommitments:    imp.OverdueCommitments,
+		OverdueByUs:           imp.OverdueByUs,
+		OverdueByThem:         imp.OverdueByThem,
+		LongestOverdueDays:    imp.LongestOverdueDays,
+		RiskReasons:           imp.RiskReasons,
 	}
 	httpx.WriteJSON(w, http.StatusOK, dto)
 }
@@ -1544,6 +1600,17 @@ func (h *Handler) GetRelationship(w http.ResponseWriter, r *http.Request) {
 			participants = append(participants, participantToDTO(participant))
 		}
 	}
+	emailThreads := make([]mailThreadDTO, 0)
+	if list, err := rel.Edges.MailThreadsOrErr(); err == nil {
+		for _, thread := range list {
+			emailThreads = append(emailThreads, mailThreadDTO{
+				ID: thread.ID.String(), Subject: thread.Subject,
+				CounterpartyEmail: thread.CounterpartyEmail, ReplyState: thread.ReplyState,
+				LastDirection: thread.LastDirection, LastActivityAt: thread.LastActivityAt,
+				MessageCount: thread.MessageCount,
+			})
+		}
+	}
 	commitments := make([]commitmentDTO, 0)
 	if list, err := rel.Edges.CommitmentsOrErr(); err == nil {
 		for _, commitment := range list {
@@ -1569,6 +1636,7 @@ func (h *Handler) GetRelationship(w http.ResponseWriter, r *http.Request) {
 		"actions":                actions,
 		"recommendations":        actions,
 		"participants":           participants,
+		"emailThreads":           emailThreads,
 		"commitments":            commitments,
 		"commitmentDependencies": dependencies,
 		"intelligence":           intelligence,

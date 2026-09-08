@@ -60,6 +60,12 @@ func parkTicket(t *testing.T, client *ent.Client, sealer *crypto.Sealer, state s
 
 func TestClaimConsumesTicketAndPersists(t *testing.T) {
 	client, ctx, _, sealer, h := setup(t)
+	var connectedEmail string
+	var connectedScopes []string
+	h.SetOnConnect(func(_ context.Context, _ *ent.User, email string, scopes []string) error {
+		connectedEmail, connectedScopes = email, scopes
+		return nil
+	})
 	parkTicket(t, client, sealer, "ticket-1", time.Now().Add(5*time.Minute), map[string]any{
 		"workos_user_id": "user_1",
 		"access_token":   "ya29.access",
@@ -67,6 +73,7 @@ func TestClaimConsumesTicketAndPersists(t *testing.T) {
 		"expires_at":     1735689600,
 		"scope":          "openid email https://www.googleapis.com/auth/gmail.readonly",
 		"token_type":     "Bearer",
+		"account_email":  "owner@example.com",
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/google-oauth/claim", strings.NewReader(`{"session":"ticket-1"}`)).WithContext(ctx)
@@ -92,6 +99,9 @@ func TestClaimConsumesTicketAndPersists(t *testing.T) {
 	// Connection persisted for the user.
 	if n := client.OAuthConnection.Query().CountX(ctx); n != 1 {
 		t.Fatalf("expected 1 oauth connection, got %d", n)
+	}
+	if connectedEmail != "owner@example.com" || strings.Join(connectedScopes, " ") != "openid email https://www.googleapis.com/auth/gmail.readonly" {
+		t.Fatalf("connect callback = %q %v", connectedEmail, connectedScopes)
 	}
 }
 
@@ -232,6 +242,30 @@ func TestStartBindsTicketAndWrongUserCannotClaim(t *testing.T) {
 	}
 	if client.OAuthPending.Query().CountX(context.Background()) != 1 {
 		t.Fatal("wrong-user claim consumed the legitimate ticket")
+	}
+}
+
+func TestStartCommitmentsProfileUsesLeastPrivilegeScopes(t *testing.T) {
+	_, ctx, _, _, h := setup(t)
+	h.SetOAuthFlow("https://accounts.example/authorize", "https://api.example/oauth/google/callback", "rowboat", nil)
+	rec := httptest.NewRecorder()
+	h.Start(rec, httptest.NewRequest(http.MethodPost, "/v1/google-oauth/start?profile=commitments", nil).WithContext(ctx))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("start: %d: %s", rec.Code, rec.Body.String())
+	}
+	var start struct {
+		AuthorizeURL string `json:"authorizeUrl"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &start); err != nil {
+		t.Fatal(err)
+	}
+	authorize, err := url.Parse(start.AuthorizeURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = "openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/calendar.events.readonly"
+	if got := authorize.Query().Get("scope"); got != want {
+		t.Fatalf("scopes = %q, want %q", got, want)
 	}
 }
 

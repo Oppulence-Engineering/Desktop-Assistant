@@ -71,9 +71,9 @@ func TestPushSyncIndexesAndAdvances(t *testing.T) {
 	if sync.syncCalls != 1 || sync.lastCursor != "1000" {
 		t.Fatalf("history walk should start at 1000, calls=%d cursor=%q", sync.syncCalls, sync.lastCursor)
 	}
-	// Layer-1 threads were indexed (2 external-counterparty threads).
-	if n := f.client.MailThread.Query().Where(mailthread.HasUserWith(user.IDEQ(f.user.ID))).CountX(f.ctx); n != 2 {
-		t.Fatalf("expected 2 indexed threads, got %d", n)
+	// Layer-1 threads were indexed (3 external-counterparty threads).
+	if n := f.client.MailThread.Query().Where(mailthread.HasUserWith(user.IDEQ(f.user.ID))).CountX(f.ctx); n != 3 {
+		t.Fatalf("expected 3 indexed threads, got %d", n)
 	}
 	// Cursor advanced to the latest history id.
 	if got := workspaceCursor(t, f); got != "2000" {

@@ -29,25 +29,30 @@ const (
 
 // Config configures the fail-closed RFC 012 connector-token verifier.
 type Config struct {
-	IssuerURL                 string
-	Audience                  string
-	JWKSURL                   string
-	RequiredOrganizationID    string
-	AcceptableSkew            time.Duration
-	ValidMethods              []string
-	AllowedJWKSOrigins        []string
-	AllowLocalhostDevelopment bool
-	HTTPTimeout               time.Duration
-	MaxJWKSResponseBytes      int64
-	JWKSCacheTTL              time.Duration
-	UnknownKIDCacheTTL        time.Duration
-	UnknownKIDRefreshCooldown time.Duration
+	IssuerURL string
+	Audience  string
+	// SkipAudienceValidation is only for providers, such as WorkOS AuthKit,
+	// whose access tokens intentionally omit the aud claim. Issuer and
+	// signature validation remain mandatory.
+	SkipAudienceValidation      bool
+	JWKSURL                     string
+	RequiredOrganizationID      string
+	AcceptableSkew              time.Duration
+	ValidMethods                []string
+	AllowedJWKSOrigins          []string
+	AllowLocalhostDevelopment   bool
+	AllowPrivateJWKSDevelopment bool
+	HTTPTimeout                 time.Duration
+	MaxJWKSResponseBytes        int64
+	JWKSCacheTTL                time.Duration
+	UnknownKIDCacheTTL          time.Duration
+	UnknownKIDRefreshCooldown   time.Duration
 	// Now overrides the verifier clock. It is intended for deterministic tests.
 	Now func() time.Time
 }
 
 // GenericConfig configures an explicitly generic JWT verifier. Unlike Config,
-// actor claims are not required. IssuerURL and Audience are still mandatory.
+// actor claims are not required.
 type GenericConfig Config
 
 type Verifier struct {
@@ -75,14 +80,17 @@ type jwksRefresh struct {
 func New(ctx context.Context, cfg Config) (*Verifier, error) { return newVerifier(ctx, cfg, true) }
 
 // NewGeneric builds an explicitly generic verifier that does not require RFC 012
-// actor claims. Exact issuer and audience validation remains mandatory.
+// actor claims. Audience validation may only be disabled explicitly.
 func NewGeneric(ctx context.Context, cfg GenericConfig) (*Verifier, error) {
 	return newVerifier(ctx, Config(cfg), false)
 }
 
 func newVerifier(ctx context.Context, cfg Config, requireActor bool) (*Verifier, error) {
-	if strings.TrimSpace(cfg.IssuerURL) == "" || strings.TrimSpace(cfg.Audience) == "" {
-		return nil, errors.New("oauthrs: exact IssuerURL and Audience are required")
+	if requireActor && cfg.SkipAudienceValidation {
+		return nil, errors.New("oauthrs: primary RFC 012 verifier cannot skip audience validation")
+	}
+	if strings.TrimSpace(cfg.IssuerURL) == "" || (!cfg.SkipAudienceValidation && strings.TrimSpace(cfg.Audience) == "") {
+		return nil, errors.New("oauthrs: exact IssuerURL and Audience are required unless audience validation is explicitly disabled")
 	}
 	if cfg.AcceptableSkew < 0 || cfg.HTTPTimeout < 0 || cfg.MaxJWKSResponseBytes < 0 || cfg.JWKSCacheTTL < 0 || cfg.UnknownKIDCacheTTL < 0 || cfg.UnknownKIDRefreshCooldown < 0 {
 		return nil, errors.New("oauthrs: durations and response limits must not be negative")
@@ -117,17 +125,17 @@ func newVerifier(ctx context.Context, cfg Config, requireActor bool) (*Verifier,
 		cfg.ValidMethods = []string{"RS256"}
 	}
 
-	issuer, err := validateRemoteURL(cfg.IssuerURL, cfg.AllowLocalhostDevelopment)
+	issuer, err := validateRemoteURL(cfg.IssuerURL, cfg.AllowLocalhostDevelopment, false)
 	if err != nil {
 		return nil, fmt.Errorf("oauthrs: invalid issuer URL: %w", err)
 	}
-	allowed, err := allowedOrigins(issuer, cfg.AllowedJWKSOrigins, cfg.AllowLocalhostDevelopment)
+	allowed, err := allowedOrigins(issuer, cfg.AllowedJWKSOrigins, cfg.AllowLocalhostDevelopment, cfg.AllowPrivateJWKSDevelopment)
 	if err != nil {
 		return nil, err
 	}
 
 	jwksRaw := cfg.JWKSURL
-	client := secureHTTPClient(cfg.HTTPTimeout, cfg.MaxJWKSResponseBytes, allowed, cfg.AllowLocalhostDevelopment)
+	client := secureHTTPClient(cfg.HTTPTimeout, cfg.MaxJWKSResponseBytes, allowed, cfg.AllowLocalhostDevelopment, cfg.AllowPrivateJWKSDevelopment)
 	if jwksRaw == "" {
 		discovery := strings.TrimRight(issuer.String(), "/") + "/.well-known/openid-configuration"
 		var doc struct {
@@ -138,7 +146,7 @@ func newVerifier(ctx context.Context, cfg Config, requireActor bool) (*Verifier,
 		}
 		jwksRaw = doc.JWKSURI
 	}
-	jwksURL, err := validateRemoteURL(jwksRaw, cfg.AllowLocalhostDevelopment)
+	jwksURL, err := validateRemoteURL(jwksRaw, cfg.AllowLocalhostDevelopment, cfg.AllowPrivateJWKSDevelopment)
 	if err != nil {
 		return nil, fmt.Errorf("oauthrs: invalid JWKS URL: %w", err)
 	}
@@ -154,7 +162,10 @@ func newVerifier(ctx context.Context, cfg Config, requireActor bool) (*Verifier,
 }
 
 func (v *Verifier) Verify(tokenString string) (*Claims, error) {
-	opts := []jwt.ParserOption{jwt.WithValidMethods(v.cfg.ValidMethods), jwt.WithExpirationRequired(), jwt.WithIssuedAt(), jwt.WithLeeway(v.cfg.AcceptableSkew), jwt.WithIssuer(v.cfg.IssuerURL), jwt.WithAudience(v.cfg.Audience)}
+	opts := []jwt.ParserOption{jwt.WithValidMethods(v.cfg.ValidMethods), jwt.WithExpirationRequired(), jwt.WithIssuedAt(), jwt.WithLeeway(v.cfg.AcceptableSkew), jwt.WithIssuer(v.cfg.IssuerURL)}
+	if !v.cfg.SkipAudienceValidation {
+		opts = append(opts, jwt.WithAudience(v.cfg.Audience))
+	}
 	tok, err := jwt.Parse(tokenString, v.keyfunc, opts...)
 	if err != nil {
 		return nil, classifyTokenError(err)
@@ -303,7 +314,7 @@ func fetchJSON(ctx context.Context, client *http.Client, raw string, limit int64
 	return json.Unmarshal(data, dst)
 }
 
-func validateRemoteURL(raw string, dev bool) (*url.URL, error) {
+func validateRemoteURL(raw string, dev, privateDev bool) (*url.URL, error) {
 	u, err := url.Parse(raw)
 	if err != nil {
 		return nil, err
@@ -311,16 +322,16 @@ func validateRemoteURL(raw string, dev bool) (*url.URL, error) {
 	if u.User != nil || u.Fragment != "" || u.Hostname() == "" {
 		return nil, errors.New("URL must have host and no userinfo or fragment")
 	}
-	if u.Scheme != "https" && !(dev && u.Scheme == "http" && isLocalhost(u.Hostname())) {
-		return nil, errors.New("HTTPS is required (HTTP localhost requires explicit development option)")
+	if u.Scheme != "https" && !(dev && u.Scheme == "http" && (isLocalhost(u.Hostname()) || privateDev)) {
+		return nil, errors.New("HTTPS is required (HTTP localhost or private JWKS requires explicit development options)")
 	}
 	return u, nil
 }
 func origin(u *url.URL) string { return strings.ToLower(u.Scheme + "://" + u.Host) }
-func allowedOrigins(issuer *url.URL, extras []string, dev bool) (map[string]bool, error) {
+func allowedOrigins(issuer *url.URL, extras []string, dev, privateDev bool) (map[string]bool, error) {
 	out := map[string]bool{origin(issuer): true}
 	for _, raw := range extras {
-		u, err := validateRemoteURL(raw, dev)
+		u, err := validateRemoteURL(raw, dev, privateDev)
 		if err != nil {
 			return nil, fmt.Errorf("oauthrs: invalid allowed JWKS origin: %w", err)
 		}
@@ -338,7 +349,16 @@ func forbiddenIP(ip net.IP) bool {
 	return ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsMulticast() || ip.IsUnspecified()
 }
 
-func secureHTTPClient(timeout time.Duration, _ int64, allow map[string]bool, dev bool) *http.Client {
+func secureHTTPClient(timeout time.Duration, _ int64, allow map[string]bool, dev, privateDev bool) *http.Client {
+	privateHTTPHosts := map[string]bool{}
+	if privateDev {
+		for raw := range allow {
+			u, err := url.Parse(raw)
+			if err == nil && u.Scheme == "http" && !isLocalhost(u.Hostname()) {
+				privateHTTPHosts[strings.ToLower(u.Hostname())] = true
+			}
+		}
+	}
 	dialer := &net.Dialer{Timeout: timeout}
 	tr := &http.Transport{DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
 		host, port, err := net.SplitHostPort(address)
@@ -349,8 +369,12 @@ func secureHTTPClient(timeout time.Duration, _ int64, allow map[string]bool, dev
 		if err != nil {
 			return nil, err
 		}
+		privateHost := privateHTTPHosts[strings.ToLower(host)]
 		for _, ip := range ips {
-			if forbiddenIP(ip) && !(dev && isLocalhost(host) && ip.IsLoopback()) {
+			if privateHost && !ip.IsPrivate() {
+				return nil, fmt.Errorf("development HTTP JWKS host %s did not resolve to a private address", host)
+			}
+			if forbiddenIP(ip) && !(dev && isLocalhost(host) && ip.IsLoopback()) && !(privateHost && ip.IsPrivate()) {
 				return nil, fmt.Errorf("blocked non-public address for %s", host)
 			}
 		}
@@ -363,7 +387,7 @@ func secureHTTPClient(timeout time.Duration, _ int64, allow map[string]bool, dev
 		if len(via) >= 3 {
 			return errors.New("too many redirects")
 		}
-		u, err := validateRemoteURL(req.URL.String(), dev)
+		u, err := validateRemoteURL(req.URL.String(), dev, privateDev)
 		if err != nil {
 			return err
 		}

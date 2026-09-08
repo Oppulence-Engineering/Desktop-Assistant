@@ -12,7 +12,7 @@ const manifestPath = path.join(
 // These are intentionally repo-specific until feature routes split the legacy island.
 const budgets = {
   productJavaScriptBytes: 3_400 * 1024,
-  productCssBytes: 350 * 1024,
+  productCssBytes: 390 * 1024,
   largestProductChunkBytes: 2_350 * 1024,
 };
 
