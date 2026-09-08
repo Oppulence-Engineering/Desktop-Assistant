@@ -26,6 +26,9 @@ jobs:
     env:
       FLY_API_TOKEN: ${{ secrets.ROWBOAT_API_FLY_API_TOKEN }}
       FLY_APP_NAME: ${{ vars.ROWBOAT_API_FLY_APP_NAME }}
+      INFISICAL_TOKEN: ${{ secrets.ROWBOAT_INFISICAL_TOKEN || secrets.INFISICAL_TOKEN }}
+      INFISICAL_PROJECT_ID: 04ebc1cf-0ec5-4e9e-8ab9-4c6da4252574
+      INFISICAL_ENVIRONMENT: prod
     steps:
       - uses: actions/checkout@v6
 
@@ -43,6 +46,61 @@ jobs:
             echo "ROWBOAT_API_FLY_APP_NAME is required in the production GitHub environment" >&2
             exit 1
           fi
+          if [[ -z "${INFISICAL_TOKEN:-}" ]]; then
+            echo "ROWBOAT_INFISICAL_TOKEN or INFISICAL_TOKEN is required" >&2
+            exit 1
+          fi
+
+      - name: Install Infisical CLI
+        run: |
+          set -euo pipefail
+          curl -1sLf "https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh" | sudo -E bash
+          sudo apt-get update
+          sudo apt-get install -y infisical
+
+      - name: Sync production secrets to Fly
+        run: |
+          set -euo pipefail
+
+          secrets_json="$(mktemp)"
+          runtime_secrets="$(mktemp)"
+          chmod 600 "${secrets_json}" "${runtime_secrets}"
+          trap 'rm -f "${secrets_json}" "${runtime_secrets}"' EXIT
+
+          infisical export \
+            --silent \
+            --format=json \
+            --projectId="${INFISICAL_PROJECT_ID}" \
+            --env="${INFISICAL_ENVIRONMENT}" \
+            --path=/ \
+            --token="${INFISICAL_TOKEN}" > "${secrets_json}"
+
+          required_keys=(
+            DATABASE_URL REDIS_URL DB_ENCRYPTION_KEY WORKOS_CLIENT_ID WORKOS_API_KEY
+            JWKS_URL HOOK_HMAC_SECRET INTERNAL_API_SECRET
+            CONNECTOR_INVALIDATION_PRINCIPALS_JSON OPENAI_API_KEY ELEVENLABS_API_KEY
+            EXA_API_KEY PARALLEL_API_KEY GOOGLE_OAUTH_CLIENT_ID GOOGLE_OAUTH_CLIENT_SECRET
+            GOOGLE_WEBHOOK_TOKEN TEMPORAL_API_KEY
+          )
+          missing=()
+          for key in "${required_keys[@]}"; do
+            if ! jq -e --arg key "${key}" '.[] | select(.key == $key and (.value // "") != "")' "${secrets_json}" >/dev/null; then
+              missing+=("${key}")
+            fi
+          done
+          if (( ${#missing[@]} > 0 )); then
+            echo "Infisical is missing required production keys: ${missing[*]}" >&2
+            exit 1
+          fi
+
+          jq -r '
+            .[]
+            | select((.value // "") != "")
+            | select(.key != "MIGRATION_DATABASE_URL")
+            | select(.key != "TEMPORAL_ENABLED" and .key != "TEMPORAL_WORKER_ENABLED")
+            | "\(.key)=\((.value // "") | tostring)"
+          ' "${secrets_json}" > "${runtime_secrets}"
+          flyctl secrets import --stage --app "${FLY_APP_NAME}" < "${runtime_secrets}"
 
       - name: Deploy and converge process topology
         run: apps/rowboat-api/scripts/fly-deploy.sh "${FLY_APP_NAME}"

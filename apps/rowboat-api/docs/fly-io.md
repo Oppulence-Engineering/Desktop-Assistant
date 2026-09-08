@@ -29,10 +29,11 @@ fly auth login
 fly apps create <app-name> --org <organization>
 ```
 
-Set runtime secrets on the app. Use the same production values documented in
+For a manual deployment, set runtime secrets on the app. Use the same production
+values documented in
 [`../../../charts/rowboat-api/values-production.yaml`](../../../charts/rowboat-api/values-production.yaml)
-and the existing `rowboat-api-secrets`; do not commit their values. At minimum,
-production validation requires the following, plus any enabled provider keys:
+and Infisical; do not commit their values. At minimum, production validation
+requires the following, plus any enabled provider keys:
 
 ```bash
 fly secrets set --app <app-name> \
@@ -45,6 +46,7 @@ fly secrets set --app <app-name> \
   TOKEN_AUDIENCE='' \
   HOOK_HMAC_SECRET='...' \
   INTERNAL_API_SECRET='...' \
+  CONNECTOR_INVALIDATION_PRINCIPALS_JSON='[...]' \
   APP_URL='https://app.example.com' \
   PUBLIC_BASE_URL='https://<app-name>.fly.dev' \
   CORS_ALLOWED_ORIGINS='https://app.example.com' \
@@ -56,7 +58,8 @@ fly secrets set --app <app-name> \
   ELEVENLABS_API_KEY='...' \
   EXA_API_KEY='...' \
   GOOGLE_OAUTH_CLIENT_ID='...' \
-  GOOGLE_OAUTH_CLIENT_SECRET='...'
+  GOOGLE_OAUTH_CLIENT_SECRET='...' \
+  PARALLEL_API_KEY='...'
 ```
 
 `DATABASE_URL` must be usable by both runtime Machines and the temporary release
@@ -90,8 +93,9 @@ From `apps/rowboat-api`, run:
 
 Relevant changes merged into `main` automatically run **Deploy rowboat-api to
 Fly.io**. The workflow can also be dispatched manually, uses the protected
-`production` environment, deploys the same script non-interactively, verifies
-Fly health checks, and smoke-tests `/healthz` and `/readyz`.
+`production` environment, imports runtime secrets from Infisical while excluding
+the direct migration credential, deploys the same script non-interactively,
+verifies Fly health checks, and smoke-tests `/healthz` and `/readyz`.
 
 The script builds the image on the GitHub runner with the repository root as
 Docker context, pushes it to Fly, runs versioned database migrations once in a
