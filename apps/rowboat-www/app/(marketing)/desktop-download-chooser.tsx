@@ -8,6 +8,8 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 
 import { cn } from "@/lib/utils";
 
+import { CONTACT_HREF } from "./marketing-data";
+
 type OperatingSystem = "linux" | "mac" | "windows";
 type Architecture = "arm64" | "x64";
 
@@ -242,12 +244,12 @@ export function DesktopDownloadChooser() {
           Download desktop app
           <ExpandMoreIcon aria-hidden="true" className="desktop-download-trigger-icon" />
         </button>
-        <Link
+        <a
           className="linear-button-secondary !h-12 !w-full !px-6 !text-[14px] sm:!w-auto"
-          href="/book-a-demo"
+          href={CONTACT_HREF}
         >
           See account mission control
-        </Link>
+        </a>
         <Link className="linear-button-ghost !h-12 !px-5 !text-[14px]" href="/product">
           How relationship intelligence works <span className="ml-2 text-foreground/40">→</span>
         </Link>

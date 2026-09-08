@@ -31,6 +31,7 @@ import type { ReactNode } from "react";
 import { Button } from "@oppulence/ui/components/button";
 import { cn } from "@/lib/utils";
 import {
+  CONTACT_HREF,
   alternativeLinks,
   blogPages,
   customerPages,
@@ -210,10 +211,6 @@ function iconForPage(page: MarketingPage): { icon: SvgIconComponent; tone?: Icon
 
   if (page.category === "customer") {
     return { icon: BriefcaseIcon, tone: "yellow" };
-  }
-
-  if (page.category === "demo") {
-    return { icon: PlayIcon, tone: "orange" };
   }
 
   if (page.category === "legal") {
@@ -516,7 +513,7 @@ export function Footer() {
               { label: "Privacy", href: "/privacy" },
               { label: "Terms", href: "/terms" },
               { label: "Responsible disclosure", href: "/responsible-disclosure" },
-              { label: "Book a relationship review", href: "/book-a-demo" },
+              { label: "Talk to the team", href: CONTACT_HREF },
             ]}
             title="Company"
           />
@@ -813,9 +810,9 @@ function RelationshipHomeHero() {
           <Link className="sm-button sm-button-blue" href="/sign-up">
             Start building <ArrowRightIcon aria-hidden="true" />
           </Link>
-          <Link className="sm-button sm-button-light" href="/book-a-demo">
+          <a className="sm-button sm-button-light" href={CONTACT_HREF}>
             Talk to the team
-          </Link>
+          </a>
         </div>
         <Link className="sm-command" href="/app">
           <span>$</span>
@@ -1339,9 +1336,9 @@ function RelationshipFinalCta() {
         <Link className="sm-button sm-button-blue" href="/sign-up">
           Start building <ArrowRightIcon aria-hidden="true" />
         </Link>
-        <Link className="sm-button sm-button-light" href="/book-a-demo">
-          Book a relationship review
-        </Link>
+        <a className="sm-button sm-button-light" href={CONTACT_HREF}>
+          Talk to the team
+        </a>
       </div>
       <p>OBSERVE · EXPLAIN · RECOMMEND · APPROVE · ACT · LEARN</p>
     </section>
@@ -1561,9 +1558,9 @@ function FinalCta() {
         action, and the evidence behind the recommended next move.
       </p>
       <div className="flex flex-col items-center gap-3 sm:flex-row">
-        <Link className="linear-button-primary !h-10 !px-5" href="/book-a-demo">
+        <a className="linear-button-primary !h-10 !px-5" href={CONTACT_HREF}>
           See account mission control
-        </Link>
+        </a>
         <Link className="linear-button-secondary !h-10 !px-5" href="/product">
           Explore relationship intelligence
         </Link>
@@ -1797,9 +1794,9 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
             </div>
             <div className="flex flex-wrap gap-3">
               <Button asChild className="marketing-cta-primary">
-                <Link href={page.ctaHref ?? "/book-a-demo"}>
-                  {page.ctaLabel ?? "Book a Revenue Leak Scan"}
-                </Link>
+                <a href={page.ctaHref ?? CONTACT_HREF}>
+                  {page.ctaLabel ?? "Talk to the team"}
+                </a>
               </Button>
               <Button asChild className="marketing-cta-secondary" variant="ghost">
                 <Link href="/app">Open action queue</Link>
@@ -1848,10 +1845,10 @@ function FeatureActionButtons({
         asChild
         className="marketing-cta-primary h-12 border border-transparent px-6 font-medium text-sm has-[>svg]:px-4"
       >
-        <Link href="/book-a-demo">
+        <a href={CONTACT_HREF}>
           {primary}
           <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
-        </Link>
+        </a>
       </Button>
       <Button
         asChild
@@ -1877,10 +1874,10 @@ function PageShell({ page, children }: { page: MarketingPage; children: ReactNod
             <p>{page.description}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild className="marketing-cta-primary">
-                <Link href={page.ctaHref ?? "/book-a-demo"}>
-                  {page.ctaLabel ?? "Book a Revenue Leak Scan"}
+                <a href={page.ctaHref ?? CONTACT_HREF}>
+                  {page.ctaLabel ?? "Talk to the team"}
                   <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
-                </Link>
+                </a>
               </Button>
               <Button asChild className="marketing-cta-secondary" variant="outline">
                 <Link href="/app">Open action queue</Link>
@@ -2145,10 +2142,10 @@ export function CustomerIndexPage({ page }: { page: MarketingPage }) {
             have a story worth telling, it will live here. No placeholder logos in the meantime.
           </p>
           <Button asChild className="marketing-cta-primary mt-1">
-            <Link href="/book-a-demo">
+            <a href={CONTACT_HREF}>
               Become an early customer
               <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
-            </Link>
+            </a>
           </Button>
         </section>
       </PageShell>
@@ -2214,36 +2211,6 @@ export function CustomerStoryPage({ page }: { page: MarketingPage }) {
   );
 }
 
-export function DemoPage({ page }: { page: MarketingPage }) {
-  return (
-    <PageShell page={page}>
-      <section className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="marketing-surface border p-6">
-          <h2 className="text-2xl font-medium">Your Revenue Leak Scan walkthrough</h2>
-          <ul className="mt-6 space-y-4">
-            {page.bullets.map((bullet) => (
-              <li className="flex gap-3 text-[13px] leading-relaxed" key={bullet}>
-                <MarketingIcon compact icon={PlayIcon} tone="orange" />
-                <span>{bullet}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="marketing-surface-strong border p-6">
-          <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-            Book your scan
-          </p>
-          <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Tell us which relationship systems you use today. We’ll reply with a time.
-          </p>
-          <Button asChild className="marketing-cta-primary mt-5">
-            <a href="mailto:hello@oppulence.io?subject=Revenue%20Leak%20Scan">Book my scan</a>
-          </Button>
-        </div>
-      </section>
-    </PageShell>
-  );
-}
 
 export function LegalPage({ page }: { page: MarketingPage }) {
   return (

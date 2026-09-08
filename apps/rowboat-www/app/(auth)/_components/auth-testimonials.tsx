@@ -23,7 +23,12 @@ export function AuthTestimonials({ items }: { items: Testimonial[] }) {
 
   useEffect(() => {
     if (items.length < 2 || paused) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // matchMedia is missing in some embedded webviews and in jsdom, and a
+    // throw here would take down the whole sign-in page. Treat it as "no
+    // preference expressed" and still rotate.
+    if (typeof window.matchMedia === "function") {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    }
 
     // Fade out just before swapping, so the text never pops between quotes.
     const fade = window.setTimeout(() => setVisible(false), ROTATE_MS - 260);

@@ -6,7 +6,6 @@ import {
   BlogIndexPage,
   CustomerIndexPage,
   CustomerStoryPage,
-  DemoPage,
   GenericPage,
   LegalPage,
   PricingPage,
@@ -82,10 +81,6 @@ export default async function Page(props: PageProps) {
 
   if (page.path.startsWith("customers/")) {
     return <CustomerStoryPage page={page} />;
-  }
-
-  if (page.path.startsWith("book-a-demo")) {
-    return <DemoPage page={page} />;
   }
 
   if (page.path.startsWith("legal/")) {

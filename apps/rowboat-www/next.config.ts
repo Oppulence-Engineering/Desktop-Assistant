@@ -66,6 +66,9 @@ const nextConfig: NextConfig = {
     return [
       { source: "/legal/terms-of-service", destination: "/terms", permanent: true },
       { source: "/legal/privacy-policy", destination: "/privacy", permanent: true },
+      // The booking page was removed; "talk to us" now goes through email.
+      // Pricing is the closest landing spot for anyone holding an old link.
+      { source: "/book-a-demo", destination: "/pricing", permanent: true },
     ];
   },
   async headers() {

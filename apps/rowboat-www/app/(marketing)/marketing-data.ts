@@ -5,12 +5,18 @@ export type LinkItem = {
   external?: boolean;
 };
 
+/**
+ * Where "talk to us" CTAs point. There is no booking page: interest goes
+ * straight to the team's inbox.
+ */
+export const CONTACT_HREF = "mailto:hello@oppulence.io?subject=Oppulence";
+
 export type MarketingPage = {
   path: string;
   eyebrow: string;
   title: string;
   description: string;
-  category: "feature" | "product" | "tool" | "blog" | "customer" | "legal" | "demo" | "landing";
+  category: "feature" | "product" | "tool" | "blog" | "customer" | "legal" | "landing";
   bullets: string[];
   proof: string[];
   ctaLabel?: string;
@@ -122,8 +128,8 @@ export const productLinks: LinkItem[] = [
     description: "Choose the plan for monitored relationships, team access, and governance",
   },
   {
-    label: "Book a relationship review",
-    href: "/book-a-demo",
+    label: "Talk to the team",
+    href: CONTACT_HREF,
     description: "Find the warm revenue slipping through your existing relationships",
   },
   {
@@ -946,7 +952,7 @@ export const primaryPages: MarketingPage[] = [
     ],
     proof: baseProof,
     ctaLabel: "Book a Revenue Leak Scan",
-    ctaHref: "/book-a-demo",
+    ctaHref: CONTACT_HREF,
   },
   {
     path: "voice",
@@ -1242,22 +1248,6 @@ export const primaryPages: MarketingPage[] = [
     proof: baseProof,
     ctaLabel: "Validate a contract",
   },
-  {
-    path: "book-a-demo",
-    eyebrow: "Revenue Leak Scan",
-    title: "Find the warm revenue slipping through your existing relationships.",
-    description:
-      "Walk through how Oppulence scans communication and CRM history, ranks the relationships worth attention, and prepares safe next actions for approval.",
-    category: "demo",
-    bullets: [
-      "Map the email, calendar, meetings, and CRM sources that hold commercial history.",
-      "Review the missed commitments and dormant opportunities a scan should detect.",
-      "Define verification, policy, and approval boundaries before execution.",
-    ],
-    proof: baseProof,
-    ctaLabel: "Book my scan",
-    ctaHref: "mailto:hello@oppulence.io?subject=Revenue%20Leak%20Scan",
-  },
   // Canonical legal pages live at /terms and /privacy (app/terms, app/privacy).
   // The old /legal/* paths redirect there (see next.config.ts).
 ];
@@ -1437,7 +1427,7 @@ export const pricingPlans = [
       "See what is slipping. A weekly report of the deals, invoices, and clients going quiet.",
     features: ["Weekly slip report", "Dollar amounts on each finding", "Links to the source email"],
     ctaLabel: "Get the report",
-    ctaHref: "/book-a-demo",
+    ctaHref: CONTACT_HREF,
   },
   {
     name: "Starter",
@@ -1494,6 +1484,6 @@ export const pricingPlans = [
     description: "A shared queue and governance for small revenue teams.",
     features: ["Everything in Intelligence", "Shared action queue", "Roles and audit trail"],
     ctaLabel: "Talk to us",
-    ctaHref: "/book-a-demo",
+    ctaHref: CONTACT_HREF,
   },
 ];

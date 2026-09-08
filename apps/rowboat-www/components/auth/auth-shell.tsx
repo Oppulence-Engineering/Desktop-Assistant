@@ -103,7 +103,8 @@ export function AuthShell({
 
           <p className="sm-auth-legal">
             By continuing, you agree to our <Link href="/terms">Terms</Link> and{" "}
-            <Link href="/privacy">Privacy Policy</Link>. {isSignUp ? "Have an account?" : "New here?"}{" "}
+            <Link href="/privacy">Privacy Policy</Link>.{" "}
+            {isSignUp ? "Have an account?" : "New here?"}{" "}
             <Link href={crossHref}>{isSignUp ? "Sign in" : "Create one"}</Link>.
           </p>
         </div>
@@ -116,7 +117,6 @@ export function AuthShell({
           <div aria-hidden className="sm-auth-canvas-wash" />
 
           <div className="sm-auth-overlay">
-
             <AuthTestimonials items={TESTIMONIALS} />
 
             <div className="sm-auth-stats">
