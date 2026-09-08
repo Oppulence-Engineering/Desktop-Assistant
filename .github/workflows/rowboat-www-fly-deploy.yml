@@ -30,6 +30,8 @@ jobs:
       FLY_APP_NAME: ${{ vars.FLY_APP_NAME || 'oppulence-rowboat-www' }}
       FLY_CONFIG: apps/rowboat-www/config/deployment/fly.toml
       ROWBOAT_WWW_SESSION_SECRET: ${{ secrets.ROWBOAT_WWW_SESSION_SECRET }}
+      ROWBOAT_WWW_PLAIN_CHAT_APP_ID: ${{ vars.ROWBOAT_WWW_PLAIN_CHAT_APP_ID }}
+      ROWBOAT_WWW_PLAIN_CHAT_SECRET: ${{ secrets.ROWBOAT_WWW_PLAIN_CHAT_SECRET }}
     steps:
       - uses: actions/checkout@v6
 
@@ -55,6 +57,16 @@ jobs:
         run: >-
           flyctl secrets set --stage --app "${FLY_APP_NAME}"
           "ROWBOAT_WWW_SESSION_SECRET=${ROWBOAT_WWW_SESSION_SECRET}"
+
+      # Support chat is optional: when the Plain values are absent the widget
+      # stays off rather than failing the deploy. Both are staged together so a
+      # signed-in visitor is never offered chat without a usable identity hash.
+      - name: Stage support chat configuration
+        if: env.ROWBOAT_WWW_PLAIN_CHAT_APP_ID != '' && env.ROWBOAT_WWW_PLAIN_CHAT_SECRET != ''
+        run: >-
+          flyctl secrets set --stage --app "${FLY_APP_NAME}"
+          "ROWBOAT_WWW_PLAIN_CHAT_APP_ID=${ROWBOAT_WWW_PLAIN_CHAT_APP_ID}"
+          "ROWBOAT_WWW_PLAIN_CHAT_SECRET=${ROWBOAT_WWW_PLAIN_CHAT_SECRET}"
 
       - name: Deploy from the monorepo root
         run: >-
