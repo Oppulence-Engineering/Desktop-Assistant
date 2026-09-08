@@ -941,9 +941,9 @@ export const primaryPages: MarketingPage[] = [
   {
     path: "product",
     eyebrow: "Product",
-    title: "Nobody remembers what you promised in March. Oppulence does.",
+    title: "Nobody remembers what you promised in March. We do.",
     description:
-      "Every commitment, objection, and open loop from your email, calendar, meetings, and CRM, kept current without anyone typing it in. Oppulence surfaces the accounts that are slipping and drafts the next move for you to approve.",
+      "Everything you said you'd do, every objection you got, every thread left hanging \u2014 pulled out of your email, calendar, meetings, and CRM without anyone typing it in. We'll tell you which accounts are slipping and write the follow-up. You send it.",
     category: "product",
     bullets: [
       "Build a living ledger of promises, objections, chases, and outcomes from the systems you already use.",
@@ -957,9 +957,9 @@ export const primaryPages: MarketingPage[] = [
   {
     path: "voice",
     eyebrow: "Oppulence Voice",
-    title: "The best context from a call is the part nobody writes down.",
+    title: "The best part of a call is the bit nobody writes down.",
     description:
-      "Oppulence Voice captures and transcribes on your device, so what was actually said becomes part of the account history. Nothing leaves your machine until you say it can.",
+      "Voice records and transcribes right on your laptop, so what people actually said becomes part of the account history instead of evaporating. Nothing leaves your machine until you say so.",
     category: "product",
     bullets: [
       "Capture dictation, notes, and meeting context locally before deciding what leaves the device.",

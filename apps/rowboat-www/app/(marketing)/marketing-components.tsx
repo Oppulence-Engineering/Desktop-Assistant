@@ -669,51 +669,51 @@ const relationshipCatalog = [
 const operatingLoop = [
   [
     "01 / OBSERVE",
-    "Connect the work already happening.",
-    "Email, calendar, CRM, meetings, notes, voice, and browser context append immutable evidence.",
+    "It reads what already happened.",
+    "Email, calendar, CRM, meetings, notes, calls, and browser context, as they come in. Nothing gets rewritten after the fact.",
   ],
   [
     "02 / ASSERT",
-    "Separate facts from inference.",
-    "Provider facts, deterministic rules, AI inference, and user corrections keep distinct authority.",
+    "It knows what it knows.",
+    "What a system told us, what a rule worked out, what the model guessed, and what you corrected are kept apart on purpose.",
   ],
   [
     "03 / PROJECT",
-    "Build one current relationship state.",
-    "Deterministic projection resolves the evidence into lifecycle, health, people, commitments, and risk.",
+    "One picture of the account.",
+    "All of it resolves into where the relationship stands: who is involved, what was promised, what looks shaky.",
   ],
   [
     "04 / EXPLAIN + RECOMMEND",
-    "Show what changed and what to do next.",
-    "Every recommendation includes the reason, supporting evidence, confidence, and any missing context.",
+    "What changed, and what to do about it.",
+    "Every suggestion comes with the reason, the emails or meetings behind it, how sure it is, and what it could not see.",
   ],
   [
     "05 / APPROVE + ACT + LEARN",
-    "Close the loop without losing control.",
-    "A person approves the exact action; execution receipts and outcomes return to the same history.",
+    "Nothing goes out without you.",
+    "You approve the exact action. What comes back, replies, meetings, edits, goes into the same history and makes it sharper.",
   ],
 ] as const;
 
 const useCases = [
   {
     eyebrow: "Founder-led sales",
-    title: "Keep warm opportunities from going quiet.",
-    body: "Find the proposal, promise, referral, or champion that lost its next step—and understand why it is worth reopening now.",
+    title: "The deal that just went quiet.",
+    body: "That proposal you sent, the intro someone offered, the person who was keen and then stopped writing. We surface it and tell you why it's worth another go now.",
   },
   {
     eyebrow: "Customer success",
-    title: "See risk before the renewal meeting.",
-    body: "Bring commitments, objections, engagement changes, and stakeholder movement into one account review with evidence attached.",
+    title: "Walk into the renewal already knowing.",
+    body: "What you promised, what they pushed back on, who stopped showing up to calls, and who quietly joined. All in one place, with the receipts.",
   },
   {
     eyebrow: "Account management",
-    title: "Run the week from the relationships that changed.",
-    body: "Replace activity dashboards with a short, ranked queue of accounts that need a thoughtful next move today.",
+    title: "Work the list, not the dashboard.",
+    body: "Instead of another activity chart, you get a short list of accounts that actually changed this week and deserve a real reply today.",
   },
   {
     eyebrow: "Partnerships and services",
-    title: "Preserve the context that lives between systems.",
-    body: "Keep decisions, introductions, obligations, and outcomes legible across long-running, high-touch relationships.",
+    title: "Relationships that outlast the paperwork.",
+    body: "Long engagements collect decisions, intros, and favours owed in both directions. That history stays readable years later, whoever is running the account.",
   },
 ] as const;
 
@@ -773,9 +773,9 @@ function RelationshipHomeHero() {
           Account Mission Control is live
           <ArrowRightIcon aria-hidden="true" />
         </Link>
-        <h1 aria-label="You are losing deals you already won.">
+        <h1 aria-label="You’re losing deals you already won.">
           <span aria-hidden="true" className="sm-hero-title-wide">
-            You are losing deals you{" "}
+            You&rsquo;re losing deals you{" "}
             <Image
               alt=""
               className="sm-inline-mark"
@@ -786,7 +786,7 @@ function RelationshipHomeHero() {
             already won<span className="sm-hero-title-period">.</span>
           </span>
           <span aria-hidden="true" className="sm-hero-title-mobile">
-            You are losing
+            You&rsquo;re losing
             <br />
             deals you{" "}
             <Image
@@ -800,9 +800,9 @@ function RelationshipHomeHero() {
           </span>
         </h1>
         <p>
-          The promise you made on a call in March. The renewal that went quiet six weeks ago. The
-          champion who changed jobs. It is all in your email, your calendar, and your CRM — and no
-          one has time to read it. Oppulence does, and tells you what needs you today.
+          That thing you promised on a call back in March. The renewal that&rsquo;s been quiet for a
+          month and a half. The champion who left and nobody noticed. It&rsquo;s all sitting in your
+          inbox somewhere. Oppulence actually reads it, and tells you who needs you today.
         </p>
         <div className="sm-hero-actions">
           <Link className="sm-button sm-button-blue" href="/sign-up">
@@ -871,34 +871,34 @@ function TheProblemSection() {
     <section className="sm-section sm-problem">
       <SectionMarker index="1" label="The problem" />
       <header className="sm-section-intro">
-        <h2>The context is there. Nobody has time to read it.</h2>
+        <h2>It&rsquo;s all written down. Nobody has time to read it.</h2>
         <p>
-          A customer relationship lives across thousands of messages, calls, and records. Your team
-          reconstructs it from memory, right before the meeting, and hopes nothing important was
-          missed.
+          One account can span a couple thousand emails, a year of calls, and whatever made it into
+          the CRM. So people wing it from memory five minutes before the call and hope they
+          didn&rsquo;t forget anything.
         </p>
       </header>
       <div className="sm-problem-grid">
         {[
           {
             stat: "Monday morning",
-            title: "The week starts with a scramble.",
-            body: "Scrolling inboxes and pipeline reports to work out which accounts moved, who is waiting on you, and what you promised last time.",
+            title: "You start the week guessing.",
+            body: "Half an hour scrolling your inbox and the pipeline report, trying to work out what moved over the weekend and who\u2019s been waiting on you since Thursday.",
           },
           {
-            stat: "Six weeks late",
-            title: "Silence looks the same as safety.",
-            body: "Nothing alerts you when a deal goes quiet or a champion stops replying. You find out at the renewal, when the decision is already made.",
+            stat: "Six weeks later",
+            title: "Quiet accounts look fine.",
+            body: "Nothing pings you when a deal goes cold or your main contact stops writing back. You find out on the renewal call, once they\u2019ve already decided.",
           },
           {
-            stat: "Between systems",
-            title: "The commitment was made out loud.",
-            body: "It happened on a call or in a thread, never became a CRM field, and quietly stopped existing the moment everyone moved on.",
+            stat: "Never written down",
+            title: "You said you\u2019d send that thing.",
+            body: "It came up on a call, or halfway down a thread. It never made it into a field anywhere, so the moment everyone moved on it stopped existing.",
           },
           {
             stat: "Every handoff",
-            title: "Context leaves with the person.",
-            body: "A rep changes territory and years of relationship history walks out with them, leaving whoever inherits the account starting from zero.",
+            title: "The context walks out the door.",
+            body: "Someone changes territory or leaves, and two years of knowing this account goes with them. Whoever picks it up starts from nothing.",
           },
         ].map((item) => (
           <article key={item.title}>
@@ -909,8 +909,8 @@ function TheProblemSection() {
         ))}
       </div>
       <p className="sm-problem-turn">
-        Every CRM ever built asked your team to fix this by typing more. Oppulence reads the work
-        that already happened instead.
+        Every CRM ever made has one fix for this: type more. Nobody does. So we built something that
+        just reads the work you already did.
       </p>
     </section>
   );
@@ -921,10 +921,10 @@ function ProductCatalogSection() {
     <section className="sm-section sm-catalog" id="product">
       <SectionMarker index="2" label="Product catalog" />
       <header className="sm-section-intro">
-        <h2>Everything you would do if you had time to read it all.</h2>
+        <h2>Everything you&rsquo;d do yourself, if you had the time.</h2>
         <p>
-          Oppulence watches the accounts, notices what changed, explains why it matters, and drafts
-          the next move for you to approve.
+          It watches the accounts, spots what changed, tells you why that matters, and writes the
+          follow-up. You decide if it goes.
         </p>
       </header>
       <fieldset className="sm-catalog-fieldset">
@@ -987,9 +987,9 @@ function WhatWeDoSection() {
         <h2>
           You keep the relationship.
           <br />
-          We keep track of it.
+          We&rsquo;ll keep track of it.
         </h2>
-        <p>Connect the tools you already use. Oppulence does the reading, and shows its work.</p>
+        <p>Plug in the tools you already use. We do the reading, and we show our work.</p>
       </header>
       <div className="sm-offer-grid">
         <Link className="sm-offer sm-offer-dark" href="/product">
@@ -1044,21 +1044,21 @@ function WhatWeDoSection() {
       </div>
       <div className="sm-comparison">
         <article>
-          <p>Legacy · an activity system</p>
-          <h3>Records contacts and transactions.</h3>
+          <p>A normal CRM</p>
+          <h3>Keeps a list of names and deals.</h3>
           <ul>
-            <li>Declared stages and fields</li>
-            <li>Scattered conversation history</li>
-            <li>Activity without explanation</li>
+            <li>Stages someone remembered to update</li>
+            <li>Conversations scattered across inboxes</li>
+            <li>Plenty of activity, no explanation</li>
           </ul>
         </article>
         <article>
           <p>Oppulence</p>
-          <h3>Models the relationship itself.</h3>
+          <h3>Keeps track of the relationship.</h3>
           <ul>
-            <li>State that changes with the evidence</li>
-            <li>Commitments, risk, people, and outcomes</li>
-            <li>One loop from observation to action</li>
+            <li>Updates itself as things actually happen</li>
+            <li>Promises, people, risk, and how it ended</li>
+            <li>From noticing to doing, in one place</li>
           </ul>
         </article>
       </div>
@@ -1072,10 +1072,10 @@ function HowItWorksSection() {
       <SectionMarker index="4" label="How it works" />
       <div className="sm-how-grid">
         <div className="sm-how-copy">
-          <h2>One operating loop.</h2>
+          <h2>How it actually works.</h2>
           <p>
-            Observe, assert, project, explain, recommend, approve, act, and learn. Each step has a
-            clear owner and a durable record.
+            Watch the work, sort fact from guess, keep one picture of the account, say what changed,
+            suggest a move, wait for you. Every step leaves a record.
           </p>
           <div className="sm-api-window">
             <div>
@@ -1104,7 +1104,7 @@ function TrustSection() {
     <section className="sm-section sm-trust">
       <SectionMarker index="5" label="Built for truth" />
       <header className="sm-section-intro">
-        <h2>If you cannot check it, you will not trust it.</h2>
+        <h2>If you can&rsquo;t check it, you won&rsquo;t trust it.</h2>
         <p>
           Oppulence is designed to say what it knows, where it learned it, and what is still
           missing.
@@ -1120,10 +1120,10 @@ function TrustSection() {
               src="/marketing/relationship-web-detail.png"
             />
           </div>
-          <h3>Evidence that can be inspected.</h3>
+          <h3>Click through to the actual email.</h3>
           <p>
-            Timeline events, state changes, recommendations, and corrections stay linked to their
-            sources.
+            Every event, change, and suggestion stays wired to the thing it came from. You can go
+            look.
           </p>
         </article>
         <article>
@@ -1135,8 +1135,11 @@ function TrustSection() {
               src="/marketing/relationship-web-list.png"
             />
           </div>
-          <h3>State a teammate can correct.</h3>
-          <p>User corrections outrank automation, remain reversible, and leave an audit trail.</p>
+          <h3>Tell it when it&rsquo;s wrong.</h3>
+          <p>
+            Your correction beats whatever the system thought. You can undo it, and there&rsquo;s a
+            record of who changed what.
+          </p>
         </article>
       </div>
       <div
@@ -1181,10 +1184,10 @@ function UseCasesSection() {
     <section className="sm-section sm-use-cases" id="use-cases">
       <SectionMarker index="6" label="Use cases" />
       <header className="sm-section-intro">
-        <h2>The revenue you already earned, protected.</h2>
+        <h2>Money you already earned, kept.</h2>
         <p>
-          Different teams, same failure: the relationship outlives the tool, the territory, and the
-          person who remembered it.
+          Different teams, same story. The relationship lasts longer than the tool, the territory,
+          or whoever used to remember it.
         </p>
       </header>
       <nav aria-label="Use case navigation" className="sm-use-case-nav">
@@ -1215,9 +1218,9 @@ function EnterpriseSection() {
     <section className="sm-section sm-enterprise">
       <SectionMarker index="7" label="Everywhere you work" />
       <header className="sm-centered-intro">
-        <h2>Oppulence runs across the relationship.</h2>
+        <h2>Same brain, wherever you&rsquo;re working.</h2>
         <p>
-          One service plane, two equal clients, and clear boundaries around every source and action.
+          Web and desktop see the same history and obey the same rules. Nothing is second-class.
         </p>
       </header>
       <div className="sm-enterprise-grid">
@@ -1268,10 +1271,10 @@ function PrinciplesSection() {
       <SectionMarker index="8" label="Product principles" />
       <div className="sm-principles-grid">
         <div>
-          <h2>Trust is a product surface.</h2>
+          <h2>You should be able to argue with it.</h2>
           <p>
-            A recommendation is only useful when the team can understand it, challenge it, and
-            control what happens next.
+            A suggestion is worthless if you can&rsquo;t see where it came from, tell it it&rsquo;s
+            wrong, and decide what happens next.
           </p>
           <Image
             alt="Oppulence governed recommendation ready for review"
@@ -1360,7 +1363,7 @@ function RelationshipFaqSection() {
     <section className="sm-section sm-faq">
       <SectionMarker index="10" label="FAQ" />
       <header className="sm-section-intro">
-        <h2>The important questions, answered plainly.</h2>
+        <h2>The stuff people usually ask.</h2>
         <p>What teams ask before connecting their customer systems.</p>
       </header>
       <div className="sm-faq-list">
@@ -1383,7 +1386,7 @@ function RelationshipFinalCta() {
   return (
     <section className="sm-final-cta">
       <h2>
-        Find out what you have been missing<span>.</span>
+        Go find what you&rsquo;ve been missing<span>.</span>
       </h2>
       <div>
         <Link className="sm-button sm-button-blue" href="/sign-up">
@@ -1400,7 +1403,7 @@ function RelationshipFinalCta() {
 
 const linearHomeSections = [
   {
-    title: "Every promise and open loop, found without anyone typing it in.",
+    title: "It finds the loose ends nobody wrote down.",
     description:
       "Oppulence scans the last 60–90 days of email, calendar, and billing to build a living ledger of promises, proposals, invoices, and open loops. It finds where a valuable relationship lost its next step, with the dollar amount and source attached.",
     label: "Relationship State Engine",

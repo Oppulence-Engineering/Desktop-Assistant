@@ -4,7 +4,7 @@ import { HomePage } from "./marketing-components";
 
 const TITLE = "Oppulence — Stop losing deals you already won";
 const DESCRIPTION =
-  "The promise from a call in March. The renewal that went quiet. It is all in your email, calendar, and CRM, and nobody has time to read it. Oppulence does, and tells you which accounts need you today.";
+  "That thing you promised on a call in March. The renewal that's been quiet for a month. It's all sitting in your inbox, and nobody has time to read it. Oppulence does, and tells you who needs you today.";
 
 export const metadata: Metadata = {
   title: TITLE,
