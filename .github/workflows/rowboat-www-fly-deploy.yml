@@ -59,7 +59,7 @@ jobs:
       - name: Deploy from the monorepo root
         run: >-
           flyctl deploy . --app "${FLY_APP_NAME}" --config "${FLY_CONFIG}"
-          --remote-only --yes
+          --local-only --yes
 
       - name: Enforce high availability
         run: flyctl scale count 2 --app "${FLY_APP_NAME}" --yes

@@ -28,7 +28,7 @@ flyctl deploy "${REPO_ROOT}" \
   --app "${FLY_APP}" \
   --config "${FLY_CONFIG}" \
   --ha=false \
-  --remote-only \
+  --local-only \
   --yes
 
 # One request-serving Machine per coast. max-per-region prevents both from

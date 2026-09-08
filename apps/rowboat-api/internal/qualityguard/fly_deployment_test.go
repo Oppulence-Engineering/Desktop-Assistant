@@ -43,7 +43,7 @@ func TestFlyDeploymentContract(t *testing.T) {
 	for _, required := range []string{
 		`flyctl config validate`,
 		`--strict`,
-		`--remote-only`,
+		`--local-only`,
 		`--process-group app`,
 		`--region iad,sjc`,
 		`--max-per-region 1`,
@@ -54,6 +54,9 @@ func TestFlyDeploymentContract(t *testing.T) {
 		if !strings.Contains(script, required) {
 			t.Errorf("fly deploy script missing regional invariant %q", required)
 		}
+	}
+	if strings.Contains(script, `--remote-only`) {
+		t.Error("Fly deploy must build on the GitHub runner")
 	}
 }
 

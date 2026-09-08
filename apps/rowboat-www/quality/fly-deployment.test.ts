@@ -11,6 +11,8 @@ const flyWorkflow = readFileSync(
 describe("Fly.io deployment contract", () => {
   it("builds from the monorepo root and keeps authenticated traffic warm", () => {
     expect(flyConfig).toContain('dockerfile = "../../Dockerfile"');
+    expect(flyWorkflow).toContain("--local-only");
+    expect(flyWorkflow).not.toContain("--remote-only");
     expect(flyConfig).toContain('auto_stop_machines = "off"');
     expect(flyConfig).toContain("auto_start_machines = false");
   });
