@@ -158,6 +158,31 @@ scripts/rowboat-api-kind.sh delete-cluster
 scripts/rowboat-api-kind.sh up
 ```
 
+## Choosing the LLM upstream
+
+`up` points the gateway at live OpenRouter by default, which spends real money
+per call. Use the hermetic devstack mock instead:
+
+```bash
+ROWBOAT_KIND_MOCK_LLM=1 make api-up   # free, no network, deterministic replies
+make api-up                           # live OpenRouter (costs credits)
+```
+
+If `api-up` fails its background-task check with `llm upstream returned status
+402`, the OpenRouter account is out of prepaid credits — it is a balance, not a
+rate limit. Check the balance with:
+
+```bash
+curl -s https://openrouter.ai/api/v1/credits \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY"
+```
+
+`total_usage` at or above `total_credits` means the account needs a top-up at
+<https://openrouter.ai/settings/credits>, where auto top-up also lives. Neither
+is reachable from the API: the credits endpoint is read-only, and inference keys
+cannot manage account or key settings. Until it is funded, run with
+`ROWBOAT_KIND_MOCK_LLM=1`.
+
 ## What this validates
 
 This validates the production chart path locally:
