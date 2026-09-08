@@ -84,11 +84,20 @@ is one support inbox rather than one per surface.
 ```bash
 ROWBOAT_WWW_PLAIN_CHAT_APP_ID=<chat app id>
 ROWBOAT_WWW_PLAIN_CHAT_SECRET=<chat secret>
+# Optional. Comma-separated Plain label ids applied to every chat thread.
+# Defaults to the "Brand: Oppulence" label.
+ROWBOAT_WWW_PLAIN_CHAT_LABEL_TYPE_IDS=lt_01M20XH6PFZ1F5EY4V19WWP7DG
 ```
 
 Both come from Plain under **Settings → Chat**. With no app id the widget is
 skipped entirely and the vendor script never loads, which is the default for
 local development.
+
+Every thread opened from the widget carries the `Brand: Oppulence` label, since
+the Plain workspace is shared with other brands. The desktop app's feedback
+relay applies the same label server-side via the API's
+`PLAIN_ALWAYS_LABEL_TYPE_IDS`, so all Oppulence tickets are filterable
+regardless of which surface they came from.
 
 Signed-in users are identified by an HMAC-SHA256 hash of their verified email,
 minted server-side in `/api/support/chat`. Plain treats that hash as a bearer

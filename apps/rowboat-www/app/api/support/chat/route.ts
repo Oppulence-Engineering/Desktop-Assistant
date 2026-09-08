@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   // freezing one anonymous response for every user. The identity here is
   // per-request and per-user, so it must be resolved at request time.
   await connection();
-  const { appId } = getSupportChatConfig();
+  const { appId, labelTypeIds } = getSupportChatConfig();
   // No chat app configured (local dev, self-hosted): report it plainly so the
   // client can skip loading Plain's script entirely.
   if (!appId) {
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   const session = readSessionCookie(request);
   if (!session) {
     return NextResponse.json(
-      { configured: true, appId },
+      { configured: true, appId, labelTypeIds },
       { headers: { "cache-control": "no-store" } },
     );
   }
@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
     {
       configured: true,
       appId,
+      labelTypeIds,
       // Only claim an identity when we can also prove it. An unverified email
       // would be rejected by Plain and risks merging the wrong customer.
       customer: hash ? { email, emailHash: hash } : undefined,

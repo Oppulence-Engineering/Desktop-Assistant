@@ -49,6 +49,7 @@ function call() {
 interface ChatConfigBody {
   configured: boolean;
   appId?: string;
+  labelTypeIds?: string[];
   customer?: { email: string; emailHash: string };
 }
 
@@ -66,6 +67,7 @@ describe("support chat config route", () => {
     vi.unstubAllEnvs();
     vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_APP_ID", "chat-app-id");
     vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_SECRET", "chat-secret");
+    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_LABEL_TYPE_IDS", "lt_brand");
     mocks.readSessionCookie.mockReturnValue(null);
   });
 
@@ -78,8 +80,36 @@ describe("support chat config route", () => {
   it("serves the app id without an identity for anonymous visitors", async () => {
     const body = await callJSON();
 
-    expect(body).toEqual({ configured: true, appId: "chat-app-id" });
+    expect(body).toEqual({
+      configured: true,
+      appId: "chat-app-id",
+      labelTypeIds: ["lt_brand"],
+    });
     expect(body.customer).toBeUndefined();
+  });
+
+  it("labels anonymous and signed-in chats alike, so every thread is branded", async () => {
+    const anonymous = await callJSON();
+    mocks.readSessionCookie.mockReturnValue(session);
+    mocks.fetchViewerIdentity.mockResolvedValue({
+      user: { id: "u1", email: "verified@example.com" },
+    });
+    const identified = await callJSON();
+
+    expect(anonymous.labelTypeIds).toEqual(["lt_brand"]);
+    expect(identified.labelTypeIds).toEqual(["lt_brand"]);
+  });
+
+  it("supports several comma-separated label ids", async () => {
+    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_LABEL_TYPE_IDS", " lt_a , lt_b ,, ");
+
+    expect((await callJSON()).labelTypeIds).toEqual(["lt_a", "lt_b"]);
+  });
+
+  it("falls back to the Brand: Oppulence label when unset", async () => {
+    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_LABEL_TYPE_IDS", "");
+
+    expect((await callJSON()).labelTypeIds).toEqual(["lt_01M20XH6PFZ1F5EY4V19WWP7DG"]);
   });
 
   it("identifies a signed-in user with a verified email and its hash", async () => {
@@ -114,7 +144,11 @@ describe("support chat config route", () => {
 
     const body = await callJSON();
 
-    expect(body).toEqual({ configured: true, appId: "chat-app-id" });
+    expect(body).toEqual({
+      configured: true,
+      appId: "chat-app-id",
+      labelTypeIds: ["lt_brand"],
+    });
   });
 
   it("never caches the response, since it carries a per-user credential", async () => {

@@ -43,8 +43,23 @@ type Config struct {
 	// without a mapping are submitted unlabelled — label types are workspace
 	// data created in Plain, so the map may legitimately be empty.
 	LabelTypeIDs map[string]string
+	// AlwaysLabelTypeIDs are applied to every thread regardless of category.
+	// The Plain workspace is shared across brands, so this carries the
+	// "Brand: Oppulence" label that makes this product's tickets filterable.
+	AlwaysLabelTypeIDs []string
 	// TitlePrefix is prepended to thread titles (e.g. "[staging] ").
 	TitlePrefix string
+}
+
+// ParseLabelList parses a comma-separated label id list ("" → nil).
+func ParseLabelList(raw string) []string {
+	var ids []string
+	for _, part := range strings.Split(raw, ",") {
+		if id := strings.TrimSpace(part); id != "" {
+			ids = append(ids, id)
+		}
+	}
+	return ids
 }
 
 // ParseLabelMap parses the PLAIN_LABEL_TYPE_IDS JSON ("" → empty map).
@@ -147,7 +162,7 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 	}
 	title := h.cfg.TitlePrefix + titleKind + " from " + u.Email
 	threadID, err := h.plain.createThread(ctx, apiKey, customerID, title, message, metadata,
-		h.cfg.LabelTypeIDs[req.Category])
+		h.threadLabels(req.Category))
 	if err != nil {
 		h.log.Warn("plain createThread failed", zap.Error(err))
 		httpx.Error(w, http.StatusBadGateway, "could not send feedback", "upstream_error")
@@ -155,6 +170,22 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"ok": true, "threadId": threadID})
+}
+
+// threadLabels returns the label type ids for a submission: the always-on
+// brand labels plus the category label when one is mapped. Duplicates are
+// dropped so a brand label that is also a category label is sent once.
+func (h *Handler) threadLabels(category string) []string {
+	ids := make([]string, 0, len(h.cfg.AlwaysLabelTypeIDs)+1)
+	seen := make(map[string]bool, len(ids))
+	for _, id := range append(append([]string{}, h.cfg.AlwaysLabelTypeIDs...), h.cfg.LabelTypeIDs[category]) {
+		if id == "" || seen[id] {
+			continue
+		}
+		seen[id] = true
+		ids = append(ids, id)
+	}
+	return ids
 }
 
 // clamp trims a client-supplied metadata string to a sane length, falling

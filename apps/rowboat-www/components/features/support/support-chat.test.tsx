@@ -113,6 +113,30 @@ describe("SupportChat", () => {
     expect(init).not.toHaveBeenCalled();
   });
 
+  it("labels every thread the widget opens, so support can filter by brand", async () => {
+    mocks.loadSupportChatConfig.mockResolvedValue({
+      configured: true,
+      appId: "app-1",
+      labelTypeIds: ["lt_brand"],
+    });
+
+    render(<SupportChat />);
+
+    await waitFor(() => expect(init).toHaveBeenCalledTimes(1));
+    const options = init.mock.calls[0][0] as Record<string, unknown>;
+    expect(options.threadDetails).toEqual({ labelTypeIds: ["lt_brand"] });
+  });
+
+  it("omits threadDetails when no labels are configured", async () => {
+    mocks.loadSupportChatConfig.mockResolvedValue({ configured: true, appId: "app-1" });
+
+    render(<SupportChat />);
+
+    await waitFor(() => expect(init).toHaveBeenCalledTimes(1));
+    const options = init.mock.calls[0][0] as Record<string, unknown>;
+    expect(options.threadDetails).toBeUndefined();
+  });
+
   it("stays silent when the config request fails", async () => {
     mocks.loadSupportChatConfig.mockRejectedValue(new Error("offline"));
 

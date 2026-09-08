@@ -15,12 +15,24 @@ import { createHmac } from "node:crypto";
 export interface SupportChatConfig {
   appId: string;
   secret: string;
+  labelTypeIds: string[];
 }
 
+/**
+ * Label applied to every thread the web widget opens, so support can tell
+ * Oppulence traffic apart from the other brands sharing this Plain workspace.
+ * Defaults to the "Brand: Oppulence" label type; override per environment.
+ */
+const DEFAULT_LABEL_TYPE_ID = "lt_01M20XH6PFZ1F5EY4V19WWP7DG";
+
 export function getSupportChatConfig(): SupportChatConfig {
+  const labels = process.env.ROWBOAT_WWW_PLAIN_CHAT_LABEL_TYPE_IDS?.trim();
   return {
     appId: process.env.ROWBOAT_WWW_PLAIN_CHAT_APP_ID?.trim() || "",
     secret: process.env.ROWBOAT_WWW_PLAIN_CHAT_SECRET?.trim() || "",
+    labelTypeIds: (labels ? labels.split(",") : [DEFAULT_LABEL_TYPE_ID])
+      .map((id) => id.trim())
+      .filter(Boolean),
   };
 }
 

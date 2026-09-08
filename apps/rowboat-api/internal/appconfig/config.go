@@ -191,7 +191,10 @@ type Config struct {
 	// differ per environment; the raw JSON maps category -> lt_… id.
 	PlainAPIURL       string
 	PlainLabelTypeIDs string
-	PlainTitlePrefix  string
+	// PlainAlwaysLabelTypeIDs is a comma-separated list of label ids applied to
+	// every thread (the shared workspace's per-brand label).
+	PlainAlwaysLabelTypeIDs string
+	PlainTitlePrefix        string
 
 	// Outbound vendor-call policy.
 	VendorTimeout               time.Duration
@@ -782,6 +785,7 @@ func Load() Config {
 		ParallelBaseURL:             getenv("PARALLEL_BASE_URL", "https://api.parallel.ai"),
 		PlainAPIURL:                 getenv("PLAIN_API_URL", "https://core-api.uk.plain.com/graphql/v1"),
 		PlainLabelTypeIDs:           getenv("PLAIN_LABEL_TYPE_IDS", ""),
+		PlainAlwaysLabelTypeIDs:     getenv("PLAIN_ALWAYS_LABEL_TYPE_IDS", ""),
 		PlainTitlePrefix:            getenv("PLAIN_TITLE_PREFIX", ""),
 		VendorTimeout:               getdur("VENDOR_TIMEOUT", 30*time.Second),
 		VendorResponseHeaderTimeout: getdur("VENDOR_RESPONSE_HEADER_TIMEOUT", 15*time.Second),

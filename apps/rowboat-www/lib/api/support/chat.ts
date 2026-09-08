@@ -14,6 +14,7 @@ import { z } from "zod";
 export const SupportChatConfigSchema = z.object({
   configured: z.boolean(),
   appId: z.string().min(1).optional(),
+  labelTypeIds: z.array(z.string().min(1)).optional(),
   customer: z
     .object({
       email: z.string().min(1),

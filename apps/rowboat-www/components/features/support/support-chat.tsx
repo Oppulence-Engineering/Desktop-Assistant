@@ -105,6 +105,11 @@ export function SupportChat({ theme = "auto", className, ...props }: SupportChat
         appId: config.appId,
         theme,
         ...(customerDetails ? { customerDetails } : {}),
+        // Applies to every thread this widget opens, so Oppulence chats are
+        // distinguishable from the other brands in the shared Plain workspace.
+        ...(config.labelTypeIds?.length
+          ? { threadDetails: { labelTypeIds: config.labelTypeIds } }
+          : {}),
         links: [
           { icon: "book", text: "Read the docs", url: "https://docs.oppulence.io" },
           {

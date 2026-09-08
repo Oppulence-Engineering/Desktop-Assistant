@@ -381,9 +381,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		return err
 	}
 	feedbackH := feedback.New(sec, client, feedback.Config{
-		BaseURL:      cfg.PlainAPIURL,
-		LabelTypeIDs: plainLabels,
-		TitlePrefix:  cfg.PlainTitlePrefix,
+		BaseURL:            cfg.PlainAPIURL,
+		LabelTypeIDs:       plainLabels,
+		AlwaysLabelTypeIDs: feedback.ParseLabelList(cfg.PlainAlwaysLabelTypeIDs),
+		TitlePrefix:        cfg.PlainTitlePrefix,
 	}, log)
 	feedbackH.SetOutboundPolicy(vendorPolicy)
 
