@@ -686,18 +686,257 @@ function SectionMarker({ label }: { label: string }) {
   );
 }
 
+const homepageSources = [
+  "Gmail",
+  "Calendar",
+  "Meetings",
+  "CRM",
+  "Notes",
+  "Voice",
+  "Browser",
+] as const;
+
+const homepageProblems = [
+  {
+    label: "Quiet deals",
+    title: "The account stopped replying.",
+    body: "Oppulence finds the promise, proposal, or invoice sitting inside the history before the relationship goes cold.",
+  },
+  {
+    label: "Renewals",
+    title: "The context was never in the CRM.",
+    body: "It reads the actual emails, meetings, and notes that explain what changed since the last check-in.",
+  },
+  {
+    label: "Handoffs",
+    title: "The memory left with the person.",
+    body: "A new owner gets the relationship record, source links, and the safest next move instead of starting over.",
+  },
+] as const;
+
+const homepageProof = [
+  "Source linked",
+  "Human approved",
+  "Built around your existing systems",
+] as const;
+
 export function HomePage() {
+  const individualPlans = pricingPlans.filter((plan) =>
+    ["Watch", "Chase", "Intelligence"].includes(plan.name),
+  );
+
   return (
-    <div className="sm-home flex flex-col">
-      <RelationshipHomeHero />
-      <TheProblemSection />
-      <ProductCatalogSection />
-      <HowItWorksSection />
-      <TrustSection />
-      <UseCasesSection />
-      <PricingSection />
-      <RelationshipFaqSection />
-      <RelationshipFinalCta />
+    <div className="op-home">
+      <section className="op-hero">
+        <div className="op-hero-copy">
+          <Link className="op-pill" href="/product">
+            Account Mission Control is live <ArrowRightIcon aria-hidden="true" />
+          </Link>
+          <h1>Know which customer relationships need you today.</h1>
+          <p>
+            Oppulence reads your team&rsquo;s email, calendar, meetings, and CRM history, then turns
+            scattered context into the next relationship move, with the evidence attached.
+          </p>
+          <div className="op-actions">
+            <Link className="op-button op-button-primary" href="/sign-up">
+              Start building <ArrowRightIcon aria-hidden="true" />
+            </Link>
+            <Link className="op-button op-button-secondary" href="#how-it-works">
+              See how it works
+            </Link>
+          </div>
+          <div className="op-proof-row" aria-label="Product promises">
+            {homepageProof.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
+        </div>
+        <div className="op-hero-visual" aria-label="Oppulence relationship queue preview">
+          <div className="op-browser-bar">
+            <span />
+            <span />
+            <span />
+            <strong>Relationship queue</strong>
+          </div>
+          <Image
+            alt="Oppulence relationship queue showing accounts that need action"
+            height={960}
+            priority
+            sizes="(max-width: 900px) 100vw, 560px"
+            src="/marketing/relationship-desktop.png"
+            width={1440}
+          />
+          <div className="op-insight-card">
+            <span>Today</span>
+            <strong>3 relationships need attention</strong>
+            <p>Each one links back to the email, meeting, or CRM change that explains why.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="op-source-band" aria-label="Supported context sources">
+        <p>Connect the systems your team already uses</p>
+        <div>
+          {homepageSources.map((source) => (
+            <span key={source}>{source}</span>
+          ))}
+        </div>
+      </section>
+
+      <section className="op-section op-problem">
+        <div className="op-section-header">
+          <span>The problem</span>
+          <h2>Important customer context is everywhere except the place you need it.</h2>
+          <p>
+            The work is already written down. It is just scattered across inboxes, calls, notes,
+            calendars, and CRM fields nobody keeps current.
+          </p>
+        </div>
+        <div className="op-card-grid op-card-grid-three">
+          {homepageProblems.map((item) => (
+            <article className="op-card" key={item.label}>
+              <p>{item.label}</p>
+              <h3>{item.title}</h3>
+              <span>{item.body}</span>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="op-section op-product" id="how-it-works">
+        <div className="op-product-copy">
+          <span>How it works</span>
+          <h2>Connect your systems. Get the queue. Approve the next move.</h2>
+          <p>
+            It watches for silence, missed promises, departed contacts, renewal risk, and
+            money-state changes, then explains what happened and suggests a move for approval.
+          </p>
+          <div className="op-feature-list">
+            {relationshipCatalog.map((item) => (
+              <article key={item.label}>
+                <small>{item.kicker}</small>
+                <h3>{item.title}</h3>
+                <p>{item.body}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+        <div className="op-product-shot">
+          <Image
+            alt="Oppulence account intelligence dashboard"
+            fill
+            sizes="(max-width: 900px) 100vw, 620px"
+            src="/marketing/relationship-desktop-detail.png"
+          />
+        </div>
+      </section>
+
+      <section className="op-section op-trust">
+        <div className="op-section-header">
+          <span>Built for trust</span>
+          <h2>You can always see where the answer came from.</h2>
+          <p>
+            Every recommendation stays tied to the source material. If the system is wrong, correct
+            it and the record gets sharper.
+          </p>
+        </div>
+        <div className="op-trust-grid">
+          <article>
+            <Image
+              alt="Evidence detail view in Oppulence"
+              height={960}
+              sizes="(max-width: 900px) 100vw, 520px"
+              src="/marketing/relationship-web-detail.png"
+              width={1440}
+            />
+            <h3>Click through to the actual email.</h3>
+            <p>Every event, change, and suggestion stays wired to the thing it came from.</p>
+          </article>
+          <article>
+            <Image
+              alt="Relationship health list in Oppulence"
+              height={960}
+              sizes="(max-width: 900px) 100vw, 520px"
+              src="/marketing/relationship-web-list.png"
+              width={1440}
+            />
+            <h3>Nothing goes out without you.</h3>
+            <p>Approve, edit, snooze, or reject the next move. The history stays inspectable.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="op-section op-pricing" id="pricing">
+        <div className="op-section-header op-pricing-header">
+          <span>Pricing</span>
+          <h2>Start small. Upgrade when the queue is worth it.</h2>
+          <p>From a free weekly report to full account intelligence for active teams.</p>
+        </div>
+        <div className="op-plan-grid">
+          {individualPlans.map((plan) => (
+            <article className={cn("op-plan", plan.recommended && "is-featured")} key={plan.name}>
+              <div>
+                <h3>{plan.name}</h3>
+                {plan.recommended ? <span>Most picked</span> : null}
+              </div>
+              <p>{plan.description}</p>
+              <strong>
+                {plan.price}
+                <small>{plan.period}</small>
+              </strong>
+              <Link
+                className={cn(
+                  "op-button",
+                  plan.recommended ? "op-button-primary" : "op-button-secondary",
+                )}
+                href={plan.ctaHref}
+              >
+                {plan.ctaLabel}
+              </Link>
+              <ul>
+                {plan.features.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+        <Link className="op-text-link" href="/pricing">
+          See full pricing and plan details <ArrowRightIcon aria-hidden="true" />
+        </Link>
+      </section>
+
+      <section className="op-section op-faq">
+        <div className="op-section-header op-section-header-compact">
+          <span>FAQ</span>
+          <h2>The stuff people usually ask.</h2>
+        </div>
+        <div className="op-faq-list">
+          {homeFaqs.map((item, index) => (
+            <details key={item.question} open={index === 0 ? true : undefined}>
+              <summary>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                {item.question}
+                <strong aria-hidden="true">+</strong>
+              </summary>
+              <p>{item.answer}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section className="op-final">
+        <div>
+          <span>Oppulence</span>
+          <h2>Find the customer context your team has been missing.</h2>
+          <p>
+            Connect your work systems and start with the relationships that need attention today.
+          </p>
+        </div>
+        <Link className="op-button op-button-light" href="/sign-up">
+          Start building <ArrowRightIcon aria-hidden="true" />
+        </Link>
+      </section>
     </div>
   );
 }
