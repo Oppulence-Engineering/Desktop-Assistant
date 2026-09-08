@@ -1696,7 +1696,11 @@ export function PlatformProductPage({ page }: { page: PlatformPage }) {
         <p className="sm-platform-lede">{page.lede}</p>
         <div className="sm-platform-actions">
           {page.download ? (
-            <DesktopDownloadChooser />
+            <DesktopDownloadChooser
+              app={page.slug === "voice-app" ? "voice" : "desktop"}
+              blurb={page.summary}
+              name={page.name}
+            />
           ) : (
             <>
               <Link className="sm-button sm-button-blue" href="/sign-up">
