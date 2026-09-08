@@ -41,6 +41,9 @@ kill_timeout = "30s"
   TRANSCRIPTION_MEETING_DEFAULT = "solomon"
   CLOUD_RUNTIME_MODEL = "openai/gpt-4.1-mini"
   CLOUD_EVENTS_ROUTER_MODEL = "openai/gpt-4.1-mini"
+  # External product connectors stay fail-closed until each product has a
+  # matching signed entitlement endpoint/key. HubSpot is native to this API.
+  CONNECTOR_EMERGENCY_DISABLED = "canvas,corinthian,cadence,conduit,eigen,wispr,github,linear,notion,stripe"
   TEMPORAL_ENABLED = "true"
   TEMPORAL_ADDRESS = "rowboat-production.kpisa.tmprl.cloud:7233"
   TEMPORAL_NAMESPACE = "rowboat-production.kpisa"
