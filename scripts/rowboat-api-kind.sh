@@ -339,7 +339,19 @@ deploy_chart() {
     *) echo "local PostgreSQL migration did not start" >&2; exit 1 ;;
   esac
   kubectl logs -n "$NAMESPACE" -f "$migration_pod"
-  if [[ "$(kubectl get pod -n "$NAMESPACE" "$migration_pod" -o jsonpath='{.status.phase}')" != "Succeeded" ]]; then
+  # `kubectl logs -f` returns as soon as the container's log stream closes,
+  # which happens before the kubelet reports the pod as Succeeded/Failed. A
+  # single read here raced the status update and called a clean exit-0
+  # migration a failure, so poll until the phase is actually terminal.
+  local migration_result=""
+  for _ in $(seq 1 60); do
+    migration_result="$(kubectl get pod -n "$NAMESPACE" "$migration_pod" -o jsonpath='{.status.phase}')"
+    case "$migration_result" in
+      Succeeded|Failed) break ;;
+    esac
+    sleep 1
+  done
+  if [[ "$migration_result" != "Succeeded" ]]; then
     echo "local PostgreSQL migration failed" >&2
     exit 1
   fi
