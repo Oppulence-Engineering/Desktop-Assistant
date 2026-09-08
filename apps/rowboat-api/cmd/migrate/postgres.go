@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +18,9 @@ const (
 	postgresRevisionTable = "atlas_schema_revisions"
 	postgresMigrationLock = "rowboat_migrate_apply"
 )
+
+//go:embed legacy_baseline_repair.sql
+var legacyBaselineRepairSQL string
 
 // applyPostgres executes the repository's checksummed Atlas-format files using
 // Atlas's Go engine. Keeping execution in this binary avoids shipping a second
@@ -42,6 +46,9 @@ func applyPostgres(ctx context.Context, databaseURL string) (err error) {
 	if err := revisions.init(ctx); err != nil {
 		return fmt.Errorf("initialize Atlas revision table: %w", err)
 	}
+	if err := repairLegacyBaseline(ctx, client.DB, baseline); err != nil {
+		return err
+	}
 	directory, err := atlasmigrate.NewLocalDir(postgresMigrationDir)
 	if err != nil {
 		return fmt.Errorf("open PostgreSQL migration directory: %w", err)
@@ -60,6 +67,55 @@ func applyPostgres(ctx context.Context, databaseURL string) (err error) {
 		return fmt.Errorf("apply PostgreSQL migrations: %w", err)
 	}
 	fmt.Println("PostgreSQL migrations applied")
+	return nil
+}
+
+// repairLegacyBaseline closes the one schema gap left by the initial Atlas
+// cutover: legacy Ent databases were marked at the baseline even when they had
+// not received the final pre-baseline schema changes.
+func repairLegacyBaseline(ctx context.Context, database *sql.DB, adopting bool) (err error) {
+	if !adopting {
+		if err := database.QueryRowContext(ctx,
+			`SELECT EXISTS (SELECT 1 FROM atlas_schema_revisions WHERE version = $1)`,
+			postgresBaseline,
+		).Scan(&adopting); err != nil {
+			return fmt.Errorf("inspect PostgreSQL baseline revision: %w", err)
+		}
+	}
+	if !adopting {
+		return nil
+	}
+	var repaired bool
+	if err := database.QueryRowContext(ctx,
+		`SELECT to_regclass('relationship_attention_items') IS NOT NULL`,
+	).Scan(&repaired); err != nil {
+		return fmt.Errorf("inspect PostgreSQL legacy baseline: %w", err)
+	}
+	if repaired {
+		return nil
+	}
+	statements, err := atlasmigrate.Stmts(legacyBaselineRepairSQL)
+	if err != nil {
+		return fmt.Errorf("parse PostgreSQL legacy baseline repair: %w", err)
+	}
+	tx, err := database.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin PostgreSQL legacy baseline repair: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			err = errors.Join(err, tx.Rollback())
+		}
+	}()
+	for i, statement := range statements {
+		if _, err := tx.ExecContext(ctx, statement.Text); err != nil {
+			return fmt.Errorf("repair PostgreSQL legacy baseline at statement %d: %w", i+1, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit PostgreSQL legacy baseline repair: %w", err)
+	}
+	fmt.Println("PostgreSQL legacy baseline repaired")
 	return nil
 }
 
