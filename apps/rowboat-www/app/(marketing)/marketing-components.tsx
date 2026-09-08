@@ -360,7 +360,9 @@ function InlineLogo({
   header?: boolean;
   prominent?: boolean;
 }) {
-  const iconSize = header ? 38 : compact ? 20 : prominent ? 40 : 28;
+  // The header mark is rendered at its box size now that the lockup no longer
+  // crops an oversized image down to a narrow window.
+  const iconSize = header ? 20 : compact ? 20 : prominent ? 40 : 28;
 
   return (
     <span className={header ? "oppulence-compact-lockup" : "flex items-center gap-2"}>
