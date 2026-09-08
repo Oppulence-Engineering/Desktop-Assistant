@@ -26,13 +26,17 @@ func TestDeepLinkScrubsOAuthCallbackAndShowsCompletion(t *testing.T) {
 	for _, want := range []string{
 		"history.replaceState(null,'','/oauth/google/callback/complete')",
 		"Google connected",
-		"Rowboat is now syncing your Google data.",
-		"You can close this tab and return to Rowboat.",
+		"Google connected | Oppulence",
+		"Oppulence is now syncing your Google data.",
+		"You can close this tab and return to Oppulence.",
 		"rowboat://oauth/google/done?session=ticket&amp;status=success",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("completion page missing %q: %s", want, body)
 		}
+	}
+	if strings.Contains(body, "Rowboat") {
+		t.Fatalf("legacy Rowboat branding leaked into completion page: %s", body)
 	}
 	if csp := rec.Header().Get("Content-Security-Policy"); !strings.Contains(csp, "script-src 'nonce-ticket'") || !strings.Contains(csp, "style-src 'nonce-ticket'") {
 		t.Fatalf("unexpected CSP: %q", csp)

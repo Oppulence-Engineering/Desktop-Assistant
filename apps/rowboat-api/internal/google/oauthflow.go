@@ -27,8 +27,8 @@ import (
 )
 
 // Start handles authenticated POST /v1/google-oauth/start. The state ticket is
-// bound to the verified Rowboat user before the browser ever visits Google, so
-// a leaked/raced callback state cannot be claimed by another Rowboat account.
+// bound to the verified Oppulence user before the browser ever visits Google, so
+// a leaked/raced callback state cannot be claimed by another Oppulence account.
 func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 	u, ok := auth.UserFromCtx(r.Context())
 	if !ok {
@@ -227,16 +227,16 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) deepLink(w http.ResponseWriter, state, status string) {
 	target := h.completionTarget(state, status)
 	title := "Google connected"
-	message := "Rowboat is now syncing your Google data."
+	message := "Oppulence is now syncing your Google data."
 	if status != "success" {
 		title = "Google connection incomplete"
-		message = "Return to Rowboat and try connecting Google again."
+		message = "Return to Oppulence and try connecting Google again."
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'nonce-"+state+"'; style-src 'nonce-"+state+"'; base-uri 'none'; frame-ancestors 'none'")
 	_, _ = io.WriteString(w, "<!doctype html><html><head><meta charset=utf-8>"+
 		"<meta name=viewport content=\"width=device-width,initial-scale=1\">"+
-		"<meta name=color-scheme content=\"light dark\"><title>"+htmlEscape(title)+" | Rowboat</title>"+
+		"<meta name=color-scheme content=\"light dark\"><title>"+htmlEscape(title)+" | Oppulence</title>"+
 		"<style nonce="+jsString(state)+">"+
 		"html{font-family:system-ui,-apple-system,sans-serif;color-scheme:light dark}"+
 		"body{min-height:100vh;margin:0;display:grid;place-items:center;background:#f7f7f8;color:#17171a}"+
@@ -246,12 +246,12 @@ func (h *Handler) deepLink(w http.ResponseWriter, state, status string) {
 		"a{display:inline-block;margin-top:1.25rem;color:#b0135b;font-weight:650;text-decoration:none}"+
 		"@media(prefers-color-scheme:dark){body{background:#17171a;color:#f7f7f8}main{background:#222226;border-color:#3b3b42}p{color:#b9b9c2}}"+
 		"</style></head><body><main><div class=mark aria-hidden=true>✓</div><h1>"+htmlEscape(title)+"</h1>"+
-		"<p>"+htmlEscape(message)+"</p><p id=status>Returning to Rowboat…</p>"+
-		"<a id=return-link href=\""+html.EscapeString(target)+"\">Return to Rowboat</a></main>"+
+		"<p>"+htmlEscape(message)+"</p><p id=status>Returning to Oppulence…</p>"+
+		"<a id=return-link href=\""+html.EscapeString(target)+"\">Return to Oppulence</a></main>"+
 		"<script nonce="+jsString(state)+">"+
 		"history.replaceState(null,'','/oauth/google/callback/complete');"+
 		"location.href="+jsString(target)+";"+
-		"setTimeout(function(){document.getElementById('status').textContent='You can close this tab and return to Rowboat.';window.close()},1200);"+
+		"setTimeout(function(){document.getElementById('status').textContent='You can close this tab and return to Oppulence.';window.close()},1200);"+
 		"</script></body></html>")
 }
 
@@ -271,7 +271,7 @@ func (h *Handler) errorPage(w http.ResponseWriter, code int, msg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; base-uri 'none'; frame-ancestors 'none'")
 	w.WriteHeader(code)
-	_, _ = io.WriteString(w, "<!doctype html><meta charset=utf-8><title>Rowboat</title>"+
+	_, _ = io.WriteString(w, "<!doctype html><meta charset=utf-8><title>Oppulence</title>"+
 		"<p style=\"font:14px system-ui;margin:3rem\">"+htmlEscape(msg)+"</p>")
 }
 
