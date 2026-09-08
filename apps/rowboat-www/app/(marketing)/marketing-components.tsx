@@ -49,22 +49,9 @@ import {
 } from "./marketing-data";
 import { MarketingEffects } from "./marketing-effects";
 
-const integrationGroups = [
-  "Email",
-  "Calendar",
-  "Meetings",
-  "CRM",
-  "Verification",
-  "Sending",
-  "Research",
-  "Policies",
-  "Custom tools",
-];
-
 const mobileNavLinks = [
   { label: "Products", href: "/products" },
   { label: "How it works", href: "/product" },
-  { label: "Integrations", href: "/integrations" },
   { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
 ];
@@ -85,11 +72,6 @@ const suiteDropdownLinks = [
     href: `/${platform.slug}`,
     description: platform.summary,
   })),
-  {
-    label: "Integrations",
-    href: "/integrations",
-    description: "Email, calendar, meetings, CRM, docs, and tickets.",
-  },
 ] as const;
 
 const productSuiteCards = [
@@ -133,9 +115,10 @@ const productRailLinks: MemoryRailLink[] = [
     label: platform.name.replace("Oppulence ", ""),
     href: `/${platform.slug}`,
   })),
-  { label: "Integrations", href: "/integrations" },
   { label: "Pricing", href: "/pricing" },
 ];
+
+const pricingPrinciples = ["Flat monthly price", "No seat tax", "Cancel any time"] as const;
 
 type IconTone = "neutral" | "blue" | "green" | "orange" | "yellow";
 
@@ -522,7 +505,6 @@ export function TopBar() {
             </div>
           </details>
           <Link href="/product">How it works</Link>
-          <Link href="/integrations">Integrations</Link>
           <Link href="/pricing">Pricing</Link>
           <Link href="/blog">Blog</Link>
         </nav>
@@ -958,7 +940,7 @@ const linearHomeSections = [
     description:
       "Oppulence verifies the contact, checks the relationship and policy context, and waits for your approval. It never emails a contact who bounced, opted out, or changed roles. Actions that touch money need a second confirmation.",
     label: "Governed Execution",
-    href: "/integrations",
+    href: "/api-documentation-software",
     src: desktopScreenshots.connections,
     alt: "Oppulence policy checks and sender protection before execution",
     bullets: [
@@ -1265,14 +1247,6 @@ export function GenericPage({ page }: { page: MarketingPage }) {
     (page.path === "lp/ai-help-center" ? featureDetails["ai-help-center"] : undefined);
 
   if (details) {
-    if (page.path === "integrations") {
-      return (
-        <SuiteSidebarLayout activeHref="/integrations">
-          <FeatureMirrorPage details={details} page={page} />
-        </SuiteSidebarLayout>
-      );
-    }
-
     return <FeatureMirrorPage details={details} page={page} />;
   }
 
@@ -1296,14 +1270,9 @@ export function GenericPage({ page }: { page: MarketingPage }) {
         })}
       </section>
       <ProofGrid page={page} />
-      {page.path === "integrations" ? <IntegrationsPanel /> : null}
       {page.category === "tool" ? <ToolPanel page={page} /> : null}
     </PageShell>
   );
-
-  if (page.path === "integrations") {
-    return <SuiteSidebarLayout activeHref="/integrations">{pageContent}</SuiteSidebarLayout>;
-  }
 
   return pageContent;
 }
@@ -1441,7 +1410,6 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
         {page.path === "api-documentation-software" ? <ApiReferenceEmbed /> : null}
 
         <ProofGrid page={page} />
-        {page.path === "integrations" ? <IntegrationsPanel /> : null}
 
         <section className="mt-14 border-t border-primary/10 pt-10">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -1582,39 +1550,6 @@ function ProofGrid({ page }: { page: MarketingPage }) {
   );
 }
 
-function IntegrationsPanel() {
-  return (
-    <section>
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
-            Connector surface
-          </p>
-          <h2 className="mt-2 text-2xl font-medium">Sources stay visible and reviewable.</h2>
-        </div>
-        <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-          Oppulence keeps each connected source legible while agents work across the graph.
-        </p>
-      </div>
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
-        {integrationGroups.map((item) => {
-          const { icon, tone } = iconForLink({ href: item, label: item });
-
-          return (
-            <div
-              className="marketing-surface flex items-center gap-3 border px-4 py-3 font-mono text-[13px]"
-              key={item}
-            >
-              <MarketingIcon compact icon={icon} tone={tone} />
-              {item}
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
 function ToolPanel({ page }: { page: MarketingPage }) {
   return (
     <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
@@ -1686,24 +1621,33 @@ function ApiReferenceEmbed() {
 export function PricingPage({ page }: { page: MarketingPage }) {
   return (
     <SuiteSidebarLayout activeHref="/pricing">
-      <div className="linear-subpage-simple linear-inset">
-        <header className="linear-page-hero">
-          <p className="linear-eyebrow-red">[pricing]</p>
-          <h1 className="linear-page-title">{page.title}</h1>
-          <p className="linear-body max-w-[560px]">{page.description}</p>
+      <div className="sm-pricing">
+        <header className="sm-pricing-hero">
+          <p className="linear-eyebrow">[pricing]</p>
+          <h1>{page.title}</h1>
+          <p>{page.description}</p>
+          <div aria-label="Pricing principles">
+            {pricingPrinciples.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
         </header>
-        <section className="linear-plan-grid">
+
+        <section aria-label="Oppulence pricing plans" className="sm-pricing-board">
           {pricingPlans.map((plan) => (
             <article
-              className={cn("linear-plan", plan.recommended && "linear-plan-featured")}
+              className={cn("sm-pricing-plan", plan.recommended && "sm-pricing-plan-featured")}
               key={plan.name}
             >
-              <p className="linear-plan-name">[{plan.name.toLowerCase()}]</p>
-              <p className="linear-plan-price">
+              <div>
+                <p>{plan.name}</p>
+                {plan.recommended ? <span>Recommended</span> : null}
+              </div>
+              <strong>
                 {plan.price}
-                {plan.period ? <span>{plan.period}</span> : null}
-              </p>
-              <p className="linear-body">{plan.description}</p>
+                {plan.period ? <small>{plan.period}</small> : null}
+              </strong>
+              <p>{plan.description}</p>
               <ul>
                 {plan.features.map((feature) => (
                   <li key={feature}>{feature}</li>
@@ -1711,20 +1655,24 @@ export function PricingPage({ page }: { page: MarketingPage }) {
               </ul>
               <Link
                 className={cn(
-                  plan.recommended ? "linear-button-primary" : "linear-button-secondary",
-                  "!h-10 w-full",
+                  "sm-memory-button",
+                  plan.recommended && "sm-memory-button-primary",
+                  "w-full",
                 )}
                 href={plan.ctaHref}
               >
-                {plan.ctaLabel}
+                {plan.ctaLabel} <ArrowRightIcon aria-hidden="true" />
               </Link>
             </article>
           ))}
         </section>
-        <p className="linear-cta-note mt-6">
-          [flat monthly price · never per seat, per email, or per lookup · one saved deal pays for
-          years]
-        </p>
+
+        <section className="sm-pricing-note">
+          <p>One saved renewal can pay for years.</p>
+          <Link href="/products">
+            See the suite <ArrowRightIcon aria-hidden="true" />
+          </Link>
+        </section>
       </div>
     </SuiteSidebarLayout>
   );

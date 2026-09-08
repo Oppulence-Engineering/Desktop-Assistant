@@ -55,7 +55,7 @@ export const featureLinks: LinkItem[] = [
   },
   {
     label: "Policy and sender protection",
-    href: "/integrations",
+    href: "/api-documentation-software",
     description: "Check suppression, frequency, permissions, and sender health",
   },
   {
@@ -82,11 +82,6 @@ export const featureLinks: LinkItem[] = [
     label: "Governed execution",
     href: "/code-to-docs",
     description: "Keep approval and audit boundaries around every material action",
-  },
-  {
-    label: "Integrations",
-    href: "/integrations",
-    description: "Connect memory, research, policy, CRM, and sending systems",
   },
   {
     label: "Source evidence",
@@ -122,19 +117,14 @@ export const productLinks: LinkItem[] = [
     description: "What was promised, what is owed, and what changed",
   },
   {
-    label: "Account Mission Control",
-    href: "/api-documentation-software",
-    description: "Prioritize, verify, govern, approve, execute, and learn in one queue",
-  },
-  {
-    label: "Integrations",
-    href: "/integrations",
-    description: "Connect email, calendar, meetings, CRM, research, verification, and sending",
-  },
-  {
     label: "Pricing",
     href: "/pricing",
     description: "Choose the plan for monitored relationships, team access, and governance",
+  },
+  {
+    label: "Account Mission Control",
+    href: "/api-documentation-software",
+    description: "Prioritize, verify, govern, approve, execute, and learn in one queue",
   },
   {
     label: "Dashboard",
@@ -300,7 +290,7 @@ export const featureDetails: Record<string, FeatureDetail> = {
     relatedPages: [
       { label: "Revenue Leak Scan", href: "/ai-help-center" },
       { label: "Research and verification", href: "/automated-screenshots-for-docs" },
-      { label: "Policy and sender protection", href: "/integrations" },
+      { label: "Policy and sender protection", href: "/api-documentation-software" },
     ],
   },
   "automated-screenshots-for-docs": {
@@ -353,7 +343,7 @@ export const featureDetails: Record<string, FeatureDetail> = {
     relatedPages: [
       { label: "Revenue Leak Scan", href: "/ai-help-center" },
       { label: "Revenue Action Queue", href: "/ai-documentation-agent" },
-      { label: "Policy and sender protection", href: "/integrations" },
+      { label: "Policy and sender protection", href: "/api-documentation-software" },
     ],
   },
   "self-service-help-widget": {
@@ -512,7 +502,7 @@ export const featureDetails: Record<string, FeatureDetail> = {
     relatedPages: [
       { label: "Workflow design", href: "/code-to-docs" },
       { label: "Embedded agents", href: "/self-service-help-widget" },
-      { label: "Integrations", href: "/integrations" },
+      { label: "Source federation", href: "/multilingual-knowledge-base" },
     ],
   },
   "multilingual-knowledge-base": {
@@ -563,7 +553,7 @@ export const featureDetails: Record<string, FeatureDetail> = {
       "A more portable knowledge layer than vendor-specific AI memory.",
     ],
     relatedPages: [
-      { label: "Integrations", href: "/integrations" },
+      { label: "Governed execution", href: "/api-documentation-software" },
       { label: "Research capture", href: "/chrome-extension-for-documentation" },
       { label: "Living work graph", href: "/ai-help-center" },
     ],
@@ -672,59 +662,6 @@ export const featureDetails: Record<string, FeatureDetail> = {
       { label: "Embedded agents", href: "/self-service-help-widget" },
       { label: "Support memory", href: "/help-center-software" },
       { label: "Workflow design", href: "/code-to-docs" },
-    ],
-  },
-  integrations: {
-    summary:
-      "Oppulence connects the systems that remember the relationship with the systems that research, verify, govern, execute, and measure the next action.",
-    heroProof: [
-      "One customer-facing queue across separately owned systems.",
-      "Clear source, policy, permission, and action boundaries.",
-      "Replies, meetings, delivery telemetry, and CRM outcomes close the loop.",
-    ],
-    sections: [
-      {
-        title: "Remember the relationship",
-        body: "Email, calendar, meetings, and CRM history provide the promises, objections, timing, and opportunity context behind each recommendation.",
-      },
-      {
-        title: "Verify and govern",
-        body: "Research, contact verification, suppression, frequency limits, permissions, and sender health determine whether an action can proceed.",
-      },
-      {
-        title: "Execute and learn",
-        body: "Approved actions move through connected channels while replies, meetings, CRM changes, delivery telemetry, and revenue outcomes update the memory.",
-      },
-    ],
-    workflow: [
-      "Connect email, calendar, meetings, and CRM history once.",
-      "Attach research and verification to the proposed action.",
-      "Apply policy, sender, permission, and approval checks.",
-      "Return execution telemetry and revenue outcomes to relationship memory.",
-    ],
-    useCases: [
-      {
-        title: "Relationship sources",
-        body: "Bring communication, meeting, calendar, and CRM history into one commercial timeline.",
-      },
-      {
-        title: "Governance systems",
-        body: "Connect verification, suppression, permissions, frequency policy, and sender-health checks before action.",
-      },
-      {
-        title: "Execution and outcomes",
-        body: "Use approved sending and CRM actions, then ingest replies, meetings, delivery results, and opportunity changes.",
-      },
-    ],
-    outcomes: [
-      "One governed revenue loop instead of disconnected dashboards.",
-      "A clear ownership boundary around every system and decision.",
-      "Relationship memory that improves from real commercial outcomes.",
-    ],
-    relatedPages: [
-      { label: "Revenue Leak Scan", href: "/ai-help-center" },
-      { label: "Governed execution", href: "/api-documentation-software" },
-      { label: "Revenue Action Queue", href: "/ai-documentation-agent" },
     ],
   },
   "chrome-extension-for-documentation": {
@@ -1096,25 +1033,6 @@ export const primaryPages: MarketingPage[] = [
     ctaLabel: "Explore support memory",
   },
   {
-    path: "integrations",
-    eyebrow: "Connected Revenue Systems",
-    title: "One governed loop across memory, research, policy, and execution.",
-    description:
-      "Oppulence connects communication and CRM history with research, verification, suppression, sender protection, and controlled execution behind one revenue action queue.",
-    category: "product",
-    bullets: [
-      "Use email, calendar, meetings, and CRM as relationship-memory sources.",
-      "Use research, verification, suppression, and sender health before action.",
-      "Return replies, meetings, delivery telemetry, and CRM outcomes to the memory.",
-    ],
-    proof: [
-      "Each connected system has a clear ownership and permission boundary.",
-      "External execution stays reviewable and auditable.",
-      "Outcomes return to the same relationship timeline.",
-    ],
-    ctaLabel: "Map your revenue stack",
-  },
-  {
     path: "internal-knowledge-base",
     eyebrow: "Team Memory",
     title: "Private team memory that agents can inspect and update.",
@@ -1193,9 +1111,9 @@ export const primaryPages: MarketingPage[] = [
   {
     path: "pricing",
     eyebrow: "Pricing",
-    title: "Watch is free. Chase is $99. Intelligence is $249.",
+    title: "Simple pricing for the commitment ledger.",
     description:
-      "A flat monthly price — never per seat, per email, or per lookup. One saved deal pays for years. Cancel at any time.",
+      "Start with the free report. Upgrade when the register becomes part of your weekly workflow.",
     category: "product",
     bullets: [
       "Founders recover warm pipeline from existing communication and CRM history.",
@@ -1409,44 +1327,17 @@ export const pricingPlans = [
     name: "Watch",
     price: "Free",
     period: "",
-    description:
-      "Open Promises report. See recent commitments with no evidence of fulfilment, with the exact source attached.",
-    features: [
-      "90-day promise report",
-      "What we owe and what they owe us",
-      "Links to the source evidence",
-    ],
+    description: "A first pass over recent promises.",
+    features: ["90-day report", "What we owe", "Source links"],
     ctaLabel: "Get the report",
-    ctaHref: "/sign-up",
-  },
-  {
-    name: "Starter",
-    price: "$49",
-    period: "/month",
-    description:
-      "The commitment register for one owner. Track obligations, evidence, state, and next review.",
-    features: [
-      "Everything in Watch",
-      "Commitments by owner and account",
-      "Approve, edit, snooze, or reject",
-      "Evidence-cited follow-up drafts",
-      "Lower monthly usage allowance than Chase",
-    ],
-    ctaLabel: "Start the register",
     ctaHref: "/sign-up",
   },
   {
     name: "Chase",
     price: "$99",
     period: "/month",
-    description:
-      "The live ledger for a full book of business. Track at-risk promises and approve the safest next action.",
-    features: [
-      "Everything in Starter",
-      "Room for a full book of business",
-      "Premium evidence streams",
-      "Monthly commitment receipt",
-    ],
+    description: "The live register for your book of business.",
+    features: ["All Watch evidence", "At-risk promises", "Approved follow-ups"],
     recommended: true,
     ctaLabel: "Start tracking",
     ctaHref: "/sign-up",
@@ -1455,26 +1346,9 @@ export const pricingPlans = [
     name: "Intelligence",
     price: "$249",
     period: "/month",
-    description:
-      "Why now, with proof. Change history, risk assessment, and exportable records for renewals and escalations.",
-    features: [
-      "Everything in Chase",
-      "What changed since the last review",
-      "By-account and by-owner views",
-      "Exportable evidence records",
-      "Every fact carries a link you can click",
-      "Up to 250 monitored accounts",
-    ],
+    description: "Change history and proof for renewals, escalations, and handovers.",
+    features: ["All Chase workflows", "Change summaries", "Exportable records"],
     ctaLabel: "Start tracking",
-    ctaHref: "/sign-up",
-  },
-  {
-    name: "Teams",
-    price: "$249+",
-    period: "",
-    description: "A shared commitment register with governance for small customer-facing teams.",
-    features: ["Everything in Intelligence", "Shared register", "Roles and audit trail"],
-    ctaLabel: "Start the ledger",
     ctaHref: "/sign-up",
   },
 ];
