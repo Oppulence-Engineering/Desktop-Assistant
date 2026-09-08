@@ -6887,36 +6887,166 @@
     padding: 68px clamp(32px, 5.8vw, 90px) 0 34px;
   }
 
-  .sm-products-shell .sm-memory-main {
+  .sm-suite-shell .sm-memory-main {
     padding-top: 72px;
   }
 
-  .sm-products-shell .sm-products-page {
+  .sm-suite-shell .sm-products-page {
     padding: 0 0 clamp(72px, 8vw, 104px);
   }
 
-  .sm-products-shell .sm-products-hero {
+  .sm-suite-shell .sm-products-hero {
     max-width: 770px;
     margin-inline: 0;
     padding-inline: 0;
     text-align: left;
   }
 
-  .sm-products-shell .sm-products-hero .linear-eyebrow {
+  .sm-suite-shell .sm-products-hero .linear-eyebrow {
     justify-self: start;
   }
 
-  .sm-products-shell .sm-products-hero > p:not(.linear-eyebrow) {
+  .sm-suite-shell .sm-products-hero > p:not(.linear-eyebrow) {
     margin-inline: 0;
   }
 
-  .sm-products-shell .sm-products-hero > div {
+  .sm-suite-shell .sm-products-hero > div {
     justify-content: flex-start;
   }
 
-  .sm-products-shell .sm-products-grid {
+  .sm-suite-shell .sm-products-grid {
     width: min(100%, 1120px);
     margin-inline: 0;
+  }
+
+  .sm-suite-shell .linear-inset {
+    width: 100%;
+    max-width: none;
+    padding-inline: 0;
+  }
+
+  .sm-suite-shell :is(.linear-hero, .linear-subpage, .linear-subpage-simple) {
+    padding-top: 0;
+  }
+
+  .sm-suite-shell
+    :is(.linear-hero-title, .linear-product-title, .linear-subpage-title, .linear-page-title),
+  .sm-suite-shell .linear-final-cta h2 {
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+    color: var(--mem-ink);
+    font-family:
+      var(--font-marketing-display), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.045em;
+  }
+
+  .sm-suite-shell .linear-hero {
+    border-bottom: 1px solid var(--mem-line);
+    padding-bottom: clamp(48px, 7vw, 72px);
+  }
+
+  .sm-suite-shell .linear-hero::before,
+  .sm-suite-shell .linear-final-cta::before {
+    content: none;
+  }
+
+  .sm-suite-shell .linear-hero-title {
+    max-width: 760px;
+    font-size: clamp(2.8rem, 5.6vw, 5.2rem);
+    line-height: 0.98;
+  }
+
+  .sm-suite-shell .linear-body {
+    color: var(--mem-muted);
+  }
+
+  .sm-suite-shell .linear-hero-meta,
+  .sm-suite-shell .linear-subpage-description,
+  .sm-suite-shell .linear-product-description {
+    padding-inline: 0;
+  }
+
+  .sm-suite-shell .linear-product-section,
+  .sm-suite-shell .linear-updates,
+  .sm-suite-shell .linear-final-cta,
+  .sm-suite-shell .linear-subpage-content > section {
+    border-top: 1px solid var(--mem-line);
+  }
+
+  .sm-suite-shell .linear-product-section,
+  .sm-suite-shell .linear-updates {
+    padding-block: clamp(52px, 7vw, 78px);
+  }
+
+  .sm-suite-shell .linear-product-header,
+  .sm-suite-shell .linear-subpage-hero {
+    gap: clamp(24px, 4vw, 56px);
+    padding-bottom: clamp(34px, 5vw, 56px);
+  }
+
+  .sm-suite-shell .linear-product-description p,
+  .sm-suite-shell .linear-subpage-description > p {
+    max-width: 42ch;
+    color: var(--mem-muted);
+    font-size: clamp(1.05rem, 1.65vw, 1.35rem);
+    line-height: 1.42;
+  }
+
+  .sm-suite-shell .linear-product-visual {
+    padding-inline: 0;
+  }
+
+  .sm-suite-shell .linear-product-panel {
+    border-color: var(--mem-line);
+    border-radius: 0;
+    background: var(--mem-soft);
+    mask-image: none;
+  }
+
+  .sm-suite-shell .linear-product-panel img {
+    border-color: var(--mem-line);
+    border-radius: 0;
+    filter: none;
+  }
+
+  .sm-suite-shell .linear-product-tabs {
+    margin-top: 0;
+  }
+
+  .sm-suite-shell .linear-product-tab {
+    border-color: var(--mem-line);
+  }
+
+  .sm-suite-shell .linear-updates-grid {
+    border-color: var(--mem-line);
+  }
+
+  .sm-suite-shell .linear-update {
+    border-color: var(--mem-line);
+  }
+
+  .sm-suite-shell .linear-final-cta {
+    align-items: flex-start;
+    gap: 24px;
+    margin-block: 0;
+    padding-block: clamp(52px, 7vw, 78px);
+    text-align: left;
+  }
+
+  .sm-suite-shell .linear-final-cta h2 {
+    max-width: 760px;
+    font-size: clamp(2.35rem, 4.4vw, 4.2rem);
+  }
+
+  .sm-suite-shell .linear-page-hero {
+    padding-top: 0;
+  }
+
+  .sm-suite-shell .linear-eyebrow-red {
+    color: var(--mem-blue);
+    font-family: var(--font-marketing-mono), "DM Mono", ui-monospace, monospace;
   }
 
   .sm-memory-mission {
@@ -7631,11 +7761,11 @@
       padding: 42px 20px 0;
     }
 
-    .sm-products-shell .sm-memory-main {
+    .sm-suite-shell .sm-memory-main {
       padding-top: 42px;
     }
 
-    .sm-products-shell .sm-products-grid {
+    .sm-suite-shell .sm-products-grid {
       width: 100%;
     }
 

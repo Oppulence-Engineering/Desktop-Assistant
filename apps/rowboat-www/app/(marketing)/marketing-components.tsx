@@ -127,7 +127,7 @@ const homeRailLinks: MemoryRailLink[] = [
 ];
 
 const productRailLinks: MemoryRailLink[] = [
-  { label: "Products", href: "/products", active: true },
+  { label: "Products", href: "/products" },
   { label: "Commitment Ledger", href: "/product" },
   ...platformPages.map((platform) => ({
     label: platform.name.replace("Oppulence ", ""),
@@ -651,66 +651,64 @@ const customerStoryIcons: {
 
 export function ProductPage({ page }: { page: MarketingPage }) {
   return (
-    <div className="flex flex-col">
-      <section className="linear-hero linear-inset">
-        <p className="mb-5 font-mono text-xs text-oppulence-orange">[product]</p>
-        <h1 className="linear-hero-title">{page.title}</h1>
-        <div className="linear-hero-meta">
-          <p className="linear-body max-w-[620px]">{page.description}</p>
-        </div>
-      </section>
-      {linearHomeSections.map((section, index) => (
-        <LinearProductSection index={index} key={section.title} section={section} />
-      ))}
-      <HomeUpdates />
-      <FinalCta />
-    </div>
+    <SuiteSidebarLayout activeHref="/product">
+      <div className="flex flex-col">
+        <section className="linear-hero linear-inset">
+          <p className="mb-5 font-mono text-xs text-oppulence-orange">[product]</p>
+          <h1 className="linear-hero-title">{page.title}</h1>
+          <div className="linear-hero-meta">
+            <p className="linear-body max-w-[620px]">{page.description}</p>
+          </div>
+        </section>
+        {linearHomeSections.map((section, index) => (
+          <LinearProductSection index={index} key={section.title} section={section} />
+        ))}
+        <HomeUpdates />
+        <FinalCta />
+      </div>
+    </SuiteSidebarLayout>
   );
 }
 
 export function ProductsPage() {
   return (
-    <div className="sm-memory-home sm-products-shell">
-      <MemoryRail ariaLabel="Products navigation" links={productRailLinks} />
+    <SuiteSidebarLayout activeHref="/products">
+      <div className="sm-products-page">
+        <section className="sm-products-hero">
+          <p className="linear-eyebrow">[products]</p>
+          <h1>One commitment ledger. Three ways to use it.</h1>
+          <p>
+            Web for the team queue. Desktop beside the work. Voice for capture. The same record
+            underneath.
+          </p>
+          <div>
+            <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
+              Get the report <ArrowRightIcon aria-hidden="true" />
+            </Link>
+            <Link className="sm-memory-button" href="/product">
+              See the ledger <ArrowRightIcon aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
 
-      <div className="sm-memory-main">
-        <div className="sm-products-page">
-          <section className="sm-products-hero">
-            <p className="linear-eyebrow">[products]</p>
-            <h1>One commitment ledger. Three ways to use it.</h1>
-            <p>
-              Web for the team queue. Desktop beside the work. Voice for capture. The same record
-              underneath.
-            </p>
-            <div>
-              <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
-                Get the report <ArrowRightIcon aria-hidden="true" />
-              </Link>
-              <Link className="sm-memory-button" href="/product">
-                See the ledger <ArrowRightIcon aria-hidden="true" />
-              </Link>
-            </div>
-          </section>
-
-          <section aria-label="Oppulence product suite" className="sm-products-grid">
-            {productSuiteCards.map((product) => (
-              <Link className="sm-products-card" href={product.href} key={product.href}>
-                <div>
-                  <span>{product.eyebrow}</span>
-                  <ArrowRightIcon aria-hidden="true" />
-                </div>
-                <h2>{product.title}</h2>
-                <p>{product.body}</p>
-                <figure>
-                  <Image alt={product.alt} height={760} src={product.src} width={980} />
-                </figure>
-                <strong>{product.cta}</strong>
-              </Link>
-            ))}
-          </section>
-        </div>
+        <section aria-label="Oppulence product suite" className="sm-products-grid">
+          {productSuiteCards.map((product) => (
+            <Link className="sm-products-card" href={product.href} key={product.href}>
+              <div>
+                <span>{product.eyebrow}</span>
+                <ArrowRightIcon aria-hidden="true" />
+              </div>
+              <h2>{product.title}</h2>
+              <p>{product.body}</p>
+              <figure>
+                <Image alt={product.alt} height={760} src={product.src} width={980} />
+              </figure>
+              <strong>{product.cta}</strong>
+            </Link>
+          ))}
+        </section>
       </div>
-    </div>
+    </SuiteSidebarLayout>
   );
 }
 
@@ -842,6 +840,20 @@ export function HomePage() {
           </Link>
         </section>
       </div>
+    </div>
+  );
+}
+
+function SuiteSidebarLayout({ activeHref, children }: { activeHref: string; children: ReactNode }) {
+  const links = productRailLinks.map((link) => ({
+    ...link,
+    active: link.href === activeHref,
+  }));
+
+  return (
+    <div className="sm-memory-home sm-suite-shell">
+      <MemoryRail ariaLabel="Products navigation" links={links} />
+      <div className="sm-memory-main">{children}</div>
     </div>
   );
 }
@@ -1151,97 +1163,99 @@ function DesktopScreenshotPreview({
  */
 export function PlatformProductPage({ page }: { page: PlatformPage }) {
   return (
-    <div className="sm-platform">
-      <section className="sm-platform-hero">
-        <p className="sm-platform-eyebrow">{page.eyebrow}</p>
-        <h1>{page.title}</h1>
-        <p className="sm-platform-lede">{page.lede}</p>
-        <div className="sm-platform-actions">
-          {page.download ? (
-            <DesktopDownloadChooser
-              app={page.slug === "voice-app" ? "voice" : "desktop"}
-              blurb={page.summary}
-              name={page.name}
-            />
-          ) : (
-            <>
-              <Link className="sm-button sm-button-blue" href="/sign-up">
-                Start free <ArrowRightIcon aria-hidden="true" />
-              </Link>
-              <Link className="sm-button sm-button-light" href="/app">
-                Open the dashboard
-              </Link>
-            </>
-          )}
-        </div>
-        <p className="sm-platform-summary">{page.summary}</p>
-      </section>
-
-      <div className="sm-platform-shot">
-        <Image
-          alt={page.screenshotAlt}
-          height={1200}
-          sizes="(max-width: 1100px) 100vw, 1100px"
-          src={page.screenshot}
-          width={1900}
-        />
-      </div>
-
-      {page.sections.map((section, index) => (
-        <section className="sm-platform-section" key={section.title}>
-          <div className="sm-platform-section-copy">
-            <p className="sm-platform-index">{String(index + 1).padStart(2, "0")}</p>
-            <h2>{section.title}</h2>
-            <p>{section.body}</p>
-            <ul>
-              {section.bullets.map((bullet) => (
-                <li key={bullet}>{bullet}</li>
-              ))}
-            </ul>
+    <SuiteSidebarLayout activeHref={`/${page.slug}`}>
+      <div className="sm-platform">
+        <section className="sm-platform-hero">
+          <p className="sm-platform-eyebrow">{page.eyebrow}</p>
+          <h1>{page.title}</h1>
+          <p className="sm-platform-lede">{page.lede}</p>
+          <div className="sm-platform-actions">
+            {page.download ? (
+              <DesktopDownloadChooser
+                app={page.slug === "voice-app" ? "voice" : "desktop"}
+                blurb={page.summary}
+                name={page.name}
+              />
+            ) : (
+              <>
+                <Link className="sm-button sm-button-blue" href="/sign-up">
+                  Start free <ArrowRightIcon aria-hidden="true" />
+                </Link>
+                <Link className="sm-button sm-button-light" href="/app">
+                  Open the dashboard
+                </Link>
+              </>
+            )}
           </div>
-          <div className="sm-platform-section-shot">
-            <Image
-              alt={section.alt}
-              height={900}
-              sizes="(max-width: 900px) 100vw, 620px"
-              src={section.screenshot}
-              width={1400}
-            />
+          <p className="sm-platform-summary">{page.summary}</p>
+        </section>
+
+        <div className="sm-platform-shot">
+          <Image
+            alt={page.screenshotAlt}
+            height={1200}
+            sizes="(max-width: 1100px) 100vw, 1100px"
+            src={page.screenshot}
+            width={1900}
+          />
+        </div>
+
+        {page.sections.map((section, index) => (
+          <section className="sm-platform-section" key={section.title}>
+            <div className="sm-platform-section-copy">
+              <p className="sm-platform-index">{String(index + 1).padStart(2, "0")}</p>
+              <h2>{section.title}</h2>
+              <p>{section.body}</p>
+              <ul>
+                {section.bullets.map((bullet) => (
+                  <li key={bullet}>{bullet}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="sm-platform-section-shot">
+              <Image
+                alt={section.alt}
+                height={900}
+                sizes="(max-width: 900px) 100vw, 620px"
+                src={section.screenshot}
+                width={1400}
+              />
+            </div>
+          </section>
+        ))}
+
+        <section className="sm-platform-specs">
+          <h2>The practical bits.</h2>
+          <dl>
+            {page.specs.map((spec) => (
+              <div key={spec.term}>
+                <dt>{spec.term}</dt>
+                <dd>{spec.detail}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <section className="sm-platform-siblings">
+          <h2>The other two.</h2>
+          <div>
+            {platformPages
+              .filter((other) => other.slug !== page.slug)
+              .map((other) => (
+                <Link href={`/${other.slug}`} key={other.slug}>
+                  <strong>{other.name}</strong>
+                  <span>{other.summary}</span>
+                  <small>
+                    Take a look <ArrowRightIcon aria-hidden="true" />
+                  </small>
+                </Link>
+              ))}
           </div>
         </section>
-      ))}
 
-      <section className="sm-platform-specs">
-        <h2>The practical bits.</h2>
-        <dl>
-          {page.specs.map((spec) => (
-            <div key={spec.term}>
-              <dt>{spec.term}</dt>
-              <dd>{spec.detail}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
-
-      <section className="sm-platform-siblings">
-        <h2>The other two.</h2>
-        <div>
-          {platformPages
-            .filter((other) => other.slug !== page.slug)
-            .map((other) => (
-              <Link href={`/${other.slug}`} key={other.slug}>
-                <strong>{other.name}</strong>
-                <span>{other.summary}</span>
-                <small>
-                  Take a look <ArrowRightIcon aria-hidden="true" />
-                </small>
-              </Link>
-            ))}
-        </div>
-      </section>
-
-      <RelationshipFinalCta />
-    </div>
+        <RelationshipFinalCta />
+      </div>
+    </SuiteSidebarLayout>
   );
 }
 
@@ -1251,10 +1265,18 @@ export function GenericPage({ page }: { page: MarketingPage }) {
     (page.path === "lp/ai-help-center" ? featureDetails["ai-help-center"] : undefined);
 
   if (details) {
+    if (page.path === "integrations") {
+      return (
+        <SuiteSidebarLayout activeHref="/integrations">
+          <FeatureMirrorPage details={details} page={page} />
+        </SuiteSidebarLayout>
+      );
+    }
+
     return <FeatureMirrorPage details={details} page={page} />;
   }
 
-  return (
+  const pageContent = (
     <PageShell page={page}>
       <section className="grid gap-6 md:grid-cols-3">
         {page.bullets.map((bullet, index) => {
@@ -1278,6 +1300,12 @@ export function GenericPage({ page }: { page: MarketingPage }) {
       {page.category === "tool" ? <ToolPanel page={page} /> : null}
     </PageShell>
   );
+
+  if (page.path === "integrations") {
+    return <SuiteSidebarLayout activeHref="/integrations">{pageContent}</SuiteSidebarLayout>;
+  }
+
+  return pageContent;
 }
 
 function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: FeatureDetail }) {
@@ -1657,46 +1685,48 @@ function ApiReferenceEmbed() {
 
 export function PricingPage({ page }: { page: MarketingPage }) {
   return (
-    <div className="linear-subpage-simple linear-inset">
-      <header className="linear-page-hero">
-        <p className="linear-eyebrow-red">[pricing]</p>
-        <h1 className="linear-page-title">{page.title}</h1>
-        <p className="linear-body max-w-[560px]">{page.description}</p>
-      </header>
-      <section className="linear-plan-grid">
-        {pricingPlans.map((plan) => (
-          <article
-            className={cn("linear-plan", plan.recommended && "linear-plan-featured")}
-            key={plan.name}
-          >
-            <p className="linear-plan-name">[{plan.name.toLowerCase()}]</p>
-            <p className="linear-plan-price">
-              {plan.price}
-              {plan.period ? <span>{plan.period}</span> : null}
-            </p>
-            <p className="linear-body">{plan.description}</p>
-            <ul>
-              {plan.features.map((feature) => (
-                <li key={feature}>{feature}</li>
-              ))}
-            </ul>
-            <Link
-              className={cn(
-                plan.recommended ? "linear-button-primary" : "linear-button-secondary",
-                "!h-10 w-full",
-              )}
-              href={plan.ctaHref}
+    <SuiteSidebarLayout activeHref="/pricing">
+      <div className="linear-subpage-simple linear-inset">
+        <header className="linear-page-hero">
+          <p className="linear-eyebrow-red">[pricing]</p>
+          <h1 className="linear-page-title">{page.title}</h1>
+          <p className="linear-body max-w-[560px]">{page.description}</p>
+        </header>
+        <section className="linear-plan-grid">
+          {pricingPlans.map((plan) => (
+            <article
+              className={cn("linear-plan", plan.recommended && "linear-plan-featured")}
+              key={plan.name}
             >
-              {plan.ctaLabel}
-            </Link>
-          </article>
-        ))}
-      </section>
-      <p className="linear-cta-note mt-6">
-        [flat monthly price · never per seat, per email, or per lookup · one saved deal pays for
-        years]
-      </p>
-    </div>
+              <p className="linear-plan-name">[{plan.name.toLowerCase()}]</p>
+              <p className="linear-plan-price">
+                {plan.price}
+                {plan.period ? <span>{plan.period}</span> : null}
+              </p>
+              <p className="linear-body">{plan.description}</p>
+              <ul>
+                {plan.features.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
+              <Link
+                className={cn(
+                  plan.recommended ? "linear-button-primary" : "linear-button-secondary",
+                  "!h-10 w-full",
+                )}
+                href={plan.ctaHref}
+              >
+                {plan.ctaLabel}
+              </Link>
+            </article>
+          ))}
+        </section>
+        <p className="linear-cta-note mt-6">
+          [flat monthly price · never per seat, per email, or per lookup · one saved deal pays for
+          years]
+        </p>
+      </div>
+    </SuiteSidebarLayout>
   );
 }
 
