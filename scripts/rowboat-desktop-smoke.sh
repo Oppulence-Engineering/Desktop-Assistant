@@ -111,6 +111,20 @@ cleanup() {
     wait "$DESKTOP_PID" 2>/dev/null || true
     DESKTOP_PID=""
   fi
+  # Electron is a grandchild of the `npm run dev` subshell, so killing that
+  # tree can leave the app alive still holding CDP_PORT. The next run then
+  # aborts with "already in use" and needs a manual kill. Reap any leftover
+  # process that is bound to our port AND owns this run's temp workdir, so a
+  # crashed run cannot poison the next one. The workdir check is what keeps
+  # this from touching a developer's own desktop on the same port.
+  if [[ "$KEEP_DESKTOP" != 1 || "$status" != 0 ]] && command -v lsof >/dev/null 2>&1; then
+    local stray
+    for stray in $(lsof -nP -iTCP:"$CDP_PORT" -sTCP:LISTEN -t 2>/dev/null || true); do
+      if ps eww -p "$stray" 2>/dev/null | tr ' ' '\n' | grep -qxF "ROWBOAT_WORKDIR=$WORKDIR"; then
+        kill -KILL "$stray" >/dev/null 2>&1 || true
+      fi
+    done
+  fi
   if [[ "$KEEP_DESKTOP" != 1 || "$status" != 0 ]]; then
     if [[ -n "$CLOUD_TASK_SLUG" ]]; then
       local cloud_task_slug_js
