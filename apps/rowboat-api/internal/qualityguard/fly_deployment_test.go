@@ -12,6 +12,7 @@ func TestFlyDeploymentContract(t *testing.T) {
 	config := readRepositoryFile(t, root, "fly.toml")
 
 	for _, required := range []string{
+		`dockerfile = "Dockerfile"`,
 		`primary_region = "iad"`,
 		`release_command = "/rowboat-api-migrate apply"`,
 		`app = "/rowboat-api"`,
