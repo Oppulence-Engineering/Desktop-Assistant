@@ -20,6 +20,19 @@ service:
   nodePorts:
     http: 30080
 
+# The chart's default ingress rule only admits in-cluster namespaces, which is
+# right for stage/prod but wrong behind a NodePort: kind publishes 30080 to the
+# host, so every caller that matters locally (the desktop app, the rowboat-www
+# container, host curl) arrives with an off-cluster source IP and gets dropped.
+# That silently turned into "www readyz 503" with a healthy API. Local only —
+# stage/prod keep the namespace-scoped default from values.yaml.
+networkPolicy:
+  ingress:
+    from:
+      - namespaceSelector: {}
+      - ipBlock:
+          cidr: 0.0.0.0/0
+
 autoscaling:
   enabled: false
 
