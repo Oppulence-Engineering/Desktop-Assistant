@@ -17,7 +17,7 @@ fly secrets set --app oppulence-rowboat-www ROWBOAT_WWW_SESSION_SECRET="$(openss
 fly deploy . \
   --app oppulence-rowboat-www \
   --config apps/rowboat-www/config/deployment/fly.toml \
-  --remote-only
+  --local-only
 fly scale count 2 --app oppulence-rowboat-www --yes
 ```
 
@@ -41,8 +41,9 @@ The `Deploy rowboat-www to Fly.io` workflow deploys automatically when relevant 
 - Optional `ROWBOAT_WWW_FLY_SMOKE_URL` variable when the smoke test should use a custom hostname
   instead of the app's `.fly.dev` hostname.
 
-The workflow validates the Fly config, stages the session secret for the release, deploys from the
-monorepo root, enforces two Machines, checks Fly health, and runs the existing public smoke test.
+The workflow validates the Fly config, stages the session secret, builds the image on the GitHub
+runner, pushes it to Fly, enforces two Machines, checks Fly health, and runs the existing public smoke
+test.
 
 ## Domain cutover
 

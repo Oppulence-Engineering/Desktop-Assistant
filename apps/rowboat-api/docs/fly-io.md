@@ -93,11 +93,12 @@ Fly.io**. The workflow can also be dispatched manually, uses the protected
 `production` environment, deploys the same script non-interactively, verifies
 Fly health checks, and smoke-tests `/healthz` and `/readyz`.
 
-The script builds with the repository root as Docker context, runs versioned
-database migrations once in a temporary release Machine, rolls out the three
-process groups, then enforces exactly one API Machine in each of `iad` and `sjc`
-and one background Machine per process in `iad`. A failed migration aborts the
-rollout. A failed regional scale exits non-zero and is safe to retry.
+The script builds the image on the GitHub runner with the repository root as
+Docker context, pushes it to Fly, runs versioned database migrations once in a
+temporary release Machine, rolls out the three process groups, then enforces
+exactly one API Machine in each of `iad` and `sjc` and one background Machine
+per process in `iad`. A failed migration aborts the rollout. A failed regional
+scale exits non-zero and is safe to retry.
 
 Verify the public and regional state:
 
