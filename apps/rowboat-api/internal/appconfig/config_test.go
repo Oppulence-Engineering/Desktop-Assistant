@@ -837,3 +837,26 @@ func TestAuthIssuerUnsetKeepsDefaults(t *testing.T) {
 			cfg.OIDCIssuerURL, cfg.TokenIssuer, cfg.OryPublicURL, cfg.WorkOSAuthorizeBaseURL)
 	}
 }
+
+// TestBrokerIssuerFollowsPublicOrigin: connector resource tokens must carry the
+// externally reachable API origin as their iss, and the chart hard-fails a
+// production render when the two drift. Setting only PUBLIC_BASE_URL used to
+// leave the issuer on an unrelated default, which is how kind ended up minting
+// tokens with a stale solomon-ai origin while serving localhost.
+func TestBrokerIssuerFollowsPublicOrigin(t *testing.T) {
+	os.Unsetenv("BROKER_TOKEN_ISSUER")
+	t.Setenv("PUBLIC_BASE_URL", "http://localhost:18080")
+	if got := Load().BrokerTokenIssuer; got != "http://localhost:18080" {
+		t.Fatalf("broker issuer did not follow the public origin: %s", got)
+	}
+
+	// The documented separate-issuer topology still works.
+	t.Setenv("BROKER_TOKEN_ISSUER", "https://broker.example.com")
+	cfg := Load()
+	if cfg.BrokerTokenIssuer != "https://broker.example.com" {
+		t.Fatalf("explicit issuer lost: %s", cfg.BrokerTokenIssuer)
+	}
+	if cfg.PublicBaseURL != "http://localhost:18080" {
+		t.Fatalf("public origin should be independent: %s", cfg.PublicBaseURL)
+	}
+}

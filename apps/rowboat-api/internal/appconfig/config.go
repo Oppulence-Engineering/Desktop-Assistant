@@ -686,6 +686,13 @@ func Load() Config {
 	// because of this duplication. AUTH_ISSUER_URL sets all three at once.
 	// Production deliberately splits them (AuthKit issuer, WorkOS API, Hydra),
 	// so each specific var still wins.
+	// Connector resource tokens must carry the externally reachable API origin
+	// as their iss; the chart hard-fails a production render when
+	// BROKER_TOKEN_ISSUER drifts from PUBLIC_BASE_URL. Defaulting it to the
+	// public origin makes them impossible to desync by omission: kind set
+	// PUBLIC_BASE_URL but not the issuer, so it silently inherited a stale
+	// solomon-ai origin from the base chart values.
+	publicBaseURL := getenv("PUBLIC_BASE_URL", "https://api.x.solomon-ai.co")
 	authIssuer := getenv("AUTH_ISSUER_URL", "")
 	issuerOr := func(key, def string) string {
 		if v := getenv(key, ""); v != "" {
@@ -757,7 +764,7 @@ func Load() Config {
 		// default to stable internal names (matching the RFC claim contracts) so
 		// classification works the moment those token modes are enabled.
 		ServiceTokenIssuer:     getenv("SERVICE_TOKEN_ISSUER", "rowboat-internal"),
-		BrokerTokenIssuer:      getenv("BROKER_TOKEN_ISSUER", "rowboat-broker"),
+		BrokerTokenIssuer:      getenv("BROKER_TOKEN_ISSUER", publicBaseURL),
 		BrokerTokenPrivateKey:  getenvAllowEmpty("BROKER_TOKEN_PRIVATE_KEY_PEM", ""),
 		BrokerTokenKeyID:       getenv("BROKER_TOKEN_KEY_ID", "rowboat-broker-1"),
 		BrokerTokenKeyringJSON: getenvAllowEmpty("BROKER_TOKEN_KEYRING_JSON", ""),
@@ -775,7 +782,7 @@ func Load() Config {
 		OryAdminURL:                               getenv("ORY_ADMIN_URL", ""),
 		OryBrokerClientID:                         getenv("ORY_BROKER_CLIENT_ID", ""),
 		OryBrokerClientSecret:                     getenv("ORY_BROKER_CLIENT_SECRET", ""),
-		PublicBaseURL:                             getenv("PUBLIC_BASE_URL", "https://api.x.solomon-ai.co"),
+		PublicBaseURL:                             publicBaseURL,
 		ConnectorsJSON:                            getenv("CONNECTORS_JSON", ""),
 		ConnectorEntitlementURLsJSON:              getenv("CONNECTOR_ENTITLEMENT_URLS_JSON", ""),
 		ConnectorEntitlementHMACKeysJSON:          getenv("CONNECTOR_ENTITLEMENT_HMAC_KEYS_JSON", ""),

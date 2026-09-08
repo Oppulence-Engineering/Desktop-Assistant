@@ -244,8 +244,11 @@ config:
   WORKOS_CLIENT_ID: ""
   PUBLIC_BASE_URL: https://api.x.solomon-ai.co
   # Exact iss for rowboat-api-minted connector resource tokens. This is not the
-  # Hydra issuer used by the authorization-code and consent flow.
-  BROKER_TOKEN_ISSUER: https://api.x.solomon-ai.co
+  # Hydra issuer used by the authorization-code and consent flow. Intentionally
+  # unset: it defaults to PUBLIC_BASE_URL, which is the contract the production
+  # render enforces. Pinning a literal here let environments that set only
+  # PUBLIC_BASE_URL inherit an unrelated origin. Set it explicitly only for the
+  # reviewed separate-issuer topology (connectorBroker.allowSeparateIssuer).
   # Active signing kid. It must exist in BROKER_TOKEN_KEYRING_JSON and match
   # BROKER_TOKEN_PRIVATE_KEY_PEM or every replica fails startup.
   BROKER_TOKEN_KEY_ID: rowboat-broker-1
