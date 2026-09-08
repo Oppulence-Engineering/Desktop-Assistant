@@ -9,7 +9,6 @@ export type PlatformRailItem = {
   title: string;
   description: string;
   label: string;
-  bullets: readonly string[];
   src: string;
   alt: string;
 };
@@ -89,11 +88,6 @@ export function PlatformRail({ items }: { items: readonly PlatformRailItem[] }) 
                 <span>{item.title}</span>
                 <span>{` ${item.description}`}</span>
               </h3>
-              <ul>
-                {item.bullets.map((bullet) => (
-                  <li key={bullet}>{bullet}</li>
-                ))}
-              </ul>
             </div>
             <figure className="sm-attio-row-media">
               <Image alt={item.alt} height={1120} src={item.src} width={1680} />

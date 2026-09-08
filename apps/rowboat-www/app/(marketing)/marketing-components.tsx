@@ -1104,13 +1104,21 @@ const linearHomeSections = [
   },
 ] as const;
 
+/* Attio's row descriptions are a single short sentence under the 24px title.
+   The long-form copy in linearHomeSections is written for the product pages
+   and overflows this block, so the home rows get their own summary line. */
+const platformRowSummaries = [
+  "Sixty to ninety days of email, calendar, and billing become one ledger of promises, with the amount and source attached.",
+  "Each week it ranks the few relationships where silence or a missed commitment makes the next move worth your attention.",
+  "It checks the contact, the policy, and the money, then waits for your approval before anything leaves your name.",
+] as const;
+
 const platformRailItems: PlatformRailItem[] = linearHomeSections.map((section, index) => ({
   id: ["find-the-loose-ends", "run-every-account", "act-with-guardrails"][index] ?? `row-${index}`,
   nav: ["Find the loose ends", "Run every account", "Act with guardrails"][index] ?? section.label,
   title: section.title,
-  description: section.description,
+  description: platformRowSummaries[index] ?? section.description,
   label: section.label,
-  bullets: section.bullets,
   src: section.src,
   alt: section.alt,
 }));

@@ -7271,22 +7271,25 @@
     border-left: 1px solid var(--attio-line);
   }
 
+  /* Attio stacks each row: a copy block with 112px/80px padding and a 24px
+     heading, then a full-bleed media panel separated by a top hairline. It is
+     never a side-by-side split. */
   .sm-attio-row {
-    display: grid;
-    align-items: center;
-    gap: clamp(28px, 3vw, 48px);
-    grid-template-columns: minmax(0, 1fr);
+    display: block;
     scroll-margin-top: 140px;
     border-bottom: 1px solid var(--attio-line);
-    padding: clamp(48px, 5vw, 80px) 0 clamp(48px, 5vw, 80px) clamp(28px, 3vw, 56px);
   }
 
   .sm-attio-row:last-child {
     border-bottom: 0;
   }
 
+  .sm-attio-row-copy {
+    padding: clamp(56px, 7.4vw, 112px) 5.55% clamp(44px, 5.3vw, 80px);
+  }
+
   .sm-attio-row h3 {
-    margin-top: 14px;
+    max-width: 560px;
     font-size: 24px;
     font-weight: 500;
     letter-spacing: -0.01em;
@@ -7301,36 +7304,15 @@
     color: var(--attio-muted);
   }
 
-  .sm-attio-row ul {
-    display: grid;
-    gap: 10px;
-    margin-top: 24px;
+  .sm-attio-row-media {
+    overflow: hidden;
+    border-top: 1px solid var(--attio-line);
+    background: var(--attio-soft);
   }
 
-  .sm-attio-row li {
-    position: relative;
-    padding-left: 20px;
-    color: var(--attio-muted);
-    font-size: 15px;
-    line-height: 1.5;
-  }
-
-  .sm-attio-row li::before {
-    content: "";
-    position: absolute;
-    top: 9px;
-    left: 2px;
-    width: 5px;
-    height: 5px;
-    border-radius: 999px;
-    background: #c2ccd8;
-  }
-
-  .sm-attio-row-media,
   .sm-attio-setup-media {
     overflow: hidden;
     border: 1px solid var(--attio-line);
-    border-radius: 0;
     background: #ffffff;
     box-shadow: 0 18px 44px rgb(17 34 56 / 7%);
   }
@@ -7340,6 +7322,12 @@
     display: block;
     width: 100%;
     height: auto;
+  }
+
+  .sm-attio-row-media img {
+    max-height: 655px;
+    object-fit: cover;
+    object-position: top center;
   }
 
   /* Self-building: centred copy, one CTA, one wide screenshot. */
@@ -7777,9 +7765,8 @@
       border-left: 0;
     }
 
-    .sm-attio-row {
-      grid-template-columns: 1fr;
-      padding-left: 0;
+    .sm-attio-row-copy {
+      padding-inline: 0;
     }
 
     .sm-attio-context-grid,
