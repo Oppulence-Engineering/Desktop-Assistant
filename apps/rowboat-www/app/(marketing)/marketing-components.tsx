@@ -424,7 +424,7 @@ function MobileMenu() {
             Sign in
           </Link>
           <Link className="sm-button sm-button-blue" href="/sign-up">
-            Start building <ArrowRightIcon aria-hidden="true" />
+            Get the report <ArrowRightIcon aria-hidden="true" />
           </Link>
         </div>
       </nav>
@@ -457,7 +457,7 @@ export function TopBar() {
               ))}
               <Link href="/product">
                 <span>How it all works</span>
-                <small>The relationship model behind all three</small>
+                <small>The commitment ledger behind all three</small>
               </Link>
             </div>
           </details>
@@ -611,32 +611,35 @@ export function ProductPage({ page }: { page: MarketingPage }) {
 
 const relationshipCatalog = [
   {
-    label: "Know who needs attention",
-    kicker: "01 · PRIORITIZE",
-    title: "See the relationships most likely to slip.",
-    body: "Oppulence turns email, calendar, meetings, and CRM history into a short list of accounts that need attention now.",
+    label: "What we owe",
+    kicker: "01 · OUTBOUND",
+    title: "Know what your business promised.",
+    body: "Oppulence extracts delivery dates, scope changes, commercial concessions, and process promises from the conversations where they were actually made.",
     bullets: [
-      "A focused queue instead of another dashboard",
-      "Promises, risks, and quiet accounts in one place",
+      "Outbound obligations by risk, then by date",
+      "Owner, due condition, state, confidence, and evidence",
     ],
     src: "/marketing/relationship-desktop.png",
   },
   {
-    label: "Understand why",
-    kicker: "02 · EXPLAIN",
-    title: "Every recommendation shows its evidence.",
-    body: "See what changed, what is at stake, and the email or meeting behind the recommendation before deciding what to do.",
-    bullets: ["Source links on every material claim", "Missing or uncertain context stays visible"],
+    label: "What they owe us",
+    kicker: "02 · INBOUND",
+    title: "Track the promises made back to you.",
+    body: "Customer prerequisites, vendor credits, partner deliverables, and other inbound obligations sit in the same register instead of being quietly forfeited.",
+    bullets: [
+      "Two-sided obligations across each account",
+      "Recoverable value that your CRM does not model",
+    ],
     src: "/marketing/relationship-web-detail.png",
   },
   {
-    label: "Approve the next move",
-    kicker: "03 · ACT",
-    title: "Review the follow-up before anything is sent.",
-    body: "Oppulence prepares the next move with the relevant history attached. You can edit, approve, snooze, or reject it.",
+    label: "What changed",
+    kicker: "03 · STATE",
+    title: "See slippage before it becomes a dispute.",
+    body: "Every commitment moves through governed states: open, at risk, met, missed, renegotiated, waived, or disputed, with the source trail kept intact.",
     bullets: [
-      "Human approval before external action",
-      "Replies and outcomes improve future suggestions",
+      "Renegotiation supersedes, but never erases",
+      "AI proposes, deterministic code tracks, humans approve",
     ],
     src: "/marketing/relationship-desktop-detail.png",
   },
@@ -644,68 +647,77 @@ const relationshipCatalog = [
 
 const homepageProblems = [
   {
-    label: "Quiet deals",
-    title: "The account stopped replying.",
-    body: "Oppulence finds the promise, proposal, or invoice sitting inside the history before the relationship goes cold.",
+    label: "Orphaned promise",
+    title: "A commitment exists in one person's sent folder and nowhere else.",
+    body: "Oppulence turns the source message, meeting, or document into a commitment record with owner, counterparty, due condition, state, and evidence.",
   },
   {
-    label: "Renewals",
-    title: "The context was never in the CRM.",
-    body: "It reads the actual emails, meetings, and notes that explain what changed since the last check-in.",
+    label: "Late discovery",
+    title: "Delivery learns about a commitment after the date has passed.",
+    body: "The register shows what was promised, when it changed, and which obligations are at risk before a renewal, QBR, or escalation.",
   },
   {
-    label: "Handoffs",
-    title: "The memory left with the person.",
-    body: "A new owner gets the relationship record, source links, and the safest next move instead of starting over.",
+    label: "Unenforced inbound",
+    title: "A vendor, partner, or customer owes something and nobody tracks it.",
+    body: "Inbound obligations live beside outbound ones, so recoverable value is not lost just because it was promised in the other direction.",
+  },
+  {
+    label: "Undefended dispute",
+    title: "Arguments about what was agreed happen from memory and screenshots.",
+    body: "Export the obligation, state history, and verbatim cited evidence as a standalone record for the conversation that matters.",
   },
 ] as const;
 
 const homepageProof = [
-  "Source linked",
-  "Human approved",
-  "Built around your existing systems",
+  "Two-sided commitment register",
+  "Every claim cited",
+  "No external action without approval",
 ] as const;
 
 const homepageStats = [
   {
-    value: "3–5",
-    label: "relationships worth reviewing each week",
-    detail: "A short queue of accounts where silence, a missed promise, or a money-state change makes the next move worth attention.",
+    value: "90 days",
+    label: "of promises surfaced in the first report",
+    detail:
+      "Connect the evidence streams and get the commitments your team made recently that have no evidence of fulfilment.",
   },
   {
-    value: "read-only",
-    label: "first pass across your work systems",
-    detail: "Start by connecting email, calendar, meetings, notes, and CRM history without changing the source systems.",
+    value: "5 views",
+    label: "what we owe, what they owe us, what changed, by account, by owner",
+    detail:
+      "The register is built for renewals, QBRs, escalations, handovers, and weekly portfolio review.",
   },
   {
-    value: "approve",
-    label: "before anything reaches a customer",
-    detail: "Oppulence prepares the next move, but a person edits, approves, snoozes, or rejects it before action.",
+    value: "0 guesses",
+    label: "dates and claims require source evidence",
+    detail:
+      "Missing due dates are recorded as unspecified. Low-confidence extractions go to review instead of being asserted.",
   },
   {
-    value: "source",
-    label: "attached to every material claim",
-    detail: "Each finding points back to the email, call, note, or CRM change it came from, so the recommendation can be checked.",
+    value: "export",
+    label: "the record when the conversation leaves the tool",
+    detail:
+      "A commitment record carries the obligation, state history, timestamped authors, and verbatim cited evidence.",
   },
 ] as const;
 
 const homepageResearchNotes = [
   {
     number: "01",
-    title: "Why CRMs forget the promises that actually move deals.",
-    body: "The highest-value customer facts usually live in a thread, a call, or a side note, not in a field someone remembers to update.",
-    href: "/blog",
-  },
-  {
-    number: "02",
-    title: "A relationship queue beats another dashboard.",
-    body: "The job is not to show everything. The job is to name the few accounts where attention today can save revenue later.",
+    title: "Businesses run on promises that no system records.",
+    body: "Delivery dates, scope changes, concessions, and SLAs are created in conversation, kept by someone else, and noticed only when broken.",
     href: "/product",
   },
   {
+    number: "02",
+    title: "The seam between systems is where commitments live.",
+    body: "CRM, CLM, ticketing, meeting notes, and email AI each hold a fragment. The obligation spans all of them.",
+    href: "/integrations",
+  },
+  {
     number: "03",
-    title: "Evidence is the interface for trust.",
-    body: "Teams only act on AI recommendations when they can inspect the source, correct the model, and keep ownership of the next step.",
+    title: "The wedge is the report; the retention is the ledger.",
+    body: "The Open Promises report proves value in a day. The accumulated, corrected obligation history compounds over time.",
     href: "/customers",
   },
 ] as const;
@@ -724,8 +736,8 @@ export function HomePage() {
             Mission
           </a>
           <a href="#what-we-do">What we do</a>
-          <a href="#in-production">In production</a>
-          <a href="#research">Research</a>
+          <a href="#in-production">The register</a>
+          <a href="#research">Read this first</a>
           <a href="#pricing">Pricing</a>
         </nav>
         <div className="sm-memory-rail-divider" />
@@ -743,10 +755,10 @@ export function HomePage() {
             <div className="sm-memory-announcement">
               <span>
                 <i aria-hidden="true" />
-                Account Mission Control is live.
+                The Commitment Ledger is live.
               </span>
               <Link href="/product">
-                Read the overview <ArrowRightIcon aria-hidden="true" />
+                Read the product brief <ArrowRightIcon aria-hidden="true" />
               </Link>
             </div>
 
@@ -763,12 +775,12 @@ export function HomePage() {
                 />
                 oppulence
               </span>{" "}
-              is building the default memory engine for customer-facing teams.
+              is the independent record of what your business promised and what was promised to you.
             </h1>
 
             <p className="sm-memory-subhead">
-              Available through the web app, desktop assistant, and the tools your team
-              already uses.
+              It tracks commitments to outcomes, proves every claim with source evidence, and shows
+              what is at risk right now.
             </p>
 
             <div className="sm-memory-actions">
@@ -776,10 +788,10 @@ export function HomePage() {
                 <span aria-hidden="true">
                   <Image alt="" height={18} src="/marketing/oppulence-icon.png" width={18} />
                 </span>
-                Build with Oppulence
+                Get the Open Promises report
               </Link>
               <Link className="sm-memory-button" href="#what-we-do">
-                What it does <ArrowRightIcon aria-hidden="true" />
+                See what it tracks <ArrowRightIcon aria-hidden="true" />
               </Link>
               <Link className="sm-memory-button" href="/pricing">
                 Pricing <ArrowRightIcon aria-hidden="true" />
@@ -794,7 +806,7 @@ export function HomePage() {
 
             <figure className="sm-memory-blueprint">
               <Image
-                alt="Connected work systems feeding one Oppulence relationship model"
+                alt="Connected work systems feeding one Oppulence commitment ledger"
                 height={1254}
                 priority
                 sizes="(max-width: 760px) 92vw, 660px"
@@ -806,17 +818,15 @@ export function HomePage() {
 
             <div className="sm-memory-prose">
               <p>
-                The useful layer for customer-facing AI is not another CRM field. It is{" "}
-                <Link href="/product">relationship memory</Link> that works across email,
-                calendar, meetings, notes, browser context, and the actual history of the
-                account.
+                Every company has a system of record for what it <strong>sold</strong>. None has a
+                system of record for what it <strong>owes</strong>. Oppulence is that{" "}
+                <Link href="/product">commitment ledger</Link>.
               </p>
-              <h2>Pipeline is no longer the constraint.</h2>
+              <h2>Your CRM tracks the deal. We track the promise and prove it.</h2>
               <p>
-                Your team already created the data. The problem is that it is scattered across
-                tools, people, and time. Oppulence reads that history, keeps the state of each
-                relationship current, and brings the right context back when a customer needs
-                attention.
+                Integrations are evidence streams. Oppulence appends immutable observations,
+                extracts the commitments inside them, tracks each one to an outcome, and links every
+                state change back to the source.
               </p>
             </div>
           </div>
@@ -827,7 +837,7 @@ export function HomePage() {
         <section className="sm-memory-section" id="what-we-do">
           <header className="sm-memory-section-head">
             <p>What we do</p>
-            <h2>Memory that turns scattered customer history into the next move.</h2>
+            <h2>A live, two-sided register of commitments.</h2>
           </header>
           <div className="sm-memory-do-grid">
             {relationshipCatalog.map((item) => (
@@ -849,11 +859,12 @@ export function HomePage() {
           <header className="sm-memory-section-head sm-memory-section-head-split">
             <div>
               <p>In production</p>
-              <h2>Designed for real accounts, not demo data.</h2>
+              <h2>The first screen is already populated.</h2>
             </div>
             <span>
-              Connect the systems once. Oppulence keeps a living account record, watches for
-              change, and explains why a relationship is worth your attention now.
+              Connect a prospect&rsquo;s sources and hand them the Open Promises report: the
+              commitments made in the last 90 days that have no evidence of fulfilment, with the
+              exact message that created each one.
             </span>
           </header>
           <div className="sm-memory-stats-grid">
@@ -865,11 +876,15 @@ export function HomePage() {
               </article>
             ))}
           </div>
-          <div className="sm-memory-signal-table" role="table" aria-label="Customer signals Oppulence monitors">
+          <div
+            className="sm-memory-signal-table"
+            role="table"
+            aria-label="Commitment failures Oppulence monitors"
+          >
             <div role="row">
-              <span role="columnheader">Signal</span>
-              <span role="columnheader">Why it matters</span>
-              <span role="columnheader">Action</span>
+              <span role="columnheader">Failure</span>
+              <span role="columnheader">What it looks like</span>
+              <span role="columnheader">What Oppulence does</span>
             </div>
             {homepageProblems.map((item) => (
               <div key={item.label} role="row">
@@ -884,11 +899,11 @@ export function HomePage() {
         <section className="sm-memory-section" id="research">
           <header className="sm-memory-section-head sm-memory-section-head-split">
             <div>
-              <p>Research</p>
-              <h2>The operating notes behind relationship intelligence.</h2>
+              <p>Read this first</p>
+              <h2>The customer-facing thesis behind the commitment ledger.</h2>
             </div>
             <Link className="sm-memory-text-link" href="/blog">
-              All notes <ArrowRightIcon aria-hidden="true" />
+              More on the product <ArrowRightIcon aria-hidden="true" />
             </Link>
           </header>
           <div className="sm-memory-research-list">
@@ -907,9 +922,12 @@ export function HomePage() {
           <header className="sm-memory-section-head sm-memory-section-head-split">
             <div>
               <p>Pricing</p>
-              <h2>Start with the deals already slipping.</h2>
+              <h2>Priced for the team that makes and keeps promises.</h2>
             </div>
-            <span>Clear monthly plans, from a free weekly report to full account intelligence.</span>
+            <span>
+              A single unmet commitment that contributes to losing one customer costs more than a
+              year of the product.
+            </span>
           </header>
           <div className="sm-memory-plan-grid">
             {individualPlans.map((plan) => (
@@ -924,10 +942,7 @@ export function HomePage() {
                   <small>{plan.period}</small>
                 </strong>
                 <Link
-                  className={cn(
-                    "sm-memory-button",
-                    plan.recommended && "sm-memory-button-primary",
-                  )}
+                  className={cn("sm-memory-button", plan.recommended && "sm-memory-button-primary")}
                   href={plan.ctaHref}
                 >
                   {plan.ctaLabel}
@@ -946,7 +961,7 @@ export function HomePage() {
           <header className="sm-memory-section-head sm-memory-section-head-split">
             <div>
               <p>FAQ</p>
-              <h2>The stuff people usually ask.</h2>
+              <h2>What teams ask before trusting a commitment ledger.</h2>
             </div>
           </header>
           <div className="sm-memory-faq-list">
@@ -964,7 +979,7 @@ export function HomePage() {
         </section>
 
         <section className="sm-memory-final">
-          <h2>Give every account a memory.</h2>
+          <h2>Track the promise, not just the deal.</h2>
           <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
             Start building <ArrowRightIcon aria-hidden="true" />
           </Link>
@@ -976,28 +991,31 @@ export function HomePage() {
 
 function RelationshipMemoryDiagram() {
   return (
-    <aside aria-label="How Oppulence turns raw relationship data into customer context" className="sm-memory-diagram">
-      <pre>{`        raw relationship data
+    <aside
+      aria-label="How Oppulence turns raw evidence streams into a commitment ledger"
+      className="sm-memory-diagram"
+    >
+      <pre>{`        raw evidence streams
               │
               ▼
-┌── oppulence ─────────────────────┐
+┌── oppulence commitment ledger ───┐
 │                                  │
 │  ┌───────────────┐               │
-│  │ account model │◀───────┐      │
-│  └───────────────┘        │      │
-│    read  │                │      │
-│    merge │                │      │
-│    infer │       prior    │      │
-│    verify▼       context  │      │
-│  ┌───────────────┐        │      │
-│  │ relationship  │────────┘      │
-│  │ memory vN+1   │               │
+│  │ observations  │──cited source │
 │  └───────────────┘               │
 │          │                       │
+│          ▼                       │
+│  ┌───────────────┐               │
+│  │ commitments   │◀──corrections │
+│  │ we owe / owed │               │
+│  └───────────────┘               │
+│          │                       │
+│          ▼                       │
+│  open · at risk · met · disputed │
 └──────────┼───────────────────────┘
-           │ inject before action
+           │ exportable record
            ▼
-     next move, with evidence`}</pre>
+  renewal, escalation, or handover`}</pre>
     </aside>
   );
 }
@@ -1186,22 +1204,22 @@ const homeFaqs = [
   {
     question: "Is Oppulence another CRM?",
     answer:
-      "No. Your CRM stays the system of record. Oppulence is the relationship-memory layer around it: the conversations, promises, objections, and outcomes that explain what should happen next.",
+      "No. Your CRM tracks the deal, stage, and amount. Oppulence tracks the commitments around the deal: what was promised, who owns it, what evidence proves it, and what is at risk now.",
   },
   {
-    question: "Is this a cold-email tool?",
+    question: "What counts as a commitment?",
     answer:
-      "No. Oppulence sends zero cold email. It only works the warm relationships you already have: ghosted proposals, quiet clients, unpaid invoices, and neglected referrals.",
+      "A commitment is an obligation by an identifiable party to an identifiable counterparty, with a concrete substance, a due date or due condition, and a citable source. If the evidence is missing, we do not assert it.",
   },
   {
     question: "Will it send messages without me?",
     answer:
-      "No. Each message waits for your click. Actions that touch money need a second confirmation. You can approve, edit, snooze, or reject anything in the queue.",
+      "No. AI can propose a next action, but deterministic code owns state and every external email, Slack, or CRM action waits for a recorded human approval.",
   },
   {
     question: "What happens to my data?",
     answer:
-      "We read your mail to serve you and no one else. We do not pool it with other customers, and we do not train shared models on it. You can disconnect at any time.",
+      "Raw evidence is encrypted, tenant-isolated, and retained only for the ledger's purpose. Every claim remains traceable to source evidence, and customers can export their full ledger with evidence.",
   },
 ];
 

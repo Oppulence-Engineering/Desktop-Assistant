@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 
 import { HomePage } from "./marketing-components";
 
-const TITLE = "Oppulence — Stop losing deals you already won";
+const TITLE = "Oppulence — The Commitment Ledger";
 const DESCRIPTION =
-  "That thing you promised on a call in March. The renewal that's been quiet for a month. It's all sitting in your inbox, and nobody has time to read it. Oppulence does, and tells you who needs you today.";
+  "Oppulence is the independent record of what your business promised and what was promised to you, proven by evidence across the systems where promises are actually made.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fcfcfc" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#111111" },
   ],
 };
