@@ -1,8 +1,6 @@
 import Link from "next/link";
 
-import { Button } from "@oppulence/ui/components/button";
-
-/** Multi-color Google "G". Explicit fills, so the button's currentColor rules don't tint it. */
+/** Multi-color Google "G". Explicit fills, so button color rules don't tint it. */
 function GoogleLogo() {
   return (
     <svg aria-hidden height="18" viewBox="0 0 24 24" width="18">
@@ -26,10 +24,8 @@ function GoogleLogo() {
   );
 }
 
-const HIGHLIGHTS = [
-  "Every account, always current",
-  "Evidence before every action",
-];
+/** Stat pills under the quote card, mirroring the public site's proof strip. */
+const STATS = ["Every account, always current", "Evidence behind every action"];
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   sign_in_unavailable: "Sign-in is temporarily unavailable. Please try again.",
@@ -54,108 +50,62 @@ export function AuthShell({
     : `/sign-up?${new URLSearchParams({ return_to: returnTo })}`;
 
   return (
-    <main className="app-shell grid min-h-svh bg-muted/30 lg:grid-cols-2">
-      {/* Form panel */}
-      <div className="flex items-center justify-center px-6 py-12 sm:px-10">
-        <div className="flex w-full max-w-sm flex-col gap-8">
-          <Link className="flex items-center gap-2.5" href="/">
-            <img alt="" className="size-7" src="/marketing/oppulence-icon.png" />
-            <span className="font-display text-2xl tracking-tight text-foreground">Oppulence</span>
+    <main className="sm-site sm-auth">
+      {/* Form column */}
+      <div className="sm-auth-form">
+        <div className="sm-auth-form-inner">
+          <Link aria-label="Oppulence home" className="sm-auth-lockup" href="/">
+            <img alt="" src="/marketing/oppulence-icon.png" />
+            <span>Oppulence</span>
           </Link>
 
-          <div className="space-y-2">
-            <h1 className="font-display text-3xl leading-tight text-foreground">
-              Your relationship layer awaits
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {isSignUp
-                ? "Create an account to get started. Your first sign-in builds your workspace."
-                : "Sign in or create an account to get started."}
-            </p>
-          </div>
+          <h1 className="sm-auth-title">Your relationship layer awaits</h1>
+          <p className="sm-auth-sub">
+            {isSignUp
+              ? "Create an account to get started. Your first sign-in builds your workspace."
+              : "Sign in or create an account to get started."}
+          </p>
 
-          {errorMessage ? (
-            <div className="rounded-[2px] border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {errorMessage}
-            </div>
-          ) : null}
+          {errorMessage ? <p className="sm-auth-error">{errorMessage}</p> : null}
 
-          <div className="space-y-3">
-            <Button asChild className="h-12 w-full bg-background" size="lg" variant="outline">
-              <a href={loginHref}>
-                <GoogleLogo />
-                {isSignUp ? "Sign up with Google" : "Continue with Google"}
-              </a>
-            </Button>
-            <p className="text-center text-xs text-muted-foreground">
-              {isSignUp ? "Already have an account? " : "Don't have an account? "}
-              <Link
-                className="font-medium text-primary underline-offset-4 hover:underline"
-                href={crossHref}
-              >
-                {isSignUp ? "Sign in" : "Sign up"}
-              </Link>
-            </p>
-          </div>
+          <a className="sm-auth-provider" href={loginHref}>
+            <GoogleLogo />
+            Continue with Google
+          </a>
 
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            By continuing, you agree to our{" "}
-            <Link className="underline underline-offset-4" href="/terms">
-              Terms
-            </Link>{" "}
-            and{" "}
-            <Link className="underline underline-offset-4" href="/privacy">
-              Privacy Policy
-            </Link>
-            .
+          <p className="sm-auth-legal">
+            By continuing, you agree to our <Link href="/terms">Terms</Link> and{" "}
+            <Link href="/privacy">Privacy Policy</Link>. {isSignUp ? "Have an account?" : "New here?"}{" "}
+            <Link href={crossHref}>{isSignUp ? "Sign in" : "Create one"}</Link>.
           </p>
         </div>
       </div>
 
-      {/* Showcase panel */}
-      <div className="relative hidden p-6 lg:block">
-        <div className="relative h-full overflow-hidden rounded-2xl bg-[#0b0b0c]">
-          <img
-            alt=""
-            className="absolute inset-0 size-full scale-105 object-cover opacity-60 blur-[3px]"
-            src="/marketing/relationship-desktop.png"
-          />
-          <div
-            aria-hidden
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(11,11,12,0.55) 0%, rgba(11,11,12,0.85) 100%), radial-gradient(60% 50% at 80% 0%, rgba(240,110,40,0.25), transparent 70%)",
-            }}
-          />
+      {/* Showcase column */}
+      <div className="sm-auth-showcase">
+        <div className="sm-auth-canvas">
+          <img alt="" className="sm-auth-canvas-image" src="/marketing/relationship-desktop.png" />
+          <div aria-hidden className="sm-auth-canvas-wash" />
 
-          <div className="relative flex h-full flex-col items-center justify-center gap-6 p-10">
-            <div className="w-full max-w-lg rounded-2xl bg-background p-7 shadow-2xl">
-              <p className="font-display text-xl leading-snug text-foreground">
-                Every customer relationship, kept current — and the next action already prepared,
-                with the evidence behind it.
-              </p>
-              <p className="mt-3 text-sm text-muted-foreground">
-                Not another CRM to update. A system that watches the work and tells you what
-                changed.
-              </p>
-              <div className="mt-6 flex items-center gap-3 border-t pt-4">
-                <img alt="" className="size-9 rounded-full" src="/marketing/oppulence-icon.png" />
-                <div className="text-sm">
-                  <p className="font-medium text-foreground">Oppulence</p>
-                  <p className="text-muted-foreground">Relationship intelligence</p>
-                </div>
-              </div>
-            </div>
+          <div className="sm-auth-overlay">
 
-            <div className="flex flex-wrap justify-center gap-3">
-              {HIGHLIGHTS.map((highlight) => (
-                <span
-                  className="rounded-full bg-white/10 px-4 py-2 text-sm text-white backdrop-blur"
-                  key={highlight}
-                >
-                  {highlight}
+            <figure className="sm-auth-quote">
+              <blockquote>
+                Tried every CRM hygiene ritual — notes, reminders, pipeline reviews. The only thing
+                that keeps accounts actually current is Oppulence.
+              </blockquote>
+              <figcaption>
+                <img alt="" src="/marketing/oppulence-icon.png" />
+                <span>
+                  <strong>Account Mission Control</strong>
+                  Live across email, meetings, Slack, and CRM
                 </span>
+              </figcaption>
+            </figure>
+
+            <div className="sm-auth-stats">
+              {STATS.map((stat) => (
+                <span key={stat}>{stat}</span>
               ))}
             </div>
           </div>
