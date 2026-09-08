@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 
 import { HomePage } from "./marketing-components";
 
-const TITLE = "Oppulence — Relationship Intelligence for Customer-Facing Teams";
+const TITLE = "Oppulence — Stop losing deals you already won";
 const DESCRIPTION =
-  "Oppulence maintains a living model of every customer relationship across email, meetings, Slack, CRM, and revenue systems—then shows what changed, what needs action, and why.";
+  "The promise from a call in March. The renewal that went quiet. It is all in your email, calendar, and CRM, and nobody has time to read it. Oppulence does, and tells you which accounts need you today.";
 
 export const metadata: Metadata = {
   title: TITLE,

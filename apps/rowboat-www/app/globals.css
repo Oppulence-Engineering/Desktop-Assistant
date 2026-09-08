@@ -7058,3 +7058,68 @@
     }
   }
 }
+
+/* Home "the problem" section: four recognizable failure modes, stated before
+   any product claim. */
+@layer utilities {
+  .sm-problem-grid {
+    display: grid;
+    gap: 1px;
+    margin-top: 48px;
+    background: var(--sm-line);
+    border: 1px solid var(--sm-line);
+  }
+
+  .sm-problem-grid article {
+    background: #ffffff;
+    padding: 32px 28px;
+  }
+
+  .sm-problem-stat {
+    color: var(--sm-blue);
+    font-family: var(--font-marketing-mono), monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .sm-problem-grid h3 {
+    margin-top: 14px;
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--sm-ink);
+  }
+
+  .sm-problem-grid article > p:last-child {
+    margin-top: 10px;
+    color: var(--sm-muted);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .sm-problem-turn {
+    margin-top: 40px;
+    max-width: 760px;
+    color: var(--sm-ink);
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+    font-weight: 500;
+    line-height: 1.32;
+    letter-spacing: -0.02em;
+  }
+
+  @media (min-width: 720px) {
+    .sm-problem-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .sm-problem-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+}

@@ -376,10 +376,7 @@ function InlineLogo({
       ) : (
         <Image
           alt=""
-          className={cn(
-            "rounded-[3px]",
-            compact ? "size-5" : prominent ? "size-10" : "size-7",
-          )}
+          className={cn("rounded-[3px]", compact ? "size-5" : prominent ? "size-10" : "size-7")}
           height={iconSize}
           src="/marketing/oppulence-icon.png"
           width={iconSize}
@@ -743,7 +740,7 @@ function SectionMarker({ index, label }: { index: string; label: string }) {
   return (
     <div className="sm-section-marker">
       <span>{label}</span>
-      <span>[{index}/9]</span>
+      <span>[{index}/10]</span>
     </div>
   );
 }
@@ -752,6 +749,7 @@ export function HomePage() {
   return (
     <div className="sm-home flex flex-col">
       <RelationshipHomeHero />
+      <TheProblemSection />
       <ProductCatalogSection />
       <WhatWeDoSection />
       <HowItWorksSection />
@@ -775,9 +773,9 @@ function RelationshipHomeHero() {
           Account Mission Control is live
           <ArrowRightIcon aria-hidden="true" />
         </Link>
-        <h1 aria-label="The relationship cloud for customer-facing teams.">
+        <h1 aria-label="You are losing deals you already won.">
           <span aria-hidden="true" className="sm-hero-title-wide">
-            The relationship cloud for{" "}
+            You are losing deals you{" "}
             <Image
               alt=""
               className="sm-inline-mark"
@@ -785,12 +783,12 @@ function RelationshipHomeHero() {
               src="/marketing/oppulence-icon.png"
               width={58}
             />{" "}
-            customer-facing teams<span className="sm-hero-title-period">.</span>
+            already won<span className="sm-hero-title-period">.</span>
           </span>
           <span aria-hidden="true" className="sm-hero-title-mobile">
-            Customer context
+            You are losing
             <br />
-            for{" "}
+            deals you{" "}
             <Image
               alt=""
               className="sm-inline-mark"
@@ -798,13 +796,13 @@ function RelationshipHomeHero() {
               src="/marketing/oppulence-icon.png"
               width={58}
             />{" "}
-            your team<span className="sm-hero-title-period">.</span>
+            already won<span className="sm-hero-title-period">.</span>
           </span>
         </h1>
         <p>
-          Oppulence maintains an accurate, living model of every customer account across email,
-          meetings, Slack, CRM, and revenue systems—then shows what changed, what needs action, and
-          the evidence behind every recommendation.
+          The promise you made on a call in March. The renewal that went quiet six weeks ago. The
+          champion who changed jobs. It is all in your email, your calendar, and your CRM — and no
+          one has time to read it. Oppulence does, and tells you what needs you today.
         </p>
         <div className="sm-hero-actions">
           <Link className="sm-button sm-button-blue" href="/sign-up">
@@ -863,15 +861,70 @@ function RelationshipHomeHero() {
   );
 }
 
+/**
+ * States the problem before any product claim. Everything here is a failure
+ * mode a customer-facing team recognizes from their own week, not a category
+ * description.
+ */
+function TheProblemSection() {
+  return (
+    <section className="sm-section sm-problem">
+      <SectionMarker index="1" label="The problem" />
+      <header className="sm-section-intro">
+        <h2>The context is there. Nobody has time to read it.</h2>
+        <p>
+          A customer relationship lives across thousands of messages, calls, and records. Your team
+          reconstructs it from memory, right before the meeting, and hopes nothing important was
+          missed.
+        </p>
+      </header>
+      <div className="sm-problem-grid">
+        {[
+          {
+            stat: "Monday morning",
+            title: "The week starts with a scramble.",
+            body: "Scrolling inboxes and pipeline reports to work out which accounts moved, who is waiting on you, and what you promised last time.",
+          },
+          {
+            stat: "Six weeks late",
+            title: "Silence looks the same as safety.",
+            body: "Nothing alerts you when a deal goes quiet or a champion stops replying. You find out at the renewal, when the decision is already made.",
+          },
+          {
+            stat: "Between systems",
+            title: "The commitment was made out loud.",
+            body: "It happened on a call or in a thread, never became a CRM field, and quietly stopped existing the moment everyone moved on.",
+          },
+          {
+            stat: "Every handoff",
+            title: "Context leaves with the person.",
+            body: "A rep changes territory and years of relationship history walks out with them, leaving whoever inherits the account starting from zero.",
+          },
+        ].map((item) => (
+          <article key={item.title}>
+            <p className="sm-problem-stat">{item.stat}</p>
+            <h3>{item.title}</h3>
+            <p>{item.body}</p>
+          </article>
+        ))}
+      </div>
+      <p className="sm-problem-turn">
+        Every CRM ever built asked your team to fix this by typing more. Oppulence reads the work
+        that already happened instead.
+      </p>
+    </section>
+  );
+}
+
 function ProductCatalogSection() {
   return (
     <section className="sm-section sm-catalog" id="product">
-      <SectionMarker index="1" label="Product catalog" />
+      <SectionMarker index="2" label="Product catalog" />
       <header className="sm-section-intro">
-        <h2>Everything required to understand and move a relationship forward.</h2>
+        <h2>Everything you would do if you had time to read it all.</h2>
         <p>
-          Focused capabilities for observing, explaining, prioritizing, and acting on customer
-          context.
+          Oppulence watches the accounts, notices what changed, explains why it matters, and drafts
+          the next move for you to approve.
         </p>
       </header>
       <fieldset className="sm-catalog-fieldset">
@@ -929,14 +982,14 @@ function ProductCatalogSection() {
 function WhatWeDoSection() {
   return (
     <section className="sm-section sm-what-we-do">
-      <SectionMarker index="2" label="What we do" />
+      <SectionMarker index="3" label="What we do" />
       <header className="sm-centered-intro">
         <h2>
-          Bring the evidence.
+          You keep the relationship.
           <br />
-          We maintain the relationship. Your team knows.
+          We keep track of it.
         </h2>
-        <p>Relationship infrastructure for the people who own customer outcomes.</p>
+        <p>Connect the tools you already use. Oppulence does the reading, and shows its work.</p>
       </header>
       <div className="sm-offer-grid">
         <Link className="sm-offer sm-offer-dark" href="/product">
@@ -1016,7 +1069,7 @@ function WhatWeDoSection() {
 function HowItWorksSection() {
   return (
     <section className="sm-section sm-how" id="how-it-works">
-      <SectionMarker index="3" label="How it works" />
+      <SectionMarker index="4" label="How it works" />
       <div className="sm-how-grid">
         <div className="sm-how-copy">
           <h2>One operating loop.</h2>
@@ -1049,9 +1102,9 @@ function HowItWorksSection() {
 function TrustSection() {
   return (
     <section className="sm-section sm-trust">
-      <SectionMarker index="4" label="Built for truth" />
+      <SectionMarker index="5" label="Built for truth" />
       <header className="sm-section-intro">
-        <h2>We do not hide uncertainty behind a score.</h2>
+        <h2>If you cannot check it, you will not trust it.</h2>
         <p>
           Oppulence is designed to say what it knows, where it learned it, and what is still
           missing.
@@ -1126,12 +1179,12 @@ function TrustSection() {
 function UseCasesSection() {
   return (
     <section className="sm-section sm-use-cases" id="use-cases">
-      <SectionMarker index="5" label="Use cases" />
+      <SectionMarker index="6" label="Use cases" />
       <header className="sm-section-intro">
-        <h2>Built for teams whose outcomes depend on context.</h2>
+        <h2>The revenue you already earned, protected.</h2>
         <p>
-          Different motions, one requirement: the relationship must survive every handoff and every
-          tool.
+          Different teams, same failure: the relationship outlives the tool, the territory, and the
+          person who remembered it.
         </p>
       </header>
       <nav aria-label="Use case navigation" className="sm-use-case-nav">
@@ -1160,7 +1213,7 @@ function UseCasesSection() {
 function EnterpriseSection() {
   return (
     <section className="sm-section sm-enterprise">
-      <SectionMarker index="6" label="Everywhere you work" />
+      <SectionMarker index="7" label="Everywhere you work" />
       <header className="sm-centered-intro">
         <h2>Oppulence runs across the relationship.</h2>
         <p>
@@ -1212,7 +1265,7 @@ function EnterpriseSection() {
 function PrinciplesSection() {
   return (
     <section className="sm-section sm-principles">
-      <SectionMarker index="7" label="Product principles" />
+      <SectionMarker index="8" label="Product principles" />
       <div className="sm-principles-grid">
         <div>
           <h2>Trust is a product surface.</h2>
@@ -1248,9 +1301,9 @@ function PricingSection() {
 
   return (
     <section className="sm-section sm-pricing" id="pricing">
-      <SectionMarker index="8" label="Pricing" />
+      <SectionMarker index="9" label="Pricing" />
       <header className="sm-centered-intro">
-        <h2>Start with the relationships already slipping.</h2>
+        <h2>Start with the deals already slipping.</h2>
         <p>Clear monthly plans—from a free weekly report to full account intelligence.</p>
       </header>
       <div className="sm-plan-grid">
@@ -1305,7 +1358,7 @@ function PricingSection() {
 function RelationshipFaqSection() {
   return (
     <section className="sm-section sm-faq">
-      <SectionMarker index="9" label="FAQ" />
+      <SectionMarker index="10" label="FAQ" />
       <header className="sm-section-intro">
         <h2>The important questions, answered plainly.</h2>
         <p>What teams ask before connecting their customer systems.</p>
@@ -1330,7 +1383,7 @@ function RelationshipFinalCta() {
   return (
     <section className="sm-final-cta">
       <h2>
-        Your customer relationships deserve one living memory<span>.</span>
+        Find out what you have been missing<span>.</span>
       </h2>
       <div>
         <Link className="sm-button sm-button-blue" href="/sign-up">
@@ -1794,9 +1847,7 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
             </div>
             <div className="flex flex-wrap gap-3">
               <Button asChild className="marketing-cta-primary">
-                <a href={page.ctaHref ?? CONTACT_HREF}>
-                  {page.ctaLabel ?? "Talk to the team"}
-                </a>
+                <a href={page.ctaHref ?? CONTACT_HREF}>{page.ctaLabel ?? "Talk to the team"}</a>
               </Button>
               <Button asChild className="marketing-cta-secondary" variant="ghost">
                 <Link href="/app">Open action queue</Link>
@@ -2210,7 +2261,6 @@ export function CustomerStoryPage({ page }: { page: MarketingPage }) {
     </PageShell>
   );
 }
-
 
 export function LegalPage({ page }: { page: MarketingPage }) {
   return (
