@@ -2,6 +2,7 @@
 
 import "@testing-library/jest-dom/vitest";
 
+import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -12,8 +13,24 @@ vi.mock("@xyflow/react", () => ({
   Background: () => null,
   Controls: () => null,
   MarkerType: { ArrowClosed: "arrowclosed" },
-  ReactFlow: ({ nodes }: { nodes: Array<{ data: { label: string } }> }) => (
-    <div>{nodes.map((node) => node.data.label).join(" → ")}</div>
+  ReactFlow: ({
+    nodes,
+    onNodeClick,
+  }: {
+    nodes: Array<{ id: string; data: { label: ReactNode } }>;
+    onNodeClick?: (event: unknown, node: { id: string }) => void;
+  }) => (
+    <div>
+      {nodes.map((node) => (
+        <button
+          aria-label={`Select ${node.id}`}
+          key={node.id}
+          onClick={() => onNodeClick?.({}, node)}
+        >
+          {node.data.label}
+        </button>
+      ))}
+    </div>
   ),
   useEdgesState: (value: unknown) => [value, vi.fn()],
   useNodesState: (value: unknown) => [value, vi.fn(), vi.fn()],
@@ -52,11 +69,13 @@ describe("VisualWorkflowBuilder", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Select action:1" }));
     fireEvent.click(screen.getByRole("button", { name: "Remove Draft recovery email" }));
 
     expect(onChange).toHaveBeenCalledWith({
       ...workflow,
       actions: ["review-account"],
+      stepConfig: {},
     });
   });
 
@@ -65,6 +84,9 @@ describe("VisualWorkflowBuilder", () => {
       ...workflow,
       actions: [...workflow.actions],
       trigger: { kind: "communication", criteria: "Customer mentions a missed deadline" },
+      stepConfig: {
+        "action:1": { recipient: "promise-recipient", tone: "warm" },
+      },
     });
 
     expect(compiled.triggers).toMatchObject({
@@ -72,6 +94,7 @@ describe("VisualWorkflowBuilder", () => {
       workflow: { version: 1, trigger: { kind: "communication" } },
     });
     expect(compiled.instructions).toContain("connector.write.gmail_draft");
+    expect(compiled.instructions).toContain("tone: warm");
     expect(compiled.instructions).toContain("runtime approval gate");
   });
 });

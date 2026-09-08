@@ -594,7 +594,7 @@ export function AppShellSidebar({
     },
     {
       key: "scheduled",
-      label: "Scheduled",
+      label: "Workflows",
       icon: Clock,
       kind: "task",
       items: tasks,
