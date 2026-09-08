@@ -23,4 +23,15 @@ func TestLegacyBaselineRepairCoversCutoverGap(t *testing.T) {
 			t.Errorf("repair SQL missing %q", required)
 		}
 	}
+	if _, err := atlasmigrate.Stmts(legacyIdentifierPrepareSQL); err != nil {
+		t.Fatalf("parse identifier preparation SQL: %v", err)
+	}
+	for _, required := range []string{
+		"revenueevidence_source_source__9c29dc0e2c6e018629a5b95c5f67b4cf",
+		"relationship_attention_items_r_08f9696c627d891d88bc4d81e117365c",
+	} {
+		if !strings.Contains(legacyIdentifierPrepareSQL, required) {
+			t.Errorf("identifier preparation SQL missing %q", required)
+		}
+	}
 }
