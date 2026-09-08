@@ -34,10 +34,12 @@
     "dev:local": "bash scripts/dev-local.sh"
   },
   "dependencies": {
+    "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^9.1.1",
     "@mui/material": "^9.1.2",
+    "@mui/material-nextjs": "^9.4.0",
     "@oppulence/relationship-contract": "file:../../packages/relationship-contract",
     "@oppulence/ui": "file:../../packages/ui",
     "@phosphor-icons/react": "^2.1.10",
