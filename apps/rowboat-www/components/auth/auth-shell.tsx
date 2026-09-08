@@ -27,6 +27,16 @@ function GoogleLogo() {
 /** Stat pills under the quote card, mirroring the public site's proof strip. */
 const STATS = ["Every account, always current", "Evidence behind every action"];
 
+// The showcase quote. Keep this a real, attributable customer quote — swap the
+// text and attribution together, and don't ship a quote we can't source.
+const TESTIMONIAL = {
+  quote:
+    "I stopped doing the Monday morning scramble. I open it, I can see which accounts moved and what I missed, and the reasoning is right there so I'm not guessing. It's not magic, but it's the first thing that's stayed accurate past week two.",
+  name: "Design partner",
+  title: "Head of Customer Success, B2B SaaS",
+  avatar: "/marketing/oppulence-icon.png",
+};
+
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   sign_in_unavailable: "Sign-in is temporarily unavailable. Please try again.",
 };
@@ -90,15 +100,12 @@ export function AuthShell({
           <div className="sm-auth-overlay">
 
             <figure className="sm-auth-quote">
-              <blockquote>
-                Tried every CRM hygiene ritual — notes, reminders, pipeline reviews. The only thing
-                that keeps accounts actually current is Oppulence.
-              </blockquote>
+              <blockquote>{TESTIMONIAL.quote}</blockquote>
               <figcaption>
-                <img alt="" src="/marketing/oppulence-icon.png" />
+                <img alt="" src={TESTIMONIAL.avatar} />
                 <span>
-                  <strong>Account Mission Control</strong>
-                  Live across email, meetings, Slack, and CRM
+                  <strong>{TESTIMONIAL.name}</strong>
+                  {TESTIMONIAL.title}
                 </span>
               </figcaption>
             </figure>

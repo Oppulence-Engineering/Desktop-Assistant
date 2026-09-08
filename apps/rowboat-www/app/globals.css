@@ -6757,8 +6757,8 @@
   .sm-auth-quote blockquote {
     margin: 0;
     color: var(--sm-ink);
-    font-size: 19px;
-    line-height: 1.42;
+    font-size: 17.5px;
+    line-height: 1.5;
     letter-spacing: -0.01em;
   }
 
