@@ -1,9 +1,8 @@
 import { DM_Mono, DM_Sans, Space_Grotesk } from "next/font/google";
 
-import { SupportChat } from "@/components/features/support/support-chat";
-
-import { MarketingLayout } from "./marketing-components";
-
+// The legal pages share the public site's type system (DM Sans body, Space
+// Grotesk display, DM Mono accents) so terms/privacy don't visually detach from
+// marketing. The `sm-site` token scope is applied on the page shell itself.
 const dmSans = DM_Sans({
   variable: "--font-marketing-sans",
   subsets: ["latin"],
@@ -26,16 +25,13 @@ const spaceGrotesk = Space_Grotesk({
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#000000",
+  themeColor: "#ffffff",
 };
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function LegalLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className={`${dmSans.variable} ${dmMono.variable} ${spaceGrotesk.variable}`}>
-      <MarketingLayout>{children}</MarketingLayout>
-      {/* The public site is dark-on-black, so the widget is pinned dark
-          rather than following the visitor's system preference. */}
-      <SupportChat theme="dark" />
+      {children}
     </div>
   );
 }

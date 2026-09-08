@@ -515,6 +515,7 @@ export function Footer() {
               { label: "Customers", href: "/customers" },
               { label: "Privacy", href: "/privacy" },
               { label: "Terms", href: "/terms" },
+              { label: "Responsible disclosure", href: "/responsible-disclosure" },
               { label: "Book a relationship review", href: "/book-a-demo" },
             ]}
             title="Company"
