@@ -692,19 +692,22 @@ const relationshipCatalog = [
   {
     label: "Read",
     kicker: "01",
-    title: "Find every promise.",
+    icon: MagnifyingGlassIcon,
+    title: "It reads itself.",
     body: "Email, meetings, CRM, and billing become one account trail.",
   },
   {
     label: "Resolve",
     kicker: "02",
-    title: "Show what is owed.",
+    icon: NetworkIcon,
+    title: "Your tools finally agree.",
     body: "What you owe, what they owe, what changed, and what is at risk.",
   },
   {
     label: "Act",
     kicker: "03",
-    title: "Explain the next move.",
+    icon: SealCheckIcon,
+    title: "Ask, and it is there.",
     body: "Every recommendation comes with the source and approval boundary.",
   },
 ] as const;
@@ -824,30 +827,37 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="sm-attio-context">
+      <section className="sm-attio-dark">
         <div className="sm-attio-shell">
-          <p className="sm-attio-section-label">The only ledger with</p>
-          <p className="sm-attio-wordmark">Relationship Memory</p>
-          <AttioHeading
-            lead="All of the history, none of the noise."
-            rest="Every promise, objection, reply, meeting, and outcome makes the next move more specific and more trusted."
-          />
-          <div className="sm-attio-context-grid">
-            {relationshipCatalog.map((item) => (
-              <article key={item.label}>
-                <span>{item.label}</span>
-                <h3>{item.title}</h3>
-                <p>{item.body}</p>
-              </article>
-            ))}
+          <div className="sm-attio-wordmark-stage">
+            <p className="sm-attio-dark-eyebrow">The only ledger with</p>
+            <h2 className="sm-attio-wordmark">
+              Relationship Memory
+              <sup aria-hidden="true">&trade;</sup>
+            </h2>
+          </div>
+
+          <div className="sm-attio-dark-strip">
+            {relationshipCatalog.map((item) => {
+              const Icon = item.icon;
+              return (
+                <article key={item.label}>
+                  <Icon aria-hidden="true" />
+                  <div>
+                    <p>{item.title}</p>
+                    <p>{item.body}</p>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      <section className="sm-attio-connect">
+      <section className="sm-attio-dark sm-attio-dark-connect">
         <div className="sm-attio-shell">
-          <p className="sm-attio-section-label">Connectivity</p>
-          <h3>Your whole stack, connected.</h3>
+          <p className="sm-attio-dark-eyebrow">Connectivity</p>
+          <h2>Your whole stack, connected.</h2>
           <p className="sm-attio-connect-body">
             Oppulence reads the systems the relationship already lives in, and writes back only
             where you approve it.

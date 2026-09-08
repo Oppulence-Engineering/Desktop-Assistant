@@ -7100,7 +7100,6 @@
   /* Shared section rhythm. Attio alternates #ffffff and #fafafb bands and
      uses one 40px/44px heading scale for every section below the hero. */
   .sm-attio-platform,
-  .sm-attio-context,
   .sm-attio-guarantees,
   .sm-attio-steps {
     background: var(--attio-soft);
@@ -7108,7 +7107,6 @@
   }
 
   .sm-attio-setup,
-  .sm-attio-connect,
   .sm-attio-suite {
     background: #ffffff;
     padding-block: clamp(88px, 8.4vw, 136px);
@@ -7148,9 +7146,7 @@
   }
 
   .sm-attio-platform,
-  .sm-attio-context,
   .sm-attio-setup,
-  .sm-attio-connect,
   .sm-attio-guarantees,
   .sm-attio-suite,
   .sm-attio-steps {
@@ -7331,31 +7327,167 @@
     margin-top: clamp(44px, 4.6vw, 68px);
   }
 
-  /* Relationship Memory: the branded centrepiece, mirrors Universal Context. */
-  .sm-attio-context > .sm-attio-shell {
+  /* Attio runs Universal Context and Connectivity as one continuous #101010
+     region: a huge wordmark over a radial glow, then a 5-up icon strip
+     divided by hairlines. This is the single biggest visual beat on the page. */
+  .sm-attio-dark {
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid var(--attio-line);
+    background: #101010;
+    color: #fafafb;
+  }
+
+  .sm-attio-dark > .sm-attio-shell {
+    border-inline-color: #262626;
+  }
+
+  .sm-attio-dark-eyebrow {
+    color: #8b93a1;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  /* Wordmark stage: the glow rises from the bottom, behind the type. */
+  .sm-attio-wordmark-stage {
+    position: relative;
     display: grid;
     justify-items: center;
+    gap: 4px;
+    padding-block: clamp(96px, 11vw, 178px) clamp(72px, 8vw, 128px);
     text-align: center;
   }
 
-  .sm-attio-context > .sm-attio-shell > .sm-attio-section-label,
-  .sm-attio-connect > .sm-attio-shell > .sm-attio-section-label {
-    justify-self: center;
+  .sm-attio-wordmark-stage::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    bottom: -46%;
+    left: 50%;
+    width: min(120%, 1100px);
+    aspect-ratio: 1;
+    border-radius: 999px;
+    background: radial-gradient(
+      circle,
+      rgb(93 124 255 / 42%) 0%,
+      rgb(56 78 190 / 20%) 42%,
+      rgb(16 16 16 / 0%) 68%
+    );
+    transform: translateX(-50%);
+  }
+
+  .sm-attio-wordmark-stage > * {
+    position: relative;
+    z-index: 1;
   }
 
   .sm-attio-wordmark {
-    margin-top: 22px;
-    background: linear-gradient(96deg, #2f6df6 0%, #7b5cf0 52%, #2f6df6 100%);
-    background-clip: text;
-    color: transparent;
-    font-size: clamp(2.4rem, 4.4vw, 4rem);
+    max-width: 100%;
+    color: #fafafb;
+    font-size: clamp(2.6rem, 5.55vw, 6rem);
     font-weight: 600;
-    letter-spacing: -0.026em;
-    line-height: 1.02;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    text-wrap: balance;
   }
 
-  .sm-attio-context h2 {
-    margin-top: 30px;
+  .sm-attio-wordmark sup {
+    top: 0.15em;
+    display: inline-block;
+    font-size: 0.4em;
+    line-height: 1;
+    vertical-align: top;
+  }
+
+  /* Icon strip: 32px/28px cells divided by hairlines, icon top, copy bottom. */
+  .sm-attio-dark-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid #262626;
+  }
+
+  .sm-attio-dark-strip article {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 32px;
+    padding: 32px 28px;
+  }
+
+  .sm-attio-dark-strip article + article {
+    border-left: 1px solid #262626;
+  }
+
+  .sm-attio-dark-strip svg {
+    width: 24px;
+    height: 24px;
+    color: #9aa3b2;
+  }
+
+  .sm-attio-dark-strip div {
+    display: grid;
+    gap: 6px;
+  }
+
+  .sm-attio-dark-strip p:first-child {
+    color: #e8eaee;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .sm-attio-dark-strip p + p {
+    color: #8b93a1;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  /* Connectivity keeps the dark treatment and Attio's 40px heading. */
+  .sm-attio-dark-connect {
+    border-top: 1px solid #262626;
+  }
+
+  .sm-attio-dark-connect > .sm-attio-shell {
+    display: grid;
+    justify-items: center;
+    padding-block: clamp(80px, 7.5vw, 120px);
+    text-align: center;
+  }
+
+  .sm-attio-dark-connect h2 {
+    margin-top: 16px;
+    color: #fafafb;
+    font-size: clamp(1.85rem, 2.4vw, 2.5rem);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+
+  .sm-attio-connect-body {
+    max-width: 620px;
+    margin-top: 14px;
+    color: #8b93a1;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+
+  .sm-attio-connect-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 40px;
+  }
+
+  .sm-attio-home .sm-attio-connect-grid span {
+    border: 1px solid #2f2f2f;
+    background: #171717;
+    padding: 10px 16px;
+    color: #c9cfd8;
+    font-size: 14px;
+    font-weight: 500;
   }
 
   .sm-attio-context-grid,
@@ -7389,7 +7521,6 @@
     transition: color 140ms ease;
   }
 
-  .sm-attio-context-grid,
   .sm-attio-home .sm-attio-suite-grid {
     gap: 0;
   }
@@ -7451,46 +7582,6 @@
   }
 
   /* Connectivity: centred copy over a wrapped integration wall. */
-  .sm-attio-connect > .sm-attio-shell {
-    display: grid;
-    justify-items: center;
-    text-align: center;
-  }
-
-  .sm-attio-connect h3 {
-    margin-top: 16px;
-    font-size: clamp(1.85rem, 2.4vw, 2.5rem);
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    line-height: 1.1;
-  }
-
-  .sm-attio-connect-body {
-    max-width: 620px;
-    margin-top: 14px;
-    color: var(--attio-muted);
-    font-size: 17px;
-    line-height: 1.5;
-  }
-
-  .sm-attio-connect-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 40px;
-  }
-
-  .sm-attio-connect-grid span {
-    border: 1px solid var(--attio-line);
-    border-radius: 0;
-    background: #ffffff;
-    padding: 10px 16px;
-    color: #4d5763;
-    font-size: 14px;
-    font-weight: 500;
-  }
-
   /* Governance: Attio's stat block. Blue left rule, 32px value, muted label,
      and no card chrome. */
   .sm-attio-guarantee-grid {
@@ -7520,18 +7611,21 @@
     line-height: 1.45;
   }
 
-  /* How it works: Attio's changelog columns, divided by hairlines only. */
+  /* How it works: Attio's changelog columns. Full-bleed hairlines, a 12px
+     muted kicker, an 18px title, and a 16px body. */
   .sm-attio-step-grid {
     gap: 0;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid var(--attio-line);
   }
 
   .sm-attio-step-grid article {
-    gap: 10px;
+    align-content: start;
+    gap: 6px;
     border: 0;
     border-left: 1px solid var(--attio-line);
     background: none;
-    padding: 0 32px;
+    padding: 28px 28px 0;
   }
 
   .sm-attio-step-grid article:first-child {
@@ -7540,9 +7634,25 @@
   }
 
   .sm-attio-step-grid article > span {
-    color: #a4aeba;
-    font-size: 14px;
+    color: var(--attio-muted);
+    font-size: 12px;
     font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  .sm-attio-step-grid h3 {
+    color: #232529;
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  .sm-attio-step-grid p {
+    color: var(--attio-muted);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.45;
   }
 
   .sm-attio-final > .sm-attio-shell {
