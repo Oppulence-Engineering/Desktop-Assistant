@@ -29,6 +29,7 @@ flyctl deploy "${REPO_ROOT}" \
   --config "${FLY_CONFIG}" \
   --ha=false \
   --local-only \
+  --wait-timeout 2m \
   --yes
 
 # One request-serving Machine per coast. max-per-region prevents both from
