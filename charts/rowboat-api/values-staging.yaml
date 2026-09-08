@@ -23,10 +23,9 @@ config:
   LOG_LEVEL: debug
   AUTO_MIGRATE: "true" # staging may auto-migrate for fast iteration
   APP_URL: https://x.staging.oppulence.io
-  OIDC_ISSUER_URL: https://oauth.staging.oppulence.io
-  TOKEN_ISSUER: https://oauth.staging.oppulence.io
+  # All three issuer URLs share this origin in staging.
+  AUTH_ISSUER_URL: https://oauth.staging.oppulence.io
   JWKS_URL: https://oauth.staging.oppulence.io/.well-known/jwks.json
-  ORY_PUBLIC_URL: https://oauth.staging.oppulence.io
   ORY_ADMIN_URL: http://hydra-admin.ory-staging.svc.cluster.local:4445
   ORY_BROKER_CLIENT_ID: solomon-connector-broker-staging
   # Exact broker completion endpoints only. The hosted BFF keeps the eventual

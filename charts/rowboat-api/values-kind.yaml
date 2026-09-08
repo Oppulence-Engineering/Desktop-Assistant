@@ -89,16 +89,16 @@ config:
 
   # Host-reachable URLs are what the desktop sees through kind port mappings.
   APP_URL: http://localhost:18080
-  OIDC_ISSUER_URL: http://localhost:18090
-  TOKEN_ISSUER: http://localhost:18090
+  # One knob for every issuer URL (OIDC, token, Ory, WorkOS authorize). They all
+  # point at the devstack mock locally, so changing the devstack port is a
+  # single edit here instead of four.
+  AUTH_ISSUER_URL: http://localhost:18090
   TOKEN_AUDIENCE: rowboat-api
 
   # rowboat-api runs inside kind, so it reaches devstack via Kubernetes DNS.
   JWKS_URL: http://rowboat-api-devstack:8090/.well-known/jwks.json
   WORKOS_BASE_URL: http://rowboat-api-devstack:8090
-  WORKOS_AUTHORIZE_BASE_URL: http://localhost:18090
 
-  ORY_PUBLIC_URL: http://localhost:18090
   PUBLIC_BASE_URL: http://localhost:18080
   # kind uses the Infisical CLI to create rowboat-api-secrets before Helm
   # deploys. Runtime app-level Infisical refresh stays disabled.

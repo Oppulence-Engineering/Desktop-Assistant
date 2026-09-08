@@ -413,10 +413,7 @@ deploy_chart() {
     --set-string "config.PUBLIC_BASE_URL=${api_origin}" \
     --set-string "config.CORS_ALLOWED_ORIGINS=${cors_origins}" \
     --set-string "config.GOOGLE_REDIRECT_URI=${api_origin}/oauth/google/callback" \
-    --set-string "config.OIDC_ISSUER_URL=${devstack_origin}" \
-    --set-string "config.TOKEN_ISSUER=${devstack_origin}" \
-    --set-string "config.WORKOS_AUTHORIZE_BASE_URL=${devstack_origin}" \
-    --set-string "config.ORY_PUBLIC_URL=${devstack_origin}" \
+    --set-string "config.AUTH_ISSUER_URL=${devstack_origin}" \
     "${google_args[@]}" \
     "${llm_args[@]}" \
     --wait \

@@ -146,9 +146,12 @@ ROWBOAT_DEVSTACK_PORT=28090 \
 scripts/rowboat-api-kind.sh up
 ```
 
-If you override the devstack port, also override `charts/rowboat-api/values-kind.yaml`
-for `OIDC_ISSUER_URL`, `TOKEN_ISSUER`, and `WORKOS_AUTHORIZE_BASE_URL`, because
-those values are embedded in devstack-issued tokens and browser login URLs.
+If you override the devstack port, also override `AUTH_ISSUER_URL` in
+`charts/rowboat-api/values-kind.yaml`, because that origin is embedded in
+devstack-issued tokens and browser login URLs. It is one knob covering
+`OIDC_ISSUER_URL`, `TOKEN_ISSUER`, `ORY_PUBLIC_URL`, and
+`WORKOS_AUTHORIZE_BASE_URL`; set those individually only to make one of them
+deliberately differ, as production does.
 
 If you created the kind cluster before this file existed, recreate it so the
 host port mappings are present:

@@ -232,13 +232,16 @@ config:
   CORS_ALLOWED_ORIGINS: https://app.solomon-ai.co
   AUTO_MIGRATE: "false" # production uses versioned migrations
   APP_URL: https://app.solomon-ai.co
-  OIDC_ISSUER_URL: https://oauth.solomon-ai.co
+  # One knob for OIDC_ISSUER_URL, TOKEN_ISSUER, ORY_PUBLIC_URL and
+  # WORKOS_AUTHORIZE_BASE_URL. Environments where they share an origin set only
+  # this; production splits them and overrides each specific var instead.
+  # Those vars are intentionally not pinned here: doing so would shadow
+  # AUTH_ISSUER_URL for anyone setting the single knob.
+  AUTH_ISSUER_URL: https://oauth.solomon-ai.co
   WEBSOCKET_API_URL: ""
-  TOKEN_ISSUER: https://oauth.solomon-ai.co
   TOKEN_AUDIENCE: rowboat-api
   JWKS_URL: https://oauth.solomon-ai.co/.well-known/jwks.json
   WORKOS_CLIENT_ID: ""
-  ORY_PUBLIC_URL: https://oauth.solomon-ai.co
   PUBLIC_BASE_URL: https://api.x.solomon-ai.co
   # Exact iss for rowboat-api-minted connector resource tokens. This is not the
   # Hydra issuer used by the authorization-code and consent flow.

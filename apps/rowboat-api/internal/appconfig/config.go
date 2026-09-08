@@ -678,6 +678,24 @@ func Load() Config {
 	// router is two cheap bounded calls per event, so it may stay smaller).
 	defaultModel := getenv("LLM_MODEL", "anthropic/claude-sonnet-4-5")
 	defaultRouterModel := getenv("LLM_MODEL", "anthropic/claude-haiku-4-5")
+	// Same idea for the issuer URLs. Outside production these three always hold
+	// the same origin (the devstack mock locally, the Hydra host in staging), so
+	// pointing an environment at a different issuer meant editing three vars in
+	// values plus four --set-string flags in the kind script, and the local docs
+	// carry a manual "remember to also update..." warning that exists only
+	// because of this duplication. AUTH_ISSUER_URL sets all three at once.
+	// Production deliberately splits them (AuthKit issuer, WorkOS API, Hydra),
+	// so each specific var still wins.
+	authIssuer := getenv("AUTH_ISSUER_URL", "")
+	issuerOr := func(key, def string) string {
+		if v := getenv(key, ""); v != "" {
+			return v
+		}
+		if authIssuer != "" {
+			return authIssuer
+		}
+		return def
+	}
 	return Config{
 		ServiceName: getenv("SERVICE_NAME", "rowboat-api"),
 		Environment: environment,
@@ -726,10 +744,10 @@ func Load() Config {
 		// WorkOS, set OIDC_ISSUER_URL + TOKEN_ISSUER to the Hydra issuer
 		// (https://oauth.solomon-ai.co) and OAUTH_CLIENT_ID to the Hydra client.
 		// See apps/rowboat-api/AUTH.md.
-		OIDCIssuerURL:   getenv("OIDC_ISSUER_URL", "https://auth.solomon-ai.co"),
+		OIDCIssuerURL:   issuerOr("OIDC_ISSUER_URL", "https://auth.solomon-ai.co"),
 		WebsocketAPIURL: getenv("WEBSOCKET_API_URL", ""),
 
-		TokenIssuer: getenv("TOKEN_ISSUER", "https://auth.solomon-ai.co"),
+		TokenIssuer: issuerOr("TOKEN_ISSUER", "https://auth.solomon-ai.co"),
 		// allowEmpty: an explicitly-set empty TOKEN_AUDIENCE disables the
 		// audience check (WorkOS access tokens carry no `aud`).
 		TokenAudience: getenvAllowEmpty("TOKEN_AUDIENCE", "rowboat-api"),
@@ -749,11 +767,11 @@ func Load() Config {
 		WorkOSAPIKey:           getenv("WORKOS_API_KEY", ""),
 		WorkOSClientID:         getenv("WORKOS_CLIENT_ID", ""),
 		WorkOSBaseURL:          getenv("WORKOS_BASE_URL", ""),
-		WorkOSAuthorizeBaseURL: getenv("WORKOS_AUTHORIZE_BASE_URL", ""),
+		WorkOSAuthorizeBaseURL: issuerOr("WORKOS_AUTHORIZE_BASE_URL", ""),
 		// Default to the WorkOS client id so WorkOS-direct needs only WORKOS_CLIENT_ID.
 		OAuthClientID: getenv("OAUTH_CLIENT_ID", getenv("WORKOS_CLIENT_ID", "")),
 
-		OryPublicURL:                              getenv("ORY_PUBLIC_URL", "https://oauth.solomon-ai.co"),
+		OryPublicURL:                              issuerOr("ORY_PUBLIC_URL", "https://oauth.solomon-ai.co"),
 		OryAdminURL:                               getenv("ORY_ADMIN_URL", ""),
 		OryBrokerClientID:                         getenv("ORY_BROKER_CLIENT_ID", ""),
 		OryBrokerClientSecret:                     getenv("ORY_BROKER_CLIENT_SECRET", ""),

@@ -788,3 +788,52 @@ func TestLLMModelUmbrella(t *testing.T) {
 		t.Fatalf("override leaked to agent runtime: %s", cfg.AgentRuntimeModel)
 	}
 }
+
+// TestAuthIssuerUmbrella: outside production the issuer URLs all hold the same
+// origin, so pointing an environment at a different issuer should be one edit,
+// not four. Production deliberately splits them, so specific vars must win.
+func TestAuthIssuerUmbrella(t *testing.T) {
+	for _, k := range []string{"AUTH_ISSUER_URL", "OIDC_ISSUER_URL", "TOKEN_ISSUER", "ORY_PUBLIC_URL", "WORKOS_AUTHORIZE_BASE_URL"} {
+		os.Unsetenv(k)
+	}
+
+	t.Setenv("AUTH_ISSUER_URL", "http://localhost:18090")
+	cfg := Load()
+	for name, got := range map[string]string{
+		"oidc":      cfg.OIDCIssuerURL,
+		"token":     cfg.TokenIssuer,
+		"ory":       cfg.OryPublicURL,
+		"authorize": cfg.WorkOSAuthorizeBaseURL,
+	} {
+		if got != "http://localhost:18090" {
+			t.Fatalf("AUTH_ISSUER_URL did not reach %s: %s", name, got)
+		}
+	}
+
+	// Production's split: each specific var overrides independently.
+	t.Setenv("OIDC_ISSUER_URL", "https://agile-glow-66.authkit.app")
+	t.Setenv("TOKEN_ISSUER", "https://api.workos.com")
+	cfg = Load()
+	if cfg.OIDCIssuerURL != "https://agile-glow-66.authkit.app" || cfg.TokenIssuer != "https://api.workos.com" {
+		t.Fatalf("specific issuers lost to umbrella: oidc=%s token=%s", cfg.OIDCIssuerURL, cfg.TokenIssuer)
+	}
+	if cfg.OryPublicURL != "http://localhost:18090" {
+		t.Fatalf("unset issuer should still follow the umbrella: %s", cfg.OryPublicURL)
+	}
+}
+
+// TestAuthIssuerUnsetKeepsDefaults: with no umbrella set, every issuer keeps
+// the documented production default.
+func TestAuthIssuerUnsetKeepsDefaults(t *testing.T) {
+	for _, k := range []string{"AUTH_ISSUER_URL", "OIDC_ISSUER_URL", "TOKEN_ISSUER", "ORY_PUBLIC_URL", "WORKOS_AUTHORIZE_BASE_URL"} {
+		os.Unsetenv(k)
+	}
+	cfg := Load()
+	if cfg.OIDCIssuerURL != "https://auth.solomon-ai.co" ||
+		cfg.TokenIssuer != "https://auth.solomon-ai.co" ||
+		cfg.OryPublicURL != "https://oauth.solomon-ai.co" ||
+		cfg.WorkOSAuthorizeBaseURL != "" {
+		t.Fatalf("unset defaults changed: oidc=%s token=%s ory=%s authorize=%q",
+			cfg.OIDCIssuerURL, cfg.TokenIssuer, cfg.OryPublicURL, cfg.WorkOSAuthorizeBaseURL)
+	}
+}
