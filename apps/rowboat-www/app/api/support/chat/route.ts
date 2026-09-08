@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { connection, NextRequest, NextResponse } from "next/server";
 
 import { readSessionCookie } from "@/lib/auth/cookies";
 import { fetchViewerIdentity } from "@/lib/auth/rowboat-api";
@@ -19,6 +19,10 @@ import { emailHash, getSupportChatConfig } from "@/lib/support/config";
  * verification handles identifying them.
  */
 export async function GET(request: NextRequest) {
+  // Cache Components would otherwise prerender this handler at build time,
+  // freezing one anonymous response for every user. The identity here is
+  // per-request and per-user, so it must be resolved at request time.
+  await connection();
   const { appId } = getSupportChatConfig();
   // No chat app configured (local dev, self-hosted): report it plainly so the
   // client can skip loading Plain's script entirely.

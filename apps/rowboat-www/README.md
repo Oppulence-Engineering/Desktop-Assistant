@@ -74,6 +74,28 @@ ROWBOAT_WWW_SESSION_SECRET=<32+ random characters>
 Local development uses an insecure fallback session secret. Production refuses
 to seal or verify auth cookies without `ROWBOAT_WWW_SESSION_SECRET`.
 
+## Support chat
+
+Plain's chat widget is mounted on both the marketing site and the dashboard by
+`components/features/support/support-chat.tsx`. Threads land in the same Plain
+workspace as the desktop app's in-app feedback (`POST /v1/feedback`), so there
+is one support inbox rather than one per surface.
+
+```bash
+ROWBOAT_WWW_PLAIN_CHAT_APP_ID=<chat app id>
+ROWBOAT_WWW_PLAIN_CHAT_SECRET=<chat secret>
+```
+
+Both come from Plain under **Settings → Chat**. With no app id the widget is
+skipped entirely and the vendor script never loads, which is the default for
+local development.
+
+Signed-in users are identified by an HMAC-SHA256 hash of their verified email,
+minted server-side in `/api/support/chat`. Plain treats that hash as a bearer
+credential for the customer's identity, so the secret stays server-side and is
+never exposed to the browser bundle. Anonymous visitors chat unauthenticated
+and Plain's own email verification identifies them.
+
 ## Verification
 
 ```bash
