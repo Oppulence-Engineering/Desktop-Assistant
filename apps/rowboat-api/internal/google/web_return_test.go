@@ -53,3 +53,14 @@ func TestDeepLinkShowsRetryCopyOnError(t *testing.T) {
 		t.Fatalf("error completion page is unclear: %s", body)
 	}
 }
+
+func TestErrorPageUsesOppulenceBranding(t *testing.T) {
+	h := &Handler{}
+	rec := httptest.NewRecorder()
+	h.errorPage(rec, 400, "Missing state.")
+
+	body := rec.Body.String()
+	if !strings.Contains(body, "<title>Oppulence</title>") || strings.Contains(body, "Rowboat") {
+		t.Fatalf("error page has incorrect branding: %s", body)
+	}
+}
