@@ -6,7 +6,7 @@ kill_signal = "SIGTERM"
 kill_timeout = "30s"
 
 [build]
-  dockerfile = "apps/rowboat-api/Dockerfile"
+  dockerfile = "Dockerfile"
 
 [deploy]
   release_command = "/rowboat-api-migrate apply"
