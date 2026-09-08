@@ -63,9 +63,8 @@ jobs:
           set -euo pipefail
 
           secrets_json="$(mktemp)"
-          runtime_secrets="$(mktemp)"
-          chmod 600 "${secrets_json}" "${runtime_secrets}"
-          trap 'rm -f "${secrets_json}" "${runtime_secrets}"' EXIT
+          chmod 600 "${secrets_json}"
+          trap 'rm -f "${secrets_json}"' EXIT
 
           infisical export \
             --silent \
@@ -78,6 +77,7 @@ jobs:
           required_keys=(
             DATABASE_URL REDIS_URL DB_ENCRYPTION_KEY WORKOS_CLIENT_ID WORKOS_API_KEY
             JWKS_URL HOOK_HMAC_SECRET INTERNAL_API_SECRET
+            BROKER_TOKEN_PRIVATE_KEY_PEM BROKER_TOKEN_KEYRING_JSON
             CONNECTOR_INVALIDATION_PRINCIPALS_JSON OPENAI_API_KEY ELEVENLABS_API_KEY
             EXA_API_KEY PARALLEL_API_KEY GOOGLE_OAUTH_CLIENT_ID GOOGLE_OAUTH_CLIENT_SECRET
             GOOGLE_WEBHOOK_TOKEN TEMPORAL_API_KEY
@@ -93,14 +93,18 @@ jobs:
             exit 1
           fi
 
-          jq -r '
+          secret_args=()
+          while IFS= read -r key; do
+            value="$(jq -r --arg key "${key}" '.[] | select(.key == $key) | .value' "${secrets_json}")"
+            secret_args+=("${key}=${value}")
+          done < <(jq -r '
             .[]
             | select((.value // "") != "")
             | select(.key != "MIGRATION_DATABASE_URL")
             | select(.key != "TEMPORAL_ENABLED" and .key != "TEMPORAL_WORKER_ENABLED")
-            | "\(.key)=\((.value // "") | tostring)"
-          ' "${secrets_json}" > "${runtime_secrets}"
-          flyctl secrets import --stage --app "${FLY_APP_NAME}" < "${runtime_secrets}"
+            | .key
+          ' "${secrets_json}")
+          flyctl secrets set --stage --app "${FLY_APP_NAME}" "${secret_args[@]}"
 
       - name: Deploy and converge process topology
         run: apps/rowboat-api/scripts/fly-deploy.sh "${FLY_APP_NAME}"
