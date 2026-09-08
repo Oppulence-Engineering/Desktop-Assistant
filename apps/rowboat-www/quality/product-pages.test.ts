@@ -35,3 +35,15 @@ describe("Oppulence product surfaces", () => {
     }
   });
 });
+
+describe("product navigation", () => {
+  it("keeps every product reachable from the footer product column", () => {
+    // The footer renders productLinks.slice(0, 6), so the three surfaces have
+    // to stay inside that window or they silently drop out of the footer.
+    const footerLinks = productLinks.slice(0, 6).map((link) => link.href);
+
+    for (const page of platformPages) {
+      expect(footerLinks).toContain(`/${page.slug}`);
+    }
+  });
+});

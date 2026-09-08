@@ -64,7 +64,6 @@ const integrationGroups = [
 ];
 
 const mobileNavLinks = [
-  { label: "Product", href: "/product" },
   { label: "How it works", href: "/#how-it-works" },
   { label: "Integrations", href: "/integrations" },
   { label: "Pricing", href: "/pricing" },
@@ -414,11 +413,14 @@ function MobileMenu() {
           </Link>
         ))}
         <p className="sm-mobile-kicker">Products</p>
-        {productLinks.slice(0, 5).map((item) => (
-          <Link className="sm-mobile-product" href={item.href} key={item.href}>
-            {item.label}
+        {platformPages.map((platform) => (
+          <Link className="sm-mobile-product" href={`/${platform.slug}`} key={platform.slug}>
+            {platform.name}
           </Link>
         ))}
+        <Link className="sm-mobile-product" href="/product">
+          How it all works
+        </Link>
         <div className="mt-auto grid gap-2 pt-8">
           <Link className="sm-button sm-button-light" href="/sign-in">
             Sign in
@@ -443,22 +445,28 @@ export function TopBar() {
         </div>
 
         <nav aria-label="Primary navigation" className="sm-desktop-nav hidden lg:flex">
-          <Link href="/product">Product</Link>
+          {/* One Products menu, led by the three ways to run Oppulence. A
+              separate "Product" link next to a "Products" menu read as two
+              different things when it was really one. */}
+          <details className="sm-nav-products" data-marketing-dropdown>
+            <summary>Products</summary>
+            <div className="linear-dropdown-panel sm-product-menu">
+              {platformPages.map((platform) => (
+                <Link href={`/${platform.slug}`} key={platform.slug}>
+                  <span>{platform.name}</span>
+                  <small>{platform.summary}</small>
+                </Link>
+              ))}
+              <Link href="/product">
+                <span>How it all works</span>
+                <small>The relationship model behind all three</small>
+              </Link>
+            </div>
+          </details>
           <Link href="/#how-it-works">How it works</Link>
           <Link href="/integrations">Integrations</Link>
           <Link href="/pricing">Pricing</Link>
           <Link href="/blog">Blog</Link>
-          <details className="sm-nav-products" data-marketing-dropdown>
-            <summary>Products</summary>
-            <div className="linear-dropdown-panel sm-product-menu">
-              {productLinks.slice(0, 6).map((item) => (
-                <Link href={item.href} key={item.href}>
-                  <span>{item.label}</span>
-                  <small>{item.description}</small>
-                </Link>
-              ))}
-            </div>
-          </details>
         </nav>
 
         <div className="flex flex-1 items-center justify-end">
