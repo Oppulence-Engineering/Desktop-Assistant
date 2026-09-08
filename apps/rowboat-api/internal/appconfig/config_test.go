@@ -745,3 +745,46 @@ func TestLLMRateLimitsAreOverridable(t *testing.T) {
 			cfg.LLMRateLimitPerUserPerMin, cfg.LLMRateLimitPerUserBurst)
 	}
 }
+
+// TestLLMModelUmbrella: the three gateway-bound runtimes must be movable with
+// one variable. Before LLM_MODEL, saying "use gpt-4.1" meant setting three
+// vars, and a deploy that set only the obvious two silently left the event
+// router on another provider.
+func TestLLMModelUmbrella(t *testing.T) {
+	for _, k := range []string{"LLM_MODEL", "AGENT_RUNTIME_MODEL", "CLOUD_RUNTIME_MODEL", "CLOUD_EVENTS_ROUTER_MODEL"} {
+		t.Setenv(k, "")
+		os.Unsetenv(k)
+	}
+
+	// Unset: each runtime keeps its own documented default.
+	cfg := Load()
+	if cfg.AgentRuntimeModel != "anthropic/claude-sonnet-4-5" ||
+		cfg.CloudRuntimeModel != "anthropic/claude-sonnet-4-5" ||
+		cfg.CloudEventsRouterModel != "anthropic/claude-haiku-4-5" {
+		t.Fatalf("unset defaults changed: agent=%s cloud=%s router=%s",
+			cfg.AgentRuntimeModel, cfg.CloudRuntimeModel, cfg.CloudEventsRouterModel)
+	}
+
+	// One knob moves all three.
+	t.Setenv("LLM_MODEL", "openai/gpt-4.1")
+	cfg = Load()
+	for name, got := range map[string]string{
+		"agent":  cfg.AgentRuntimeModel,
+		"cloud":  cfg.CloudRuntimeModel,
+		"router": cfg.CloudEventsRouterModel,
+	} {
+		if got != "openai/gpt-4.1" {
+			t.Fatalf("LLM_MODEL did not reach %s runtime: %s", name, got)
+		}
+	}
+
+	// A specific var still wins, so one runtime can differ deliberately.
+	t.Setenv("CLOUD_EVENTS_ROUTER_MODEL", "openai/gpt-4.1-mini")
+	cfg = Load()
+	if cfg.CloudEventsRouterModel != "openai/gpt-4.1-mini" {
+		t.Fatalf("specific override lost to umbrella: %s", cfg.CloudEventsRouterModel)
+	}
+	if cfg.AgentRuntimeModel != "openai/gpt-4.1" {
+		t.Fatalf("override leaked to agent runtime: %s", cfg.AgentRuntimeModel)
+	}
+}

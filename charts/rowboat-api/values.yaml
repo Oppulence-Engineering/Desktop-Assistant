@@ -346,7 +346,10 @@ config:
   # and requires TEMPORAL_ENABLED=true.
   CLOUD_EVENTS_ROUTING_ENABLED: "false"
   CLOUD_EVENTS_MATCH_THRESHOLD: "0.7"
-  CLOUD_EVENTS_ROUTER_MODEL: anthropic/claude-haiku-4-5
+  # CLOUD_EVENTS_ROUTER_MODEL is intentionally unset: the Go default already
+  # picks the cheap router model, and pinning it here would override
+  # LLM_MODEL for anyone who sets that single knob. Set it explicitly only
+  # to give the router a deliberately different model than the runtimes.
   CLOUD_EVENTS_MAX_PAYLOAD_BYTES: "262144"
   # Google watch manager (RFC 003): registers/renews Gmail + Calendar push
   # subscriptions in the scheduler pod. Requires GOOGLE_WEBHOOK_TOKEN and (for
@@ -363,7 +366,8 @@ config:
   # deterministic-artifact NoopRuntime. MAX_DURATION must stay strictly under
   # the 5m Temporal activity timeout (boot validation enforces it).
   CLOUD_RUNTIME_ENABLED: "true"
-  CLOUD_RUNTIME_MODEL: anthropic/claude-sonnet-4-5
+  # CLOUD_RUNTIME_MODEL is intentionally unset; same reason as the router
+  # model above. Prefer setting LLM_MODEL once.
   CLOUD_RUNTIME_MAX_DURATION: 4m
   CLOUD_RUNTIME_MAX_LLM_CALLS: "12"
   CLOUD_RUNTIME_MAX_TOOL_CALLS: "24"

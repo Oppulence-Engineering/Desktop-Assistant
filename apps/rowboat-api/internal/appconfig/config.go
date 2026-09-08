@@ -670,6 +670,14 @@ func Load() Config {
 	if production {
 		corsDefault = "https://app.solomon-ai.co"
 	}
+	// One knob to move every gateway-bound runtime. Three separate *_MODEL vars
+	// meant "use model X" had to be said three times and was easy to half-apply:
+	// a deploy that set the two obvious ones still left the event router on a
+	// different provider. LLM_MODEL sets the floor for all of them; the specific
+	// vars still win where a runtime genuinely needs a different model (the event
+	// router is two cheap bounded calls per event, so it may stay smaller).
+	defaultModel := getenv("LLM_MODEL", "anthropic/claude-sonnet-4-5")
+	defaultRouterModel := getenv("LLM_MODEL", "anthropic/claude-haiku-4-5")
 	return Config{
 		ServiceName: getenv("SERVICE_NAME", "rowboat-api"),
 		Environment: environment,
@@ -869,7 +877,7 @@ func Load() Config {
 		CloudEventsMatchThreshold: getfloat("CLOUD_EVENTS_MATCH_THRESHOLD", 0.7),
 		// Routing is two cheap bounded calls per event; default to the cheapest
 		// priced model (see internal/pricing DefaultTable).
-		CloudEventsRouterModel:     getenv("CLOUD_EVENTS_ROUTER_MODEL", "anthropic/claude-haiku-4-5"),
+		CloudEventsRouterModel:     getenv("CLOUD_EVENTS_ROUTER_MODEL", defaultRouterModel),
 		CloudEventsMaxPayloadBytes: getint("CLOUD_EVENTS_MAX_PAYLOAD_BYTES", 256<<10),
 		SlackSigningSecret:         getenv("SLACK_SIGNING_SECRET", ""),
 		GoogleWebhookToken:         getenv("GOOGLE_WEBHOOK_TOKEN", ""),
@@ -899,7 +907,7 @@ func Load() Config {
 		DriveAPIBaseURL:        getenv("DRIVE_API_BASE_URL", ""),
 
 		CloudRuntimeEnabled:               getbool("CLOUD_RUNTIME_ENABLED", true),
-		CloudRuntimeModel:                 getenv("CLOUD_RUNTIME_MODEL", "anthropic/claude-sonnet-4-5"),
+		CloudRuntimeModel:                 getenv("CLOUD_RUNTIME_MODEL", defaultModel),
 		CloudRuntimeMaxDuration:           getdur("CLOUD_RUNTIME_MAX_DURATION", 4*time.Minute),
 		CloudRuntimeMaxLLMCalls:           getint("CLOUD_RUNTIME_MAX_LLM_CALLS", 12),
 		CloudRuntimeMaxToolCalls:          getint("CLOUD_RUNTIME_MAX_TOOL_CALLS", 24),
@@ -925,7 +933,7 @@ func Load() Config {
 		AgentStreamingEnabled: getbool("AGENT_STREAMING_ENABLED", true),
 		AgentHITLEnabled:      getbool("AGENT_HITL_ENABLED", true),
 		AgentSubagentsEnabled: getbool("AGENT_SUBAGENTS_ENABLED", true),
-		AgentRuntimeModel:     getenv("AGENT_RUNTIME_MODEL", "anthropic/claude-sonnet-4-5"),
+		AgentRuntimeModel:     getenv("AGENT_RUNTIME_MODEL", defaultModel),
 
 		AgentMaxLLMCallsPerTurn:  getint("AGENT_MAX_LLM_CALLS_PER_TURN", 12),
 		AgentMaxToolCallsPerTurn: getint("AGENT_MAX_TOOL_CALLS_PER_TURN", 24),
