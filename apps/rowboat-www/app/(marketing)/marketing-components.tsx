@@ -467,7 +467,7 @@ function MobileMenu() {
             Sign in
           </Link>
           <Link className="sm-button sm-button-blue" href="/sign-up">
-            Get the report <ArrowRightIcon aria-hidden="true" />
+            Start for free <ArrowRightIcon aria-hidden="true" />
           </Link>
         </div>
       </nav>
@@ -508,7 +508,7 @@ export function TopBar() {
             Sign in
           </Link>
           <Link className="sm-header-cta hidden md:inline-flex" href="/sign-up">
-            Start building <ArrowRightIcon aria-hidden="true" />
+            Start for free <ArrowRightIcon aria-hidden="true" />
           </Link>
           <MobileMenu />
         </div>
@@ -659,7 +659,7 @@ export function ProductsPage() {
           </p>
           <div>
             <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
-              Get the report <ArrowRightIcon aria-hidden="true" />
+              Start for free <ArrowRightIcon aria-hidden="true" />
             </Link>
             <Link className="sm-memory-button" href="/product">
               See the ledger <ArrowRightIcon aria-hidden="true" />
@@ -790,11 +790,11 @@ export function HomePage() {
           </p>
 
           <div className="sm-attio-actions">
-            <Link className="sm-attio-btn" href="/pricing">
-              Talk to sales
+            <Link className="sm-attio-btn" href="/product">
+              See how it works
             </Link>
             <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
-              Get the report
+              Start for free
             </Link>
           </div>
         </div>
@@ -842,7 +842,7 @@ export function HomePage() {
             rest="Connect your inbox and calendar. Oppulence reads the last 90 days and builds the ledger before you ask it anything."
           />
           <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
-            Get the report
+            Start for free
           </Link>
           <figure className="sm-attio-setup-media">
             <Image
@@ -968,7 +968,7 @@ export function HomePage() {
               See the suite
             </Link>
             <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
-              Get the report
+              Start for free
             </Link>
           </div>
         </div>

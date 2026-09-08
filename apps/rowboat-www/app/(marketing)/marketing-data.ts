@@ -1329,7 +1329,7 @@ export const pricingPlans = [
     period: "",
     description: "A first pass over recent promises.",
     features: ["90-day report", "What we owe", "Source links"],
-    ctaLabel: "Get the report",
+    ctaLabel: "Start for free",
     ctaHref: "/sign-up",
   },
   {
