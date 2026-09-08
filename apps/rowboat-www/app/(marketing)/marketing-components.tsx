@@ -846,7 +846,8 @@ function RelationshipHomeHero() {
           height={1254}
           priority
           sizes="(max-width: 760px) 95vw, 900px"
-          src="/marketing/relationship-system/observe.png"
+          src="/marketing/relationship-system/observe.webp"
+          unoptimized
           width={1254}
         />
         <Image
