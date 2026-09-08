@@ -83,9 +83,9 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
           </dl>
           <div className="border-t border-border p-4 md:border-t-0">
             <p className="mb-2 text-xs font-medium text-primary/55">Why accounts are exposed</p>
-            {data.riskReasons.length ? (
+            {data.riskReasons?.length ? (
               <ul className="space-y-1.5 text-sm">
-                {data.riskReasons.slice(0, 5).map((risk) => (
+                {data.riskReasons!.slice(0, 5).map((risk) => (
                   <li className="flex items-center justify-between gap-3" key={risk.reason}>
                     <span className="text-primary/60">
                       {DETECTOR_LABELS[risk.reason] ?? risk.reason.replaceAll("_", " ")}
@@ -102,7 +102,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
       </section>
 
       {/* weekly digest preview — the same summary the email is built from */}
-      {digest && digest.top.length > 0 ? (
+      {digest?.top?.length ? (
         <section className="rounded-none border border-border p-4">
           <div className="mb-2 flex items-center gap-2">
             <EnvelopeSimple weight="fill" className="size-4 text-primary/55" />
@@ -110,7 +110,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
             <span className="text-xs text-primary/45">emailed while you have open loops</span>
           </div>
           <ul className="flex flex-col gap-1.5">
-            {digest.top.slice(0, 3).map((a, i) => (
+            {digest.top!.slice(0, 3).map((a, i) => (
               <li key={i} className="flex items-center justify-between gap-3 text-sm">
                 <span className="truncate text-primary/75">
                   <span className="text-primary/45">{a.detector}:</span> {a.reason}
@@ -179,7 +179,7 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
       </div>
 
       {/* per-detector */}
-      {data.byDetector.length > 0 ? (
+      {data.byDetector?.length ? (
         <section className="rounded-none border border-border p-4">
           <h3 className="mb-3 text-sm font-medium text-primary">Which signals pay off</h3>
           <table className="w-full text-sm">
