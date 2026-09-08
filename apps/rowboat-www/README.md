@@ -39,6 +39,17 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000). The marketing site is
 public; `/app` redirects through WorkOS when there is no dashboard session.
 
+To develop against the local `rowboat-api` stack on the port the packaged
+container uses, run `npm run dev:local` instead. It serves the same app with
+hot reload on [http://localhost:18082](http://localhost:18082) and points at
+the API on `18080`. If a prebuilt `rowboat-www-local` container is running on
+that port, the script stops it first — a container serves a baked production
+image and will not reflect your edits.
+
+This app installs with **npm** (`package-lock.json`); the Docker image builds
+with `npm ci`. Running `pnpm install` here writes a `pnpm-lock.yaml` that fails
+`quality/repository-policies`.
+
 ## Authentication
 
 rowboat-www authenticates through rowboat-api's WorkOS AuthKit broker:
