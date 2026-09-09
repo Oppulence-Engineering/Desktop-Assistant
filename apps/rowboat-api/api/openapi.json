@@ -16989,6 +16989,279 @@
         "tags": ["Oppulence Voice"]
       }
     },
+    "/v1/commitments": {
+      "get": {
+        "description": "Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register.",
+        "operationId": "listCommitments",
+        "parameters": [
+          {
+            "description": "promised_by_me, promised_by_them, or mutual.",
+            "in": "query",
+            "name": "direction",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Comma-separated register states: open, at_risk, met, missed, waived, disputed. at_risk is derived from the due date.",
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Owner participant reference.",
+            "in": "query",
+            "name": "owner",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Restrict to one account.",
+            "in": "query",
+            "name": "relationshipId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only commitments due before this instant.",
+            "in": "query",
+            "name": "dueBefore",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only commitments updated at or after this instant.",
+            "in": "query",
+            "name": "changedSince",
+            "required": false,
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size (default 50, max 200).",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page offset.",
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Commitment register.",
+                  "properties": {
+                    "commitments": {
+                      "description": "Register rows, each with its derived state and account.",
+                      "items": {
+                        "$ref": "#/components/schemas/RelationshipCommitment"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": ["commitments"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The register page."
+          },
+          "400": {
+            "$ref": "#/components/responses/400"
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "List the commitment register",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
+    "/v1/commitments/{commitmentId}/export": {
+      "get": {
+        "description": "Returns one commitment as a standalone record: the obligation, its full state history, and the verbatim cited evidence with timestamps. Pass format=md for the Markdown document a user forwards. A record that cannot leave the tool cannot settle an argument.",
+        "operationId": "exportCommitment",
+        "parameters": [
+          {
+            "description": "Commitment id.",
+            "in": "path",
+            "name": "commitmentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "md for Markdown; JSON otherwise.",
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Commitment record.",
+                  "properties": {
+                    "account": {
+                      "description": "Counterparty account.",
+                      "example": "Acme",
+                      "type": "string"
+                    },
+                    "direction": {
+                      "description": "promised_by_me, promised_by_them, or mutual.",
+                      "example": "promised_by_me",
+                      "type": "string"
+                    },
+                    "evidence": {
+                      "description": "Verbatim cited sources.",
+                      "items": {
+                        "description": "Cited source.",
+                        "properties": {
+                          "contentHash": {
+                            "description": "Content hash of the source.",
+                            "example": "sha256:abc123",
+                            "type": "string"
+                          },
+                          "excerpt": {
+                            "description": "Verbatim quote.",
+                            "example": "We will have the migration live by the 14th.",
+                            "type": "string"
+                          },
+                          "occurredAt": {
+                            "description": "When the source was created.",
+                            "example": "2026-09-06T12:00:00Z",
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "source": {
+                            "description": "Source system.",
+                            "example": "gmail",
+                            "type": "string"
+                          },
+                          "sourceUri": {
+                            "description": "Link to the source.",
+                            "example": "https://mail.google.com/thread-1",
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "generatedAt": {
+                      "description": "When the record was produced.",
+                      "example": "2026-09-09T12:00:00Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "history": {
+                      "description": "Ordered state changes.",
+                      "items": {
+                        "description": "Transition.",
+                        "properties": {
+                          "actorType": {
+                            "description": "Who caused it.",
+                            "example": "user",
+                            "type": "string"
+                          },
+                          "kind": {
+                            "description": "Event kind.",
+                            "example": "internally_confirmed",
+                            "type": "string"
+                          },
+                          "occurredAt": {
+                            "description": "When.",
+                            "example": "2026-09-07T09:00:00Z",
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "version": {
+                            "description": "Event version.",
+                            "example": 2,
+                            "type": "integer"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "id": {
+                      "description": "Commitment id.",
+                      "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                      "type": "string"
+                    },
+                    "state": {
+                      "description": "Register state.",
+                      "example": "at_risk",
+                      "type": "string"
+                    },
+                    "text": {
+                      "description": "The obligation.",
+                      "example": "Migration live by the 14th",
+                      "type": "string"
+                    }
+                  },
+                  "required": ["id", "state", "evidence", "history"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The exportable record."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Export a commitment record",
+        "tags": ["Relationship Intelligence"]
+      }
+    },
     "/v1/config": {
       "get": {
         "description": "Public endpoint fetched by the desktop before sign-in. Values identify the app origin, OIDC issuer, optional WebSocket API, and static OAuth client id.",
@@ -21529,6 +21802,8 @@
                       "due_date_changed",
                       "renegotiated",
                       "fulfilled",
+                      "missed",
+                      "waived",
                       "cancelled",
                       "superseded"
                     ],
@@ -23783,6 +24058,128 @@
           }
         ],
         "summary": "Get scan progress",
+        "tags": ["Revenue"]
+      }
+    },
+    "/v1/revenue-leak-scans/{scanId}/report": {
+      "get": {
+        "description": "Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.",
+        "operationId": "getOpenPromisesReport",
+        "parameters": [
+          {
+            "description": "Scan id.",
+            "in": "path",
+            "name": "scanId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "description": "md for Markdown; JSON otherwise.",
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Open promises report.",
+                  "properties": {
+                    "generatedAt": {
+                      "description": "When the report was produced.",
+                      "example": "2026-09-09T12:00:00Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "inboundCount": {
+                      "description": "Promises made to us.",
+                      "example": 5,
+                      "type": "integer"
+                    },
+                    "items": {
+                      "description": "Open promises, at risk first.",
+                      "items": {
+                        "description": "Open promise.",
+                        "properties": {
+                          "account": {
+                            "description": "Counterparty account.",
+                            "example": "Acme",
+                            "type": "string"
+                          },
+                          "commitmentId": {
+                            "description": "Commitment id.",
+                            "example": "8b8dfa9b-a7b2-46ea-982c-622a914c00e5",
+                            "type": "string"
+                          },
+                          "sourceQuote": {
+                            "description": "The exact message that created it.",
+                            "example": "We will have the migration live by the 14th.",
+                            "type": "string"
+                          },
+                          "state": {
+                            "description": "Register state.",
+                            "example": "at_risk",
+                            "type": "string"
+                          },
+                          "text": {
+                            "description": "The obligation.",
+                            "example": "Migration live by the 14th",
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "lookbackDays": {
+                      "description": "Scan window in days.",
+                      "example": 90,
+                      "type": "integer"
+                    },
+                    "outboundCount": {
+                      "description": "Promises we made.",
+                      "example": 12,
+                      "type": "integer"
+                    },
+                    "scanStatus": {
+                      "description": "Scan status.",
+                      "example": "completed",
+                      "type": "string"
+                    },
+                    "threadsSeen": {
+                      "description": "Conversations read.",
+                      "example": 412,
+                      "type": "integer"
+                    }
+                  },
+                  "required": ["generatedAt", "items"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "The open promises report."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Get the open promises report",
         "tags": ["Revenue"]
       }
     },

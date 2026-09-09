@@ -792,6 +792,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/commitments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the commitment register
+     * @description Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register.
+     */
+    get: operations["listCommitments"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/commitments/{commitmentId}/export": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Export a commitment record
+     * @description Returns one commitment as a standalone record: the obligation, its full state history, and the verbatim cited evidence with timestamps. Pass format=md for the Markdown document a user forwards. A record that cannot leave the tool cannot settle an argument.
+     */
+    get: operations["exportCommitment"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/config": {
     parameters: {
       query?: never;
@@ -2508,6 +2548,26 @@ export interface paths {
      * @description Returns progress, counts, errors, and source freshness for one scan.
      */
     get: operations["getRevenueLeakScan"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/revenue-leak-scans/{scanId}/report": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get the open promises report
+     * @description Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.
+     */
+    get: operations["getOpenPromisesReport"];
     put?: never;
     post?: never;
     delete?: never;
@@ -14223,6 +14283,161 @@ export interface operations {
       500: components["responses"]["500"];
     };
   };
+  listCommitments: {
+    parameters: {
+      query?: {
+        /** @description promised_by_me, promised_by_them, or mutual. */
+        direction?: string;
+        /** @description Comma-separated register states: open, at_risk, met, missed, waived, disputed. at_risk is derived from the due date. */
+        state?: string;
+        /** @description Owner participant reference. */
+        owner?: string;
+        /** @description Restrict to one account. */
+        relationshipId?: string;
+        /** @description Only commitments due before this instant. */
+        dueBefore?: string;
+        /** @description Only commitments updated at or after this instant. */
+        changedSince?: string;
+        /** @description Page size (default 50, max 200). */
+        limit?: number;
+        /** @description Page offset. */
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The register page. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Register rows, each with its derived state and account. */
+            commitments: components["schemas"]["RelationshipCommitment"][];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+    };
+  };
+  exportCommitment: {
+    parameters: {
+      query?: {
+        /** @description md for Markdown; JSON otherwise. */
+        format?: string;
+      };
+      header?: never;
+      path: {
+        /** @description Commitment id. */
+        commitmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The exportable record. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /**
+             * @description Counterparty account.
+             * @example Acme
+             */
+            account?: string;
+            /**
+             * @description promised_by_me, promised_by_them, or mutual.
+             * @example promised_by_me
+             */
+            direction?: string;
+            /** @description Verbatim cited sources. */
+            evidence: {
+              /**
+               * @description Content hash of the source.
+               * @example sha256:abc123
+               */
+              contentHash?: string;
+              /**
+               * @description Verbatim quote.
+               * @example We will have the migration live by the 14th.
+               */
+              excerpt?: string;
+              /**
+               * Format: date-time
+               * @description When the source was created.
+               * @example 2026-09-06T12:00:00Z
+               */
+              occurredAt?: string;
+              /**
+               * @description Source system.
+               * @example gmail
+               */
+              source?: string;
+              /**
+               * @description Link to the source.
+               * @example https://mail.google.com/thread-1
+               */
+              sourceUri?: string;
+            }[];
+            /**
+             * Format: date-time
+             * @description When the record was produced.
+             * @example 2026-09-09T12:00:00Z
+             */
+            generatedAt?: string;
+            /** @description Ordered state changes. */
+            history: {
+              /**
+               * @description Who caused it.
+               * @example user
+               */
+              actorType?: string;
+              /**
+               * @description Event kind.
+               * @example internally_confirmed
+               */
+              kind?: string;
+              /**
+               * Format: date-time
+               * @description When.
+               * @example 2026-09-07T09:00:00Z
+               */
+              occurredAt?: string;
+              /**
+               * @description Event version.
+               * @example 2
+               */
+              version?: number;
+            }[];
+            /**
+             * @description Commitment id.
+             * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+             */
+            id: string;
+            /**
+             * @description Register state.
+             * @example at_risk
+             */
+            state: string;
+            /**
+             * @description The obligation.
+             * @example Migration live by the 14th
+             */
+            text?: string;
+          };
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
   getConfig: {
     parameters: {
       query?: never;
@@ -17141,6 +17356,8 @@ export interface operations {
             | "due_date_changed"
             | "renegotiated"
             | "fulfilled"
+            | "missed"
+            | "waived"
             | "cancelled"
             | "superseded";
           /**
@@ -18576,6 +18793,94 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["RevenueLeakScan"];
+        };
+      };
+      401: components["responses"]["401"];
+      404: components["responses"]["404"];
+    };
+  };
+  getOpenPromisesReport: {
+    parameters: {
+      query?: {
+        /** @description md for Markdown; JSON otherwise. */
+        format?: string;
+      };
+      header?: never;
+      path: {
+        /** @description Scan id. */
+        scanId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The open promises report. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /**
+             * Format: date-time
+             * @description When the report was produced.
+             * @example 2026-09-09T12:00:00Z
+             */
+            generatedAt: string;
+            /**
+             * @description Promises made to us.
+             * @example 5
+             */
+            inboundCount?: number;
+            /** @description Open promises, at risk first. */
+            items: {
+              /**
+               * @description Counterparty account.
+               * @example Acme
+               */
+              account?: string;
+              /**
+               * @description Commitment id.
+               * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
+               */
+              commitmentId?: string;
+              /**
+               * @description The exact message that created it.
+               * @example We will have the migration live by the 14th.
+               */
+              sourceQuote?: string;
+              /**
+               * @description Register state.
+               * @example at_risk
+               */
+              state?: string;
+              /**
+               * @description The obligation.
+               * @example Migration live by the 14th
+               */
+              text?: string;
+            }[];
+            /**
+             * @description Scan window in days.
+             * @example 90
+             */
+            lookbackDays?: number;
+            /**
+             * @description Promises we made.
+             * @example 12
+             */
+            outboundCount?: number;
+            /**
+             * @description Scan status.
+             * @example completed
+             */
+            scanStatus?: string;
+            /**
+             * @description Conversations read.
+             * @example 412
+             */
+            threadsSeen?: number;
+          };
         };
       };
       401: components["responses"]["401"];
