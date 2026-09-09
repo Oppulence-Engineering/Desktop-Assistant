@@ -41,6 +41,23 @@ import { WorkspaceView } from "@/components/revenue/workspace-view";
 import { ActionsView } from "@/components/actions/actions-view";
 import type { RevenueLeakScan, RevenueWorkspace } from "@/types/revenue";
 
+// The register's own failures, in words a customer can act on. A raw "not
+// found" from the proxy tells them nothing; worse, the old code showed no
+// message at all and rendered the onboarding prompt instead.
+function registerErrorMessage(reason: unknown): string {
+  const status = reason instanceof RevenueAPIError ? reason.status : 0;
+  if (status === 404) {
+    return "The commitment register is unavailable on this server. This usually means the app is newer than the API it is talking to.";
+  }
+  if (status === 403) {
+    return "You do not have access to the commitment register in this workspace.";
+  }
+  if (reason instanceof Error && reason.message.trim()) {
+    return friendlyRevenueError(reason.message);
+  }
+  return "The commitment register could not be loaded.";
+}
+
 const SCAN_IDS_KEY = "oppulence.revenue.scanIds";
 
 function loadScanIds(): string[] {
@@ -131,11 +148,7 @@ export function RevenuePanel({
       return {
         entries: entries.status === "fulfilled" ? entries.value : [],
         registerError:
-          entries.status === "rejected"
-            ? entries.reason instanceof Error
-              ? entries.reason.message
-              : "The commitment register could not be loaded."
-            : undefined,
+          entries.status === "rejected" ? registerErrorMessage(entries.reason) : undefined,
         sources: sources.status === "fulfilled" ? sources.value : [],
         relationshipCount:
           graph.status === "fulfilled"

@@ -8,7 +8,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps } from "react";
 
 import { CommitmentQueue } from "./commitment-queue";
-import type { RegisterEntry, RelationshipSourceInventoryItem } from "@/types/revenue";
+import type {
+  RegisterEntry,
+  RelationshipSourceInventoryItem,
+  RevenueLeakScan,
+} from "@/types/revenue";
 
 afterEach(cleanup);
 
@@ -180,7 +184,7 @@ describe("CommitmentQueue", () => {
 });
 
 describe("when the register is empty for a reason", () => {
-  const deadGrant = {
+  const deadGrant: RevenueLeakScan = {
     id: "scan-failed",
     status: "failed",
     mode: "linked",
