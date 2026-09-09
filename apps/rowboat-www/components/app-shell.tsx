@@ -3,6 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   ArrowLeft,
   AddressBook,
@@ -346,6 +347,7 @@ function SidebarNavItem({
   active,
   chevron,
   chevronOpen,
+  href,
   className,
   ...props
 }: {
@@ -355,17 +357,15 @@ function SidebarNavItem({
   active?: boolean;
   chevron?: boolean;
   chevronOpen?: boolean;
+  href?: string;
 } & React.ComponentProps<"button">) {
-  return (
-    <button
-      className={cn(
-        "group/item flex h-8 w-full items-center gap-2 rounded-none px-2 py-1 text-left text-[13px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200",
-        active && "bg-background-200 text-primary dark:bg-background-200",
-        className,
-      )}
-      type="button"
-      {...props}
-    >
+  const classes = cn(
+    "group/item flex h-8 w-full items-center gap-2 rounded-none px-2 py-1 text-left text-[13px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200",
+    active && "bg-background-200 text-primary dark:bg-background-200",
+    className,
+  );
+  const content = (
+    <>
       <AppIcon
         className={cn(
           "text-primary/40 transition-all group-hover/item:rotate-[-4deg] group-hover/item:text-primary/80",
@@ -387,6 +387,18 @@ function SidebarNavItem({
           )}
         />
       ) : null}
+    </>
+  );
+  if (href) {
+    return (
+      <Link aria-current={active ? "page" : undefined} className={classes} href={href}>
+        {content}
+      </Link>
+    );
+  }
+  return (
+    <button className={classes} type="button" {...props}>
+      {content}
     </button>
   );
 }
@@ -477,6 +489,7 @@ export function AppShellSidebar({
   onOpenSession?: (runId: string) => void;
   onNewChat?: () => void;
 }) {
+  const pathname = usePathname();
   const [agents, setAgents] = React.useState<string[]>([]);
   const [tasks, setTasks] = React.useState<{ label: string; value: string }[]>([]);
   const [taskRuns, setTaskRuns] = React.useState<{ label: string; value: string }[]>([]);
@@ -703,9 +716,12 @@ export function AppShellSidebar({
             />
             {/* The wedge, first in the list: the report is what a new account
                 reads before anything else. */}
-            <Link href="/app/report" className="block">
-              <SidebarNavItem active={false} icon={FileText} label="Open promises" />
-            </Link>
+            <SidebarNavItem
+              active={pathname === "/app/report"}
+              href="/app/report"
+              icon={FileText}
+              label="Open promises"
+            />
             {(
               [
                 ["tasks", CheckSquare],
@@ -824,12 +840,16 @@ export function AppShellSidebar({
           <Link
             className="group/item flex h-9 w-full items-center gap-2.5 rounded-none px-2.5 py-1 text-sm text-primary/70 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200"
             href="/api/reference"
+            rel="noopener noreferrer"
+            target="_blank"
           >
             <AppIcon
               className="text-primary/40 transition-all group-hover/item:rotate-[-4deg] group-hover/item:text-primary/80"
               icon={BookOpen}
             />
-            Docs
+            {/* This is the OpenAPI spec, not product documentation. Calling it
+                "Docs" sent operators looking for help into a route table. */}
+            API reference
           </Link>
           <SidebarNavItem
             active={view === "settings"}

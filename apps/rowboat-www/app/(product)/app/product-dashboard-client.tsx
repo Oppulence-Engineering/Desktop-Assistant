@@ -1414,6 +1414,10 @@ function PageBody({
           navigateTo("chat");
           setSelectedResource(null);
         }}
+        onNavigateRelationship={() => {
+          setRevenueTab("relationships");
+          navigateTo("revenue");
+        }}
         onNewChat={startNewChat}
         onOpenAgent={(name) => {
           navigateTo("chat");
@@ -1540,9 +1544,14 @@ function PageBody({
               </div>
               {view !== "settings" ? (
                 <div className="flex items-center gap-2">
+                  {/* Help used to open the OpenAPI reference: an operator who
+                      clicked it because a promise was missed landed on a route
+                      table titled with a different product's name. */}
                   <Link
                     className="hidden text-[13px] text-primary/55 transition-colors hover:text-primary md:inline-flex"
-                    href="/api/reference"
+                    href="/blog"
+                    rel="noopener noreferrer"
+                    target="_blank"
                   >
                     Help
                   </Link>

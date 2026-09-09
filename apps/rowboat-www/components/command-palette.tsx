@@ -5,6 +5,7 @@ import {
   ChatCircle,
   ChatsCircle,
   FilePlus,
+  Buildings,
   Folder,
   Monitor,
   Moon,
@@ -29,6 +30,8 @@ import {
   CommandShortcut,
 } from "@oppulence/ui/components/command";
 import type { SessionMeta } from "@/lib/chat-sessions";
+import { listRelationships } from "@/lib/revenue";
+import type { RevenueRelationship } from "@/types/revenue";
 
 export function CommandPalette({
   open,
@@ -37,6 +40,7 @@ export function CommandPalette({
   sessions,
   onNewChat,
   onNavigateChat,
+  onNavigateRelationship,
   onOpenSettings,
   onOpenAgent,
   onOpenSession,
@@ -48,17 +52,58 @@ export function CommandPalette({
   sessions: SessionMeta[];
   onNewChat: () => void;
   onNavigateChat: () => void;
+  /** Opens one account record. Optional so the palette still renders in
+   *  contexts that have no relationship surface to jump to. */
+  onNavigateRelationship?: (relationshipId: string) => void;
   onOpenSettings: (section: SettingsSection) => void;
   onOpenAgent: (name: string) => void;
   onOpenSession: (runId: string) => void;
   onToggleSidebar: () => void;
 }) {
+  const [query, setQuery] = React.useState("");
+  const [accounts, setAccounts] = React.useState<RevenueRelationship[]>([]);
+  const [searching, setSearching] = React.useState(false);
   const { setTheme } = useThemePreference();
 
   const runAnd = (fn: () => void) => () => {
     fn();
     onOpenChange(false);
   };
+
+  // The palette advertised "search" from the most prominent control in the
+  // sidebar, but only ever filtered this static command list — typing the name
+  // of a real account returned "No results found". Accounts are what an
+  // operator looks for by name, so they are what it searches.
+  React.useEffect(() => {
+    const term = query.trim();
+    if (!open || term.length < 2) {
+      setAccounts([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const timer = setTimeout(() => {
+      let cancelled = false;
+      void listRelationships({ q: term })
+        .then((rows) => {
+          if (!cancelled) setAccounts(rows.slice(0, 6));
+        })
+        .catch(() => {
+          if (!cancelled) setAccounts([]);
+        })
+        .finally(() => {
+          if (!cancelled) setSearching(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [open, query]);
+
+  React.useEffect(() => {
+    if (!open) setQuery("");
+  }, [open]);
 
   return (
     <CommandDialog
@@ -68,9 +113,35 @@ export function CommandPalette({
       open={open}
       title="Command palette"
     >
-      <CommandInput placeholder="Type a command or search…" />
+      <CommandInput
+        onValueChange={setQuery}
+        placeholder="Search accounts, or type a command…"
+        value={query}
+      />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandEmpty>
+          {searching ? "Searching…" : "No results found."}
+        </CommandEmpty>
+        {accounts.length > 0 ? (
+          <>
+            <CommandGroup heading="Accounts">
+              {accounts.map((account) => (
+                <CommandItem
+                  key={account.id}
+                  // cmdk filters on value; the server already matched, so keep
+                  // the typed query as the value to stop it filtering results
+                  // the API deliberately returned.
+                  value={`${query} ${account.displayName}`}
+                  onSelect={runAnd(() => onNavigateRelationship?.(account.id))}
+                >
+                  <Buildings />
+                  {account.displayName}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        ) : null}
         <CommandGroup heading="Actions">
           <CommandItem onSelect={runAnd(onNewChat)}>
             <FilePlus />
