@@ -48,6 +48,7 @@ type OpenPromisesReport struct {
 	InboundCount  int            `json:"inboundCount"`
 	ByAccount     map[string]int `json:"byAccount"`
 	Items         []ReportItem   `json:"items"`
+	Truncated     bool           `json:"truncated"`
 }
 
 // OpenPromisesReport builds the report for one completed scan.
@@ -63,11 +64,20 @@ func (s *Service) OpenPromisesReport(
 	// The scan writes candidates, because nothing a model extracted is a
 	// commitment until a human confirms it. The report IS that review surface,
 	// so unlike the register it deliberately shows candidates.
-	rows, err := s.ListCommitments(ctx, u, CommitmentFilter{
+	since := scan.CreatedAt.UTC().AddDate(0, 0, -scan.LookbackDays)
+	filter := CommitmentFilter{
 		States:            []string{RegisterOpen, RegisterAtRisk},
 		IncludeCandidates: true,
+		EvidenceSince:     since,
 		Limit:             200,
-	})
+	}
+	rows, err := s.ListCommitments(ctx, u, filter)
+	if err != nil {
+		return nil, err
+	}
+	filter.Offset = len(rows)
+	filter.Limit = 1
+	more, err := s.ListCommitments(ctx, u, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -79,6 +89,7 @@ func (s *Service) OpenPromisesReport(
 		ScanStatus:   scan.Status,
 		ByAccount:    map[string]int{},
 		Items:        []ReportItem{},
+		Truncated:    len(more) > 0,
 	}
 	for _, row := range rows {
 		item := ReportItem{
@@ -96,6 +107,12 @@ func (s *Service) OpenPromisesReport(
 		}
 		if item.Account == "" {
 			item.Account = "Unattributed"
+		}
+		if evidences, evidenceErr := row.Edges.EvidencesOrErr(); evidenceErr == nil && len(evidences) > 0 {
+			evidence := evidences[0]
+			item.SourceQuote = evidence.Excerpt
+			item.SourceURI = evidence.SourceURI
+			item.OccurredAt = &evidence.OccurredAt
 		}
 		report.ByAccount[item.Account]++
 		if row.Direction == "promised_by_them" {
@@ -134,6 +151,9 @@ func (r *OpenPromisesReport) Markdown() string {
 	fmt.Fprintf(&b, "- **%d** promises we made\n", r.OutboundCount)
 	fmt.Fprintf(&b, "- **%d** promises made to us\n", r.InboundCount)
 	fmt.Fprintf(&b, "- **%d** conversations read\n\n", r.ThreadsSeen)
+	if r.Truncated {
+		b.WriteString("This report shows the first 200 open promises. Open the register for the complete ledger.\n\n")
+	}
 
 	if len(r.Items) == 0 {
 		b.WriteString("No open promises were found in this window. ")
@@ -158,7 +178,7 @@ func (r *OpenPromisesReport) Markdown() string {
 			owed = "They owe"
 		}
 		fmt.Fprintf(&b, "### %s — %s\n\n", item.Account, item.Text)
-		fmt.Fprintf(&b, "%s · state **%s**", owed, item.State)
+		fmt.Fprintf(&b, "%s · state **%s**", owed, registerStateLabel(item.State))
 		switch {
 		case item.DueAt != nil:
 			fmt.Fprintf(&b, " · due %s", item.DueAt.UTC().Format("2006-01-02"))
@@ -175,8 +195,15 @@ func (r *OpenPromisesReport) Markdown() string {
 		if quote := strings.TrimSpace(item.SourceQuote); quote != "" {
 			fmt.Fprintf(&b, "> %s\n\n", strings.ReplaceAll(quote, "\n", "\n> "))
 		}
+		if item.OccurredAt != nil {
+			fmt.Fprintf(&b, "Source observed %s", item.OccurredAt.UTC().Format(time.RFC3339))
+			if item.SourceURI != "" {
+				fmt.Fprintf(&b, " · %s", item.SourceURI)
+			}
+			b.WriteString("\n\n")
+		}
 	}
-	fmt.Fprintf(&b, "\n---\n\nGenerated %s. Every promise above links to the message that created it.\n",
+	fmt.Fprintf(&b, "\n---\n\nGenerated %s. Every promise above includes the source evidence available at scan time.\n",
 		r.GeneratedAt.Format(time.RFC3339))
 	return b.String()
 }

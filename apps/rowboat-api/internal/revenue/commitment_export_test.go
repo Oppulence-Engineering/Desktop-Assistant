@@ -118,3 +118,27 @@ func TestExportRejectsACommitmentOutsideTheWorkspace(t *testing.T) {
 		t.Fatal("exported a commitment from another workspace")
 	}
 }
+
+// The exported record is forwarded into a customer conversation. A raw
+// "at_risk" in that table reads as a database dump and undermines the record it
+// is meant to prove.
+func TestExportedRecordUsesHumanStateNames(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	rel := f.relationship(t)
+	soon := now.Add(24 * time.Hour)
+	row := seedCommitment(t, f, rel, "promised_by_me", "Ship the migration", "", &soon)
+
+	record, err := f.svc.ExportCommitment(f.ctx, f.user, row.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	doc := record.Markdown()
+	if !strings.Contains(doc, "| State | At risk |") {
+		t.Fatalf("state was not humanised:\n%s", doc)
+	}
+	if strings.Contains(doc, "at_risk") {
+		t.Fatalf("raw enum leaked into the document:\n%s", doc)
+	}
+}

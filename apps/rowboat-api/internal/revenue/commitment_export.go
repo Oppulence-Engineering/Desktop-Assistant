@@ -124,6 +124,30 @@ func (s *Service) ExportCommitment(
 	return record, nil
 }
 
+// registerStateLabel renders a state the way a reader says it.
+//
+// This document is forwarded into a customer conversation to settle an
+// argument about what was agreed. A raw "at_risk" in that table reads as a
+// database dump and undermines the record it is meant to prove.
+func registerStateLabel(state string) string {
+	switch state {
+	case RegisterAtRisk:
+		return "At risk"
+	case RegisterMet:
+		return "Met"
+	case RegisterMissed:
+		return "Missed"
+	case RegisterWaived:
+		return "Waived"
+	case RegisterDisputed:
+		return "Disputed"
+	case RegisterOpen:
+		return "Open"
+	default:
+		return strings.ToUpper(state[:1]) + strings.ReplaceAll(state[1:], "_", " ")
+	}
+}
+
 // Markdown renders the record as the document a user forwards.
 //
 // Every claim in the output carries its citation. If the record has no
@@ -147,7 +171,7 @@ func (r *CommitmentRecord) Markdown() string {
 	if r.Account != "" {
 		fmt.Fprintf(&b, "| Account | %s |\n", r.Account)
 	}
-	fmt.Fprintf(&b, "| State | %s |\n", r.State)
+	fmt.Fprintf(&b, "| State | %s |\n", registerStateLabel(r.State))
 	switch {
 	case r.DueAt != nil:
 		fmt.Fprintf(&b, "| Due | %s |\n", r.DueAt.UTC().Format("2006-01-02"))
