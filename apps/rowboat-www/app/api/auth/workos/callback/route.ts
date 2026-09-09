@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { publicOrigin } from "@/lib/auth/origin";
 
 import { clearPKCECookie, readPKCECookie, setSessionCookie } from "@/lib/auth/cookies";
+import { desktopCallbackTarget } from "@/lib/auth/desktop-callback";
 import { exchangeWorkOSCode, sessionFromTokenBundle } from "@/lib/auth/rowboat-api";
 
 type PublicSignInError = "provider_error" | "invalid_sign_in_state" | "sign_in_failed";
@@ -32,6 +33,18 @@ export async function GET(request: NextRequest) {
 
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
+
+  // The desktop app cannot register its loopback redirect URI with WorkOS, so
+  // it borrows this one and marks itself in `state`. Bounce the code back to
+  // the app, which holds the PKCE verifier and does the exchange itself. This
+  // runs before the PKCE cookie check below, which a desktop flow never sets.
+  if (code) {
+    const desktopTarget = desktopCallbackTarget(state, code);
+    if (desktopTarget) {
+      return NextResponse.redirect(desktopTarget);
+    }
+  }
+
   const pending = readPKCECookie(request);
   if (!code || !state || !pending || pending.state !== state) {
     return signInRedirect(request, "invalid_sign_in_state");
