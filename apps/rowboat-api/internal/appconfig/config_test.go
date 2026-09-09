@@ -753,7 +753,7 @@ func TestLLMRateLimitsAreOverridable(t *testing.T) {
 func TestLLMModelUmbrella(t *testing.T) {
 	for _, k := range []string{"LLM_MODEL", "AGENT_RUNTIME_MODEL", "CLOUD_RUNTIME_MODEL", "CLOUD_EVENTS_ROUTER_MODEL"} {
 		t.Setenv(k, "")
-		os.Unsetenv(k)
+		_ = os.Unsetenv(k)
 	}
 
 	// Unset: each runtime keeps its own documented default.
@@ -794,7 +794,7 @@ func TestLLMModelUmbrella(t *testing.T) {
 // not four. Production deliberately splits them, so specific vars must win.
 func TestAuthIssuerUmbrella(t *testing.T) {
 	for _, k := range []string{"AUTH_ISSUER_URL", "OIDC_ISSUER_URL", "TOKEN_ISSUER", "ORY_PUBLIC_URL", "WORKOS_AUTHORIZE_BASE_URL"} {
-		os.Unsetenv(k)
+		_ = os.Unsetenv(k)
 	}
 
 	t.Setenv("AUTH_ISSUER_URL", "http://localhost:18090")
@@ -826,7 +826,7 @@ func TestAuthIssuerUmbrella(t *testing.T) {
 // the documented production default.
 func TestAuthIssuerUnsetKeepsDefaults(t *testing.T) {
 	for _, k := range []string{"AUTH_ISSUER_URL", "OIDC_ISSUER_URL", "TOKEN_ISSUER", "ORY_PUBLIC_URL", "WORKOS_AUTHORIZE_BASE_URL"} {
-		os.Unsetenv(k)
+		_ = os.Unsetenv(k)
 	}
 	cfg := Load()
 	if cfg.OIDCIssuerURL != "https://auth.solomon-ai.co" ||
@@ -844,7 +844,7 @@ func TestAuthIssuerUnsetKeepsDefaults(t *testing.T) {
 // leave the issuer on an unrelated default, which is how kind ended up minting
 // tokens with a stale solomon-ai origin while serving localhost.
 func TestBrokerIssuerFollowsPublicOrigin(t *testing.T) {
-	os.Unsetenv("BROKER_TOKEN_ISSUER")
+	_ = os.Unsetenv("BROKER_TOKEN_ISSUER")
 	t.Setenv("PUBLIC_BASE_URL", "http://localhost:18080")
 	if got := Load().BrokerTokenIssuer; got != "http://localhost:18080" {
 		t.Fatalf("broker issuer did not follow the public origin: %s", got)
