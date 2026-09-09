@@ -23,6 +23,8 @@ import {
   StartGoogleOAuth200Response,
 } from "@/lib/api/generated/zod/google-oauth/google-oauth";
 import { startHostedOAuth } from "@/lib/api/connectors/hosted-oauth";
+import { listRelationshipSourceStatuses } from "@/lib/revenue";
+import { cn } from "@/lib/utils";
 import { parseConnectorsResponse } from "@/lib/api/connectors/schema";
 import { dashboardFetch } from "@/lib/auth/client";
 import {
@@ -52,6 +54,27 @@ function displayDate(value?: string | null): string | null {
   if (!value) return null;
   const date = new Date(value);
   return Number.isNaN(date.valueOf()) ? null : date.toLocaleString();
+}
+
+// The Google card used to render a bare connected/not-connected badge, so a
+// dead grant still read as "Active" while every scan failed with a 401. The
+// source status is the only thing that knows whether the token actually works.
+const GOOGLE_HEALTH: Record<string, { label: string; tone: "ok" | "warn" | "bad" }> = {
+  live: { label: "Active", tone: "ok" },
+  connected: { label: "Active", tone: "ok" },
+  backfilling: { label: "Syncing", tone: "warn" },
+  rebuilding: { label: "Rebuilding", tone: "warn" },
+  authorizing: { label: "Authorizing", tone: "warn" },
+  degraded: { label: "Degraded", tone: "warn" },
+  stale: { label: "Stale", tone: "warn" },
+  reconnect_required: { label: "Reconnect required", tone: "bad" },
+  disconnected: { label: "Disconnected", tone: "bad" },
+  not_connected: { label: "Required", tone: "bad" },
+};
+
+function googleHealth(connected: boolean, sourceStatus?: string) {
+  if (sourceStatus && GOOGLE_HEALTH[sourceStatus]) return GOOGLE_HEALTH[sourceStatus];
+  return connected ? GOOGLE_HEALTH.connected : GOOGLE_HEALTH.not_connected;
 }
 
 function healthLabel(connector: Connector): string {
@@ -109,6 +132,7 @@ function ConnectorScopeList({ scopes }: { scopes: ConnectorScope[] }) {
 
 function GoogleConnectionSettings() {
   const [status, setStatus] = React.useState<GoogleConnectionStatus | null>(null);
+  const [sourceStatus, setSourceStatus] = React.useState<string | undefined>(undefined);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const claimStarted = React.useRef(false);
@@ -117,6 +141,16 @@ function GoogleConnectionSettings() {
     const response = await dashboardFetch("/api/rowboat/v1/google-oauth");
     if (!response.ok) throw new Error(`Could not load Google status (${response.status})`);
     setStatus(GetGoogleConnectionStatus200Response.parse(await response.json()));
+    // Health, not existence. A row in the OAuth table only says the user once
+    // authorized; the source status says whether the grant still works.
+    try {
+      const sources = await listRelationshipSourceStatuses();
+      setSourceStatus(sources.find((entry) => entry.source === "google")?.status);
+    } catch {
+      // Health is additive: if it cannot be read the card still renders the
+      // connect/reconnect action, it just cannot promise the grant is good.
+      setSourceStatus(undefined);
+    }
   }, []);
 
   React.useEffect(() => {
@@ -177,18 +211,33 @@ function GoogleConnectionSettings() {
     }
   };
 
+  const health = googleHealth(Boolean(status?.connected), sourceStatus);
+
   return (
     <div className="settings-panel mb-3 flex items-start justify-between gap-4 px-4 py-3">
       <div>
         <span className="flex items-center gap-2 text-sm font-medium text-primary">
           Gmail &amp; Google Calendar
-          <Badge className="rounded-[2px]" variant="outline">
-            {status?.connected ? "Active" : "Required"}
+          <Badge
+            className={cn(
+              "rounded-[2px]",
+              health.tone === "ok" && "border-oppulence-green/40 text-oppulence-green",
+              health.tone === "bad" && "border-destructive/40 text-destructive",
+            )}
+            variant="outline"
+          >
+            {health.label}
           </Badge>
         </span>
         <p className="mt-1 text-xs text-muted-foreground">
           Read recent correspondence and meetings to identify operational commitments.
         </p>
+        {health.tone === "bad" && status?.connected ? (
+          <p className="mt-1 text-xs text-destructive">
+            Google is no longer accepting this authorization, so audits cannot read your mail.
+            Reconnect to resume.
+          </p>
+        ) : null}
         {status?.accounts.map((account) => (
           <p className="mt-1 font-mono text-[11px] text-primary/50" key={account.accountId}>
             {account.accountId}

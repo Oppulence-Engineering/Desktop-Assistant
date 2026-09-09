@@ -123,9 +123,19 @@ export function RevenuePanel({
         listRelationshipSources(),
         getRelationshipGraph({ scope: "portfolio", depth: 1 }),
       ]);
-      if (entries.status === "rejected") throw entries.reason;
+      // A failed register fetch must not erase a source list that loaded fine.
+      // Throwing here used to discard the whole result, so the panel fell back
+      // to sources=[] and rendered "Connect Gmail & Calendar" — telling a user
+      // whose Google account was connected and healthy to go connect it. A
+      // request that fails has to say so, not impersonate onboarding.
       return {
-        entries: entries.value,
+        entries: entries.status === "fulfilled" ? entries.value : [],
+        registerError:
+          entries.status === "rejected"
+            ? entries.reason instanceof Error
+              ? entries.reason.message
+              : "The commitment register could not be loaded."
+            : undefined,
         sources: sources.status === "fulfilled" ? sources.value : [],
         relationshipCount:
           graph.status === "fulfilled"
@@ -231,13 +241,20 @@ export function RevenuePanel({
     [commitmentQuery, setBanner, setNoticeMsg],
   );
 
-  const latestCompletedScan = (activeScan ? [activeScan, ...scans] : scans)
-    .filter((scan) => scan.status === "completed")
-    .sort((left, right) =>
-      (right.completedAt || right.startedAt || "").localeCompare(
-        left.completedAt || left.startedAt || "",
-      ),
-    )[0];
+  const scansNewestFirst = (activeScan ? [activeScan, ...scans] : scans).sort((left, right) =>
+    (right.completedAt || right.startedAt || "").localeCompare(
+      left.completedAt || left.startedAt || "",
+    ),
+  );
+  const latestCompletedScan = scansNewestFirst.find((scan) => scan.status === "completed");
+  // A failed audit is the answer to "why is my register empty", and it was only
+  // visible on the audits screen — somewhere a user has no reason to open. The
+  // failure belongs next to the empty register that it caused.
+  const latestScanFailure = scansNewestFirst.find((scan) => scan.status === "failed");
+  const showFailure =
+    latestScanFailure &&
+    (!latestCompletedScan ||
+      (latestScanFailure.completedAt || "") > (latestCompletedScan.completedAt || ""));
 
   return (
     <div className="flex h-full min-w-0 w-full flex-col overflow-hidden">
@@ -265,13 +282,14 @@ export function RevenuePanel({
             relationshipCount={commitmentQuery.data?.relationshipCount ?? 0}
             sources={commitmentQuery.data?.sources ?? []}
             latestScan={latestCompletedScan}
+            failedScan={showFailure ? latestScanFailure : undefined}
             loading={commitmentQuery.isLoading}
             error={
               commitmentQuery.error instanceof Error
                 ? commitmentQuery.error.message
                 : commitmentQuery.error
                   ? "Could not load the Commitment Queue."
-                  : undefined
+                  : commitmentQuery.data?.registerError
             }
             scanning={scanning}
             onScan={runScan}

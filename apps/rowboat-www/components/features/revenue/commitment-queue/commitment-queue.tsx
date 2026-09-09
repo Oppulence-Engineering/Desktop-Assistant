@@ -84,10 +84,26 @@ export type RegisterView = "we_owe" | "they_owe" | "changed" | "by_account" | "b
 
 export const REGISTER_VIEWS: { id: RegisterView; label: string; hint: string }[] = [
   { id: "we_owe", label: "What we owe", hint: "Outbound obligations by risk, then by date." },
-  { id: "they_owe", label: "What they owe us", hint: "Inbound obligations. The view no other tool offers." },
-  { id: "changed", label: "What changed", hint: "New commitments and slippage since the last review." },
-  { id: "by_account", label: "By account", hint: "The full two-sided history for one relationship." },
-  { id: "by_owner", label: "By owner", hint: "What each person has promised. Used for load and handover." },
+  {
+    id: "they_owe",
+    label: "What they owe us",
+    hint: "Inbound obligations. The view no other tool offers.",
+  },
+  {
+    id: "changed",
+    label: "What changed",
+    hint: "New commitments and slippage since the last review.",
+  },
+  {
+    id: "by_account",
+    label: "By account",
+    hint: "The full two-sided history for one relationship.",
+  },
+  {
+    id: "by_owner",
+    label: "By owner",
+    hint: "What each person has promised. Used for load and handover.",
+  },
 ];
 
 /** The filter each view sends to the register. Kept beside the labels so the
@@ -103,8 +119,7 @@ export function registerFilterFor(
       return { direction: "promised_by_them", state: ["open", "at_risk"], limit: 200 };
     case "changed":
       return {
-        changedSince:
-          options.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        changedSince: options.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
         limit: 200,
       };
     case "by_account":
@@ -128,6 +143,10 @@ export interface CommitmentQueueProps extends Omit<
   relationshipCount?: number;
   sources: RelationshipSourceInventoryItem[];
   latestScan?: RevenueLeakScan | null;
+  /** The most recent audit that failed, when it is newer than the last success.
+   *  A failed audit is the reason the register is empty, so it belongs here
+   *  rather than only on the audits screen. */
+  failedScan?: RevenueLeakScan | null;
   loading?: boolean;
   error?: string;
   scanning?: boolean;
@@ -229,6 +248,24 @@ function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQue
     });
 }
 
+// A dead Google grant and a transient provider fault need different words and
+// a different button. Everything else is "try again".
+function scanFailure(scan: RevenueLeakScan | null | undefined) {
+  if (!scan?.error) return null;
+  const needsReconnect = /invalid authentication|invalid_grant|unauthorized|returned 40[13]/i.test(
+    scan.error,
+  );
+  return {
+    needsReconnect,
+    headline: needsReconnect
+      ? "Google needs reconnecting"
+      : "The last audit did not finish",
+    detail: needsReconnect
+      ? "Google stopped accepting the authorization, so we could not read your mail. Reconnect to run the audit again."
+      : scan.error,
+  };
+}
+
 function sourceConnected(source: RelationshipSourceInventoryItem | undefined) {
   return Boolean(
     source?.accounts.some(
@@ -278,6 +315,7 @@ export function CommitmentQueue({
   relationshipCount = 0,
   sources,
   latestScan,
+  failedScan,
   loading = false,
   error,
   scanning = false,
@@ -298,6 +336,7 @@ export function CommitmentQueue({
   const [correctedText, setCorrectedText] = React.useState("");
   const [correctedDueAt, setCorrectedDueAt] = React.useState("");
   const items = React.useMemo(() => toQueueItems(entries), [entries]);
+  const failure = scanFailure(failedScan);
   const filtered = items.filter((item) => {
     if (filter === "review" && item.missingEvidence.length === 0) return false;
     if (filter === "due" && item.urgency !== "overdue" && item.urgency !== "due_soon") return false;
@@ -494,6 +533,49 @@ export function CommitmentQueue({
       ) : loading ? (
         <div className="flex flex-1 items-center justify-center gap-2 p-6 text-sm text-primary/55">
           <CircleNotch className="animate-spin" /> Loading commitments…
+        </div>
+      ) : filtered.length === 0 && scanning ? (
+        // Mid-scan the register is empty because nothing has been read yet, not
+        // because nothing was found. Saying "no promises were found" here reads
+        // as a result and it is the wrong one.
+        <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
+          <CircleNotch className="mb-3 size-7 animate-spin text-primary/40" />
+          <h2 className="text-[20px] font-semibold leading-6 text-primary">
+            Reading your last 90 days
+          </h2>
+          <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+            This takes a few minutes. You can keep working and come back.
+          </p>
+        </div>
+      ) : filtered.length === 0 && failure ? (
+        // The empty register and the reason for it, together.
+        <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
+          <Warning className="mb-3 size-7 text-destructive" />
+          <h2 className="text-[20px] font-semibold leading-6 text-primary">{failure.headline}</h2>
+          <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">{failure.detail}</p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            {failure.needsReconnect ? (
+              <Button
+                type="button"
+                size="sm"
+                className="bg-[#3478f6] text-white"
+                onClick={onOpenConnectors}
+              >
+                <Plugs /> Reconnect Google
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                className="bg-[#3478f6] text-white"
+                onClick={onScan}
+                disabled={scanning}
+              >
+                {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />}
+                Run the audit again
+              </Button>
+            )}
+          </div>
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[84px] text-center">
@@ -874,7 +956,9 @@ export function CommitmentQueue({
                         <Check /> Confirm promise
                       </ActionButton>
                     ) : null}
-                    {["internally_confirmed", "offered", "disputed"].includes(selected.acceptance) ? (
+                    {["internally_confirmed", "offered", "disputed"].includes(
+                      selected.acceptance,
+                    ) ? (
                       <ActionButton
                         busy={busy === `${selected.id}:accepted`}
                         disabled={busy !== null}
@@ -920,7 +1004,8 @@ export function CommitmentQueue({
                         Unblock
                       </Button>
                     ) : null}
-                    {["internally_confirmed", "accepted"].includes(selected.acceptance) || selected.blocker ? (
+                    {["internally_confirmed", "accepted"].includes(selected.acceptance) ||
+                    selected.blocker ? (
                       <Button
                         type="button"
                         size="sm"

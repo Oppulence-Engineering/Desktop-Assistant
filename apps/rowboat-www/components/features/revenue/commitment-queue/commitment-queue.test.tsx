@@ -178,3 +178,68 @@ describe("CommitmentQueue", () => {
     );
   });
 });
+
+describe("when the register is empty for a reason", () => {
+  const deadGrant = {
+    id: "scan-failed",
+    status: "failed",
+    mode: "linked",
+    lookbackDays: 90,
+    threadsSeen: 0,
+    candidatesSeen: 0,
+    error:
+      "revenue: gmail thread sweep: gmail threads.list: google api /gmail/v1/users/me/threads returned 401: Request had invalid authentication credentials.",
+  };
+
+  // The bug this replaces: a dead Google grant produced an empty register and
+  // the words "Connect Gmail and Calendar", sending a user who was already
+  // connected back through an OAuth flow that could not help them.
+  it("names the dead grant and offers to reconnect", () => {
+    render(<CommitmentQueue {...props({ entries: [], failedScan: deadGrant })} />);
+
+    expect(screen.getByText("Google needs reconnecting")).toBeInTheDocument();
+    expect(screen.getByText(/stopped accepting the authorization/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Reconnect Google/ })).toBeEnabled();
+    expect(screen.queryByText(/Connect Gmail and Calendar to find/)).not.toBeInTheDocument();
+  });
+
+  // A provider outage is not the user's fault and must not send them through
+  // OAuth. It offers a retry instead.
+  it("offers a retry for a transient failure, not a reconnect", () => {
+    render(
+      <CommitmentQueue
+        {...props({
+          entries: [],
+          failedScan: { ...deadGrant, error: "google api /gmail returned 503: Backend Error" },
+        })}
+      />,
+    );
+
+    expect(screen.getByText("The last audit did not finish")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Run the audit again/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Reconnect Google/ })).not.toBeInTheDocument();
+  });
+
+  // Mid-scan, "no promises were found" reads as a result. It is not one.
+  it("says it is still reading while a scan runs", () => {
+    render(<CommitmentQueue {...props({ entries: [], scanning: true })} />);
+
+    expect(screen.getByText("Reading your last 90 days")).toBeInTheDocument();
+    expect(screen.queryByText(/No explicit promises were found/)).not.toBeInTheDocument();
+  });
+});
+
+// Fix 4's contract at the UI edge: when the register request fails, the panel
+// passes the failure down and the queue shows it. It must never silently fall
+// through to the "connect your accounts" onboarding copy, which is what a
+// failed fetch used to look like.
+it("shows a register failure instead of the onboarding prompt", () => {
+  render(
+    <CommitmentQueue
+      {...props({ entries: [], sources: [], error: "The commitment register could not be loaded." })}
+    />,
+  );
+
+  expect(screen.getByText("The commitment register could not be loaded.")).toBeInTheDocument();
+  expect(screen.queryByText(/Connect Gmail and Calendar to find/)).not.toBeInTheDocument();
+});
