@@ -14,10 +14,15 @@ Install `flyctl`, authenticate, and run these commands from the monorepo root:
 ```bash
 fly apps create oppulence-rowboat-www
 fly secrets set --app oppulence-rowboat-www ROWBOAT_WWW_SESSION_SECRET="$(openssl rand -base64 48)"
+# Optional: Plain support chat (Settings -> Chat -> Oppulence). Without these
+# the widget stays off; the app is otherwise unaffected.
+fly secrets set --app oppulence-rowboat-www \
+  ROWBOAT_WWW_PLAIN_CHAT_APP_ID="liveChatApp_..." \
+  ROWBOAT_WWW_PLAIN_CHAT_SECRET="<chat secret>"
 fly deploy . \
   --app oppulence-rowboat-www \
   --config apps/rowboat-www/config/deployment/fly.toml \
-  --remote-only
+  --local-only
 fly scale count 2 --app oppulence-rowboat-www --yes
 ```
 
@@ -30,19 +35,23 @@ named Fly App.
 
 ## GitHub Actions setup
 
-The `Deploy rowboat-www to Fly.io` workflow is manual so it cannot race the existing Kubernetes
-production deployment. Configure the GitHub `production` environment with:
+The `Deploy rowboat-www to Fly.io` workflow deploys automatically when relevant changes land on
+`main`; it can also be started manually. Configure the GitHub `production` environment with:
 
 - `FLY_API_TOKEN` secret: an app-scoped deploy token from
   `fly tokens create deploy --app oppulence-rowboat-www --expiry 720h`. Rotate it before the
   30-day expiry.
 - `ROWBOAT_WWW_SESSION_SECRET` secret: the same 32-or-more-character value used for the Fly App.
+- Optional `ROWBOAT_WWW_PLAIN_CHAT_SECRET` secret and `ROWBOAT_WWW_PLAIN_CHAT_APP_ID` variable for
+  Plain support chat. Both must be present for the workflow to stage them; with either missing the
+  step is skipped and the widget stays off rather than failing the deploy.
 - Optional `FLY_APP_NAME` variable when the Fly App is not named `oppulence-rowboat-www`.
 - Optional `ROWBOAT_WWW_FLY_SMOKE_URL` variable when the smoke test should use a custom hostname
   instead of the app's `.fly.dev` hostname.
 
-The workflow validates the Fly config, stages the session secret for the release, deploys from the
-monorepo root, enforces two Machines, checks Fly health, and runs the existing public smoke test.
+The workflow validates the Fly config, stages the session secret, builds the image on the GitHub
+runner, pushes it to Fly, enforces two Machines, checks Fly health, and runs the existing public smoke
+test.
 
 ## Domain cutover
 

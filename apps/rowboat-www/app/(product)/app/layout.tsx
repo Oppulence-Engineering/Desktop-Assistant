@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { SupportChat } from "@/components/features/support/support-chat";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { requireSession } from "@/lib/auth/session";
 
@@ -9,5 +10,12 @@ export const instant = false;
 
 export default async function ProductLayout({ children }: { children: ReactNode }) {
   await requireSession("/app");
-  return <QueryProvider>{children}</QueryProvider>;
+  return (
+    <QueryProvider>
+      {children}
+      {/* Signed-in users reach support without leaving the dashboard; the
+          widget identifies them from the sealed session. */}
+      <SupportChat />
+    </QueryProvider>
+  );
 }

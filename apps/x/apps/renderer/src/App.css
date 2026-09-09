@@ -2191,9 +2191,8 @@ svg.app-icon.animate-spin {
   object-fit: contain;
 }
 
-.dark .titlebar-brand-mark {
-  filter: invert(1);
-}
+/* The brand mark is a full-color asset, so it must not be inverted in dark
+   mode the way the previous monochrome silhouette was. */
 
 .graph-view {
   background-color: var(--background);
@@ -2279,7 +2278,7 @@ svg.app-icon.animate-spin {
 
 /* ── No rounded borders ──────────────────────────────────────────────────────
    The desktop app uses square corners throughout. This zeroes every rounded
-   utility (named like `rounded-lg` and arbitrary like `rounded-[14px]`) and the
+   utility (named like `rounded-none` and arbitrary like `rounded-[14px]`) and the
    hardcoded panel/email radii. Two classes of element keep their shape:
      • anything `rounded-full` (utility pills, circular badges, avatars), and
      • the CSS circles `border-radius: 50%` (message avatar, status dot, chip-x).

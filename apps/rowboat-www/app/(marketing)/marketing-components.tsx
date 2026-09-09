@@ -18,18 +18,19 @@ import MagnifyingGlassIcon from "@mui/icons-material/SearchOutlined";
 import MonitorIcon from "@mui/icons-material/DesktopWindowsOutlined";
 import NetworkIcon from "@mui/icons-material/HubOutlined";
 import PathIcon from "@mui/icons-material/RouteOutlined";
-import PlayIcon from "@mui/icons-material/PlayCircleOutlined";
 import PlugsConnectedIcon from "@mui/icons-material/CableOutlined";
 import SealCheckIcon from "@mui/icons-material/VerifiedOutlined";
 import SparkleIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import StackIcon from "@mui/icons-material/LayersOutlined";
 import TrayIcon from "@mui/icons-material/InboxOutlined";
 import Image from "next/image";
+import { PlatformRail, type PlatformRailItem } from "./platform-rail";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Button } from "@oppulence/ui/components/button";
 import { cn } from "@/lib/utils";
+import { DesktopDownloadChooser } from "./desktop-download-chooser";
 import {
   alternativeLinks,
   blogPages,
@@ -43,29 +44,75 @@ import {
   toolLinks,
   type FeatureDetail,
   type LinkItem,
+  platformPages,
   type MarketingPage,
+  type PlatformPage,
 } from "./marketing-data";
 import { MarketingEffects } from "./marketing-effects";
 
-const integrationGroups = [
-  "Email",
-  "Calendar",
-  "Meetings",
-  "CRM",
-  "Verification",
-  "Sending",
-  "Research",
-  "Policies",
-  "Custom tools",
-];
-
 const mobileNavLinks = [
-  { label: "Product", href: "/product" },
-  { label: "How it works", href: "/#how-it-works" },
-  { label: "Integrations", href: "/integrations" },
+  { label: "Products", href: "/products" },
+  { label: "How it works", href: "/product" },
   { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
 ];
+
+const suiteDropdownLinks = [
+  {
+    label: "Products overview",
+    href: "/products",
+    description: "Web, Desktop, Voice, and the ledger underneath.",
+  },
+  {
+    label: "Commitment Ledger",
+    href: "/product",
+    description: "What was promised, what is owed, and what changed.",
+  },
+  ...platformPages.map((platform) => ({
+    label: platform.name,
+    href: `/${platform.slug}`,
+    description: platform.summary,
+  })),
+] as const;
+
+const productSuiteCards = [
+  {
+    eyebrow: "Core",
+    title: "Commitment Ledger",
+    body: "The record of what was promised, owed, and changed.",
+    href: "/product",
+    cta: "See the ledger",
+    src: "/marketing/relationship-system/observe.webp",
+    alt: "Connected systems feeding the Oppulence commitment ledger",
+  },
+  ...platformPages.map((platform) => ({
+    eyebrow: platform.eyebrow.replace("Oppulence ", ""),
+    title: platform.name,
+    body: platform.summary,
+    href: `/${platform.slug}`,
+    cta: "Open product",
+    src: platform.screenshot,
+    alt: platform.screenshotAlt,
+  })),
+] as const;
+
+type MemoryRailLink = {
+  label: string;
+  href: string;
+  active?: boolean;
+};
+
+const productRailLinks: MemoryRailLink[] = [
+  { label: "Products", href: "/products" },
+  { label: "Commitment Ledger", href: "/product" },
+  ...platformPages.map((platform) => ({
+    label: platform.name.replace("Oppulence ", ""),
+    href: `/${platform.slug}`,
+  })),
+  { label: "Pricing", href: "/pricing" },
+];
+
+const pricingPrinciples = ["Flat monthly price", "No seat tax", "Cancel any time"] as const;
 
 type IconTone = "neutral" | "blue" | "green" | "orange" | "yellow";
 
@@ -92,7 +139,7 @@ function MarketingIcon({
     <span
       className={cn(
         "marketing-icon-frame",
-        compact ? "size-7 rounded-md" : "size-9 rounded-[8px]",
+        compact ? "size-7 rounded-none" : "size-9 rounded-[8px]",
         iconToneClasses[tone],
         className,
       )}
@@ -210,10 +257,6 @@ function iconForPage(page: MarketingPage): { icon: SvgIconComponent; tone?: Icon
 
   if (page.category === "customer") {
     return { icon: BriefcaseIcon, tone: "yellow" };
-  }
-
-  if (page.category === "demo") {
-    return { icon: PlayIcon, tone: "orange" };
   }
 
   if (page.category === "legal") {
@@ -360,7 +403,9 @@ function InlineLogo({
   header?: boolean;
   prominent?: boolean;
 }) {
-  const iconSize = header ? 38 : compact ? 20 : prominent ? 40 : 28;
+  // The header mark is rendered at its box size now that the lockup no longer
+  // crops an oversized image down to a narrow window.
+  const iconSize = header ? 20 : compact ? 20 : prominent ? 40 : 28;
 
   return (
     <span className={header ? "oppulence-compact-lockup" : "flex items-center gap-2"}>
@@ -377,10 +422,7 @@ function InlineLogo({
       ) : (
         <Image
           alt=""
-          className={cn(
-            "rounded-[3px] dark:invert",
-            compact ? "size-5" : prominent ? "size-10" : "size-7",
-          )}
+          className={cn("rounded-[3px]", compact ? "size-5" : prominent ? "size-10" : "size-7")}
           height={iconSize}
           src="/marketing/oppulence-icon.png"
           width={iconSize}
@@ -415,7 +457,7 @@ function MobileMenu() {
           </Link>
         ))}
         <p className="sm-mobile-kicker">Products</p>
-        {productLinks.slice(0, 5).map((item) => (
+        {suiteDropdownLinks.slice(0, 5).map((item) => (
           <Link className="sm-mobile-product" href={item.href} key={item.href}>
             {item.label}
           </Link>
@@ -425,7 +467,7 @@ function MobileMenu() {
             Sign in
           </Link>
           <Link className="sm-button sm-button-blue" href="/sign-up">
-            Start building <ArrowRightIcon aria-hidden="true" />
+            Start for free <ArrowRightIcon aria-hidden="true" />
           </Link>
         </div>
       </nav>
@@ -444,15 +486,11 @@ export function TopBar() {
         </div>
 
         <nav aria-label="Primary navigation" className="sm-desktop-nav hidden lg:flex">
-          <Link href="/product">Product</Link>
-          <Link href="/#how-it-works">How it works</Link>
-          <Link href="/integrations">Integrations</Link>
-          <Link href="/pricing">Pricing</Link>
-          <Link href="/blog">Blog</Link>
           <details className="sm-nav-products" data-marketing-dropdown>
             <summary>Products</summary>
             <div className="linear-dropdown-panel sm-product-menu">
-              {productLinks.slice(0, 6).map((item) => (
+              <p className="sm-product-menu-kicker">Oppulence suite</p>
+              {suiteDropdownLinks.map((item) => (
                 <Link href={item.href} key={item.href}>
                   <span>{item.label}</span>
                   <small>{item.description}</small>
@@ -460,6 +498,9 @@ export function TopBar() {
               ))}
             </div>
           </details>
+          <Link href="/product">How it works</Link>
+          <Link href="/pricing">Pricing</Link>
+          <Link href="/blog">Blog</Link>
         </nav>
 
         <div className="flex flex-1 items-center justify-end">
@@ -467,7 +508,7 @@ export function TopBar() {
             Sign in
           </Link>
           <Link className="sm-header-cta hidden md:inline-flex" href="/sign-up">
-            Start building <ArrowRightIcon aria-hidden="true" />
+            Start for free <ArrowRightIcon aria-hidden="true" />
           </Link>
           <MobileMenu />
         </div>
@@ -499,11 +540,10 @@ export function Footer() {
         <div className="sm-footer-statement">
           <InlineLogo prominent />
           <h2>
-            Relationship intelligence
-            <br />
-            for customer-facing teams.
+            The commitment ledger <br />
+            for business promises.
           </h2>
-          <p>One living model. Every source. Every next move explained.</p>
+          <p>What you owe. What they owe. Every claim cited.</p>
         </div>
         <div className="sm-footer-links">
           <LinearFooterGroup items={productLinks.slice(0, 6)} title="Product" />
@@ -513,7 +553,7 @@ export function Footer() {
               { label: "Customers", href: "/customers" },
               { label: "Privacy", href: "/privacy" },
               { label: "Terms", href: "/terms" },
-              { label: "Book a relationship review", href: "/book-a-demo" },
+              { label: "Responsible disclosure", href: "/responsible-disclosure" },
             ]}
             title="Company"
           />
@@ -587,742 +627,420 @@ const customerStoryIcons: {
 
 export function ProductPage({ page }: { page: MarketingPage }) {
   return (
-    <div className="flex flex-col">
-      <section className="linear-hero linear-inset">
-        <p className="mb-5 font-mono text-xs text-oppulence-orange">[product]</p>
-        <h1 className="linear-hero-title">{page.title}</h1>
-        <div className="linear-hero-meta">
-          <p className="linear-body max-w-[620px]">{page.description}</p>
-        </div>
-      </section>
-      {linearHomeSections.map((section, index) => (
-        <LinearProductSection index={index} key={section.title} section={section} />
-      ))}
-      <HomeUpdates />
-      <FinalCta />
-    </div>
+    <SuiteSidebarLayout activeHref="/product">
+      <div className="flex flex-col">
+        <section className="linear-hero linear-inset">
+          <p className="mb-5 font-mono text-xs text-oppulence-orange">[product]</p>
+          <h1 className="linear-hero-title">{page.title}</h1>
+          <div className="linear-hero-meta">
+            <p className="linear-body max-w-[620px]">{page.description}</p>
+          </div>
+        </section>
+        {linearHomeSections.map((section, index) => (
+          <LinearProductSection index={index} key={section.title} section={section} />
+        ))}
+        <HomeUpdates />
+        <FinalCta />
+      </div>
+    </SuiteSidebarLayout>
+  );
+}
+
+export function ProductsPage() {
+  return (
+    <SuiteSidebarLayout activeHref="/products">
+      <div className="sm-products-page">
+        <section className="sm-products-hero">
+          <p className="linear-eyebrow">[products]</p>
+          <h1>One commitment ledger. Three ways to use it.</h1>
+          <p>
+            Web for the team queue. Desktop beside the work. Voice for capture. The same record
+            underneath.
+          </p>
+          <div>
+            <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
+              Start for free <ArrowRightIcon aria-hidden="true" />
+            </Link>
+            <Link className="sm-memory-button" href="/product">
+              See the ledger <ArrowRightIcon aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+
+        <section aria-label="Oppulence product suite" className="sm-products-grid">
+          {productSuiteCards.map((product) => (
+            <Link className="sm-products-card" href={product.href} key={product.href}>
+              <div>
+                <span>{product.eyebrow}</span>
+                <ArrowRightIcon aria-hidden="true" />
+              </div>
+              <h2>{product.title}</h2>
+              <p>{product.body}</p>
+              <figure>
+                <Image alt={product.alt} height={760} src={product.src} width={980} />
+              </figure>
+              <strong>{product.cta}</strong>
+            </Link>
+          ))}
+        </section>
+      </div>
+    </SuiteSidebarLayout>
   );
 }
 
 const relationshipCatalog = [
   {
-    label: "Living relationship state",
-    kicker: "01 · MODEL",
-    title: "One current truth for every customer account.",
-    body: "Lifecycle, engagement, sentiment, health, participants, commitments, risks, and milestones stay current as new evidence arrives.",
-    bullets: [
-      "Qualitative health, never an opaque score",
-      "Every state is correctable and replayable",
-    ],
-    src: "/marketing/relationship-web-list.png",
+    label: "Read",
+    kicker: "01",
+    icon: MagnifyingGlassIcon,
+    title: "It reads itself.",
+    body: "Email, meetings, CRM, and billing become one account trail.",
   },
   {
-    label: "Account Mission Control",
-    kicker: "02 · PRIORITIZE",
-    title: "Know which relationship needs action now.",
-    body: "A ranked queue explains what changed, what is at stake, and the safest valuable next move across your book of business.",
-    bullets: ["Portfolio-level attention queue", "Human-readable reasons and source links"],
-    src: "/marketing/relationship-desktop.png",
+    label: "Resolve",
+    kicker: "02",
+    icon: NetworkIcon,
+    title: "Your tools finally agree.",
+    body: "What you owe, what they owe, what changed, and what is at risk.",
   },
   {
-    label: "Conversation intelligence",
-    kicker: "03 · UNDERSTAND",
-    title: "Turn every conversation into durable follow-through.",
-    body: "Meetings, email, notes, and voice become bilateral commitments, objections, risks, and next steps instead of another pile of summaries.",
-    bullets: ["Commitment and decision extraction", "Meeting briefs grounded in account history"],
-    src: "/marketing/desktop-meetings.png",
-  },
-  {
-    label: "Evidence graph",
-    kicker: "04 · EXPLAIN",
-    title: "Every conclusion keeps its receipt.",
-    body: "Source facts, deterministic rules, AI inferences, and user corrections retain provenance, confidence, freshness, and review state.",
-    bullets: [
-      "Evidence attached to material claims",
-      "Missing and ambiguous evidence stays visible",
-    ],
-    src: "/marketing/relationship-web-detail.png",
-  },
-  {
-    label: "Connected sources",
-    kicker: "05 · OBSERVE",
-    title: "The systems around the relationship become observers.",
-    body: "Gmail, Calendar, Slack, HubSpot, meetings, notes, voice, browser context, and direct corrections feed one durable account history.",
-    bullets: ["Source identity, health, and freshness", "Provider-neutral observation contract"],
-    src: "/marketing/desktop-connections.png",
-  },
-  {
-    label: "Governed actions",
-    kicker: "06 · ACT",
-    title: "AI proposes. Your team decides.",
-    body: "Oppulence drafts the next move, runs policy checks, and waits. Approved email, Slack, and CRM actions execute against an exact reviewed revision.",
-    bullets: ["Human approval before external action", "Idempotent execution with receipts"],
-    src: "/marketing/relationship-desktop-detail.png",
-  },
-  {
-    label: "Always-on workflows",
-    kicker: "07 · LEARN",
-    title: "The relationship keeps moving while clients are closed.",
-    body: "Scheduled and event-driven cloud runs watch for changes, while replies, meetings, edits, corrections, and outcomes improve the next recommendation.",
-    bullets: ["Cloud-safe background runtime", "Web and desktop share the same state"],
-    src: "/marketing/desktop-background-tasks.png",
+    label: "Act",
+    kicker: "03",
+    icon: SealCheckIcon,
+    title: "Ask, and it is there.",
+    body: "Every recommendation comes with the source and approval boundary.",
   },
 ] as const;
 
-const operatingLoop = [
-  [
-    "01 / OBSERVE",
-    "Connect the work already happening.",
-    "Email, calendar, CRM, meetings, notes, voice, and browser context append immutable evidence.",
-  ],
-  [
-    "02 / ASSERT",
-    "Separate facts from inference.",
-    "Provider facts, deterministic rules, AI inference, and user corrections keep distinct authority.",
-  ],
-  [
-    "03 / PROJECT",
-    "Build one current relationship state.",
-    "Deterministic projection resolves the evidence into lifecycle, health, people, commitments, and risk.",
-  ],
-  [
-    "04 / EXPLAIN + RECOMMEND",
-    "Show what changed and what to do next.",
-    "Every recommendation includes the reason, supporting evidence, confidence, and any missing context.",
-  ],
-  [
-    "05 / APPROVE + ACT + LEARN",
-    "Close the loop without losing control.",
-    "A person approves the exact action; execution receipts and outcomes return to the same history.",
-  ],
+const homepageGuarantees = [
+  { value: "Every source", label: "linked back to the original evidence" },
+  { value: "Every action", label: "waits for your approval" },
+  { value: "Every record", label: "exportable, and yours to take" },
 ] as const;
 
-const useCases = [
-  {
-    eyebrow: "Founder-led sales",
-    title: "Keep warm opportunities from going quiet.",
-    body: "Find the proposal, promise, referral, or champion that lost its next step—and understand why it is worth reopening now.",
-  },
-  {
-    eyebrow: "Customer success",
-    title: "See risk before the renewal meeting.",
-    body: "Bring commitments, objections, engagement changes, and stakeholder movement into one account review with evidence attached.",
-  },
-  {
-    eyebrow: "Account management",
-    title: "Run the week from the relationships that changed.",
-    body: "Replace activity dashboards with a short, ranked queue of accounts that need a thoughtful next move today.",
-  },
-  {
-    eyebrow: "Partnerships and services",
-    title: "Preserve the context that lives between systems.",
-    body: "Keep decisions, introductions, obligations, and outcomes legible across long-running, high-touch relationships.",
-  },
+const homepageSources = [
+  { label: "Email", icon: EnvelopeIcon },
+  { label: "Calendar", icon: CalendarDotsIcon },
+  { label: "Meetings", icon: HeadsetIcon },
+  { label: "CRM", icon: BriefcaseIcon },
+  { label: "Billing", icon: ChartLineIcon },
 ] as const;
 
-const platformPrinciples = [
-  [
-    "Evidence before inference",
-    "Every material state and recommendation points back to the source that supports it.",
-  ],
-  [
-    "Visible uncertainty",
-    "Stale, missing, conflicting, and still-processing evidence are explicit states—not silent guesses.",
-  ],
-  [
-    "Human authority",
-    "Corrections outrank automation. External actions require policy evaluation and approval.",
-  ],
-  [
-    "Equal clients",
-    "Web and desktop share the same relationship contract, history, corrections, and approvals.",
-  ],
-] as const;
-
-function SectionMarker({ index, label }: { index: string; label: string }) {
+/* Section headings mirror attio.com: one ink-coloured lead sentence followed by
+   muted supporting sentences inside the same 40px/44px block. */
+function AttioHeading({ lead, rest }: { lead: string; rest?: string }) {
   return (
-    <div className="sm-section-marker">
-      <span>{label}</span>
-      <span>[{index}/9]</span>
+    <h2>
+      <span>{lead}</span>
+      {rest ? <span>{` ${rest}`}</span> : null}
+    </h2>
+  );
+}
+
+function AttioSectionHead({
+  cta,
+  label,
+  lead,
+  rest,
+}: {
+  cta?: { href: string; label: string };
+  label: string;
+  lead: string;
+  rest?: string;
+}) {
+  return (
+    <div className="sm-attio-section-head">
+      <p className="sm-attio-section-label">{label}</p>
+      <AttioHeading lead={lead} rest={rest} />
+      {cta ? (
+        <Link className="sm-attio-head-link" href={cta.href}>
+          {cta.label}
+          <ArrowRightIcon aria-hidden="true" />
+        </Link>
+      ) : null}
     </div>
   );
 }
+
+const homepageStack = [
+  "Gmail",
+  "Google Calendar",
+  "Outlook",
+  "HubSpot",
+  "Salesforce",
+  "Stripe",
+  "Slack",
+  "Zoom",
+] as const;
 
 export function HomePage() {
   return (
-    <div className="sm-home flex flex-col">
-      <RelationshipHomeHero />
-      <ProductCatalogSection />
-      <WhatWeDoSection />
-      <HowItWorksSection />
-      <TrustSection />
-      <UseCasesSection />
-      <EnterpriseSection />
-      <PrinciplesSection />
-      <PricingSection />
-      <RelationshipFaqSection />
-      <RelationshipFinalCta />
-    </div>
-  );
-}
-
-function RelationshipHomeHero() {
-  return (
-    <section className="sm-hero">
-      <div className="sm-hero-copy">
-        <Link className="sm-announcement" href="/product">
-          <span>New</span>
-          Account Mission Control is live
-          <ArrowRightIcon aria-hidden="true" />
-        </Link>
-        <h1 aria-label="The relationship cloud for customer-facing teams.">
-          <span aria-hidden="true" className="sm-hero-title-wide">
-            The relationship cloud for{" "}
-            <Image
-              alt=""
-              className="sm-inline-mark"
-              height={58}
-              src="/marketing/oppulence-icon.png"
-              width={58}
-            />{" "}
-            customer-facing teams<span className="sm-hero-title-period">.</span>
-          </span>
-          <span aria-hidden="true" className="sm-hero-title-mobile">
-            Customer context
-            <br />
-            for{" "}
-            <Image
-              alt=""
-              className="sm-inline-mark"
-              height={58}
-              src="/marketing/oppulence-icon.png"
-              width={58}
-            />{" "}
-            your team<span className="sm-hero-title-period">.</span>
-          </span>
-        </h1>
-        <p>
-          Oppulence maintains an accurate, living model of every customer account across email,
-          meetings, Slack, CRM, and revenue systems—then shows what changed, what needs action, and
-          the evidence behind every recommendation.
-        </p>
-        <div className="sm-hero-actions">
-          <Link className="sm-button sm-button-blue" href="/sign-up">
-            Start building <ArrowRightIcon aria-hidden="true" />
+    <div className="sm-attio-home">
+      <section className="sm-attio-hero" id="mission">
+        <div className="sm-attio-shell sm-attio-hero-copy">
+          <Link className="sm-attio-announcement" href="/products">
+            The Commitment Ledger is live
+            <ArrowRightIcon aria-hidden="true" />
           </Link>
-          <Link className="sm-button sm-button-light" href="/book-a-demo">
-            Talk to the team
-          </Link>
-        </div>
-        <Link className="sm-command" href="/app">
-          <span>$</span>
-          ask Oppulence what changed this week
-          <ArrowRightIcon aria-hidden="true" />
-        </Link>
-        <Link className="sm-personal-link" href="/product">
-          Explore relationship intelligence <ArrowRightIcon aria-hidden="true" />
-        </Link>
-      </div>
-      <div className="sm-source-strip" role="group" aria-label="Supported evidence sources">
-        <p>Built around the systems your team already uses</p>
-        <div>
-          {[
-            "Gmail",
-            "Google Calendar",
-            "Slack",
-            "HubSpot",
-            "Meetings",
-            "Notes",
-            "Voice",
-            "Browser",
-          ].map((source) => (
-            <span key={source}>{source}</span>
-          ))}
-        </div>
-      </div>
-      <div className="sm-hero-art">
-        <Image
-          alt="Connected work systems feeding one Oppulence relationship model"
-          height={1254}
-          priority
-          sizes="(max-width: 760px) 95vw, 900px"
-          src="/marketing/relationship-system/observe.webp"
-          unoptimized
-          width={1254}
-        />
-        <Image
-          alt=""
-          aria-hidden="true"
-          className="sm-hero-art-mark"
-          height={84}
-          src="/marketing/oppulence-icon.png"
-          width={84}
-        />
-      </div>
-    </section>
-  );
-}
 
-function ProductCatalogSection() {
-  return (
-    <section className="sm-section sm-catalog" id="product">
-      <SectionMarker index="1" label="Product catalog" />
-      <header className="sm-section-intro">
-        <h2>Everything required to understand and move a relationship forward.</h2>
-        <p>
-          Focused capabilities for observing, explaining, prioritizing, and acting on customer
-          context.
-        </p>
-      </header>
-      <fieldset className="sm-catalog-fieldset">
-        <legend className="sr-only">Explore Oppulence capabilities</legend>
-        <div className="sm-catalog-shell">
-          <div className="sm-catalog-tabs">
-            {relationshipCatalog.map((item, index) => (
-              <label className="sm-catalog-tab" htmlFor={`catalog-${index + 1}`} key={item.label}>
-                <input
-                  aria-label={item.label}
-                  className="sm-catalog-radio sr-only"
-                  defaultChecked={index === 0}
-                  id={`catalog-${index + 1}`}
-                  name="relationship-catalog"
-                  type="radio"
-                />
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                {item.label}
-              </label>
+          <h1>Every promise, on the record.</h1>
+          <p>
+            Oppulence is the ledger that tracks what you owe, what they owe, and what changed across
+            every account.
+          </p>
+
+          <div className="sm-attio-actions">
+            <Link className="sm-attio-btn" href="/product">
+              See how it works
+            </Link>
+            <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
+              Start for free
+            </Link>
+          </div>
+        </div>
+
+        <div className="sm-attio-stage">
+          <div className="sm-attio-shell">
+            <AttioProductWindow />
+          </div>
+        </div>
+      </section>
+
+      <section aria-label="Connected sources" className="sm-attio-logo-band">
+        <div className="sm-attio-shell">
+          <div className="sm-attio-logo-grid">
+            {homepageSources.map((source) => {
+              const Icon = source.icon;
+              return (
+                <div key={source.label}>
+                  <Icon aria-hidden="true" />
+                  {source.label}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="sm-attio-platform" id="what-we-do">
+        <div className="sm-attio-shell">
+          <AttioSectionHead
+            label="Platform"
+            lead="The record that never forgets."
+            rest="Catches the promise made on a call. Flags the renewal before it slips."
+          />
+
+          <PlatformRail items={platformRailItems} />
+        </div>
+      </section>
+
+      <section className="sm-attio-setup">
+        <div className="sm-attio-shell">
+          <AttioSectionHead
+            label="Self-building"
+            lead="Live from day one."
+            rest="Connect your inbox and calendar. Oppulence reads the last 90 days and builds the ledger before you ask it anything."
+          />
+          <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
+            Start for free
+          </Link>
+          <figure className="sm-attio-setup-media">
+            <Image
+              alt="Oppulence connecting Gmail, calendar, CRM, and billing in settings"
+              height={960}
+              src={desktopScreenshots.connections}
+              width={1440}
+            />
+          </figure>
+        </div>
+      </section>
+
+      <section className="sm-attio-dark">
+        <div className="sm-attio-shell">
+          <div className="sm-attio-wordmark-stage">
+            <p className="sm-attio-dark-eyebrow">The only ledger with</p>
+            <h2 className="sm-attio-wordmark">
+              Relationship Memory
+              <sup aria-hidden="true">&trade;</sup>
+            </h2>
+          </div>
+
+          <div className="sm-attio-dark-strip">
+            {relationshipCatalog.map((item) => {
+              const Icon = item.icon;
+              return (
+                <article key={item.label}>
+                  <Icon aria-hidden="true" />
+                  <div>
+                    <p>{item.title}</p>
+                    <p>{item.body}</p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="sm-attio-dark sm-attio-dark-connect">
+        <div className="sm-attio-shell">
+          <p className="sm-attio-dark-eyebrow">Connectivity</p>
+          <h2>Your whole stack, connected.</h2>
+          <p className="sm-attio-connect-body">
+            Oppulence reads the systems the relationship already lives in, and writes back only
+            where you approve it.
+          </p>
+          <div className="sm-attio-connect-grid">
+            {homepageStack.map((tool) => (
+              <span key={tool}>{tool}</span>
             ))}
           </div>
-          <div className="sm-catalog-panels">
-            {relationshipCatalog.map((item, index) => (
-              <article
-                className={`sm-catalog-panel sm-catalog-panel-${index + 1}`}
-                key={item.title}
-              >
-                <div className="sm-catalog-panel-copy">
-                  <p>{item.kicker}</p>
-                  <h3>{item.title}</h3>
-                  <p>{item.body}</p>
-                  <ul>
-                    {item.bullets.map((bullet) => (
-                      <li key={bullet}>{bullet}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="sm-catalog-image">
-                  <Image
-                    alt={`Oppulence product view for ${item.label}`}
-                    fill
-                    sizes="(max-width: 860px) 100vw, 780px"
-                    src={item.src}
-                  />
-                </div>
+        </div>
+      </section>
+
+      <section className="sm-attio-guarantees">
+        <div className="sm-attio-shell">
+          <AttioSectionHead
+            label="Governance"
+            lead="Run it at any scale."
+            rest="Production-grade for your team and its agents."
+          />
+          <div className="sm-attio-guarantee-grid">
+            {homepageGuarantees.map((item) => (
+              <article key={item.label}>
+                <strong>{item.value}</strong>
+                <span>{item.label}</span>
               </article>
             ))}
           </div>
         </div>
-      </fieldset>
-    </section>
-  );
-}
+      </section>
 
-function WhatWeDoSection() {
-  return (
-    <section className="sm-section sm-what-we-do">
-      <SectionMarker index="2" label="What we do" />
-      <header className="sm-centered-intro">
-        <h2>
-          Bring the evidence.
-          <br />
-          We maintain the relationship. Your team knows.
-        </h2>
-        <p>Relationship infrastructure for the people who own customer outcomes.</p>
-      </header>
-      <div className="sm-offer-grid">
-        <Link className="sm-offer sm-offer-dark" href="/product">
-          <span>For customer-facing teams</span>
-          <h3>Account Mission Control</h3>
-          <p>
-            A living, explainable view of every account and the next move that deserves attention.
-          </p>
-          <dl>
-            <div>
-              <dt>4</dt>
-              <dd>questions answered</dd>
-            </div>
-            <div>
-              <dt>8</dt>
-              <dd>steps in the loop</dd>
-            </div>
-            <div>
-              <dt>2</dt>
-              <dd>equal clients</dd>
-            </div>
-          </dl>
-          <small>
-            See relationship intelligence <ArrowRightIcon aria-hidden="true" />
-          </small>
-        </Link>
-        <Link className="sm-offer sm-offer-blue" href="/voice">
-          <span>For work in motion</span>
-          <h3>Oppulence Desktop</h3>
-          <p>
-            Local knowledge, meetings, voice, browser context, and native execution connected to the
-            same account history.
-          </p>
-          <div className="sm-offer-products">
-            <span>
-              Meetings<small>capture</small>
-            </span>
-            <span>
-              Voice<small>local-first</small>
-            </span>
-            <span>
-              Knowledge<small>searchable</small>
-            </span>
-            <span>
-              Actions<small>governed</small>
-            </span>
-          </div>
-          <small>
-            Explore the desktop node <ArrowRightIcon aria-hidden="true" />
-          </small>
-        </Link>
-      </div>
-      <div className="sm-comparison">
-        <article>
-          <p>Legacy · an activity system</p>
-          <h3>Records contacts and transactions.</h3>
-          <ul>
-            <li>Declared stages and fields</li>
-            <li>Scattered conversation history</li>
-            <li>Activity without explanation</li>
-          </ul>
-        </article>
-        <article>
-          <p>Oppulence</p>
-          <h3>Models the relationship itself.</h3>
-          <ul>
-            <li>State that changes with the evidence</li>
-            <li>Commitments, risk, people, and outcomes</li>
-            <li>One loop from observation to action</li>
-          </ul>
-        </article>
-      </div>
-    </section>
-  );
-}
-
-function HowItWorksSection() {
-  return (
-    <section className="sm-section sm-how" id="how-it-works">
-      <SectionMarker index="3" label="How it works" />
-      <div className="sm-how-grid">
-        <div className="sm-how-copy">
-          <h2>One operating loop.</h2>
-          <p>
-            Observe, assert, project, explain, recommend, approve, act, and learn. Each step has a
-            clear owner and a durable record.
-          </p>
-          <div className="sm-api-window">
-            <div>
-              <span>relationship-state</span>
-              <span>LIVE</span>
-            </div>
-            <pre>{`GET  /v1/relationships/{id}\nGET  /v1/relationships/{id}/evidence\nPOST /v1/relationships/{id}/recommendations`}</pre>
-          </div>
-        </div>
-        <div className="sm-loop-list">
-          {operatingLoop.map(([eyebrow, title, body]) => (
-            <article key={eyebrow}>
-              <p>{eyebrow}</p>
-              <h3>{title}</h3>
-              <span>{body}</span>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function TrustSection() {
-  return (
-    <section className="sm-section sm-trust">
-      <SectionMarker index="4" label="Built for truth" />
-      <header className="sm-section-intro">
-        <h2>We do not hide uncertainty behind a score.</h2>
-        <p>
-          Oppulence is designed to say what it knows, where it learned it, and what is still
-          missing.
-        </p>
-      </header>
-      <div className="sm-trust-cards">
-        <article>
-          <div className="sm-trust-image">
-            <Image
-              alt="Oppulence account detail with evidence and source health"
-              fill
-              sizes="(max-width: 800px) 100vw, 650px"
-              src="/marketing/relationship-web-detail.png"
-            />
-          </div>
-          <h3>Evidence that can be inspected.</h3>
-          <p>
-            Timeline events, state changes, recommendations, and corrections stay linked to their
-            sources.
-          </p>
-        </article>
-        <article>
-          <div className="sm-trust-image">
-            <Image
-              alt="Oppulence account list with qualitative relationship health"
-              fill
-              sizes="(max-width: 800px) 100vw, 650px"
-              src="/marketing/relationship-web-list.png"
-            />
-          </div>
-          <h3>State a teammate can correct.</h3>
-          <p>User corrections outrank automation, remain reversible, and leave an audit trail.</p>
-        </article>
-      </div>
-      <div
-        className="sm-trust-table"
-        role="table"
-        aria-label="Relationship intelligence responsibility model"
-      >
-        <div role="row">
-          <span role="columnheader">Question</span>
-          <span role="columnheader">System answer</span>
-          <span role="columnheader">Authority</span>
-        </div>
-        {[
-          [
-            "What is the state?",
-            "Qualitative lifecycle, health, and engagement",
-            "Deterministic projection",
-          ],
-          ["What changed?", "Material state transition with time and source", "Versioned history"],
-          [
-            "What supports it?",
-            "Linked facts, inference, confidence, and freshness",
-            "Evidence graph",
-          ],
-          ["What needs action?", "Ranked recommendation and reason", "Human-approved action"],
-        ].map((row) => (
-          <div role="row" key={row[0]}>
-            {row.map((cell) => (
-              <span role="cell" key={cell}>
-                {cell}
-              </span>
-            ))}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function UseCasesSection() {
-  return (
-    <section className="sm-section sm-use-cases" id="use-cases">
-      <SectionMarker index="5" label="Use cases" />
-      <header className="sm-section-intro">
-        <h2>Built for teams whose outcomes depend on context.</h2>
-        <p>
-          Different motions, one requirement: the relationship must survive every handoff and every
-          tool.
-        </p>
-      </header>
-      <nav aria-label="Use case navigation" className="sm-use-case-nav">
-        {useCases.map((_, index) => (
-          <a aria-label={`View use case ${index + 1}`} href={`#use-case-${index + 1}`} key={index}>
-            {String(index + 1).padStart(2, "0")}
-          </a>
-        ))}
-      </nav>
-      <div aria-label="Use cases" className="sm-use-case-track" role="region">
-        {useCases.map((item, index) => (
-          <article id={`use-case-${index + 1}`} key={item.eyebrow}>
-            <p>{item.eyebrow}</p>
-            <h3>{item.title}</h3>
-            <span>{item.body}</span>
-            <Link href="/product">
-              <small>Powered by the same relationship state</small>
-            </Link>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function EnterpriseSection() {
-  return (
-    <section className="sm-section sm-enterprise">
-      <SectionMarker index="6" label="Everywhere you work" />
-      <header className="sm-centered-intro">
-        <h2>Oppulence runs across the relationship.</h2>
-        <p>
-          One service plane, two equal clients, and clear boundaries around every source and action.
-        </p>
-      </header>
-      <div className="sm-enterprise-grid">
-        {[
-          [
-            "01 / WEB",
-            "Portfolio mission control.",
-            "Review accounts, coordinate the team, inspect evidence, correct state, and approve next moves.",
-          ],
-          [
-            "02 / DESKTOP",
-            "Context where work happens.",
-            "Bring local knowledge, meetings, voice notes, browser context, and native execution into the same model.",
-          ],
-          [
-            "03 / CLOUD",
-            "Always-on observation.",
-            "Scheduled and event-driven workflows continue to ingest, project, and watch while clients are closed.",
-          ],
-        ].map(([eyebrow, title, body]) => (
-          <article key={eyebrow}>
-            <p>{eyebrow}</p>
-            <h3>{title}</h3>
-            <span>{body}</span>
-          </article>
-        ))}
-      </div>
-      <div className="sm-security-grid">
-        {[
-          ["Encrypted", "Raw observation payloads are sealed at rest."],
-          ["Tenant-scoped", "Identity and relationship data stay workspace-bound."],
-          ["Reviewable", "Corrections, approvals, and execution leave an audit trail."],
-          ["Replaceable", "Connectors can change; the relationship history remains the asset."],
-        ].map(([title, body]) => (
-          <article key={title}>
-            <strong>{title}</strong>
-            <p>{body}</p>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function PrinciplesSection() {
-  return (
-    <section className="sm-section sm-principles">
-      <SectionMarker index="7" label="Product principles" />
-      <div className="sm-principles-grid">
-        <div>
-          <h2>Trust is a product surface.</h2>
-          <p>
-            A recommendation is only useful when the team can understand it, challenge it, and
-            control what happens next.
-          </p>
-          <Image
-            alt="Oppulence governed recommendation ready for review"
-            height={960}
-            sizes="(max-width: 800px) 100vw, 620px"
-            src="/marketing/relationship-desktop-detail.png"
-            width={1440}
+      <section className="sm-attio-suite" id="products">
+        <div className="sm-attio-shell">
+          <AttioSectionHead
+            cta={{ href: "/products", label: "View all" }}
+            label="Suite"
+            lead="Work where the relationship happens."
+            rest="Web for the queue, desktop beside the work, voice for capture."
           />
-        </div>
-        <div>
-          {platformPrinciples.map(([title, body], index) => (
-            <article key={title}>
-              <span>0{index + 1}</span>
-              <h3>{title}</h3>
-              <p>{body}</p>
-            </article>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function PricingSection() {
-  const individualPlans = pricingPlans.slice(0, 4);
-  const teamPlan = pricingPlans[4];
-
-  return (
-    <section className="sm-section sm-pricing" id="pricing">
-      <SectionMarker index="8" label="Pricing" />
-      <header className="sm-centered-intro">
-        <h2>Start with the relationships already slipping.</h2>
-        <p>Clear monthly plans—from a free weekly report to full account intelligence.</p>
-      </header>
-      <div className="sm-plan-grid">
-        {individualPlans.map((plan) => (
-          <article className={cn(plan.recommended && "is-featured")} key={plan.name}>
-            <div>
-              <h3>{plan.name}</h3>
-              {plan.recommended ? <span>Most picked</span> : null}
-            </div>
-            <p>{plan.description}</p>
-            <strong>
-              {plan.price}
-              <small>{plan.period}</small>
-            </strong>
-            <Link
-              className={cn("sm-button", plan.recommended ? "sm-button-blue" : "sm-button-light")}
-              href={plan.ctaHref}
-            >
-              {plan.ctaLabel}
-            </Link>
-            <ul>
-              {plan.features.map((feature) => (
-                <li key={feature}>{feature}</li>
-              ))}
-            </ul>
-          </article>
-        ))}
-      </div>
-      {teamPlan ? (
-        <aside className="sm-team-plan">
-          <div>
-            <p>Teams</p>
-            <h3>{teamPlan.description}</h3>
-          </div>
-          <ul>
-            {teamPlan.features.map((feature) => (
-              <li key={feature}>{feature}</li>
+          <div className="sm-attio-suite-grid">
+            {productSuiteCards.map((product) => (
+              <Link href={product.href} key={product.href}>
+                <span>{product.eyebrow}</span>
+                <strong>{product.title}</strong>
+                <p>{product.body}</p>
+                <ArrowRightIcon aria-hidden="true" />
+              </Link>
             ))}
-          </ul>
-          <Link className="sm-button sm-button-blue" href={teamPlan.ctaHref}>
-            {teamPlan.ctaLabel}
-          </Link>
-        </aside>
-      ) : null}
-      <Link className="sm-pricing-link" href="/pricing">
-        See full pricing and plan details <ArrowRightIcon aria-hidden="true" />
-      </Link>
-    </section>
+          </div>
+        </div>
+      </section>
+
+      <section className="sm-attio-steps">
+        <div className="sm-attio-shell">
+          <AttioSectionHead
+            cta={{ href: "/product", label: "See the ledger" }}
+            label="How it works"
+            lead="Better as you use it."
+            rest="Every approved move sharpens the record underneath it."
+          />
+          <div className="sm-attio-step-grid">
+            {homeSteps.map((step, index) => (
+              <article key={step.title}>
+                <div className="sm-attio-step-copy">
+                  <span>{`Step 0${index + 1}`}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.body}</p>
+                </div>
+                <div aria-hidden="true" className="sm-attio-step-rule" />
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="sm-attio-final">
+        <div className="sm-attio-shell">
+          <h2>Know what is owed.</h2>
+          <div className="sm-attio-actions">
+            <Link className="sm-attio-btn" href="/products">
+              See the suite
+            </Link>
+            <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
+              Start for free
+            </Link>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
 
-function RelationshipFaqSection() {
+function AttioProductWindow() {
   return (
-    <section className="sm-section sm-faq">
-      <SectionMarker index="9" label="FAQ" />
-      <header className="sm-section-intro">
-        <h2>The important questions, answered plainly.</h2>
-        <p>What teams ask before connecting their customer systems.</p>
-      </header>
-      <div className="sm-faq-list">
-        {homeFaqs.map((item, index) => (
-          <details key={item.question} open={index === 0 ? true : undefined}>
-            <summary>
-              <span>{String(index + 1).padStart(2, "0")}</span>
-              {item.question}
-              <strong aria-hidden="true">+</strong>
-            </summary>
-            <p>{item.answer}</p>
-          </details>
-        ))}
+    <figure className="sm-attio-product-window">
+      <div className="sm-attio-product-inner">
+        <div className="sm-attio-product-chrome">
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+          <span aria-hidden="true" />
+        </div>
+        <Image
+          alt="Oppulence account mission control ranking accounts by what changed and what is owed"
+          height={960}
+          priority
+          sizes="(max-width: 760px) 100vw, 1296px"
+          src="/marketing/relationship-web-list.png"
+          width={1440}
+        />
       </div>
-    </section>
+    </figure>
+  );
+}
+
+function SuiteSidebarLayout({ activeHref, children }: { activeHref: string; children: ReactNode }) {
+  const links = productRailLinks.map((link) => ({
+    ...link,
+    active: link.href === activeHref,
+  }));
+
+  return (
+    <div className="sm-memory-home sm-suite-shell">
+      <MemoryRail ariaLabel="Products navigation" links={links} />
+      <div className="sm-memory-main">{children}</div>
+    </div>
+  );
+}
+
+function MemoryRail({ ariaLabel, links }: { ariaLabel: string; links: readonly MemoryRailLink[] }) {
+  return (
+    <aside aria-label={ariaLabel} className="sm-memory-rail">
+      <nav>
+        {links.map((link) => {
+          const content = (
+            <>
+              {link.active ? <span aria-hidden="true" /> : null}
+              {link.label}
+            </>
+          );
+
+          return link.href.startsWith("#") ? (
+            <a className={link.active ? "is-active" : undefined} href={link.href} key={link.href}>
+              {content}
+            </a>
+          ) : (
+            <Link
+              className={link.active ? "is-active" : undefined}
+              href={link.href}
+              key={link.href}
+            >
+              {content}
+            </Link>
+          );
+        })}
+      </nav>
+    </aside>
   );
 }
 
@@ -1330,24 +1048,20 @@ function RelationshipFinalCta() {
   return (
     <section className="sm-final-cta">
       <h2>
-        Your customer relationships deserve one living memory<span>.</span>
+        Go find what you&rsquo;ve been missing<span>.</span>
       </h2>
       <div>
         <Link className="sm-button sm-button-blue" href="/sign-up">
           Start building <ArrowRightIcon aria-hidden="true" />
         </Link>
-        <Link className="sm-button sm-button-light" href="/book-a-demo">
-          Book a relationship review
-        </Link>
       </div>
-      <p>OBSERVE · EXPLAIN · RECOMMEND · APPROVE · ACT · LEARN</p>
     </section>
   );
 }
 
 const linearHomeSections = [
   {
-    title: "Turn fragmented evidence into living relationship state.",
+    title: "It finds the loose ends nobody wrote down.",
     description:
       "Oppulence scans the last 60–90 days of email, calendar, and billing to build a living ledger of promises, proposals, invoices, and open loops. It finds where a valuable relationship lost its next step, with the dollar amount and source attached.",
     label: "Relationship State Engine",
@@ -1379,7 +1093,7 @@ const linearHomeSections = [
     description:
       "Oppulence verifies the contact, checks the relationship and policy context, and waits for your approval. It never emails a contact who bounced, opted out, or changed roles. Actions that touch money need a second confirmation.",
     label: "Governed Execution",
-    href: "/integrations",
+    href: "/api-documentation-software",
     src: desktopScreenshots.connections,
     alt: "Oppulence policy checks and sender protection before execution",
     bullets: [
@@ -1389,6 +1103,43 @@ const linearHomeSections = [
     ],
   },
 ] as const;
+
+/* Attio's row descriptions are a single short sentence under the 24px title.
+   The long-form copy in linearHomeSections is written for the product pages
+   and overflows this block, so the home rows get their own summary line. */
+const platformRowSummaries = [
+  "Sixty to ninety days of email, calendar, and billing become one ledger of promises, with the amount and source attached.",
+  "Each week it ranks the few relationships where silence or a missed commitment makes the next move worth your attention.",
+  "It checks the contact, the policy, and the money, then waits for your approval before anything leaves your name.",
+] as const;
+
+/* Each row needs a screenshot that shows the thing the copy claims. The
+   product-page images did not: row one pointed at a Notes folder list, and
+   the connections dialog was reused for both row three and self-building. */
+const platformRowMedia = [
+  {
+    src: "/marketing/relationship-web-detail.png",
+    alt: "An account record showing the promised security review, its evidence timeline, and what changed",
+  },
+  {
+    src: "/marketing/relationship-desktop.png",
+    alt: "Accounts ranked by what needs action now, each with its health and the change that triggered it",
+  },
+  {
+    src: "/marketing/relationship-desktop-detail.png",
+    alt: "A drafted follow-up held at an approve or reject gate, with the evidence behind it in view",
+  },
+] as const;
+
+const platformRailItems: PlatformRailItem[] = linearHomeSections.map((section, index) => ({
+  id: ["find-the-loose-ends", "run-every-account", "act-with-guardrails"][index] ?? `row-${index}`,
+  nav: ["Find the loose ends", "Run every account", "Act with guardrails"][index] ?? section.label,
+  title: section.title,
+  description: platformRowSummaries[index] ?? section.description,
+  label: section.label,
+  src: platformRowMedia[index]?.src ?? section.src,
+  alt: platformRowMedia[index]?.alt ?? section.alt,
+}));
 
 function LinearProductSection({
   index,
@@ -1510,44 +1261,6 @@ function HomeStepVisual({ index }: { index: number }) {
   );
 }
 
-const homeFaqs = [
-  {
-    question: "Is Oppulence another CRM?",
-    answer:
-      "No. Your CRM stays the system of record. Oppulence is the relationship-memory layer around it: the conversations, promises, objections, and outcomes that explain what should happen next.",
-  },
-  {
-    question: "What is relationship memory?",
-    answer:
-      "It is a living record of what was promised, what changed, what happened next, and which open loop still matters for each person, company, client, opportunity, referral, or partner. Oppulence keeps that record tied to source evidence and turns it into a reviewable next action.",
-  },
-  {
-    question: "Is this a cold-email tool?",
-    answer:
-      "No. Oppulence sends zero cold email. It only works the warm relationships you already have: ghosted proposals, quiet clients, unpaid invoices, and neglected referrals.",
-  },
-  {
-    question: "Will it send messages without me?",
-    answer:
-      "No. Each message waits for your click. Actions that touch money need a second confirmation. You can approve, edit, snooze, or reject anything in the queue.",
-  },
-  {
-    question: "How does it decide what matters?",
-    answer:
-      "It looks at the relationship history, the commitment that was made, the dollar value at stake, and the time since the last reply. Each recommendation shows its evidence.",
-  },
-  {
-    question: "What does it cost?",
-    answer:
-      "Watch is free: a weekly report of what is slipping, with dollar amounts. Chase is $99 per month: drafted nudges, one-click approval, and recovery receipts. One saved deal pays for years.",
-  },
-  {
-    question: "What happens to my data?",
-    answer:
-      "We read your mail to serve you and no one else. We do not pool it with other customers, and we do not train shared models on it. You can disconnect at any time.",
-  },
-];
-
 function FinalCta() {
   return (
     <section className="linear-final-cta linear-inset">
@@ -1558,8 +1271,8 @@ function FinalCta() {
         action, and the evidence behind the recommended next move.
       </p>
       <div className="flex flex-col items-center gap-3 sm:flex-row">
-        <Link className="linear-button-primary !h-10 !px-5" href="/book-a-demo">
-          See account mission control
+        <Link className="linear-button-primary !h-10 !px-5" href="/sign-up">
+          Start building
         </Link>
         <Link className="linear-button-secondary !h-10 !px-5" href="/product">
           Explore relationship intelligence
@@ -1603,7 +1316,7 @@ function DesktopScreenshotPreview({
       <div className="relative z-10 flex min-w-0 flex-1 items-center justify-center p-2 sm:p-6">
         <Image
           alt={alt}
-          className="marketing-preview-image w-full min-w-0 max-w-6xl rounded-md border border-primary/10 bg-background object-cover shadow-2xl shadow-black/30"
+          className="marketing-preview-image w-full min-w-0 max-w-6xl rounded-none border border-primary/10 bg-background object-cover shadow-2xl shadow-black/30"
           height={1000}
           priority={src === desktopScreenshots.home}
           sizes="(max-width: 768px) 100vw, 1120px"
@@ -1612,6 +1325,109 @@ function DesktopScreenshotPreview({
         />
       </div>
     </div>
+  );
+}
+
+/**
+ * One of the three ways to run Oppulence (web, desktop, voice). Same shape for
+ * all three so they read as siblings; the installer picker only appears for
+ * the two that actually ship a binary.
+ */
+export function PlatformProductPage({ page }: { page: PlatformPage }) {
+  return (
+    <SuiteSidebarLayout activeHref={`/${page.slug}`}>
+      <div className="sm-platform">
+        <section className="sm-platform-hero">
+          <p className="sm-platform-eyebrow">{page.eyebrow}</p>
+          <h1>{page.title}</h1>
+          <p className="sm-platform-lede">{page.lede}</p>
+          <div className="sm-platform-actions">
+            {page.download ? (
+              <DesktopDownloadChooser
+                app={page.slug === "voice-app" ? "voice" : "desktop"}
+                blurb={page.summary}
+                name={page.name}
+              />
+            ) : (
+              <>
+                <Link className="sm-button sm-button-blue" href="/sign-up">
+                  Start free <ArrowRightIcon aria-hidden="true" />
+                </Link>
+                <Link className="sm-button sm-button-light" href="/app">
+                  Open the dashboard
+                </Link>
+              </>
+            )}
+          </div>
+          <p className="sm-platform-summary">{page.summary}</p>
+        </section>
+
+        <div className="sm-platform-shot">
+          <Image
+            alt={page.screenshotAlt}
+            height={1200}
+            sizes="(max-width: 1100px) 100vw, 1100px"
+            src={page.screenshot}
+            width={1900}
+          />
+        </div>
+
+        {page.sections.map((section, index) => (
+          <section className="sm-platform-section" key={section.title}>
+            <div className="sm-platform-section-copy">
+              <p className="sm-platform-index">{String(index + 1).padStart(2, "0")}</p>
+              <h2>{section.title}</h2>
+              <p>{section.body}</p>
+              <ul>
+                {section.bullets.map((bullet) => (
+                  <li key={bullet}>{bullet}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="sm-platform-section-shot">
+              <Image
+                alt={section.alt}
+                height={900}
+                sizes="(max-width: 900px) 100vw, 620px"
+                src={section.screenshot}
+                width={1400}
+              />
+            </div>
+          </section>
+        ))}
+
+        <section className="sm-platform-specs">
+          <h2>The practical bits.</h2>
+          <dl>
+            {page.specs.map((spec) => (
+              <div key={spec.term}>
+                <dt>{spec.term}</dt>
+                <dd>{spec.detail}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <section className="sm-platform-siblings">
+          <h2>The other two.</h2>
+          <div>
+            {platformPages
+              .filter((other) => other.slug !== page.slug)
+              .map((other) => (
+                <Link href={`/${other.slug}`} key={other.slug}>
+                  <strong>{other.name}</strong>
+                  <span>{other.summary}</span>
+                  <small>
+                    Take a look <ArrowRightIcon aria-hidden="true" />
+                  </small>
+                </Link>
+              ))}
+          </div>
+        </section>
+
+        <RelationshipFinalCta />
+      </div>
+    </SuiteSidebarLayout>
   );
 }
 
@@ -1624,7 +1440,7 @@ export function GenericPage({ page }: { page: MarketingPage }) {
     return <FeatureMirrorPage details={details} page={page} />;
   }
 
-  return (
+  const pageContent = (
     <PageShell page={page}>
       <section className="grid gap-6 md:grid-cols-3">
         {page.bullets.map((bullet, index) => {
@@ -1644,10 +1460,11 @@ export function GenericPage({ page }: { page: MarketingPage }) {
         })}
       </section>
       <ProofGrid page={page} />
-      {page.path === "integrations" ? <IntegrationsPanel /> : null}
       {page.category === "tool" ? <ToolPanel page={page} /> : null}
     </PageShell>
   );
+
+  return pageContent;
 }
 
 function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: FeatureDetail }) {
@@ -1667,7 +1484,8 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
           <div className="linear-subpage-description">
             <p>{page.description}</p>
             <FeatureActionButtons
-              primary={page.ctaLabel ?? "Book a Revenue Leak Scan"}
+              primary={page.ctaLabel ?? "Start building"}
+              primaryHref={page.ctaHref ?? "/sign-up"}
               secondary="See product"
             />
           </div>
@@ -1679,7 +1497,7 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
 
             return (
               <article
-                className="marketing-surface flex gap-3 rounded-md border px-4 py-3"
+                className="marketing-surface flex gap-3 rounded-none border px-4 py-3"
                 key={bullet}
               >
                 <MarketingIcon compact icon={icon} tone={tone} />
@@ -1782,7 +1600,6 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
         {page.path === "api-documentation-software" ? <ApiReferenceEmbed /> : null}
 
         <ProofGrid page={page} />
-        {page.path === "integrations" ? <IntegrationsPanel /> : null}
 
         <section className="mt-14 border-t border-primary/10 pt-10">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -1794,9 +1611,7 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
             </div>
             <div className="flex flex-wrap gap-3">
               <Button asChild className="marketing-cta-primary">
-                <Link href={page.ctaHref ?? "/book-a-demo"}>
-                  {page.ctaLabel ?? "Book a Revenue Leak Scan"}
-                </Link>
+                <Link href={page.ctaHref ?? "/sign-up"}>{page.ctaLabel ?? "Start building"}</Link>
               </Button>
               <Button asChild className="marketing-cta-secondary" variant="ghost">
                 <Link href="/app">Open action queue</Link>
@@ -1833,10 +1648,12 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
 }
 
 function FeatureActionButtons({
-  primary = "Book a Revenue Leak Scan",
+  primary = "Start building",
+  primaryHref = "/sign-up",
   secondary = "See product",
 }: {
   primary?: string;
+  primaryHref?: string;
   secondary?: string;
 }) {
   return (
@@ -1845,7 +1662,7 @@ function FeatureActionButtons({
         asChild
         className="marketing-cta-primary h-12 border border-transparent px-6 font-medium text-sm has-[>svg]:px-4"
       >
-        <Link href="/book-a-demo">
+        <Link href={primaryHref}>
           {primary}
           <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
         </Link>
@@ -1874,8 +1691,8 @@ function PageShell({ page, children }: { page: MarketingPage; children: ReactNod
             <p>{page.description}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild className="marketing-cta-primary">
-                <Link href={page.ctaHref ?? "/book-a-demo"}>
-                  {page.ctaLabel ?? "Book a Revenue Leak Scan"}
+                <Link href={page.ctaHref ?? "/sign-up"}>
+                  {page.ctaLabel ?? "Start building"}
                   <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
                 </Link>
               </Button>
@@ -1918,39 +1735,6 @@ function ProofGrid({ page }: { page: MarketingPage }) {
             </div>
           </article>
         ))}
-      </div>
-    </section>
-  );
-}
-
-function IntegrationsPanel() {
-  return (
-    <section>
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
-            Connector surface
-          </p>
-          <h2 className="mt-2 text-2xl font-medium">Sources stay visible and reviewable.</h2>
-        </div>
-        <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-          Oppulence keeps each connected source legible while agents work across the graph.
-        </p>
-      </div>
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
-        {integrationGroups.map((item) => {
-          const { icon, tone } = iconForLink({ href: item, label: item });
-
-          return (
-            <div
-              className="marketing-surface flex items-center gap-3 border px-4 py-3 font-mono text-[13px]"
-              key={item}
-            >
-              <MarketingIcon compact icon={icon} tone={tone} />
-              {item}
-            </div>
-          );
-        })}
       </div>
     </section>
   );
@@ -2026,46 +1810,61 @@ function ApiReferenceEmbed() {
 
 export function PricingPage({ page }: { page: MarketingPage }) {
   return (
-    <div className="linear-subpage-simple linear-inset">
-      <header className="linear-page-hero">
-        <p className="linear-eyebrow-red">[pricing]</p>
-        <h1 className="linear-page-title">{page.title}</h1>
-        <p className="linear-body max-w-[560px]">{page.description}</p>
-      </header>
-      <section className="linear-plan-grid">
-        {pricingPlans.map((plan) => (
-          <article
-            className={cn("linear-plan", plan.recommended && "linear-plan-featured")}
-            key={plan.name}
-          >
-            <p className="linear-plan-name">[{plan.name.toLowerCase()}]</p>
-            <p className="linear-plan-price">
-              {plan.price}
-              {plan.period ? <span>{plan.period}</span> : null}
-            </p>
-            <p className="linear-body">{plan.description}</p>
-            <ul>
-              {plan.features.map((feature) => (
-                <li key={feature}>{feature}</li>
-              ))}
-            </ul>
-            <Link
-              className={cn(
-                plan.recommended ? "linear-button-primary" : "linear-button-secondary",
-                "!h-10 w-full",
-              )}
-              href={plan.ctaHref}
+    <SuiteSidebarLayout activeHref="/pricing">
+      <div className="sm-pricing">
+        <header className="sm-pricing-hero">
+          <p className="linear-eyebrow">[pricing]</p>
+          <h1>{page.title}</h1>
+          <p>{page.description}</p>
+          <div aria-label="Pricing principles">
+            {pricingPrinciples.map((item) => (
+              <span key={item}>{item}</span>
+            ))}
+          </div>
+        </header>
+
+        <section aria-label="Oppulence pricing plans" className="sm-pricing-board">
+          {pricingPlans.map((plan) => (
+            <article
+              className={cn("sm-pricing-plan", plan.recommended && "sm-pricing-plan-featured")}
+              key={plan.name}
             >
-              {plan.ctaLabel}
-            </Link>
-          </article>
-        ))}
-      </section>
-      <p className="linear-cta-note mt-6">
-        [flat monthly price · never per seat, per email, or per lookup · one saved deal pays for
-        years]
-      </p>
-    </div>
+              <div>
+                <p>{plan.name}</p>
+                {plan.recommended ? <span>Recommended</span> : null}
+              </div>
+              <strong>
+                {plan.price}
+                {plan.period ? <small>{plan.period}</small> : null}
+              </strong>
+              <p>{plan.description}</p>
+              <ul>
+                {plan.features.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
+              <Link
+                className={cn(
+                  "sm-memory-button",
+                  plan.recommended && "sm-memory-button-primary",
+                  "w-full",
+                )}
+                href={plan.ctaHref}
+              >
+                {plan.ctaLabel} <ArrowRightIcon aria-hidden="true" />
+              </Link>
+            </article>
+          ))}
+        </section>
+
+        <section className="sm-pricing-note">
+          <p>One saved renewal can pay for years.</p>
+          <Link href="/products">
+            See the suite <ArrowRightIcon aria-hidden="true" />
+          </Link>
+        </section>
+      </div>
+    </SuiteSidebarLayout>
   );
 }
 
@@ -2142,7 +1941,7 @@ export function CustomerIndexPage({ page }: { page: MarketingPage }) {
             have a story worth telling, it will live here. No placeholder logos in the meantime.
           </p>
           <Button asChild className="marketing-cta-primary mt-1">
-            <Link href="/book-a-demo">
+            <Link href="/sign-up">
               Become an early customer
               <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
             </Link>
@@ -2207,37 +2006,6 @@ export function CustomerStoryPage({ page }: { page: MarketingPage }) {
         ))}
       </section>
       <ProofGrid page={page} />
-    </PageShell>
-  );
-}
-
-export function DemoPage({ page }: { page: MarketingPage }) {
-  return (
-    <PageShell page={page}>
-      <section className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="marketing-surface border p-6">
-          <h2 className="text-2xl font-medium">Your Revenue Leak Scan walkthrough</h2>
-          <ul className="mt-6 space-y-4">
-            {page.bullets.map((bullet) => (
-              <li className="flex gap-3 text-[13px] leading-relaxed" key={bullet}>
-                <MarketingIcon compact icon={PlayIcon} tone="orange" />
-                <span>{bullet}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="marketing-surface-strong border p-6">
-          <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-            Book your scan
-          </p>
-          <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
-            Tell us which relationship systems you use today. We’ll reply with a time.
-          </p>
-          <Button asChild className="marketing-cta-primary mt-5">
-            <a href="mailto:hello@oppulence.io?subject=Revenue%20Leak%20Scan">Book my scan</a>
-          </Button>
-        </div>
-      </section>
     </PageShell>
   );
 }

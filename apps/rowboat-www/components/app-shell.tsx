@@ -358,7 +358,7 @@ function SidebarNavItem({
   return (
     <button
       className={cn(
-        "group/item flex h-8 w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200",
+        "group/item flex h-8 w-full items-center gap-2 rounded-none px-2 py-1 text-left text-[13px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200",
         active && "bg-background-200 text-primary dark:bg-background-200",
         className,
       )}
@@ -404,7 +404,7 @@ function SidebarSubItem({
   return (
     <button
       className={cn(
-        "flex h-8 w-full items-center gap-2.5 rounded-md py-1 pr-3 pl-5 text-left text-sm text-primary/65 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200",
+        "flex h-8 w-full items-center gap-2.5 rounded-none py-1 pr-3 pl-5 text-left text-sm text-primary/65 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200",
         active && "bg-background-200 text-primary dark:bg-background-200",
         muted && "text-primary/50",
       )}
@@ -638,7 +638,7 @@ export function AppShellSidebar({
           <span className="text-[15px] font-medium tracking-tight text-primary">Oppulence</span>
           <button
             aria-label="Close sidebar"
-            className="ml-auto flex size-8 items-center justify-center rounded-md text-primary/50 hover:bg-background-100 hover:text-primary md:hidden"
+            className="ml-auto flex size-8 items-center justify-center rounded-none text-primary/50 hover:bg-background-100 hover:text-primary md:hidden"
             onClick={onToggle}
             type="button"
           >
@@ -684,7 +684,7 @@ export function AppShellSidebar({
         ) : (
           <nav className="no-scrollbar flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2">
             <button
-              className="mb-1 flex h-8 w-full items-center gap-2 rounded-md border border-border bg-background px-2 text-left text-[13px] text-primary/65 transition-colors hover:bg-background-100 hover:text-primary"
+              className="mb-1 flex h-8 w-full items-center gap-2 rounded-none border border-border bg-background px-2 text-left text-[13px] text-primary/65 transition-colors hover:bg-background-100 hover:text-primary"
               onClick={onOpenSearch}
               type="button"
             >
@@ -816,7 +816,7 @@ export function AppShellSidebar({
 
         <div className="flex flex-col gap-1 px-2 py-2">
           <Link
-            className="group/item flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 py-1 text-sm text-primary/70 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200"
+            className="group/item flex h-9 w-full items-center gap-2.5 rounded-none px-2.5 py-1 text-sm text-primary/70 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200"
             href="/api/reference"
           >
             <AppIcon
@@ -835,7 +835,7 @@ export function AppShellSidebar({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-background-100 data-[state=open]:bg-background-100 dark:hover:bg-background-200 dark:data-[state=open]:bg-background-200"
+                className="flex w-full items-center gap-2.5 rounded-none px-2 py-1.5 text-left transition-colors hover:bg-background-100 data-[state=open]:bg-background-100 dark:hover:bg-background-200 dark:data-[state=open]:bg-background-200"
                 type="button"
               >
                 <Avatar className="size-8 rounded-full ring-1 ring-border">
@@ -853,7 +853,7 @@ export function AppShellSidebar({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="app-shell min-w-56 rounded-xl"
+              className="app-shell min-w-56 rounded-none"
               side="right"
               sideOffset={8}
             >

@@ -1382,9 +1382,7 @@
     padding-inline: 8px;
   }
 
-  .linear-logo img {
-    filter: invert(1);
-  }
+  /* Brand mark is now a full-color asset; inverting it would wreck the palette. */
 
   .linear-nav-link,
   .linear-nav-trigger {
@@ -3814,10 +3812,7 @@
       color: #ffffff;
     }
 
-    .linear-logo img,
-    .linear-footer img {
-      filter: invert(1);
-    }
+    /* Brand mark is now a full-color asset; inverting it would wreck the palette. */
   }
 
   /*
@@ -4255,19 +4250,15 @@
   }
 
   /*
-   * Inter flat-scale pass. The marketing surface adopts self-hosted
-   * Inter (next/font, OFL — commercially safe, unlike SF Pro) at two
-   * weights (400/500) with -0.15px tracking, a four-step type scale
-   * (12/13/14/24px), a three-step ink ramp (#292929 / #5D5D5D /
-   * #9E9E9E), and a radius system of 8px navigation, 16px cards, pill
-   * CTAs. Icons: 14px nav, 20px cards (sized in marketing-components).
-   * Mono keeps its accent role but micro-labels normalize to 12px.
-   * Dark keeps its oklch ramp via the re-declaration block at the end.
+   * Attio-inspired type pass. The public surface now uses Inter for both
+   * body and display copy: compact tracking, medium navigation, lighter
+   * large headlines, and monospace reserved for diagrams or data labels.
    */
   .marketing-polar {
-    --font-marketing-sans:
-      var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, ui-sans-serif, system-ui,
-      "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-attio-sans:
+      var(--font-marketing-sans, var(--font-inter)), "Inter", -apple-system, BlinkMacSystemFont,
+      ui-sans-serif, system-ui, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-marketing-display: var(--font-attio-sans);
     --foreground: #292929;
     --card-foreground: #292929;
     --popover-foreground: #292929;
@@ -4278,21 +4269,22 @@
     --linear-text-secondary: #5d5d5d;
     --linear-text-tertiary: #9e9e9e;
     --linear-text-quaternary: #9e9e9e;
-    font-family: var(--font-marketing-sans);
+    font-family: var(--font-attio-sans);
     font-feature-settings: "cv01", "ss03";
+    font-optical-sizing: auto;
     font-weight: 400;
-    letter-spacing: -0.15px;
+    letter-spacing: -0.01em;
   }
 
   .marketing-polar .font-display {
-    font-family: var(--font-marketing-sans);
+    font-family: var(--font-marketing-display);
     font-weight: 500;
-    letter-spacing: -0.15px;
+    letter-spacing: -0.018em;
   }
 
   .marketing-polar :is(h1, h2, h3, h4) {
     font-weight: 500;
-    letter-spacing: -0.15px;
+    letter-spacing: -0.018em;
   }
 
   .linear-footer-column a,
@@ -4826,8 +4818,8 @@
     background: #ffffff;
     color: var(--sm-ink);
     color-scheme: light;
-    font-family: var(--font-marketing-sans), "DM Sans", sans-serif;
-    letter-spacing: 0;
+    font-family: var(--font-attio-sans, var(--font-marketing-sans)), "Inter", sans-serif;
+    letter-spacing: -0.01em;
   }
 
   html:has(.sm-site),
@@ -4907,8 +4899,8 @@
   .sm-header .oppulence-compact-lockup__wordmark {
     font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
     font-size: 22px;
-    font-weight: 600;
-    letter-spacing: -0.04em;
+    font-weight: 500;
+    letter-spacing: -0.03em;
   }
 
   .sm-desktop-nav {
@@ -4926,7 +4918,10 @@
     border: 1px solid transparent;
     padding-inline: 10px;
     color: #202831;
+    font-family: var(--font-attio-sans, var(--font-marketing-sans)), "Inter", sans-serif;
     font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
     line-height: 1;
     list-style: none;
   }
@@ -4951,10 +4946,21 @@
     top: 46px;
     right: 0;
     display: grid;
-    width: 320px;
+    width: 360px;
     border: 1px solid var(--sm-line);
     background: #ffffff;
     box-shadow: 0 20px 50px rgb(18 35 52 / 14%);
+  }
+
+  .sm-product-menu-kicker {
+    border-bottom: 1px solid var(--sm-line);
+    padding: 10px 15px 8px;
+    color: #7d8893;
+    font-family: var(--font-marketing-display), var(--font-marketing-sans), sans-serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
   .sm-product-menu a {
@@ -4999,6 +5005,8 @@
     padding-inline: 18px 13px;
     color: #ffffff;
     font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
   }
 
   .sm-header-cta svg,
@@ -5025,6 +5033,8 @@
     border: 1px solid var(--sm-line);
     padding-inline: 24px;
     font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
     transition: 150ms ease;
   }
 
@@ -5055,11 +5065,11 @@
   .sm-footer h2 {
     font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
     font-weight: 500;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.025em;
   }
 
   .sm-hero {
-    padding-top: 70px;
+    padding-top: 56px;
     text-align: center;
   }
 
@@ -5069,7 +5079,7 @@
     align-items: center;
     flex-direction: column;
     margin-inline: auto;
-    padding: 48px 24px 42px;
+    padding: 38px 24px 34px;
   }
 
   .sm-announcement {
@@ -5078,7 +5088,7 @@
     align-items: center;
     gap: 9px;
     border: 1px solid #ccd9e5;
-    margin-bottom: 38px;
+    margin-bottom: 30px;
     padding: 0 10px 0 0;
     color: #39434d;
     font-size: 12px;
@@ -5100,9 +5110,9 @@
   }
 
   .sm-hero h1 {
-    max-width: 1020px;
-    font-size: clamp(3.6rem, 5vw, 4.5rem);
-    line-height: 1.04;
+    max-width: 900px;
+    font-size: clamp(3.15rem, 4.4vw, 3.85rem);
+    line-height: 1.03;
   }
 
   .sm-hero-title-period {
@@ -5123,7 +5133,7 @@
 
   .sm-hero-copy > p {
     max-width: 720px;
-    margin-top: 26px;
+    margin-top: 22px;
     color: var(--sm-muted);
     font-size: 16px;
     line-height: 1.55;
@@ -5132,7 +5142,7 @@
   .sm-hero-actions {
     display: flex;
     gap: 12px;
-    margin-top: 34px;
+    margin-top: 28px;
   }
 
   .sm-command {
@@ -5170,7 +5180,7 @@
 
   .sm-source-strip {
     overflow: hidden;
-    padding: 0 24px 38px;
+    padding: 0 24px 32px;
   }
 
   .sm-source-strip > p {
@@ -5199,7 +5209,7 @@
   .sm-hero-art {
     position: relative;
     display: grid;
-    height: clamp(360px, 40vw, 520px);
+    height: clamp(320px, 34vw, 440px);
     place-items: center;
     overflow: hidden;
     border-top: 1px solid var(--sm-line);
@@ -5217,7 +5227,6 @@
     position: absolute;
     width: 62px;
     height: 62px;
-    filter: invert(1);
   }
 
   .sm-section {
@@ -5240,16 +5249,16 @@
 
   .sm-section-intro {
     display: grid;
-    gap: 28px 64px;
-    padding: clamp(58px, 7vw, 94px) 32px;
+    gap: 24px 56px;
+    padding: clamp(48px, 5.5vw, 72px) 32px;
     grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.58fr);
   }
 
   .sm-section-intro h2,
   .sm-centered-intro h2 {
-    max-width: 720px;
-    font-size: clamp(2.2rem, 4vw, 3.5rem);
-    line-height: 1.02;
+    max-width: 700px;
+    font-size: clamp(2rem, 3.2vw, 2.75rem);
+    line-height: 1.08;
   }
 
   .sm-section-intro > p,
@@ -5265,7 +5274,7 @@
     display: flex;
     align-items: center;
     flex-direction: column;
-    padding: clamp(64px, 8vw, 108px) 32px 58px;
+    padding: clamp(52px, 6vw, 76px) 32px 48px;
     text-align: center;
   }
 
@@ -5280,7 +5289,7 @@
 
   .sm-catalog-shell {
     display: grid;
-    min-height: 650px;
+    min-height: 520px;
     border-top: 1px solid var(--sm-line);
     grid-template-columns: 330px minmax(0, 1fr);
   }
@@ -5325,19 +5334,19 @@
 
   .sm-catalog-panel {
     display: none;
-    min-height: 650px;
-    grid-template-rows: auto minmax(330px, 1fr);
+    min-height: 520px;
+    grid-template-rows: auto minmax(260px, 1fr);
   }
 
   .sm-catalog-panel-copy {
-    padding: 42px 44px 34px;
+    padding: 36px 40px 30px;
   }
 
   .sm-catalog-panel-copy h3 {
     max-width: 700px;
     margin-top: 14px;
-    font-size: clamp(2rem, 3.5vw, 3rem);
-    line-height: 1.05;
+    font-size: clamp(1.85rem, 2.8vw, 2.4rem);
+    line-height: 1.08;
   }
 
   .sm-catalog-panel-copy > p:nth-of-type(2) {
@@ -5365,7 +5374,7 @@
   .sm-catalog-image,
   .sm-trust-image {
     position: relative;
-    min-height: 330px;
+    min-height: 260px;
     overflow: hidden;
     border-top: 1px solid var(--sm-line);
     background: var(--sm-soft);
@@ -5532,11 +5541,12 @@
   }
 
   .sm-how-copy {
-    padding: clamp(58px, 7vw, 94px) 40px;
+    padding: clamp(48px, 5.5vw, 72px) 40px;
   }
 
   .sm-how-copy h2 {
-    font-size: clamp(2.2rem, 4vw, 3.5rem);
+    font-size: clamp(2rem, 3.2vw, 2.75rem);
+    line-height: 1.08;
   }
 
   .sm-how-copy > p {
@@ -5582,7 +5592,7 @@
   }
 
   .sm-loop-list article {
-    min-height: 176px;
+    min-height: 150px;
     border-bottom: 1px solid var(--sm-line);
     padding: 32px 40px;
   }
@@ -5620,7 +5630,7 @@
   }
 
   .sm-trust-image {
-    min-height: 390px;
+    min-height: 320px;
     border-top: 0;
     border-bottom: 1px solid var(--sm-line);
   }
@@ -5678,10 +5688,7 @@
   }
 
   .sm-use-case-nav {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 0 32px 18px;
+    display: none;
   }
 
   .sm-use-case-nav a {
@@ -5702,30 +5709,22 @@
 
   .sm-use-case-track {
     display: grid;
-    overflow-x: auto;
     border-top: 1px solid var(--sm-line);
-    grid-auto-columns: minmax(320px, 42%);
-    grid-auto-flow: column;
-    scroll-behavior: smooth;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .sm-use-case-track article {
     display: flex;
-    min-height: 390px;
+    min-height: 320px;
     flex-direction: column;
     border-right: 1px solid var(--sm-line);
-    padding: 38px 34px;
-    scroll-margin-left: 0;
-    scroll-margin-top: 90px;
-    scroll-snap-align: start;
+    padding: 32px 30px;
   }
 
   .sm-use-case-track h3 {
-    margin-top: 22px;
-    font-size: clamp(1.8rem, 3vw, 2.6rem);
-    line-height: 1.08;
+    margin-top: 18px;
+    font-size: clamp(1.65rem, 2.3vw, 2rem);
+    line-height: 1.12;
   }
 
   .sm-use-case-track article > span {
@@ -5867,13 +5866,13 @@
     display: grid;
     border-top: 1px solid var(--sm-line);
     border-bottom: 1px solid var(--sm-line);
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .sm-plan-grid article {
     display: flex;
     min-width: 0;
-    min-height: 520px;
+    min-height: 460px;
     flex-direction: column;
     border-right: 1px solid var(--sm-line);
     padding: 28px 24px;
@@ -6043,14 +6042,14 @@
     display: flex;
     align-items: center;
     flex-direction: column;
-    padding: clamp(110px, 14vw, 190px) 30px 72px;
+    padding: clamp(84px, 9vw, 124px) 30px 64px;
     text-align: center;
   }
 
   .sm-final-cta h2 {
-    max-width: 920px;
-    font-size: clamp(3.2rem, 7vw, 6.6rem);
-    line-height: 0.94;
+    max-width: 820px;
+    font-size: clamp(3rem, 5.2vw, 4.6rem);
+    line-height: 0.98;
   }
 
   .sm-final-cta h2 span {
@@ -6060,7 +6059,7 @@
   .sm-final-cta > div {
     display: flex;
     gap: 12px;
-    margin-top: 42px;
+    margin-top: 34px;
   }
 
   .sm-final-cta > p {
@@ -6080,16 +6079,16 @@
   }
 
   .sm-footer-shell {
-    padding-top: 62px;
+    padding-top: 40px;
     padding-bottom: 24px;
   }
 
   .sm-footer-statement {
     display: grid;
     align-items: end;
-    gap: 16px 64px;
-    padding: 0 32px 58px;
-    grid-template-columns: 1.1fr 0.65fr;
+    gap: 14px 56px;
+    padding: 0 32px 34px;
+    grid-template-columns: 1fr 0.7fr;
   }
 
   .sm-footer-statement > span {
@@ -6098,14 +6097,17 @@
   }
 
   .sm-footer-statement h2 {
-    font-size: clamp(2.2rem, 4vw, 3.6rem);
-    line-height: 1.02;
+    max-width: 520px;
+    font-size: clamp(1.35rem, 1.55vw, 1.65rem);
+    line-height: 1.14;
   }
 
   .sm-footer-statement > p {
+    max-width: 360px;
+    justify-self: end;
     color: var(--sm-muted);
-    font-size: 14px;
-    line-height: 1.55;
+    font-size: 13px;
+    line-height: 1.5;
   }
 
   .sm-footer-links {
@@ -6153,6 +6155,185 @@
     text-transform: uppercase;
   }
 
+  .sm-products-page {
+    display: grid;
+    gap: 0;
+    padding: clamp(76px, 10vw, 118px) 0 clamp(72px, 9vw, 112px);
+  }
+
+  .sm-products-hero {
+    display: grid;
+    max-width: 860px;
+    gap: 22px;
+    margin-inline: auto;
+    padding-inline: 24px;
+    text-align: center;
+  }
+
+  .sm-products-hero .linear-eyebrow {
+    justify-self: center;
+  }
+
+  .sm-products-hero h1,
+  .sm-products-card h2 {
+    font-family:
+      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
+      sans-serif;
+    font-weight: 500;
+    letter-spacing: -0.022em;
+  }
+
+  .sm-products-hero h1 {
+    color: var(--sm-ink);
+    font-size: clamp(3rem, 6vw, 5.7rem);
+    font-weight: 600;
+    letter-spacing: -0.026em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
+  .sm-products-hero > p:not(.linear-eyebrow) {
+    max-width: 600px;
+    margin-inline: auto;
+    color: var(--sm-muted);
+    font-size: clamp(1rem, 1.6vw, 1.25rem);
+    line-height: 1.55;
+    text-wrap: balance;
+  }
+
+  .sm-products-hero > div {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .sm-products-grid {
+    display: grid;
+    width: min(1120px, calc(100% - 48px));
+    margin: clamp(56px, 8vw, 88px) auto 0;
+    border-top: 1px solid var(--sm-line);
+    border-left: 1px solid var(--sm-line);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sm-products-card {
+    display: grid;
+    min-height: 430px;
+    align-content: start;
+    border-right: 1px solid var(--sm-line);
+    border-bottom: 1px solid var(--sm-line);
+    background: #ffffff;
+    padding: 24px;
+    text-decoration: none;
+    transition:
+      background 150ms ease,
+      color 150ms ease;
+  }
+
+  .sm-products-card:hover {
+    background: #f5f9ff;
+  }
+
+  .sm-products-card > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--sm-blue);
+    font-family: var(--font-marketing-display), var(--font-marketing-sans), sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .sm-products-card > div svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .sm-products-card h2 {
+    margin-top: 22px;
+    color: var(--sm-ink);
+    font-size: clamp(1.7rem, 3vw, 2.55rem);
+    line-height: 1.04;
+  }
+
+  .sm-products-card p {
+    max-width: 420px;
+    margin-top: 13px;
+    color: var(--sm-muted);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .sm-products-card figure {
+    display: grid;
+    height: 184px;
+    place-items: center;
+    overflow: hidden;
+    margin-top: 24px;
+    background: #112b8b;
+  }
+
+  .sm-products-card figure img {
+    width: 84%;
+    height: auto;
+    object-fit: contain;
+  }
+
+  .sm-products-card:first-child figure img {
+    filter: brightness(1.24) contrast(1.14) saturate(0.35);
+    mix-blend-mode: screen;
+  }
+
+  .sm-products-card strong {
+    margin-top: 20px;
+    color: var(--sm-ink);
+    font-family: var(--font-marketing-display), var(--font-marketing-sans), sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 760px) {
+    .sm-products-page {
+      padding: 64px 0 72px;
+    }
+
+    .sm-products-hero {
+      gap: 18px;
+      padding-inline: 20px;
+      text-align: left;
+    }
+
+    .sm-products-hero .linear-eyebrow {
+      justify-self: start;
+    }
+
+    .sm-products-hero h1 {
+      font-size: clamp(2.55rem, 14vw, 4rem);
+    }
+
+    .sm-products-hero > div,
+    .sm-products-hero .sm-memory-button {
+      width: 100%;
+    }
+
+    .sm-products-grid {
+      width: calc(100% - 40px);
+      margin-top: 42px;
+      grid-template-columns: 1fr;
+    }
+
+    .sm-products-card {
+      min-height: 0;
+      padding: 22px 20px;
+    }
+  }
+
   @media (max-width: 1023px) {
     html[data-marketing-menu-open] {
       overflow: hidden;
@@ -6185,10 +6366,10 @@
       min-height: 42px;
       padding: 9px 0;
       color: var(--sm-ink);
-      font-family: var(--font-marketing-sans), "DM Sans", sans-serif;
+      font-family: var(--font-attio-sans, var(--font-marketing-sans)), "Inter", sans-serif;
       font-size: 16px;
-      font-weight: 400;
-      letter-spacing: 0;
+      font-weight: 500;
+      letter-spacing: -0.01em;
     }
 
     .sm-mobile-panel > a::before,
@@ -6241,18 +6422,6 @@
       border-top: 1px solid var(--sm-line);
       border-left: 0;
     }
-
-    .sm-plan-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .sm-plan-grid article:nth-child(2) {
-      border-right: 0;
-    }
-
-    .sm-plan-grid article:nth-child(-n + 2) {
-      border-bottom: 1px solid var(--sm-line);
-    }
   }
 
   @media (max-width: 760px) {
@@ -6282,7 +6451,7 @@
     }
 
     .sm-hero-copy {
-      padding: 30px 20px 36px;
+      padding: 26px 20px 30px;
     }
 
     .sm-announcement {
@@ -6292,8 +6461,8 @@
     }
 
     .sm-hero h1 {
-      font-size: 2.5rem;
-      line-height: 1.03;
+      font-size: 2.25rem;
+      line-height: 1.05;
     }
 
     .sm-hero-title-wide {
@@ -6358,19 +6527,20 @@
       display: flex;
       gap: 18px;
       flex-direction: column;
-      padding: 50px 20px;
+      padding: 40px 20px;
     }
 
     .sm-section-intro h2,
     .sm-centered-intro h2,
     .sm-how-copy h2,
     .sm-principles-grid > div:first-child h2 {
-      font-size: 2.25rem;
+      font-size: 1.9rem;
+      line-height: 1.1;
     }
 
     .sm-centered-intro {
       align-items: flex-start;
-      padding: 54px 20px 44px;
+      padding: 42px 20px 36px;
       text-align: left;
     }
 
@@ -6379,18 +6549,28 @@
       min-height: 0;
     }
 
+    .sm-catalog-tabs {
+      display: grid;
+      overflow: visible;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .sm-catalog-tab {
-      min-width: 210px;
-      min-height: 60px;
-      padding-inline: 18px;
+      min-width: 0;
+      min-height: 72px;
+      gap: 5px;
+      padding: 10px;
+      font-size: 11px;
+      grid-template-columns: 1fr;
+      line-height: 1.25;
     }
 
     .sm-catalog-panel-copy {
-      padding: 34px 20px 28px;
+      padding: 30px 20px 26px;
     }
 
     .sm-catalog-panel-copy h3 {
-      font-size: 2.1rem;
+      font-size: 1.75rem;
     }
 
     .sm-catalog-image {
@@ -6430,7 +6610,7 @@
     }
 
     .sm-how-copy {
-      padding: 50px 20px;
+      padding: 40px 20px;
     }
 
     .sm-loop-list article {
@@ -6461,12 +6641,13 @@
     }
 
     .sm-use-case-track {
-      grid-auto-columns: 88%;
+      grid-template-columns: 1fr;
     }
 
     .sm-use-case-track article {
-      min-height: 360px;
-      padding: 32px 24px;
+      min-height: 0;
+      border-bottom: 1px solid var(--sm-line);
+      padding: 30px 20px 34px;
     }
 
     .sm-enterprise-grid article,
@@ -6527,11 +6708,12 @@
     }
 
     .sm-final-cta {
-      padding: 100px 20px 58px;
+      padding: 76px 20px 54px;
     }
 
     .sm-final-cta h2 {
-      font-size: clamp(3rem, 14vw, 4.25rem);
+      font-size: clamp(2.6rem, 12vw, 3.25rem);
+      line-height: 1;
     }
 
     .sm-final-cta > div {
@@ -6549,11 +6731,15 @@
     }
 
     .sm-footer-shell {
-      padding-top: 48px;
+      padding-top: 36px;
     }
 
     .sm-footer-statement {
-      padding: 0 20px 44px;
+      padding: 0 20px 30px;
+    }
+
+    .sm-footer-statement > p {
+      justify-self: start;
     }
 
     .sm-footer .linear-footer-column {
@@ -6579,6 +6765,3319 @@
     .sm-site *::after {
       scroll-behavior: auto !important;
       transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Attio-inspired main landing page: centered thesis, product window, sparse platform proof. */
+@layer utilities {
+  .sm-attio-home {
+    --attio-blue: #245bc2;
+    --attio-ink: #1c1d1f;
+    /* #6f7988 measured 4.22:1 on the soft band, under the 4.5:1 AA floor.
+       #5a6473 keeps the same cool hue at 5.74:1. */
+    --attio-muted: #5a6473;
+    --attio-faint: #8b96a1;
+    --attio-line: #e4e7ec;
+    --attio-chip: #e8f0ff;
+    --attio-soft: #fafafb;
+    background: #ffffff;
+    color: var(--attio-ink);
+    font-family:
+      var(--font-attio-sans, var(--font-marketing-sans)), "Inter", ui-sans-serif, system-ui,
+      sans-serif;
+    letter-spacing: -0.011em;
+  }
+
+  .sm-attio-home a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .linear-shell:has(> .sm-attio-home) {
+    width: 100%;
+    max-width: none;
+    flex: 1;
+    padding-inline: 0;
+  }
+
+  .sm-site:has(.sm-attio-home) .linear-guides::before,
+  .sm-site:has(.sm-attio-home) .linear-guides::after {
+    content: none;
+  }
+
+  /* The shell clips overflow, which silently disables position: sticky for the
+     platform rail. The Attio home has no horizontal bleed, so clipping is safe
+     to drop here. */
+  .sm-site:has(.sm-attio-home) {
+    overflow: visible;
+  }
+
+  /* Header on the Attio home: 68px bar, 1440/24px container so the wordmark
+     lines up with hero copy, and neutral dark CTA instead of the blue pill. */
+  .sm-site:has(.sm-attio-home) .sm-header {
+    height: 68px;
+    border-bottom-color: var(--attio-line, #e4e7ec);
+  }
+
+  .sm-site:has(.sm-attio-home) .sm-header .linear-header-inner {
+    width: min(100%, 1440px);
+    padding-inline: 24px;
+  }
+
+  .sm-site:has(.sm-attio-home) .sm-header-cta {
+    min-height: 36px;
+    gap: 0;
+    border-color: #202124;
+    border-radius: 0;
+    margin-left: 10px;
+    background: #202124;
+    padding-inline: 14px;
+    color: #f3f4f6;
+    font-size: 14px;
+  }
+
+  .sm-site:has(.sm-attio-home) .sm-header-cta svg {
+    display: none;
+  }
+
+  .sm-site:has(.sm-attio-home) .sm-login {
+    min-height: 36px;
+    min-width: 0;
+    border-color: #cad0d9;
+    border-radius: 0;
+    padding-inline: 14px;
+    font-size: 14px;
+  }
+
+  /* Attio frames every section with vertical hairlines: a 1440px container
+     with a 24px gutter leaves a 1392px frame whose edges carry the rules
+     (x=168 and x=1560 at 1728px). Content is then inset one column of the
+     24-column grid, so it starts at x=226. */
+  .sm-attio-shell {
+    width: min(100%, 1392px);
+    margin-inline: auto;
+    border-inline: 1px solid var(--attio-line);
+    padding-inline: clamp(20px, 4.1667%, 58px);
+  }
+
+  /* The hero is full-bleed over its gradient, so it opts out of the rules. */
+  .sm-attio-hero > .sm-attio-shell {
+    border-inline: 0;
+  }
+
+  /* Hero: measurements mirror attio.com at 1728px (pill 30px, h1 4vw/0.95,
+     lede 18px, 36px buttons, product window cropped by the fold). */
+  .sm-attio-hero {
+    position: relative;
+    isolation: isolate;
+    background: #ffffff;
+    /* Attio: pill sits 100px below the header. Ours is a fixed 68px overlay. */
+    padding-top: 168px;
+  }
+
+  /* Attio's hero backdrop, layered top-down: a white radial fade, 8px white
+     pinstripes, then the periwinkle radial glow rising from the fold. */
+  .sm-attio-hero::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 928px;
+    /* Top layer down: Attio's white radial is 400% wide and 150% tall, so it
+       washes out most of the periwinkle and leaves colour only at the fold.
+       Sizing it to 100% is what made the stripes and blue read as noise. */
+    background-image:
+      radial-gradient(70% 106.7% at 50% 0%, #ffffff 32%, rgb(255 255 255 / 0%) 64%),
+      repeating-linear-gradient(
+        90deg,
+        rgb(255 255 255 / 78%) 0,
+        rgb(255 255 255 / 78%) 1px,
+        rgb(255 255 255 / 0%) 1px,
+        rgb(255 255 255 / 0%) 8px
+      ),
+      radial-gradient(90% 80% at 50% 100%, #eef2ff 0%, #d5deff 52%, #a9bcf2 100%);
+    background-repeat: no-repeat, repeat, no-repeat;
+    background-position:
+      50% 0,
+      0 0,
+      0 0;
+    background-size:
+      400% 150%,
+      8px 100%,
+      100% 100%;
+    /* Attio's glow never reaches the viewport edge; the wide radial plus this
+       taper keeps the stripes from banding along the sides. */
+    mask-image: radial-gradient(120% 100% at 50% 100%, #000000 42%, rgb(0 0 0 / 0%) 88%);
+  }
+
+  .sm-attio-hero-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .sm-attio-home .sm-attio-announcement {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #e8ebee;
+    border-radius: 0;
+    padding: 0 12px;
+    color: var(--attio-ink);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1;
+    transition: border-color 140ms ease;
+  }
+
+  .sm-attio-home .sm-attio-announcement:hover {
+    border-color: #ccd5de;
+  }
+
+  .sm-attio-announcement svg {
+    width: 14px;
+    height: 14px;
+    color: #99a3ad;
+  }
+
+  .sm-attio-hero h1 {
+    margin-top: 36px;
+    font-family:
+      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
+      sans-serif;
+    font-size: clamp(2.6rem, 4vw, 4.32rem);
+    font-weight: 600;
+    letter-spacing: -0.0237em;
+    line-height: 0.95;
+    text-wrap: balance;
+  }
+
+  .sm-attio-hero-copy > p {
+    max-width: 487px;
+    margin-top: 36px;
+    color: #5a6473;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.3;
+    text-wrap: balance;
+  }
+
+  .sm-attio-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .sm-attio-home .sm-attio-btn {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid #cbd3db;
+    border-radius: 0;
+    background: #ffffff;
+    padding: 0 12px;
+    color: #2b333c;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1;
+    transition:
+      border-color 140ms ease,
+      background 140ms ease,
+      color 140ms ease;
+  }
+
+  .sm-attio-home .sm-attio-btn:hover {
+    border-color: #aab6c2;
+    background: #fbfcfd;
+  }
+
+  .sm-attio-home .sm-attio-btn-primary {
+    border-color: #3d444b;
+    background: #1c2126;
+    color: #f4f5f6;
+  }
+
+  .sm-attio-home .sm-attio-btn-primary:hover {
+    border-color: #1c2126;
+    background: #0d1114;
+    color: #ffffff;
+  }
+
+  /* Product window: translucent outer frame, white inner pane, cropped by
+     the fold exactly like Attio's hero app shot. */
+  .sm-attio-stage {
+    overflow: hidden;
+    padding-top: 78px;
+  }
+
+  .sm-attio-product-window {
+    overflow: hidden;
+    width: min(100%, 1296px);
+    margin: 0 auto;
+    border-radius: 0;
+    background: rgb(246 247 249 / 80%);
+    padding: 6px 6px 0;
+  }
+
+  .sm-attio-product-inner {
+    overflow: hidden;
+    border-radius: 0;
+    background: #ffffff;
+  }
+
+  .sm-attio-product-chrome {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    padding: 14px 16px 10px;
+  }
+
+  .sm-attio-product-chrome span {
+    width: 11px;
+    height: 11px;
+    border-radius: 999px;
+  }
+
+  .sm-attio-product-chrome span:first-child {
+    background: #ec6a5e;
+  }
+
+  .sm-attio-product-chrome span:nth-child(2) {
+    background: #f4bf4f;
+  }
+
+  .sm-attio-product-chrome span:nth-child(3) {
+    background: #61c454;
+  }
+
+  .sm-attio-product-window img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 700px;
+    object-fit: cover;
+    object-position: top center;
+  }
+
+  /* Logo band: Attio's 5-cell grid where a 1px gap over a line-coloured
+     background draws the hairlines between 96px cells. */
+  .sm-attio-logo-band {
+    background: var(--attio-soft);
+  }
+
+  .sm-attio-logo-band > .sm-attio-shell {
+    padding-inline: 0;
+  }
+
+  .sm-attio-logo-grid {
+    display: grid;
+    gap: 1px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    border-block: 1px solid var(--attio-line);
+    background: var(--attio-line);
+  }
+
+  .sm-attio-logo-grid > div {
+    display: flex;
+    height: 96px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: var(--attio-soft);
+    color: #9aa4b1;
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.019em;
+  }
+
+  /* Attio's cells carry a 20px mark beside the name, not bare text. */
+  .sm-attio-logo-grid svg {
+    width: 20px;
+    height: 20px;
+    color: #aab3bf;
+  }
+
+  /* Shared section rhythm. Attio alternates #ffffff and #fafafb bands and
+     uses one 40px/44px heading scale for every section below the hero. */
+  /* Attio's section rhythm is asymmetric: 152px above the head, 80px below
+     the content. Symmetric padding is what made our page feel evenly spaced
+     rather than top-weighted like the reference. */
+  .sm-attio-platform,
+  .sm-attio-guarantees,
+  .sm-attio-steps {
+    background: var(--attio-soft);
+    padding-block: clamp(80px, 8.8vw, 152px) clamp(56px, 4.6vw, 80px);
+  }
+
+  .sm-attio-setup,
+  .sm-attio-suite {
+    background: #ffffff;
+    padding-block: clamp(80px, 8.8vw, 152px) clamp(56px, 4.6vw, 80px);
+  }
+
+  /* Attio closes on a near-black band, not another white one. */
+  .sm-attio-final {
+    background: #101010;
+    padding-block: clamp(88px, 8.4vw, 120px);
+  }
+
+  .sm-attio-final > .sm-attio-shell {
+    border-inline-color: #2a2a2a;
+  }
+
+  .sm-attio-final .sm-attio-btn {
+    border-color: #3a3a3a;
+    background: #101010;
+    color: #f3f4f6;
+  }
+
+  .sm-attio-final .sm-attio-btn:hover {
+    border-color: #555555;
+    background: #1a1a1a;
+  }
+
+  .sm-attio-final .sm-attio-btn-primary {
+    border-color: #ffffff;
+    background: #ffffff;
+    color: #101010;
+  }
+
+  .sm-attio-final .sm-attio-btn-primary:hover {
+    border-color: #e6e6e6;
+    background: #e6e6e6;
+    color: #101010;
+  }
+
+  .sm-attio-platform,
+  .sm-attio-setup,
+  .sm-attio-guarantees,
+  .sm-attio-suite,
+  .sm-attio-steps {
+    border-top: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-section-head {
+    display: grid;
+    justify-items: start;
+    gap: 24px;
+    max-width: 896px;
+  }
+
+  .sm-attio-section-label {
+    justify-self: start;
+    border-radius: 0;
+    background: var(--attio-chip);
+    padding: 2px 6px;
+    color: var(--attio-blue);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  /* Attio holds every section heading at a fixed 40px/44px rather than
+     scaling it fluidly, so the hero stays the only large type on the page. */
+  /* Attio caps section headings at 880px and keeps them to two or three
+     lines. Anything longer stops reading as a headline. */
+  .sm-attio-home h2 {
+    max-width: 880px;
+    font-size: 40px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+
+  .sm-attio-home h2 > span:first-child {
+    color: var(--attio-ink);
+  }
+
+  .sm-attio-home h2 > span + span {
+    color: var(--attio-muted);
+  }
+
+  /* Attio's secondary head link: 32px tall, 12px label, hairline border. */
+  .sm-attio-home .sm-attio-head-link {
+    display: inline-flex;
+    min-height: 32px;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #cad0d9;
+    background: #ffffff;
+    padding: 0 6px 0 10px;
+    color: #2e3238;
+    font-size: 12px;
+    font-weight: 500;
+    transition: border-color 140ms ease;
+  }
+
+  .sm-attio-home .sm-attio-head-link:hover {
+    border-color: #aab6c2;
+  }
+
+  .sm-attio-head-link svg {
+    width: 13px;
+    height: 13px;
+    color: #8b96a1;
+  }
+
+  /* Platform: Attio's sticky capability rail beside hairline-separated rows.
+     The rail tracks whichever row is crossing the viewport middle. */
+  .sm-attio-platform-grid {
+    display: grid;
+    align-items: start;
+    gap: clamp(32px, 4vw, 72px);
+    grid-template-columns: 260px minmax(0, 1fr);
+    margin-top: clamp(48px, 5vw, 76px);
+    border-top: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-rail {
+    position: sticky;
+    top: 116px;
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    padding-top: clamp(48px, 5vw, 80px);
+  }
+
+  .sm-attio-rail a {
+    border-left: 2px solid transparent;
+    padding: 8px 0 8px 20px;
+    color: #5a6472;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    transition:
+      color 140ms ease,
+      border-color 140ms ease;
+  }
+
+  .sm-attio-rail a:hover {
+    color: var(--attio-ink);
+  }
+
+  .sm-attio-rail a[data-active="true"] {
+    border-left-color: var(--attio-blue);
+    color: var(--attio-ink);
+  }
+
+  .sm-attio-rows {
+    display: grid;
+    border-left: 1px solid var(--attio-line);
+  }
+
+  /* Attio stacks each row: a copy block with 112px/80px padding and a 24px
+     heading, then a full-bleed media panel separated by a top hairline. It is
+     never a side-by-side split. */
+  .sm-attio-row {
+    display: block;
+    scroll-margin-top: 140px;
+    border-bottom: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-row:last-child {
+    border-bottom: 0;
+  }
+
+  .sm-attio-row-copy {
+    padding: clamp(56px, 7.4vw, 112px) 5.55% clamp(44px, 5.3vw, 80px);
+  }
+
+  .sm-attio-row h3 {
+    max-width: 560px;
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+
+  .sm-attio-row h3 > span:first-child {
+    color: var(--attio-ink);
+  }
+
+  .sm-attio-row h3 > span + span {
+    color: var(--attio-muted);
+  }
+
+  .sm-attio-row-media {
+    overflow: hidden;
+    border-top: 1px solid var(--attio-line);
+    background: var(--attio-soft);
+  }
+
+  .sm-attio-setup-media {
+    overflow: hidden;
+    border: 1px solid var(--attio-line);
+    background: #ffffff;
+    box-shadow: 0 18px 44px rgb(17 34 56 / 7%);
+  }
+
+  .sm-attio-row-media img,
+  .sm-attio-setup-media img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .sm-attio-row-media img {
+    max-height: 655px;
+    object-fit: cover;
+    object-position: top center;
+  }
+
+  /* Self-building: centred copy, one CTA, one wide screenshot. */
+  .sm-attio-setup > .sm-attio-shell {
+    display: grid;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .sm-attio-setup .sm-attio-section-head {
+    justify-items: center;
+  }
+
+  .sm-attio-setup .sm-attio-section-label {
+    justify-self: center;
+  }
+
+  /* Attio runs this heading to 926px so it lands on three lines, not five. */
+  .sm-attio-setup .sm-attio-section-head,
+  .sm-attio-setup h2 {
+    max-width: 926px;
+  }
+
+  .sm-attio-setup .sm-attio-btn-primary {
+    margin-top: 28px;
+  }
+
+  .sm-attio-setup-media {
+    width: min(100%, 1100px);
+    margin-top: clamp(44px, 4.6vw, 68px);
+  }
+
+  /* Attio runs Universal Context and Connectivity as one continuous #101010
+     region: a huge wordmark over a radial glow, then a 5-up icon strip
+     divided by hairlines. This is the single biggest visual beat on the page. */
+  .sm-attio-dark {
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid var(--attio-line);
+    background: #101010;
+    color: #fafafb;
+  }
+
+  .sm-attio-dark > .sm-attio-shell {
+    border-inline-color: #262626;
+  }
+
+  .sm-attio-dark-eyebrow {
+    color: #8b93a1;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  /* Wordmark stage: the glow rises from the bottom, behind the type. */
+  .sm-attio-wordmark-stage {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    padding-block: clamp(96px, 11vw, 178px) clamp(72px, 8vw, 128px);
+    text-align: center;
+  }
+
+  .sm-attio-wordmark-stage::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    bottom: -46%;
+    left: 50%;
+    width: min(120%, 1100px);
+    aspect-ratio: 1;
+    border-radius: 999px;
+    background: radial-gradient(
+      circle,
+      rgb(93 124 255 / 42%) 0%,
+      rgb(56 78 190 / 20%) 42%,
+      rgb(16 16 16 / 0%) 68%
+    );
+    transform: translateX(-50%);
+  }
+
+  .sm-attio-wordmark-stage > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Scoped past `.sm-attio-home h2`, which otherwise pins this to 40px. */
+  .sm-attio-home .sm-attio-wordmark {
+    max-width: 100%;
+    color: #fafafb;
+    font-size: clamp(2.6rem, 5.55vw, 6rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    text-wrap: balance;
+  }
+
+  .sm-attio-wordmark sup {
+    top: 0.15em;
+    display: inline-block;
+    font-size: 0.4em;
+    line-height: 1;
+    vertical-align: top;
+  }
+
+  /* Icon strip: 32px/28px cells divided by hairlines, icon top, copy bottom. */
+  .sm-attio-dark-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid #262626;
+  }
+
+  .sm-attio-dark-strip article {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 32px;
+    padding: 32px 28px;
+  }
+
+  .sm-attio-dark-strip article + article {
+    border-left: 1px solid #262626;
+  }
+
+  .sm-attio-dark-strip svg {
+    width: 24px;
+    height: 24px;
+    color: #9aa3b2;
+  }
+
+  .sm-attio-dark-strip div {
+    display: grid;
+    gap: 6px;
+  }
+
+  .sm-attio-dark-strip p:first-child {
+    color: #e8eaee;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .sm-attio-dark-strip p + p {
+    color: #8b93a1;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  /* Connectivity keeps the dark treatment and Attio's 40px heading. */
+  .sm-attio-dark-connect {
+    border-top: 1px solid #262626;
+  }
+
+  .sm-attio-dark-connect > .sm-attio-shell {
+    display: grid;
+    justify-items: center;
+    padding-block: clamp(80px, 7.5vw, 120px);
+    text-align: center;
+  }
+
+  .sm-attio-dark-connect h2 {
+    margin-top: 16px;
+    color: #fafafb;
+    font-size: clamp(1.85rem, 2.4vw, 2.5rem);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+
+  .sm-attio-connect-body {
+    max-width: 620px;
+    margin-top: 14px;
+    color: #8b93a1;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+
+  .sm-attio-connect-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 40px;
+  }
+
+  .sm-attio-home .sm-attio-connect-grid span {
+    border: 1px solid #2f2f2f;
+    background: #171717;
+    padding: 10px 16px;
+    color: #c9cfd8;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .sm-attio-context-grid,
+  .sm-attio-guarantee-grid,
+  .sm-attio-step-grid,
+  .sm-attio-suite-grid {
+    display: grid;
+    gap: 16px;
+    width: 100%;
+    margin-top: clamp(44px, 4.6vw, 68px);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    text-align: left;
+  }
+
+  .sm-attio-suite-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  /* Attio divides column groups with hairlines rather than boxing each item. */
+  .sm-attio-context-grid article,
+  .sm-attio-guarantee-grid article,
+  .sm-attio-step-grid article,
+  .sm-attio-home .sm-attio-suite-grid a {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    border: 0;
+    border-left: 1px solid var(--attio-line);
+    background: none;
+    padding: 0 32px;
+    transition: color 140ms ease;
+  }
+
+  .sm-attio-home .sm-attio-suite-grid {
+    gap: 0;
+  }
+
+  .sm-attio-context-grid article:first-child,
+  .sm-attio-home .sm-attio-suite-grid a:first-child {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .sm-attio-context-grid article > span,
+  .sm-attio-step-grid article > span,
+  .sm-attio-suite-grid a > span {
+    color: var(--attio-blue);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+
+  .sm-attio-context-grid h3,
+  .sm-attio-step-grid h3,
+  .sm-attio-suite-grid strong {
+    color: var(--attio-ink);
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.014em;
+    line-height: 1.25;
+  }
+
+  .sm-attio-context-grid p,
+  .sm-attio-step-grid p,
+  .sm-attio-suite-grid p {
+    color: var(--attio-muted);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .sm-attio-home .sm-attio-suite-grid a {
+    position: relative;
+    padding-right: 48px;
+  }
+
+  .sm-attio-home .sm-attio-suite-grid a:hover strong {
+    color: var(--attio-blue);
+  }
+
+  .sm-attio-suite-grid a svg {
+    position: absolute;
+    top: 2px;
+    right: 32px;
+    width: 15px;
+    height: 15px;
+    color: #aeb8c4;
+    transition: transform 140ms ease;
+  }
+
+  .sm-attio-home .sm-attio-suite-grid a:hover svg {
+    transform: translateX(3px);
+  }
+
+  /* Connectivity: centred copy over a wrapped integration wall. */
+  /* Governance: Attio's stat block. Blue left rule, 32px value, muted label,
+     and no card chrome. */
+  /* Attio caps this column at 464px but lets the heading itself run to 880px,
+     so the copy still breaks over three lines rather than four. */
+  .sm-attio-guarantees .sm-attio-section-head {
+    max-width: 640px;
+  }
+
+  .sm-attio-guarantee-grid {
+    gap: 32px 24px;
+    margin-top: clamp(44px, 4.6vw, 68px);
+  }
+
+  .sm-attio-guarantee-grid article {
+    justify-items: start;
+    gap: 6px;
+    border: 0;
+    border-left: 2px solid var(--attio-blue);
+    background: none;
+    padding: 0 0 0 24px;
+  }
+
+  .sm-attio-guarantee-grid strong {
+    color: var(--attio-ink);
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+
+  .sm-attio-guarantee-grid span {
+    color: var(--attio-muted);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  /* How it works: Attio's changelog columns. Full-bleed hairlines, a 12px
+     muted kicker, an 18px title, and a 16px body. */
+  .sm-attio-step-grid {
+    gap: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-step-grid article {
+    align-content: start;
+    gap: 0;
+    border: 0;
+    border-left: 1px solid var(--attio-line);
+    background: none;
+    padding: 28px 0 0;
+  }
+
+  .sm-attio-step-copy {
+    display: grid;
+    flex-grow: 1;
+    gap: 6px;
+    padding-inline: 24px;
+  }
+
+  /* Attio closes each changelog column with a 56px strip of hairline ticks. */
+  .sm-attio-step-rule {
+    height: 56px;
+    margin-top: 24px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--attio-line) 0,
+      var(--attio-line) 1px,
+      rgb(0 0 0 / 0%) 1px,
+      rgb(0 0 0 / 0%) 12px
+    );
+    mask-image: linear-gradient(180deg, rgb(0 0 0 / 0%) 0%, #000000 100%);
+  }
+
+  .sm-attio-step-grid article:first-child {
+    border-left: 0;
+  }
+
+  .sm-attio-step-grid article:first-child .sm-attio-step-copy {
+    padding-left: 0;
+  }
+
+  .sm-attio-step-grid article > span {
+    color: var(--attio-muted);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0;
+  }
+
+  .sm-attio-step-grid h3 {
+    color: #232529;
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  .sm-attio-step-grid p {
+    color: var(--attio-muted);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  .sm-attio-final > .sm-attio-shell {
+    display: grid;
+    justify-items: center;
+    gap: 24px;
+    text-align: center;
+  }
+
+  .sm-attio-final h2 {
+    max-width: 720px;
+    color: #ffffff;
+    font-size: clamp(2.1rem, 3.24vw, 3.5rem);
+    letter-spacing: -0.015em;
+    line-height: 1;
+  }
+
+  .sm-attio-final h2 > span:first-child {
+    color: #ffffff;
+  }
+
+  @media (max-width: 1000px) {
+    .sm-attio-platform-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+    }
+
+    .sm-attio-rail {
+      top: 70px;
+      z-index: 4;
+      display: flex;
+      overflow-x: auto;
+      gap: 4px;
+      border-bottom: 1px solid var(--attio-line);
+      background: var(--attio-soft);
+      padding-top: 0;
+      scrollbar-width: none;
+    }
+
+    .sm-attio-rail a {
+      flex: 0 0 auto;
+      border-bottom: 2px solid transparent;
+      border-left: 0;
+      padding: 14px 12px;
+      white-space: nowrap;
+    }
+
+    .sm-attio-rail a[data-active="true"] {
+      border-bottom-color: var(--attio-blue);
+      border-left-color: transparent;
+    }
+
+    .sm-attio-rows {
+      border-left: 0;
+    }
+
+    .sm-attio-row-copy {
+      padding-inline: 0;
+    }
+
+    .sm-attio-context-grid,
+    .sm-attio-guarantee-grid,
+    .sm-attio-step-grid,
+    .sm-attio-suite-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sm-attio-context-grid article:nth-child(odd),
+    .sm-attio-home .sm-attio-suite-grid a:nth-child(odd) {
+      border-left: 0;
+      padding-left: 0;
+    }
+  }
+
+  @media (max-width: 1000px) {
+    /* Attio drops the vertical rules below lg (max-lg:border-none); at narrow
+       widths they collide with the screen edge. */
+    .sm-attio-shell {
+      border-inline: 0;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .sm-attio-hero {
+      padding-top: 108px;
+    }
+
+    .sm-attio-hero h1 {
+      max-width: 100%;
+      font-size: clamp(2.4rem, 11vw, 3.1rem);
+    }
+
+    .sm-attio-hero-copy > p {
+      max-width: 100%;
+      font-size: 16px;
+    }
+
+    .sm-attio-actions {
+      width: 100%;
+      justify-content: stretch;
+    }
+
+    .sm-attio-home .sm-attio-btn {
+      flex: 1;
+      min-height: 42px;
+    }
+
+    .sm-attio-product-window {
+      margin-inline: -20px;
+      border-radius: 0;
+    }
+
+    .sm-attio-product-window img {
+      max-height: 380px;
+    }
+
+    .sm-attio-context-grid,
+    .sm-attio-guarantee-grid,
+    .sm-attio-step-grid,
+    .sm-attio-suite-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .sm-attio-logo-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sm-attio-context-grid article,
+    .sm-attio-step-grid article,
+    .sm-attio-home .sm-attio-suite-grid a {
+      border-left: 0;
+      border-top: 1px solid var(--attio-line);
+      padding: 24px 0 0;
+    }
+
+    .sm-attio-step-copy {
+      padding-inline: 0;
+    }
+
+    .sm-attio-step-rule {
+      display: none;
+    }
+
+    .sm-attio-context-grid article:first-child,
+    .sm-attio-step-grid article:first-child,
+    .sm-attio-home .sm-attio-suite-grid a:first-child {
+      border-top: 0;
+      padding-top: 0;
+    }
+
+    .sm-attio-suite-grid a svg {
+      right: 0;
+    }
+
+    .sm-attio-home h2,
+    .sm-attio-dark-connect h2 {
+      font-size: clamp(1.75rem, 8vw, 2.15rem);
+    }
+  }
+}
+
+/* Homepage: sparse reference-style landing page with a left rail, blue accent, and ASCII system diagram. */
+@layer utilities {
+  body:has(.sm-memory-home) {
+    background: #ffffff;
+    color-scheme: light;
+  }
+
+  .sm-site:has(.sm-memory-home) .sm-header {
+    display: none;
+  }
+
+  .linear-shell:has(> .sm-memory-home) {
+    width: 100%;
+    max-width: none;
+    flex: 1;
+    padding-inline: 0;
+  }
+
+  .sm-site:has(.sm-memory-home) .linear-guides::before,
+  .sm-site:has(.sm-memory-home) .linear-guides::after {
+    content: none;
+  }
+
+  .sm-memory-home {
+    --mem-rail: 300px;
+    --mem-blue: #0562ef;
+    --mem-ink: #0b1015;
+    --mem-muted: #626b76;
+    --mem-faint: #8b96a1;
+    --mem-line: #dfe4ea;
+    --mem-line-strong: #c7d0db;
+    --mem-soft: #f7faff;
+    display: grid;
+    min-height: 100svh;
+    background: #ffffff;
+    color: var(--mem-ink);
+    font-family:
+      var(--font-attio-sans, var(--font-marketing-sans)), "Inter", ui-sans-serif, system-ui,
+      sans-serif;
+    grid-template-columns: var(--mem-rail) minmax(0, 1fr);
+  }
+
+  .sm-memory-home a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .sm-memory-home h1,
+  .sm-memory-home h2,
+  .sm-memory-home h3,
+  .sm-memory-final h2 {
+    font-family:
+      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
+      sans-serif;
+    font-weight: 500;
+    letter-spacing: -0.022em;
+  }
+
+  .sm-memory-home p,
+  .sm-memory-home span,
+  .sm-memory-home li {
+    text-wrap: pretty;
+  }
+
+  .sm-memory-rail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100svh;
+    border-right: 1px solid var(--mem-line);
+    background: #ffffff;
+    padding: 132px 40px 32px 70px;
+  }
+
+  .sm-memory-rail nav {
+    display: grid;
+    gap: 21px;
+  }
+
+  .sm-memory-rail nav a {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    width: max-content;
+    color: #5f6873;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+
+  .sm-memory-rail nav a:hover,
+  .sm-memory-rail-links a:hover {
+    color: var(--mem-blue);
+  }
+
+  .sm-memory-rail nav a.is-active {
+    color: var(--mem-ink);
+    font-weight: 600;
+  }
+
+  .sm-memory-rail nav a.is-active span {
+    width: 6px;
+    height: 6px;
+    margin-left: -16px;
+    background: var(--mem-blue);
+  }
+
+  .sm-memory-rail-divider {
+    width: 174px;
+    border-top: 1px dashed var(--mem-line);
+    margin: 28px 0 22px 18px;
+  }
+
+  .sm-memory-rail-links {
+    display: grid;
+    gap: 17px;
+    margin-left: 18px;
+  }
+
+  .sm-memory-rail-links a {
+    width: max-content;
+    color: #004fd8;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .sm-memory-main {
+    min-width: 0;
+    padding: 68px clamp(32px, 5.8vw, 90px) 0 34px;
+  }
+
+  .sm-suite-shell .sm-memory-main {
+    padding-top: 72px;
+  }
+
+  .sm-suite-shell .sm-products-page {
+    padding: 0 0 clamp(72px, 8vw, 104px);
+  }
+
+  .sm-suite-shell .sm-products-hero {
+    max-width: 770px;
+    margin-inline: 0;
+    padding-inline: 0;
+    text-align: left;
+  }
+
+  .sm-suite-shell .sm-products-hero .linear-eyebrow {
+    justify-self: start;
+  }
+
+  .sm-suite-shell .sm-products-hero > p:not(.linear-eyebrow) {
+    margin-inline: 0;
+  }
+
+  .sm-suite-shell .sm-products-hero > div {
+    justify-content: flex-start;
+  }
+
+  .sm-suite-shell .sm-products-grid {
+    width: min(100%, 1120px);
+    margin-inline: 0;
+  }
+
+  .sm-suite-shell .linear-inset {
+    width: 100%;
+    max-width: none;
+    padding-inline: 0;
+  }
+
+  .sm-suite-shell :is(.linear-hero, .linear-subpage, .linear-subpage-simple) {
+    padding-top: 0;
+  }
+
+  .sm-suite-shell
+    :is(.linear-hero-title, .linear-product-title, .linear-subpage-title, .linear-page-title),
+  .sm-suite-shell .linear-final-cta h2 {
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+    color: var(--mem-ink);
+    font-family:
+      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
+      sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.026em;
+  }
+
+  .sm-suite-shell .linear-hero {
+    border-bottom: 1px solid var(--mem-line);
+    padding-bottom: clamp(48px, 7vw, 72px);
+  }
+
+  .sm-suite-shell .linear-hero::before,
+  .sm-suite-shell .linear-final-cta::before {
+    content: none;
+  }
+
+  .sm-suite-shell .linear-hero-title {
+    max-width: 760px;
+    font-size: clamp(2.8rem, 5.6vw, 5.2rem);
+    line-height: 0.98;
+  }
+
+  .sm-suite-shell .linear-body {
+    color: var(--mem-muted);
+  }
+
+  .sm-suite-shell .linear-hero-meta,
+  .sm-suite-shell .linear-subpage-description,
+  .sm-suite-shell .linear-product-description {
+    padding-inline: 0;
+  }
+
+  .sm-suite-shell .linear-product-section,
+  .sm-suite-shell .linear-updates,
+  .sm-suite-shell .linear-final-cta,
+  .sm-suite-shell .linear-subpage-content > section {
+    border-top: 1px solid var(--mem-line);
+  }
+
+  .sm-suite-shell .linear-product-section,
+  .sm-suite-shell .linear-updates {
+    padding-block: clamp(52px, 7vw, 78px);
+  }
+
+  .sm-suite-shell .linear-product-header,
+  .sm-suite-shell .linear-subpage-hero {
+    gap: clamp(24px, 4vw, 56px);
+    padding-bottom: clamp(34px, 5vw, 56px);
+  }
+
+  .sm-suite-shell .linear-product-description p,
+  .sm-suite-shell .linear-subpage-description > p {
+    max-width: 42ch;
+    color: var(--mem-muted);
+    font-size: clamp(1.05rem, 1.65vw, 1.35rem);
+    line-height: 1.42;
+  }
+
+  .sm-suite-shell .linear-product-visual {
+    padding-inline: 0;
+  }
+
+  .sm-suite-shell .linear-product-panel {
+    border-color: var(--mem-line);
+    border-radius: 0;
+    background: var(--mem-soft);
+    mask-image: none;
+  }
+
+  .sm-suite-shell .linear-product-panel img {
+    border-color: var(--mem-line);
+    border-radius: 0;
+    filter: none;
+  }
+
+  .sm-suite-shell .linear-product-tabs {
+    margin-top: 0;
+  }
+
+  .sm-suite-shell .linear-product-tab {
+    border-color: var(--mem-line);
+  }
+
+  .sm-suite-shell .linear-updates-grid {
+    border-color: var(--mem-line);
+  }
+
+  .sm-suite-shell .linear-update {
+    border-color: var(--mem-line);
+  }
+
+  .sm-suite-shell .linear-final-cta {
+    align-items: flex-start;
+    gap: 24px;
+    margin-block: 0;
+    padding-block: clamp(52px, 7vw, 78px);
+    text-align: left;
+  }
+
+  .sm-suite-shell .linear-final-cta h2 {
+    max-width: 760px;
+    font-size: clamp(2.35rem, 4.4vw, 4.2rem);
+  }
+
+  .sm-suite-shell .linear-page-hero {
+    padding-top: 0;
+  }
+
+  .sm-suite-shell .linear-eyebrow-red {
+    color: var(--mem-blue);
+    font-family: var(--font-marketing-mono), "DM Mono", ui-monospace, monospace;
+  }
+
+  .sm-pricing {
+    padding-bottom: clamp(68px, 8vw, 104px);
+  }
+
+  .sm-pricing-hero {
+    display: grid;
+    max-width: 760px;
+    gap: 22px;
+  }
+
+  .sm-pricing-hero h1 {
+    color: var(--mem-ink);
+    font-family:
+      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
+      sans-serif;
+    font-size: clamp(2.8rem, 5.6vw, 5.2rem);
+    font-weight: 600;
+    letter-spacing: -0.026em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
+  .sm-pricing-hero > p {
+    max-width: 610px;
+    color: var(--mem-muted);
+    font-size: clamp(1rem, 1.55vw, 1.25rem);
+    line-height: 1.55;
+  }
+
+  .sm-pricing-hero > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+
+  .sm-pricing-hero span {
+    border: 1px solid var(--mem-line);
+    background: #ffffff;
+    padding: 7px 10px;
+    color: #54606b;
+    font-family: var(--font-marketing-display), var(--font-marketing-sans), sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .sm-pricing-board {
+    display: grid;
+    margin-top: clamp(48px, 7vw, 72px);
+    border-top: 1px solid var(--mem-line);
+    border-left: 1px solid var(--mem-line);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sm-pricing-plan {
+    display: flex;
+    min-height: 420px;
+    flex-direction: column;
+    border-right: 1px solid var(--mem-line);
+    border-bottom: 1px solid var(--mem-line);
+    background: #ffffff;
+    padding: 28px;
+  }
+
+  .sm-pricing-plan-featured {
+    background: var(--mem-soft);
+  }
+
+  .sm-pricing-plan > div {
+    display: flex;
+    min-height: 24px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .sm-pricing-plan > div p,
+  .sm-pricing-plan > div span {
+    color: var(--mem-blue);
+    font-family: var(--font-marketing-display), var(--font-marketing-sans), sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .sm-pricing-plan > div span {
+    border: 1px solid #cfe0ff;
+    background: #ffffff;
+    padding: 5px 7px;
+  }
+
+  .sm-pricing-plan > strong {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    margin-top: 26px;
+    color: var(--mem-ink);
+    font-family:
+      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
+      sans-serif;
+    font-size: clamp(2.35rem, 4vw, 3.4rem);
+    font-weight: 600;
+    letter-spacing: -0.026em;
+    line-height: 0.95;
+  }
+
+  .sm-pricing-plan > strong small {
+    color: var(--mem-muted);
+    font-family: var(--font-marketing-sans), "DM Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  .sm-pricing-plan > p {
+    min-height: 46px;
+    margin-top: 18px;
+    color: var(--mem-muted);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .sm-pricing-plan ul {
+    display: grid;
+    gap: 11px;
+    margin-top: 28px;
+    margin-bottom: 28px;
+  }
+
+  .sm-pricing-plan li {
+    color: var(--mem-ink);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .sm-pricing-plan li::before {
+    content: "+";
+    margin-right: 9px;
+    color: var(--mem-blue);
+    font-family: var(--font-marketing-mono), "DM Mono", ui-monospace, monospace;
+  }
+
+  .sm-pricing-plan .sm-memory-button {
+    margin-top: auto;
+  }
+
+  .sm-pricing-note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    border: 1px solid var(--mem-line);
+    border-top: 0;
+    padding: 18px 22px;
+  }
+
+  .sm-pricing-note p {
+    color: var(--mem-muted);
+    font-size: 14px;
+  }
+
+  .sm-pricing-note a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--mem-blue);
+    font-family: var(--font-attio-sans, var(--font-marketing-sans)), "Inter", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .sm-pricing-note svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  @media (max-width: 900px) {
+    .sm-pricing-board {
+      grid-template-columns: 1fr;
+    }
+
+    .sm-pricing-plan {
+      min-height: 0;
+    }
+  }
+
+  .sm-memory-mission {
+    display: grid;
+    align-items: start;
+    gap: clamp(28px, 4vw, 52px);
+    grid-template-columns: minmax(0, 690px) minmax(310px, 1fr);
+  }
+
+  .sm-memory-mission-copy {
+    min-width: 0;
+  }
+
+  .sm-memory-announcement {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 38px;
+    color: var(--mem-muted);
+    font-size: 13px;
+  }
+
+  .sm-memory-announcement > span,
+  .sm-memory-announcement a {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sm-memory-announcement i {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #16be6b;
+  }
+
+  .sm-memory-announcement a {
+    min-height: 31px;
+    border: 1px solid var(--mem-line);
+    background: #ffffff;
+    padding-inline: 11px 9px;
+    color: var(--mem-ink);
+  }
+
+  .sm-memory-announcement a:hover,
+  .sm-memory-button:hover {
+    border-color: var(--mem-blue);
+  }
+
+  .sm-memory-announcement svg,
+  .sm-memory-button svg,
+  .sm-memory-text-link svg,
+  .sm-memory-research-list svg,
+  .sm-memory-final svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .sm-memory-mission h1 {
+    max-width: 760px;
+    font-size: clamp(2.75rem, 3.55vw, 3.58rem);
+    font-weight: 600;
+    letter-spacing: -0.026em;
+    line-height: 1.06;
+  }
+
+  .sm-memory-title-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.18em;
+    white-space: nowrap;
+  }
+
+  .sm-memory-title-icon {
+    width: 0.78em;
+    height: 0.78em;
+    object-fit: contain;
+    vertical-align: -0.04em;
+  }
+
+  .sm-memory-subhead {
+    max-width: 620px;
+    margin-top: 22px;
+    color: var(--mem-muted);
+    font-size: 18px;
+    line-height: 1.45;
+  }
+
+  .sm-memory-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 28px;
+  }
+
+  .sm-memory-button {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 13px;
+    border: 1px solid #cfe0ff;
+    background: #f5f9ff;
+    padding: 0 16px;
+    color: var(--mem-ink);
+    font-family: var(--font-attio-sans, var(--font-marketing-sans)), "Inter", sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    text-transform: none;
+    transition:
+      border-color 150ms ease,
+      background 150ms ease,
+      color 150ms ease;
+  }
+
+  .sm-memory-button-primary {
+    border-color: var(--mem-blue);
+    background: var(--mem-blue);
+    color: #ffffff;
+  }
+
+  .sm-memory-button-primary:hover {
+    background: #004fc6;
+    color: #ffffff;
+  }
+
+  .sm-memory-button-primary > span {
+    display: grid;
+    align-self: stretch;
+    width: 42px;
+    place-items: center;
+    border-right: 1px solid rgb(255 255 255 / 32%);
+    margin-left: -16px;
+    background: #ffffff;
+  }
+
+  .sm-memory-button-primary > span img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+  }
+
+  .sm-memory-proof-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-top: 18px;
+  }
+
+  .sm-memory-proof-row span {
+    border: 1px solid var(--mem-line);
+    background: #ffffff;
+    padding: 7px 10px;
+    color: #54606b;
+    font-family: var(--font-marketing-display), var(--font-marketing-sans), sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .sm-memory-blueprint {
+    display: grid;
+    width: min(100%, 662px);
+    height: 278px;
+    place-items: center;
+    overflow: hidden;
+    margin: 56px 0 34px;
+    background: #112b8b;
+  }
+
+  .sm-memory-blueprint img {
+    width: min(88%, 580px);
+    height: auto;
+    opacity: 0.9;
+    filter: brightness(1.24) contrast(1.14) saturate(0.35);
+    mix-blend-mode: screen;
+    transform: translateY(6px) scale(1.14);
+  }
+
+  .sm-memory-prose {
+    max-width: 655px;
+    padding-bottom: 44px;
+  }
+
+  .sm-memory-prose p {
+    color: #171c22;
+    font-size: 16px;
+    line-height: 1.72;
+  }
+
+  .sm-memory-prose a,
+  .sm-memory-prose h2 {
+    color: var(--mem-blue);
+  }
+
+  .sm-memory-prose a {
+    text-decoration: none;
+  }
+
+  .sm-memory-prose a::after {
+    content: " +";
+    font-family: var(--font-marketing-mono), "DM Mono", ui-monospace, monospace;
+    font-size: 0.72em;
+  }
+
+  .sm-memory-prose h2 {
+    margin: 28px 0 16px;
+    font-size: 18px;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+  }
+
+  .sm-memory-diagram {
+    overflow-x: auto;
+    padding-top: 2px;
+    color: #101720;
+    font-family:
+      var(--font-marketing-mono), "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: clamp(10px, 0.88vw, 12px);
+    line-height: 1.45;
+  }
+
+  .sm-memory-diagram pre {
+    width: max-content;
+    margin: 0;
+    white-space: pre;
+  }
+
+  .sm-memory-section {
+    border-top: 1px solid var(--mem-line);
+  }
+
+  .sm-memory-section-head {
+    display: grid;
+    max-width: 880px;
+    gap: 18px;
+    padding: 44px 0 30px;
+  }
+
+  .sm-memory-section-head-split {
+    max-width: none;
+    align-items: end;
+    gap: 28px clamp(40px, 6vw, 92px);
+    grid-template-columns: minmax(0, 0.98fr) minmax(280px, 0.62fr);
+  }
+
+  .sm-memory-section-head > p,
+  .sm-memory-section-head > div > p,
+  .sm-memory-do-grid article > p,
+  .sm-memory-section-head .sm-memory-text-link {
+    color: var(--mem-blue);
+    font-family: var(--font-marketing-display), var(--font-marketing-sans), sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .sm-memory-section-head h2 {
+    max-width: 790px;
+    font-size: clamp(2rem, 3.25vw, 3.15rem);
+    line-height: 1.05;
+  }
+
+  .sm-memory-section-head > span,
+  .sm-memory-section-head-split > span {
+    max-width: 560px;
+    color: var(--mem-muted);
+    font-size: 15px;
+    line-height: 1.62;
+  }
+
+  .sm-memory-text-link {
+    display: inline-flex;
+    align-items: center;
+    justify-self: end;
+    gap: 8px;
+  }
+
+  .sm-memory-do-grid,
+  .sm-memory-stats-grid,
+  .sm-memory-plan-grid {
+    display: grid;
+    border-top: 1px solid var(--mem-line);
+  }
+
+  .sm-memory-do-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sm-memory-do-grid article {
+    min-height: 190px;
+    border-right: 1px solid var(--mem-line);
+    padding: 28px 30px;
+  }
+
+  .sm-memory-do-grid article:last-child {
+    border-right: 0;
+  }
+
+  .sm-memory-do-grid h3 {
+    margin-top: 16px;
+    font-size: clamp(1.35rem, 1.75vw, 1.65rem);
+    line-height: 1.1;
+  }
+
+  .sm-memory-do-grid article > span {
+    display: block;
+    margin-top: 12px;
+    color: var(--mem-muted);
+    font-size: 14px;
+    line-height: 1.58;
+  }
+
+  .sm-memory-do-grid ul {
+    display: grid;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .sm-memory-do-grid li,
+  .sm-memory-plan-grid li {
+    color: #56616c;
+    font-size: 12px;
+    line-height: 1.48;
+  }
+
+  .sm-memory-do-grid li::before,
+  .sm-memory-plan-grid li::before {
+    content: "+";
+    margin-right: 8px;
+    color: var(--mem-blue);
+    font-family: var(--font-marketing-mono), "DM Mono", ui-monospace, monospace;
+  }
+
+  .sm-memory-stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .sm-memory-stats-grid article {
+    min-height: 215px;
+    border-right: 1px solid var(--mem-line);
+    padding: 26px 22px;
+  }
+
+  .sm-memory-stats-grid article:last-child {
+    border-right: 0;
+  }
+
+  .sm-memory-stats-grid strong {
+    display: block;
+    color: var(--mem-blue);
+    font-family:
+      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
+      sans-serif;
+    font-size: clamp(1.8rem, 2.8vw, 2.55rem);
+    font-weight: 600;
+    letter-spacing: -0.022em;
+    line-height: 1;
+  }
+
+  .sm-memory-stats-grid p {
+    min-height: 42px;
+    margin-top: 14px;
+    color: var(--mem-ink);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .sm-memory-stats-grid span {
+    display: block;
+    margin-top: 12px;
+    color: var(--mem-muted);
+    font-size: 12px;
+    line-height: 1.52;
+  }
+
+  .sm-memory-signal-table {
+    overflow-x: auto;
+    border-top: 1px solid var(--mem-line);
+  }
+
+  .sm-memory-signal-table > div {
+    display: grid;
+    min-width: 760px;
+    border-bottom: 1px solid var(--mem-line);
+    grid-template-columns: 0.55fr 0.9fr 1.4fr;
+  }
+
+  .sm-memory-signal-table > div:last-child {
+    border-bottom: 0;
+  }
+
+  .sm-memory-signal-table span {
+    min-width: 0;
+    border-right: 1px solid var(--mem-line);
+    padding: 16px 18px;
+    color: #4f5a65;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .sm-memory-signal-table span:last-child {
+    border-right: 0;
+  }
+
+  .sm-memory-signal-table [role="columnheader"] {
+    background: var(--mem-soft);
+    color: var(--mem-ink);
+    font-family: var(--font-marketing-mono), "DM Mono", ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .sm-memory-research-list {
+    border-top: 1px solid var(--mem-line);
+  }
+
+  .sm-memory-research-list a {
+    display: grid;
+    min-height: 104px;
+    align-items: center;
+    gap: 18px;
+    border-bottom: 1px solid var(--mem-line);
+    padding: 18px 0;
+    grid-template-columns: 58px minmax(0, 1fr) minmax(260px, 0.9fr) 24px;
+  }
+
+  .sm-memory-research-list a:last-child {
+    border-bottom: 0;
+  }
+
+  .sm-memory-research-list a:hover strong,
+  .sm-memory-research-list a:hover svg {
+    color: var(--mem-blue);
+  }
+
+  .sm-memory-research-list span {
+    color: var(--mem-blue);
+    font-family: var(--font-marketing-mono), "DM Mono", ui-monospace, monospace;
+    font-size: 12px;
+  }
+
+  .sm-memory-research-list strong {
+    max-width: 620px;
+    font-family:
+      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
+      sans-serif;
+    font-size: clamp(1.2rem, 1.7vw, 1.55rem);
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.018em;
+    transition: color 150ms ease;
+  }
+
+  .sm-memory-research-list p {
+    color: var(--mem-muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .sm-memory-research-list svg {
+    color: var(--mem-faint);
+    transition: color 150ms ease;
+  }
+
+  .sm-memory-plan-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sm-memory-plan-grid article {
+    display: flex;
+    min-height: 430px;
+    flex-direction: column;
+    border-right: 1px solid var(--mem-line);
+    padding: 28px 24px;
+  }
+
+  .sm-memory-plan-grid article:last-child {
+    border-right: 0;
+  }
+
+  .sm-memory-plan-grid article.is-featured {
+    background: var(--mem-soft);
+  }
+
+  .sm-memory-plan-grid article > div {
+    display: flex;
+    min-height: 28px;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .sm-memory-plan-grid h3 {
+    font-size: 23px;
+    line-height: 1.1;
+  }
+
+  .sm-memory-plan-grid article > div span {
+    border: 1px solid #bed5f1;
+    background: #eaf3ff;
+    padding: 4px 7px;
+    color: var(--mem-blue);
+    font-family: var(--font-marketing-mono), "DM Mono", ui-monospace, monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .sm-memory-plan-grid article > p {
+    min-height: 74px;
+    margin-top: 14px;
+    color: var(--mem-muted);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .sm-memory-plan-grid article > strong {
+    margin: 22px 0;
+    font-family:
+      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
+      sans-serif;
+    font-size: 35px;
+    font-weight: 600;
+    letter-spacing: -0.026em;
+    line-height: 1;
+  }
+
+  .sm-memory-plan-grid article > strong small {
+    margin-left: 4px;
+    color: var(--mem-muted);
+    font-family: var(--font-marketing-sans), "DM Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+
+  .sm-memory-plan-grid .sm-memory-button {
+    width: 100%;
+  }
+
+  .sm-memory-plan-grid ul {
+    display: grid;
+    gap: 9px;
+    margin-top: 24px;
+  }
+
+  .sm-memory-faq-list {
+    border-top: 1px solid var(--mem-line);
+  }
+
+  .sm-memory-faq-list details {
+    border-bottom: 1px solid var(--mem-line);
+  }
+
+  .sm-memory-faq-list details:last-child {
+    border-bottom: 0;
+  }
+
+  .sm-memory-faq-list summary {
+    display: grid;
+    min-height: 70px;
+    cursor: pointer;
+    align-items: center;
+    gap: 18px;
+    padding: 0 0;
+    font-family:
+      var(--font-marketing-display), var(--font-marketing-sans), ui-sans-serif, system-ui,
+      sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    grid-template-columns: 42px 1fr auto;
+    letter-spacing: -0.018em;
+    list-style: none;
+  }
+
+  .sm-memory-faq-list summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .sm-memory-faq-list summary > span {
+    color: var(--mem-blue);
+    font-family: var(--font-marketing-mono), "DM Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0;
+  }
+
+  .sm-memory-faq-list summary > strong {
+    color: var(--mem-faint);
+    font-weight: 400;
+    transition: transform 150ms ease;
+  }
+
+  .sm-memory-faq-list details[open] summary > strong {
+    transform: rotate(45deg);
+  }
+
+  .sm-memory-faq-list details > p {
+    max-width: 780px;
+    padding: 0 54px 26px;
+    color: var(--mem-muted);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .sm-memory-final {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 28px;
+    border-top: 1px solid var(--mem-line);
+    padding: 56px 0 58px;
+  }
+
+  .sm-memory-final h2 {
+    max-width: 720px;
+    font-size: clamp(2.35rem, 4vw, 3.6rem);
+    line-height: 0.98;
+  }
+
+  .sm-site:has(.sm-memory-home) .sm-footer {
+    margin-left: 300px;
+    border-top: 1px solid var(--mem-line);
+    background: #ffffff;
+  }
+
+  .sm-site:has(.sm-memory-home) .sm-footer .linear-shell {
+    width: 100%;
+    max-width: none;
+    padding-inline: 34px clamp(32px, 5.8vw, 90px);
+  }
+
+  .sm-site:has(.sm-memory-home) .sm-footer-links {
+    display: none;
+  }
+
+  .sm-site:has(.sm-memory-home) .sm-footer-bottom {
+    border-top: 1px solid var(--mem-line);
+  }
+
+  @media (max-width: 1180px) {
+    .sm-memory-home {
+      --mem-rail: 250px;
+    }
+
+    .sm-memory-rail {
+      padding-left: 48px;
+    }
+
+    .sm-memory-mission {
+      grid-template-columns: minmax(0, 1fr) minmax(285px, 0.65fr);
+    }
+
+    .sm-site:has(.sm-memory-home) .sm-footer {
+      margin-left: 250px;
+    }
+
+    .sm-memory-stats-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sm-memory-stats-grid article:nth-child(2n) {
+      border-right: 0;
+    }
+
+    .sm-memory-stats-grid article:nth-child(-n + 2) {
+      border-bottom: 1px solid var(--mem-line);
+    }
+  }
+
+  @media (max-width: 980px) {
+    .sm-memory-home {
+      display: block;
+    }
+
+    .sm-memory-rail {
+      position: sticky;
+      z-index: 20;
+      top: 0;
+      height: auto;
+      overflow-x: auto;
+      border-right: 0;
+      border-bottom: 1px solid var(--mem-line);
+      padding: 14px 12px;
+      scrollbar-width: none;
+    }
+
+    .sm-memory-rail::-webkit-scrollbar {
+      display: none;
+    }
+
+    .sm-memory-rail nav {
+      display: flex;
+      min-width: max-content;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sm-memory-rail nav a {
+      gap: 7px;
+      font-size: 12px;
+    }
+
+    .sm-memory-rail nav a.is-active span {
+      margin-left: 0;
+    }
+
+    .sm-memory-rail-divider,
+    .sm-memory-rail-links {
+      display: none;
+    }
+
+    .sm-memory-main {
+      padding: 42px 20px 0;
+    }
+
+    .sm-suite-shell .sm-memory-main {
+      padding-top: 42px;
+    }
+
+    .sm-suite-shell .sm-products-grid {
+      width: 100%;
+    }
+
+    .sm-memory-mission,
+    .sm-memory-section-head-split {
+      grid-template-columns: 1fr;
+    }
+
+    .sm-memory-diagram {
+      max-width: 100%;
+      border-top: 1px solid var(--mem-line);
+      padding: 26px 0 34px;
+    }
+
+    .sm-memory-do-grid,
+    .sm-memory-plan-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .sm-memory-do-grid article,
+    .sm-memory-plan-grid article {
+      min-height: 0;
+      border-right: 0;
+      border-bottom: 1px solid var(--mem-line);
+    }
+
+    .sm-memory-do-grid article:last-child,
+    .sm-memory-plan-grid article:last-child {
+      border-bottom: 0;
+    }
+
+    .sm-memory-research-list a {
+      grid-template-columns: 44px minmax(0, 1fr) 22px;
+    }
+
+    .sm-memory-research-list p {
+      grid-column: 2 / 4;
+      margin-top: -8px;
+    }
+
+    .sm-site:has(.sm-memory-home) .sm-footer {
+      margin-left: 0;
+    }
+
+    .sm-site:has(.sm-memory-home) .sm-footer .linear-shell {
+      padding-inline: 20px;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .sm-memory-main {
+      padding-top: 34px;
+    }
+
+    .sm-memory-announcement {
+      gap: 8px;
+      margin-bottom: 28px;
+      font-size: 12px;
+    }
+
+    .sm-memory-announcement a {
+      min-height: 30px;
+    }
+
+    .sm-memory-mission h1 {
+      font-size: clamp(2.25rem, 10.8vw, 3.05rem);
+      line-height: 1.05;
+    }
+
+    .sm-memory-title-brand {
+      white-space: normal;
+    }
+
+    .sm-memory-subhead {
+      font-size: 16px;
+    }
+
+    .sm-memory-actions {
+      display: grid;
+    }
+
+    .sm-memory-button {
+      width: 100%;
+      min-height: 46px;
+    }
+
+    .sm-memory-blueprint {
+      height: 230px;
+      margin: 42px 0 34px;
+    }
+
+    .sm-memory-blueprint img {
+      width: 620px;
+      max-width: none;
+      transform: translateY(6px) scale(1.08);
+    }
+
+    .sm-memory-prose {
+      padding-bottom: 46px;
+    }
+
+    .sm-memory-prose p {
+      font-size: 15px;
+      line-height: 1.66;
+    }
+
+    .sm-memory-section-head {
+      padding: 42px 0 30px;
+    }
+
+    .sm-memory-section-head h2 {
+      font-size: 2rem;
+      line-height: 1.08;
+    }
+
+    .sm-memory-do-grid article,
+    .sm-memory-plan-grid article,
+    .sm-memory-stats-grid article {
+      min-height: 0;
+      padding: 26px 0;
+    }
+
+    .sm-memory-stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .sm-memory-stats-grid article,
+    .sm-memory-stats-grid article:nth-child(2n) {
+      border-right: 0;
+      border-bottom: 1px solid var(--mem-line);
+    }
+
+    .sm-memory-stats-grid article:last-child {
+      border-bottom: 0;
+    }
+
+    .sm-memory-signal-table > div {
+      min-width: 680px;
+    }
+
+    .sm-memory-research-list a {
+      min-height: 0;
+      padding: 22px 0;
+      grid-template-columns: 34px minmax(0, 1fr) 18px;
+    }
+
+    .sm-memory-research-list p {
+      grid-column: 1 / 4;
+      margin-top: 0;
+    }
+
+    .sm-memory-faq-list summary {
+      min-height: 64px;
+      gap: 12px;
+      font-size: 16px;
+      grid-template-columns: 30px 1fr auto;
+    }
+
+    .sm-memory-faq-list details > p {
+      padding: 0 0 24px 42px;
+    }
+
+    .sm-memory-final {
+      display: grid;
+      padding: 64px 0 54px;
+    }
+
+    .sm-memory-final h2 {
+      font-size: clamp(2.35rem, 11vw, 3rem);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sm-memory-home *,
+    .sm-memory-home *::before,
+    .sm-memory-home *::after {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Auth pages. Same token scope and type system as the public site (`sm-site`),
+   laid out as a split screen: form column left, showcase canvas right. */
+@layer utilities {
+  .sm-auth {
+    display: grid;
+    min-height: 100svh;
+    background: #ffffff;
+    grid-template-columns: 1fr;
+  }
+
+  .sm-auth-form {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(32px, 6vw, 72px) clamp(20px, 6vw, 64px);
+  }
+
+  .sm-auth-form-inner {
+    width: 100%;
+    max-width: 380px;
+  }
+
+  .sm-auth-lockup {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 40px;
+    color: var(--sm-ink);
+    text-decoration: none;
+  }
+
+  .sm-auth-lockup img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+  }
+
+  .sm-auth-lockup span {
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: 27px;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+  }
+
+  .sm-auth-title {
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: clamp(1.9rem, 2.6vw, 2.3rem);
+    font-weight: 500;
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+    color: var(--sm-ink);
+  }
+
+  .sm-auth-sub {
+    margin-top: 12px;
+    color: var(--sm-muted);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .sm-auth-error {
+    margin-top: 20px;
+    border: 1px solid #f2c2c2;
+    border-radius: 0;
+    background: #fdf2f2;
+    padding: 10px 12px;
+    color: #a52020;
+    font-size: 14px;
+  }
+
+  .sm-auth-provider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: 32px;
+    border: 1px solid var(--sm-line);
+    border-radius: 0;
+    background: #ffffff;
+    padding: 14px 16px;
+    color: var(--sm-ink);
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    box-shadow: 0 1px 2px rgb(11 16 21 / 5%);
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .sm-auth-provider:hover {
+    border-color: #c3cedb;
+    background: var(--sm-soft);
+  }
+
+  .sm-auth-legal {
+    margin-top: 22px;
+    color: var(--sm-muted);
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+
+  .sm-auth-legal a {
+    color: var(--sm-muted);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .sm-auth-legal a:hover {
+    color: var(--sm-blue);
+  }
+
+  .sm-auth-showcase {
+    display: none;
+    padding: 24px 24px 24px 0;
+  }
+
+  .sm-auth-canvas {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 0;
+    background: linear-gradient(180deg, #7fa9e8, #b8d0ea 55%, #cfe0d6);
+  }
+
+  .sm-auth-canvas-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.42;
+    filter: blur(46px) saturate(1.35);
+    transform: scale(1.25);
+  }
+
+  .sm-auth-canvas-wash {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(70% 55% at 50% 8%, rgb(255 255 255 / 35%), transparent 65%),
+      linear-gradient(180deg, rgb(5 98 239 / 12%), rgb(5 98 239 / 4%));
+  }
+
+  .sm-auth-overlay {
+    position: relative;
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: clamp(24px, 4vw, 56px);
+  }
+
+  .sm-auth-quote {
+    width: min(100%, 560px);
+    margin: 0;
+    border-radius: 0;
+    background: #ffffff;
+    padding: 26px 28px;
+    border: 1px solid rgb(255 255 255 / 70%);
+    box-shadow: 0 24px 60px rgb(11 16 21 / 16%);
+  }
+
+  .sm-auth-quote-body {
+    transition: opacity 0.26s ease;
+  }
+
+  .sm-auth-quote[data-visible="false"] .sm-auth-quote-body {
+    opacity: 0;
+  }
+
+  .sm-auth-dots {
+    display: flex;
+    gap: 6px;
+    margin-top: 20px;
+  }
+
+  .sm-auth-dots span {
+    width: 18px;
+    height: 3px;
+    background: var(--sm-line);
+    transition: background 0.26s ease;
+  }
+
+  .sm-auth-dots span[data-active="true"] {
+    background: var(--sm-blue);
+  }
+
+  .sm-auth-quote blockquote {
+    margin: 0;
+    min-height: 6.1em;
+    color: var(--sm-ink);
+    font-size: 17.5px;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+  }
+
+  .sm-auth-quote figcaption {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 22px;
+  }
+
+  .sm-auth-quote figcaption img {
+    width: 36px;
+    height: 36px;
+    border-radius: 0;
+    object-fit: contain;
+  }
+
+  .sm-auth-quote figcaption span {
+    display: grid;
+    color: var(--sm-muted);
+    font-size: 13.5px;
+    line-height: 1.35;
+  }
+
+  .sm-auth-quote figcaption strong {
+    color: var(--sm-ink);
+    font-weight: 500;
+  }
+
+  .sm-auth-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .sm-auth-stats span {
+    border-radius: 0;
+    background: rgb(255 255 255 / 55%);
+    padding: 9px 16px;
+    color: #1d2a38;
+    font-size: 13.5px;
+    backdrop-filter: blur(6px);
+  }
+
+  @media (min-width: 1024px) {
+    .sm-auth {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    }
+
+    .sm-auth-showcase {
+      display: block;
+    }
+  }
+}
+
+/* Legal documents (terms, privacy, responsible disclosure). Same token scope
+   and type system as the public site, in a single readable measure. */
+@layer utilities {
+  .sm-legal {
+    min-height: 100svh;
+    background: #ffffff;
+    color: var(--sm-ink);
+  }
+
+  .sm-legal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--sm-line);
+    padding: 18px clamp(20px, 6vw, 64px);
+  }
+
+  .sm-legal-lockup {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--sm-ink);
+    text-decoration: none;
+  }
+
+  .sm-legal-lockup img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+  }
+
+  .sm-legal-lockup span {
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+  }
+
+  .sm-legal-header-tag {
+    color: var(--sm-muted);
+    font-size: 14px;
+  }
+
+  .sm-legal-header-tag::before {
+    content: "·";
+    margin-right: 12px;
+  }
+
+  .sm-legal-body {
+    width: min(100%, 760px);
+    margin-inline: auto;
+    padding: clamp(40px, 7vw, 72px) clamp(20px, 6vw, 24px) 80px;
+  }
+
+  .sm-legal-body h1 {
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: clamp(2.1rem, 4vw, 2.9rem);
+    font-weight: 500;
+    line-height: 1.06;
+    letter-spacing: -0.035em;
+  }
+
+  .sm-legal-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin-top: 14px;
+    color: var(--sm-muted);
+    font-size: 14px;
+  }
+
+  .sm-legal-meta a {
+    color: var(--sm-blue);
+    text-decoration: none;
+  }
+
+  .sm-legal-meta a:hover {
+    text-decoration: underline;
+  }
+
+  .sm-legal-intro {
+    margin-top: 26px;
+    color: #39434d;
+    font-size: 16.5px;
+    line-height: 1.6;
+  }
+
+  .sm-legal-index {
+    display: grid;
+    gap: 8px;
+    margin: 34px 0 8px;
+    border-block: 1px solid var(--sm-line);
+    padding: 22px 0;
+  }
+
+  .sm-legal-index a {
+    color: var(--sm-muted);
+    font-size: 14.5px;
+    text-decoration: none;
+  }
+
+  .sm-legal-index a:hover {
+    color: var(--sm-blue);
+  }
+
+  .sm-legal-body section {
+    margin-top: 46px;
+    scroll-margin-top: 24px;
+  }
+
+  .sm-legal-body h2 {
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .sm-legal-summary {
+    margin-top: 8px;
+    color: var(--sm-muted);
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+
+  .sm-legal-p {
+    margin-top: 16px;
+    color: #39434d;
+    font-size: 15.5px;
+    line-height: 1.68;
+  }
+
+  .sm-legal-list {
+    margin-top: 16px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .sm-legal-list li {
+    position: relative;
+    padding-left: 20px;
+    color: #39434d;
+    font-size: 15.5px;
+    line-height: 1.62;
+  }
+
+  .sm-legal-list li::before {
+    content: "";
+    position: absolute;
+    top: 0.72em;
+    left: 2px;
+    width: 6px;
+    height: 1px;
+    background: var(--sm-blue);
+  }
+
+  .sm-legal-terms {
+    margin-top: 18px;
+    display: grid;
+    gap: 16px;
+  }
+
+  .sm-legal-terms dt {
+    color: var(--sm-ink);
+    font-size: 15.5px;
+    font-weight: 500;
+  }
+
+  .sm-legal-terms dd {
+    margin: 4px 0 0;
+    color: #39434d;
+    font-size: 15.5px;
+    line-height: 1.62;
+  }
+
+  .sm-legal-callout {
+    margin-top: 18px;
+    border-left: 2px solid var(--sm-blue);
+    background: var(--sm-soft);
+    padding: 16px 18px;
+    color: var(--sm-ink);
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+
+  .sm-legal-updated {
+    margin-top: 56px;
+    border-top: 1px solid var(--sm-line);
+    padding-top: 22px;
+    color: var(--sm-muted);
+    font-size: 14px;
+  }
+
+  .sm-legal-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid var(--sm-line);
+    padding: 26px clamp(20px, 6vw, 64px);
+    color: var(--sm-muted);
+    font-size: 14px;
+  }
+
+  .sm-legal-footer div {
+    display: flex;
+    gap: 20px;
+  }
+
+  .sm-legal-footer a {
+    color: var(--sm-muted);
+    text-decoration: none;
+  }
+
+  .sm-legal-footer a:hover {
+    color: var(--sm-blue);
+  }
+
+  @media (min-width: 768px) {
+    .sm-legal-index {
+      grid-auto-flow: column;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: repeat(var(--sm-legal-index-rows, 10), auto);
+      gap: 10px 32px;
+    }
+  }
+}
+
+/* Home "the problem" section: four recognizable failure modes, stated before
+   any product claim. */
+@layer utilities {
+  .sm-problem-grid {
+    display: grid;
+    gap: 1px;
+    margin-top: 0;
+    background: var(--sm-line);
+    border: 1px solid var(--sm-line);
+  }
+
+  .sm-problem-grid article {
+    background: #ffffff;
+    padding: 28px 24px;
+  }
+
+  .sm-problem-stat {
+    color: var(--sm-blue);
+    font-family: var(--font-marketing-mono), monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .sm-problem-grid h3 {
+    margin-top: 14px;
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 500;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    color: var(--sm-ink);
+  }
+
+  .sm-problem-grid article > p:last-child {
+    margin-top: 10px;
+    color: var(--sm-muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .sm-problem-turn {
+    max-width: 820px;
+    margin: 0;
+    padding: 30px 32px 34px;
+    color: var(--sm-ink);
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: clamp(1.15rem, 1.8vw, 1.4rem);
+    font-weight: 500;
+    line-height: 1.32;
+    letter-spacing: -0.02em;
+  }
+
+  @media (min-width: 720px) {
+    .sm-problem-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .sm-problem-turn {
+      padding: 26px 20px 30px;
+      font-size: 1.05rem;
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .sm-problem-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+}
+
+/* Product pages for the three ways to run Oppulence: web, desktop, voice. */
+@layer utilities {
+  .sm-platform-hero {
+    padding: clamp(48px, 8vw, 96px) 0 0;
+    max-width: 880px;
+  }
+
+  .sm-platform-eyebrow {
+    color: var(--sm-blue);
+    font-family: var(--font-marketing-mono), monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .sm-platform-hero h1 {
+    margin-top: 18px;
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    color: var(--sm-ink);
+  }
+
+  .sm-platform-lede {
+    margin-top: 22px;
+    max-width: 680px;
+    color: var(--sm-muted);
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  .sm-platform-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 34px;
+  }
+
+  .sm-platform-summary {
+    margin-top: 20px;
+    color: var(--sm-muted);
+    font-size: 14px;
+  }
+
+  .sm-platform-shot {
+    position: relative;
+    margin-top: 56px;
+    overflow: hidden;
+    border: 1px solid var(--sm-line);
+    background: var(--sm-soft);
+  }
+
+  .sm-platform-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .sm-platform-section {
+    display: grid;
+    gap: 32px;
+    align-items: center;
+    border-top: 1px solid var(--sm-line);
+    padding: clamp(48px, 7vw, 88px) 0;
+  }
+
+  .sm-platform-index {
+    color: var(--sm-muted);
+    font-family: var(--font-marketing-mono), monospace;
+    font-size: 12px;
+  }
+
+  .sm-platform-section-copy h2 {
+    margin-top: 14px;
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    color: var(--sm-ink);
+  }
+
+  .sm-platform-section-copy > p {
+    margin-top: 14px;
+    max-width: 520px;
+    color: var(--sm-muted);
+    font-size: 16px;
+    line-height: 1.62;
+  }
+
+  .sm-platform-section-copy ul {
+    display: grid;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .sm-platform-section-copy li {
+    position: relative;
+    padding-left: 20px;
+    color: var(--sm-ink);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .sm-platform-section-copy li::before {
+    content: "";
+    position: absolute;
+    top: 0.68em;
+    left: 0;
+    width: 8px;
+    height: 1px;
+    background: var(--sm-blue);
+  }
+
+  .sm-platform-section-shot {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--sm-line);
+    background: var(--sm-soft);
+  }
+
+  .sm-platform-section-shot img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .sm-platform-specs {
+    border-top: 1px solid var(--sm-line);
+    padding: clamp(48px, 7vw, 80px) 0;
+  }
+
+  .sm-platform-specs h2,
+  .sm-platform-siblings h2 {
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+    color: var(--sm-ink);
+  }
+
+  .sm-platform-specs dl {
+    display: grid;
+    gap: 1px;
+    margin-top: 32px;
+    background: var(--sm-line);
+    border: 1px solid var(--sm-line);
+  }
+
+  .sm-platform-specs dl > div {
+    display: grid;
+    gap: 6px;
+    background: #ffffff;
+    padding: 22px 24px;
+  }
+
+  .sm-platform-specs dt {
+    color: var(--sm-muted);
+    font-family: var(--font-marketing-mono), monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .sm-platform-specs dd {
+    margin: 0;
+    color: var(--sm-ink);
+    font-size: 15.5px;
+    line-height: 1.55;
+  }
+
+  .sm-platform-siblings {
+    border-top: 1px solid var(--sm-line);
+    padding: clamp(48px, 7vw, 80px) 0;
+  }
+
+  .sm-platform-siblings > div {
+    display: grid;
+    gap: 16px;
+    margin-top: 30px;
+  }
+
+  .sm-platform-siblings a {
+    display: grid;
+    gap: 8px;
+    border: 1px solid var(--sm-line);
+    padding: 26px 28px;
+    text-decoration: none;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .sm-platform-siblings a:hover {
+    border-color: var(--sm-blue);
+    background: var(--sm-soft);
+  }
+
+  .sm-platform-siblings strong {
+    font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
+    font-size: 19px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--sm-ink);
+  }
+
+  .sm-platform-siblings span {
+    color: var(--sm-muted);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .sm-platform-siblings small {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--sm-blue);
+    font-size: 13.5px;
+  }
+
+  .sm-platform-siblings small svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  @media (min-width: 900px) {
+    .sm-platform-section {
+      grid-template-columns: 1fr 1.1fr;
+      gap: 64px;
+    }
+
+    .sm-platform-section:nth-child(even) .sm-platform-section-copy {
+      order: 2;
+    }
+
+    .sm-platform-specs dl {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .sm-platform-siblings > div {
+      grid-template-columns: 1fr 1fr;
     }
   }
 }

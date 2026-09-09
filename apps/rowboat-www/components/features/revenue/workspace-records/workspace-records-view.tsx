@@ -874,7 +874,7 @@ function NoteDialog({
             htmlFor="note-relationship"
             className="flex min-w-0 items-center gap-2 text-[12px] text-white/80"
           >
-            <Note className="size-3.5 text-white/45" />
+            <Note className="size-3.5 text-white/50" />
             <select
               id="note-relationship"
               aria-label="Linked company"
@@ -890,7 +890,7 @@ function NoteDialog({
               ))}
             </select>
           </label>
-          <div className="flex items-center gap-2 text-white/45">
+          <div className="flex items-center gap-2 text-white/50">
             <button
               aria-label="Minimize note"
               type="button"
@@ -960,7 +960,7 @@ function NoteDialog({
           </div>
           <input
             aria-label="Note title"
-            className="mt-8 w-full bg-transparent text-[32px] font-semibold leading-tight tracking-[-0.03em] text-white/85 outline-none placeholder:text-white/42"
+            className="mt-8 w-full bg-transparent text-[32px] font-semibold leading-tight tracking-[-0.03em] text-white/85 outline-none placeholder:text-white/55"
             placeholder="Untitled note"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
@@ -1000,7 +1000,7 @@ function NoteDialog({
                   <p className="text-[11px] font-medium uppercase tracking-wide text-cyan-300/80">
                     Live account context
                   </p>
-                  <p className="mt-0.5 text-[11px] text-white/35">
+                  <p className="mt-0.5 text-[11px] text-white/55">
                     Auto-refreshes every 30 seconds without changing your writing
                   </p>
                 </div>
@@ -1032,13 +1032,13 @@ function NoteDialog({
                     ],
                   ].map(([label, value]) => (
                     <div className="min-w-0 bg-[#17181a] p-3" key={label}>
-                      <p className="text-[10px] uppercase tracking-wide text-white/35">{label}</p>
+                      <p className="text-[10px] uppercase tracking-wide text-white/55">{label}</p>
                       <p className="mt-1 truncate capitalize text-white/70">{value}</p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="px-3 py-4 text-[12px] text-white/35">
+                <p className="px-3 py-4 text-[12px] text-white/55">
                   Loading current account state…
                 </p>
               )}
@@ -1083,20 +1083,20 @@ function NoteDialog({
           <Plate editor={editor} onChange={({ value }) => setContent(value)}>
             <PlateContent
               aria-label="Note content"
-              className="mt-6 min-h-24 text-[14px] leading-6 text-white/80 outline-none [&_.slate-blockquote]:my-3 [&_.slate-blockquote]:border-l-2 [&_.slate-blockquote]:border-cyan-400/40 [&_.slate-blockquote]:pl-3 [&_.slate-blockquote]:text-white/60 [&_.slate-h2]:my-3 [&_.slate-h2]:text-xl [&_.slate-h2]:font-semibold [&_[data-slate-placeholder]]:text-white/38"
+              className="mt-6 min-h-24 text-[14px] leading-6 text-white/80 outline-none [&_.slate-blockquote]:my-3 [&_.slate-blockquote]:border-l-2 [&_.slate-blockquote]:border-cyan-400/40 [&_.slate-blockquote]:pl-3 [&_.slate-blockquote]:text-white/60 [&_.slate-h2]:my-3 [&_.slate-h2]:text-xl [&_.slate-h2]:font-semibold [&_[data-slate-placeholder]]:text-white/55"
               placeholder="Start typing your note"
             />
           </Plate>
           {bodyEmpty ? (
             <div className="mt-6 space-y-7 text-[13px] text-white/55">
               <div>
-                <p className="text-[10px] font-medium uppercase tracking-wide text-white/45">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-white/50">
                   Favorite templates
                 </p>
                 <p className="mt-2">Templates that you favorite will appear here</p>
               </div>
               <div className="space-y-3">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-white/45">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-white/50">
                   Actions
                 </p>
                 <button type="button" className="flex items-center gap-2 hover:text-white">
@@ -1110,7 +1110,7 @@ function NoteDialog({
           ) : null}
           {saveState !== "saved" ? (
             <span
-              className={`absolute right-5 bottom-3 text-[11px] ${saveState === "error" ? "text-red-400" : "text-white/35"}`}
+              className={`absolute right-5 bottom-3 text-[11px] ${saveState === "error" ? "text-red-400" : "text-white/55"}`}
             >
               {saveState === "saving" ? "Saving…" : "Save failed"}
             </span>
@@ -1371,7 +1371,7 @@ function TaskDialog({
           <button
             aria-label="Close task"
             type="button"
-            className="flex size-7 items-center justify-center text-white/45 hover:bg-white/5 hover:text-white"
+            className="flex size-7 items-center justify-center text-white/50 hover:bg-white/5 hover:text-white"
             onClick={onClose}
           >
             <X className="size-4" />
@@ -1379,7 +1379,7 @@ function TaskDialog({
         </div>
         <textarea
           aria-label="Task title"
-          className="min-h-[50px] w-full resize-none bg-transparent px-5 py-4 text-[14px] text-white/85 outline-none placeholder:text-white/38"
+          className="min-h-[50px] w-full resize-none bg-transparent px-5 py-4 text-[14px] text-white/85 outline-none placeholder:text-white/55"
           placeholder="Schedule a demo with @Contact"
           rows={1}
           value={title}
@@ -1466,7 +1466,7 @@ function TaskDialog({
               onClick={onClose}
             >
               Cancel{" "}
-              <kbd className="border border-white/10 px-1 text-[10px] text-white/35">ESC</kbd>
+              <kbd className="border border-white/10 px-1 text-[10px] text-white/55">ESC</kbd>
             </button>
             <button
               type="button"

@@ -48,6 +48,22 @@ func TestLoadWorkerConnectorRegistryAppliesEmergencyDisableBeforeEntitlementRequ
 	}
 }
 
+func TestDefaultProductionRegistryKeepsNativeHubSpotWithoutExternalEntitlements(t *testing.T) {
+	registry, err := loadWorkerConnectorRegistry(appconfig.Config{
+		Environment: "production",
+		ConnectorEmergencyDisabled: []string{
+			"canvas", "corinthian", "cadence", "conduit", "eigen", "wispr",
+			"github", "linear", "notion", "stripe",
+		},
+	})
+	if err != nil {
+		t.Fatalf("load registry: %v", err)
+	}
+	if !registry.Enabled("hubspot") {
+		t.Fatal("native HubSpot connector must remain enabled")
+	}
+}
+
 func TestLoadWorkerConnectorRegistryConfiguresAuthoritativeTransport(t *testing.T) {
 	registry, err := loadWorkerConnectorRegistry(appconfig.Config{
 		Environment:                      "production",

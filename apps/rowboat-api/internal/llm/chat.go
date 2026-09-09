@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/quota"
@@ -108,6 +109,10 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 	if err != nil {
 		return ChatResult{}, err
 	}
+	// Wire names are sanitized (see sanitizeToolName); translate the model's
+	// choice back to the runtime's real tool name before returning, or the
+	// dispatcher would look up a tool that does not exist.
+	wireToReal := toolNameMap(req.Tools)
 
 	estimate := h.prices.LLMEstimate(req.Model, inputBytes/4, req.MaxTokens)
 	charge, err := h.gate.Reserve(ctx, req.Op, estimate, req.RequestID, h.spendLimits)
@@ -147,7 +152,10 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 	}
 	if resp.StatusCode >= http.StatusBadRequest {
 		h.refund(ctx, charge)
-		return ChatResult{}, fmt.Errorf("llm upstream returned status %d", resp.StatusCode)
+		// The body carries the only actionable detail (which field the provider
+		// rejected). Dropping it turned a one-line schema bug into a blind hunt,
+		// so include a bounded prefix; it is provider error text, not user data.
+		return ChatResult{}, fmt.Errorf("llm upstream returned status %d: %s", resp.StatusCode, truncateForError(raw))
 	}
 
 	var parsed struct {
@@ -169,9 +177,13 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 
 	msg := ChatMessage{Role: "assistant", Content: choice.Message.Content}
 	for _, tc := range choice.Message.ToolCalls {
+		name := tc.Function.Name
+		if real, ok := wireToReal[name]; ok {
+			name = real
+		}
 		msg.ToolCalls = append(msg.ToolCalls, ToolCall{
 			ID:        tc.ID,
-			Name:      tc.Function.Name,
+			Name:      name,
 			Arguments: json.RawMessage(tc.Function.Arguments),
 		})
 	}
@@ -205,6 +217,10 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 // (which performs no balance check) drive the ledger negative (see
 // estimateInputTokens in estimate.go, the proxy-path twin of this rule).
 func marshalChatBody(upstreamModel string, req ChatRequest) (body []byte, inputBytes int, err error) {
+	realToWire := make(map[string]string, len(req.Tools))
+	for wire, real := range toolNameMap(req.Tools) {
+		realToWire[real] = wire
+	}
 	messages := make([]wireMessage, 0, len(req.Messages))
 	for _, m := range req.Messages {
 		wm := wireMessage{Role: m.Role, Content: m.Content, ToolCallID: m.ToolCallID}
@@ -213,6 +229,12 @@ func marshalChatBody(upstreamModel string, req ChatRequest) (body []byte, inputB
 			wtc.ID = tc.ID
 			wtc.Type = "function"
 			wtc.Function.Name = tc.Name
+			if wire, ok := realToWire[tc.Name]; ok {
+				// Assistant turns replayed from history must name tools the
+				// same way the advertised schemas do, or Anthropic rejects the
+				// whole conversation.
+				wtc.Function.Name = wire
+			}
 			wtc.Function.Arguments = string(tc.Arguments)
 			wm.ToolCalls = append(wm.ToolCalls, wtc)
 		}
@@ -238,10 +260,14 @@ func marshalChatBody(upstreamModel string, req ChatRequest) (body []byte, inputB
 			if len(params) == 0 {
 				params = json.RawMessage(`{"type":"object","properties":{}}`)
 			}
+			name := t.Name
+			if wire, ok := realToWire[t.Name]; ok {
+				name = wire
+			}
 			tools = append(tools, map[string]any{
 				"type": "function",
 				"function": map[string]any{
-					"name":        t.Name,
+					"name":        name,
 					"description": t.Description,
 					"parameters":  params,
 				},
@@ -260,4 +286,71 @@ func marshalChatBody(upstreamModel string, req ChatRequest) (body []byte, inputB
 		return nil, 0, err
 	}
 	return body, inputBytes, nil
+}
+
+// Tool names travel to the model inside a provider-validated schema. Anthropic
+// (and OpenAI) require `^[a-zA-Z0-9_-]{1,128}$`, but this codebase names tools
+// with dots — "artifact.write", "connector.read.gmail" — because dots are the
+// runtime's own namespace separator. Sending them raw made every tool-carrying
+// agent call fail upstream with a 400 that named no tool, so the dotted names
+// are rewritten here at the wire boundary and mapped back on the way out. The
+// runtime keeps its dotted names; only the provider sees the flattened ones.
+
+// sanitizeToolName maps a tool name onto the provider-legal character set.
+
+// truncateForError bounds an upstream error body so it can be logged and
+// surfaced on a run record without pasting an unbounded provider response.
+func truncateForError(raw []byte) string {
+	const max = 512
+	s := strings.TrimSpace(string(raw))
+	if len(s) > max {
+		return s[:max] + "…"
+	}
+	return s
+}
+
+func sanitizeToolName(name string) string {
+	var b strings.Builder
+	b.Grow(len(name))
+	for _, r := range name {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '_', r == '-':
+			b.WriteRune(r)
+		default:
+			b.WriteByte('_')
+		}
+	}
+	out := b.String()
+	if len(out) > 128 {
+		out = out[:128]
+	}
+	return out
+}
+
+// toolNameMap returns wire name -> real name for the advertised tools. Two
+// distinct tools can sanitize to the same string ("a.b" and "a_b"); a numeric
+// suffix keeps them distinguishable so the response can always be mapped back
+// to exactly one real tool.
+func toolNameMap(tools []ToolDef) map[string]string {
+	if len(tools) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(tools))
+	for _, t := range tools {
+		wire := sanitizeToolName(t.Name)
+		if wire == "" {
+			wire = "tool"
+		}
+		if existing, taken := out[wire]; taken && existing != t.Name {
+			for i := 2; ; i++ {
+				candidate := fmt.Sprintf("%s_%d", wire, i)
+				if _, dup := out[candidate]; !dup {
+					wire = candidate
+					break
+				}
+			}
+		}
+		out[wire] = t.Name
+	}
+	return out
 }

@@ -874,7 +874,7 @@ function ChatInputInner({
                 <button
                   type="button"
                   onClick={() => removeAttachment(attachment.id)}
-                  className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-md border border-border/70 bg-background/70 text-muted-foreground opacity-0 transition-[opacity,color] duration-150 hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
+                  className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-none border border-border/70 bg-background/70 text-muted-foreground opacity-0 transition-[opacity,color] duration-150 hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
                   aria-label={`Remove ${attachmentName}`}
                 >
                   <X className="size-3.5" />

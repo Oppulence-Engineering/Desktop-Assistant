@@ -40,7 +40,7 @@ function IntegrationBrandIcon({
         src={brandIcon}
         alt=""
         aria-hidden="true"
-        className="size-9 shrink-0 rounded-lg object-cover"
+        className="size-9 shrink-0 rounded-none object-cover"
       />
     );
   }
@@ -48,7 +48,7 @@ function IntegrationBrandIcon({
   return (
     <span
       aria-label={`${displayName} integration`}
-      className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-sky-300/[0.09] text-sky-200"
+      className="flex size-9 shrink-0 items-center justify-center rounded-none bg-sky-300/[0.09] text-sky-200"
     >
       <Plug className="size-4" />
     </span>
@@ -89,13 +89,13 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
             <span className="text-[11px] text-white/42">Email + calendar</span>
           </div>
 
-          <div className="rounded-xl border border-red-300/14 bg-gradient-to-br from-red-400/[0.08] to-white/[0.035] p-3.5 shadow-[0_14px_36px_rgba(0,0,0,0.16)]">
+          <div className="rounded-none border border-red-300/14 bg-gradient-to-br from-red-400/[0.08] to-white/[0.035] p-3.5 shadow-[0_14px_36px_rgba(0,0,0,0.16)]">
             <div className="flex items-start gap-3">
               <img
                 src={GOOGLE_BRAND_ICON}
                 alt=""
                 aria-hidden="true"
-                className="size-10 shrink-0 rounded-lg object-cover"
+                className="size-10 shrink-0 rounded-none object-cover"
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-3">
@@ -114,7 +114,7 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
                   type="button"
                   onClick={() => state.handleConnect("google")}
                   disabled={googleState.isConnecting || googleState.isConnected}
-                  className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/12 bg-white/[0.075] px-3 text-sm font-medium text-white/88 transition-colors hover:border-white/24 hover:bg-white/[0.11] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35 disabled:pointer-events-none disabled:opacity-65"
+                  className="mt-3 flex h-9 w-full items-center justify-center gap-2 rounded-none border border-white/12 bg-white/[0.075] px-3 text-sm font-medium text-white/88 transition-colors hover:border-white/24 hover:bg-white/[0.11] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35 disabled:pointer-events-none disabled:opacity-65"
                 >
                   {googleState.isConnecting ? (
                     <>
@@ -138,8 +138,8 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
           </div>
         </section>
 
-        <div className="flex items-center gap-3 rounded-xl border border-emerald-300/16 bg-emerald-300/[0.055] p-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-emerald-300/10 text-emerald-300">
+        <div className="flex items-center gap-3 rounded-none border border-emerald-300/16 bg-emerald-300/[0.055] p-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-none bg-emerald-300/10 text-emerald-300">
             <ShieldCheck className="size-[18px]" />
           </span>
           <div className="min-w-0 flex-1">
@@ -167,7 +167,7 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
             <span className="text-[11px] text-white/42">Add anytime</span>
           </div>
 
-          <div className="divide-y divide-white/8 overflow-hidden rounded-xl border border-white/10 bg-white/[0.035]">
+          <div className="divide-y divide-white/8 overflow-hidden rounded-none border border-white/10 bg-white/[0.035]">
             {state.integrationsLoading ? (
               <div className="flex h-20 items-center justify-center gap-2 text-xs text-white/42">
                 <Loader2 className="size-4 animate-spin" />
@@ -198,7 +198,7 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
                       aria-label={`Connect ${integration.displayName}`}
                       onClick={() => state.handleConnectIntegration(integration)}
                       disabled={integration.connected || isBusy}
-                      className="flex h-8 min-w-[82px] items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.055] px-2.5 text-xs font-medium text-white/74 transition-colors hover:border-white/20 hover:bg-white/[0.09] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35 disabled:pointer-events-none disabled:opacity-60"
+                      className="flex h-8 min-w-[82px] items-center justify-center gap-1.5 rounded-none border border-white/10 bg-white/[0.055] px-2.5 text-xs font-medium text-white/74 transition-colors hover:border-white/20 hover:bg-white/[0.09] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35 disabled:pointer-events-none disabled:opacity-60"
                     >
                       {isBusy ? (
                         <>
@@ -228,7 +228,7 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
           <button
             type="button"
             onClick={state.handleBack}
-            className="flex h-11 items-center gap-2 rounded-lg border border-white/10 px-3 text-sm font-medium text-white/58 transition-colors hover:border-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35"
+            className="flex h-11 items-center gap-2 rounded-none border border-white/10 px-3 text-sm font-medium text-white/58 transition-colors hover:border-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35"
           >
             <ArrowLeft className="size-4" />
             Back
@@ -236,7 +236,7 @@ export function ConnectAccountsStep({ state }: ConnectAccountsStepProps) {
           <button
             type="button"
             onClick={state.handleNext}
-            className="flex h-11 items-center justify-center gap-2 rounded-lg bg-white px-3 text-sm font-semibold text-black shadow-[0_8px_24px_rgba(255,255,255,0.08)] transition-all hover:-translate-y-px hover:bg-white/92 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+            className="flex h-11 items-center justify-center gap-2 rounded-none bg-white px-3 text-sm font-semibold text-black shadow-[0_8px_24px_rgba(255,255,255,0.08)] transition-all hover:-translate-y-px hover:bg-white/92 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
           >
             Continue
             <ArrowRight className="size-4" />

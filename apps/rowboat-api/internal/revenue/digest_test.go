@@ -2,6 +2,7 @@ package revenue
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -70,6 +71,19 @@ func TestDigestEmpty(t *testing.T) {
 	}
 	if !dg.Empty() {
 		t.Fatal("a queue with no open actions must produce an empty digest")
+	}
+	// A nil Top marshals to JSON null, and the dashboard reads digest.top.length
+	// directly, so a null there crashes the Impact view rather than rendering an
+	// empty state.
+	if dg.Top == nil {
+		t.Fatal("Top must be non-nil so it marshals as [] rather than null")
+	}
+	encoded, err := json.Marshal(dg)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if !strings.Contains(string(encoded), `"top":[]`) {
+		t.Fatalf("empty digest must encode top as [], got %s", encoded)
 	}
 }
 

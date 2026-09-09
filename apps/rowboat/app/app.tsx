@@ -23,7 +23,7 @@ export function App() {
       {/* Main content box */}
       <div className="flex-1 flex items-center justify-center">
         <div className="bg-white/70 backdrop-blur-sm rounded-none p-10 flex flex-col items-center gap-8 shadow-lg">
-          <Image src={logo} alt="RowBoat Logo" height={40} />
+          <Image src={logo} alt="Oppulence" height={40} />
           {(isLoading || !user) && <Spinner size="sm" />}
           {user && (
             <div className="flex items-center gap-2">

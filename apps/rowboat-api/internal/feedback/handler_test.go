@@ -68,6 +68,11 @@ func fakePlain(t *testing.T, calls *[]plainRequest) *httptest.Server {
 
 func newHandler(t *testing.T, baseURL, apiKey string, labels map[string]string) (*feedback.Handler, *ent.User, context.Context) {
 	t.Helper()
+	return newHandlerWithAlways(t, baseURL, apiKey, labels, nil)
+}
+
+func newHandlerWithAlways(t *testing.T, baseURL, apiKey string, labels map[string]string, always []string) (*feedback.Handler, *ent.User, context.Context) {
+	t.Helper()
 	client := testClient(t)
 	ctx := context.Background()
 	u := client.User.Create().SetEmail("a@x.co").SetWorkosUserID("user_1").SaveX(ctx)
@@ -75,8 +80,9 @@ func newHandler(t *testing.T, baseURL, apiKey string, labels map[string]string) 
 	client.Subscription.Create().SetUser(u).SetSanctionedCredits(10000).SaveX(ctx)
 	sec := secrets.NewFromConfig(appconfig.Config{PlainAPIKey: apiKey})
 	h := feedback.New(sec, client, feedback.Config{
-		BaseURL:      baseURL,
-		LabelTypeIDs: labels,
+		BaseURL:            baseURL,
+		LabelTypeIDs:       labels,
+		AlwaysLabelTypeIDs: always,
 	}, zap.NewNop())
 	return h, u, ctx
 }
@@ -228,6 +234,73 @@ func TestSubmitPlainMutationErrorIs502(t *testing.T) {
 	rec := submit(ctx, t, h, u, `{"category":"bug","message":"hi"}`)
 	if rec.Code != http.StatusBadGateway {
 		t.Fatalf("want 502, got %d: %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestSubmitAlwaysAppliesBrandLabel(t *testing.T) {
+	var calls []plainRequest
+	srv := fakePlain(t, &calls)
+	defer srv.Close()
+
+	// The Plain workspace is shared across brands, so the brand label must be
+	// on every thread, alongside the category label.
+	h, u, ctx := newHandlerWithAlways(t, srv.URL, "plain-key",
+		map[string]string{"bug": "lt_bug"}, []string{"lt_brand"})
+	rec := submit(ctx, t, h, u, `{"category":"bug","message":"it broke"}`)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	thread := calls[1].variables["input"].(map[string]any)
+	labels, _ := thread["labelTypeIds"].([]any)
+	if len(labels) != 2 || labels[0] != "lt_brand" || labels[1] != "lt_bug" {
+		t.Errorf("labelTypeIds = %v, want [lt_brand lt_bug]", thread["labelTypeIds"])
+	}
+}
+
+func TestSubmitAppliesBrandLabelWhenCategoryUnmapped(t *testing.T) {
+	var calls []plainRequest
+	srv := fakePlain(t, &calls)
+	defer srv.Close()
+
+	h, u, ctx := newHandlerWithAlways(t, srv.URL, "plain-key", nil, []string{"lt_brand"})
+	rec := submit(ctx, t, h, u, `{"category":"other","message":"hello"}`)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	thread := calls[1].variables["input"].(map[string]any)
+	labels, _ := thread["labelTypeIds"].([]any)
+	if len(labels) != 1 || labels[0] != "lt_brand" {
+		t.Errorf("labelTypeIds = %v, want [lt_brand]", thread["labelTypeIds"])
+	}
+}
+
+func TestSubmitDeduplicatesBrandAndCategoryLabel(t *testing.T) {
+	var calls []plainRequest
+	srv := fakePlain(t, &calls)
+	defer srv.Close()
+
+	h, u, ctx := newHandlerWithAlways(t, srv.URL, "plain-key",
+		map[string]string{"bug": "lt_same"}, []string{"lt_same"})
+	rec := submit(ctx, t, h, u, `{"category":"bug","message":"dupe"}`)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	thread := calls[1].variables["input"].(map[string]any)
+	labels, _ := thread["labelTypeIds"].([]any)
+	if len(labels) != 1 {
+		t.Errorf("labelTypeIds = %v, want a single deduplicated id", thread["labelTypeIds"])
+	}
+}
+
+func TestParseLabelList(t *testing.T) {
+	if got := feedback.ParseLabelList(" lt_a , lt_b ,, "); len(got) != 2 || got[0] != "lt_a" || got[1] != "lt_b" {
+		t.Errorf("ParseLabelList = %v", got)
+	}
+	if got := feedback.ParseLabelList("  "); len(got) != 0 {
+		t.Errorf("empty should yield no ids, got %v", got)
 	}
 }
 

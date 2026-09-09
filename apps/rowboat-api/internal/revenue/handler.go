@@ -511,7 +511,7 @@ func commitmentEventToDTO(commitmentID uuid.UUID, event *ent.CommitmentEvent) co
 		SourceEventID: event.SourceEventID, Version: event.Version,
 		Kind: event.Kind, ActorType: event.ActorType, ActorRef: event.ActorRef,
 		OccurredAt: event.OccurredAt, SourceObservationID: event.SourceObservationID,
-		EvidenceRefs:               event.EvidenceRefs,
+		EvidenceRefs:               jsonSlice(event.EvidenceRefs),
 		OwnerParticipantRef:        stringValue("ownerParticipantRef"),
 		CounterpartyParticipantRef: stringValue("counterpartyParticipantRef"),
 		BeneficiaryParticipantRef:  stringValue("beneficiaryParticipantRef"),
@@ -544,7 +544,7 @@ func commitmentDependencyToDTO(relationshipID uuid.UUID, dependency *ent.Commitm
 	return commitmentDependencyDTO{
 		ID: dependency.ID.String(), RelationshipID: relationshipID.String(),
 		FromCommitmentID: from.ID.String(), ToCommitmentID: to.ID.String(),
-		Kind: dependency.Kind, EvidenceRefs: dependency.EvidenceRefs, CreatedAt: dependency.CreatedAt,
+		Kind: dependency.Kind, EvidenceRefs: jsonSlice(dependency.EvidenceRefs), CreatedAt: dependency.CreatedAt,
 	}, nil
 }
 
@@ -681,7 +681,7 @@ func relationshipAttentionToDTO(item *ent.RelationshipAttentionItem) (relationsh
 	return relationshipAttentionDTO{
 		ID: item.ID.String(), Version: item.Version, RelationshipID: rel.ID.String(), RelationshipName: rel.DisplayName,
 		ReasonCode: item.ReasonCode, Explanation: item.Explanation, TriggeringObjectRef: item.TriggeringObjectRef,
-		EvidenceRefs: item.EvidenceRefs, UrgencyBand: item.UrgencyBand, RankScore: item.RankScore, RankFactors: item.RankFactorsJSON,
+		EvidenceRefs: jsonSlice(item.EvidenceRefs), UrgencyBand: item.UrgencyBand, RankScore: item.RankScore, RankFactors: item.RankFactorsJSON,
 		SourceRequirements: item.SourceRequirements, RecommendationID: item.RecommendationID,
 		RecommendationRevision: item.RecommendationRevision, OwnerID: item.OwnerID, Status: item.Status,
 		StateReason: item.StateReason, SnoozedUntil: item.SnoozedUntil, ExpiresAt: item.ExpiresAt,
@@ -710,7 +710,7 @@ func identityCandidateToDTO(candidate *ent.RelationshipIdentityCandidate) (ident
 		Version: candidate.Version, ProposedRelationship: relationshipToDTO(proposed), ExistingRelationship: relationshipToDTO(existing),
 		AnchorKind: candidate.AnchorKind, AnchorProvider: candidate.AnchorProvider, AnchorPreview: candidate.AnchorPreview,
 		MatchingAnchors: candidate.MatchingAnchors, ConflictingAnchors: candidate.ConflictingAnchors,
-		EvidenceRefs: candidate.EvidenceRefs, EvidenceCount: candidate.EvidenceCount,
+		EvidenceRefs: jsonSlice(candidate.EvidenceRefs), EvidenceCount: candidate.EvidenceCount,
 		EvidenceFrom: candidate.EvidenceFrom, EvidenceTo: candidate.EvidenceTo, Impact: impact,
 		RecommendedDecision: candidate.RecommendedDecision, RecommendationConfidence: candidate.Confidence,
 		Decision: candidate.Decision, DecisionReason: candidate.DecisionReason,
@@ -1317,6 +1317,16 @@ type impactDTO struct {
 	RiskReasons           []RiskStat     `json:"riskReasons"`
 }
 
+// jsonSlice returns a non-nil slice so the field marshals as [] rather than
+// null. Clients read .length straight off these arrays, and a null there is a
+// runtime crash rather than an empty state.
+func jsonSlice[T any](in []T) []T {
+	if in == nil {
+		return []T{}
+	}
+	return in
+}
+
 func ratio(num, den int) *float64 {
 	if den <= 0 {
 		return nil
@@ -1339,20 +1349,21 @@ func (h *Handler) Impact(w http.ResponseWriter, r *http.Request) {
 	replied := imp.OutcomeCount("replied")
 	meetings := imp.OutcomeCount("meeting_booked")
 	dto := impactDTO{
-		Surfaced:              imp.Surfaced,
-		Open:                  imp.Open,
-		Handled:               imp.Handled,
-		Snoozed:               imp.Snoozed,
-		Dismissed:             imp.Dismissed,
-		Approved:              imp.Approved,
-		Executed:              imp.Executed,
-		Replied:               replied,
-		Meetings:              meetings,
-		Won:                   imp.OutcomeCount("won"),
-		Lost:                  imp.OutcomeCount("lost"),
-		ReplyRate:             ratio(replied, imp.Executed),
-		MeetingRate:           ratio(meetings, imp.Executed),
-		Outcomes:              imp.Outcomes,
+		Surfaced:    imp.Surfaced,
+		Open:        imp.Open,
+		Handled:     imp.Handled,
+		Snoozed:     imp.Snoozed,
+		Dismissed:   imp.Dismissed,
+		Approved:    imp.Approved,
+		Executed:    imp.Executed,
+		Replied:     replied,
+		Meetings:    meetings,
+		Won:         imp.OutcomeCount("won"),
+		Lost:        imp.OutcomeCount("lost"),
+		ReplyRate:   ratio(replied, imp.Executed),
+		MeetingRate: ratio(meetings, imp.Executed),
+		Outcomes:    imp.Outcomes,
+		// Slices are normalised below so they marshal as [] rather than null.
 		ByDetector:            imp.Detectors,
 		Relationships:         imp.Relationships,
 		AtRiskRelationships:   imp.AtRiskRelationships,
@@ -1363,6 +1374,11 @@ func (h *Handler) Impact(w http.ResponseWriter, r *http.Request) {
 		OverdueByThem:         imp.OverdueByThem,
 		LongestOverdueDays:    imp.LongestOverdueDays,
 		RiskReasons:           imp.RiskReasons,
+	}
+	dto.ByDetector = jsonSlice(dto.ByDetector)
+	dto.RiskReasons = jsonSlice(dto.RiskReasons)
+	if dto.Outcomes == nil {
+		dto.Outcomes = map[string]int{}
 	}
 	httpx.WriteJSON(w, http.StatusOK, dto)
 }

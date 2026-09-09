@@ -42,7 +42,7 @@ export function AutoPermissionDecision({
   return (
     <div
       className={cn(
-        "not-prose mb-4 w-full rounded-md border",
+        "not-prose mb-4 w-full rounded-none border",
         allowed
           ? "border-green-500/50 bg-green-50/80 dark:border-green-500/35 dark:bg-green-950/30"
           : "border-[#fa2525]/60 bg-[#fa2525]/15 dark:border-[#fa2525]/50 dark:bg-[#fa2525]/20",
@@ -71,13 +71,13 @@ export function AutoPermissionDecision({
           </div>
         </div>
         {command && (
-          <div className="rounded-md border bg-background/50 p-3">
+          <div className="rounded-none border bg-background/50 p-3">
             <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Command</p>
             <pre className="whitespace-pre-wrap break-all font-mono text-xs text-foreground">{command}</pre>
           </div>
         )}
         {filePermission && (
-          <div className="space-y-3 rounded-md border bg-background/50 p-3">
+          <div className="space-y-3 rounded-none border bg-background/50 p-3">
             <div>
               <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">Action</p>
               <p className="text-xs font-medium text-foreground">

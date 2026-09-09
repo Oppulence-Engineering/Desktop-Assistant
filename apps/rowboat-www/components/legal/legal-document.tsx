@@ -3,103 +3,147 @@ import Link from "next/link";
 import { CurrentYear } from "./current-year";
 
 /**
- * One legal section: a heading followed by body blocks. A string block is a
- * paragraph; a string[] block renders as a bullet list.
+ * A body block inside a legal section.
+ *
+ * - `string` renders a paragraph
+ * - `string[]` renders a bullet list
+ * - `{ term, text }[]` renders a definition-style list, used for the
+ *   "categories of data" and "your rights" lists that the templates rely on
+ * - `{ callout }` renders an emphasized box for the notices that have to stand
+ *   out (arbitration, jury-trial waiver, and similar)
  */
+export type LegalBlock = string | string[] | { term: string; text: string }[] | { callout: string };
+
 export type LegalSection = {
   heading: string;
-  body: (string | string[])[];
+  /** Optional short lead-in shown under the heading in muted text. */
+  summary?: string;
+  body: LegalBlock[];
 };
+
+function isTermList(block: LegalBlock): block is { term: string; text: string }[] {
+  return Array.isArray(block) && typeof block[0] === "object" && block[0] !== null;
+}
+
+function BlockContent({ block }: { block: LegalBlock }) {
+  if (typeof block === "string") {
+    return <p className="sm-legal-p">{block}</p>;
+  }
+
+  if (!Array.isArray(block)) {
+    return <p className="sm-legal-callout">{block.callout}</p>;
+  }
+
+  if (isTermList(block)) {
+    return (
+      <dl className="sm-legal-terms">
+        {block.map((item) => (
+          <div key={item.term}>
+            <dt>{item.term}</dt>
+            <dd>{item.text}</dd>
+          </div>
+        ))}
+      </dl>
+    );
+  }
+
+  return (
+    <ul className="sm-legal-list">
+      {(block as string[]).map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ul>
+  );
+}
 
 export function LegalDocument({
   title,
+  effective,
   lastUpdated,
   intro,
   sections,
-  otherDoc,
+  contactEmail,
+  related,
 }: {
   title: string;
+  /** Date the document takes effect, shown next to the title like the ToC. */
+  effective: string;
   lastUpdated: string;
   intro: string;
   sections: LegalSection[];
-  otherDoc: { label: string; href: string };
+  contactEmail: string;
+  related: { label: string; href: string }[];
 }) {
   return (
-    <div className="app-shell min-h-svh bg-background text-foreground">
-      <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-6">
-          <Link className="flex items-center gap-2.5" href="/">
-            <img alt="" className="size-5" src="/marketing/oppulence-icon.png" />
-            <span className="font-display text-base">Oppulence</span>
-          </Link>
-          <Link
-            className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-            href="/"
-          >
-            Back to home
-          </Link>
-        </div>
+    <div className="sm-site sm-legal">
+      <header className="sm-legal-header">
+        <Link className="sm-legal-lockup" href="/">
+          <img alt="" src="/marketing/oppulence-icon.png" />
+          <span>Oppulence</span>
+        </Link>
+        <span className="sm-legal-header-tag">Legal</span>
       </header>
 
-      <article className="mx-auto max-w-3xl px-6 py-14">
-        <p className="font-mono text-xs text-oppulence-orange">[legal]</p>
-        <h1 className="mt-2 font-display text-4xl">{title}</h1>
-        <p className="mt-3 font-mono text-xs text-muted-foreground">Last updated: {lastUpdated}</p>
-        <p className="mt-6 text-base leading-relaxed text-primary/80">{intro}</p>
+      <article className="sm-legal-body">
+        <h1>{title}</h1>
+        <p className="sm-legal-meta">
+          Effective {effective}
+          <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+        </p>
+        <p className="sm-legal-intro">{intro}</p>
 
-        <div className="mt-10 space-y-10">
-          {sections.map((section, index) => (
-            <section key={section.heading}>
-              <h2 className="text-lg font-medium text-foreground">
-                <span className="mr-2 font-mono text-sm text-muted-foreground">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                {section.heading}
-              </h2>
-              <div className="mt-3 space-y-3">
-                {section.body.map((block, i) =>
-                  Array.isArray(block) ? (
-                    <ul className="ml-1 space-y-2" key={i}>
-                      {block.map((item) => (
-                        <li
-                          className="flex gap-2.5 text-sm leading-relaxed text-primary/70"
-                          key={item}
-                        >
-                          <span className="mt-2 size-1 shrink-0 rounded-full bg-oppulence-orange" />
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm leading-relaxed text-primary/70" key={i}>
-                      {block}
-                    </p>
-                  ),
-                )}
-              </div>
-            </section>
+        {/* On-page index. Legal documents are long, and the templates assume a
+            reader who is looking for one specific section. The row count keeps
+            the two columns reading top-to-bottom, left-to-right. */}
+        <nav
+          aria-label="Contents"
+          className="sm-legal-index"
+          style={
+            {
+              "--sm-legal-index-rows": Math.ceil(sections.length / 2),
+            } as React.CSSProperties
+          }
+        >
+          {sections.map((section) => (
+            <a href={`#${slugify(section.heading)}`} key={section.heading}>
+              {section.heading}
+            </a>
           ))}
-        </div>
+        </nav>
+
+        {sections.map((section) => (
+          <section id={slugify(section.heading)} key={section.heading}>
+            <h2>{section.heading}</h2>
+            {section.summary ? <p className="sm-legal-summary">{section.summary}</p> : null}
+            {section.body.map((block, i) => (
+              <BlockContent block={block} key={i} />
+            ))}
+          </section>
+        ))}
+
+        <p className="sm-legal-updated">Last updated: {lastUpdated}</p>
       </article>
 
-      <footer className="border-t">
-        <div className="mx-auto flex max-w-3xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-muted-foreground sm:flex-row">
-          <span className="font-mono text-xs">
-            © <CurrentYear /> Oppulence
-          </span>
-          <div className="flex items-center gap-5">
-            <Link
-              className="underline-offset-4 hover:text-foreground hover:underline"
-              href={otherDoc.href}
-            >
-              {otherDoc.label}
+      <footer className="sm-legal-footer">
+        <span>
+          © <CurrentYear /> Playbook Media · Oppulence
+        </span>
+        <div>
+          {related.map((doc) => (
+            <Link href={doc.href} key={doc.href}>
+              {doc.label}
             </Link>
-            <Link className="underline-offset-4 hover:text-foreground hover:underline" href="/">
-              Home
-            </Link>
-          </div>
+          ))}
+          <Link href="/">Home</Link>
         </div>
       </footer>
     </div>
   );
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }

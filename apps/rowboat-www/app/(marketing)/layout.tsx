@@ -1,22 +1,19 @@
-import { DM_Mono, DM_Sans, Space_Grotesk } from "next/font/google";
+import { DM_Mono, Inter } from "next/font/google";
+
+import { SupportChat } from "@/components/features/support/support-chat";
 
 import { MarketingLayout } from "./marketing-components";
 
-const dmSans = DM_Sans({
+const inter = Inter({
   variable: "--font-marketing-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
 const dmMono = DM_Mono({
   variable: "--font-marketing-mono",
   weight: ["400", "500"],
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-marketing-display",
   subsets: ["latin"],
   display: "swap",
 });
@@ -29,8 +26,11 @@ export const viewport = {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`${dmSans.variable} ${dmMono.variable} ${spaceGrotesk.variable}`}>
+    <div className={`${inter.variable} ${dmMono.variable}`}>
       <MarketingLayout>{children}</MarketingLayout>
+      {/* The public site is dark-on-black, so the widget is pinned dark
+          rather than following the visitor's system preference. */}
+      <SupportChat theme="dark" />
     </div>
   );
 }

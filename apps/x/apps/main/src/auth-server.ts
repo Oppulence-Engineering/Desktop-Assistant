@@ -169,7 +169,6 @@ function renderOAuthPage(state: OAuthPageState): string {
           .brand__mark img {
             width: 20px;
             height: 20px;
-            filter: invert(1);
           }
 
           .hero__content {
@@ -325,7 +324,6 @@ function renderOAuthPage(state: OAuthPageState): string {
             width: 16px;
             height: 16px;
             flex: none;
-            filter: invert(1);
             opacity: 0.82;
           }
 

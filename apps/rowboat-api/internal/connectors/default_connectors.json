@@ -317,7 +317,7 @@
       "staging": "hubspot-api-staging",
       "production": "hubspot-api"
     },
-    "authoritativeEntitlementRequired": true,
+    "authoritativeEntitlementRequired": false,
     "nativeTools": [
       { "name": "connector.read.hubspot_search", "trustTier": "read" },
       { "name": "connector.write.hubspot_note", "trustTier": "act" },

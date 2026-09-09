@@ -189,9 +189,9 @@
 }
 
 .settings-workspace .rounded,
-.settings-workspace .rounded-md,
-.settings-workspace .rounded-lg,
-.settings-workspace .rounded-xl {
+.settings-workspace .rounded-none,
+.settings-workspace .rounded-none,
+.settings-workspace .rounded-none {
   border-radius: 8px;
 }
 
@@ -662,27 +662,25 @@
   gap: 8px;
 }
 
+/*
+ * The mark is square and fills its box. The previous rules framed a narrow
+ * 14x20 window onto an oversized, negatively-offset image to crop the old
+ * feather's tall silhouette; applied to the square four-tile mark that window
+ * sliced off the right-hand tiles.
+ */
 .oppulence-compact-lockup__mark {
   display: block;
   flex: 0 0 auto;
   height: 20px;
-  overflow: hidden;
   position: relative;
-  width: 14px;
+  width: 20px;
 }
 
 .oppulence-compact-lockup__mark-image {
   border-radius: 0;
-  height: 38px;
-  left: -13px;
+  height: 20px;
   max-width: none;
-  position: absolute;
-  top: -9px;
-  width: 38px;
-}
-
-.dark .oppulence-compact-lockup__mark-image {
-  filter: invert(1);
+  width: 20px;
 }
 
 .oppulence-compact-lockup__wordmark {
@@ -703,15 +701,13 @@
 }
 
 .oppulence-compact-lockup--desktop .oppulence-compact-lockup__mark {
-  height: 15px;
-  width: 11px;
+  height: 16px;
+  width: 16px;
 }
 
 .oppulence-compact-lockup--desktop .oppulence-compact-lockup__mark-image {
-  height: 29px;
-  left: -10px;
-  top: -7px;
-  width: 29px;
+  height: 16px;
+  width: 16px;
 }
 
 .oppulence-compact-lockup--desktop .oppulence-compact-lockup__wordmark {

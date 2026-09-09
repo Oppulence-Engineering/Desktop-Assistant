@@ -10,7 +10,9 @@ const flyWorkflow = readFileSync(
 
 describe("Fly.io deployment contract", () => {
   it("builds from the monorepo root and keeps authenticated traffic warm", () => {
-    expect(flyConfig).toContain('dockerfile = "apps/rowboat-www/Dockerfile"');
+    expect(flyConfig).toContain('dockerfile = "../../Dockerfile"');
+    expect(flyWorkflow).toContain("--local-only");
+    expect(flyWorkflow).not.toContain("--remote-only");
     expect(flyConfig).toContain('auto_stop_machines = "off"');
     expect(flyConfig).toContain("auto_start_machines = false");
   });
@@ -23,5 +25,11 @@ describe("Fly.io deployment contract", () => {
 
   it("preserves the two-instance availability floor", () => {
     expect(flyWorkflow).toContain('flyctl scale count 2 --app "${FLY_APP_NAME}" --yes');
+  });
+
+  it("deploys relevant main branch changes automatically", () => {
+    expect(flyWorkflow).toContain("push:");
+    expect(flyWorkflow).toContain("branches: [main]");
+    expect(flyWorkflow).toContain('      - "apps/rowboat-www/**"');
   });
 });

@@ -363,7 +363,7 @@ export function AgentsView({
                 {agents.map((agent) => (
                   <button
                     className={cn(
-                      "flex w-full items-start gap-2 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-muted/70",
+                      "flex w-full items-start gap-2 rounded-none px-3 py-2.5 text-left transition-colors hover:bg-muted/70",
                       selected?.slug === agent.slug && "bg-muted/70",
                     )}
                     key={agent.slug}
@@ -463,7 +463,7 @@ export function AgentsView({
                   <h3 className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
                     Instructions
                   </h3>
-                  <p className="mt-2 whitespace-pre-wrap rounded-xl border bg-muted/15 p-4 text-sm leading-6">
+                  <p className="mt-2 whitespace-pre-wrap rounded-none border bg-muted/15 p-4 text-sm leading-6">
                     {selected.instructions || "No additional instructions."}
                   </p>
                 </section>

@@ -9,3 +9,14 @@ paths = [
 regexes = [
   '''idem-hubspot-1''',
 ]
+
+[[allowlists]]
+description = "Generated GraphQL field-name tables contain no credential values"
+condition = "AND"
+regexTarget = "line"
+paths = [
+  '''^apps/rowboat-api/internal/gqlapi/generated\.go$''',
+]
+regexes = [
+  '''fieldsInOrder := \[\.\.\.\]string\{''',
+]

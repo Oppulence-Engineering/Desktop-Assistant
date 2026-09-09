@@ -23,14 +23,18 @@
           "email": "avery@acme.com",
           "role": "champion",
           "title": "VP Operations",
-          "externalRefs": ["hubspot:contact:acme-avery"]
+          "externalRefs": [
+            "hubspot:contact:acme-avery"
+          ]
         },
         {
           "displayName": "Morgan Lee",
           "email": "morgan@acme.com",
           "role": "decision_maker",
           "title": "CFO",
-          "externalRefs": ["hubspot:contact:acme-morgan"]
+          "externalRefs": [
+            "hubspot:contact:acme-morgan"
+          ]
         }
       ],
       "assertions": [
@@ -39,21 +43,24 @@
           "value": "evaluation",
           "sourceType": "source_fact",
           "confidence": 1,
-          "validFrom": "2026-07-18T15:00:00Z"
+          "validFrom": "2026-07-18T15:00:00Z",
+          "reason": "HubSpot moved the deal to evaluation after the pricing review on 18 Jul."
         },
         {
           "dimension": "engagement",
           "value": "declining",
           "sourceType": "deterministic",
           "confidence": 0.92,
-          "validFrom": "2026-07-25T16:00:00Z"
+          "validFrom": "2026-07-25T16:00:00Z",
+          "reason": "Replies dropped from every two days to none in the last nine days."
         },
         {
           "dimension": "sentiment",
           "value": "mixed",
           "sourceType": "ai_inference",
           "confidence": 0.84,
-          "validFrom": "2026-07-25T16:00:00Z"
+          "validFrom": "2026-07-25T16:00:00Z",
+          "reason": "Positive on price, hesitant on the security process, from the last two threads."
         },
         {
           "dimension": "health",
@@ -68,28 +75,32 @@
           "value": "A $40k evaluation is waiting on a security review after pricing approval.",
           "sourceType": "ai_inference",
           "confidence": 0.91,
-          "validFrom": "2026-07-25T16:00:00Z"
+          "validFrom": "2026-07-25T16:00:00Z",
+          "reason": "Derived from the pricing approval, the open security review, and nine days of silence."
         },
         {
           "dimension": "next_action",
           "value": "Ask Avery to confirm the security-review owner and offer two meeting times.",
           "sourceType": "ai_inference",
           "confidence": 0.93,
-          "validFrom": "2026-07-25T16:00:00Z"
+          "validFrom": "2026-07-25T16:00:00Z",
+          "reason": "Unblocking the review owner is the one step holding up a $40k evaluation."
         },
         {
           "dimension": "risk",
           "value": "Security review has no owner",
           "sourceType": "deterministic",
           "confidence": 0.97,
-          "validFrom": "2026-07-25T16:00:00Z"
+          "validFrom": "2026-07-25T16:00:00Z",
+          "reason": "The security review was requested on 22 Jul and nobody has been assigned."
         },
         {
           "dimension": "milestone",
           "value": "Pricing approved",
           "sourceType": "source_fact",
           "confidence": 1,
-          "validFrom": "2026-07-18T15:00:00Z"
+          "validFrom": "2026-07-18T15:00:00Z",
+          "reason": "Pricing was approved in the 18 Jul review call."
         }
       ]
     },
@@ -167,7 +178,9 @@
           "email": "samira@betacorp.com",
           "role": "owner",
           "title": "Controller",
-          "externalRefs": ["stripe:customer:beta"]
+          "externalRefs": [
+            "stripe:customer:beta"
+          ]
         }
       ],
       "assertions": [
@@ -176,21 +189,24 @@
           "value": "active_customer",
           "sourceType": "source_fact",
           "confidence": 1,
-          "validFrom": "2026-07-03T14:00:00Z"
+          "validFrom": "2026-07-03T14:00:00Z",
+          "reason": "HubSpot lists Beta Corp as an active customer post-implementation."
         },
         {
           "dimension": "engagement",
           "value": "dormant",
           "sourceType": "deterministic",
           "confidence": 0.94,
-          "validFrom": "2026-07-24T14:00:00Z"
+          "validFrom": "2026-07-24T14:00:00Z",
+          "reason": "No inbound message in 21 days across email or meetings."
         },
         {
           "dimension": "sentiment",
           "value": "unknown",
           "sourceType": "ai_inference",
           "confidence": 0.62,
-          "validFrom": "2026-07-24T14:00:00Z"
+          "validFrom": "2026-07-24T14:00:00Z",
+          "reason": "Not enough recent conversation to read sentiment either way."
         },
         {
           "dimension": "health",
@@ -205,28 +221,32 @@
           "value": "A $14k implementation invoice is overdue with no current payment plan.",
           "sourceType": "ai_inference",
           "confidence": 0.9,
-          "validFrom": "2026-07-24T14:00:00Z"
+          "validFrom": "2026-07-24T14:00:00Z",
+          "reason": "Derived from the delivered implementation and the overdue invoice with no payment plan."
         },
         {
           "dimension": "next_action",
           "value": "Confirm the payment owner and ask for a dated payment plan.",
           "sourceType": "ai_inference",
           "confidence": 0.94,
-          "validFrom": "2026-07-24T14:00:00Z"
+          "validFrom": "2026-07-24T14:00:00Z",
+          "reason": "Naming a payment owner is the fastest route to a dated plan on $14k."
         },
         {
           "dimension": "risk",
           "value": "Invoice is 21 days overdue",
           "sourceType": "source_fact",
           "confidence": 1,
-          "validFrom": "2026-07-24T14:00:00Z"
+          "validFrom": "2026-07-24T14:00:00Z",
+          "reason": "Invoice INV-2043 passed its due date 21 days ago."
         },
         {
           "dimension": "milestone",
           "value": "Implementation delivered",
           "sourceType": "source_fact",
           "confidence": 1,
-          "validFrom": "2026-07-03T14:00:00Z"
+          "validFrom": "2026-07-03T14:00:00Z",
+          "reason": "Implementation was signed off and delivered on 12 Jun."
         }
       ]
     },
@@ -253,7 +273,9 @@
           "email": "dana@northstar.example",
           "role": "champion",
           "title": "Director of Operations",
-          "externalRefs": ["hubspot:contact:northstar-dana"]
+          "externalRefs": [
+            "hubspot:contact:northstar-dana"
+          ]
         }
       ],
       "assertions": [
@@ -262,21 +284,24 @@
           "value": "renewal",
           "sourceType": "source_fact",
           "confidence": 1,
-          "validFrom": "2026-07-25T11:00:00Z"
+          "validFrom": "2026-07-25T11:00:00Z",
+          "reason": "The renewal window opened on 1 Jul per the contract record."
         },
         {
           "dimension": "engagement",
           "value": "steady",
           "sourceType": "deterministic",
           "confidence": 0.89,
-          "validFrom": "2026-07-25T11:00:00Z"
+          "validFrom": "2026-07-25T11:00:00Z",
+          "reason": "Steady cadence: three meetings and regular replies over six weeks."
         },
         {
           "dimension": "sentiment",
           "value": "positive",
           "sourceType": "ai_inference",
           "confidence": 0.88,
-          "validFrom": "2026-07-25T11:00:00Z"
+          "validFrom": "2026-07-25T11:00:00Z",
+          "reason": "Consistently positive language across the last three meetings."
         },
         {
           "dimension": "health",
@@ -291,28 +316,32 @@
           "value": "A $28k renewal enters planning with an active champion and clear timing.",
           "sourceType": "ai_inference",
           "confidence": 0.9,
-          "validFrom": "2026-07-25T11:00:00Z"
+          "validFrom": "2026-07-25T11:00:00Z",
+          "reason": "Derived from the open renewal window, steady engagement, and the champion's move."
         },
         {
           "dimension": "next_action",
           "value": "Book the renewal planning session and confirm the stakeholder map.",
           "sourceType": "ai_inference",
           "confidence": 0.91,
-          "validFrom": "2026-07-25T11:00:00Z"
+          "validFrom": "2026-07-25T11:00:00Z",
+          "reason": "Booking planning now protects $28k before the champion changes teams."
         },
         {
           "dimension": "risk",
           "value": "Champion changes teams next month",
           "sourceType": "source_fact",
           "confidence": 0.86,
-          "validFrom": "2026-07-25T11:00:00Z"
+          "validFrom": "2026-07-25T11:00:00Z",
+          "reason": "The champion said on 24 Jul they move teams next month."
         },
         {
           "dimension": "milestone",
           "value": "Renewal window opened",
           "sourceType": "source_fact",
           "confidence": 1,
-          "validFrom": "2026-07-25T11:00:00Z"
+          "validFrom": "2026-07-25T11:00:00Z",
+          "reason": "The renewal window opened on 1 Jul."
         }
       ]
     }
@@ -324,8 +353,8 @@
       "channel": "email",
       "reason": "Six quiet days after a dated promise, and legal approval removed the last known blocker.",
       "recipientEmail": "avery@acme.com",
-      "proposedSubject": "Acme security review — next steps",
-      "proposedMessage": "Hi Avery — I have the revised security packet ready. Can we confirm the review owner and use Tuesday at 10:00 or Wednesday at 14:00 to close the remaining questions?",
+      "proposedSubject": "Acme security review \u2014 next steps",
+      "proposedMessage": "Hi Avery \u2014 I have the revised security packet ready. Can we confirm the review owner and use Tuesday at 10:00 or Wednesday at 14:00 to close the remaining questions?",
       "executionMode": "draft",
       "priorityScore": 94,
       "priorityComponents": {
@@ -342,7 +371,7 @@
       "reason": "The $14k implementation invoice is 21 days overdue without a dated payment plan.",
       "recipientEmail": "samira@betacorp.com",
       "proposedSubject": "Beta Corp payment plan",
-      "proposedMessage": "Hi Samira — could you confirm the payment owner and share a dated plan for the outstanding implementation invoice?",
+      "proposedMessage": "Hi Samira \u2014 could you confirm the payment owner and share a dated plan for the outstanding implementation invoice?",
       "executionMode": "draft",
       "priorityScore": 89,
       "priorityComponents": {
@@ -359,7 +388,7 @@
       "reason": "The $28k renewal window opens Friday and the stakeholder map should be refreshed before Dana changes teams.",
       "recipientEmail": "dana@northstar.example",
       "proposedSubject": "Northstar renewal planning",
-      "proposedMessage": "Hi Dana — before the renewal window opens, can we refresh the stakeholder map and book the planning session?",
+      "proposedMessage": "Hi Dana \u2014 before the renewal window opens, can we refresh the stakeholder map and book the planning session?",
       "executionMode": "draft",
       "priorityScore": 72,
       "priorityComponents": {

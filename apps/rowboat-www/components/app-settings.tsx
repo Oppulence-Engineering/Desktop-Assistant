@@ -125,7 +125,7 @@ function ValueRow({
   };
 
   return (
-    <div className="group/row flex min-h-[34px] items-center justify-between gap-4 rounded-sm px-4 py-1 transition-colors hover:bg-background-100 dark:hover:bg-background-200">
+    <div className="group/row flex min-h-[34px] items-center justify-between gap-4 rounded-none px-4 py-1 transition-colors hover:bg-background-100 dark:hover:bg-background-200">
       <span className="text-xs capitalize text-primary/60">{label}</span>
       <span className="flex min-w-0 items-center gap-1.5">
         <span
@@ -343,7 +343,7 @@ function AppearanceSection() {
             >
               <span
                 className={cn(
-                  "flex h-20 overflow-hidden rounded-md border",
+                  "flex h-20 overflow-hidden rounded-none border",
                   option.value === "dark" ? "border-zinc-700 bg-zinc-900" : "bg-white",
                 )}
               >

@@ -24,13 +24,13 @@ export function ProductSignInButton({
       onClick={onClick}
       disabled={connecting}
       className={[
-        "group h-11 w-full justify-between rounded-lg border-white/10 bg-white/[0.055] px-3 text-left text-sm text-white/82 shadow-none hover:border-white/18 hover:bg-white/[0.085] hover:text-white focus-visible:border-white/40 disabled:opacity-70",
+        "group h-11 w-full justify-between rounded-none border-white/10 bg-white/[0.055] px-3 text-left text-sm text-white/82 shadow-none hover:border-white/18 hover:bg-white/[0.085] hover:text-white focus-visible:border-white/40 disabled:opacity-70",
         connected ? "border-emerald-400/30 bg-emerald-400/[0.08] text-emerald-100" : "",
         className ?? "",
       ].join(" ")}
     >
       <span className="flex min-w-0 items-center gap-2.5">
-        <img src="/logo-only.png" alt="" className="size-4 shrink-0 invert" />
+        <img src="/logo-only.png" alt="" className="size-4 shrink-0" />
         <span className="truncate">{label}</span>
       </span>
       {connected ? (

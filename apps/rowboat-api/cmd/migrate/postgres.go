@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,12 +12,20 @@ import (
 	atlasmigrate "ariga.io/atlas/sql/migrate"
 	_ "ariga.io/atlas/sql/postgres" // register the Atlas PostgreSQL driver
 	"ariga.io/atlas/sql/sqlclient"
+	"github.com/lib/pq"
 )
 
 const (
-	postgresRevisionTable = "atlas_schema_revisions"
-	postgresMigrationLock = "rowboat_migrate_apply"
+	postgresRevisionTable   = "atlas_schema_revisions"
+	postgresMigrationLock   = "rowboat_migrate_apply"
+	identifierNormalization = "20260821020000"
 )
+
+//go:embed legacy_baseline_repair.sql
+var legacyBaselineRepairSQL string
+
+//go:embed legacy_identifier_prepare.sql
+var legacyIdentifierPrepareSQL string
 
 // applyPostgres executes the repository's checksummed Atlas-format files using
 // Atlas's Go engine. Keeping execution in this binary avoids shipping a second
@@ -42,6 +51,16 @@ func applyPostgres(ctx context.Context, databaseURL string) (err error) {
 	if err := revisions.init(ctx); err != nil {
 		return fmt.Errorf("initialize Atlas revision table: %w", err)
 	}
+	adopted, err := baselineAdopted(ctx, client.DB, baseline)
+	if err != nil {
+		return err
+	}
+	if err := repairLegacyBaseline(ctx, client.DB, adopted); err != nil {
+		return err
+	}
+	if err := prepareIdentifierNormalization(ctx, client.DB, adopted); err != nil {
+		return err
+	}
 	directory, err := atlasmigrate.NewLocalDir(postgresMigrationDir)
 	if err != nil {
 		return fmt.Errorf("open PostgreSQL migration directory: %w", err)
@@ -60,6 +79,83 @@ func applyPostgres(ctx context.Context, databaseURL string) (err error) {
 		return fmt.Errorf("apply PostgreSQL migrations: %w", err)
 	}
 	fmt.Println("PostgreSQL migrations applied")
+	return nil
+}
+
+// repairLegacyBaseline closes the one schema gap left by the initial Atlas
+// cutover: legacy Ent databases were marked at the baseline even when they had
+// not received the final pre-baseline schema changes.
+func repairLegacyBaseline(ctx context.Context, database *sql.DB, adopted bool) error {
+	if !adopted {
+		return nil
+	}
+	var repaired bool
+	if err := database.QueryRowContext(ctx,
+		`SELECT to_regclass('relationship_attention_items') IS NOT NULL`,
+	).Scan(&repaired); err != nil {
+		return fmt.Errorf("inspect PostgreSQL legacy baseline: %w", err)
+	}
+	if repaired {
+		return nil
+	}
+	return executeSQL(ctx, database, "legacy baseline repair", legacyBaselineRepairSQL)
+}
+
+func baselineAdopted(ctx context.Context, database *sql.DB, adopting bool) (bool, error) {
+	if adopting {
+		return true, nil
+	}
+	if err := database.QueryRowContext(ctx,
+		`SELECT EXISTS (SELECT 1 FROM atlas_schema_revisions WHERE version = $1)`,
+		postgresBaseline,
+	).Scan(&adopting); err != nil {
+		return false, fmt.Errorf("inspect PostgreSQL baseline revision: %w", err)
+	}
+	return adopting, nil
+}
+
+func prepareIdentifierNormalization(ctx context.Context, database *sql.DB, adopted bool) error {
+	if !adopted {
+		return nil
+	}
+	var complete bool
+	if err := database.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM atlas_schema_revisions
+			WHERE version = $1 AND applied = total
+		)
+	`, identifierNormalization).Scan(&complete); err != nil {
+		return fmt.Errorf("inspect PostgreSQL identifier normalization: %w", err)
+	}
+	if complete {
+		return nil
+	}
+	return executeSQL(ctx, database, "legacy identifier preparation", legacyIdentifierPrepareSQL)
+}
+
+func executeSQL(ctx context.Context, database *sql.DB, label, source string) (err error) {
+	statements, err := atlasmigrate.Stmts(source)
+	if err != nil {
+		return fmt.Errorf("parse PostgreSQL %s: %w", label, err)
+	}
+	tx, err := database.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin PostgreSQL %s: %w", label, err)
+	}
+	defer func() {
+		if err != nil {
+			err = errors.Join(err, tx.Rollback())
+		}
+	}()
+	for i, statement := range statements {
+		if _, err := tx.ExecContext(ctx, statement.Text); err != nil {
+			return fmt.Errorf("execute PostgreSQL %s at statement %d: %w", label, i+1, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit PostgreSQL %s: %w", label, err)
+	}
+	fmt.Printf("PostgreSQL %s applied\n", label)
 	return nil
 }
 
@@ -126,12 +222,19 @@ func (r *postgresRevisions) init(ctx context.Context) error {
 }
 
 func (r *postgresRevisions) ReadRevision(ctx context.Context, version string) (*atlasmigrate.Revision, error) {
-	row := r.db.QueryRowContext(ctx, revisionSelect+` WHERE version = $1`, version)
+	row := r.db.QueryRowContext(ctx, revisionByVersionQuery(version))
 	revision, err := scanRevision(row.Scan)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, atlasmigrate.ErrRevisionNotExist
 	}
 	return revision, err
+}
+
+// Transaction poolers can switch server connections between the describe and
+// execute phases of an unnamed prepared statement. A quoted literal keeps this
+// single-value lookup on PostgreSQL's simple query path.
+func revisionByVersionQuery(version string) string {
+	return revisionSelect + ` WHERE version = ` + pq.QuoteLiteral(version)
 }
 
 func (r *postgresRevisions) ReadRevisions(ctx context.Context) ([]*atlasmigrate.Revision, error) {

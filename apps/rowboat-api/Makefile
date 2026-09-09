@@ -130,7 +130,7 @@ mod-verify:
 .PHONY: security
 security:
 	$(GOVULNCHECK) ./...
-	$(GITLEAKS) git ../../ --gitleaks-ignore-path ../../.gitleaksignore --redact --no-banner
+	$(GITLEAKS) git ../../ --config ../../.gitleaks.toml --gitleaks-ignore-path ../../.gitleaksignore --redact --no-banner
 
 .PHONY: verify
 verify: fmt-check lint architecture rowboatlint ruleguard structural policy migration-validate mod-verify test

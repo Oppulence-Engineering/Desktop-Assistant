@@ -191,7 +191,10 @@ type Config struct {
 	// differ per environment; the raw JSON maps category -> lt_… id.
 	PlainAPIURL       string
 	PlainLabelTypeIDs string
-	PlainTitlePrefix  string
+	// PlainAlwaysLabelTypeIDs is a comma-separated list of label ids applied to
+	// every thread (the shared workspace's per-brand label).
+	PlainAlwaysLabelTypeIDs string
+	PlainTitlePrefix        string
 
 	// Outbound vendor-call policy.
 	VendorTimeout               time.Duration
@@ -667,6 +670,39 @@ func Load() Config {
 	if production {
 		corsDefault = "https://app.solomon-ai.co"
 	}
+	// One knob to move every gateway-bound runtime. Three separate *_MODEL vars
+	// meant "use model X" had to be said three times and was easy to half-apply:
+	// a deploy that set the two obvious ones still left the event router on a
+	// different provider. LLM_MODEL sets the floor for all of them; the specific
+	// vars still win where a runtime genuinely needs a different model (the event
+	// router is two cheap bounded calls per event, so it may stay smaller).
+	defaultModel := getenv("LLM_MODEL", "anthropic/claude-sonnet-4-5")
+	defaultRouterModel := getenv("LLM_MODEL", "anthropic/claude-haiku-4-5")
+	// Same idea for the issuer URLs. Outside production these three always hold
+	// the same origin (the devstack mock locally, the Hydra host in staging), so
+	// pointing an environment at a different issuer meant editing three vars in
+	// values plus four --set-string flags in the kind script, and the local docs
+	// carry a manual "remember to also update..." warning that exists only
+	// because of this duplication. AUTH_ISSUER_URL sets all three at once.
+	// Production deliberately splits them (AuthKit issuer, WorkOS API, Hydra),
+	// so each specific var still wins.
+	// Connector resource tokens must carry the externally reachable API origin
+	// as their iss; the chart hard-fails a production render when
+	// BROKER_TOKEN_ISSUER drifts from PUBLIC_BASE_URL. Defaulting it to the
+	// public origin makes them impossible to desync by omission: kind set
+	// PUBLIC_BASE_URL but not the issuer, so it silently inherited a stale
+	// solomon-ai origin from the base chart values.
+	publicBaseURL := getenv("PUBLIC_BASE_URL", "https://api.x.solomon-ai.co")
+	authIssuer := getenv("AUTH_ISSUER_URL", "")
+	issuerOr := func(key, def string) string {
+		if v := getenv(key, ""); v != "" {
+			return v
+		}
+		if authIssuer != "" {
+			return authIssuer
+		}
+		return def
+	}
 	return Config{
 		ServiceName: getenv("SERVICE_NAME", "rowboat-api"),
 		Environment: environment,
@@ -715,10 +751,10 @@ func Load() Config {
 		// WorkOS, set OIDC_ISSUER_URL + TOKEN_ISSUER to the Hydra issuer
 		// (https://oauth.solomon-ai.co) and OAUTH_CLIENT_ID to the Hydra client.
 		// See apps/rowboat-api/AUTH.md.
-		OIDCIssuerURL:   getenv("OIDC_ISSUER_URL", "https://auth.solomon-ai.co"),
+		OIDCIssuerURL:   issuerOr("OIDC_ISSUER_URL", "https://auth.solomon-ai.co"),
 		WebsocketAPIURL: getenv("WEBSOCKET_API_URL", ""),
 
-		TokenIssuer: getenv("TOKEN_ISSUER", "https://auth.solomon-ai.co"),
+		TokenIssuer: issuerOr("TOKEN_ISSUER", "https://auth.solomon-ai.co"),
 		// allowEmpty: an explicitly-set empty TOKEN_AUDIENCE disables the
 		// audience check (WorkOS access tokens carry no `aud`).
 		TokenAudience: getenvAllowEmpty("TOKEN_AUDIENCE", "rowboat-api"),
@@ -728,7 +764,7 @@ func Load() Config {
 		// default to stable internal names (matching the RFC claim contracts) so
 		// classification works the moment those token modes are enabled.
 		ServiceTokenIssuer:     getenv("SERVICE_TOKEN_ISSUER", "rowboat-internal"),
-		BrokerTokenIssuer:      getenv("BROKER_TOKEN_ISSUER", "rowboat-broker"),
+		BrokerTokenIssuer:      getenv("BROKER_TOKEN_ISSUER", publicBaseURL),
 		BrokerTokenPrivateKey:  getenvAllowEmpty("BROKER_TOKEN_PRIVATE_KEY_PEM", ""),
 		BrokerTokenKeyID:       getenv("BROKER_TOKEN_KEY_ID", "rowboat-broker-1"),
 		BrokerTokenKeyringJSON: getenvAllowEmpty("BROKER_TOKEN_KEYRING_JSON", ""),
@@ -738,15 +774,15 @@ func Load() Config {
 		WorkOSAPIKey:           getenv("WORKOS_API_KEY", ""),
 		WorkOSClientID:         getenv("WORKOS_CLIENT_ID", ""),
 		WorkOSBaseURL:          getenv("WORKOS_BASE_URL", ""),
-		WorkOSAuthorizeBaseURL: getenv("WORKOS_AUTHORIZE_BASE_URL", ""),
+		WorkOSAuthorizeBaseURL: issuerOr("WORKOS_AUTHORIZE_BASE_URL", ""),
 		// Default to the WorkOS client id so WorkOS-direct needs only WORKOS_CLIENT_ID.
 		OAuthClientID: getenv("OAUTH_CLIENT_ID", getenv("WORKOS_CLIENT_ID", "")),
 
-		OryPublicURL:                              getenv("ORY_PUBLIC_URL", "https://oauth.solomon-ai.co"),
+		OryPublicURL:                              issuerOr("ORY_PUBLIC_URL", "https://oauth.solomon-ai.co"),
 		OryAdminURL:                               getenv("ORY_ADMIN_URL", ""),
 		OryBrokerClientID:                         getenv("ORY_BROKER_CLIENT_ID", ""),
 		OryBrokerClientSecret:                     getenv("ORY_BROKER_CLIENT_SECRET", ""),
-		PublicBaseURL:                             getenv("PUBLIC_BASE_URL", "https://api.x.solomon-ai.co"),
+		PublicBaseURL:                             publicBaseURL,
 		ConnectorsJSON:                            getenv("CONNECTORS_JSON", ""),
 		ConnectorEntitlementURLsJSON:              getenv("CONNECTOR_ENTITLEMENT_URLS_JSON", ""),
 		ConnectorEntitlementHMACKeysJSON:          getenv("CONNECTOR_ENTITLEMENT_HMAC_KEYS_JSON", ""),
@@ -782,6 +818,7 @@ func Load() Config {
 		ParallelBaseURL:             getenv("PARALLEL_BASE_URL", "https://api.parallel.ai"),
 		PlainAPIURL:                 getenv("PLAIN_API_URL", "https://core-api.uk.plain.com/graphql/v1"),
 		PlainLabelTypeIDs:           getenv("PLAIN_LABEL_TYPE_IDS", ""),
+		PlainAlwaysLabelTypeIDs:     getenv("PLAIN_ALWAYS_LABEL_TYPE_IDS", ""),
 		PlainTitlePrefix:            getenv("PLAIN_TITLE_PREFIX", ""),
 		VendorTimeout:               getdur("VENDOR_TIMEOUT", 30*time.Second),
 		VendorResponseHeaderTimeout: getdur("VENDOR_RESPONSE_HEADER_TIMEOUT", 15*time.Second),
@@ -865,7 +902,7 @@ func Load() Config {
 		CloudEventsMatchThreshold: getfloat("CLOUD_EVENTS_MATCH_THRESHOLD", 0.7),
 		// Routing is two cheap bounded calls per event; default to the cheapest
 		// priced model (see internal/pricing DefaultTable).
-		CloudEventsRouterModel:     getenv("CLOUD_EVENTS_ROUTER_MODEL", "anthropic/claude-haiku-4-5"),
+		CloudEventsRouterModel:     getenv("CLOUD_EVENTS_ROUTER_MODEL", defaultRouterModel),
 		CloudEventsMaxPayloadBytes: getint("CLOUD_EVENTS_MAX_PAYLOAD_BYTES", 256<<10),
 		SlackSigningSecret:         getenv("SLACK_SIGNING_SECRET", ""),
 		GoogleWebhookToken:         getenv("GOOGLE_WEBHOOK_TOKEN", ""),
@@ -895,7 +932,7 @@ func Load() Config {
 		DriveAPIBaseURL:        getenv("DRIVE_API_BASE_URL", ""),
 
 		CloudRuntimeEnabled:               getbool("CLOUD_RUNTIME_ENABLED", true),
-		CloudRuntimeModel:                 getenv("CLOUD_RUNTIME_MODEL", "anthropic/claude-sonnet-4-5"),
+		CloudRuntimeModel:                 getenv("CLOUD_RUNTIME_MODEL", defaultModel),
 		CloudRuntimeMaxDuration:           getdur("CLOUD_RUNTIME_MAX_DURATION", 4*time.Minute),
 		CloudRuntimeMaxLLMCalls:           getint("CLOUD_RUNTIME_MAX_LLM_CALLS", 12),
 		CloudRuntimeMaxToolCalls:          getint("CLOUD_RUNTIME_MAX_TOOL_CALLS", 24),
@@ -921,7 +958,7 @@ func Load() Config {
 		AgentStreamingEnabled: getbool("AGENT_STREAMING_ENABLED", true),
 		AgentHITLEnabled:      getbool("AGENT_HITL_ENABLED", true),
 		AgentSubagentsEnabled: getbool("AGENT_SUBAGENTS_ENABLED", true),
-		AgentRuntimeModel:     getenv("AGENT_RUNTIME_MODEL", "anthropic/claude-sonnet-4-5"),
+		AgentRuntimeModel:     getenv("AGENT_RUNTIME_MODEL", defaultModel),
 
 		AgentMaxLLMCallsPerTurn:  getint("AGENT_MAX_LLM_CALLS_PER_TURN", 12),
 		AgentMaxToolCallsPerTurn: getint("AGENT_MAX_TOOL_CALLS_PER_TURN", 24),

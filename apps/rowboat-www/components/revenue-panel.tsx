@@ -205,14 +205,14 @@ export function RevenuePanel({
     <div className="flex h-full min-w-0 w-full flex-col overflow-hidden">
       <div className="relative min-h-0 flex-1 overflow-y-auto">
         {error ? (
-          <Alert variant="destructive" className="m-3 mb-0 rounded-md">
+          <Alert variant="destructive" className="m-3 mb-0 rounded-none">
             <WarningCircle weight="fill" />
             <AlertTitle>Action needed</AlertTitle>
             <AlertDescription>{friendlyRevenueError(error)}</AlertDescription>
           </Alert>
         ) : null}
         {notice ? (
-          <Alert className="m-3 mb-0 rounded-md">
+          <Alert className="m-3 mb-0 rounded-none">
             <Sparkle weight="fill" />
             <AlertDescription>{notice}</AlertDescription>
           </Alert>

@@ -12,6 +12,7 @@ func TestFlyDeploymentContract(t *testing.T) {
 	config := readRepositoryFile(t, root, "fly.toml")
 
 	for _, required := range []string{
+		`dockerfile = "Dockerfile"`,
 		`primary_region = "iad"`,
 		`release_command = "/rowboat-api-migrate apply"`,
 		`app = "/rowboat-api"`,
@@ -42,7 +43,7 @@ func TestFlyDeploymentContract(t *testing.T) {
 	for _, required := range []string{
 		`flyctl config validate`,
 		`--strict`,
-		`--remote-only`,
+		`--local-only`,
 		`--process-group app`,
 		`--region iad,sjc`,
 		`--max-per-region 1`,
@@ -54,6 +55,9 @@ func TestFlyDeploymentContract(t *testing.T) {
 			t.Errorf("fly deploy script missing regional invariant %q", required)
 		}
 	}
+	if strings.Contains(script, `--remote-only`) {
+		t.Error("Fly deploy must build on the GitHub runner")
+	}
 }
 
 func TestFlyDeploymentWorkflowContract(t *testing.T) {
@@ -61,6 +65,9 @@ func TestFlyDeploymentWorkflowContract(t *testing.T) {
 	workflow := readRepositoryFile(t, root, "../../.github/workflows/rowboat-api-fly-deploy.yml")
 
 	for _, required := range []string{
+		`push:`,
+		`branches: [main]`,
+		`- "apps/rowboat-api/**"`,
 		`workflow_dispatch:`,
 		`environment: production`,
 		`ROWBOAT_API_FLY_API_TOKEN`,

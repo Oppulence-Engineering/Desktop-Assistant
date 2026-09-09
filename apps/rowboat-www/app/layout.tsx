@@ -1,3 +1,4 @@
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import localFont from "next/font/local";
@@ -65,7 +66,9 @@ export default function RootLayout({
         className={`${geist.variable} ${geistMono.variable} ${f37Stout.variable} ${inter.variable} antialiased`}
         suppressHydrationWarning
       >
-        {children}
+        <AppRouterCacheProvider options={{ key: "css" }}>
+          {children}
+        </AppRouterCacheProvider>
       </body>
     </html>
   );

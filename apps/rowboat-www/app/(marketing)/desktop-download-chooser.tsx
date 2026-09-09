@@ -167,7 +167,20 @@ function detectionLabel(detection: Detection): string {
   return "Detected";
 }
 
-export function DesktopDownloadChooser() {
+/**
+ * Installer picker for the two apps that ship binaries. `app` selects which
+ * repository /api/download resolves against, so Voice never offers the
+ * Desktop build (or the reverse).
+ */
+export function DesktopDownloadChooser({
+  app = "desktop",
+  name = "Oppulence Desktop",
+  blurb = "Sign in once and continue with the same relationship state as the web app.",
+}: {
+  app?: "desktop" | "voice";
+  name?: string;
+  blurb?: string;
+} = {}) {
   const [detection, setDetection] = useState<Detection>({
     architecture: null,
     operatingSystem: null,
@@ -239,12 +252,12 @@ export function DesktopDownloadChooser() {
           onClick={() => setIsOpen((current) => !current)}
           type="button"
         >
-          Download desktop app
+          Download {name === "Oppulence Desktop" ? "desktop app" : "Oppulence Voice"}
           <ExpandMoreIcon aria-hidden="true" className="desktop-download-trigger-icon" />
         </button>
         <Link
           className="linear-button-secondary !h-12 !w-full !px-6 !text-[14px] sm:!w-auto"
-          href="/book-a-demo"
+          href="/app"
         >
           See account mission control
         </Link>
@@ -259,12 +272,12 @@ export function DesktopDownloadChooser() {
       <div className="desktop-download-collapse" hidden={!isOpen} id={panelId}>
         <section aria-label="Desktop app downloads" className="desktop-download-panel">
           <header className="desktop-download-panel-header">
-            <p className="desktop-download-eyebrow">[desktop app · latest release]</p>
+            <p className="desktop-download-eyebrow">[{app} app · latest release]</p>
             <div className="desktop-download-panel-title">
               <DownloadIcon aria-hidden="true" />
-              <h2>Download Oppulence Desktop</h2>
+              <h2>Download {name}</h2>
             </div>
-            <p>Sign in once and continue with the same relationship state as the web app.</p>
+            <p>{blurb}</p>
           </header>
 
           <div
@@ -325,9 +338,9 @@ export function DesktopDownloadChooser() {
 
                 return (
                   <Link
-                    aria-label={`Download Oppulence Desktop for ${selectedGroup.title}: ${option.label}, ${option.detail}`}
+                    aria-label={`Download ${name} for ${selectedGroup.title}: ${option.label}, ${option.detail}`}
                     className={cn("desktop-download-option", isRecommended && "is-recommended")}
-                    href={`/api/download?platform=${option.platform}`}
+                    href={`/api/download?app=${app}&platform=${option.platform}`}
                     key={option.platform}
                     prefetch={false}
                   >
