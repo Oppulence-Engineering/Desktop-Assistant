@@ -178,8 +178,8 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 	msg := ChatMessage{Role: "assistant", Content: choice.Message.Content}
 	for _, tc := range choice.Message.ToolCalls {
 		name := tc.Function.Name
-		if real, ok := wireToReal[name]; ok {
-			name = real
+		if canonical, ok := wireToReal[name]; ok {
+			name = canonical
 		}
 		msg.ToolCalls = append(msg.ToolCalls, ToolCall{
 			ID:        tc.ID,
@@ -301,10 +301,10 @@ func marshalChatBody(upstreamModel string, req ChatRequest) (body []byte, inputB
 // truncateForError bounds an upstream error body so it can be logged and
 // surfaced on a run record without pasting an unbounded provider response.
 func truncateForError(raw []byte) string {
-	const max = 512
+	const maxLen = 512
 	s := strings.TrimSpace(string(raw))
-	if len(s) > max {
-		return s[:max] + "…"
+	if len(s) > maxLen {
+		return s[:maxLen] + "…"
 	}
 	return s
 }
