@@ -204,15 +204,25 @@ func commitmentState(row *ent.Commitment) string {
 	}
 }
 
+// permittedCommitmentTransition is the state machine of the one-pager, §4.
+//
+// "renegotiated" is deliberately absent as a *state*. Renegotiation supersedes
+// the terms and returns the obligation to open; the prior terms survive in the
+// event log, never in a resting status. A "renegotiated" row here was
+// unreachable, because nothing ever set the status, so it is gone.
+//
+// "at risk" is likewise absent, because it is derived from the due date at read
+// time (see commitmentRegisterState) rather than stored. Nothing transitions
+// into it, so nothing transitions out of it.
 func permittedCommitmentTransition(state, kind string) bool {
 	allowed := map[string]map[string]bool{
 		"candidate":            {"internally_confirmed": true, "corrected": true, "cancelled": true, "superseded": true},
-		"internally_confirmed": {"offered": true, "accepted": true, "corrected": true, "due_date_changed": true, "renegotiated": true, "fulfilled": true, "cancelled": true, "superseded": true},
-		"offered":              {"accepted": true, "disputed": true, "corrected": true, "due_date_changed": true, "renegotiated": true, "cancelled": true, "superseded": true},
-		"open":                 {"disputed": true, "blocked": true, "corrected": true, "due_date_changed": true, "renegotiated": true, "fulfilled": true, "cancelled": true, "superseded": true},
-		"blocked":              {"unblocked": true, "corrected": true, "due_date_changed": true, "renegotiated": true, "fulfilled": true, "cancelled": true, "superseded": true},
-		"renegotiated":         {"accepted": true, "corrected": true, "fulfilled": true, "cancelled": true, "superseded": true},
-		"disputed":             {"accepted": true, "corrected": true, "cancelled": true, "superseded": true},
+		"internally_confirmed": {"offered": true, "accepted": true, "corrected": true, "due_date_changed": true, "renegotiated": true, "fulfilled": true, "missed": true, "waived": true, "cancelled": true, "superseded": true},
+		"offered":              {"accepted": true, "disputed": true, "corrected": true, "due_date_changed": true, "renegotiated": true, "missed": true, "waived": true, "cancelled": true, "superseded": true},
+		"open":                 {"disputed": true, "blocked": true, "corrected": true, "due_date_changed": true, "renegotiated": true, "fulfilled": true, "missed": true, "waived": true, "cancelled": true, "superseded": true},
+		"blocked":              {"unblocked": true, "corrected": true, "due_date_changed": true, "renegotiated": true, "fulfilled": true, "missed": true, "waived": true, "cancelled": true, "superseded": true},
+		"disputed":             {"accepted": true, "corrected": true, "waived": true, "cancelled": true, "superseded": true},
+		"missed":               {"corrected": true, "disputed": true, "renegotiated": true, "fulfilled": true, "waived": true, "superseded": true},
 	}
 	return allowed[state][kind]
 }
@@ -243,6 +253,9 @@ func (s *Service) AppendCommitmentTransition(
 	}
 	if input.Kind == "renegotiated" && input.DueAt.IsZero() && strings.TrimSpace(input.Action) == "" {
 		return nil, fmt.Errorf("%w: renegotiation requires action or dueAt", ErrInvalidInput)
+	}
+	if input.Kind == "waived" && strings.TrimSpace(input.Reason) == "" {
+		return nil, fmt.Errorf("%w: waiver requires a reason", ErrInvalidInput)
 	}
 	if input.Kind == "corrected" && input.DueAt.IsZero() && strings.TrimSpace(input.Action) == "" {
 		return nil, fmt.Errorf("%w: correction requires action or dueAt", ErrInvalidInput)
@@ -290,6 +303,20 @@ func (s *Service) AppendCommitmentTransition(
 		_ = tx.Rollback()
 		return nil, fmt.Errorf("%w: invalid commitment transition %s -> %s", ErrInvalidInput, state, input.Kind)
 	}
+	// One-pager §4: "Missed is never inferred from silence alone." Absence of
+	// fulfilment produces *at risk*, which is derived and prompts a human. Only
+	// an elapsed due date plus that human's review may record a miss, so a
+	// commitment with no due date, or one still in the future, cannot be missed.
+	if input.Kind == "missed" {
+		if row.DueAt == nil {
+			_ = tx.Rollback()
+			return nil, fmt.Errorf("%w: a commitment with no due date cannot be missed", ErrInvalidInput)
+		}
+		if !row.DueAt.Before(s.now().UTC()) {
+			_ = tx.Rollback()
+			return nil, fmt.Errorf("%w: due date has not elapsed", ErrInvalidInput)
+		}
+	}
 	payload := map[string]any{"reason": strings.TrimSpace(input.Reason)}
 	update := txc.Commitment.Update().Where(
 		commitment.IDEQ(row.ID), commitment.CurrentEventVersionEQ(row.CurrentEventVersion),
@@ -311,6 +338,8 @@ func (s *Service) AppendCommitmentTransition(
 		update.ClearBlocker()
 	case "fulfilled":
 		update.SetStatus("fulfilled").SetCompletedAt(s.now().UTC())
+	case "missed", "waived":
+		update.SetStatus(input.Kind)
 	case "cancelled", "superseded":
 		update.SetStatus(input.Kind)
 	}
