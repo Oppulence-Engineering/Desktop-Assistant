@@ -196,6 +196,7 @@ func (s *Service) runScan(ctx context.Context, u *ent.User, scan *ent.RevenueLea
 		SetRelationshipsCreated(stats.relationships).
 		SetEvidencesCreated(stats.evidences).
 		SetActionsCreated(stats.actions).
+		SetCommitmentsCreated(stats.commitments).
 		ClearActiveClaim().
 		SetCompletedAt(s.now())
 	if stats.freshest != nil {
@@ -224,6 +225,7 @@ type scanStats struct {
 	relationships int
 	evidences     int
 	actions       int
+	commitments   int
 	freshest      *time.Time
 }
 
@@ -328,7 +330,7 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		if stats.actions >= scanMaxActions {
 			break
 		}
-		created, madeRel, madeEv, err := s.materializeHit(ctx, u, c.sum, c.hit)
+		created, madeRel, madeEv, madeCommitment, err := s.materializeHit(ctx, u, c.sum, c.hit)
 		if err != nil {
 			s.log.Warn("revenue: materialize scan hit", zap.String("detector", c.hit.Detector), zap.Error(err))
 			continue
@@ -338,6 +340,9 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		}
 		if madeEv {
 			stats.evidences++
+		}
+		if madeCommitment {
+			stats.commitments++
 		}
 		if created {
 			stats.actions++
@@ -354,15 +359,15 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 // materializeHit writes relationship + evidence + queue action for one
 // detector hit. Reruns dedupe: the relationship by primary email, the
 // evidence by (source, record, hash), the action by its dedupe key.
-func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSummary, hit *detectorHit) (createdAction, createdRel, createdEv bool, err error) {
+func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSummary, hit *detectorHit) (createdAction, createdRel, createdEv, createdCommitment bool, err error) {
 	ws, err := s.CurrentWorkspace(ctx, u)
 	if err != nil {
-		return false, false, false, err
+		return false, false, false, createdCommitment, err
 	}
 	resolution := threadRelationshipInput(sum)
 	rel, linkedPersons, createdRel, err := s.syncThreadRelationshipWithPeople(ctx, u, ws, sum)
 	if err != nil {
-		return false, false, false, err
+		return false, false, false, createdCommitment, err
 	}
 
 	// An account whose identity is under review must not generate queue work: the
@@ -371,12 +376,12 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 	// declining to create keeps the queue honest rather than merely safe.
 	unresolved, err := s.relationshipHasUnresolvedIdentity(ctx, rel.ID)
 	if err != nil {
-		return false, createdRel, false, err
+		return false, createdRel, false, createdCommitment, err
 	}
 	if unresolved {
 		s.log.Info("revenue: scan hit deferred pending identity review",
 			zap.String("relationship", rel.ID.String()))
-		return false, createdRel, false, nil
+		return false, createdRel, false, createdCommitment, nil
 	}
 
 	anchorHash := sha256.Sum256([]byte(hit.Anchor.ID + ":" + hit.Anchor.Snippet))
@@ -404,10 +409,10 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 			revenueevidence.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
 		).Only(ctx)
 		if err != nil {
-			return false, createdRel, false, err
+			return false, createdRel, false, createdCommitment, err
 		}
 	default:
-		return false, createdRel, false, err
+		return false, createdRel, false, createdCommitment, err
 	}
 
 	// The evidence row's (source, record, content hash) uniqueness is the scan's
@@ -419,17 +424,17 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 			if err = countParticipantInteraction(
 				ctx, s.client, ws, u, rel, linkedPersons[participant.Email], resolution, participant,
 			); err != nil {
-				return false, createdRel, createdEv, err
+				return false, createdRel, createdEv, createdCommitment, err
 			}
 		}
 	}
 	if hit.Commitment != nil {
-		if err = s.materializeScannedCommitment(ctx, u, ws, rel, ev, *hit.Commitment); err != nil {
-			return false, createdRel, createdEv, err
+		if createdCommitment, err = s.materializeScannedCommitment(ctx, u, ws, rel, ev, *hit.Commitment); err != nil {
+			return false, createdRel, createdEv, createdCommitment, err
 		}
 	}
 	if hit.ActionType == "" {
-		return false, createdRel, createdEv, nil
+		return false, createdRel, createdEv, createdCommitment, nil
 	}
 
 	// Thread-scoped, NOT detector-scoped: a thread yields at most one queue
@@ -441,7 +446,7 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 		Where(revenueaction.DedupeKeyEQ(dedupeKey)).
 		Exist(ctx)
 	if err != nil {
-		return false, createdRel, createdEv, err
+		return false, createdRel, createdEv, createdCommitment, err
 	}
 	action, err := s.CreateAction(ctx, u, ActionInput{
 		RelationshipID:  rel.ID,
@@ -458,14 +463,14 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 		PriorityParts:   hit.Components,
 	})
 	if err != nil {
-		return false, createdRel, createdEv, err
+		return false, createdRel, createdEv, createdCommitment, err
 	}
 	createdAction = !existed
 	if existed {
 		if current, queryErr := action.QueryRelationship().Only(ctx); queryErr == nil && current.ID != rel.ID {
 			action, err = action.Update().SetRelationship(rel).Save(ctx)
 			if err != nil {
-				return false, createdRel, createdEv, err
+				return false, createdRel, createdEv, createdCommitment, err
 			}
 		}
 	}
@@ -473,7 +478,7 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 		// Best-effort evidence link; the action stands without it.
 		_ = s.client.RevenueAction.UpdateOneID(action.ID).AddEvidences(ev).Exec(ctx)
 	}
-	return createdAction, createdRel, createdEv, nil
+	return createdAction, createdRel, createdEv, createdCommitment, nil
 }
 
 func threadRelationshipInput(sum *threadSummary) RelationshipObservationInput {
@@ -615,12 +620,12 @@ func (s *Service) materializeScannedCommitment(
 	rel *ent.Relationship,
 	ev *ent.RevenueEvidence,
 	draft scannedCommitment,
-) error {
+) (bool, error) {
 	exists, err := s.client.Commitment.Query().Where(
 		commitment.HasEvidencesWith(revenueevidence.IDEQ(ev.ID)),
 	).Exist(ctx)
 	if err != nil || exists {
-		return err
+		return false, err
 	}
 	payload, err := json.Marshal(map[string]string{
 		"action":                     draft.Text,
@@ -628,29 +633,29 @@ func (s *Service) materializeScannedCommitment(
 		"counterpartyParticipantRef": draft.CounterpartyRef,
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
 	tx, err := s.client.Tx(ctx)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer func() { _ = tx.Rollback() }()
 	txc := tx.Client()
 	txws, err := txc.RevenueWorkspace.Get(ctx, ws.ID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	txu, err := txc.User.Get(ctx, u.ID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	txrel, err := txc.Relationship.Get(ctx, rel.ID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	txev, err := txc.RevenueEvidence.Get(ctx, ev.ID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	row, err := txc.Commitment.Create().
 		SetWorkspace(txws).SetRelationship(txrel).SetUser(txu).
@@ -659,16 +664,16 @@ func (s *Service) materializeScannedCommitment(
 		SetSourcePhrase(draft.Text).SetAcceptance("candidate").SetCurrentEventVersion(1).
 		AddEvidences(txev).Save(ctx)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if _, err = txc.CommitmentEvent.Create().
 		SetWorkspace(txws).SetRelationship(txrel).SetUser(txu).SetCommitment(row).
 		SetSourceEventID("gmail-commitment:" + ev.ID.String()).SetVersion(1).SetKind("proposed").
 		SetActorType("deterministic_rule").SetActorRef("gmail-scan").SetOccurredAt(ev.OccurredAt.UTC()).
 		SetEvidenceRefs([]string{"revenue-evidence:" + ev.ID.String()}).SetPayloadJSON(string(payload)).Save(ctx); err != nil {
-		return err
+		return false, err
 	}
-	return tx.Commit()
+	return true, tx.Commit()
 }
 
 // directionOf maps a thread's latest message onto the interaction direction the

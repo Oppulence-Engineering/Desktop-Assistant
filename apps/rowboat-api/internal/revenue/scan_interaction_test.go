@@ -27,7 +27,7 @@ func TestScanRerunsDoNotInflateInteractionCount(t *testing.T) {
 	}
 
 	for round := 0; round < 4; round++ {
-		if _, _, _, err := f.svc.materializeHit(f.ctx, f.user, sum, hit); err != nil {
+		if _, _, _, _, err := f.svc.materializeHit(f.ctx, f.user, sum, hit); err != nil {
 			t.Fatalf("round %d: %v", round, err)
 		}
 	}
@@ -70,7 +70,7 @@ func TestNewThreadActivityCountsAnotherInteraction(t *testing.T) {
 		ProposedMessage: "m", Components: map[string]int{"recency": 1},
 		Anchor: googleapi.GmailThreadMessage{ID: "m1", ThreadID: "t1", At: now, Snippet: "any update?"},
 	}
-	if _, _, _, err := f.svc.materializeHit(f.ctx, f.user, sum, first); err != nil {
+	if _, _, _, _, err := f.svc.materializeHit(f.ctx, f.user, sum, first); err != nil {
 		t.Fatalf("first: %v", err)
 	}
 
@@ -83,7 +83,7 @@ func TestNewThreadActivityCountsAnotherInteraction(t *testing.T) {
 			ID: "m2", ThreadID: "t1", At: sum.LastAt, Snippet: "following up again",
 		},
 	}
-	if _, _, _, err := f.svc.materializeHit(f.ctx, f.user, sum, second); err != nil {
+	if _, _, _, _, err := f.svc.materializeHit(f.ctx, f.user, sum, second); err != nil {
 		t.Fatalf("second: %v", err)
 	}
 
