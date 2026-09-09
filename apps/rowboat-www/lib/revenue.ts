@@ -36,6 +36,10 @@ import type {
   ResearchConsentState,
   ResearchEstimate,
   ResearchStatus,
+  CommitmentRegisterFilter,
+  CommitmentRecord,
+  OpenPromisesReport,
+  RegisterEntry,
 } from "@/types/revenue";
 
 export class RevenueAPIError extends Error {
@@ -768,3 +772,47 @@ export function relativeTime(iso?: string): string {
     year: "numeric",
   });
 }
+
+// --- the commitment register -------------------------------------------------
+//
+// One route, five views. Before this existed the register was assembled in the
+// browser from relationship-graph nodes, which could not page, could not filter
+// server-side, and could not answer "by owner" or "what changed" at all.
+
+export async function listCommitments(
+  filter: CommitmentRegisterFilter = {},
+  signal?: AbortSignal,
+): Promise<RegisterEntry[]> {
+  const params = new URLSearchParams();
+  if (filter.direction) params.set("direction", filter.direction);
+  if (filter.state?.length) params.set("state", filter.state.join(","));
+  if (filter.owner) params.set("owner", filter.owner);
+  if (filter.relationshipId) params.set("relationshipId", filter.relationshipId);
+  if (filter.dueBefore) params.set("dueBefore", filter.dueBefore);
+  if (filter.changedSince) params.set("changedSince", filter.changedSince);
+  if (filter.limit) params.set("limit", String(filter.limit));
+  if (filter.offset) params.set("offset", String(filter.offset));
+  const query = params.toString();
+  const res = await call<{ commitments?: RegisterEntry[] }>(
+    `/commitments${query ? `?${query}` : ""}`,
+    { signal },
+  );
+  return res.commitments ?? [];
+}
+
+export const getCommitmentRecord = (commitmentId: string, signal?: AbortSignal) =>
+  call<CommitmentRecord>(`/commitments/${encodeURIComponent(commitmentId)}/export`, { signal });
+
+/** The Markdown document a user forwards. Returned as text, not JSON. */
+export async function getCommitmentRecordMarkdown(commitmentId: string): Promise<string> {
+  const res = await dashboardFetch(
+    toDashboardAPIPath(`/commitments/${encodeURIComponent(commitmentId)}/export?format=md`),
+  );
+  if (!res.ok) {
+    throw new RevenueAPIError(`Export failed (${res.status})`, res.status);
+  }
+  return res.text();
+}
+
+export const getOpenPromisesReport = (scanId: string, signal?: AbortSignal) =>
+  call<OpenPromisesReport>(`/revenue-leak-scans/${encodeURIComponent(scanId)}/report`, { signal });

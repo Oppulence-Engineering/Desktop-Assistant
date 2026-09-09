@@ -8,84 +8,34 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ComponentProps } from "react";
 
 import { CommitmentQueue } from "./commitment-queue";
-import type { RelationshipGraph, RelationshipSourceInventoryItem } from "@/types/revenue";
+import type { RegisterEntry, RelationshipSourceInventoryItem } from "@/types/revenue";
 
 afterEach(cleanup);
 
 const dueAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-function graph(acceptance = "accepted"): RelationshipGraph {
-  return {
-    contractVersion: "2026-08-01",
-    generatedAt: new Date().toISOString(),
-    asOf: new Date().toISOString(),
-    historical: false,
-    scope: "portfolio",
-    depth: 1,
-    permissions: {
-      canView: true,
-      canContribute: true,
-      canApprove: true,
-      canExecute: true,
-      canSaveViews: true,
+// The queue reads the register now, so the fixture is a register row rather
+// than a relationship-graph node with edges the component had to reassemble.
+function entries(acceptance: RegisterEntry["acceptance"] = "accepted"): RegisterEntry[] {
+  return [
+    {
+      id: "commitment-1",
+      direction: "promised_by_me",
+      text: "Send the signed security packet",
+      status: "open",
+      state: "at_risk",
+      relationshipId: "rel-1",
+      relationshipName: "Acme",
+      dueAt,
+      confidence: 0.9,
+      userConfirmed: acceptance !== "candidate",
+      acceptance,
+      ownerParticipantRef: "Taylor",
+      counterpartyParticipantRef: "Morgan",
+      sourcePhrase: "I will send the signed security packet by Friday.",
+      currentEventVersion: 3,
     },
-    nodes: [
-      {
-        id: "relationship:rel-1",
-        kind: "relationship",
-        label: "Acme",
-        relationshipId: "rel-1",
-        relationshipIds: ["rel-1"],
-        changedSinceReview: false,
-        changedDimensions: [],
-        evidenceRefs: [],
-        metadata: {},
-      },
-      {
-        id: "person:owner",
-        kind: "person",
-        label: "Taylor",
-        relationshipId: "rel-1",
-        relationshipIds: ["rel-1"],
-        changedSinceReview: false,
-        changedDimensions: [],
-        evidenceRefs: [],
-        metadata: {},
-      },
-      {
-        id: "commitment:commitment-1",
-        kind: "commitment",
-        label: "Send the signed security packet",
-        relationshipId: "rel-1",
-        relationshipIds: ["rel-1"],
-        status: "open",
-        summary: "I will send the signed security packet by Friday.",
-        dueAt,
-        resourceRef: "commitment-1",
-        changedSinceReview: false,
-        changedDimensions: [],
-        evidenceRefs: ["evidence-1"],
-        metadata: {
-          acceptance,
-          direction: "promised_by_me",
-          counterpartyParticipantRef: "Morgan",
-          currentEventVersion: 3,
-          userConfirmed: acceptance !== "candidate",
-        },
-      },
-    ],
-    edges: [
-      {
-        id: "edge:owner",
-        source: "person:owner",
-        target: "commitment:commitment-1",
-        kind: "owns",
-        label: "owns",
-        directed: true,
-        evidenceRefs: ["evidence-1"],
-      },
-    ],
-  };
+  ];
 }
 
 const sources: RelationshipSourceInventoryItem[] = [
@@ -108,7 +58,8 @@ const sources: RelationshipSourceInventoryItem[] = [
 
 function props(overrides: Partial<ComponentProps<typeof CommitmentQueue>> = {}) {
   return {
-    graph: graph(),
+    entries: entries(),
+    relationshipCount: 1,
     sources,
     onScan: vi.fn(),
     onOpenConnectors: vi.fn(),
@@ -139,7 +90,7 @@ describe("CommitmentQueue", () => {
     render(
       <CommitmentQueue
         {...props({
-          graph: { ...graph(), nodes: [], edges: [] },
+          entries: [],
           sources: [
             {
               ...sources[0],
@@ -196,8 +147,7 @@ describe("CommitmentQueue", () => {
   it("records confirmation and correction through transition callbacks", async () => {
     const user = userEvent.setup();
     const onTransition = vi.fn(async () => true);
-    const candidate = graph("candidate");
-    render(<CommitmentQueue {...props({ graph: candidate, onTransition })} />);
+    render(<CommitmentQueue {...props({ entries: entries("candidate"), onTransition })} />);
 
     await user.click(screen.getByRole("button", { name: "Confirm promise" }));
     await waitFor(() =>

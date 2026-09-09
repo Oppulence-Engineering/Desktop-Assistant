@@ -1094,3 +1094,95 @@ export type RelationshipGraphPermissions = z.infer<typeof RelationshipGraphPermi
 export type RelationshipGraph = z.infer<typeof RelationshipGraphSchema>;
 export type RelationshipGraphSavedViewState = z.infer<typeof RelationshipGraphSavedViewStateSchema>;
 export type RelationshipGraphSavedView = z.infer<typeof RelationshipGraphSavedViewSchema>;
+
+// --- the commitment register -------------------------------------------------
+//
+// The register is the cross-account list of obligations: what we owe, what they
+// owe us, what changed. Every other commitment surface in this app is scoped to
+// one account and cannot answer those questions.
+
+/** The state a reader sees, which is not the status the database stores:
+ *  "met" is stored as "fulfilled" and "at risk" is derived from the due date. */
+export type RegisterState =
+  | "open"
+  | "at_risk"
+  | "met"
+  | "missed"
+  | "waived"
+  | "disputed"
+  | "cancelled"
+  | "superseded";
+
+export interface RegisterEntry extends RelationshipCommitment {
+  state: RegisterState;
+  relationshipId?: string;
+  relationshipName?: string;
+}
+
+export interface CommitmentRegisterFilter {
+  direction?: "promised_by_me" | "promised_by_them" | "mutual";
+  state?: RegisterState[];
+  owner?: string;
+  relationshipId?: string;
+  dueBefore?: string;
+  changedSince?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ExportedEvidence {
+  source: string;
+  sourceUri?: string;
+  excerpt: string;
+  occurredAt: string;
+  contentHash: string;
+}
+
+export interface ExportedTransition {
+  version: number;
+  kind: string;
+  actorType: string;
+  actorRef?: string;
+  occurredAt: string;
+}
+
+export interface CommitmentRecord {
+  id: string;
+  generatedAt: string;
+  account: string;
+  direction: string;
+  text: string;
+  state: RegisterState;
+  dueAt?: string;
+  duePhrase?: string;
+  owner?: string;
+  counterparty?: string;
+  confidence: number;
+  evidence: ExportedEvidence[];
+  history: ExportedTransition[];
+}
+
+export interface OpenPromisesReportItem {
+  commitmentId: string;
+  account: string;
+  direction: string;
+  text: string;
+  state: RegisterState;
+  dueAt?: string;
+  duePhrase?: string;
+  owner?: string;
+  sourceQuote?: string;
+  sourceUri?: string;
+  occurredAt?: string;
+}
+
+export interface OpenPromisesReport {
+  generatedAt: string;
+  lookbackDays: number;
+  threadsSeen: number;
+  scanStatus: string;
+  outboundCount: number;
+  inboundCount: number;
+  byAccount: Record<string, number>;
+  items: OpenPromisesReportItem[];
+}

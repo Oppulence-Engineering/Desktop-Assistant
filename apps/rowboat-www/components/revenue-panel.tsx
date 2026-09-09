@@ -13,7 +13,9 @@ import {
   getRelationshipGraph,
   getScan,
   getScans,
+  getCommitmentRecordMarkdown,
   getWorkspace,
+  listCommitments,
   listRelationshipSources,
   RevenueAPIError,
   runCommitmentRecovery,
@@ -21,8 +23,10 @@ import {
 } from "@/lib/revenue";
 import {
   CommitmentQueue,
+  registerFilterFor,
   type CommitmentQueueItem,
   type CommitmentQueueTransition,
+  type RegisterView,
 } from "@/components/features/revenue/commitment-queue/commitment-queue";
 import { ImpactView } from "@/components/revenue/impact-view";
 import { QueueView } from "@/components/revenue/queue-view";
@@ -107,15 +111,27 @@ export function RevenuePanel({
       return status === "completed" || status === "failed" ? false : 2_000;
     },
   });
+  // The register comes from its own route now. The relationship graph is still
+  // fetched, but only for the account count in the empty state — the rows
+  // themselves are no longer reassembled from graph nodes in the browser.
+  const [registerView, setRegisterView] = React.useState<RegisterView>("we_owe");
   const commitmentQuery = useQuery({
-    queryKey: ["commitment-queue", refreshKey],
+    queryKey: ["commitment-queue", refreshKey, registerView],
     queryFn: async () => {
-      const [graph, sources] = await Promise.allSettled([
-        getRelationshipGraph({ scope: "portfolio", depth: 1 }),
+      const [entries, sources, graph] = await Promise.allSettled([
+        listCommitments(registerFilterFor(registerView)),
         listRelationshipSources(),
+        getRelationshipGraph({ scope: "portfolio", depth: 1 }),
       ]);
-      if (graph.status === "rejected") throw graph.reason;
-      return { graph: graph.value, sources: sources.status === "fulfilled" ? sources.value : [] };
+      if (entries.status === "rejected") throw entries.reason;
+      return {
+        entries: entries.value,
+        sources: sources.status === "fulfilled" ? sources.value : [],
+        relationshipCount:
+          graph.status === "fulfilled"
+            ? graph.value.nodes.filter((node) => node.kind === "relationship").length
+            : 0,
+      };
     },
     enabled: tab === "commitments",
   });
@@ -173,6 +189,28 @@ export function RevenuePanel({
     [commitmentQuery, setBanner, setNoticeMsg],
   );
 
+  // The record leaves the tool as Markdown, because the place it gets used is
+  // an email thread and Markdown pastes.
+  const exportRecord = React.useCallback(
+    async (item: CommitmentQueueItem) => {
+      try {
+        const markdown = await getCommitmentRecordMarkdown(item.id);
+        const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `commitment-${item.id}.md`;
+        link.click();
+        URL.revokeObjectURL(url);
+        capture(RevenueEvents.CommitmentExported, { commitmentId: item.id, state: item.state });
+        setNoticeMsg("Commitment record exported.");
+      } catch (error) {
+        setBanner(error instanceof Error ? error.message : "Could not export the record.");
+      }
+    },
+    [setBanner, setNoticeMsg],
+  );
+
   const draftRecovery = React.useCallback(
     async (relationshipId: string) => {
       try {
@@ -220,7 +258,11 @@ export function RevenuePanel({
 
         {tab === "commitments" ? (
           <CommitmentQueue
-            graph={commitmentQuery.data?.graph ?? null}
+            entries={commitmentQuery.data?.entries ?? []}
+            view={registerView}
+            onViewChange={setRegisterView}
+            onExport={exportRecord}
+            relationshipCount={commitmentQuery.data?.relationshipCount ?? 0}
             sources={commitmentQuery.data?.sources ?? []}
             latestScan={latestCompletedScan}
             loading={commitmentQuery.isLoading}

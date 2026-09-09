@@ -8,6 +8,7 @@ import {
   ArrowClockwise,
   Check,
   CircleNotch,
+  Export,
   MagnifyingGlass,
   PencilSimple,
   Plugs,
@@ -36,8 +37,8 @@ import {
 import { cn } from "@oppulence/ui/lib/utils";
 
 import type {
-  RelationshipGraph,
-  RelationshipGraphNode,
+  CommitmentRegisterFilter,
+  RegisterEntry,
   RelationshipSourceInventoryItem,
   RevenueLeakScan,
 } from "@/types/revenue";
@@ -64,7 +65,12 @@ export interface CommitmentQueueItem {
   owner: string;
   counterparty: string;
   dueAt?: string;
+  /** The register state a reader sees: open, at_risk, met, missed, waived… */
   state: string;
+  /** Where the promise sits in the confirm/offer/accept chain. A separate axis
+   *  from state: a commitment can be accepted AND at risk. */
+  acceptance: string;
+  blocker?: string;
   quote?: string;
   missingEvidence: string[];
   nextAction: string;
@@ -72,11 +78,54 @@ export interface CommitmentQueueItem {
   currentEventVersion: number;
 }
 
+/** The five views of the commitment register (one-pager §3). Each one is a
+ *  different query against GET /v1/commitments, not a different screen. */
+export type RegisterView = "we_owe" | "they_owe" | "changed" | "by_account" | "by_owner";
+
+export const REGISTER_VIEWS: { id: RegisterView; label: string; hint: string }[] = [
+  { id: "we_owe", label: "What we owe", hint: "Outbound obligations by risk, then by date." },
+  { id: "they_owe", label: "What they owe us", hint: "Inbound obligations. The view no other tool offers." },
+  { id: "changed", label: "What changed", hint: "New commitments and slippage since the last review." },
+  { id: "by_account", label: "By account", hint: "The full two-sided history for one relationship." },
+  { id: "by_owner", label: "By owner", hint: "What each person has promised. Used for load and handover." },
+];
+
+/** The filter each view sends to the register. Kept beside the labels so the
+ *  view and its query cannot drift apart. */
+export function registerFilterFor(
+  view: RegisterView,
+  options: { relationshipId?: string; owner?: string; since?: string } = {},
+): CommitmentRegisterFilter {
+  switch (view) {
+    case "we_owe":
+      return { direction: "promised_by_me", state: ["open", "at_risk"], limit: 200 };
+    case "they_owe":
+      return { direction: "promised_by_them", state: ["open", "at_risk"], limit: 200 };
+    case "changed":
+      return {
+        changedSince:
+          options.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        limit: 200,
+      };
+    case "by_account":
+      return { relationshipId: options.relationshipId, limit: 200 };
+    case "by_owner":
+      return { owner: options.owner, limit: 200 };
+  }
+}
+
 export interface CommitmentQueueProps extends Omit<
   React.ComponentPropsWithoutRef<"section">,
   "children"
 > {
-  graph: RelationshipGraph | null;
+  /** Register rows from GET /v1/commitments. */
+  entries: RegisterEntry[];
+  view?: RegisterView;
+  onViewChange?: (view: RegisterView) => void;
+  /** Fetches the Markdown record a user forwards. */
+  onExport?: (item: CommitmentQueueItem) => Promise<void>;
+  /** Accounts in the workspace, for the "no accounts yet" empty state. */
+  relationshipCount?: number;
   sources: RelationshipSourceInventoryItem[];
   latestScan?: RevenueLeakScan | null;
   loading?: boolean;
@@ -93,79 +142,55 @@ export interface CommitmentQueueProps extends Omit<
   onDraftRecovery: (relationshipId: string) => Promise<boolean>;
 }
 
-function metadataString(node: RelationshipGraphNode, key: string) {
-  const value = node.metadata[key];
-  return typeof value === "string" ? value.trim() : "";
-}
+// The register already carries direction, owner, counterparty, the derived
+// state and the account name, so the queue no longer reconstructs commitments
+// from relationship-graph nodes and edges. That reconstruction could not page,
+// could not filter server-side, and could not answer "by owner" at all.
 
-function metadataNumber(node: RelationshipGraphNode, key: string) {
-  const value = node.metadata[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
-function commitmentState(node: RelationshipGraphNode) {
-  if (node.status && node.status !== "open") return node.status;
-  if (metadataString(node, "blocker")) return "blocked";
-  const acceptance = metadataString(node, "acceptance");
-  if (acceptance) return acceptance;
-  return node.metadata.userConfirmed === true ? "internally_confirmed" : "candidate";
-}
-
-function missingEvidence(node: RelationshipGraphNode, hasOwner: boolean) {
+function missingEvidence(entry: RegisterEntry) {
   const missing: string[] = [];
-  if (!hasOwner && !metadataString(node, "ownerParticipantRef")) missing.push("promiser");
-  if (
-    !metadataString(node, "counterpartyParticipantRef") &&
-    !metadataString(node, "beneficiaryParticipantRef")
-  )
+  if (!entry.ownerParticipantRef?.trim()) missing.push("promiser");
+  if (!entry.counterpartyParticipantRef?.trim() && !entry.beneficiaryParticipantRef?.trim()) {
     missing.push("recipient");
-  if (!node.dueAt) missing.push("due date");
-  if (!node.summary?.trim()) missing.push("exact quote");
-  if (node.evidenceRefs.length === 0) missing.push("supporting record");
-  if (commitmentState(node) === "candidate") missing.push("confirmation");
+  }
+  if (!entry.dueAt) missing.push("due date");
+  if (!entry.sourcePhrase?.trim()) missing.push("exact quote");
+  if (entry.acceptance === "candidate") missing.push("confirmation");
   return missing;
 }
 
-function nextAction(state: string, missing: string[], urgency: CommitmentQueueItem["urgency"]) {
-  if (state === "fulfilled") return "Closed from observed or confirmed evidence.";
+function nextAction(
+  state: string,
+  missing: string[],
+  urgency: CommitmentQueueItem["urgency"],
+  blocked = false,
+) {
+  if (state === "met") return "Closed from observed or confirmed evidence.";
+  if (state === "waived") return "Released by the counterparty. No action required.";
   if (state === "cancelled" || state === "superseded") return "No action required.";
-  if (state === "blocked") return "Resolve the blocker or renegotiate the promise.";
+  if (state === "missed") return "Acknowledge with the counterparty or renegotiate.";
   if (state === "disputed") return "Clarify the promise with the counterparty.";
+  if (blocked) return "Resolve the blocker or renegotiate the promise.";
   if (missing.length > 0) return `Confirm or correct ${missing[0]}.`;
   if (urgency === "overdue") return "Draft a recovery message or task now.";
   if (urgency === "due_soon") return "Review and warn the owner before it is overdue.";
   return "Watch connected sources for fulfillment or a reply.";
 }
 
-function buildCommitmentQueue(graph: RelationshipGraph, now = new Date()) {
-  const nodes = new Map(graph.nodes.map((node) => [node.id, node]));
-  const ownerByCommitment = new Map<string, RelationshipGraphNode>();
-  for (const edge of graph.edges) {
-    if (edge.kind === "owns") {
-      const owner = nodes.get(edge.source);
-      if (owner) ownerByCommitment.set(edge.target, owner);
-    }
-  }
-
-  return graph.nodes
-    .filter((node) => node.kind === "commitment" && node.relationshipId && node.resourceRef)
-    .map((node): CommitmentQueueItem => {
-      const relationship = nodes.get(`relationship:${node.relationshipId}`);
-      const ownerNode = ownerByCommitment.get(node.id);
-      const direction = metadataString(node, "direction");
-      const beneficiaryRef = metadataString(node, "beneficiaryParticipantRef");
-      const counterpartyRef = metadataString(node, "counterpartyParticipantRef");
-      const relationshipName = relationship?.label || "Unknown account";
+function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQueueItem[] {
+  return entries
+    .map((entry): CommitmentQueueItem => {
+      const relationshipName = entry.relationshipName || "Unknown account";
       const owner =
-        ownerNode?.label ||
-        metadataString(node, "ownerParticipantRef") ||
-        (direction === "promised_by_me" ? "You" : relationshipName);
+        entry.ownerParticipantRef ||
+        (entry.direction === "promised_by_me" ? "You" : relationshipName);
       const counterparty =
-        beneficiaryRef ||
-        (direction === "promised_by_them" ? "You" : counterpartyRef || relationshipName);
-      const state = commitmentState(node);
-      const due = node.dueAt ? new Date(node.dueAt).getTime() : undefined;
-      const closed = ["fulfilled", "cancelled", "superseded"].includes(state);
+        entry.beneficiaryParticipantRef ||
+        (entry.direction === "promised_by_them"
+          ? "You"
+          : entry.counterpartyParticipantRef || relationshipName);
+      const due = entry.dueAt ? new Date(entry.dueAt).getTime() : undefined;
+      const closed = ["met", "waived", "cancelled", "superseded"].includes(entry.state);
       const urgency: CommitmentQueueItem["urgency"] = closed
         ? "closed"
         : due !== undefined && due < now.getTime()
@@ -173,22 +198,24 @@ function buildCommitmentQueue(graph: RelationshipGraph, now = new Date()) {
           : due !== undefined && due <= now.getTime() + THREE_DAYS
             ? "due_soon"
             : "open";
-      const missing = missingEvidence(node, Boolean(ownerNode));
+      const missing = missingEvidence(entry);
       return {
-        id: node.resourceRef!,
-        relationshipId: node.relationshipId!,
+        id: entry.id,
+        relationshipId: entry.relationshipId ?? "",
         relationshipName,
-        text: node.label,
-        direction,
+        text: entry.text,
+        direction: entry.direction,
         owner,
         counterparty,
-        dueAt: node.dueAt,
-        state,
-        quote: node.summary,
+        dueAt: entry.dueAt,
+        state: entry.state,
+        acceptance: entry.acceptance ?? "candidate",
+        blocker: entry.blocker,
+        quote: entry.sourcePhrase,
         missingEvidence: missing,
-        nextAction: nextAction(state, missing, urgency),
+        nextAction: nextAction(entry.state, missing, urgency, Boolean(entry.blocker?.trim())),
         urgency,
-        currentEventVersion: metadataNumber(node, "currentEventVersion"),
+        currentEventVersion: entry.currentEventVersion ?? 0,
       };
     })
     .sort((left, right) => {
@@ -212,15 +239,25 @@ function sourceConnected(source: RelationshipSourceInventoryItem | undefined) {
 
 function statusLabel(value: string) {
   const labels: Record<string, string> = {
+    open: "Open",
+    at_risk: "At risk",
+    met: "Met",
+    missed: "Missed",
+    waived: "Waived",
+    disputed: "Disputed",
+    cancelled: "Cancelled",
+    superseded: "Superseded",
+  };
+  return labels[value] || value.replaceAll("_", " ");
+}
+
+function acceptanceLabel(value: string) {
+  const labels: Record<string, string> = {
     candidate: "Needs confirmation",
     internally_confirmed: "Confirmed",
     offered: "Offered",
     accepted: "Accepted",
     disputed: "Disputed",
-    blocked: "Blocked",
-    fulfilled: "Fulfilled",
-    cancelled: "Cancelled",
-    superseded: "Superseded",
   };
   return labels[value] || value.replaceAll("_", " ");
 }
@@ -234,7 +271,11 @@ function localDateTime(iso?: string) {
 
 export function CommitmentQueue({
   className,
-  graph,
+  entries,
+  view = "we_owe",
+  onViewChange,
+  onExport,
+  relationshipCount = 0,
   sources,
   latestScan,
   loading = false,
@@ -251,12 +292,12 @@ export function CommitmentQueue({
   const [query, setQuery] = React.useState("");
   const [filter, setFilter] = React.useState("active");
   const [busy, setBusy] = React.useState<string | null>(null);
+  const [exporting, setExporting] = React.useState(false);
   const [selected, setSelected] = React.useState<CommitmentQueueItem | null>(null);
   const [editing, setEditing] = React.useState<CommitmentQueueItem | null>(null);
   const [correctedText, setCorrectedText] = React.useState("");
   const [correctedDueAt, setCorrectedDueAt] = React.useState("");
-  const items = React.useMemo(() => (graph ? buildCommitmentQueue(graph) : []), [graph]);
-  const relationshipCount = graph?.nodes.filter((node) => node.kind === "relationship").length ?? 0;
+  const items = React.useMemo(() => toQueueItems(entries), [entries]);
   const filtered = items.filter((item) => {
     if (filter === "review" && item.missingEvidence.length === 0) return false;
     if (filter === "due" && item.urgency !== "overdue" && item.urgency !== "due_soon") return false;
@@ -303,6 +344,30 @@ export function CommitmentQueue({
       className={cn("relative flex min-h-full w-full min-w-0 flex-col", className)}
       {...props}
     >
+      <div
+        className="flex shrink-0 flex-wrap items-center gap-1 border-b border-border px-3 py-1.5"
+        role="tablist"
+        aria-label="Register views"
+      >
+        {REGISTER_VIEWS.map((registerView) => (
+          <button
+            key={registerView.id}
+            role="tab"
+            type="button"
+            aria-selected={view === registerView.id}
+            title={registerView.hint}
+            onClick={() => onViewChange?.(registerView.id)}
+            className={cn(
+              "h-7 rounded-none border px-2.5 text-[12px] transition-colors",
+              view === registerView.id
+                ? "border-border bg-background-100 text-primary"
+                : "border-transparent text-primary/55 hover:text-primary",
+            )}
+          >
+            {registerView.label}
+          </button>
+        ))}
+      </div>
       <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         <div className="relative min-w-[220px] max-w-sm flex-1">
           <MagnifyingGlass className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-primary/35" />
@@ -378,7 +443,7 @@ export function CommitmentQueue({
           </span>
           <span>
             <b className="font-medium text-primary">
-              {items.filter((item) => item.state === "fulfilled").length}
+              {items.filter((item) => item.state === "met").length}
             </b>{" "}
             fulfilled
           </span>
@@ -591,7 +656,7 @@ export function CommitmentQueue({
                   </td>
                   <td className="px-2 py-1.5">
                     <div className="flex items-center gap-1">
-                      {item.state === "candidate" ? (
+                      {item.acceptance === "candidate" ? (
                         <ActionButton
                           busy={busy === `${item.id}:internally_confirmed`}
                           disabled={busy !== null}
@@ -647,6 +712,24 @@ export function CommitmentQueue({
                 <X className="size-4" />
               </button>
               <span className="text-[12px] text-primary/45">Commitment record</span>
+              {/* One-pager §3: a record that cannot leave the tool cannot
+                  settle an argument. */}
+              {onExport ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="ml-auto h-7 px-2 text-[12px]"
+                  disabled={exporting}
+                  onClick={() => {
+                    setExporting(true);
+                    void onExport(selected).finally(() => setExporting(false));
+                  }}
+                >
+                  {exporting ? <CircleNotch className="animate-spin" /> : <Export />}
+                  Export record
+                </Button>
+              ) : null}
             </div>
             <div className="border-b border-border p-4">
               <div className="flex items-start gap-3">
@@ -662,7 +745,7 @@ export function CommitmentQueue({
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {(selected.urgency === "overdue" || selected.urgency === "due_soon") &&
-                selected.state !== "candidate" ? (
+                selected.acceptance !== "candidate" ? (
                   <Button
                     type="button"
                     size="sm"
@@ -745,6 +828,7 @@ export function CommitmentQueue({
                   }
                 />
                 <DetailCard label="Promise status" value={statusLabel(selected.state)} />
+                <DetailCard label="Acceptance" value={acceptanceLabel(selected.acceptance)} />
                 <DetailCard
                   label="Evidence completeness"
                   value={
@@ -781,7 +865,7 @@ export function CommitmentQueue({
                     </p>
                   ) : null}
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {selected.state === "candidate" ? (
+                    {selected.acceptance === "candidate" ? (
                       <ActionButton
                         busy={busy === `${selected.id}:internally_confirmed`}
                         disabled={busy !== null}
@@ -790,7 +874,7 @@ export function CommitmentQueue({
                         <Check /> Confirm promise
                       </ActionButton>
                     ) : null}
-                    {["internally_confirmed", "offered", "disputed"].includes(selected.state) ? (
+                    {["internally_confirmed", "offered", "disputed"].includes(selected.acceptance) ? (
                       <ActionButton
                         busy={busy === `${selected.id}:accepted`}
                         disabled={busy !== null}
@@ -799,7 +883,7 @@ export function CommitmentQueue({
                         <Check /> Mark accepted
                       </ActionButton>
                     ) : null}
-                    {selected.state === "accepted" || selected.state === "offered" ? (
+                    {selected.acceptance === "accepted" || selected.acceptance === "offered" ? (
                       <Button
                         type="button"
                         size="sm"
@@ -810,7 +894,7 @@ export function CommitmentQueue({
                         Mark disputed
                       </Button>
                     ) : null}
-                    {selected.state === "accepted" ? (
+                    {selected.acceptance === "accepted" ? (
                       <Button
                         type="button"
                         size="sm"
@@ -825,7 +909,7 @@ export function CommitmentQueue({
                         Mark blocked
                       </Button>
                     ) : null}
-                    {selected.state === "blocked" ? (
+                    {selected.blocker ? (
                       <Button
                         type="button"
                         size="sm"
@@ -836,7 +920,7 @@ export function CommitmentQueue({
                         Unblock
                       </Button>
                     ) : null}
-                    {["internally_confirmed", "accepted", "blocked"].includes(selected.state) ? (
+                    {["internally_confirmed", "accepted"].includes(selected.acceptance) || selected.blocker ? (
                       <Button
                         type="button"
                         size="sm"
