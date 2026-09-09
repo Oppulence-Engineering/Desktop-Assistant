@@ -7,6 +7,11 @@ import "client-only";
 // server-side and bounces the browser back through WorkOS on a 401.
 
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
+import {
+  ExportCommitment200Response,
+  ListCommitments200Response,
+} from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
+import { GetOpenPromisesReport200Response } from "@/lib/api/generated/zod/revenue/revenue";
 import { RelationshipGraphSchema } from "@/types/revenue";
 import type {
   ActionAudit,
@@ -235,8 +240,20 @@ export const companyLinkedInURL = (
     : `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(displayName)}`;
 };
 
-export const interactionCountLabel = (count: number) =>
-  `${count} interaction${count === 1 ? "" : "s"}`;
+// An absent count is not a count of zero.
+//
+// This rendered `count ?? 0` as "0 interactions", so an account last touched
+// eighteen hours ago was labelled as having no interactions at all — the
+// number had simply never been computed. Stating a total nobody counted is the
+// product's worst failure mode: confidently wrong beats "we do not know".
+export const interactionCountLabel = (count: number | null | undefined) => {
+  if (count === null || count === undefined) return "—";
+  // It counts indexed email threads, so it says so. Called "interactions" it
+  // read as every touch of the account, which made "0 interactions" sit next
+  // to "last interaction 18 hours ago" and look like a contradiction — the
+  // account had been touched, just not over indexed mail.
+  return `${count} email thread${count === 1 ? "" : "s"}`;
+};
 
 export async function listRelationships(
   filters: RelationshipFilters = {},
@@ -790,18 +807,29 @@ export async function listCommitments(
   if (filter.relationshipId) params.set("relationshipId", filter.relationshipId);
   if (filter.dueBefore) params.set("dueBefore", filter.dueBefore);
   if (filter.changedSince) params.set("changedSince", filter.changedSince);
+  if (filter.includeCandidates) params.set("includeCandidates", "true");
   if (filter.limit) params.set("limit", String(filter.limit));
   if (filter.offset) params.set("offset", String(filter.offset));
   const query = params.toString();
-  const res = await call<{ commitments?: RegisterEntry[] }>(
-    `/commitments${query ? `?${query}` : ""}`,
-    { signal },
+  const res = ListCommitments200Response.parse(
+    await call<unknown>(`/commitments${query ? `?${query}` : ""}`, { signal }),
   );
-  return res.commitments ?? [];
+  return res.commitments.map((row) => ({
+    ...row,
+    dueAt: row.dueAt ?? undefined,
+    completedAt: row.completedAt ?? undefined,
+  })) as RegisterEntry[];
 }
 
-export const getCommitmentRecord = (commitmentId: string, signal?: AbortSignal) =>
-  call<CommitmentRecord>(`/commitments/${encodeURIComponent(commitmentId)}/export`, { signal });
+export async function getCommitmentRecord(
+  commitmentId: string,
+  signal?: AbortSignal,
+): Promise<CommitmentRecord> {
+  const record = ExportCommitment200Response.parse(
+    await call<unknown>(`/commitments/${encodeURIComponent(commitmentId)}/export`, { signal }),
+  );
+  return { ...record, dueAt: record.dueAt ?? undefined } as CommitmentRecord;
+}
 
 /** The Markdown document a user forwards. Returned as text, not JSON. */
 export async function getCommitmentRecordMarkdown(commitmentId: string): Promise<string> {
@@ -814,5 +842,34 @@ export async function getCommitmentRecordMarkdown(commitmentId: string): Promise
   return res.text();
 }
 
-export const getOpenPromisesReport = (scanId: string, signal?: AbortSignal) =>
-  call<OpenPromisesReport>(`/revenue-leak-scans/${encodeURIComponent(scanId)}/report`, { signal });
+export async function getOpenPromisesReport(
+  scanId: string,
+  signal?: AbortSignal,
+): Promise<OpenPromisesReport> {
+  const report = GetOpenPromisesReport200Response.parse(
+    await call<unknown>(`/revenue-leak-scans/${encodeURIComponent(scanId)}/report`, { signal }),
+  );
+  return {
+    ...report,
+    items: report.items.map((item) => ({ ...item, dueAt: item.dueAt ?? undefined })),
+  } as OpenPromisesReport;
+}
+
+export async function getOpenPromisesReportMarkdown(scanId: string): Promise<string> {
+  const res = await dashboardFetch(
+    toDashboardAPIPath(`/revenue-leak-scans/${encodeURIComponent(scanId)}/report?format=md`),
+  );
+  if (!res.ok) throw new RevenueAPIError(`Report export failed (${res.status})`, res.status);
+  return res.text();
+}
+
+export function downloadMarkdown(filename: string, markdown: string) {
+  const url = URL.createObjectURL(new Blob([markdown], { type: "text/markdown;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}

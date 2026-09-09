@@ -63,6 +63,15 @@ describe("companyLinkedInURL", () => {
 });
 
 it("labels interaction counts grammatically", () => {
-  expect(interactionCountLabel(1)).toBe("1 interaction");
-  expect(interactionCountLabel(2)).toBe("2 interactions");
+  expect(interactionCountLabel(1)).toBe("1 email thread");
+  expect(interactionCountLabel(2)).toBe("2 email threads");
+});
+
+// An absent count is not a count of zero. An account last touched eighteen
+// hours ago was labelled "0 interactions" because the total had never been
+// computed — a number nobody counted, stated as fact.
+it("interactionCountLabel does not invent a zero", () => {
+  expect(interactionCountLabel(undefined)).toBe("—");
+  expect(interactionCountLabel(null)).toBe("—");
+  expect(interactionCountLabel(0)).toBe("0 email threads");
 });

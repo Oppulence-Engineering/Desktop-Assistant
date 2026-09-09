@@ -46,6 +46,13 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
   ];
   const maxFunnel = Math.max(...funnel.map((f) => f.value), 1);
 
+  // "source_degradation" means we stopped receiving evidence. It is the only
+  // risk reason that is about our own plumbing rather than the relationship.
+  const degradedCount =
+    data.riskReasons?.find((risk) => risk.reason === "source_degradation")?.relationships ?? 0;
+  const sourceDegradationDominates =
+    degradedCount > 0 && degradedCount >= Math.max(1, data.atRiskRelationships);
+
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col gap-6">
       <section className="border border-border" data-capability="relationship-impact">
@@ -66,6 +73,23 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
             <WarningDiamond className="size-4 text-amber-500" /> Updated from live account state
           </div>
         </div>
+        {/* Exposure caused by a broken source is a statement about us, not
+            about the customer's accounts. Rendered as portfolio risk it reads
+            as "your business is on fire" when the truth is "we cannot see your
+            mail" — so when degradation drives most of the exposure, that is
+            said first, before any score. */}
+        {sourceDegradationDominates ? (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-amber-500/40 bg-amber-500/[0.06] px-4 py-2.5 text-[13px]">
+            <WarningDiamond className="size-4 shrink-0 text-amber-500" />
+            <span className="font-medium text-primary">
+              This score reflects missing data, not account behaviour.
+            </span>
+            <span className="text-primary/60">
+              {degradedCount} of {data.relationships} accounts are exposed because a connected
+              source stopped reporting. Reconnect it before reading these numbers as risk.
+            </span>
+          </div>
+        ) : null}
         <div className="grid grid-cols-2 divide-x divide-y divide-border md:grid-cols-4 md:divide-y-0">
           <Stat label="Portfolio risk score" value={`${data.portfolioRiskScore}/100`} />
           <Stat
