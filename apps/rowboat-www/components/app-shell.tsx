@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ArrowLeft,
   AddressBook,
+  FileText,
   Bell,
   Brain,
   BookOpen,
@@ -700,6 +701,11 @@ export function AppShellSidebar({
               label="Home"
               onClick={onNavigateChat}
             />
+            {/* The wedge, first in the list: the report is what a new account
+                reads before anything else. */}
+            <Link href="/app/report" className="block">
+              <SidebarNavItem active={false} icon={FileText} label="Open promises" />
+            </Link>
             {(
               [
                 ["tasks", CheckSquare],
