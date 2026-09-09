@@ -6,10 +6,15 @@ import { CircleNotch, LinkSimple, Plugs, ShieldCheck } from "@phosphor-icons/rea
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { Button } from "@oppulence/ui/components/button";
 import { Input } from "@oppulence/ui/components/input";
-import { linkWorkspace, relativeTime, RevenueAPIError } from "@/lib/revenue";
+import {
+  linkWorkspace,
+  listRelationshipSourceStatuses,
+  relativeTime,
+  RevenueAPIError,
+} from "@/lib/revenue";
 import { Field, errMessage } from "@/components/revenue/shared";
 import { capture, RevenueEvents } from "@/lib/analytics";
-import type { RevenueWorkspace } from "@/types/revenue";
+import type { RelationshipSourceStatus, RevenueWorkspace } from "@/types/revenue";
 
 export function WorkspaceView({
   workspace,
@@ -24,6 +29,24 @@ export function WorkspaceView({
   onNotice: (m: string) => void;
   onOpenConnectors?: () => void;
 }) {
+  // A page called "Sources" that says nothing about sources is where users
+  // were sent when told to reconnect, and it showed them a workspace-linking
+  // form instead. Connection health belongs here, above everything else.
+  const [sources, setSources] = React.useState<RelationshipSourceStatus[] | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    void listRelationshipSourceStatuses()
+      .then((rows) => {
+        if (!cancelled) setSources(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setSources([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [orgId, setOrgId] = React.useState("");
   const [wsId, setWsId] = React.useState("");
   const [busy, setBusy] = React.useState(false);
@@ -57,6 +80,30 @@ export function WorkspaceView({
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
+      <section className="rounded-[2px] border border-border">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <span className="text-sm font-medium text-primary">Connected sources</span>
+          {onOpenConnectors ? (
+            <Button onClick={onOpenConnectors} size="sm" variant="outline">
+              Manage connectors
+            </Button>
+          ) : null}
+        </div>
+        {sources === null ? (
+          <p className="px-4 py-3 text-sm text-primary/50">Loading sources…</p>
+        ) : sources.length === 0 ? (
+          <p className="px-4 py-3 text-sm text-primary/50">
+            No sources are connected yet, so there is nothing to read promises from.
+          </p>
+        ) : (
+          <dl className="divide-y divide-border text-sm">
+            {sources.map((source) => (
+              <SourceRow key={`${source.source}:${source.sourceAccountId}`} source={source} />
+            ))}
+          </dl>
+        )}
+      </section>
+
       {/* status card */}
       <section className="rounded-[2px] border border-border">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -146,6 +193,37 @@ export function WorkspaceView({
           </section>
         </>
       )}
+    </div>
+  );
+}
+
+// Health in the words a reader uses, and never silent about a source that has
+// stopped working.
+function SourceRow({ source }: { source: RelationshipSourceStatus }) {
+  const attention = source.status === "reconnect_required" || source.status === "disconnected";
+  const label = source.status.replaceAll("_", " ");
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5">
+      <div className="min-w-0">
+        <span className="capitalize text-primary/80">{source.source}</span>
+        {source.sourceAccountId && source.sourceAccountId !== "default" ? (
+          <span className="ml-2 font-mono text-xs text-primary/45">{source.sourceAccountId}</span>
+        ) : null}
+        {attention ? (
+          <p className="mt-0.5 text-xs text-destructive">
+            This source has stopped reporting, so promises from it are not being read.
+          </p>
+        ) : null}
+      </div>
+      <span
+        className={
+          attention
+            ? "shrink-0 border border-destructive/40 px-1.5 py-0.5 text-xs capitalize text-destructive"
+            : "shrink-0 text-xs capitalize text-primary/60"
+        }
+      >
+        {label}
+      </span>
     </div>
   );
 }
