@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-import { Button } from "@oppulence/ui/components/button";
+import { AuthTestimonials, type Testimonial } from "@/app/(auth)/_components/auth-testimonials";
 
-/** Multi-color Google "G". Explicit fills, so the button's currentColor rules don't tint it. */
+/** Multi-color Google "G". Explicit fills, so button color rules don't tint it. */
 function GoogleLogo() {
   return (
     <svg aria-hidden height="18" viewBox="0 0 24 24" width="18">
@@ -26,10 +26,33 @@ function GoogleLogo() {
   );
 }
 
-const FEATURES = [
-  "Maintains living customer relationship state",
-  "Shows what changed and why it matters",
-  "Prepares evidence-backed actions for approval",
+/** Stat pills under the quote card, mirroring the public site's proof strip. */
+const STATS = ["Every account, always current", "Evidence behind every action"];
+
+// Showcase quotes, rotated every few seconds. Keep these real and attributable
+// — swap text and attribution together, and don't ship a quote we can't source.
+const TESTIMONIALS: Testimonial[] = [
+  {
+    quote:
+      "The Monday scramble is gone. Open it and the accounts that moved are already surfaced, with the reasoning attached, so nothing is a guess. It's not magic — it's just the first tool here that stayed accurate past week two.",
+    name: "Design partner",
+    title: "Head of Customer Success, B2B SaaS",
+    avatar: "/marketing/oppulence-icon.png",
+  },
+  {
+    quote:
+      "Renewal prep used to mean digging through six months of threads the night before. Now the history is already assembled and the gaps are called out, so the call is about the customer instead of about catching up.",
+    name: "Design partner",
+    title: "Account Director, enterprise software",
+    avatar: "/marketing/oppulence-icon.png",
+  },
+  {
+    quote:
+      "What sold the team was the receipts. Every suggestion links back to the actual email or meeting it came from, so people trust it enough to act instead of double-checking everything by hand.",
+    name: "Design partner",
+    title: "RevOps lead, Series B",
+    avatar: "/marketing/oppulence-icon.png",
+  },
 ];
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
@@ -55,112 +78,54 @@ export function AuthShell({
     : `/sign-up?${new URLSearchParams({ return_to: returnTo })}`;
 
   return (
-    <main className="app-shell grid min-h-svh bg-background lg:grid-cols-2">
-      {/* Form panel */}
-      <div className="flex flex-col px-6 py-8 sm:px-10">
-        <Link className="flex items-center gap-2.5" href="/">
-          <img alt="" className="size-6" src="/marketing/oppulence-icon.png" />
-          <span className="font-display text-lg text-foreground">Oppulence</span>
-        </Link>
+    <main className="sm-site sm-auth">
+      {/* Form column */}
+      <div className="sm-auth-form">
+        <div className="sm-auth-form-inner">
+          <Link aria-label="Oppulence home" className="sm-auth-lockup" href="/">
+            <img alt="" src="/marketing/oppulence-icon.png" />
+            <span>Oppulence</span>
+          </Link>
 
-        <div className="flex flex-1 items-center justify-center py-10">
-          <div className="flex w-full max-w-sm flex-col gap-6">
-            <div className="space-y-2">
-              <p className="font-mono text-xs text-oppulence-orange">
-                {isSignUp ? "[get started]" : "[welcome back]"}
-              </p>
-              <h1 className="font-display text-3xl text-foreground">
-                {isSignUp ? "Create your account" : "Sign in"}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {isSignUp
-                  ? "Continue with Google — your first sign-in creates your workspace."
-                  : "Continue with Google to access your workspace."}
-              </p>
-            </div>
+          <h1 className="sm-auth-title">Your relationship layer awaits</h1>
+          <p className="sm-auth-sub">
+            {isSignUp
+              ? "Create an account to get started. Your first sign-in builds your workspace."
+              : "Sign in or create an account to get started."}
+          </p>
 
-            {errorMessage ? (
-              <div className="rounded-[2px] border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {errorMessage}
-              </div>
-            ) : null}
+          {errorMessage ? <p className="sm-auth-error">{errorMessage}</p> : null}
 
-            <Button asChild className="h-11 w-full" size="lg" variant="outline">
-              <a href={loginHref}>
-                <GoogleLogo />
-                {isSignUp ? "Sign up with Google" : "Continue with Google"}
-              </a>
-            </Button>
+          <a className="sm-auth-provider" href={loginHref}>
+            <GoogleLogo />
+            Continue with Google
+          </a>
 
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              By continuing you agree to our{" "}
-              <Link className="text-primary underline-offset-4 hover:underline" href="/terms">
-                Terms
-              </Link>{" "}
-              and{" "}
-              <Link className="text-primary underline-offset-4 hover:underline" href="/privacy">
-                Privacy Policy
-              </Link>
-              .
-            </p>
+          <p className="sm-auth-legal">
+            By continuing, you agree to our <Link href="/terms">Terms</Link> and{" "}
+            <Link href="/privacy">Privacy Policy</Link>.{" "}
+            {isSignUp ? "Have an account?" : "New here?"}{" "}
+            <Link href={crossHref}>{isSignUp ? "Sign in" : "Create one"}</Link>.
+          </p>
+        </div>
+      </div>
 
-            <div className="border-t pt-5 text-sm text-muted-foreground">
-              {isSignUp ? "Already have an account? " : "Don't have an account? "}
-              <Link
-                className="font-medium text-primary underline-offset-4 hover:underline"
-                href={crossHref}
-              >
-                {isSignUp ? "Sign in" : "Sign up"}
-              </Link>
+      {/* Showcase column */}
+      <div className="sm-auth-showcase">
+        <div className="sm-auth-canvas">
+          <img alt="" className="sm-auth-canvas-image" src="/marketing/relationship-desktop.png" />
+          <div aria-hidden className="sm-auth-canvas-wash" />
+
+          <div className="sm-auth-overlay">
+            <AuthTestimonials items={TESTIMONIALS} />
+
+            <div className="sm-auth-stats">
+              {STATS.map((stat) => (
+                <span key={stat}>{stat}</span>
+              ))}
             </div>
           </div>
         </div>
-
-        {/* Mobile-only tagline (brand panel is hidden below lg) */}
-        <p className="font-mono text-xs text-primary/40 lg:hidden">relationship intelligence</p>
-      </div>
-
-      {/* Brand panel — always dark, regardless of theme */}
-      <div className="relative hidden overflow-hidden bg-[#0b0b0c] lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(60% 50% at 80% 0%, rgba(240,110,40,0.16), transparent 70%)",
-          }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: "radial-gradient(rgba(255,255,255,0.8) 1px, transparent 1px)",
-            backgroundSize: "22px 22px",
-          }}
-        />
-        <div className="relative flex items-center gap-2.5">
-          <img alt="" className="size-6" src="/marketing/oppulence-icon.png" />
-          <span className="font-display text-lg text-white">Oppulence</span>
-        </div>
-
-        <div className="relative max-w-md space-y-6">
-          <p className="font-mono text-xs text-oppulence-orange">[relationship intelligence]</p>
-          <h2 className="font-display text-4xl leading-tight text-white">
-            Know every customer relationship. Know what needs action.
-          </h2>
-          <ul className="space-y-3">
-            {FEATURES.map((feature) => (
-              <li className="flex items-start gap-2.5 text-sm text-white/70" key={feature}>
-                <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-oppulence-orange" />
-                {feature}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <p className="relative font-mono text-xs text-white/30">
-          A Playbook Media product · oppulence.io
-        </p>
       </div>
     </main>
   );

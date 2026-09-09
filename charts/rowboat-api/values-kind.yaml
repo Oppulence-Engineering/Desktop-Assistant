@@ -20,6 +20,19 @@ service:
   nodePorts:
     http: 30080
 
+# The chart's default ingress rule only admits in-cluster namespaces, which is
+# right for stage/prod but wrong behind a NodePort: kind publishes 30080 to the
+# host, so every caller that matters locally (the desktop app, the rowboat-www
+# container, host curl) arrives with an off-cluster source IP and gets dropped.
+# That silently turned into "www readyz 503" with a healthy API. Local only —
+# stage/prod keep the namespace-scoped default from values.yaml.
+networkPolicy:
+  ingress:
+    from:
+      - namespaceSelector: {}
+      - ipBlock:
+          cidr: 0.0.0.0/0
+
 autoscaling:
   enabled: false
 
@@ -66,18 +79,26 @@ config:
   CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:18080
   GRAPHQL_INTROSPECTION_ENABLED: "true"
 
+  # One knob for every gateway-bound runtime (agent, cloud, event router).
+  # gpt-4.1 is already priced and advertised by /v1/llm/models, so the desktop
+  # can select it too, and it is cheaper per 1K than the Anthropic defaults
+  # (20/80 vs Sonnet's 30/150) — which matters because the gateway reserves the
+  # whole max_tokens up front against the prepaid balance. Set a specific
+  # *_MODEL var only to make one runtime deliberately differ.
+  LLM_MODEL: openai/gpt-4.1
+
   # Host-reachable URLs are what the desktop sees through kind port mappings.
   APP_URL: http://localhost:18080
-  OIDC_ISSUER_URL: http://localhost:18090
-  TOKEN_ISSUER: http://localhost:18090
+  # One knob for every issuer URL (OIDC, token, Ory, WorkOS authorize). They all
+  # point at the devstack mock locally, so changing the devstack port is a
+  # single edit here instead of four.
+  AUTH_ISSUER_URL: http://localhost:18090
   TOKEN_AUDIENCE: rowboat-api
 
   # rowboat-api runs inside kind, so it reaches devstack via Kubernetes DNS.
   JWKS_URL: http://rowboat-api-devstack:8090/.well-known/jwks.json
   WORKOS_BASE_URL: http://rowboat-api-devstack:8090
-  WORKOS_AUTHORIZE_BASE_URL: http://localhost:18090
 
-  ORY_PUBLIC_URL: http://localhost:18090
   PUBLIC_BASE_URL: http://localhost:18080
   # kind uses the Infisical CLI to create rowboat-api-secrets before Helm
   # deploys. Runtime app-level Infisical refresh stays disabled.

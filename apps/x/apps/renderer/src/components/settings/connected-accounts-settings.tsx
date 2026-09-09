@@ -93,10 +93,10 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
     return (
       <div
         key={provider}
-        className="flex items-center justify-between gap-3 rounded-2xl border border-border px-3 py-3 transition-colors hover:bg-accent/50"
+        className="flex items-center justify-between gap-3 rounded-none border border-border px-3 py-3 transition-colors hover:bg-accent/50"
       >
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-muted">{icon}</div>
+          <div className="flex size-10 items-center justify-center rounded-none bg-muted">{icon}</div>
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-medium truncate">{displayName}</span>
             {state.isLoading ? (
@@ -184,11 +184,11 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
     return (
       <div
         key={integration.name}
-        className="rounded-2xl border border-border p-3 transition-colors hover:bg-accent/50"
+        className="rounded-none border border-border p-3 transition-colors hover:bg-accent/50"
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-none bg-muted">
               {integrationIcon(integration.name, integration.iconUrl)}
             </div>
             <div className="min-w-0">
@@ -295,10 +295,10 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
     return (
       <div
         key="slack"
-        className="flex items-center justify-between gap-3 rounded-2xl border border-border px-3 py-3 transition-colors hover:bg-accent/50"
+        className="flex items-center justify-between gap-3 rounded-none border border-border px-3 py-3 transition-colors hover:bg-accent/50"
       >
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-none bg-muted">
             <BrandImage src={SLACK_BRAND_ICON} />
           </div>
           <div className="min-w-0">
@@ -479,7 +479,7 @@ export function ConnectedAccountsSettings({ dialogOpen }: ConnectedAccountsSetti
                 {rows.length ? (
                   rows
                 ) : (
-                  <p className="rounded-2xl border border-dashed border-border p-4 text-xs text-muted-foreground">
+                  <p className="rounded-none border border-dashed border-border p-4 text-xs text-muted-foreground">
                     {empty}
                   </p>
                 )}

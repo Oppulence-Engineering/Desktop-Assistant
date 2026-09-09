@@ -206,7 +206,7 @@ function ToolkitPreviewIcon({ toolkit }: { toolkit: ToolkitPreview }) {
     <div
       title={`${toolkit.name}: ${toolkit.description}`}
       aria-label={toolkit.name}
-      className={`flex size-8 shrink-0 items-center justify-center rounded-lg border ${
+      className={`flex size-8 shrink-0 items-center justify-center rounded-none border ${
         toolkit.connected
           ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
           : "border-border bg-muted/60 text-muted-foreground"
@@ -810,7 +810,7 @@ export function HomeView({
                   <button
                     type="button"
                     onClick={() => setConnectionsSettingsOpen(true)}
-                    className="ml-1 flex h-5 shrink-0 items-center gap-1 rounded-md px-1 text-[12px] font-medium text-primary hover:underline"
+                    className="ml-1 flex h-5 shrink-0 items-center gap-1 rounded-none px-1 text-[12px] font-medium text-primary hover:underline"
                   >
                     Connections
                     <ArrowRight className="size-3" />

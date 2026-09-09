@@ -1343,7 +1343,7 @@ function SettingsOverview({ onNavigate }: { onNavigate: (tab: ConfigTab) => void
             ))}
           </div>
         ) : (
-          <p className="rounded-2xl border border-dashed border-border p-5 text-sm text-muted-foreground">
+          <p className="rounded-none border border-dashed border-border p-5 text-sm text-muted-foreground">
             No settings match “{query}”. Try a provider, permission, transcription, or appearance.
           </p>
         )}

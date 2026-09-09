@@ -745,3 +745,118 @@ func TestLLMRateLimitsAreOverridable(t *testing.T) {
 			cfg.LLMRateLimitPerUserPerMin, cfg.LLMRateLimitPerUserBurst)
 	}
 }
+
+// TestLLMModelUmbrella: the three gateway-bound runtimes must be movable with
+// one variable. Before LLM_MODEL, saying "use gpt-4.1" meant setting three
+// vars, and a deploy that set only the obvious two silently left the event
+// router on another provider.
+func TestLLMModelUmbrella(t *testing.T) {
+	for _, k := range []string{"LLM_MODEL", "AGENT_RUNTIME_MODEL", "CLOUD_RUNTIME_MODEL", "CLOUD_EVENTS_ROUTER_MODEL"} {
+		t.Setenv(k, "")
+		os.Unsetenv(k)
+	}
+
+	// Unset: each runtime keeps its own documented default.
+	cfg := Load()
+	if cfg.AgentRuntimeModel != "anthropic/claude-sonnet-4-5" ||
+		cfg.CloudRuntimeModel != "anthropic/claude-sonnet-4-5" ||
+		cfg.CloudEventsRouterModel != "anthropic/claude-haiku-4-5" {
+		t.Fatalf("unset defaults changed: agent=%s cloud=%s router=%s",
+			cfg.AgentRuntimeModel, cfg.CloudRuntimeModel, cfg.CloudEventsRouterModel)
+	}
+
+	// One knob moves all three.
+	t.Setenv("LLM_MODEL", "openai/gpt-4.1")
+	cfg = Load()
+	for name, got := range map[string]string{
+		"agent":  cfg.AgentRuntimeModel,
+		"cloud":  cfg.CloudRuntimeModel,
+		"router": cfg.CloudEventsRouterModel,
+	} {
+		if got != "openai/gpt-4.1" {
+			t.Fatalf("LLM_MODEL did not reach %s runtime: %s", name, got)
+		}
+	}
+
+	// A specific var still wins, so one runtime can differ deliberately.
+	t.Setenv("CLOUD_EVENTS_ROUTER_MODEL", "openai/gpt-4.1-mini")
+	cfg = Load()
+	if cfg.CloudEventsRouterModel != "openai/gpt-4.1-mini" {
+		t.Fatalf("specific override lost to umbrella: %s", cfg.CloudEventsRouterModel)
+	}
+	if cfg.AgentRuntimeModel != "openai/gpt-4.1" {
+		t.Fatalf("override leaked to agent runtime: %s", cfg.AgentRuntimeModel)
+	}
+}
+
+// TestAuthIssuerUmbrella: outside production the issuer URLs all hold the same
+// origin, so pointing an environment at a different issuer should be one edit,
+// not four. Production deliberately splits them, so specific vars must win.
+func TestAuthIssuerUmbrella(t *testing.T) {
+	for _, k := range []string{"AUTH_ISSUER_URL", "OIDC_ISSUER_URL", "TOKEN_ISSUER", "ORY_PUBLIC_URL", "WORKOS_AUTHORIZE_BASE_URL"} {
+		os.Unsetenv(k)
+	}
+
+	t.Setenv("AUTH_ISSUER_URL", "http://localhost:18090")
+	cfg := Load()
+	for name, got := range map[string]string{
+		"oidc":      cfg.OIDCIssuerURL,
+		"token":     cfg.TokenIssuer,
+		"ory":       cfg.OryPublicURL,
+		"authorize": cfg.WorkOSAuthorizeBaseURL,
+	} {
+		if got != "http://localhost:18090" {
+			t.Fatalf("AUTH_ISSUER_URL did not reach %s: %s", name, got)
+		}
+	}
+
+	// Production's split: each specific var overrides independently.
+	t.Setenv("OIDC_ISSUER_URL", "https://agile-glow-66.authkit.app")
+	t.Setenv("TOKEN_ISSUER", "https://api.workos.com")
+	cfg = Load()
+	if cfg.OIDCIssuerURL != "https://agile-glow-66.authkit.app" || cfg.TokenIssuer != "https://api.workos.com" {
+		t.Fatalf("specific issuers lost to umbrella: oidc=%s token=%s", cfg.OIDCIssuerURL, cfg.TokenIssuer)
+	}
+	if cfg.OryPublicURL != "http://localhost:18090" {
+		t.Fatalf("unset issuer should still follow the umbrella: %s", cfg.OryPublicURL)
+	}
+}
+
+// TestAuthIssuerUnsetKeepsDefaults: with no umbrella set, every issuer keeps
+// the documented production default.
+func TestAuthIssuerUnsetKeepsDefaults(t *testing.T) {
+	for _, k := range []string{"AUTH_ISSUER_URL", "OIDC_ISSUER_URL", "TOKEN_ISSUER", "ORY_PUBLIC_URL", "WORKOS_AUTHORIZE_BASE_URL"} {
+		os.Unsetenv(k)
+	}
+	cfg := Load()
+	if cfg.OIDCIssuerURL != "https://auth.solomon-ai.co" ||
+		cfg.TokenIssuer != "https://auth.solomon-ai.co" ||
+		cfg.OryPublicURL != "https://oauth.solomon-ai.co" ||
+		cfg.WorkOSAuthorizeBaseURL != "" {
+		t.Fatalf("unset defaults changed: oidc=%s token=%s ory=%s authorize=%q",
+			cfg.OIDCIssuerURL, cfg.TokenIssuer, cfg.OryPublicURL, cfg.WorkOSAuthorizeBaseURL)
+	}
+}
+
+// TestBrokerIssuerFollowsPublicOrigin: connector resource tokens must carry the
+// externally reachable API origin as their iss, and the chart hard-fails a
+// production render when the two drift. Setting only PUBLIC_BASE_URL used to
+// leave the issuer on an unrelated default, which is how kind ended up minting
+// tokens with a stale solomon-ai origin while serving localhost.
+func TestBrokerIssuerFollowsPublicOrigin(t *testing.T) {
+	os.Unsetenv("BROKER_TOKEN_ISSUER")
+	t.Setenv("PUBLIC_BASE_URL", "http://localhost:18080")
+	if got := Load().BrokerTokenIssuer; got != "http://localhost:18080" {
+		t.Fatalf("broker issuer did not follow the public origin: %s", got)
+	}
+
+	// The documented separate-issuer topology still works.
+	t.Setenv("BROKER_TOKEN_ISSUER", "https://broker.example.com")
+	cfg := Load()
+	if cfg.BrokerTokenIssuer != "https://broker.example.com" {
+		t.Fatalf("explicit issuer lost: %s", cfg.BrokerTokenIssuer)
+	}
+	if cfg.PublicBaseURL != "http://localhost:18080" {
+		t.Fatalf("public origin should be independent: %s", cfg.PublicBaseURL)
+	}
+}

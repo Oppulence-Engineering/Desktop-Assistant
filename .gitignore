@@ -13,6 +13,7 @@ data/
 
 # Root tooling package (git hooks / formatter / commit linting)
 /node_modules/
+node_modules/
 
 # Local secret drop for vendor keys (RFC 039 and friends). Never committed:
 # a key in the working tree is one `git add -A` away from being published.
@@ -22,3 +23,10 @@ tok.txt
 # Code-review-graph cache and local agent settings backup
 .code-review-graph/
 .gemini/settings.json.bak
+
+# Local screenshot review artifacts (regenerated on demand, never a deliverable)
+/.screenshots/
+
+# Nested lockfiles: pnpm resolves every package from the root lockfile, so a
+# per-package one is a local accident that can pin different versions.
+/packages/*/pnpm-lock.yaml

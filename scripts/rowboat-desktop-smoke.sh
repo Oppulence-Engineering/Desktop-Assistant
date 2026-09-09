@@ -75,6 +75,24 @@ ab_connect() {
   agent-browser --session "$BROWSER_SESSION" connect "$CDP_PORT"
 }
 
+# The desktop opens more than one renderer (the main window plus the always-on
+# dictation overlay), and agent-browser attaches to whichever target it lists
+# first. That is often dictation.html, whose DOM is a single "Start dictation"
+# button — so every `wait --text` against the onboarding copy timed out and the
+# run died in the driver with a confusing "daemon may be busy" read error.
+# Pin the session to the main window by URL instead of trusting tab order.
+ab_select_main_window() {
+  local tabs id
+  # Must go through ab() so the --cdp flag is carried; without it agent-browser
+  # spawns/targets its own blank browser instead of the attached Electron.
+  tabs="$(ab tab 2>/dev/null || true)"
+  # Rows look like: "→ [t1] Title - http://localhost:5173/dictation.html"
+  id="$(awk '/\[t[0-9]+\]/ && !/dictation\.html/ { match($0, /t[0-9]+/); print substr($0, RSTART, RLENGTH); exit }' <<<"$tabs")"
+  if [[ -n "$id" ]]; then
+    ab tab "$id" >/dev/null 2>&1 || true
+  fi
+}
+
 ab_close() {
   agent-browser --session "$BROWSER_SESSION" close
 }
@@ -110,6 +128,20 @@ cleanup() {
     fi
     wait "$DESKTOP_PID" 2>/dev/null || true
     DESKTOP_PID=""
+  fi
+  # Electron is a grandchild of the `npm run dev` subshell, so killing that
+  # tree can leave the app alive still holding CDP_PORT. The next run then
+  # aborts with "already in use" and needs a manual kill. Reap any leftover
+  # process that is bound to our port AND owns this run's temp workdir, so a
+  # crashed run cannot poison the next one. The workdir check is what keeps
+  # this from touching a developer's own desktop on the same port.
+  if [[ "$KEEP_DESKTOP" != 1 || "$status" != 0 ]] && command -v lsof >/dev/null 2>&1; then
+    local stray
+    for stray in $(lsof -nP -iTCP:"$CDP_PORT" -sTCP:LISTEN -t 2>/dev/null || true); do
+      if ps eww -p "$stray" 2>/dev/null | tr ' ' '\n' | grep -qxF "ROWBOAT_WORKDIR=$WORKDIR"; then
+        kill -KILL "$stray" >/dev/null 2>&1 || true
+      fi
+    done
   fi
   if [[ "$KEEP_DESKTOP" != 1 || "$status" != 0 ]]; then
     if [[ -n "$CLOUD_TASK_SLUG" ]]; then
@@ -235,6 +267,7 @@ fi
 
 wait_for_port "$CDP_PORT" "Electron CDP"
 ab_connect >/dev/null
+ab_select_main_window
 ab wait --text "You're 2 clicks away" >/dev/null
 
 if ab snapshot -i -c | grep -q "You're 2 clicks away"; then

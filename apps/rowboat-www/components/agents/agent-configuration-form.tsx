@@ -301,7 +301,7 @@ export function AgentConfigurationForm({
 
   if (!document) {
     return (
-      <div className="m-5 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+      <div className="m-5 rounded-none border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
         This agent definition could not be displayed. Refresh it and try again.
       </div>
     );
@@ -346,7 +346,7 @@ export function AgentConfigurationForm({
     <div className="mx-auto w-full max-w-3xl divide-y">
       <section className="space-y-5 p-5 sm:p-6">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-oppulence-orange/10 p-2 text-oppulence-orange">
+          <div className="rounded-none bg-oppulence-orange/10 p-2 text-oppulence-orange">
             <Robot className="size-5" weight="fill" />
           </div>
           <div>
@@ -449,7 +449,7 @@ export function AgentConfigurationForm({
 
       <section className="space-y-5 p-5 sm:p-6">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-muted p-2 text-muted-foreground">
+          <div className="rounded-none bg-muted p-2 text-muted-foreground">
             <Wrench className="size-5" />
           </div>
           <div>
@@ -464,7 +464,7 @@ export function AgentConfigurationForm({
             return (
               <label
                 className={cn(
-                  "flex min-h-16 items-start justify-between gap-3 rounded-lg border p-3 transition-colors",
+                  "flex min-h-16 items-start justify-between gap-3 rounded-none border p-3 transition-colors",
                   checked && "border-oppulence-orange/40 bg-oppulence-orange/5",
                   !readOnly && "cursor-pointer hover:bg-muted/40",
                 )}
@@ -492,7 +492,7 @@ export function AgentConfigurationForm({
           })}
         </div>
 
-        <div className="space-y-2 rounded-lg border border-dashed p-4">
+        <div className="space-y-2 rounded-none border border-dashed p-4">
           <Label>Custom tools</Label>
           <FieldHint>Add an approved tool by its registered name.</FieldHint>
           <TagEditor
@@ -575,7 +575,7 @@ export function AgentConfigurationForm({
 
       <section className="p-5 sm:p-6">
         <Accordion collapsible type="single">
-          <AccordionItem className="rounded-lg border px-4" value="limits">
+          <AccordionItem className="rounded-none border px-4" value="limits">
             <AccordionTrigger className="hover:no-underline">
               <span className="flex items-center gap-3">
                 <ShieldCheck className="size-5 text-muted-foreground" />

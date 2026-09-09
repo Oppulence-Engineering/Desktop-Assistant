@@ -59,9 +59,12 @@ func (s *Service) Digest(ctx context.Context, u *ent.User) (*Digest, error) {
 	d := &Digest{
 		GeneratedAt: s.now(),
 		OpenCount:   openCount,
-		Replied:     imp.OutcomeCount("replied"),
-		Meetings:    imp.OutcomeCount("meeting_booked"),
-		Handled:     imp.Handled,
+		// Non-nil so the field marshals as [] rather than null. A nil slice
+		// would make clients guard every access to digest.top.
+		Top:      make([]DigestAction, 0, len(actions)),
+		Replied:  imp.OutcomeCount("replied"),
+		Meetings: imp.OutcomeCount("meeting_booked"),
+		Handled:  imp.Handled,
 	}
 	for _, a := range actions {
 		d.Top = append(d.Top, DigestAction{

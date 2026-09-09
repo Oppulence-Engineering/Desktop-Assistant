@@ -10,7 +10,7 @@ export type MarketingPage = {
   eyebrow: string;
   title: string;
   description: string;
-  category: "feature" | "product" | "tool" | "blog" | "customer" | "legal" | "demo" | "landing";
+  category: "feature" | "product" | "tool" | "blog" | "customer" | "legal" | "landing";
   bullets: string[];
   proof: string[];
   ctaLabel?: string;
@@ -55,7 +55,7 @@ export const featureLinks: LinkItem[] = [
   },
   {
     label: "Policy and sender protection",
-    href: "/integrations",
+    href: "/api-documentation-software",
     description: "Check suppression, frequency, permissions, and sender health",
   },
   {
@@ -84,11 +84,6 @@ export const featureLinks: LinkItem[] = [
     description: "Keep approval and audit boundaries around every material action",
   },
   {
-    label: "Integrations",
-    href: "/integrations",
-    description: "Connect memory, research, policy, CRM, and sending systems",
-  },
-  {
     label: "Source evidence",
     href: "/chrome-extension-for-documentation",
     description: "Keep every recommendation tied to the evidence behind it",
@@ -97,24 +92,29 @@ export const featureLinks: LinkItem[] = [
 
 export const productLinks: LinkItem[] = [
   {
-    label: "Relationship intelligence",
-    href: "/product",
-    description: "See how living relationship state becomes evidence-backed action",
+    label: "Products",
+    href: "/products",
+    description: "The full Oppulence suite",
+  },
+  {
+    label: "Oppulence Web",
+    href: "/web",
+    description: "Your whole book of business in a browser, nothing to install",
+  },
+  {
+    label: "Oppulence Desktop",
+    href: "/desktop",
+    description: "The native app that sits next to the work on Mac, Windows, and Linux",
   },
   {
     label: "Oppulence Voice",
-    href: "/voice",
-    description: "Capture voice locally and send consented evidence into relationship memory",
+    href: "/voice-app",
+    description: "Dictate into any app and get your meetings written down",
   },
   {
-    label: "Account Mission Control",
-    href: "/api-documentation-software",
-    description: "Prioritize, verify, govern, approve, execute, and learn in one queue",
-  },
-  {
-    label: "Integrations",
-    href: "/integrations",
-    description: "Connect email, calendar, meetings, CRM, research, verification, and sending",
+    label: "Commitment Ledger",
+    href: "/product",
+    description: "What was promised, what is owed, and what changed",
   },
   {
     label: "Pricing",
@@ -122,9 +122,9 @@ export const productLinks: LinkItem[] = [
     description: "Choose the plan for monitored relationships, team access, and governance",
   },
   {
-    label: "Book a relationship review",
-    href: "/book-a-demo",
-    description: "Find the warm revenue slipping through your existing relationships",
+    label: "Account Mission Control",
+    href: "/api-documentation-software",
+    description: "Prioritize, verify, govern, approve, execute, and learn in one queue",
   },
   {
     label: "Dashboard",
@@ -290,7 +290,7 @@ export const featureDetails: Record<string, FeatureDetail> = {
     relatedPages: [
       { label: "Revenue Leak Scan", href: "/ai-help-center" },
       { label: "Research and verification", href: "/automated-screenshots-for-docs" },
-      { label: "Policy and sender protection", href: "/integrations" },
+      { label: "Policy and sender protection", href: "/api-documentation-software" },
     ],
   },
   "automated-screenshots-for-docs": {
@@ -343,7 +343,7 @@ export const featureDetails: Record<string, FeatureDetail> = {
     relatedPages: [
       { label: "Revenue Leak Scan", href: "/ai-help-center" },
       { label: "Revenue Action Queue", href: "/ai-documentation-agent" },
-      { label: "Policy and sender protection", href: "/integrations" },
+      { label: "Policy and sender protection", href: "/api-documentation-software" },
     ],
   },
   "self-service-help-widget": {
@@ -502,7 +502,7 @@ export const featureDetails: Record<string, FeatureDetail> = {
     relatedPages: [
       { label: "Workflow design", href: "/code-to-docs" },
       { label: "Embedded agents", href: "/self-service-help-widget" },
-      { label: "Integrations", href: "/integrations" },
+      { label: "Source federation", href: "/multilingual-knowledge-base" },
     ],
   },
   "multilingual-knowledge-base": {
@@ -553,7 +553,7 @@ export const featureDetails: Record<string, FeatureDetail> = {
       "A more portable knowledge layer than vendor-specific AI memory.",
     ],
     relatedPages: [
-      { label: "Integrations", href: "/integrations" },
+      { label: "Governed execution", href: "/api-documentation-software" },
       { label: "Research capture", href: "/chrome-extension-for-documentation" },
       { label: "Living work graph", href: "/ai-help-center" },
     ],
@@ -662,59 +662,6 @@ export const featureDetails: Record<string, FeatureDetail> = {
       { label: "Embedded agents", href: "/self-service-help-widget" },
       { label: "Support memory", href: "/help-center-software" },
       { label: "Workflow design", href: "/code-to-docs" },
-    ],
-  },
-  integrations: {
-    summary:
-      "Oppulence connects the systems that remember the relationship with the systems that research, verify, govern, execute, and measure the next action.",
-    heroProof: [
-      "One customer-facing queue across separately owned systems.",
-      "Clear source, policy, permission, and action boundaries.",
-      "Replies, meetings, delivery telemetry, and CRM outcomes close the loop.",
-    ],
-    sections: [
-      {
-        title: "Remember the relationship",
-        body: "Email, calendar, meetings, and CRM history provide the promises, objections, timing, and opportunity context behind each recommendation.",
-      },
-      {
-        title: "Verify and govern",
-        body: "Research, contact verification, suppression, frequency limits, permissions, and sender health determine whether an action can proceed.",
-      },
-      {
-        title: "Execute and learn",
-        body: "Approved actions move through connected channels while replies, meetings, CRM changes, delivery telemetry, and revenue outcomes update the memory.",
-      },
-    ],
-    workflow: [
-      "Connect email, calendar, meetings, and CRM history once.",
-      "Attach research and verification to the proposed action.",
-      "Apply policy, sender, permission, and approval checks.",
-      "Return execution telemetry and revenue outcomes to relationship memory.",
-    ],
-    useCases: [
-      {
-        title: "Relationship sources",
-        body: "Bring communication, meeting, calendar, and CRM history into one commercial timeline.",
-      },
-      {
-        title: "Governance systems",
-        body: "Connect verification, suppression, permissions, frequency policy, and sender-health checks before action.",
-      },
-      {
-        title: "Execution and outcomes",
-        body: "Use approved sending and CRM actions, then ingest replies, meetings, delivery results, and opportunity changes.",
-      },
-    ],
-    outcomes: [
-      "One governed revenue loop instead of disconnected dashboards.",
-      "A clear ownership boundary around every system and decision.",
-      "Relationship memory that improves from real commercial outcomes.",
-    ],
-    relatedPages: [
-      { label: "Revenue Leak Scan", href: "/ai-help-center" },
-      { label: "Governed execution", href: "/api-documentation-software" },
-      { label: "Revenue Action Queue", href: "/ai-documentation-agent" },
     ],
   },
   "chrome-extension-for-documentation": {
@@ -935,9 +882,9 @@ export const primaryPages: MarketingPage[] = [
   {
     path: "product",
     eyebrow: "Product",
-    title: "Relationship memory that turns into action.",
+    title: "Nobody remembers what you promised in March. We do.",
     description:
-      "Oppulence remembers what was promised, what changed, and what happened next across every commercial relationship. It finds the open loops that put revenue at risk and prepares the next move for approval.",
+      "Everything you said you'd do, every objection you got, every thread left hanging \u2014 pulled out of your email, calendar, meetings, and CRM without anyone typing it in. We'll tell you which accounts are slipping and write the follow-up. You send it.",
     category: "product",
     bullets: [
       "Build a living ledger of promises, objections, chases, and outcomes from the systems you already use.",
@@ -945,28 +892,8 @@ export const primaryPages: MarketingPage[] = [
       "Approve the next action and let replies, meetings, edits, and revenue outcomes improve the memory.",
     ],
     proof: baseProof,
-    ctaLabel: "Book a Revenue Leak Scan",
-    ctaHref: "/book-a-demo",
-  },
-  {
-    path: "voice",
-    eyebrow: "Oppulence Voice",
-    title: "Private voice capture for living relationship memory.",
-    description:
-      "Oppulence Voice transcribes on your device, keeps local capture under your control, and sends only explicitly consented evidence into Rowboat workflows.",
-    category: "product",
-    bullets: [
-      "Capture dictation, notes, and meeting context locally before deciding what leaves the device.",
-      "Synchronize encrypted artifacts through the Oppulence cloud without storing plaintext note content in the relay.",
-      "Hand approved captures to Rowboat with source identity, consent, provenance, and idempotency attached.",
-    ],
-    proof: [
-      "Local-first transcription and capture",
-      "Explicit consent at the Rowboat handoff",
-      "Source-backed, idempotent relationship evidence",
-    ],
-    ctaLabel: "Read the Oppulence Voice docs",
-    ctaHref: "https://docs.oppulence.io",
+    ctaLabel: "Start building",
+    ctaHref: "/sign-up",
   },
   {
     path: "ai-documentation-agent",
@@ -1012,7 +939,8 @@ export const primaryPages: MarketingPage[] = [
       "Turn the best findings into a short, ranked revenue action queue.",
     ],
     proof: baseProof,
-    ctaLabel: "Book a Revenue Leak Scan",
+    ctaLabel: "Start building",
+    ctaHref: "/sign-up",
   },
   {
     path: "api-documentation-software",
@@ -1105,25 +1033,6 @@ export const primaryPages: MarketingPage[] = [
     ctaLabel: "Explore support memory",
   },
   {
-    path: "integrations",
-    eyebrow: "Connected Revenue Systems",
-    title: "One governed loop across memory, research, policy, and execution.",
-    description:
-      "Oppulence connects communication and CRM history with research, verification, suppression, sender protection, and controlled execution behind one revenue action queue.",
-    category: "product",
-    bullets: [
-      "Use email, calendar, meetings, and CRM as relationship-memory sources.",
-      "Use research, verification, suppression, and sender health before action.",
-      "Return replies, meetings, delivery telemetry, and CRM outcomes to the memory.",
-    ],
-    proof: [
-      "Each connected system has a clear ownership and permission boundary.",
-      "External execution stays reviewable and auditable.",
-      "Outcomes return to the same relationship timeline.",
-    ],
-    ctaLabel: "Map your revenue stack",
-  },
-  {
     path: "internal-knowledge-base",
     eyebrow: "Team Memory",
     title: "Private team memory that agents can inspect and update.",
@@ -1151,7 +1060,8 @@ export const primaryPages: MarketingPage[] = [
       "Scale into live notes, triggers, and controlled tool actions.",
     ],
     proof: baseProof,
-    ctaLabel: "Book a demo",
+    ctaLabel: "Start building",
+    ctaHref: "/sign-up",
   },
   {
     path: "multilingual-knowledge-base",
@@ -1201,9 +1111,9 @@ export const primaryPages: MarketingPage[] = [
   {
     path: "pricing",
     eyebrow: "Pricing",
-    title: "Watch is free. Chase is $99. Intelligence is $249.",
+    title: "Simple pricing for the commitment ledger.",
     description:
-      "A flat monthly price — never per seat, per email, or per lookup. One saved deal pays for years. Cancel at any time.",
+      "Start with the free report. Upgrade when the register becomes part of your weekly workflow.",
     category: "product",
     bullets: [
       "Founders recover warm pipeline from existing communication and CRM history.",
@@ -1241,22 +1151,6 @@ export const primaryPages: MarketingPage[] = [
     ],
     proof: baseProof,
     ctaLabel: "Validate a contract",
-  },
-  {
-    path: "book-a-demo",
-    eyebrow: "Revenue Leak Scan",
-    title: "Find the warm revenue slipping through your existing relationships.",
-    description:
-      "Walk through how Oppulence scans communication and CRM history, ranks the relationships worth attention, and prepares safe next actions for approval.",
-    category: "demo",
-    bullets: [
-      "Map the email, calendar, meetings, and CRM sources that hold commercial history.",
-      "Review the missed commitments and dormant opportunities a scan should detect.",
-      "Define verification, policy, and approval boundaries before execution.",
-    ],
-    proof: baseProof,
-    ctaLabel: "Book my scan",
-    ctaHref: "mailto:hello@oppulence.io?subject=Revenue%20Leak%20Scan",
   },
   // Canonical legal pages live at /terms and /privacy (app/terms, app/privacy).
   // The old /legal/* paths redirect there (see next.config.ts).
@@ -1365,8 +1259,8 @@ export const blogPages: MarketingPage[] = blogSlugs.map((slug) => ({
     "Where source evidence, policy, approval, execution, and outcomes fit.",
   ],
   proof: baseProof,
-  ctaLabel: "Book a Revenue Leak Scan",
-  ctaHref: "/ai-help-center",
+  ctaLabel: "Start building",
+  ctaHref: "/sign-up",
 }));
 
 export const customerPages: MarketingPage[] = customerSlugs.map((slug) => ({
@@ -1433,67 +1327,233 @@ export const pricingPlans = [
     name: "Watch",
     price: "Free",
     period: "",
-    description:
-      "See what is slipping. A weekly report of the deals, invoices, and clients going quiet.",
-    features: ["Weekly slip report", "Dollar amounts on each finding", "Links to the source email"],
-    ctaLabel: "Get the report",
-    ctaHref: "/book-a-demo",
-  },
-  {
-    name: "Starter",
-    price: "$49",
-    period: "/month",
-    description:
-      "The whole chase workflow at a smaller volume. For one person with one book of business.",
-    features: [
-      "Everything in Watch",
-      "Drafted chases in your voice",
-      "Approve, edit, snooze, or reject",
-      "Verified, suppression-checked sends",
-      "Lower monthly usage allowance than Chase",
-    ],
-    ctaLabel: "Start chasing",
+    description: "A first pass over recent promises.",
+    features: ["90-day report", "What we owe", "Source links"],
+    ctaLabel: "Start for free",
     ctaHref: "/sign-up",
   },
   {
     name: "Chase",
     price: "$99",
     period: "/month",
-    description: "The chase, done for you. Drafted nudges in your voice, approved with one click.",
-    features: [
-      "Everything in Starter",
-      "Room for a full book of business",
-      "Premium connectors",
-      "Monthly recovery receipt",
-    ],
+    description: "The live register for your book of business.",
+    features: ["All Watch evidence", "At-risk promises", "Approved follow-ups"],
     recommended: true,
-    ctaLabel: "Start chasing",
+    ctaLabel: "Start tracking",
     ctaHref: "/sign-up",
   },
   {
     name: "Intelligence",
     price: "$249",
     period: "/month",
-    description:
-      "Why today, not just who is quiet. Watches your accounts for the things that make an email worth sending.",
-    features: [
-      "Everything in Chase",
-      "Funding, launch, acquisition and hiring alerts on your accounts",
-      "Where a departed contact went, and who replaced them",
-      "Meeting briefs that know what happened this week",
-      "Every fact carries a link you can click",
-      "Up to 250 monitored accounts",
-    ],
-    ctaLabel: "Start watching",
+    description: "Change history and proof for renewals, escalations, and handovers.",
+    features: ["All Chase workflows", "Change summaries", "Exportable records"],
+    ctaLabel: "Start tracking",
     ctaHref: "/sign-up",
   },
+];
+
+/**
+ * The three ways people actually run Oppulence. Each gets its own page at
+ * /web, /desktop, and /voice-app so the nav can point at a product rather than
+ * a feature essay. Desktop and Voice both ship an installer, so their pages
+ * carry the download chooser.
+ */
+export type PlatformPage = {
+  slug: string;
+  name: string;
+  eyebrow: string;
+  title: string;
+  lede: string;
+  /** Shown as a one-line answer to "what is this, concretely?" */
+  summary: string;
+  screenshot: string;
+  screenshotAlt: string;
+  /** Whether the page shows the desktop installer picker. */
+  download: boolean;
+  sections: {
+    title: string;
+    body: string;
+    bullets: string[];
+    screenshot: string;
+    alt: string;
+  }[];
+  specs: { term: string; detail: string }[];
+};
+
+export const platformPages: PlatformPage[] = [
   {
-    name: "Teams",
-    price: "Talk to us",
-    period: "",
-    description: "A shared queue and governance for small revenue teams.",
-    features: ["Everything in Intelligence", "Shared action queue", "Roles and audit trail"],
-    ctaLabel: "Talk to us",
-    ctaHref: "/book-a-demo",
+    slug: "web",
+    name: "Oppulence Web",
+    eyebrow: "Oppulence Web",
+    title: "The whole book of business, in a browser tab.",
+    lede: "Open it Monday morning and the accounts that moved over the weekend are already at the top, with the reason why and a draft reply waiting. Nothing to install, and it keeps working when your laptop is shut.",
+    summary:
+      "Runs in the cloud. Best for managers, shared queues, and anyone who lives in a browser.",
+    screenshot: "/marketing/relationship-web-list.png",
+    screenshotAlt:
+      "Oppulence Web account mission control listing Beta Corp, Acme, and Northstar Labs with health and next actions",
+    download: false,
+    sections: [
+      {
+        title: "The list you actually work from.",
+        body: "Every account you own, sorted by which ones need a person today. Each row says what changed, when it changed, and how much is riding on it.",
+        bullets: [
+          "Ranked by what moved, not by last touch date",
+          "Filter to your patch, your team, or the whole book",
+          "Click any account for the full history behind it",
+        ],
+        screenshot: "/marketing/relationship-web-list.png",
+        alt: "Ranked account list in Oppulence Web",
+      },
+      {
+        title: "Open an account and see the receipts.",
+        body: "The promises, the objections, who has gone quiet, who just joined the thread. Every claim links back to the email or meeting it came from, so you can check before you act.",
+        bullets: [
+          "One timeline across email, calendar, Slack, and CRM",
+          "Commitments in both directions, with dates",
+          "Anything stale or missing is labelled, not hidden",
+        ],
+        screenshot: "/marketing/relationship-web-detail.png",
+        alt: "Account detail view with linked source evidence",
+      },
+      {
+        title: "It keeps watching while you sleep.",
+        body: "Background runs in the cloud notice replies, meetings, and money changes as they land, so Monday's list is already right before you open it.",
+        bullets: [
+          "Scheduled and event-driven runs",
+          "No machine to leave switched on",
+          "Same history the desktop app sees",
+        ],
+        screenshot: "/marketing/desktop-background-tasks.png",
+        alt: "Background task runs keeping account state current",
+      },
+    ],
+    specs: [
+      { term: "Runs on", detail: "Any modern browser. Nothing to install." },
+      { term: "Sign in with", detail: "Google, through your existing work account." },
+      { term: "Best for", detail: "Shared queues, managers, and reviewing a whole book." },
+      { term: "Works offline", detail: "No. Use the desktop app if you need local access." },
+    ],
+  },
+  {
+    slug: "desktop",
+    name: "Oppulence Desktop",
+    eyebrow: "Oppulence Desktop",
+    title: "It sits next to the work instead of in another tab.",
+    lede: "Same accounts, same history, except it is right there while you write the email, sit in the meeting, or dig through a doc. Some things never leave your machine, which matters more than people admit.",
+    summary: "A native Mac, Windows, and Linux app. Best for the person doing the work all day.",
+    screenshot: "/marketing/desktop-home.png",
+    screenshotAlt: "Oppulence Desktop home view",
+    download: true,
+    sections: [
+      {
+        title: "Ask about an account without leaving what you are doing.",
+        body: "Pull up who this person is, what you last promised them, and what they pushed back on, without hunting through six months of thread.",
+        bullets: [
+          "Full account history, one keystroke away",
+          "Answers cite the message they came from",
+          "Works against the same state as the web app",
+        ],
+        screenshot: "/marketing/desktop-chat.png",
+        alt: "Oppulence Desktop conversational view over account history",
+      },
+      {
+        title: "Walk into the call already briefed.",
+        body: "Before a meeting you get the account as it stands: what you last promised, what they objected to, who has gone quiet. Afterwards, what was agreed becomes part of the history instead of a note you meant to write.",
+        bullets: [
+          "A brief built from the account, not a template",
+          "Commitments captured as commitments, with dates",
+          "Pairs with Oppulence Voice for the transcript itself",
+        ],
+        screenshot: "/marketing/desktop-email.png",
+        alt: "Oppulence Desktop showing customer threads flagged as important with the assistant alongside",
+      },
+      {
+        title: "Your own notes count as evidence too.",
+        body: "The doc you keep on a key account, the thing a colleague told you in passing. Local knowledge feeds the same picture, and stays yours.",
+        bullets: [
+          "Local files searched alongside connected sources",
+          "You choose what syncs and what stays put",
+          "Corrections you make beat whatever it inferred",
+        ],
+        screenshot: "/marketing/desktop-knowledge.png",
+        alt: "Local knowledge and notes in Oppulence Desktop",
+      },
+    ],
+    specs: [
+      { term: "Runs on", detail: "macOS (Apple silicon and Intel), Windows, and Linux." },
+      { term: "Install size", detail: "Signed installer. DMG, EXE, DEB, or RPM." },
+      { term: "Offline", detail: "Local notes, capture, and search work without a connection." },
+      { term: "Updates", detail: "Ships with the app. You do not have to chase releases." },
+    ],
+  },
+  {
+    slug: "voice-app",
+    name: "Oppulence Voice",
+    eyebrow: "Oppulence Voice",
+    title: "Talk instead of typing. It lands where your cursor is.",
+    lede: "Hit a hotkey, say the thing, and the words appear in whatever app you are in \u2014 the email, the CRM box, the doc. It also sits in your meetings and writes them down. Transcription can run entirely on your machine, so the audio never leaves.",
+    summary: "A standalone dictation and meeting app for macOS, Windows, and Linux.",
+    screenshot: "/marketing/voice-transcription.png",
+    screenshotAlt:
+      "Oppulence Voice speech-to-text settings offering cloud, bring-your-own-key, local on-device, and self-hosted engines",
+    download: true,
+    sections: [
+      {
+        title: "Dictate into any app on your machine.",
+        body: "One global hotkey. Speak, and the cleaned-up text is pasted at your cursor, whether that is Gmail, HubSpot, Slack, or a terminal. Roughly three times faster than typing it out, and you stop losing the thought halfway through.",
+        bullets: [
+          "Works in any application, not just ours",
+          "Filler words and false starts cleaned up automatically",
+          "A second hotkey dictates in one language and pastes another",
+        ],
+        screenshot: "/marketing/voice-hotkeys.png",
+        alt: "Oppulence Voice hotkey settings for dictation, the voice agent, translation, and meeting mode",
+      },
+      {
+        title: "It writes down your meetings.",
+        body: "Zoom, Teams, and FaceTime calls are detected automatically. You get a live transcript with speakers labelled, and afterwards a set of notes instead of a memory of what was said.",
+        bullets: [
+          "Speaker labelling that runs on your device",
+          "Google, Microsoft, and Apple calendar integration",
+          "Import an existing recording, or a YouTube link, and get a transcript",
+        ],
+        screenshot: "/marketing/voice-integrations.png",
+        alt: "Oppulence Voice integrations connecting Google Calendar, the API, MCP, and the CLI",
+      },
+      {
+        title: "It learns your customers\u2019 names.",
+        body: "Every account list is full of words no general model has heard: company names, product codenames, the acronym your team invented last quarter. Add them once and they stop coming out garbled.",
+        bullets: [
+          "Names, tools, and acronyms it should always get right",
+          "Snippets expand a phrase into boilerplate you type constantly",
+          "Import a list instead of adding them one by one",
+        ],
+        screenshot: "/marketing/voice-dictionary.png",
+        alt: "The Oppulence Voice dictionary holding customer names and acronyms",
+      },
+      {
+        title: "The audio can stay on your laptop.",
+        body: "Run transcription locally with Whisper or Parakeet and nothing is uploaded, which matters when the call was about someone\u2019s contract. Or use a cloud model when you would rather have the speed. Your choice, per machine.",
+        bullets: [
+          "Local speech-to-text with GPU acceleration",
+          "No telemetry and no data collection",
+          "Open source, so you can go read what it does",
+        ],
+        screenshot: "/marketing/voice-transcription.png",
+        alt: "Choosing between cloud and fully local on-device transcription",
+      },
+    ],
+    specs: [
+      { term: "Runs on", detail: "macOS (Apple silicon and Intel), Windows, and Linux." },
+      { term: "Transcription", detail: "Local Whisper or Parakeet, or a cloud model. You pick." },
+      { term: "Works with", detail: "Any app on your machine, via a global hotkey." },
+      { term: "Source", detail: "Open source, built on OpenWhispr." },
+    ],
   },
 ];
+
+export function getPlatformPage(slug: string) {
+  return platformPages.find((page) => page.slug === slug);
+}

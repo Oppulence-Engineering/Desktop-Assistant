@@ -6,7 +6,6 @@ import {
   BlogIndexPage,
   CustomerIndexPage,
   CustomerStoryPage,
-  DemoPage,
   GenericPage,
   LegalPage,
   PricingPage,
@@ -39,16 +38,6 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   return {
     title: `${page.eyebrow} - Oppulence`,
     description: page.description,
-    ...(page.path === "voice"
-      ? {
-          alternates: { canonical: "https://oppulence.io/voice" },
-          openGraph: {
-            title: "Oppulence Voice - Oppulence",
-            description: page.description,
-            url: "https://oppulence.io/voice",
-          },
-        }
-      : {}),
   };
 }
 
@@ -82,10 +71,6 @@ export default async function Page(props: PageProps) {
 
   if (page.path.startsWith("customers/")) {
     return <CustomerStoryPage page={page} />;
-  }
-
-  if (page.path.startsWith("book-a-demo")) {
-    return <DemoPage page={page} />;
   }
 
   if (page.path.startsWith("legal/")) {

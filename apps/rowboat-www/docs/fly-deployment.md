@@ -14,6 +14,11 @@ Install `flyctl`, authenticate, and run these commands from the monorepo root:
 ```bash
 fly apps create oppulence-rowboat-www
 fly secrets set --app oppulence-rowboat-www ROWBOAT_WWW_SESSION_SECRET="$(openssl rand -base64 48)"
+# Optional: Plain support chat (Settings -> Chat -> Oppulence). Without these
+# the widget stays off; the app is otherwise unaffected.
+fly secrets set --app oppulence-rowboat-www \
+  ROWBOAT_WWW_PLAIN_CHAT_APP_ID="liveChatApp_..." \
+  ROWBOAT_WWW_PLAIN_CHAT_SECRET="<chat secret>"
 fly deploy . \
   --app oppulence-rowboat-www \
   --config apps/rowboat-www/config/deployment/fly.toml \
@@ -37,6 +42,9 @@ The `Deploy rowboat-www to Fly.io` workflow deploys automatically when relevant 
   `fly tokens create deploy --app oppulence-rowboat-www --expiry 720h`. Rotate it before the
   30-day expiry.
 - `ROWBOAT_WWW_SESSION_SECRET` secret: the same 32-or-more-character value used for the Fly App.
+- Optional `ROWBOAT_WWW_PLAIN_CHAT_SECRET` secret and `ROWBOAT_WWW_PLAIN_CHAT_APP_ID` variable for
+  Plain support chat. Both must be present for the workflow to stage them; with either missing the
+  step is skipped and the widget stays off rather than failing the deploy.
 - Optional `FLY_APP_NAME` variable when the Fly App is not named `oppulence-rowboat-www`.
 - Optional `ROWBOAT_WWW_FLY_SMOKE_URL` variable when the smoke test should use a custom hostname
   instead of the app's `.fly.dev` hostname.

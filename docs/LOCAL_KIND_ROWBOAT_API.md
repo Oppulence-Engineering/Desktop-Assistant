@@ -146,9 +146,12 @@ ROWBOAT_DEVSTACK_PORT=28090 \
 scripts/rowboat-api-kind.sh up
 ```
 
-If you override the devstack port, also override `charts/rowboat-api/values-kind.yaml`
-for `OIDC_ISSUER_URL`, `TOKEN_ISSUER`, and `WORKOS_AUTHORIZE_BASE_URL`, because
-those values are embedded in devstack-issued tokens and browser login URLs.
+If you override the devstack port, also override `AUTH_ISSUER_URL` in
+`charts/rowboat-api/values-kind.yaml`, because that origin is embedded in
+devstack-issued tokens and browser login URLs. It is one knob covering
+`OIDC_ISSUER_URL`, `TOKEN_ISSUER`, `ORY_PUBLIC_URL`, and
+`WORKOS_AUTHORIZE_BASE_URL`; set those individually only to make one of them
+deliberately differ, as production does.
 
 If you created the kind cluster before this file existed, recreate it so the
 host port mappings are present:
@@ -157,6 +160,42 @@ host port mappings are present:
 scripts/rowboat-api-kind.sh delete-cluster
 scripts/rowboat-api-kind.sh up
 ```
+
+## Choosing the LLM upstream
+
+`up` points the gateway at live OpenRouter by default, which spends real money
+per call. Use the hermetic devstack mock instead:
+
+```bash
+ROWBOAT_KIND_MOCK_LLM=1 make api-up   # free, no network, deterministic replies
+make api-up                           # live OpenRouter (costs credits)
+```
+
+If `api-up` fails its background-task check with `llm upstream returned status
+402`, the OpenRouter account is short on prepaid credits — it is a balance, not
+a rate limit. OpenRouter reserves the full `max_tokens` up front, so the cutoff
+depends on request size rather than on the balance alone: with a near-zero
+balance a small request still succeeds while a large one is refused.
+
+```text
+max_tokens=8     -> 200
+max_tokens=512   -> 200
+max_tokens=4096  -> 402 "requested up to 4096 tokens, but can only afford 1329"
+```
+
+That is why the desktop and background-task paths fail first: they ask for the
+largest completions. Check the balance with:
+
+```bash
+curl -s https://openrouter.ai/api/v1/credits \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY"
+```
+
+`total_usage` at or above `total_credits` means the account needs a top-up at
+<https://openrouter.ai/settings/credits>, where auto top-up also lives. Neither
+is reachable from the API: the credits endpoint is read-only, and inference keys
+cannot manage account or key settings. Until it is funded, run with
+`ROWBOAT_KIND_MOCK_LLM=1`.
 
 ## What this validates
 

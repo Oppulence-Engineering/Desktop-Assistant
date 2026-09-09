@@ -25,7 +25,7 @@ export function BrandRail({ state }: BrandRailProps) {
         <div className="mb-10">
           <div className="mb-6 flex items-center gap-3">
             <div className="flex size-9 items-center justify-center border border-[var(--onboarding-border)] bg-[var(--onboarding-card)]">
-              <img src="/logo-only.png" alt={PRODUCT_NAME} className="size-6 dark:invert" />
+              <img src="/logo-only.png" alt={PRODUCT_NAME} className="size-6" />
             </div>
             <div className="min-w-0">
               <div className="text-base font-semibold tracking-tight">{PRODUCT_NAME}</div>

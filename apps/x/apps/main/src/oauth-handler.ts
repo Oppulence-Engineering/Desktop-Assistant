@@ -22,6 +22,7 @@ import { isSignedIn } from "@x/core/account/account";
 import { startGoogleConnectViaBackend } from "@x/core/auth/google-backend-oauth";
 import { invalidateCopilotInstructionsCache } from "@x/core/application/assistant/instructions";
 import { claimTokensViaBackend } from "@x/core/auth/google-backend-oauth";
+import { hasGoogleCredentialChanged } from "@x/core/auth/google-reconnect";
 import type { OAuthTokens } from "@x/core/auth/types";
 import {
   startConnectorViaBackend,
@@ -463,6 +464,8 @@ export async function connectProvider(
         // Otherwise it's BYOK with missing creds → error.
         if (await isSignedIn()) {
           try {
+            const previousAccessToken =
+              (await oauthRepo.read("google")).tokens?.access_token ?? null;
             // Ask the api for the authorize URL rather than guessing a path.
             // This previously opened `<webapp>/oauth/google/start`, which the
             // webapp has never served since the flow moved to the api — the
@@ -475,7 +478,7 @@ export async function connectProvider(
             // but that depends on owning the URL scheme. Poll for the same
             // tokens so the connect still completes when it does not.
             const state = new URL(authorizeUrl).searchParams.get("state");
-            if (state) void pollForGoogleConnect(state);
+            if (state) void pollForGoogleConnect(state, previousAccessToken);
             return { success: true };
           } catch (error) {
             console.error("[OAuth] Failed to start Oppulence-managed Google connect:", error);
@@ -756,11 +759,14 @@ async function persistGoogleConnect(tokens: OAuthTokens): Promise<void> {
   console.log("[OAuth] Solomon AI-managed Google connect complete");
 }
 
-/** Whether a managed Google connect has already landed tokens on disk. */
-async function googleConnectLanded(): Promise<boolean> {
+/** Whether this managed Google connect has landed a new credential on disk. */
+async function googleConnectLanded(previousAccessToken: string | null): Promise<boolean> {
   try {
     const connection = await getOAuthRepo().read("google");
-    return Boolean(connection?.tokens?.access_token);
+    return hasGoogleCredentialChanged(
+      previousAccessToken,
+      connection?.tokens?.access_token,
+    );
   } catch {
     return false;
   }
@@ -792,12 +798,15 @@ const CLAIM_POLL_TIMEOUT_MS = 5 * 60_000;
  * Claiming is one-shot, so whichever path gets there first wins and the other
  * finds nothing left to take — polling alongside a working deep link is safe.
  */
-async function pollForGoogleConnect(state: string): Promise<void> {
+async function pollForGoogleConnect(
+  state: string,
+  previousAccessToken: string | null,
+): Promise<void> {
   const deadline = Date.now() + CLAIM_POLL_TIMEOUT_MS;
   while (Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, CLAIM_POLL_INTERVAL_MS));
     // The deep link may have completed this already.
-    if (await googleConnectLanded()) return;
+    if (await googleConnectLanded(previousAccessToken)) return;
     try {
       await persistGoogleConnect(await claimTokensViaBackend(state));
       console.log("[OAuth] Completed Google connect by polling (no deep link)");

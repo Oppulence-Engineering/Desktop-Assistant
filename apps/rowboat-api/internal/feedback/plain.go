@@ -123,8 +123,8 @@ func (c *plainClient) upsertCustomer(ctx context.Context, apiKey, email string) 
 }
 
 // createThread opens a thread for the customer and returns the thread id.
-// labelTypeID is optional ("" → no label).
-func (c *plainClient) createThread(ctx context.Context, apiKey, customerID, title, message, metadata, labelTypeID string) (string, error) {
+// labelTypeIDs is optional (empty → no labels).
+func (c *plainClient) createThread(ctx context.Context, apiKey, customerID, title, message, metadata string, labelTypeIDs []string) (string, error) {
 	input := map[string]any{
 		"customerIdentifier": map[string]any{"customerId": customerID},
 		"title":              title,
@@ -134,8 +134,8 @@ func (c *plainClient) createThread(ctx context.Context, apiKey, customerID, titl
 			{"componentText": map[string]any{"text": metadata, "textSize": "S", "textColor": "MUTED"}},
 		},
 	}
-	if labelTypeID != "" {
-		input["labelTypeIds"] = []string{labelTypeID}
+	if len(labelTypeIDs) > 0 {
+		input["labelTypeIds"] = labelTypeIDs
 	}
 	var data struct {
 		CreateThread struct {

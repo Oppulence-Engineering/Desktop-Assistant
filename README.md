@@ -1,33 +1,37 @@
 # Oppulence
 
-**Relationship intelligence for customer-facing teams**
+**The commitment ledger**
 
-Oppulence maintains an accurate, living model of every customer relationship
-and tells the team what needs action.
+Oppulence is the independent record of what your business promised and what was
+promised to you, proven by evidence.
 
-Email, calendar, Slack, meetings, notes, and CRM each hold part of the truth.
-Oppulence treats those systems as evidence streams, reconciles what they know,
-and presents one explainable relationship state across the web and desktop
-apps.
+Businesses run on promises that no system records: a delivery date agreed on a
+call, a scope change conceded in a thread, a vendor SLA nobody tracks. Your CRM
+records the deal. It does not record the obligation.
+
+Oppulence treats email, calendar, Slack, meetings, notes, documents, and CRM as
+evidence streams, extracts the commitments inside them, and tracks each one to
+an outcome across the web and desktop apps.
 
 The product direction is captured in the
 [Oppulence one-pager](./docs/one-pager.md) and
 [RFC 036: Relationship State Engine](./apps/rfc/036-relationship-state-engine.md):
 
-> Model the relationship directly. Treat every integration as an observer, link
-> every material claim to evidence, and recommend the next action without
-> hiding how the system reached its conclusion.
+> Model the obligation directly. Treat every integration as an observer, link
+> every commitment to the evidence that created it, and recommend the next
+> action without hiding how the system reached its conclusion.
 
 Use Oppulence to:
 
-- Open Account Mission Control and understand the current relationship state,
-  what changed, and why.
-- See lifecycle, engagement, sentiment, health, participants, commitments,
-  risks, milestones, and next actions in one place.
-- Trace important claims back to email, calendar, Slack, CRM, meetings, notes,
-  and desktop context.
-- Catch accounts that need attention before a renewal, deal, onboarding, or
-  commitment silently slips.
+- Open the Commitment Register and see what you owe them and what they owe you.
+- Know who made each promise, by when, and whether it was met, missed,
+  renegotiated, or is now at risk.
+- Trace every commitment back to the exact email, meeting, Slack message, CRM
+  record, note, or desktop context that created it.
+- Catch obligations before a renewal, deal, onboarding, or delivery date
+  silently slips.
+- Export a commitment record that survives being forwarded to a customer, an
+  executive, or counsel.
 - Correct the model when the evidence is incomplete or wrong.
 - Review and approve external actions before Oppulence sends or writes
   anything.

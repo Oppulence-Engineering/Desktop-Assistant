@@ -28,6 +28,7 @@ export const PUBLIC_MAILBOX_DOMAINS: ReadonlySet<string> = new Set([
   "outlook.com",
   "hotmail.com",
   "live.com",
+  "msn.com",
   "icloud.com",
   "me.com",
   "mac.com",

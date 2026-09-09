@@ -1259,7 +1259,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       </SettingsSection>
 
       <Collapsible open={modelsOpen} onOpenChange={setModelsOpen}>
-        <div className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-muted/10 p-4">
+        <div className="flex items-center justify-between gap-4 rounded-none border border-border bg-muted/10 p-4">
           <div>
             <h3 className="text-sm font-medium text-foreground">On-device models</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
@@ -1488,7 +1488,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
       <Collapsible open={meetingsOpen} onOpenChange={setMeetingsOpen}>
         <div
           className={cn(
-            "flex items-center justify-between gap-4 rounded-2xl border p-4",
+            "flex items-center justify-between gap-4 rounded-none border p-4",
             meetingIssueCount ? "border-amber-500/35 bg-amber-500/5" : "border-border bg-muted/10",
           )}
         >
@@ -1660,7 +1660,7 @@ export function TranscriptionSettings({ dialogOpen }: { dialogOpen: boolean }) {
                   disabled={researchBusy || (!research.allowed && !research.consent.consented)}
                 />
                 {research.allowed && research.consent.consented && researchEstimate && (
-                  <div className="rounded-md border border-border/60 p-3 text-sm">
+                  <div className="rounded-none border border-border/60 p-3 text-sm">
                     {researchEstimate.people === 0 ? (
                       <p className="text-muted-foreground">
                         Everyone you correspond with has already been looked up. New contacts are

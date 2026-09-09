@@ -232,17 +232,23 @@ config:
   CORS_ALLOWED_ORIGINS: https://app.solomon-ai.co
   AUTO_MIGRATE: "false" # production uses versioned migrations
   APP_URL: https://app.solomon-ai.co
-  OIDC_ISSUER_URL: https://oauth.solomon-ai.co
+  # One knob for OIDC_ISSUER_URL, TOKEN_ISSUER, ORY_PUBLIC_URL and
+  # WORKOS_AUTHORIZE_BASE_URL. Environments where they share an origin set only
+  # this; production splits them and overrides each specific var instead.
+  # Those vars are intentionally not pinned here: doing so would shadow
+  # AUTH_ISSUER_URL for anyone setting the single knob.
+  AUTH_ISSUER_URL: https://oauth.solomon-ai.co
   WEBSOCKET_API_URL: ""
-  TOKEN_ISSUER: https://oauth.solomon-ai.co
   TOKEN_AUDIENCE: rowboat-api
   JWKS_URL: https://oauth.solomon-ai.co/.well-known/jwks.json
   WORKOS_CLIENT_ID: ""
-  ORY_PUBLIC_URL: https://oauth.solomon-ai.co
   PUBLIC_BASE_URL: https://api.x.solomon-ai.co
   # Exact iss for rowboat-api-minted connector resource tokens. This is not the
-  # Hydra issuer used by the authorization-code and consent flow.
-  BROKER_TOKEN_ISSUER: https://api.x.solomon-ai.co
+  # Hydra issuer used by the authorization-code and consent flow. Intentionally
+  # unset: it defaults to PUBLIC_BASE_URL, which is the contract the production
+  # render enforces. Pinning a literal here let environments that set only
+  # PUBLIC_BASE_URL inherit an unrelated origin. Set it explicitly only for the
+  # reviewed separate-issuer topology (connectorBroker.allowSeparateIssuer).
   # Active signing kid. It must exist in BROKER_TOKEN_KEYRING_JSON and match
   # BROKER_TOKEN_PRIVATE_KEY_PEM or every replica fails startup.
   BROKER_TOKEN_KEY_ID: rowboat-broker-1
@@ -298,6 +304,9 @@ config:
   # categories submit unlabelled. PLAIN_API_KEY comes from Infisical.
   PLAIN_API_URL: https://core-api.uk.plain.com/graphql/v1
   PLAIN_LABEL_TYPE_IDS: '{"bug":"lt_01JN2Y0T823VHEYPD9KX3YA3XZ","feature":"lt_01HXTDSYX6SG3V7YB8CNB0YZB5","question":"lt_01JN2Y1BFY6FXD90REETNPWFJA","other":"lt_01JN2Y280HG5F8BH33Q1CDN7E7"}'
+  # Applied to every thread on top of the category label. The Plain workspace is
+  # shared across brands, so this is "Brand: Oppulence".
+  PLAIN_ALWAYS_LABEL_TYPE_IDS: lt_01M20XH6PFZ1F5EY4V19WWP7DG
   PLAIN_TITLE_PREFIX: ""
   TEMPORAL_ENABLED: "false"
   TEMPORAL_ADDRESS: temporal-frontend.temporal:7233
@@ -343,7 +352,10 @@ config:
   # and requires TEMPORAL_ENABLED=true.
   CLOUD_EVENTS_ROUTING_ENABLED: "false"
   CLOUD_EVENTS_MATCH_THRESHOLD: "0.7"
-  CLOUD_EVENTS_ROUTER_MODEL: anthropic/claude-haiku-4-5
+  # CLOUD_EVENTS_ROUTER_MODEL is intentionally unset: the Go default already
+  # picks the cheap router model, and pinning it here would override
+  # LLM_MODEL for anyone who sets that single knob. Set it explicitly only
+  # to give the router a deliberately different model than the runtimes.
   CLOUD_EVENTS_MAX_PAYLOAD_BYTES: "262144"
   # Google watch manager (RFC 003): registers/renews Gmail + Calendar push
   # subscriptions in the scheduler pod. Requires GOOGLE_WEBHOOK_TOKEN and (for
@@ -360,7 +372,8 @@ config:
   # deterministic-artifact NoopRuntime. MAX_DURATION must stay strictly under
   # the 5m Temporal activity timeout (boot validation enforces it).
   CLOUD_RUNTIME_ENABLED: "true"
-  CLOUD_RUNTIME_MODEL: anthropic/claude-sonnet-4-5
+  # CLOUD_RUNTIME_MODEL is intentionally unset; same reason as the router
+  # model above. Prefer setting LLM_MODEL once.
   CLOUD_RUNTIME_MAX_DURATION: 4m
   CLOUD_RUNTIME_MAX_LLM_CALLS: "12"
   CLOUD_RUNTIME_MAX_TOOL_CALLS: "24"

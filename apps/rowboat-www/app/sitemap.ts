@@ -8,7 +8,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...marketingPaths.map((route) => ({
       url: `https://oppulence.io/${route}`,
       changeFrequency: "monthly" as const,
-      priority: route === "voice" || route === "product" ? 0.9 : 0.7,
+      priority: route === "product" ? 0.9 : 0.7,
+    })),
+    // Product suite pages.
+    ...["products", "web", "desktop", "voice-app"].map((route) => ({
+      url: `https://oppulence.io/${route}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.9,
+    })),
+    // Legal pages are stable but should still be discoverable, particularly
+    // responsible-disclosure, which researchers look for by search.
+    ...["terms", "privacy", "responsible-disclosure"].map((route) => ({
+      url: `https://oppulence.io/${route}`,
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
     })),
   ];
 }

@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 
 import { HomePage } from "./marketing-components";
 
-const TITLE = "Oppulence — Relationship Intelligence for Customer-Facing Teams";
+const TITLE = "Oppulence — The Commitment Ledger";
 const DESCRIPTION =
-  "Oppulence maintains a living model of every customer relationship across email, meetings, Slack, CRM, and revenue systems—then shows what changed, what needs action, and why.";
+  "Oppulence is the independent record of business promises: what you owe, what they owe, what changed, and the proof behind it.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fcfcfc" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#111111" },
   ],
 };

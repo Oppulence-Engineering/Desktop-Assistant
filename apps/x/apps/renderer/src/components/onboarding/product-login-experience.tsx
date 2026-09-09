@@ -83,7 +83,7 @@ export function ProductLoginExperience({
             variant="outline"
             onClick={onContinueOffline}
             disabled={connecting}
-            className="group h-11 w-full justify-between rounded-lg border-white/10 bg-white/[0.055] px-3 text-left text-sm text-white/82 shadow-none hover:border-white/18 hover:bg-white/[0.085] hover:text-white focus-visible:border-white/40"
+            className="group h-11 w-full justify-between rounded-none border-white/10 bg-white/[0.055] px-3 text-left text-sm text-white/82 shadow-none hover:border-white/18 hover:bg-white/[0.085] hover:text-white focus-visible:border-white/40"
           >
             <span>Continue with local workspace</span>
             <ArrowRight className="size-4 shrink-0 text-white/42 transition-transform group-hover:translate-x-0.5 group-hover:text-white/72" />
@@ -95,7 +95,7 @@ export function ProductLoginExperience({
             type="button"
             variant="outline"
             onClick={onUseOwnProvider}
-            className="group h-11 w-full justify-between rounded-lg border-white/10 bg-white/[0.055] px-3 text-left text-sm text-white/82 shadow-none hover:border-white/18 hover:bg-white/[0.085] hover:text-white focus-visible:border-white/40"
+            className="group h-11 w-full justify-between rounded-none border-white/10 bg-white/[0.055] px-3 text-left text-sm text-white/82 shadow-none hover:border-white/18 hover:bg-white/[0.085] hover:text-white focus-visible:border-white/40"
           >
             <span className="flex min-w-0 items-center gap-2.5">
               <KeyRound className="size-4 shrink-0 text-white/78" />
