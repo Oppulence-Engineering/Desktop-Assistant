@@ -277,17 +277,26 @@ function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQue
 
 // A dead Google grant and a transient provider fault need different words and
 // a different button. Everything else is "try again".
-function scanFailure(scan: RevenueLeakScan | null | undefined) {
+function scanFailure(
+  scan: RevenueLeakScan | null | undefined,
+  sourceStillBroken: boolean,
+) {
   if (!scan?.error) return null;
-  const needsReconnect = /invalid authentication|invalid_grant|unauthorized|returned 40[13]/i.test(
+  const wasAuthFailure = /invalid authentication|invalid_grant|unauthorized|returned 40[13]/i.test(
     scan.error,
   );
+  // Only ask for a reconnect while the grant is actually broken. Reading the
+  // old error alone kept telling a user who had just reconnected that Google
+  // still needed reconnecting.
+  const needsReconnect = wasAuthFailure && sourceStillBroken;
   return {
     needsReconnect,
     headline: needsReconnect ? "Google needs reconnecting" : "The last audit did not finish",
     detail: needsReconnect
       ? "Google stopped accepting the authorization, so we could not read your mail. Reconnect to run the audit again."
-      : scan.error,
+      : wasAuthFailure
+        ? "The last audit could not read your mail. The connection looks healthy now, so running it again should work."
+        : scan.error,
   };
 }
 
@@ -384,7 +393,6 @@ export function CommitmentQueue({
   const [correctedText, setCorrectedText] = React.useState("");
   const [correctedDueAt, setCorrectedDueAt] = React.useState("");
   const items = React.useMemo(() => toQueueItems(entries), [entries]);
-  const failure = scanFailure(failedScan);
   const scopeMissing =
     (view === "by_account" && !accountId) || (view === "by_owner" && !owner.trim());
   const filtered = items.filter((item) => {
@@ -401,7 +409,11 @@ export function CommitmentQueue({
     );
   });
   const google = sources.find((source) => source.source === "google");
-  const googleNeedsReconnect = Boolean(failure?.needsReconnect || sourceNeedsReconnect(google));
+  const googleNeedsReconnect = sourceNeedsReconnect(google);
+  // A past failure is history; the source status says whether it is still true.
+  // After a successful reconnect the old 401 must stop demanding another one —
+  // it becomes "that audit did not finish", with a retry.
+  const failure = scanFailure(failedScan, googleNeedsReconnect);
   const googleConnected = !googleNeedsReconnect && sourceConnected(google);
   const needsReview = items.filter(
     (item) => item.urgency !== "closed" && item.missingEvidence.length > 0,

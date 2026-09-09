@@ -216,7 +216,10 @@ func (s *Service) runScan(ctx context.Context, u *ent.User, scan *ent.RevenueLea
 		// reporting the connection as healthy — so the register looked empty
 		// for no visible reason and "reconnect Google" was never suggested.
 		if googleapi.IsAuthError(err) {
-			if _, merr := s.MarkSourceSyncFailure(ctx, u, "google", "", "invalid_grant"); merr != nil {
+			// Every Google account, not a synthetic "default" one: the grant is
+			// held per user, so its death stops all of them, and a row for an
+			// account that does not exist is a row no reconnect can clear.
+			if _, merr := s.MarkSourceGrantFailure(ctx, u, "google", "invalid_grant"); merr != nil {
 				s.log.Error("revenue: mark google reconnect required", zap.Error(merr))
 			}
 		}

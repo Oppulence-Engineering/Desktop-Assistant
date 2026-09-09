@@ -350,6 +350,46 @@ func (s *Service) MarkSourceSyncFailure(
 	return updated, err
 }
 
+// MarkSourceGrantFailure marks every connected account of one source as needing
+// reconnection, and creates none.
+//
+// A provider grant is held per user, not per account: one dead Google
+// authorization stops every mailbox under it. Reporting the failure against a
+// synthetic "default" account instead left a row that described no real
+// connection — so reconnecting, which updates the accounts that actually exist,
+// could never clear it, and the product went on telling a user who had just
+// reconnected that Google still needed reconnecting.
+//
+// Returns how many accounts were marked. Zero means the source has no accounts
+// yet, which is not an error: there is nothing to reconnect.
+func (s *Service) MarkSourceGrantFailure(
+	ctx context.Context,
+	u *ent.User,
+	source string,
+	errorCode string,
+) (int, error) {
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceManageSources)
+	if err != nil {
+		return 0, err
+	}
+	source = canonicalSource(source)
+	rows, err := s.client.RelationshipSourceStatus.Query().Where(
+		relationshipsourcestatus.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+		relationshipsourcestatus.SourceEQ(source),
+	).All(ctx)
+	if err != nil {
+		return 0, err
+	}
+	marked := 0
+	for _, row := range rows {
+		if _, err := s.MarkSourceSyncFailure(ctx, u, source, row.SourceAccountID, errorCode); err != nil {
+			return marked, err
+		}
+		marked++
+	}
+	return marked, nil
+}
+
 // MarkSourceDisconnected makes an operator disconnect sticky and clears all
 // resumable provider cursors.
 func (s *Service) MarkSourceDisconnected(

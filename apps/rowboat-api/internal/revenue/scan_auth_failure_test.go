@@ -29,6 +29,34 @@ func waitForScan(t *testing.T, f *fixture, id interface{ String() string }) stri
 	}
 }
 
+// seedGoogleAccount authorizes one google account the way the connector flow
+// does, so the source rows a scan failure has to mark actually exist.
+func seedGoogleAccount(t *testing.T, f *fixture, account string) {
+	t.Helper()
+	if _, err := f.svc.ReportSourceAuthorization(f.ctx, f.user, "google", SourceAuthorizationInput{
+		SourceAccountID: account,
+		State:           "completed",
+		GrantedScopes:   []string{"https://www.googleapis.com/auth/gmail.readonly"},
+	}); err != nil {
+		t.Fatalf("seed google account %s: %v", account, err)
+	}
+}
+
+func googleSourceStatuses(t *testing.T, f *fixture) map[string]string {
+	t.Helper()
+	statuses, err := f.svc.RelationshipSourceStatuses(f.ctx, f.user)
+	if err != nil {
+		t.Fatalf("source statuses: %v", err)
+	}
+	out := map[string]string{}
+	for _, s := range statuses {
+		if s.Source == "google" {
+			out[s.SourceAccountID] = s.Status
+		}
+	}
+	return out
+}
+
 func googleSourceStatus(t *testing.T, f *fixture) string {
 	t.Helper()
 	statuses, err := f.svc.RelationshipSourceStatuses(f.ctx, f.user)
@@ -50,6 +78,7 @@ func googleSourceStatus(t *testing.T, f *fixture) string {
 // surface tells the same story.
 func TestScanMarksGoogleReconnectRequiredOnAuthFailure(t *testing.T) {
 	f := newFixture(t)
+	seedGoogleAccount(t, f, "owner@x.co")
 	f.svc.SetSweeper(&fakeSweeper{err: &googleapi.APIError{
 		Path:       "/gmail/v1/users/me/threads",
 		StatusCode: http.StatusUnauthorized,
@@ -149,5 +178,41 @@ func TestFreshnessDoesNotMaskReconnectRequired(t *testing.T) {
 	applySourceFreshness(connected, now)
 	if connected.Status != "stale" {
 		t.Fatalf("connected source status = %q, want stale", connected.Status)
+	}
+}
+
+// The grant is held per user, so its death stops every Google account under it
+// — and marking a synthetic "default" account created a row that described no
+// real connection. Reconnecting updates the accounts that exist, so that row
+// could never be cleared, and a user who had just reconnected was still told
+// Google needed reconnecting.
+func TestScanMarksEveryGoogleAccountAndInventsNone(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+
+	for _, account := range []string{"one@x.co", "two@x.co"} {
+		seedGoogleAccount(t, f, account)
+	}
+
+	f.svc.SetSweeper(&fakeSweeper{err: &googleapi.APIError{
+		Path: "/gmail/v1/users/me/threads", StatusCode: http.StatusUnauthorized,
+	}})
+	scan, err := f.svc.StartScan(f.ctx, f.user, 90)
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if got := waitForScan(t, f, scan.ID); got != "failed" {
+		t.Fatalf("scan status = %s, want failed", got)
+	}
+
+	statuses := googleSourceStatuses(t, f)
+	if _, invented := statuses["default"]; invented {
+		t.Error("a synthetic \"default\" account was invented; no reconnect can ever clear it")
+	}
+	for _, account := range []string{"one@x.co", "two@x.co"} {
+		if statuses[account] != "reconnect_required" {
+			t.Errorf("account %s = %q, want reconnect_required", account, statuses[account])
+		}
 	}
 }

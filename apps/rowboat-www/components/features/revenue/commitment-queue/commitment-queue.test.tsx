@@ -60,6 +60,32 @@ const sources: RelationshipSourceInventoryItem[] = [
   },
 ];
 
+// A dead grant is a fact about the source, not only about a past scan. The
+// component now asks the source before telling anyone to reconnect.
+const brokenSources: RelationshipSourceInventoryItem[] = [
+  {
+    ...sources[0],
+    accounts: [
+      {
+        connectionId: "google-1",
+        source: "google",
+        sourceAccountId: "me@gmail.com",
+        status: "reconnect_required",
+        backfillPhase: "failed",
+        backfillCompleted: 0,
+        backfillTotal: 0,
+        completeness: "stale",
+        expectedCadenceSeconds: 900,
+        lagSeconds: 0,
+        retryCount: 1,
+        requiredScopes: [],
+        grantedScopes: [],
+        missingScopes: [],
+      },
+    ],
+  },
+];
+
 function props(overrides: Partial<ComponentProps<typeof CommitmentQueue>> = {}) {
   return {
     entries: entries(),
@@ -208,7 +234,9 @@ describe("when the register is empty for a reason", () => {
   // the words "Connect Gmail and Calendar", sending a user who was already
   // connected back through an OAuth flow that could not help them.
   it("names the dead grant and offers to reconnect", () => {
-    render(<CommitmentQueue {...props({ entries: [], failedScan: deadGrant })} />);
+    render(
+      <CommitmentQueue {...props({ entries: [], failedScan: deadGrant, sources: brokenSources })} />,
+    );
 
     expect(screen.getByText("Google needs reconnecting")).toBeInTheDocument();
     expect(screen.getByText(/stopped accepting the authorization/)).toBeInTheDocument();
@@ -271,6 +299,7 @@ it("keeps warning about a dead grant even when the register has rows", () => {
     <CommitmentQueue
       {...props({
         entries: entries(),
+        sources: brokenSources,
         failedScan: {
           id: "scan-failed",
           status: "failed",
@@ -288,4 +317,31 @@ it("keeps warning about a dead grant even when the register has rows", () => {
   expect(screen.getByText(/not being updated until you reconnect/)).toBeInTheDocument();
   // The rows are still there — the warning is additive, not a replacement.
   expect(screen.getByText("Send the signed security packet")).toBeInTheDocument();
+});
+
+// The bug a real reconnect exposed: the register kept demanding another
+// reconnect after the user had already done one, because it read only the old
+// failed scan and never asked whether the source was working again.
+it("stops demanding a reconnect once the source is healthy again", () => {
+  render(
+    <CommitmentQueue
+      {...props({
+        entries: [],
+        sources,
+        failedScan: {
+          id: "scan-old",
+          status: "failed",
+          mode: "linked",
+          lookbackDays: 90,
+          threadsSeen: 0,
+          candidatesSeen: 0,
+          error: "google api /gmail returned 401: Request had invalid authentication credentials.",
+        },
+      })}
+    />,
+  );
+
+  expect(screen.queryByRole("button", { name: /Reconnect Google/ })).not.toBeInTheDocument();
+  expect(screen.getByText(/connection looks healthy now/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Run the audit again/ })).toBeInTheDocument();
 });
