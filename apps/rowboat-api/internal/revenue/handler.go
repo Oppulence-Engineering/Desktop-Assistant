@@ -57,12 +57,20 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/current/features", h.WorkspaceFeatureControls)
 		r.Put("/current/features/{capability}", h.SetWorkspaceFeatureControl)
 	})
+	// The register: obligations across every account, which is the product.
+	// Every other commitment route is scoped to one relationship and cannot
+	// answer "what do we owe anyone".
+	r.Get("/v1/commitments", h.ListCommitments)
+	// A record that cannot leave the tool cannot settle an argument.
+	r.Get("/v1/commitments/{commitmentId}/export", h.ExportCommitment)
 	r.Get("/v1/revenue-impact", h.Impact)
 	r.Get("/v1/revenue-digest", h.Digest)
 	r.Get("/v1/revenue-search", h.SemanticSearch)
 	r.Route("/v1/revenue-leak-scans", func(r chi.Router) {
 		r.Post("/", h.StartScan)
 		r.Get("/{scanId}", h.GetScan)
+		// The wedge: what a prospect reads on their first day.
+		r.Get("/{scanId}/report", h.OpenPromisesReport)
 	})
 	r.Route("/v1/relationships", func(r chi.Router) {
 		r.Get("/", h.ListRelationships)
