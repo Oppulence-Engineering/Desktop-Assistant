@@ -461,10 +461,20 @@ func applySourceFreshness(status *ent.RelationshipSourceStatus, now time.Time) {
 	}
 	status.LagSeconds = int64(lag.Seconds())
 	boundary := time.Duration(status.ExpectedCadenceSeconds*2) * time.Second
-	if lag > boundary {
-		status.Status = "stale"
-		status.Completeness = "stale"
+	if lag <= boundary {
+		return
 	}
+	// Staleness is derived from the clock and must never overwrite a state that
+	// asks the user for something. A grant that needs reconnecting always goes
+	// stale — no sync can succeed without it — so relabelling it "stale" hid
+	// the one fact the user could act on behind the symptom it causes. The lag
+	// is still recorded; only the headline state is protected.
+	if status.Status == "reconnect_required" {
+		status.Completeness = "stale"
+		return
+	}
+	status.Status = "stale"
+	status.Completeness = "stale"
 }
 
 func canonicalSource(source string) string {

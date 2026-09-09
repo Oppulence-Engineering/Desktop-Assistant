@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 )
 
@@ -109,5 +110,44 @@ func TestIsAuthErrorClassifiesByStatusCode(t *testing.T) {
 	}
 	if googleapi.IsAuthError(nil) {
 		t.Error("nil classified as an auth error")
+	}
+}
+
+// Staleness is derived from the clock. A dead grant guarantees staleness — no
+// sync can succeed — so letting freshness overwrite the state hid the one fact
+// the user could act on behind the symptom it caused. This is the last link in
+// the chain: without it the scan marks reconnect_required and the API still
+// reports "stale".
+func TestFreshnessDoesNotMaskReconnectRequired(t *testing.T) {
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	longAgo := now.Add(-72 * time.Hour)
+
+	needsReconnect := &ent.RelationshipSourceStatus{
+		Status:                 "reconnect_required",
+		Completeness:           "partial",
+		ExpectedCadenceSeconds: 900,
+		LastSuccessAt:          &longAgo,
+	}
+	applySourceFreshness(needsReconnect, now)
+	if needsReconnect.Status != "reconnect_required" {
+		t.Fatalf("status = %q, want reconnect_required", needsReconnect.Status)
+	}
+	if needsReconnect.Completeness != "stale" {
+		t.Fatalf("completeness = %q, want stale", needsReconnect.Completeness)
+	}
+	if needsReconnect.LagSeconds == 0 {
+		t.Fatal("lag was not recorded")
+	}
+
+	// An ordinary connected source still goes stale on the same clock.
+	connected := &ent.RelationshipSourceStatus{
+		Status:                 "connected",
+		Completeness:           "partial",
+		ExpectedCadenceSeconds: 900,
+		LastSuccessAt:          &longAgo,
+	}
+	applySourceFreshness(connected, now)
+	if connected.Status != "stale" {
+		t.Fatalf("connected source status = %q, want stale", connected.Status)
 	}
 }
