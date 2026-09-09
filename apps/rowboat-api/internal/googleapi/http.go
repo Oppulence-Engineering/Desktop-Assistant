@@ -99,10 +99,11 @@ func (c *Client) doJSON(req *http.Request, token string, out any) error {
 				Message string `json:"message"`
 			} `json:"error"`
 		}
-		if json.Unmarshal(respBody, &payload) == nil && strings.TrimSpace(payload.Error.Message) != "" {
-			return fmt.Errorf("google api %s returned %d: %s", req.URL.Path, resp.StatusCode, strings.TrimSpace(payload.Error.Message))
+		apiErr := &APIError{Path: req.URL.Path, StatusCode: resp.StatusCode}
+		if json.Unmarshal(respBody, &payload) == nil {
+			apiErr.Message = strings.TrimSpace(payload.Error.Message)
 		}
-		return fmt.Errorf("google api %s returned %d", req.URL.Path, resp.StatusCode)
+		return apiErr
 	}
 	if out == nil {
 		return nil

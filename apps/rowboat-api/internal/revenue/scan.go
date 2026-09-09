@@ -210,6 +210,16 @@ func (s *Service) runScan(ctx context.Context, u *ent.User, scan *ent.RevenueLea
 		}
 		upd.SetStatus("failed").SetError(msg)
 		revenuemetrics.Scans.WithLabelValues("failed", scan.Mode).Inc()
+		// A dead Google grant is the one scan failure the user can fix, and the
+		// only one they must be told about. Recording it on the scan row alone
+		// buried it on the audits screen while every other surface kept
+		// reporting the connection as healthy — so the register looked empty
+		// for no visible reason and "reconnect Google" was never suggested.
+		if googleapi.IsAuthError(err) {
+			if _, merr := s.MarkSourceSyncFailure(ctx, u, "google", "", "invalid_grant"); merr != nil {
+				s.log.Error("revenue: mark google reconnect required", zap.Error(merr))
+			}
+		}
 	} else {
 		upd.SetStatus("completed")
 		revenuemetrics.Scans.WithLabelValues("completed", scan.Mode).Inc()
