@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
+  ArrowLeftIcon,
   ArrowRightIcon,
   CircleNotchIcon,
   ExportIcon,
@@ -18,23 +19,32 @@ import { Button } from "@oppulence/ui/components/button";
 import { AuthGate } from "@/components/auth-gate";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import {
+  downloadMarkdown,
   friendlyRevenueError,
   getOpenPromisesReport,
+  getOpenPromisesReportMarkdown,
   getScan,
   listRelationshipSources,
+  safeResearchCitationURL,
   startScan,
 } from "@/lib/revenue";
 import type { OpenPromisesReport, RelationshipSourceInventoryItem } from "@/types/revenue";
 
 const ACTIVE_SOURCE_STATES = new Set(["connected", "backfilling", "live"]);
 
-function googleConnected(sources: RelationshipSourceInventoryItem[]) {
+// Health reports the WORST account, never the best. A .some() over accounts
+// let one healthy connection hide a dead grant, and this page would then invite
+// the user to run a scan that cannot possibly read their mail.
+const ATTENTION_SOURCE_STATES = new Set(["reconnect_required", "disconnected"]);
+
+function googleHealth(sources: RelationshipSourceInventoryItem[]) {
   const google = sources.find((source) => source.source === "google");
-  return Boolean(
-    google?.accounts.some(
-      (account) => ACTIVE_SOURCE_STATES.has(account.status) && account.missingScopes.length === 0,
-    ),
-  );
+  const accounts = google?.accounts ?? [];
+  if (accounts.some((a) => ATTENTION_SOURCE_STATES.has(a.status) || a.missingScopes.length > 0)) {
+    return "needs_reconnect" as const;
+  }
+  if (accounts.some((a) => ACTIVE_SOURCE_STATES.has(a.status))) return "ready" as const;
+  return "not_connected" as const;
 }
 
 export function OpenPromisesReportClient() {
@@ -66,7 +76,7 @@ function ReportBody() {
     queryKey: ["report-sources"],
     queryFn: () => listRelationshipSources(),
   });
-  const connected = googleConnected(sourcesQuery.data ?? []);
+  const health = googleHealth(sourcesQuery.data ?? []);
 
   const scanQuery = useQuery({
     queryKey: ["report-scan", scanId],
@@ -111,10 +121,18 @@ function ReportBody() {
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-3xl flex-col gap-6 px-6 py-12">
       <header>
+        {/* This page renders outside the app shell, so without this there is no
+            way back into the product from it. */}
+        <Link
+          className="mb-4 inline-flex items-center gap-1.5 text-[13px] text-primary/50 hover:text-primary"
+          href="/app"
+        >
+          <ArrowLeftIcon className="size-3.5" /> Back to Oppulence
+        </Link>
         <h1 className="text-[28px] font-medium leading-tight text-primary">Open promises</h1>
         <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-primary/60">
-          The commitments your team made in the last 90 days that have no evidence of
-          fulfilment, and the exact message that created each one.
+          The commitments your team made in the last 90 days that have no evidence of fulfilment,
+          and the exact message that created each one.
         </p>
       </header>
 
@@ -124,8 +142,10 @@ function ReportBody() {
         </p>
       ) : null}
 
-      {!connected && !sourcesQuery.isLoading ? (
+      {health === "not_connected" && !sourcesQuery.isLoading ? (
         <ConnectStep />
+      ) : health === "needs_reconnect" && !sourcesQuery.isLoading ? (
+        <ReconnectStep />
       ) : !scanId ? (
         <StartStep
           onRun={() => {
@@ -143,7 +163,24 @@ function ReportBody() {
           }}
         />
       ) : reportQuery.data ? (
-        <Report report={reportQuery.data} />
+        <Report report={reportQuery.data} scanId={scanId} />
+      ) : reportQuery.isError ? (
+        <section className="border border-destructive/40 bg-destructive/5 p-5" role="alert">
+          <h2 className="text-[15px] font-medium text-destructive">The report could not load</h2>
+          <p className="mt-1.5 text-[13px] text-primary/70">
+            {friendlyRevenueError(
+              reportQuery.error instanceof Error ? reportQuery.error.message : "Please try again.",
+            )}
+          </p>
+          <Button
+            className="mt-4"
+            onClick={() => void reportQuery.refetch()}
+            type="button"
+            variant="outline"
+          >
+            Try again
+          </Button>
+        </section>
       ) : (
         <p className="flex items-center gap-2 text-[13px] text-primary/55">
           <CircleNotchIcon className="size-4 animate-spin" /> Building the report.
@@ -159,12 +196,33 @@ function ConnectStep() {
     <section className="border border-border bg-background-50 p-5">
       <h2 className="text-[15px] font-medium text-primary">Connect Gmail to begin</h2>
       <p className="mt-1.5 max-w-lg text-[13px] leading-relaxed text-primary/60">
-        Oppulence reads the last 90 days to find promises. Nothing is sent, written, or
-        replied to on your behalf.
+        Oppulence reads the last 90 days to find promises. Nothing is sent, written, or replied to
+        on your behalf.
       </p>
       <Button asChild className="mt-4 bg-[#3478f6] text-white hover:bg-[#2f6fe6]">
         <Link href="/app/settings">
           <PlugsIcon /> Connect Gmail &amp; Calendar
+        </Link>
+      </Button>
+    </section>
+  );
+}
+
+// The grant died. Offering "find my open promises" here would invite a scan
+// that cannot read anything.
+function ReconnectStep() {
+  return (
+    <section className="border border-destructive/40 bg-destructive/[0.04] p-5">
+      <h2 className="flex items-center gap-2 text-[15px] font-medium text-primary">
+        <WarningIcon className="size-4 text-destructive" /> Google needs reconnecting
+      </h2>
+      <p className="mt-1.5 max-w-lg text-[13px] leading-relaxed text-primary/60">
+        Google stopped accepting the authorization, so we cannot read your mail. Reconnect to
+        run the audit.
+      </p>
+      <Button asChild className="mt-4 bg-[#3478f6] text-white hover:bg-[#2f6fe6]">
+        <Link href="/app/settings">
+          <PlugsIcon /> Reconnect Google
         </Link>
       </Button>
     </section>
@@ -227,42 +285,30 @@ function ScanningStep({
   );
 }
 
-function Report({ report }: { report: OpenPromisesReport }) {
-  const download = React.useCallback(() => {
-    const lines = [
-      "# Open promises",
-      "",
-      `Commitments found in the last ${String(report.lookbackDays)} days with no evidence of fulfilment.`,
-      "",
-      `- ${String(report.outboundCount)} promises we made`,
-      `- ${String(report.inboundCount)} promises made to us`,
-      `- ${String(report.threadsSeen)} conversations read`,
-      "",
-      ...report.items.flatMap((item) => [
-        `### ${item.account} — ${item.text}`,
-        "",
-        `${item.direction === "promised_by_them" ? "They owe" : "We owe"} · state ${item.state}` +
-          (item.dueAt ? ` · due ${item.dueAt.slice(0, 10)}` : " · due unspecified"),
-        "",
-        ...(item.sourceQuote ? [`> ${item.sourceQuote}`, ""] : []),
-      ]),
-    ];
-    const blob = new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "open-promises.md";
-    link.click();
-    URL.revokeObjectURL(url);
-  }, [report]);
+function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string }) {
+  const [downloading, setDownloading] = React.useState(false);
+  const [downloadError, setDownloadError] = React.useState<string | null>(null);
+  const download = React.useCallback(async () => {
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      downloadMarkdown("open-promises.md", await getOpenPromisesReportMarkdown(scanId));
+    } catch (error) {
+      setDownloadError(
+        error instanceof Error ? error.message : "The report could not be downloaded.",
+      );
+    } finally {
+      setDownloading(false);
+    }
+  }, [scanId]);
 
   if (report.items.length === 0) {
     return (
       <section className="border border-border bg-background-50 p-5">
         <h2 className="text-[15px] font-medium text-primary">No open promises found</h2>
         <p className="mt-1.5 max-w-lg text-[13px] leading-relaxed text-primary/60">
-          We read {report.threadsSeen} conversations and found nothing outstanding. That is
-          either good news, or a sign that more sources need connecting.
+          We read {report.threadsSeen} conversations and found nothing outstanding. That is either
+          good news, or a sign that more sources need connecting.
         </p>
         <Button asChild className="mt-4" variant="outline">
           <Link href="/app/settings">Connect more sources</Link>
@@ -280,8 +326,14 @@ function Report({ report }: { report: OpenPromisesReport }) {
       </section>
 
       <div className="flex items-center gap-2">
-        <Button onClick={download} type="button" variant="outline">
-          <ExportIcon /> Download the report
+        <Button
+          disabled={downloading}
+          onClick={() => void download()}
+          type="button"
+          variant="outline"
+        >
+          {downloading ? <CircleNotchIcon className="animate-spin" /> : <ExportIcon />}
+          {downloading ? "Downloading" : "Download the report"}
         </Button>
         <Button asChild variant="outline">
           <Link href="/app/revenue">
@@ -289,6 +341,13 @@ function Report({ report }: { report: OpenPromisesReport }) {
           </Link>
         </Button>
       </div>
+
+      {downloadError ? <p className="text-[13px] text-destructive">{downloadError}</p> : null}
+      {report.truncated ? (
+        <p className="border border-amber-500/40 bg-amber-500/5 p-3 text-[13px] text-primary/70">
+          This report shows the first 200 open promises. Open the register for the complete ledger.
+        </p>
+      ) : null}
 
       <ol className="flex flex-col gap-3">
         {report.items.map((item) => (
@@ -313,6 +372,26 @@ function Report({ report }: { report: OpenPromisesReport }) {
               <blockquote className="mt-2.5 border-l-2 border-border pl-3 text-[13px] italic leading-relaxed text-primary/55">
                 {item.sourceQuote}
               </blockquote>
+            ) : null}
+            {item.occurredAt || safeResearchCitationURL(item.sourceUri ?? "") ? (
+              <p className="mt-2 text-[12px] text-primary/45">
+                {item.occurredAt
+                  ? `Source observed ${new Date(item.occurredAt).toLocaleString()}`
+                  : "Source"}
+                {safeResearchCitationURL(item.sourceUri ?? "") ? (
+                  <>
+                    {" · "}
+                    <a
+                      className="underline underline-offset-2 hover:text-primary"
+                      href={safeResearchCitationURL(item.sourceUri ?? "") as string}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      Open source
+                    </a>
+                  </>
+                ) : null}
+              </p>
             ) : null}
           </li>
         ))}

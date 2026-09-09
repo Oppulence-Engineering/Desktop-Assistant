@@ -110,22 +110,43 @@ export const REGISTER_VIEWS: { id: RegisterView; label: string; hint: string }[]
  *  view and its query cannot drift apart. */
 export function registerFilterFor(
   view: RegisterView,
-  options: { relationshipId?: string; owner?: string; since?: string } = {},
-): CommitmentRegisterFilter {
+  options: {
+    relationshipId?: string;
+    owner?: string;
+    since?: string;
+    includeCandidates?: boolean;
+  } = {},
+): CommitmentRegisterFilter | null {
+  const includeCandidates = options.includeCandidates || undefined;
   switch (view) {
     case "we_owe":
-      return { direction: "promised_by_me", state: ["open", "at_risk"], limit: 200 };
+      return {
+        direction: "promised_by_me",
+        state: ["open", "at_risk"],
+        includeCandidates,
+        limit: 200,
+      };
     case "they_owe":
-      return { direction: "promised_by_them", state: ["open", "at_risk"], limit: 200 };
+      return {
+        direction: "promised_by_them",
+        state: ["open", "at_risk"],
+        includeCandidates,
+        limit: 200,
+      };
     case "changed":
       return {
         changedSince: options.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        includeCandidates,
         limit: 200,
       };
     case "by_account":
-      return { relationshipId: options.relationshipId, limit: 200 };
+      return options.relationshipId
+        ? { relationshipId: options.relationshipId, includeCandidates, limit: 200 }
+        : null;
     case "by_owner":
-      return { owner: options.owner, limit: 200 };
+      return options.owner?.trim()
+        ? { owner: options.owner.trim(), includeCandidates, limit: 200 }
+        : null;
   }
 }
 
@@ -141,6 +162,12 @@ export interface CommitmentQueueProps extends Omit<
   onExport?: (item: CommitmentQueueItem) => Promise<void>;
   /** Accounts in the workspace, for the "no accounts yet" empty state. */
   relationshipCount?: number;
+  accounts?: { id: string; label: string }[];
+  accountId?: string;
+  onAccountChange?: (relationshipId: string) => void;
+  owner?: string;
+  onOwnerChange?: (owner: string) => void;
+  onIncludeCandidatesChange?: (include: boolean) => void;
   sources: RelationshipSourceInventoryItem[];
   latestScan?: RevenueLeakScan | null;
   /** The most recent audit that failed, when it is newer than the last success.
@@ -257,16 +284,31 @@ function scanFailure(scan: RevenueLeakScan | null | undefined) {
   );
   return {
     needsReconnect,
-    headline: needsReconnect
-      ? "Google needs reconnecting"
-      : "The last audit did not finish",
+    headline: needsReconnect ? "Google needs reconnecting" : "The last audit did not finish",
     detail: needsReconnect
       ? "Google stopped accepting the authorization, so we could not read your mail. Reconnect to run the audit again."
       : scan.error,
   };
 }
 
+// Health reports the WORST account, never the best.
+//
+// This used to be a .some() over accounts, so a workspace with one healthy
+// account and one whose grant had died read as fully connected — and the
+// broken one is the one an audit trips over. An account that needs the user
+// back through OAuth outranks any number of healthy siblings.
+const ATTENTION_SOURCE_STATES = new Set(["reconnect_required", "disconnected"]);
+
+function sourceNeedsReconnect(source: RelationshipSourceInventoryItem | undefined) {
+  return Boolean(
+    source?.accounts.some(
+      (account) => ATTENTION_SOURCE_STATES.has(account.status) || account.missingScopes.length > 0,
+    ),
+  );
+}
+
 function sourceConnected(source: RelationshipSourceInventoryItem | undefined) {
+  if (sourceNeedsReconnect(source)) return false;
   return Boolean(
     source?.accounts.some(
       (account) => ACTIVE_SOURCE_STATES.has(account.status) && account.missingScopes.length === 0,
@@ -313,6 +355,12 @@ export function CommitmentQueue({
   onViewChange,
   onExport,
   relationshipCount = 0,
+  accounts = [],
+  accountId,
+  onAccountChange,
+  owner = "",
+  onOwnerChange,
+  onIncludeCandidatesChange,
   sources,
   latestScan,
   failedScan,
@@ -337,6 +385,8 @@ export function CommitmentQueue({
   const [correctedDueAt, setCorrectedDueAt] = React.useState("");
   const items = React.useMemo(() => toQueueItems(entries), [entries]);
   const failure = scanFailure(failedScan);
+  const scopeMissing =
+    (view === "by_account" && !accountId) || (view === "by_owner" && !owner.trim());
   const filtered = items.filter((item) => {
     if (filter === "review" && item.missingEvidence.length === 0) return false;
     if (filter === "due" && item.urgency !== "overdue" && item.urgency !== "due_soon") return false;
@@ -351,6 +401,8 @@ export function CommitmentQueue({
     );
   });
   const google = sources.find((source) => source.source === "google");
+  const googleNeedsReconnect = Boolean(failure?.needsReconnect || sourceNeedsReconnect(google));
+  const googleConnected = !googleNeedsReconnect && sourceConnected(google);
   const needsReview = items.filter(
     (item) => item.urgency !== "closed" && item.missingEvidence.length > 0,
   ).length;
@@ -418,7 +470,36 @@ export function CommitmentQueue({
             className="h-8 border-border bg-background pl-8 text-[13px]"
           />
         </div>
-        <Select value={filter} onValueChange={setFilter}>
+        {view === "by_account" ? (
+          <Select value={accountId} onValueChange={onAccountChange}>
+            <SelectTrigger className="h-8 w-48" aria-label="Choose account">
+              <SelectValue placeholder="Choose an account" />
+            </SelectTrigger>
+            <SelectContent className="app-shell rounded-none">
+              {accounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
+        {view === "by_owner" ? (
+          <Input
+            aria-label="Filter by owner"
+            className="h-8 w-48 border-border bg-background text-[13px]"
+            onChange={(event) => onOwnerChange?.(event.target.value)}
+            placeholder="Owner name or email"
+            value={owner}
+          />
+        ) : null}
+        <Select
+          value={filter}
+          onValueChange={(value) => {
+            setFilter(value);
+            onIncludeCandidatesChange?.(value === "review");
+          }}
+        >
           <SelectTrigger className="h-8 w-40" aria-label="Filter commitments">
             <SelectValue />
           </SelectTrigger>
@@ -440,11 +521,11 @@ export function CommitmentQueue({
           Recovery drafts
         </Button>
         <div className="ml-auto flex items-center gap-2">
-          {!sourceConnected(google) ? (
+          {!failure?.needsReconnect && !googleConnected ? (
             <Button type="button" variant="outline" size="sm" onClick={onOpenConnectors}>
-              <Plugs /> Connect Gmail &amp; Calendar
+              <Plugs /> {googleNeedsReconnect ? "Reconnect Google" : "Connect Gmail & Calendar"}
             </Button>
-          ) : (
+          ) : googleConnected ? (
             <button
               className="hidden h-8 items-center gap-1.5 text-[12px] text-emerald-400 2xl:flex"
               onClick={onOpenAccounts}
@@ -452,7 +533,7 @@ export function CommitmentQueue({
             >
               <span className="size-1.5 rounded-full bg-emerald-400" /> Google connected
             </button>
-          )}
+          ) : null}
           <Button
             type="button"
             size="sm"
@@ -523,6 +604,36 @@ export function CommitmentQueue({
         </div>
       ) : null}
 
+      {/* A broken source is not only an empty-register problem. With rows on
+          screen the register still looks authoritative while it is quietly
+          going out of date, so the warning rides above the list too — the
+          empty state below repeats it at full size when there is nothing else
+          to show. */}
+      {failure && items.length > 0 ? (
+        <div
+          role="alert"
+          className="mx-3 mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-none border border-destructive/40 bg-destructive/[0.04] px-3 py-2 text-[13px] text-destructive"
+        >
+          <Warning className="size-4 shrink-0" />
+          <span className="font-medium">{failure.headline}</span>
+          <span className="text-destructive/80">
+            {failure.needsReconnect
+              ? "This register is not being updated until you reconnect."
+              : "The last audit did not finish, so this register may be incomplete."}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="ml-auto h-7 border-destructive/40 px-2 text-[12px] text-destructive"
+            onClick={failure.needsReconnect ? onOpenConnectors : onScan}
+            disabled={!failure.needsReconnect && scanning}
+          >
+            {failure.needsReconnect ? "Reconnect Google" : "Run the audit again"}
+          </Button>
+        </div>
+      ) : null}
+
       {error ? (
         <div
           role="alert"
@@ -533,6 +644,17 @@ export function CommitmentQueue({
       ) : loading ? (
         <div className="flex flex-1 items-center justify-center gap-2 p-6 text-sm text-primary/55">
           <CircleNotch className="animate-spin" /> Loading commitments…
+        </div>
+      ) : scopeMissing ? (
+        <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
+          <h2 className="text-[20px] font-semibold leading-6 text-primary">
+            {view === "by_account" ? "Choose an account" : "Enter an owner"}
+          </h2>
+          <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+            {view === "by_account"
+              ? "Select one relationship to see its two-sided promise history."
+              : "Use a name or email to see what that person has promised."}
+          </p>
         </div>
       ) : filtered.length === 0 && scanning ? (
         // Mid-scan the register is empty because nothing has been read yet, not
@@ -593,21 +715,23 @@ export function CommitmentQueue({
           </h2>
           <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
             {items.length === 0
-              ? sourceConnected(google)
+              ? googleConnected
                 ? "No explicit promises were found. Run another audit after new conversations or import reviewed meeting evidence."
-                : "Connect Gmail and Calendar to find who promised what, when it is due, and the exact evidence behind it."
+                : googleNeedsReconnect
+                  ? "Reconnect Google to resume finding who promised what, when it is due, and the exact evidence behind it."
+                  : "Connect Gmail and Calendar to find who promised what, when it is due, and the exact evidence behind it."
               : "Change the filter or search query."}
           </p>
           {items.length === 0 ? (
             <div className="mt-5 flex flex-wrap justify-center gap-2">
-              {!sourceConnected(google) ? (
+              {!googleConnected ? (
                 <Button
                   type="button"
                   size="sm"
                   className="bg-[#3478f6] text-white"
                   onClick={onOpenConnectors}
                 >
-                  <Plugs /> Connect Gmail &amp; Calendar
+                  <Plugs /> {googleNeedsReconnect ? "Reconnect Google" : "Connect Gmail & Calendar"}
                 </Button>
               ) : (
                 <Button
@@ -884,7 +1008,7 @@ export function CommitmentQueue({
                   value={
                     selected.missingEvidence.length
                       ? selected.missingEvidence.join(", ")
-                      : "Nothing"
+                      : "None"
                   }
                 />
               </dl>
@@ -1105,9 +1229,10 @@ function StatusBadge({ state }: { state: string }) {
       variant="outline"
       className={cn(
         "rounded-[2px] capitalize",
-        state === "fulfilled" && "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
-        state === "blocked" && "border-amber-500/40 text-amber-600 dark:text-amber-400",
-        state === "disputed" && "border-red-500/40 text-red-600 dark:text-red-400",
+        state === "met" && "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
+        state === "at_risk" && "border-amber-500/40 text-amber-600 dark:text-amber-400",
+        (state === "missed" || state === "disputed") &&
+          "border-red-500/40 text-red-600 dark:text-red-400",
       )}
     >
       {statusLabel(state)}

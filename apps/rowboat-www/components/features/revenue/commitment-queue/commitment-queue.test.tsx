@@ -86,6 +86,7 @@ describe("CommitmentQueue", () => {
     expect(component).toHaveTextContent("Morgan");
     expect(component).toHaveTextContent("I will send the signed security packet by Friday.");
     expect(component).toHaveTextContent("Due within 72h");
+    expect(screen.getByText("At risk")).toHaveClass("border-amber-500/40");
     expect(screen.getByRole("button", { name: /Run 90-day Promise Leak Audit/ })).toBeEnabled();
     expect(screen.getByRole("button", { name: /Connect Gmail & Calendar/ })).toBeEnabled();
   });
@@ -148,6 +149,14 @@ describe("CommitmentQueue", () => {
     expect(screen.getByRole("button", { name: "Review 1 relationship" })).toBeEnabled();
   });
 
+  it("asks for a scope before loading an owner view", () => {
+    render(<CommitmentQueue {...props({ entries: [], owner: "", view: "by_owner" })} />);
+
+    expect(screen.getByRole("textbox", { name: "Filter by owner" })).toBeInTheDocument();
+    expect(screen.getByText("Enter an owner")).toBeInTheDocument();
+    expect(screen.queryByText(/Connect Gmail and Calendar to find/)).not.toBeInTheDocument();
+  });
+
   it("records confirmation and correction through transition callbacks", async () => {
     const user = userEvent.setup();
     const onTransition = vi.fn(async () => true);
@@ -204,6 +213,8 @@ describe("when the register is empty for a reason", () => {
     expect(screen.getByText("Google needs reconnecting")).toBeInTheDocument();
     expect(screen.getByText(/stopped accepting the authorization/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Reconnect Google/ })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: /Connect Gmail & Calendar/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Google connected/ })).not.toBeInTheDocument();
     expect(screen.queryByText(/Connect Gmail and Calendar to find/)).not.toBeInTheDocument();
   });
 
@@ -240,10 +251,41 @@ describe("when the register is empty for a reason", () => {
 it("shows a register failure instead of the onboarding prompt", () => {
   render(
     <CommitmentQueue
-      {...props({ entries: [], sources: [], error: "The commitment register could not be loaded." })}
+      {...props({
+        entries: [],
+        sources: [],
+        error: "The commitment register could not be loaded.",
+      })}
     />,
   );
 
   expect(screen.getByText("The commitment register could not be loaded.")).toBeInTheDocument();
   expect(screen.queryByText(/Connect Gmail and Calendar to find/)).not.toBeInTheDocument();
+});
+
+// Dogfooding found this: the reconnect warning only rendered on an empty
+// register. With rows on screen the list still looked authoritative while it
+// was quietly going out of date, and nothing said the audits had stopped.
+it("keeps warning about a dead grant even when the register has rows", () => {
+  render(
+    <CommitmentQueue
+      {...props({
+        entries: entries(),
+        failedScan: {
+          id: "scan-failed",
+          status: "failed",
+          mode: "linked",
+          lookbackDays: 90,
+          threadsSeen: 0,
+          candidatesSeen: 0,
+          error: "google api /gmail returned 401: Request had invalid authentication credentials.",
+        },
+      })}
+    />,
+  );
+
+  expect(screen.getByText("Google needs reconnecting")).toBeInTheDocument();
+  expect(screen.getByText(/not being updated until you reconnect/)).toBeInTheDocument();
+  // The rows are still there — the warning is additive, not a replacement.
+  expect(screen.getByText("Send the signed security packet")).toBeInTheDocument();
 });
