@@ -208,6 +208,27 @@ func (_u *RevenueLeakScanUpdate) AddActionsCreated(v int) *RevenueLeakScanUpdate
 	return _u
 }
 
+// SetCommitmentsCreated sets the "commitments_created" field.
+func (_u *RevenueLeakScanUpdate) SetCommitmentsCreated(v int) *RevenueLeakScanUpdate {
+	_u.mutation.ResetCommitmentsCreated()
+	_u.mutation.SetCommitmentsCreated(v)
+	return _u
+}
+
+// SetNillableCommitmentsCreated sets the "commitments_created" field if the given value is not nil.
+func (_u *RevenueLeakScanUpdate) SetNillableCommitmentsCreated(v *int) *RevenueLeakScanUpdate {
+	if v != nil {
+		_u.SetCommitmentsCreated(*v)
+	}
+	return _u
+}
+
+// AddCommitmentsCreated adds value to the "commitments_created" field.
+func (_u *RevenueLeakScanUpdate) AddCommitmentsCreated(v int) *RevenueLeakScanUpdate {
+	_u.mutation.AddCommitmentsCreated(v)
+	return _u
+}
+
 // SetStartedAt sets the "started_at" field.
 func (_u *RevenueLeakScanUpdate) SetStartedAt(v time.Time) *RevenueLeakScanUpdate {
 	_u.mutation.SetStartedAt(v)
@@ -377,6 +398,11 @@ func (_u *RevenueLeakScanUpdate) check() error {
 			return &ValidationError{Name: "actions_created", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.actions_created": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CommitmentsCreated(); ok {
+		if err := revenueleakscan.CommitmentsCreatedValidator(v); err != nil {
+			return &ValidationError{Name: "commitments_created", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.commitments_created": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RevenueLeakScan.workspace"`)
 	}
@@ -448,6 +474,12 @@ func (_u *RevenueLeakScanUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if value, ok := _u.mutation.AddedActionsCreated(); ok {
 		_spec.AddField(revenueleakscan.FieldActionsCreated, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.CommitmentsCreated(); ok {
+		_spec.SetField(revenueleakscan.FieldCommitmentsCreated, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCommitmentsCreated(); ok {
+		_spec.AddField(revenueleakscan.FieldCommitmentsCreated, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.StartedAt(); ok {
 		_spec.SetField(revenueleakscan.FieldStartedAt, field.TypeTime, value)
@@ -673,6 +705,27 @@ func (_u *RevenueLeakScanUpdateOne) AddActionsCreated(v int) *RevenueLeakScanUpd
 	return _u
 }
 
+// SetCommitmentsCreated sets the "commitments_created" field.
+func (_u *RevenueLeakScanUpdateOne) SetCommitmentsCreated(v int) *RevenueLeakScanUpdateOne {
+	_u.mutation.ResetCommitmentsCreated()
+	_u.mutation.SetCommitmentsCreated(v)
+	return _u
+}
+
+// SetNillableCommitmentsCreated sets the "commitments_created" field if the given value is not nil.
+func (_u *RevenueLeakScanUpdateOne) SetNillableCommitmentsCreated(v *int) *RevenueLeakScanUpdateOne {
+	if v != nil {
+		_u.SetCommitmentsCreated(*v)
+	}
+	return _u
+}
+
+// AddCommitmentsCreated adds value to the "commitments_created" field.
+func (_u *RevenueLeakScanUpdateOne) AddCommitmentsCreated(v int) *RevenueLeakScanUpdateOne {
+	_u.mutation.AddCommitmentsCreated(v)
+	return _u
+}
+
 // SetStartedAt sets the "started_at" field.
 func (_u *RevenueLeakScanUpdateOne) SetStartedAt(v time.Time) *RevenueLeakScanUpdateOne {
 	_u.mutation.SetStartedAt(v)
@@ -855,6 +908,11 @@ func (_u *RevenueLeakScanUpdateOne) check() error {
 			return &ValidationError{Name: "actions_created", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.actions_created": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CommitmentsCreated(); ok {
+		if err := revenueleakscan.CommitmentsCreatedValidator(v); err != nil {
+			return &ValidationError{Name: "commitments_created", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.commitments_created": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RevenueLeakScan.workspace"`)
 	}
@@ -943,6 +1001,12 @@ func (_u *RevenueLeakScanUpdateOne) sqlSave(ctx context.Context) (_node *Revenue
 	}
 	if value, ok := _u.mutation.AddedActionsCreated(); ok {
 		_spec.AddField(revenueleakscan.FieldActionsCreated, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.CommitmentsCreated(); ok {
+		_spec.SetField(revenueleakscan.FieldCommitmentsCreated, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCommitmentsCreated(); ok {
+		_spec.AddField(revenueleakscan.FieldCommitmentsCreated, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.StartedAt(); ok {
 		_spec.SetField(revenueleakscan.FieldStartedAt, field.TypeTime, value)

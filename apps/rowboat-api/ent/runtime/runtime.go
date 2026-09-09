@@ -4006,6 +4006,12 @@ func init() {
 	revenueleakscan.DefaultActionsCreated = revenueleakscanDescActionsCreated.Default.(int)
 	// revenueleakscan.ActionsCreatedValidator is a validator for the "actions_created" field. It is called by the builders before save.
 	revenueleakscan.ActionsCreatedValidator = revenueleakscanDescActionsCreated.Validators[0].(func(int) error)
+	// revenueleakscanDescCommitmentsCreated is the schema descriptor for commitments_created field.
+	revenueleakscanDescCommitmentsCreated := revenueleakscanFields[9].Descriptor()
+	// revenueleakscan.DefaultCommitmentsCreated holds the default value on creation for the commitments_created field.
+	revenueleakscan.DefaultCommitmentsCreated = revenueleakscanDescCommitmentsCreated.Default.(int)
+	// revenueleakscan.CommitmentsCreatedValidator is a validator for the "commitments_created" field. It is called by the builders before save.
+	revenueleakscan.CommitmentsCreatedValidator = revenueleakscanDescCommitmentsCreated.Validators[0].(func(int) error)
 	// revenueleakscanDescID is the schema descriptor for id field.
 	revenueleakscanDescID := revenueleakscanMixinFields0[0].Descriptor()
 	// revenueleakscan.DefaultID holds the default value on creation for the id field.

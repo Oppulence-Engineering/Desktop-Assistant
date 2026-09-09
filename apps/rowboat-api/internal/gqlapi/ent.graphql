@@ -14228,6 +14228,7 @@ type RevenueLeakScan implements Node {
   relationshipsCreated: Int!
   evidencesCreated: Int!
   actionsCreated: Int!
+  commitmentsCreated: Int!
   startedAt: Time
   completedAt: Time
   error: String
@@ -14392,6 +14393,17 @@ input RevenueLeakScanWhereInput {
   actionsCreatedGTE: Int
   actionsCreatedLT: Int
   actionsCreatedLTE: Int
+  """
+  commitments_created field predicates
+  """
+  commitmentsCreated: Int
+  commitmentsCreatedNEQ: Int
+  commitmentsCreatedIn: [Int!]
+  commitmentsCreatedNotIn: [Int!]
+  commitmentsCreatedGT: Int
+  commitmentsCreatedGTE: Int
+  commitmentsCreatedLT: Int
+  commitmentsCreatedLTE: Int
   """
   started_at field predicates
   """

@@ -4,6 +4,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/schema/mixin"
 )
@@ -25,7 +26,8 @@ func (Commitment) Fields() []ent.Field {
 		field.Text("text").NotEmpty().Sensitive(),
 		field.String("status").
 			Default("open").
-			Validate(oneOfRevenue("status", "open", "fulfilled", "cancelled", "superseded")),
+			Validate(oneOfRevenue("status",
+				"open", "fulfilled", "missed", "waived", "cancelled", "superseded")),
 		field.Time("due_at").Optional().Nillable(),
 		field.Float("confidence").Min(0).Max(1),
 		field.Bool("user_confirmed").Default(false),
@@ -58,5 +60,15 @@ func (Commitment) Edges() []ent.Edge {
 			StorageKey(edge.Column("from_commitment_id")),
 		edge.To("incoming_dependencies", CommitmentDependency.Type).
 			StorageKey(edge.Column("to_commitment_id")),
+	}
+}
+
+// Indexes serves the commitment register. The register lists across every
+// account at once — "what we owe", "what they owe us" — so the hot query is
+// workspace plus status plus due date, not a single relationship's rows.
+func (Commitment) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Edges("workspace").Fields("status", "due_at"),
+		index.Edges("workspace").Fields("direction", "status"),
 	}
 }

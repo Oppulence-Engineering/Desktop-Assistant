@@ -47905,6 +47905,16 @@ type RevenueLeakScanWhereInput struct {
 	ActionsCreatedLT    *int  `json:"actionsCreatedLT,omitempty"`
 	ActionsCreatedLTE   *int  `json:"actionsCreatedLTE,omitempty"`
 
+	// "commitments_created" field predicates.
+	CommitmentsCreated      *int  `json:"commitmentsCreated,omitempty"`
+	CommitmentsCreatedNEQ   *int  `json:"commitmentsCreatedNEQ,omitempty"`
+	CommitmentsCreatedIn    []int `json:"commitmentsCreatedIn,omitempty"`
+	CommitmentsCreatedNotIn []int `json:"commitmentsCreatedNotIn,omitempty"`
+	CommitmentsCreatedGT    *int  `json:"commitmentsCreatedGT,omitempty"`
+	CommitmentsCreatedGTE   *int  `json:"commitmentsCreatedGTE,omitempty"`
+	CommitmentsCreatedLT    *int  `json:"commitmentsCreatedLT,omitempty"`
+	CommitmentsCreatedLTE   *int  `json:"commitmentsCreatedLTE,omitempty"`
+
 	// "started_at" field predicates.
 	StartedAt       *time.Time  `json:"startedAt,omitempty"`
 	StartedAtNEQ    *time.Time  `json:"startedAtNEQ,omitempty"`
@@ -48376,6 +48386,30 @@ func (i *RevenueLeakScanWhereInput) P() (predicate.RevenueLeakScan, error) {
 	}
 	if i.ActionsCreatedLTE != nil {
 		predicates = append(predicates, revenueleakscan.ActionsCreatedLTE(*i.ActionsCreatedLTE))
+	}
+	if i.CommitmentsCreated != nil {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedEQ(*i.CommitmentsCreated))
+	}
+	if i.CommitmentsCreatedNEQ != nil {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedNEQ(*i.CommitmentsCreatedNEQ))
+	}
+	if len(i.CommitmentsCreatedIn) > 0 {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedIn(i.CommitmentsCreatedIn...))
+	}
+	if len(i.CommitmentsCreatedNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedNotIn(i.CommitmentsCreatedNotIn...))
+	}
+	if i.CommitmentsCreatedGT != nil {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedGT(*i.CommitmentsCreatedGT))
+	}
+	if i.CommitmentsCreatedGTE != nil {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedGTE(*i.CommitmentsCreatedGTE))
+	}
+	if i.CommitmentsCreatedLT != nil {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedLT(*i.CommitmentsCreatedLT))
+	}
+	if i.CommitmentsCreatedLTE != nil {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedLTE(*i.CommitmentsCreatedLTE))
 	}
 	if i.StartedAt != nil {
 		predicates = append(predicates, revenueleakscan.StartedAtEQ(*i.StartedAt))

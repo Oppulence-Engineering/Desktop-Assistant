@@ -111,6 +111,11 @@ func ActionsCreated(v int) predicate.RevenueLeakScan {
 	return predicate.RevenueLeakScan(sql.FieldEQ(FieldActionsCreated, v))
 }
 
+// CommitmentsCreated applies equality check predicate on the "commitments_created" field. It's identical to CommitmentsCreatedEQ.
+func CommitmentsCreated(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldCommitmentsCreated, v))
+}
+
 // StartedAt applies equality check predicate on the "started_at" field. It's identical to StartedAtEQ.
 func StartedAt(v time.Time) predicate.RevenueLeakScan {
 	return predicate.RevenueLeakScan(sql.FieldEQ(FieldStartedAt, v))
@@ -654,6 +659,46 @@ func ActionsCreatedLT(v int) predicate.RevenueLeakScan {
 // ActionsCreatedLTE applies the LTE predicate on the "actions_created" field.
 func ActionsCreatedLTE(v int) predicate.RevenueLeakScan {
 	return predicate.RevenueLeakScan(sql.FieldLTE(FieldActionsCreated, v))
+}
+
+// CommitmentsCreatedEQ applies the EQ predicate on the "commitments_created" field.
+func CommitmentsCreatedEQ(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldCommitmentsCreated, v))
+}
+
+// CommitmentsCreatedNEQ applies the NEQ predicate on the "commitments_created" field.
+func CommitmentsCreatedNEQ(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNEQ(FieldCommitmentsCreated, v))
+}
+
+// CommitmentsCreatedIn applies the In predicate on the "commitments_created" field.
+func CommitmentsCreatedIn(vs ...int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldIn(FieldCommitmentsCreated, vs...))
+}
+
+// CommitmentsCreatedNotIn applies the NotIn predicate on the "commitments_created" field.
+func CommitmentsCreatedNotIn(vs ...int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNotIn(FieldCommitmentsCreated, vs...))
+}
+
+// CommitmentsCreatedGT applies the GT predicate on the "commitments_created" field.
+func CommitmentsCreatedGT(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGT(FieldCommitmentsCreated, v))
+}
+
+// CommitmentsCreatedGTE applies the GTE predicate on the "commitments_created" field.
+func CommitmentsCreatedGTE(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGTE(FieldCommitmentsCreated, v))
+}
+
+// CommitmentsCreatedLT applies the LT predicate on the "commitments_created" field.
+func CommitmentsCreatedLT(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLT(FieldCommitmentsCreated, v))
+}
+
+// CommitmentsCreatedLTE applies the LTE predicate on the "commitments_created" field.
+func CommitmentsCreatedLTE(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLTE(FieldCommitmentsCreated, v))
 }
 
 // StartedAtEQ applies the EQ predicate on the "started_at" field.

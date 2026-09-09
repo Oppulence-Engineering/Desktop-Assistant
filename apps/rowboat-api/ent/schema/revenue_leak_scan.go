@@ -43,6 +43,7 @@ func (RevenueLeakScan) Fields() []ent.Field {
 		field.Int("relationships_created").Default(0).Min(0),
 		field.Int("evidences_created").Default(0).Min(0),
 		field.Int("actions_created").Default(0).Min(0),
+		field.Int("commitments_created").Default(0).Min(0),
 		field.Time("started_at").Optional().Nillable(),
 		field.Time("completed_at").Optional().Nillable(),
 		field.Text("error").Optional(),

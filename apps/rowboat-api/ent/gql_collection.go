@@ -9770,6 +9770,11 @@ func (_q *RevenueLeakScanQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, revenueleakscan.FieldActionsCreated)
 				fieldSeen[revenueleakscan.FieldActionsCreated] = struct{}{}
 			}
+		case "commitmentsCreated":
+			if _, ok := fieldSeen[revenueleakscan.FieldCommitmentsCreated]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldCommitmentsCreated)
+				fieldSeen[revenueleakscan.FieldCommitmentsCreated] = struct{}{}
+			}
 		case "startedAt":
 			if _, ok := fieldSeen[revenueleakscan.FieldStartedAt]; !ok {
 				selectedFields = append(selectedFields, revenueleakscan.FieldStartedAt)

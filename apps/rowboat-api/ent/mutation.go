@@ -94311,6 +94311,8 @@ type RevenueLeakScanMutation struct {
 	addevidences_created     *int
 	actions_created          *int
 	addactions_created       *int
+	commitments_created      *int
+	addcommitments_created   *int
 	started_at               *time.Time
 	completed_at             *time.Time
 	error                    *string
@@ -94958,6 +94960,62 @@ func (m *RevenueLeakScanMutation) ResetActionsCreated() {
 	m.addactions_created = nil
 }
 
+// SetCommitmentsCreated sets the "commitments_created" field.
+func (m *RevenueLeakScanMutation) SetCommitmentsCreated(i int) {
+	m.commitments_created = &i
+	m.addcommitments_created = nil
+}
+
+// CommitmentsCreated returns the value of the "commitments_created" field in the mutation.
+func (m *RevenueLeakScanMutation) CommitmentsCreated() (r int, exists bool) {
+	v := m.commitments_created
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCommitmentsCreated returns the old "commitments_created" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldCommitmentsCreated(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCommitmentsCreated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCommitmentsCreated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCommitmentsCreated: %w", err)
+	}
+	return oldValue.CommitmentsCreated, nil
+}
+
+// AddCommitmentsCreated adds i to the "commitments_created" field.
+func (m *RevenueLeakScanMutation) AddCommitmentsCreated(i int) {
+	if m.addcommitments_created != nil {
+		*m.addcommitments_created += i
+	} else {
+		m.addcommitments_created = &i
+	}
+}
+
+// AddedCommitmentsCreated returns the value that was added to the "commitments_created" field in this mutation.
+func (m *RevenueLeakScanMutation) AddedCommitmentsCreated() (r int, exists bool) {
+	v := m.addcommitments_created
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCommitmentsCreated resets all changes to the "commitments_created" field.
+func (m *RevenueLeakScanMutation) ResetCommitmentsCreated() {
+	m.commitments_created = nil
+	m.addcommitments_created = nil
+}
+
 // SetStartedAt sets the "started_at" field.
 func (m *RevenueLeakScanMutation) SetStartedAt(t time.Time) {
 	m.started_at = &t
@@ -95266,7 +95324,7 @@ func (m *RevenueLeakScanMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RevenueLeakScanMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 16)
 	if m.created_at != nil {
 		fields = append(fields, revenueleakscan.FieldCreatedAt)
 	}
@@ -95299,6 +95357,9 @@ func (m *RevenueLeakScanMutation) Fields() []string {
 	}
 	if m.actions_created != nil {
 		fields = append(fields, revenueleakscan.FieldActionsCreated)
+	}
+	if m.commitments_created != nil {
+		fields = append(fields, revenueleakscan.FieldCommitmentsCreated)
 	}
 	if m.started_at != nil {
 		fields = append(fields, revenueleakscan.FieldStartedAt)
@@ -95342,6 +95403,8 @@ func (m *RevenueLeakScanMutation) Field(name string) (ent.Value, bool) {
 		return m.EvidencesCreated()
 	case revenueleakscan.FieldActionsCreated:
 		return m.ActionsCreated()
+	case revenueleakscan.FieldCommitmentsCreated:
+		return m.CommitmentsCreated()
 	case revenueleakscan.FieldStartedAt:
 		return m.StartedAt()
 	case revenueleakscan.FieldCompletedAt:
@@ -95381,6 +95444,8 @@ func (m *RevenueLeakScanMutation) OldField(ctx context.Context, name string) (en
 		return m.OldEvidencesCreated(ctx)
 	case revenueleakscan.FieldActionsCreated:
 		return m.OldActionsCreated(ctx)
+	case revenueleakscan.FieldCommitmentsCreated:
+		return m.OldCommitmentsCreated(ctx)
 	case revenueleakscan.FieldStartedAt:
 		return m.OldStartedAt(ctx)
 	case revenueleakscan.FieldCompletedAt:
@@ -95475,6 +95540,13 @@ func (m *RevenueLeakScanMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetActionsCreated(v)
 		return nil
+	case revenueleakscan.FieldCommitmentsCreated:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCommitmentsCreated(v)
+		return nil
 	case revenueleakscan.FieldStartedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -95529,6 +95601,9 @@ func (m *RevenueLeakScanMutation) AddedFields() []string {
 	if m.addactions_created != nil {
 		fields = append(fields, revenueleakscan.FieldActionsCreated)
 	}
+	if m.addcommitments_created != nil {
+		fields = append(fields, revenueleakscan.FieldCommitmentsCreated)
+	}
 	return fields
 }
 
@@ -95549,6 +95624,8 @@ func (m *RevenueLeakScanMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedEvidencesCreated()
 	case revenueleakscan.FieldActionsCreated:
 		return m.AddedActionsCreated()
+	case revenueleakscan.FieldCommitmentsCreated:
+		return m.AddedCommitmentsCreated()
 	}
 	return nil, false
 }
@@ -95599,6 +95676,13 @@ func (m *RevenueLeakScanMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddActionsCreated(v)
+		return nil
+	case revenueleakscan.FieldCommitmentsCreated:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCommitmentsCreated(v)
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueLeakScan numeric field %s", name)
@@ -95692,6 +95776,9 @@ func (m *RevenueLeakScanMutation) ResetField(name string) error {
 		return nil
 	case revenueleakscan.FieldActionsCreated:
 		m.ResetActionsCreated()
+		return nil
+	case revenueleakscan.FieldCommitmentsCreated:
+		m.ResetCommitmentsCreated()
 		return nil
 	case revenueleakscan.FieldStartedAt:
 		m.ResetStartedAt()

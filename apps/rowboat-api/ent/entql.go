@@ -1916,6 +1916,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			revenueleakscan.FieldRelationshipsCreated: {Type: field.TypeInt, Column: revenueleakscan.FieldRelationshipsCreated},
 			revenueleakscan.FieldEvidencesCreated:     {Type: field.TypeInt, Column: revenueleakscan.FieldEvidencesCreated},
 			revenueleakscan.FieldActionsCreated:       {Type: field.TypeInt, Column: revenueleakscan.FieldActionsCreated},
+			revenueleakscan.FieldCommitmentsCreated:   {Type: field.TypeInt, Column: revenueleakscan.FieldCommitmentsCreated},
 			revenueleakscan.FieldStartedAt:            {Type: field.TypeTime, Column: revenueleakscan.FieldStartedAt},
 			revenueleakscan.FieldCompletedAt:          {Type: field.TypeTime, Column: revenueleakscan.FieldCompletedAt},
 			revenueleakscan.FieldError:                {Type: field.TypeString, Column: revenueleakscan.FieldError},
@@ -16065,6 +16066,11 @@ func (f *RevenueLeakScanFilter) WhereEvidencesCreated(p entql.IntP) {
 // WhereActionsCreated applies the entql int predicate on the actions_created field.
 func (f *RevenueLeakScanFilter) WhereActionsCreated(p entql.IntP) {
 	f.Where(p.Field(revenueleakscan.FieldActionsCreated))
+}
+
+// WhereCommitmentsCreated applies the entql int predicate on the commitments_created field.
+func (f *RevenueLeakScanFilter) WhereCommitmentsCreated(p entql.IntP) {
+	f.Where(p.Field(revenueleakscan.FieldCommitmentsCreated))
 }
 
 // WhereStartedAt applies the entql time.Time predicate on the started_at field.

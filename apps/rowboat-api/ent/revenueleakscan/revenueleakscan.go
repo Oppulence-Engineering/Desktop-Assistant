@@ -38,6 +38,8 @@ const (
 	FieldEvidencesCreated = "evidences_created"
 	// FieldActionsCreated holds the string denoting the actions_created field in the database.
 	FieldActionsCreated = "actions_created"
+	// FieldCommitmentsCreated holds the string denoting the commitments_created field in the database.
+	FieldCommitmentsCreated = "commitments_created"
 	// FieldStartedAt holds the string denoting the started_at field in the database.
 	FieldStartedAt = "started_at"
 	// FieldCompletedAt holds the string denoting the completed_at field in the database.
@@ -82,6 +84,7 @@ var Columns = []string{
 	FieldRelationshipsCreated,
 	FieldEvidencesCreated,
 	FieldActionsCreated,
+	FieldCommitmentsCreated,
 	FieldStartedAt,
 	FieldCompletedAt,
 	FieldError,
@@ -156,6 +159,10 @@ var (
 	DefaultActionsCreated int
 	// ActionsCreatedValidator is a validator for the "actions_created" field. It is called by the builders before save.
 	ActionsCreatedValidator func(int) error
+	// DefaultCommitmentsCreated holds the default value on creation for the "commitments_created" field.
+	DefaultCommitmentsCreated int
+	// CommitmentsCreatedValidator is a validator for the "commitments_created" field. It is called by the builders before save.
+	CommitmentsCreatedValidator func(int) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -221,6 +228,11 @@ func ByEvidencesCreated(opts ...sql.OrderTermOption) OrderOption {
 // ByActionsCreated orders the results by the actions_created field.
 func ByActionsCreated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActionsCreated, opts...).ToFunc()
+}
+
+// ByCommitmentsCreated orders the results by the commitments_created field.
+func ByCommitmentsCreated(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCommitmentsCreated, opts...).ToFunc()
 }
 
 // ByStartedAt orders the results by the started_at field.

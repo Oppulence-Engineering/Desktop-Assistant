@@ -180,6 +180,20 @@ func (_c *RevenueLeakScanCreate) SetNillableActionsCreated(v *int) *RevenueLeakS
 	return _c
 }
 
+// SetCommitmentsCreated sets the "commitments_created" field.
+func (_c *RevenueLeakScanCreate) SetCommitmentsCreated(v int) *RevenueLeakScanCreate {
+	_c.mutation.SetCommitmentsCreated(v)
+	return _c
+}
+
+// SetNillableCommitmentsCreated sets the "commitments_created" field if the given value is not nil.
+func (_c *RevenueLeakScanCreate) SetNillableCommitmentsCreated(v *int) *RevenueLeakScanCreate {
+	if v != nil {
+		_c.SetCommitmentsCreated(*v)
+	}
+	return _c
+}
+
 // SetStartedAt sets the "started_at" field.
 func (_c *RevenueLeakScanCreate) SetStartedAt(v time.Time) *RevenueLeakScanCreate {
 	_c.mutation.SetStartedAt(v)
@@ -355,6 +369,10 @@ func (_c *RevenueLeakScanCreate) defaults() error {
 		v := revenueleakscan.DefaultActionsCreated
 		_c.mutation.SetActionsCreated(v)
 	}
+	if _, ok := _c.mutation.CommitmentsCreated(); !ok {
+		v := revenueleakscan.DefaultCommitmentsCreated
+		_c.mutation.SetCommitmentsCreated(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		if revenueleakscan.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized revenueleakscan.DefaultID (forgotten import ent/runtime?)")
@@ -435,6 +453,14 @@ func (_c *RevenueLeakScanCreate) check() error {
 	if v, ok := _c.mutation.ActionsCreated(); ok {
 		if err := revenueleakscan.ActionsCreatedValidator(v); err != nil {
 			return &ValidationError{Name: "actions_created", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.actions_created": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.CommitmentsCreated(); !ok {
+		return &ValidationError{Name: "commitments_created", err: errors.New(`ent: missing required field "RevenueLeakScan.commitments_created"`)}
+	}
+	if v, ok := _c.mutation.CommitmentsCreated(); ok {
+		if err := revenueleakscan.CommitmentsCreatedValidator(v); err != nil {
+			return &ValidationError{Name: "commitments_created", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.commitments_created": %w`, err)}
 		}
 	}
 	if len(_c.mutation.WorkspaceIDs()) == 0 {
@@ -522,6 +548,10 @@ func (_c *RevenueLeakScanCreate) createSpec() (*RevenueLeakScan, *sqlgraph.Creat
 	if value, ok := _c.mutation.ActionsCreated(); ok {
 		_spec.SetField(revenueleakscan.FieldActionsCreated, field.TypeInt, value)
 		_node.ActionsCreated = value
+	}
+	if value, ok := _c.mutation.CommitmentsCreated(); ok {
+		_spec.SetField(revenueleakscan.FieldCommitmentsCreated, field.TypeInt, value)
+		_node.CommitmentsCreated = value
 	}
 	if value, ok := _c.mutation.StartedAt(); ok {
 		_spec.SetField(revenueleakscan.FieldStartedAt, field.TypeTime, value)
@@ -784,6 +814,24 @@ func (u *RevenueLeakScanUpsert) UpdateActionsCreated() *RevenueLeakScanUpsert {
 // AddActionsCreated adds v to the "actions_created" field.
 func (u *RevenueLeakScanUpsert) AddActionsCreated(v int) *RevenueLeakScanUpsert {
 	u.Add(revenueleakscan.FieldActionsCreated, v)
+	return u
+}
+
+// SetCommitmentsCreated sets the "commitments_created" field.
+func (u *RevenueLeakScanUpsert) SetCommitmentsCreated(v int) *RevenueLeakScanUpsert {
+	u.Set(revenueleakscan.FieldCommitmentsCreated, v)
+	return u
+}
+
+// UpdateCommitmentsCreated sets the "commitments_created" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsert) UpdateCommitmentsCreated() *RevenueLeakScanUpsert {
+	u.SetExcluded(revenueleakscan.FieldCommitmentsCreated)
+	return u
+}
+
+// AddCommitmentsCreated adds v to the "commitments_created" field.
+func (u *RevenueLeakScanUpsert) AddCommitmentsCreated(v int) *RevenueLeakScanUpsert {
+	u.Add(revenueleakscan.FieldCommitmentsCreated, v)
 	return u
 }
 
@@ -1096,6 +1144,27 @@ func (u *RevenueLeakScanUpsertOne) AddActionsCreated(v int) *RevenueLeakScanUpse
 func (u *RevenueLeakScanUpsertOne) UpdateActionsCreated() *RevenueLeakScanUpsertOne {
 	return u.Update(func(s *RevenueLeakScanUpsert) {
 		s.UpdateActionsCreated()
+	})
+}
+
+// SetCommitmentsCreated sets the "commitments_created" field.
+func (u *RevenueLeakScanUpsertOne) SetCommitmentsCreated(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetCommitmentsCreated(v)
+	})
+}
+
+// AddCommitmentsCreated adds v to the "commitments_created" field.
+func (u *RevenueLeakScanUpsertOne) AddCommitmentsCreated(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddCommitmentsCreated(v)
+	})
+}
+
+// UpdateCommitmentsCreated sets the "commitments_created" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertOne) UpdateCommitmentsCreated() *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateCommitmentsCreated()
 	})
 }
 
@@ -1587,6 +1656,27 @@ func (u *RevenueLeakScanUpsertBulk) AddActionsCreated(v int) *RevenueLeakScanUps
 func (u *RevenueLeakScanUpsertBulk) UpdateActionsCreated() *RevenueLeakScanUpsertBulk {
 	return u.Update(func(s *RevenueLeakScanUpsert) {
 		s.UpdateActionsCreated()
+	})
+}
+
+// SetCommitmentsCreated sets the "commitments_created" field.
+func (u *RevenueLeakScanUpsertBulk) SetCommitmentsCreated(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetCommitmentsCreated(v)
+	})
+}
+
+// AddCommitmentsCreated adds v to the "commitments_created" field.
+func (u *RevenueLeakScanUpsertBulk) AddCommitmentsCreated(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddCommitmentsCreated(v)
+	})
+}
+
+// UpdateCommitmentsCreated sets the "commitments_created" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertBulk) UpdateCommitmentsCreated() *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateCommitmentsCreated()
 	})
 }
 

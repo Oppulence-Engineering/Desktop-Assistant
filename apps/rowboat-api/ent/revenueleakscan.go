@@ -42,6 +42,8 @@ type RevenueLeakScan struct {
 	EvidencesCreated int `json:"evidences_created,omitempty"`
 	// ActionsCreated holds the value of the "actions_created" field.
 	ActionsCreated int `json:"actions_created,omitempty"`
+	// CommitmentsCreated holds the value of the "commitments_created" field.
+	CommitmentsCreated int `json:"commitments_created,omitempty"`
 	// StartedAt holds the value of the "started_at" field.
 	StartedAt *time.Time `json:"started_at,omitempty"`
 	// CompletedAt holds the value of the "completed_at" field.
@@ -98,7 +100,7 @@ func (*RevenueLeakScan) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case revenueleakscan.FieldLookbackDays, revenueleakscan.FieldThreadsSeen, revenueleakscan.FieldCandidatesSeen, revenueleakscan.FieldRelationshipsCreated, revenueleakscan.FieldEvidencesCreated, revenueleakscan.FieldActionsCreated:
+		case revenueleakscan.FieldLookbackDays, revenueleakscan.FieldThreadsSeen, revenueleakscan.FieldCandidatesSeen, revenueleakscan.FieldRelationshipsCreated, revenueleakscan.FieldEvidencesCreated, revenueleakscan.FieldActionsCreated, revenueleakscan.FieldCommitmentsCreated:
 			values[i] = new(sql.NullInt64)
 		case revenueleakscan.FieldStatus, revenueleakscan.FieldActiveClaim, revenueleakscan.FieldMode, revenueleakscan.FieldError:
 			values[i] = new(sql.NullString)
@@ -197,6 +199,12 @@ func (_m *RevenueLeakScan) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field actions_created", values[i])
 			} else if value.Valid {
 				_m.ActionsCreated = int(value.Int64)
+			}
+		case revenueleakscan.FieldCommitmentsCreated:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field commitments_created", values[i])
+			} else if value.Valid {
+				_m.CommitmentsCreated = int(value.Int64)
 			}
 		case revenueleakscan.FieldStartedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -319,6 +327,9 @@ func (_m *RevenueLeakScan) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("actions_created=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ActionsCreated))
+	builder.WriteString(", ")
+	builder.WriteString("commitments_created=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CommitmentsCreated))
 	builder.WriteString(", ")
 	if v := _m.StartedAt; v != nil {
 		builder.WriteString("started_at=")
