@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.32](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.31...v0.1.32) (2026-09-09)
+
+
+### Features
+
+* **www:** rebuild the public site, auth, and legal pages ([#254](https://github.com/Oppulence-Engineering/Desktop-Assistant/issues/254)) ([a5e5314](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/a5e5314e7f9e71b93083888a662c9af64cb6933b))
+
 ## [0.1.31](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.30...v0.1.31) (2026-08-28)
 
 
