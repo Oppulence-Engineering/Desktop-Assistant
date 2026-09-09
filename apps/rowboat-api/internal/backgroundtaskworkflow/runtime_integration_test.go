@@ -147,7 +147,14 @@ func TestRuntimeIntegrationGmailToolThenArtifact(t *testing.T) {
 		switch call {
 		case 1:
 			// Sanity: tools were advertised, including the scoped gmail tool.
-			if !strings.Contains(string(body), "connector.read.gmail") {
+			//
+			// On the wire the name is "connector_read_gmail", not
+			// "connector.read.gmail": sanitizeToolName maps tool names onto
+			// the provider-legal character set, and llm.ChatComplete
+			// translates the model's reply back through wireToReal. Asserting
+			// the dotted name here checked something that never crosses the
+			// wire, so this assertion failed for every run.
+			if !strings.Contains(string(body), "connector_read_gmail") {
 				w.WriteHeader(http.StatusBadRequest)
 				_, _ = io.WriteString(w, `{"error":"gmail tool not advertised"}`)
 				return
