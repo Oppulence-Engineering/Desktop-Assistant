@@ -62,6 +62,28 @@ func (s *Service) SetSweeper(sw ThreadSweeper) { s.sweeper = sw }
 // running for the workspace.
 var ErrScanUnavailable = errors.New("revenue: scan unavailable")
 
+// UserSafeScanError keeps provider and implementation details in the audit
+// record while returning only actionable text to product and agent surfaces.
+func UserSafeScanError(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	lower := strings.ToLower(raw)
+	if strings.Contains(lower, "invalid_grant") || strings.Contains(lower, "invalid authentication") ||
+		strings.Contains(lower, "returned 401") || strings.Contains(lower, "returned 403") {
+		return "Google reported invalid authentication; reconnect is required."
+	}
+	switch raw {
+	case "scan abandoned (process restart)":
+		return "The audit stopped during a restart. Run it again."
+	case "scan aborted by an internal error":
+		return "The audit stopped because of an internal error. Run it again."
+	default:
+		return "The audit did not finish. Try again or check the connected source."
+	}
+}
+
 // StartScan creates the scan row and runs the bounded sweep in the
 // background; GET /v1/revenue-leak-scans/{id} polls progress. One running
 // scan per workspace at a time.
@@ -181,6 +203,21 @@ func (s *Service) GetScan(ctx context.Context, id uuid.UUID) (*ent.RevenueLeakSc
 	return scan, err
 }
 
+// ListScans returns the caller's persisted audit history newest first.
+func (s *Service) ListScans(ctx context.Context, u *ent.User, limit int) ([]*ent.RevenueLeakScan, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	return s.client.RevenueLeakScan.Query().
+		Where(revenueleakscan.HasUserWith(user.IDEQ(u.ID))).
+		Order(ent.Desc(revenueleakscan.FieldCreatedAt)).
+		Limit(limit).
+		All(ctx)
+}
+
 // runScan performs the sweep, detection, and queue writes, then finalizes the
 // scan row. Errors mark the scan failed; partial progress is kept (actions
 // already written stay — they dedupe on rerun).
@@ -277,7 +314,7 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 	for _, msgs := range threads {
 		stats.threads++
 		sum := summarizeThread(selfEmail, msgs)
-		if sum == nil {
+		if sum == nil || sum.OutboundCount == 0 {
 			continue
 		}
 		if stats.freshest == nil || sum.LastAt.After(*stats.freshest) {
@@ -305,12 +342,20 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 			}
 		}
 		hit := detectThread(sum, now)
-		anchor := lastMessage(sum)
-		promiseText := anchor.Snippet
-		if body, err := s.MessageBody(ctx, u, anchor.ID); err == nil {
-			promiseText = body
+		if hit == nil {
+			if err := s.resolveScanAction(ctx, ws.ID, sum); err != nil {
+				s.log.Warn("revenue: resolve stale scan action", zap.Error(err))
+			}
 		}
-		promise := detectExplicitCommitment(sum, promiseText)
+		// Look through the thread, not only its final message.
+		//
+		// A promise is made once and then buried by whatever was said after
+		// it: "I'll send the contract Friday" in message three of a ten
+		// message thread was invisible, because only the last message was ever
+		// read. Same detector, same evidence rules, same one-commitment-per-
+		// thread cap — it simply stops discarding the messages the promise was
+		// actually in.
+		anchor, promise := s.findExplicitCommitment(ctx, u, sum)
 		if hit == nil && promise != nil {
 			anchor.Snippet = promise.Text
 			hit = &detectorHit{
@@ -367,6 +412,24 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		}
 	}
 	return stats, nil
+}
+
+// resolveScanAction removes a recommendation when newer mail proves its
+// detector no longer applies. It does not touch writes already in flight.
+func (s *Service) resolveScanAction(ctx context.Context, workspaceID uuid.UUID, sum *threadSummary) error {
+	_, err := s.client.RevenueAction.Update().
+		Where(
+			revenueaction.DedupeKeyEQ("scan:"+sum.ThreadID),
+			revenueaction.QueueStatusIn(QueueOpen, QueueSnoozed),
+			revenueaction.ExecutionStatusEQ(ExecPending),
+			revenueaction.HasWorkspaceWith(revenueworkspace.IDEQ(workspaceID)),
+			revenueaction.HasEvidencesWith(revenueevidence.OccurredAtLT(sum.LastAt)),
+		).
+		SetQueueStatus(QueueDismissed).
+		SetDismissReason("resolved_by_new_evidence").
+		ClearSnoozedUntil().
+		Save(ctx)
+	return err
 }
 
 // materializeHit writes relationship + evidence + queue action for one
@@ -502,7 +565,8 @@ func threadRelationshipInput(sum *threadSummary) RelationshipObservationInput {
 	}
 	return RelationshipObservationInput{
 		DisplayName: displayName, PrimaryEmail: primaryEmail, AccountDomain: domain,
-		PreferredKind: kind, Source: "gmail", OccurredAt: sum.LastAt, ReceivedAt: sum.LastAt,
+		PreferredKind: kind, Source: "gmail", ExternalID: sum.ThreadID,
+		OccurredAt: sum.LastAt, ReceivedAt: sum.LastAt,
 		Channel: "email", Direction: directionOf(sum.LastOutbound),
 		Participants: []RelationshipParticipantInput{{
 			DisplayName: coalesce(sum.CounterpartyName, sum.Counterparty),
@@ -738,11 +802,56 @@ var (
 	followUpRe           = regexp.MustCompile(`(?i)\b(follow up|follow-up|circle back|check back|touch base|reconnect|next (week|month|quarter))\b`)
 	introRe              = regexp.MustCompile(`(?i)\b(intro|introduc|referr|connect(ing)? you|looping in|cc'?ing)\b`)
 	askRe                = regexp.MustCompile(`(?i)(\?|can you|could you|would you|let me know|what do you think|any update|thoughts)`)
+	closedLoopRe         = regexp.MustCompile(`(?i)\b(no (payment|action|response|reply) (is )?required|unsubscribe|manage (your )?email preferences)\b`)
 	explicitCommitmentRe = regexp.MustCompile(`(?i)\b(i|we)(['’]ll|\s+(will|shall|commit(ted)? to|promise(d)? to|agree(d)? to))\s+(send|share|deliver|provide|complete|finish|review|schedule|book|call|email|follow up|update|prepare|resolve|fix|return|introduce|connect|pay|sign|submit|confirm)\b`)
 )
 
+// commitmentScanDepth bounds how many messages of one thread are read for a
+// promise, newest first.
+//
+// ponytail: each message costs one body fetch, so a long thread is the only
+// thing this protects against. Raise it, or index bodies up front, if promises
+// are found to hide deeper than this.
+const commitmentScanDepth = 12
+
+// findExplicitCommitment returns the newest message in the thread that states
+// an explicit promise, and the promise. It returns the thread's last message
+// and a nil promise when there is none, so callers still have an anchor for
+// the other detectors' evidence.
+func (s *Service) findExplicitCommitment(
+	ctx context.Context,
+	u *ent.User,
+	sum *threadSummary,
+) (googleapi.GmailThreadMessage, *scannedCommitment) {
+	ordered := append([]googleapi.GmailThreadMessage(nil), sum.Messages...)
+	sort.SliceStable(ordered, func(i, j int) bool { return ordered[i].At.After(ordered[j].At) })
+	for i, message := range ordered {
+		if i >= commitmentScanDepth {
+			break
+		}
+		text := message.Snippet
+		if body, err := s.MessageBody(ctx, u, message.ID); err == nil {
+			text = body
+		}
+		if promise := detectExplicitCommitmentIn(message, sum, text); promise != nil {
+			return message, promise
+		}
+	}
+	return lastMessage(sum), nil
+}
+
 func detectExplicitCommitment(sum *threadSummary, text string) *scannedCommitment {
-	message := lastMessage(sum)
+	return detectExplicitCommitmentIn(lastMessage(sum), sum, text)
+}
+
+// detectExplicitCommitmentIn attributes the promise to the message it was
+// actually written in, so direction and owner follow that message rather than
+// whichever one happened to be last.
+func detectExplicitCommitmentIn(
+	message googleapi.GmailThreadMessage,
+	sum *threadSummary,
+	text string,
+) *scannedCommitment {
 	quote := commitmentQuote(text)
 	if quote == "" {
 		return nil
@@ -858,6 +967,9 @@ func detectThread(sum *threadSummary, now time.Time) *detectorHit {
 	// the latest message actually said. The subject is still used to compose
 	// the proposed reply, never as a trigger.
 	text := lastSnippet(sum)
+	if closedLoopRe.MatchString(text) {
+		return nil
+	}
 
 	// requested_follow_up_due: an explicit follow-up promise with nothing after it.
 	if followUpRe.MatchString(text) && age >= 14*24*time.Hour {
