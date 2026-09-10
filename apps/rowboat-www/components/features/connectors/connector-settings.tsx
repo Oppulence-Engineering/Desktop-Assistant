@@ -213,6 +213,20 @@ function GoogleConnectionSettings() {
 
   const health = googleHealth(Boolean(status?.connected), sourceStatus);
 
+  const startConnection = () => {
+    if (
+      status?.connected &&
+      !window.confirm(
+        health.tone === "bad"
+          ? "This starts Google authorization to restore access. Continue?"
+          : "This opens Google authorization only to switch accounts or update permissions. It does not refresh delayed data. Continue?",
+      )
+    ) {
+      return;
+    }
+    void connect();
+  };
+
   return (
     <div className="settings-panel mb-3 flex items-start justify-between gap-4 px-4 py-3">
       <div>
@@ -238,6 +252,12 @@ function GoogleConnectionSettings() {
             Reconnect to resume.
           </p>
         ) : null}
+        {sourceStatus === "stale" && status?.connected ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Google authorization is still connected. Source data is delayed; reauthorizing is not
+            required.
+          </p>
+        ) : null}
         {status?.accounts.map((account) => (
           <p className="mt-1 font-mono text-[11px] text-primary/50" key={account.accountId}>
             {account.accountId}
@@ -245,8 +265,14 @@ function GoogleConnectionSettings() {
         ))}
         {error ? <p className="mt-1 font-mono text-xs text-destructive">{error}</p> : null}
       </div>
-      <Button disabled={busy} onClick={connect} size="sm" variant="outline">
-        {busy ? "Connecting…" : status?.connected ? "Reconnect Google" : "Connect Google"}
+      <Button disabled={busy} onClick={startConnection} size="sm" variant="outline">
+        {busy
+          ? "Connecting…"
+          : !status?.connected
+            ? "Connect Google"
+            : health.tone === "bad"
+              ? "Reconnect Google"
+              : "Change Google access"}
       </Button>
     </div>
   );

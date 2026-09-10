@@ -10,7 +10,9 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/predicate"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 )
 
@@ -50,6 +52,7 @@ type CommitmentFilter struct {
 	RelationshipID uuid.UUID
 	DueBefore      time.Time
 	ChangedSince   time.Time
+	EvidenceSince  time.Time
 	Limit          int
 	Offset         int
 
@@ -86,34 +89,42 @@ func commitmentRegisterState(row *ent.Commitment, now time.Time) string {
 	return RegisterOpen
 }
 
-// storedStatusesFor maps requested register states onto the statuses actually
-// stored, so the database filters what it can and only the derived states need
-// a pass in Go.
-func storedStatusesFor(states []string) (stored []string, needsDerived bool) {
-	seen := map[string]bool{}
-	for _, state := range states {
-		switch strings.TrimSpace(state) {
+// registerStatePredicates maps reader-facing states onto their exact stored
+// representation. Keeping the clock projection in SQL makes pagination exact.
+func registerStatePredicates(states []string, now time.Time) ([]predicate.Commitment, error) {
+	cutoff := now.Add(AtRiskWindow)
+	predicates := make([]predicate.Commitment, 0, len(states))
+	for _, raw := range states {
+		switch state := strings.TrimSpace(raw); state {
+		case "":
+			continue
 		case RegisterMet:
-			seen["fulfilled"] = true
-		case RegisterMissed:
-			seen["missed"] = true
-		case RegisterWaived:
-			seen["waived"] = true
-		case "cancelled":
-			seen["cancelled"] = true
-		case "superseded":
-			seen["superseded"] = true
-		case RegisterOpen, RegisterAtRisk, RegisterDisputed:
-			// All three live in the "open" row and separate only after the
-			// projection above, so the query keeps them together.
-			seen["open"] = true
-			needsDerived = true
+			predicates = append(predicates, commitment.StatusEQ("fulfilled"))
+		case RegisterMissed, RegisterWaived, "cancelled", "superseded":
+			predicates = append(predicates, commitment.StatusEQ(state))
+		case RegisterDisputed:
+			predicates = append(predicates, commitment.And(
+				commitment.StatusEQ("open"),
+				commitment.AcceptanceEQ("disputed"),
+			))
+		case RegisterAtRisk:
+			predicates = append(predicates, commitment.And(
+				commitment.StatusEQ("open"),
+				commitment.AcceptanceNEQ("disputed"),
+				commitment.DueAtNotNil(),
+				commitment.DueAtLT(cutoff),
+			))
+		case RegisterOpen:
+			predicates = append(predicates, commitment.And(
+				commitment.StatusEQ("open"),
+				commitment.AcceptanceNEQ("disputed"),
+				commitment.Or(commitment.DueAtIsNil(), commitment.DueAtGTE(cutoff)),
+			))
+		default:
+			return nil, fmt.Errorf("%w: unknown state %q", ErrInvalidInput, state)
 		}
 	}
-	for status := range seen {
-		stored = append(stored, status)
-	}
-	return stored, needsDerived
+	return predicates, nil
 }
 
 // ListCommitments returns one page of the register for the caller's workspace.
@@ -163,45 +174,21 @@ func (s *Service) ListCommitments(
 	if !f.ChangedSince.IsZero() {
 		q = q.Where(commitment.UpdatedAtGTE(f.ChangedSince.UTC()))
 	}
-
-	stored, needsDerived := storedStatusesFor(f.States)
-	if len(stored) > 0 {
-		q = q.Where(commitment.StatusIn(stored...))
+	if !f.EvidenceSince.IsZero() {
+		since := f.EvidenceSince.UTC()
+		q = q.Where(commitment.HasEvidencesWith(
+			revenueevidence.OccurredAtGTE(since),
+		)).WithEvidences(func(evidenceQuery *ent.RevenueEvidenceQuery) {
+			evidenceQuery.Where(revenueevidence.OccurredAtGTE(since)).Order(ent.Asc(revenueevidence.FieldOccurredAt))
+		})
 	}
-	q = q.WithRelationship().Order(ent.Asc(commitment.FieldDueAt), ent.Desc(commitment.FieldCreatedAt))
-
-	// A derived state cannot be filtered in SQL, so when one is requested the
-	// page is assembled in Go over a bounded window rather than by LIMIT alone.
-	//
-	// ponytail: the window caps how deep a derived-state filter can page. A
-	// workspace with more open commitments than the window will not see the
-	// tail. Store at_risk on write, or paginate by keyset, if that ever bites.
-	if !needsDerived || len(f.States) == 0 {
-		return q.Limit(limit).Offset(f.Offset).All(ctx)
-	}
-	rows, err := q.Limit(f.Offset + limit*4 + 200).All(ctx)
+	statePredicates, err := registerStatePredicates(f.States, s.now().UTC())
 	if err != nil {
 		return nil, err
 	}
-	want := map[string]bool{}
-	for _, state := range f.States {
-		want[strings.TrimSpace(state)] = true
+	if len(statePredicates) > 0 {
+		q = q.Where(commitment.Or(statePredicates...))
 	}
-	now := s.now().UTC()
-	kept := make([]*ent.Commitment, 0, limit)
-	skipped := 0
-	for _, row := range rows {
-		if !want[commitmentRegisterState(row, now)] {
-			continue
-		}
-		if skipped < f.Offset {
-			skipped++
-			continue
-		}
-		kept = append(kept, row)
-		if len(kept) == limit {
-			break
-		}
-	}
-	return kept, nil
+	q = q.WithRelationship().Order(ent.Asc(commitment.FieldDueAt), ent.Desc(commitment.FieldCreatedAt))
+	return q.Limit(limit).Offset(f.Offset).All(ctx)
 }

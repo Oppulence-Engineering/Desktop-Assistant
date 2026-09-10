@@ -2,6 +2,7 @@ package googleapi
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -46,6 +47,7 @@ func mockGoogleReads(t *testing.T) (*Client, *httptest.Server) {
 			return
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
+			"nextPageToken": "page_2",
 			"items": []map[string]any{{
 				"id": "evt_1", "summary": "Acme QBR",
 				"start":     map[string]string{"dateTime": "2026-06-08T17:00:00Z"},
@@ -80,7 +82,7 @@ func mockGoogleReads(t *testing.T) (*Client, *httptest.Server) {
 
 func TestListMessages(t *testing.T) {
 	c, _ := mockGoogleReads(t)
-	msgs, err := c.ListMessages(context.Background(), "tok", "from:acme.com", 2)
+	msgs, _, err := c.ListMessages(context.Background(), "tok", "from:acme.com", 2, "")
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
@@ -100,7 +102,7 @@ func TestListMessagesClampsLimit(t *testing.T) {
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{"messages": []any{}})
 	})).URL})
-	if _, err := c.ListMessages(context.Background(), "tok", "", 500); err != nil {
+	if _, _, err := c.ListMessages(context.Background(), "tok", "", 500, ""); err != nil {
 		t.Fatalf("list: %v", err)
 	}
 }
@@ -113,15 +115,30 @@ func TestGoogleAPIErrorIncludesProviderMessage(t *testing.T) {
 	defer srv.Close()
 
 	c := New(Config{GmailBaseURL: srv.URL})
-	_, err := c.ListMessages(context.Background(), "tok", "", 1)
+	_, _, err := c.ListMessages(context.Background(), "tok", "", 1, "")
 	if err == nil || !strings.Contains(err.Error(), "Quota exceeded for quota metric.") {
 		t.Fatalf("error = %v, want provider detail", err)
 	}
 }
 
+func TestExtractPlainTextFallsBackToHTML(t *testing.T) {
+	encode := func(body string) string { return base64.RawURLEncoding.EncodeToString([]byte(body)) }
+	htmlOnly := gmailPart{MimeType: "text/html", Body: gmailBody{Data: encode(`<html><head><style>hidden</style></head><body><p>Hello <b>world</b> &amp; team</p><script>hidden()</script></body></html>`)}}
+	if got := extractPlainText(&htmlOnly); got != "Hello world & team" {
+		t.Fatalf("html body = %q", got)
+	}
+	alternative := gmailPart{MimeType: "multipart/alternative", Parts: []gmailPart{
+		{MimeType: "text/html", Body: gmailBody{Data: encode(`<b>HTML fallback</b>`)}},
+		{MimeType: "text/plain", Body: gmailBody{Data: encode("Plain wins")}},
+	}}
+	if got := extractPlainText(&alternative); got != "Plain wins" {
+		t.Fatalf("preferred body = %q", got)
+	}
+}
+
 func TestListEvents(t *testing.T) {
 	c, _ := mockGoogleReads(t)
-	events, err := c.ListEvents(context.Background(), "tok", CalendarQuery{
+	events, nextPageToken, err := c.ListEvents(context.Background(), "tok", CalendarQuery{
 		TimeMin: "2026-06-06T00:00:00Z",
 		TimeMax: "2026-06-13T00:00:00Z",
 		Text:    "Acme",
@@ -132,6 +149,9 @@ func TestListEvents(t *testing.T) {
 	}
 	if len(events) != 2 {
 		t.Fatalf("events = %d, want 2", len(events))
+	}
+	if nextPageToken != "page_2" {
+		t.Fatalf("next page token = %q", nextPageToken)
 	}
 	if events[0].Summary != "Acme QBR" || events[0].StartsAt != "2026-06-08T17:00:00Z" || len(events[0].Attendees) != 1 {
 		t.Fatalf("event = %+v", events[0])

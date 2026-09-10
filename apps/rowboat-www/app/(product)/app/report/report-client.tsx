@@ -24,28 +24,14 @@ import {
   getOpenPromisesReport,
   getOpenPromisesReportMarkdown,
   getScan,
+  googleSourceHealth,
+  latestCompletedScan,
+  listScans,
   listRelationshipSources,
   safeResearchCitationURL,
   startScan,
 } from "@/lib/revenue";
-import type { OpenPromisesReport, RelationshipSourceInventoryItem } from "@/types/revenue";
-
-const ACTIVE_SOURCE_STATES = new Set(["connected", "backfilling", "live"]);
-
-// Health reports the WORST account, never the best. A .some() over accounts
-// let one healthy connection hide a dead grant, and this page would then invite
-// the user to run a scan that cannot possibly read their mail.
-const ATTENTION_SOURCE_STATES = new Set(["reconnect_required", "disconnected"]);
-
-function googleHealth(sources: RelationshipSourceInventoryItem[]) {
-  const google = sources.find((source) => source.source === "google");
-  const accounts = google?.accounts ?? [];
-  if (accounts.some((a) => ATTENTION_SOURCE_STATES.has(a.status) || a.missingScopes.length > 0)) {
-    return "needs_reconnect" as const;
-  }
-  if (accounts.some((a) => ACTIVE_SOURCE_STATES.has(a.status))) return "ready" as const;
-  return "not_connected" as const;
-}
+import type { OpenPromisesReport } from "@/types/revenue";
 
 export function OpenPromisesReportClient() {
   return (
@@ -76,12 +62,19 @@ function ReportBody() {
     queryKey: ["report-sources"],
     queryFn: () => listRelationshipSources(),
   });
-  const health = googleHealth(sourcesQuery.data ?? []);
+  const health = googleSourceHealth(sourcesQuery.data ?? []);
+
+  const scansQuery = useQuery({
+    queryKey: ["report-scans"],
+    queryFn: () => listScans(),
+    enabled: !scanId,
+  });
+  const effectiveScanId = scanId ?? latestCompletedScan(scansQuery.data ?? [])?.id ?? null;
 
   const scanQuery = useQuery({
-    queryKey: ["report-scan", scanId],
-    queryFn: () => getScan(scanId as string),
-    enabled: Boolean(scanId),
+    queryKey: ["report-scan", effectiveScanId],
+    queryFn: () => getScan(effectiveScanId as string),
+    enabled: Boolean(effectiveScanId),
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       return status === "completed" || status === "failed" ? false : 2_000;
@@ -90,9 +83,9 @@ function ReportBody() {
   const scanDone = scanQuery.data?.status === "completed";
 
   const reportQuery = useQuery({
-    queryKey: ["report", scanId],
-    queryFn: () => getOpenPromisesReport(scanId as string),
-    enabled: Boolean(scanId) && scanDone,
+    queryKey: ["report", effectiveScanId],
+    queryFn: () => getOpenPromisesReport(effectiveScanId as string),
+    enabled: Boolean(effectiveScanId) && scanDone,
   });
 
   React.useEffect(() => {
@@ -142,11 +135,15 @@ function ReportBody() {
         </p>
       ) : null}
 
-      {health === "not_connected" && !sourcesQuery.isLoading ? (
+      {sourcesQuery.isLoading || (!scanId && scansQuery.isLoading) ? (
+        <p className="flex items-center gap-2 text-[13px] text-primary/55">
+          <CircleNotchIcon className="size-4 animate-spin" /> Loading your report.
+        </p>
+      ) : health === "not_connected" ? (
         <ConnectStep />
-      ) : health === "needs_reconnect" && !sourcesQuery.isLoading ? (
+      ) : health === "needs_reconnect" ? (
         <ReconnectStep />
-      ) : !scanId ? (
+      ) : !effectiveScanId ? (
         <StartStep
           onRun={() => {
             void run();
@@ -163,7 +160,7 @@ function ReportBody() {
           }}
         />
       ) : reportQuery.data ? (
-        <Report report={reportQuery.data} scanId={scanId} />
+        <Report report={reportQuery.data} scanId={effectiveScanId} />
       ) : reportQuery.isError ? (
         <section className="border border-destructive/40 bg-destructive/5 p-5" role="alert">
           <h2 className="text-[15px] font-medium text-destructive">The report could not load</h2>
@@ -217,8 +214,8 @@ function ReconnectStep() {
         <WarningIcon className="size-4 text-destructive" /> Google needs reconnecting
       </h2>
       <p className="mt-1.5 max-w-lg text-[13px] leading-relaxed text-primary/60">
-        Google stopped accepting the authorization, so we cannot read your mail. Reconnect to
-        run the audit.
+        Google stopped accepting the authorization, so we cannot read your mail. Reconnect to run
+        the audit.
       </p>
       <Button asChild className="mt-4 bg-[#3478f6] text-white hover:bg-[#2f6fe6]">
         <Link href="/app/settings">

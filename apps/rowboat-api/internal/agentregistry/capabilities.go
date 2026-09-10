@@ -83,18 +83,19 @@ type SlackTokenResolver interface {
 // a tool must degrade gracefully (report "unavailable") rather than panic on a
 // nil dep.
 type ToolDeps struct {
-	Client      *ent.Client
-	Creds       CredResolver
-	SlackTokens SlackTokenResolver
-	Slack       *slackclient.Client
-	Sealer      *crypto.Sealer
-	Secrets     *secrets.Store
-	Google      *googleapi.Client
-	HubSpot     *hubspotapi.Client
-	Web         *websearch.Client
-	Conduit     *faculties.Client
-	Eigen       *faculties.Client
-	UserID      string
+	Client         *ent.Client
+	ActionProposer backgroundtaskruntime.ActionProposer
+	Creds          CredResolver
+	SlackTokens    SlackTokenResolver
+	Slack          *slackclient.Client
+	Sealer         *crypto.Sealer
+	Secrets        *secrets.Store
+	Google         *googleapi.Client
+	HubSpot        *hubspotapi.Client
+	Web            *websearch.Client
+	Conduit        *faculties.Client
+	Eigen          *faculties.Client
+	UserID         string
 }
 
 // Capability is one Layer-1 tool: the metadata advertised to the model and used

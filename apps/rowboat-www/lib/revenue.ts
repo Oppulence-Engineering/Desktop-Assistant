@@ -177,11 +177,42 @@ export const startScan = (lookbackDays?: number) =>
 export const getScan = (scanId: string, signal?: AbortSignal) =>
   call<RevenueLeakScan>(`/revenue-leak-scans/${scanId}`, { signal });
 
-// Scan history is not a server list endpoint; the panel keeps its own record of
-// scans it started this session and re-hydrates each by id.
-export async function getScans(ids: string[]): Promise<RevenueLeakScan[]> {
-  const rows = await Promise.all(ids.map((id) => getScan(id).catch(() => null)));
-  return rows.filter((r): r is RevenueLeakScan => r !== null);
+export const listScans = async () =>
+  call<{ scans: RevenueLeakScan[] }>("/revenue-leak-scans?limit=10").then(
+    (body) => body.scans ?? [],
+  );
+
+export function latestCompletedScan(
+  scans: Array<Pick<RevenueLeakScan, "id" | "status" | "threadsSeen">>,
+) {
+  return (
+    scans.find((scan) => scan.status === "completed" && (scan.threadsSeen ?? 0) > 0) ??
+    scans.find((scan) => scan.status === "completed")
+  );
+}
+
+export function googleSourceHealth(
+  sources: Array<{
+    source: string;
+    accounts: Array<{ status: string; missingScopes: string[] }>;
+  }>,
+) {
+  const accounts = sources.find((source) => source.source === "google")?.accounts ?? [];
+  if (
+    accounts.some(
+      (account) =>
+        account.status === "reconnect_required" ||
+        account.status === "disconnected" ||
+        account.missingScopes.length > 0,
+    )
+  ) {
+    return "needs_reconnect" as const;
+  }
+  return accounts.some((account) =>
+    ["connected", "backfilling", "live", "stale"].includes(account.status),
+  )
+    ? ("ready" as const)
+    : ("not_connected" as const);
 }
 
 // --- queue reads -------------------------------------------------------------

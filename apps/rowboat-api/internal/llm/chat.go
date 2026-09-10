@@ -68,6 +68,17 @@ type ChatResult struct {
 	OutputTokens int
 }
 
+// UpstreamStatusError preserves the provider status so callers can distinguish
+// permanent account/configuration failures from transient outages.
+type UpstreamStatusError struct {
+	StatusCode int
+	detail     string
+}
+
+func (e *UpstreamStatusError) Error() string {
+	return fmt.Sprintf("llm upstream returned status %d: %s", e.StatusCode, e.detail)
+}
+
 // wire shapes for the OpenAI chat completions request.
 type wireToolCall struct {
 	ID       string `json:"id"`
@@ -155,7 +166,7 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 		// The body carries the only actionable detail (which field the provider
 		// rejected). Dropping it turned a one-line schema bug into a blind hunt,
 		// so include a bounded prefix; it is provider error text, not user data.
-		return ChatResult{}, fmt.Errorf("llm upstream returned status %d: %s", resp.StatusCode, truncateForError(raw))
+		return ChatResult{}, &UpstreamStatusError{StatusCode: resp.StatusCode, detail: truncateForError(raw)}
 	}
 
 	var parsed struct {

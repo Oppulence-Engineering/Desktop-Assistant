@@ -309,6 +309,38 @@ func TestPersonProjectionIsIdempotent(t *testing.T) {
 	}
 }
 
+func TestPersonAttributesCollapseHistoricalDuplicateFact(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 8, 4, 12, 0, 0, 0, time.UTC)
+	if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user,
+		[]RelationshipObservationInput{personObservation("obs_1", "Acme", "acme.example", now,
+			RelationshipParticipantInput{DisplayName: "Sarah Chen", Email: "sarah@acme.example"})},
+	); err != nil {
+		t.Fatalf("ingest: %v", err)
+	}
+	p := personsIn(t, f)[0]
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatalf("workspace: %v", err)
+	}
+	if err := upsertPersonAttributes(f.ctx, f.client, ws, f.user, p, nil, []PersonAttributeInput{{
+		Dimension: "display_name", Value: "Sarah Chen", SourceType: "source_fact",
+		Source: "hubspot", Extractor: "display_name_header", Confidence: 0.8,
+		Reason: "Name as it appeared on the source record.", ObservedAt: now,
+	}}); err != nil {
+		t.Fatalf("legacy duplicate: %v", err)
+	}
+
+	raw := p.QueryAttributes().CountX(f.ctx)
+	attributes, err := f.svc.PersonAttributes(f.ctx, f.user, p.ID)
+	if err != nil {
+		t.Fatalf("attributes: %v", err)
+	}
+	if raw != 4 || len(attributes) != 3 {
+		t.Fatalf("raw attributes = %d, visible attributes = %d; want 4 and 3", raw, len(attributes))
+	}
+}
+
 // Two anchors pointing at different existing people is a question, not an answer.
 func TestPersonMultiMatchNeverMergesAutomatically(t *testing.T) {
 	f := newFixture(t)

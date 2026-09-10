@@ -1374,6 +1374,7 @@ type ComplexityRoot struct {
 		ActionsCreated       func(childComplexity int) int
 		ActiveClaim          func(childComplexity int) int
 		CandidatesSeen       func(childComplexity int) int
+		CommitmentsCreated   func(childComplexity int) int
 		CompletedAt          func(childComplexity int) int
 		CreatedAt            func(childComplexity int) int
 		Error                func(childComplexity int) int
@@ -8312,6 +8313,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RevenueLeakScan.CandidatesSeen(childComplexity), true
+	case "RevenueLeakScan.commitmentsCreated":
+		if e.ComplexityRoot.RevenueLeakScan.CommitmentsCreated == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RevenueLeakScan.CommitmentsCreated(childComplexity), true
 	case "RevenueLeakScan.completedAt":
 		if e.ComplexityRoot.RevenueLeakScan.CompletedAt == nil {
 			break
@@ -12205,6 +12212,8 @@ func (ec *executionContext) childFields_RevenueLeakScan(ctx context.Context, fie
 		return ec.fieldContext_RevenueLeakScan_evidencesCreated(ctx, field)
 	case "actionsCreated":
 		return ec.fieldContext_RevenueLeakScan_actionsCreated(ctx, field)
+	case "commitmentsCreated":
+		return ec.fieldContext_RevenueLeakScan_commitmentsCreated(ctx, field)
 	case "startedAt":
 		return ec.fieldContext_RevenueLeakScan_startedAt(ctx, field)
 	case "completedAt":
@@ -40947,6 +40956,29 @@ func (ec *executionContext) _RevenueLeakScan_actionsCreated(ctx context.Context,
 	)
 }
 func (ec *executionContext) fieldContext_RevenueLeakScan_actionsCreated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RevenueLeakScan", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _RevenueLeakScan_commitmentsCreated(ctx context.Context, field graphql.CollectedField, obj *ent.RevenueLeakScan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RevenueLeakScan_commitmentsCreated(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CommitmentsCreated, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RevenueLeakScan_commitmentsCreated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("RevenueLeakScan", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
@@ -112672,7 +112704,7 @@ func (ec *executionContext) unmarshalInputRevenueLeakScanWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "activeClaim", "activeClaimNEQ", "activeClaimIn", "activeClaimNotIn", "activeClaimGT", "activeClaimGTE", "activeClaimLT", "activeClaimLTE", "activeClaimContains", "activeClaimHasPrefix", "activeClaimHasSuffix", "activeClaimIsNil", "activeClaimNotNil", "activeClaimEqualFold", "activeClaimContainsFold", "mode", "modeNEQ", "modeIn", "modeNotIn", "modeGT", "modeGTE", "modeLT", "modeLTE", "modeContains", "modeHasPrefix", "modeHasSuffix", "modeEqualFold", "modeContainsFold", "lookbackDays", "lookbackDaysNEQ", "lookbackDaysIn", "lookbackDaysNotIn", "lookbackDaysGT", "lookbackDaysGTE", "lookbackDaysLT", "lookbackDaysLTE", "threadsSeen", "threadsSeenNEQ", "threadsSeenIn", "threadsSeenNotIn", "threadsSeenGT", "threadsSeenGTE", "threadsSeenLT", "threadsSeenLTE", "candidatesSeen", "candidatesSeenNEQ", "candidatesSeenIn", "candidatesSeenNotIn", "candidatesSeenGT", "candidatesSeenGTE", "candidatesSeenLT", "candidatesSeenLTE", "relationshipsCreated", "relationshipsCreatedNEQ", "relationshipsCreatedIn", "relationshipsCreatedNotIn", "relationshipsCreatedGT", "relationshipsCreatedGTE", "relationshipsCreatedLT", "relationshipsCreatedLTE", "evidencesCreated", "evidencesCreatedNEQ", "evidencesCreatedIn", "evidencesCreatedNotIn", "evidencesCreatedGT", "evidencesCreatedGTE", "evidencesCreatedLT", "evidencesCreatedLTE", "actionsCreated", "actionsCreatedNEQ", "actionsCreatedIn", "actionsCreatedNotIn", "actionsCreatedGT", "actionsCreatedGTE", "actionsCreatedLT", "actionsCreatedLTE", "startedAt", "startedAtNEQ", "startedAtIn", "startedAtNotIn", "startedAtGT", "startedAtGTE", "startedAtLT", "startedAtLTE", "startedAtIsNil", "startedAtNotNil", "completedAt", "completedAtNEQ", "completedAtIn", "completedAtNotIn", "completedAtGT", "completedAtGTE", "completedAtLT", "completedAtLTE", "completedAtIsNil", "completedAtNotNil", "error", "errorNEQ", "errorIn", "errorNotIn", "errorGT", "errorGTE", "errorLT", "errorLTE", "errorContains", "errorHasPrefix", "errorHasSuffix", "errorIsNil", "errorNotNil", "errorEqualFold", "errorContainsFold", "sourceFreshnessAt", "sourceFreshnessAtNEQ", "sourceFreshnessAtIn", "sourceFreshnessAtNotIn", "sourceFreshnessAtGT", "sourceFreshnessAtGTE", "sourceFreshnessAtLT", "sourceFreshnessAtLTE", "sourceFreshnessAtIsNil", "sourceFreshnessAtNotNil", "hasWorkspace", "hasWorkspaceWith", "hasUser", "hasUserWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "activeClaim", "activeClaimNEQ", "activeClaimIn", "activeClaimNotIn", "activeClaimGT", "activeClaimGTE", "activeClaimLT", "activeClaimLTE", "activeClaimContains", "activeClaimHasPrefix", "activeClaimHasSuffix", "activeClaimIsNil", "activeClaimNotNil", "activeClaimEqualFold", "activeClaimContainsFold", "mode", "modeNEQ", "modeIn", "modeNotIn", "modeGT", "modeGTE", "modeLT", "modeLTE", "modeContains", "modeHasPrefix", "modeHasSuffix", "modeEqualFold", "modeContainsFold", "lookbackDays", "lookbackDaysNEQ", "lookbackDaysIn", "lookbackDaysNotIn", "lookbackDaysGT", "lookbackDaysGTE", "lookbackDaysLT", "lookbackDaysLTE", "threadsSeen", "threadsSeenNEQ", "threadsSeenIn", "threadsSeenNotIn", "threadsSeenGT", "threadsSeenGTE", "threadsSeenLT", "threadsSeenLTE", "candidatesSeen", "candidatesSeenNEQ", "candidatesSeenIn", "candidatesSeenNotIn", "candidatesSeenGT", "candidatesSeenGTE", "candidatesSeenLT", "candidatesSeenLTE", "relationshipsCreated", "relationshipsCreatedNEQ", "relationshipsCreatedIn", "relationshipsCreatedNotIn", "relationshipsCreatedGT", "relationshipsCreatedGTE", "relationshipsCreatedLT", "relationshipsCreatedLTE", "evidencesCreated", "evidencesCreatedNEQ", "evidencesCreatedIn", "evidencesCreatedNotIn", "evidencesCreatedGT", "evidencesCreatedGTE", "evidencesCreatedLT", "evidencesCreatedLTE", "actionsCreated", "actionsCreatedNEQ", "actionsCreatedIn", "actionsCreatedNotIn", "actionsCreatedGT", "actionsCreatedGTE", "actionsCreatedLT", "actionsCreatedLTE", "commitmentsCreated", "commitmentsCreatedNEQ", "commitmentsCreatedIn", "commitmentsCreatedNotIn", "commitmentsCreatedGT", "commitmentsCreatedGTE", "commitmentsCreatedLT", "commitmentsCreatedLTE", "startedAt", "startedAtNEQ", "startedAtIn", "startedAtNotIn", "startedAtGT", "startedAtGTE", "startedAtLT", "startedAtLTE", "startedAtIsNil", "startedAtNotNil", "completedAt", "completedAtNEQ", "completedAtIn", "completedAtNotIn", "completedAtGT", "completedAtGTE", "completedAtLT", "completedAtLTE", "completedAtIsNil", "completedAtNotNil", "error", "errorNEQ", "errorIn", "errorNotIn", "errorGT", "errorGTE", "errorLT", "errorLTE", "errorContains", "errorHasPrefix", "errorHasSuffix", "errorIsNil", "errorNotNil", "errorEqualFold", "errorContainsFold", "sourceFreshnessAt", "sourceFreshnessAtNEQ", "sourceFreshnessAtIn", "sourceFreshnessAtNotIn", "sourceFreshnessAtGT", "sourceFreshnessAtGTE", "sourceFreshnessAtLT", "sourceFreshnessAtLTE", "sourceFreshnessAtIsNil", "sourceFreshnessAtNotNil", "hasWorkspace", "hasWorkspaceWith", "hasUser", "hasUserWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -113491,6 +113523,62 @@ func (ec *executionContext) unmarshalInputRevenueLeakScanWhereInput(ctx context.
 				return it, err
 			}
 			it.ActionsCreatedLTE = data
+		case "commitmentsCreated":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreated"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreated = data
+		case "commitmentsCreatedNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedNEQ = data
+		case "commitmentsCreatedIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedIn = data
+		case "commitmentsCreatedNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedNotIn = data
+		case "commitmentsCreatedGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedGT = data
+		case "commitmentsCreatedGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedGTE = data
+		case "commitmentsCreatedLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedLT = data
+		case "commitmentsCreatedLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedLTE = data
 		case "startedAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startedAt"))
 			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
@@ -134405,6 +134493,11 @@ func (ec *executionContext) _RevenueLeakScan(ctx context.Context, sel ast.Select
 			}
 		case "actionsCreated":
 			out.Values[i] = ec._RevenueLeakScan_actionsCreated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "commitmentsCreated":
+			out.Values[i] = ec._RevenueLeakScan_commitmentsCreated(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

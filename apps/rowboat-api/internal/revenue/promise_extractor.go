@@ -147,9 +147,11 @@ func (e *LLMPromiseExtractor) ExtractPromises(
 		raw = raw[i : j+1]
 	}
 	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
-		// An unparseable answer proposes nothing. It is never an error worth
-		// failing a scan over.
-		return nil, nil
+		// An answer we cannot parse proposes nothing. That is a result rather
+		// than a failure: the audit continues on the deterministic rules, and
+		// reporting an error here would make a malformed reply look like an
+		// outage and count against the extraction-failure total.
+		payload.Promises = nil
 	}
 	return verifyPromiseQuotes(payload.Promises, in.Body), nil
 }

@@ -385,6 +385,10 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 			if agentBus != nil {
 				publisher = agentBus
 			}
+			var agentActionProposer backgroundtaskruntime.ActionProposer
+			if actionBroker != nil {
+				agentActionProposer = backgroundtaskworkflow.NewActionProposer(actionBroker, client)
+			}
 			agentworkflow.Register(w, &agentworkflow.Activities{
 				Client:         client,
 				LLM:            deps.LLM,
@@ -416,10 +420,11 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 					MaxConcurrent:    64,
 					MaxResponseBytes: 4 << 20,
 				}),
-				Web:     websearch.New(cfg.WebSearchAPIURL, cfg.WebSearchAPIKey, outbound.Policy{Timeout: 20 * time.Second, MaxConcurrent: 32, MaxResponseBytes: 4 << 20}),
-				Conduit: faculties.New("conduit", cfg.ConduitBaseURL, cfg.ServiceTokenIssuer, cfg.AgentSigningSecret(), outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
-				Eigen:   faculties.New("eigen", cfg.EigenBaseURL, cfg.ServiceTokenIssuer, cfg.AgentSigningSecret(), outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
-				Log:     log,
+				Web:            websearch.New(cfg.WebSearchAPIURL, cfg.WebSearchAPIKey, outbound.Policy{Timeout: 20 * time.Second, MaxConcurrent: 32, MaxResponseBytes: 4 << 20}),
+				Conduit:        faculties.New("conduit", cfg.ConduitBaseURL, cfg.ServiceTokenIssuer, cfg.AgentSigningSecret(), outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
+				Eigen:          faculties.New("eigen", cfg.EigenBaseURL, cfg.ServiceTokenIssuer, cfg.AgentSigningSecret(), outbound.Policy{Timeout: 30 * time.Second, MaxConcurrent: 16, MaxResponseBytes: 4 << 20}),
+				ActionProposer: agentActionProposer,
+				Log:            log,
 			})
 			// RFC 027 P5: the scheduled-session action runs on the worker and
 			// starts sessions through the canonical starter (which needs the

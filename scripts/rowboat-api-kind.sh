@@ -12,11 +12,9 @@ API_PORT_ENV_SET="${ROWBOAT_API_PORT+x}"
 DEVSTACK_PORT_ENV_SET="${ROWBOAT_DEVSTACK_PORT+x}"
 FALLBACK_API_PORT="${ROWBOAT_API_FALLBACK_PORT:-18081}"
 FALLBACK_DEVSTACK_PORT="${ROWBOAT_DEVSTACK_FALLBACK_PORT:-18091}"
-# Set ROWBOAT_KIND_REAL_GOOGLE=1 to run the Google OAuth flow against real
-# accounts.google.com instead of the devstack mock — the only way to exercise a
-# real Gmail mailbox locally. Credentials come from the Infisical sync, so
-# nothing extra is needed beyond the flag.
-REAL_GOOGLE="${ROWBOAT_KIND_REAL_GOOGLE:-}"
+# Real Google is the local dogfood default. The mock remains an explicit opt-in
+# for hermetic tests that never touch a real mailbox.
+MOCK_GOOGLE="${ROWBOAT_KIND_MOCK_GOOGLE:-}"
 # The redirect URI has to match one registered on the Google Cloud OAuth client
 # byte for byte. Only this port is registered, which is why real-Google mode
 # refuses to start on any other one rather than failing later inside Google's
@@ -82,11 +80,8 @@ Environment overrides:
   ROWBOAT_DEVSTACK_PORT   default: 18090
   ROWBOAT_API_FALLBACK_PORT       default: 18081
   ROWBOAT_DEVSTACK_FALLBACK_PORT  default: 18091
-  ROWBOAT_KIND_REAL_GOOGLE        unset: devstack Google mock (hermetic).
-                                  set:   real accounts.google.com, so a real
-                                         Gmail account can be connected against
-                                         the local stack. Requires the API on
-                                         ROWBOAT_GOOGLE_REDIRECT_PORT.
+  ROWBOAT_KIND_MOCK_GOOGLE        unset: real accounts.google.com (default).
+                                  set:   devstack Google mock for hermetic tests.
   ROWBOAT_GOOGLE_REDIRECT_PORT    default: 18080 (the registered redirect URI)
   INFISICAL_PROJECT_ID                    required unless .infisical.json exists
   INFISICAL_TOKEN                         optional service/machine token for CI
@@ -360,16 +355,22 @@ deploy_chart() {
   local devstack_origin="http://localhost:${DEVSTACK_PORT}"
   local cors_origins="http://localhost:3000\\,http://localhost:5173\\,${api_origin}"
 
-  # Google OAuth endpoints: the hermetic devstack mock by default, real Google
-  # when REAL_GOOGLE is set. Empty strings are the contract wire.go expects for
+  # Google OAuth endpoints: real Google by default, with the devstack mock only
+  # when MOCK_GOOGLE is set. Empty strings are the contract wire.go expects for
   # "use the real endpoints" — SetOAuthFlow and SetTokenURL keep their built-in
   # defaults (accounts.google.com / oauth2.googleapis.com) when handed an empty
-  # argument, so these must be set to "" rather than left out, which would
-  # inherit the mock from values-kind.yaml.
+  # argument.
   local -a google_args=(
-    --set-string "config.GOOGLE_AUTHORIZE_URL=${devstack_origin}/o/oauth2/v2/auth"
+    --set-string "config.GOOGLE_AUTHORIZE_URL="
+    --set-string "config.GOOGLE_TOKEN_URL="
   )
-  if [[ -n "$REAL_GOOGLE" ]]; then
+  if [[ -n "$MOCK_GOOGLE" ]]; then
+    echo "Google OAuth: devstack mock (explicit opt-in)"
+    google_args=(
+      --set-string "config.GOOGLE_AUTHORIZE_URL=${devstack_origin}/o/oauth2/v2/auth"
+      --set-string "config.GOOGLE_TOKEN_URL=http://rowboat-api-devstack:8090/v1/google-oauth-mock/token"
+    )
+  else
     if [[ "$API_PORT" != "$GOOGLE_REDIRECT_PORT" ]]; then
       echo "real Google needs the API on localhost:${GOOGLE_REDIRECT_PORT}, but it is on ${API_PORT}." >&2
       echo "Only http://localhost:${GOOGLE_REDIRECT_PORT}/oauth/google/callback is registered on the OAuth" >&2
@@ -378,10 +379,6 @@ deploy_chart() {
       exit 1
     fi
     echo "Google OAuth: real accounts.google.com (redirect ${api_origin}/oauth/google/callback)"
-    google_args=(
-      --set-string "config.GOOGLE_AUTHORIZE_URL="
-      --set-string "config.GOOGLE_TOKEN_URL="
-    )
   fi
 
   # LLM upstream: real OpenRouter by default, devstack mock only on request.
@@ -1493,11 +1490,11 @@ run_desktop() {
   ensure_host_access
   cd "${ROOT_DIR}/apps/x"
   # Point Gmail at the devstack mock unless the caller is deliberately running
-  # against a real mailbox. REAL_GOOGLE already means "use Google for OAuth", so
-  # it means "use Google for mail" too — silently mocking mail in that mode would
+  # against a real mailbox. Real Google is the default for OAuth and mail;
+  # silently mocking mail in that mode would
   # make a real-account dogfooding session quietly read fixtures instead.
   local gmail_root=""
-  if [[ -z "$REAL_GOOGLE" ]]; then
+  if [[ -n "$MOCK_GOOGLE" ]]; then
     gmail_root="http://localhost:${DEVSTACK_PORT}"
   fi
   API_URL="http://localhost:${API_PORT}" \

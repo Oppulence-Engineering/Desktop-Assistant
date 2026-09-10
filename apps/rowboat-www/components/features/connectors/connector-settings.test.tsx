@@ -68,6 +68,44 @@ afterEach(() => {
 });
 
 describe("hosted connector settings", () => {
+  it("explains stale sync without presenting reauthorization as the normal action", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+      void _init;
+      const url = String(input);
+      const body = url.includes("/api/rowboat/v1/google-oauth")
+        ? {
+            connected: true,
+            accounts: [
+              {
+                accountId: "owner@example.com",
+                connectedAt: "2026-09-09T12:00:00Z",
+                scopes: [],
+              },
+            ],
+          }
+        : url.includes("/relationship-sources/status")
+          ? { sources: [{ source: "google", status: "stale" }] }
+          : { connectors: [] };
+      return new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    const confirm = vi.fn(() => false);
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("confirm", confirm);
+
+    render(<ConnectorSettings />);
+
+    const changeAccess = await screen.findByRole("button", { name: "Change Google access" });
+    expect(screen.getByText(/Source data is delayed; reauthorizing is not required/)).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Reconnect Google" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reauthorize Google" })).not.toBeInTheDocument();
+    await userEvent.click(changeAccess);
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("does not refresh delayed data"));
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
+  });
+
   it("starts from the actual Connect control with explicit required scopes", async () => {
     const fetchMock = mockConnectors(connector());
     render(<ConnectorSettings />);

@@ -65,6 +65,7 @@ func TestCommitmentRegisterRoutesAreMounted(t *testing.T) {
 	for _, want := range []string{
 		"GET /v1/commitments",
 		"GET /v1/commitments/{commitmentId}/export",
+		"GET /v1/revenue-leak-scans/",
 		"GET /v1/revenue-leak-scans/{scanId}/report",
 	} {
 		if !mounted[want] {

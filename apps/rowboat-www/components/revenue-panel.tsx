@@ -9,12 +9,13 @@ import type { RevenueTab } from "@/components/app-shell";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import {
   appendCommitmentTransition,
+  downloadMarkdown,
   friendlyRevenueError,
   getRelationshipGraph,
   getScan,
-  getScans,
   getCommitmentRecordMarkdown,
   getWorkspace,
+  listScans,
   listCommitments,
   listRelationshipSources,
   RevenueAPIError,
@@ -58,27 +59,6 @@ function registerErrorMessage(reason: unknown): string {
   return "The commitment register could not be loaded.";
 }
 
-const SCAN_IDS_KEY = "oppulence.revenue.scanIds";
-
-function loadScanIds(): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(SCAN_IDS_KEY);
-    const ids = raw ? (JSON.parse(raw) as string[]) : [];
-    return Array.isArray(ids) ? ids.slice(0, 10) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveScanIds(ids: string[]) {
-  try {
-    window.localStorage.setItem(SCAN_IDS_KEY, JSON.stringify(ids.slice(0, 10)));
-  } catch {
-    // storage unavailable — history is best-effort
-  }
-}
-
 export function RevenuePanel({
   tab,
   onTabChange,
@@ -97,7 +77,7 @@ export function RevenuePanel({
   const [scanning, setScanning] = React.useState(false);
   const [refreshKey, setRefreshKey] = React.useState(0);
 
-  // Load workspace + hydrate any prior scans this browser started.
+  // Load workspace and persisted audit history, including automatic runs.
   React.useEffect(() => {
     void getWorkspace()
       .then(setWorkspace)
@@ -105,11 +85,9 @@ export function RevenuePanel({
         if (e instanceof RevenueAPIError && (e.status === 401 || e.status === 404)) return;
         setError(e instanceof Error ? e.message : "Could not load the revenue workspace.");
       });
-    const ids = loadScanIds();
-    if (ids.length)
-      void getScans(ids)
-        .then(setScans)
-        .catch(() => {});
+    void listScans()
+      .then(setScans)
+      .catch(() => {});
   }, []);
 
   const setBanner = React.useCallback((msg: string | null) => setError(msg || null), []);
@@ -132,11 +110,26 @@ export function RevenuePanel({
   // fetched, but only for the account count in the empty state — the rows
   // themselves are no longer reassembled from graph nodes in the browser.
   const [registerView, setRegisterView] = React.useState<RegisterView>("we_owe");
+  const [registerAccountId, setRegisterAccountId] = React.useState("");
+  const [registerOwner, setRegisterOwner] = React.useState("");
+  const [includeCandidates, setIncludeCandidates] = React.useState(false);
   const commitmentQuery = useQuery({
-    queryKey: ["commitment-queue", refreshKey, registerView],
-    queryFn: async () => {
+    queryKey: [
+      "commitment-queue",
+      refreshKey,
+      registerView,
+      registerAccountId,
+      registerOwner,
+      includeCandidates,
+    ],
+    queryFn: async ({ signal }) => {
+      const filter = registerFilterFor(registerView, {
+        relationshipId: registerAccountId,
+        owner: registerOwner,
+        includeCandidates,
+      });
       const [entries, sources, graph] = await Promise.allSettled([
-        listCommitments(registerFilterFor(registerView)),
+        filter ? listCommitments(filter, signal) : Promise.resolve([]),
         listRelationshipSources(),
         getRelationshipGraph({ scope: "portfolio", depth: 1 }),
       ]);
@@ -150,6 +143,14 @@ export function RevenuePanel({
         registerError:
           entries.status === "rejected" ? registerErrorMessage(entries.reason) : undefined,
         sources: sources.status === "fulfilled" ? sources.value : [],
+        accounts:
+          graph.status === "fulfilled"
+            ? graph.value.nodes.flatMap((node) =>
+                node.kind === "relationship" && node.relationshipId
+                  ? [{ id: node.relationshipId, label: node.label }]
+                  : [],
+              )
+            : [],
         relationshipCount:
           graph.status === "fulfilled"
             ? graph.value.nodes.filter((node) => node.kind === "relationship").length
@@ -186,7 +187,6 @@ export function RevenuePanel({
       const s = await startScan(90);
       setActiveScan(s);
       setScans((prev) => [s, ...prev.filter((p) => p.id !== s.id)]);
-      saveScanIds([s.id, ...loadScanIds().filter((id) => id !== s.id)]);
     } catch (e) {
       setScanning(false);
       if (e instanceof RevenueAPIError && e.code === "scan_unavailable") {
@@ -218,13 +218,7 @@ export function RevenuePanel({
     async (item: CommitmentQueueItem) => {
       try {
         const markdown = await getCommitmentRecordMarkdown(item.id);
-        const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `commitment-${item.id}.md`;
-        link.click();
-        URL.revokeObjectURL(url);
+        downloadMarkdown(`commitment-${item.id}.md`, markdown);
         capture(RevenueEvents.CommitmentExported, { commitmentId: item.id, state: item.state });
         setNoticeMsg("Commitment record exported.");
       } catch (error) {
@@ -293,6 +287,12 @@ export function RevenuePanel({
             onViewChange={setRegisterView}
             onExport={exportRecord}
             relationshipCount={commitmentQuery.data?.relationshipCount ?? 0}
+            accounts={commitmentQuery.data?.accounts ?? []}
+            accountId={registerAccountId}
+            onAccountChange={setRegisterAccountId}
+            owner={registerOwner}
+            onOwnerChange={setRegisterOwner}
+            onIncludeCandidatesChange={setIncludeCandidates}
             sources={commitmentQuery.data?.sources ?? []}
             latestScan={latestCompletedScan}
             failedScan={showFailure ? latestScanFailure : undefined}

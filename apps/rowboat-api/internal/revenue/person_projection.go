@@ -460,7 +460,8 @@ func refreshPersonInteractionRollup(ctx context.Context, client *ent.Client, p *
 		return err
 	}
 	if len(stats) == 0 {
-		return nil
+		_, err = p.Update().ClearFirstInteractionAt().ClearLastInteractionAt().SetRelationshipCount(0).Save(ctx)
+		return err
 	}
 	first, last := stats[0].FirstInteractionAt, stats[0].LastInteractionAt
 	for _, stat := range stats[1:] {

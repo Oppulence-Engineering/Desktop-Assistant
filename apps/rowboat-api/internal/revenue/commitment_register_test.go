@@ -83,7 +83,7 @@ func TestRegisterServesTheFiveViews(t *testing.T) {
 
 	t.Run("what changed", func(t *testing.T) {
 		rows, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{
-			ChangedSince: now.Add(-time.Hour),
+			ChangedSince: time.Now().UTC().Add(-time.Hour),
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -265,6 +265,67 @@ func TestRegisterRejectsAnUnknownDirection(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{Direction: "sideways"}); err == nil {
 		t.Fatal("unknown direction was accepted")
+	}
+}
+
+func TestRegisterRejectsAnUnknownState(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{
+		States: []string{RegisterOpen, "guessing"},
+	}); err == nil {
+		t.Fatal("unknown state was ignored")
+	}
+}
+
+func TestDerivedStatePaginationDoesNotDropLaterMatches(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	rel := f.relationship(t)
+	dueSoon := now.Add(time.Hour)
+	for i := 0; i < 205; i++ {
+		seedCommitment(t, f, rel, "promised_by_me", "At risk", "", &dueSoon)
+	}
+	dueLater := now.Add(30 * 24 * time.Hour)
+	seedCommitment(t, f, rel, "promised_by_me", "Still open", "", &dueLater)
+
+	rows, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{
+		States: []string{RegisterOpen}, Limit: 1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 || rows[0].Text != "Still open" {
+		t.Fatalf("derived-state pagination dropped the later match: %#v", rows)
+	}
+}
+
+func TestRenegotiationReopensAndUnblocksAMissedCommitment(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	rel := f.relationship(t)
+	past := now.Add(-24 * time.Hour)
+	row := seedCommitment(t, f, rel, "promised_by_me", "Ship the migration", "", &past)
+	row, err := row.Update().SetBlocker("Waiting on the customer").Save(f.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	row, err = f.svc.AppendCommitmentTransition(f.ctx, f.user, rel.ID, row.ID, CommitmentTransitionInput{
+		Kind: "missed", IdempotencyKey: "renegotiate:missed", Reason: "Reviewed after the due date",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	future := now.Add(7 * 24 * time.Hour)
+	row, err = f.svc.AppendCommitmentTransition(f.ctx, f.user, rel.ID, row.ID, CommitmentTransitionInput{
+		Kind: "renegotiated", IdempotencyKey: "renegotiate:new-terms", DueAt: future,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if row.Status != "open" || row.Blocker != "" {
+		t.Fatalf("renegotiation did not reopen cleanly: status=%q blocker=%q", row.Status, row.Blocker)
 	}
 }
 

@@ -9,9 +9,11 @@ import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
 import type {
+  GetOpenPromisesReport200One,
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
   ListRevenueActions200,
+  ListRevenueLeakScans200,
   RevenueAction,
   RevenueDigest,
   RevenueImpact,
@@ -29,6 +31,7 @@ import {
   getEditRevenueActionResponseMock,
   getEvaluateRevenueActionResponseMock,
   getExecuteRevenueActionResponseMock,
+  getGetOpenPromisesReportResponseMock,
   getGetRevenueActionAuditResponseMock,
   getGetRevenueActionResponseMock,
   getGetRevenueActionSourceBodyResponseMock,
@@ -38,6 +41,7 @@ import {
   getGetRevenueWorkspaceResponseMock,
   getLinkRevenueWorkspaceResponseMock,
   getListRevenueActionsResponseMock,
+  getListRevenueLeakScansResponseMock,
   getRecordRevenueActionOutcomeResponseMock,
   getRejectRevenueActionResponseMock,
   getRevenueSemanticSearchResponseMock,
@@ -61,8 +65,10 @@ export {
   getGetRevenueActionSourceBodyResponseMock,
   getGetRevenueDigestResponseMock,
   getGetRevenueImpactResponseMock,
+  getListRevenueLeakScansResponseMock,
   getStartRevenueLeakScanResponseMock,
   getGetRevenueLeakScanResponseMock,
+  getGetOpenPromisesReportResponseMock,
   getRevenueSemanticSearchResponseMock,
   getGetRevenueWorkspaceResponseMock,
   getLinkRevenueWorkspaceResponseMock,
@@ -428,6 +434,30 @@ export const getGetRevenueImpactMockHandler = (
   );
 };
 
+export const getListRevenueLeakScansMockHandler = (
+  overrideResponse?:
+    | ListRevenueLeakScans200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListRevenueLeakScans200> | ListRevenueLeakScans200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/revenue-leak-scans",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListRevenueLeakScansResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
 export const getStartRevenueLeakScanMockHandler = (
   overrideResponse?:
     | RevenueLeakScan
@@ -471,6 +501,35 @@ export const getGetRevenueLeakScanMockHandler = (
           : getGetRevenueLeakScanResponseMock(),
         { status: 200 },
       );
+    },
+    options,
+  );
+};
+
+export const getGetOpenPromisesReportMockHandler = (
+  overrideResponse?:
+    | GetOpenPromisesReport200One
+    | string
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<GetOpenPromisesReport200One | string> | GetOpenPromisesReport200One | string),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/revenue-leak-scans/:scanId/report",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      const resolvedBody =
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getGetOpenPromisesReportResponseMock();
+      return typeof resolvedBody === "string"
+        ? HttpResponse.text(resolvedBody, {
+            status: 200,
+            headers: { "Content-Type": "text/markdown" },
+          })
+        : HttpResponse.json(resolvedBody, { status: 200 });
     },
     options,
   );
@@ -563,8 +622,10 @@ export const getRevenueMock = () => [
   getGetRevenueActionSourceBodyMockHandler(),
   getGetRevenueDigestMockHandler(),
   getGetRevenueImpactMockHandler(),
+  getListRevenueLeakScansMockHandler(),
   getStartRevenueLeakScanMockHandler(),
   getGetRevenueLeakScanMockHandler(),
+  getGetOpenPromisesReportMockHandler(),
   getRevenueSemanticSearchMockHandler(),
   getGetRevenueWorkspaceMockHandler(),
   getLinkRevenueWorkspaceMockHandler(),

@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/net/html"
 )
 
 // maxGmailMessages caps the messages.list → messages.get fan-out: each listed
@@ -31,9 +33,101 @@ type GmailMessage struct {
 	Outbound   bool     `json:"outbound"`
 }
 
-// ListMessages searches the connected mailbox (Gmail query syntax) and
-// returns up to limit message summaries (clamped to maxGmailMessages).
-func (c *Client) ListMessages(ctx context.Context, token, query string, limit int) ([]GmailMessage, error) {
+// GmailLabel is the stable identity needed to build exact Gmail label queries.
+type GmailLabel struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+// GmailLabelDetail reports the live totals for one exact Gmail label.
+type GmailLabelDetail struct {
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Type           string `json:"type"`
+	MessagesTotal  int64  `json:"messagesTotal"`
+	MessagesUnread int64  `json:"messagesUnread"`
+	ThreadsTotal   int64  `json:"threadsTotal"`
+	ThreadsUnread  int64  `json:"threadsUnread"`
+}
+
+// GmailProfile identifies the mailbox Google actually authorized and reports
+// its current aggregate counts.
+type GmailProfile struct {
+	EmailAddress  string `json:"emailAddress"`
+	MessagesTotal int64  `json:"messagesTotal"`
+	ThreadsTotal  int64  `json:"threadsTotal"`
+	HistoryID     string `json:"historyId"`
+}
+
+// GetProfile returns the connected Gmail mailbox's live identity and totals.
+func (c *Client) GetProfile(ctx context.Context, token string) (GmailProfile, error) {
+	var profile GmailProfile
+	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/profile", nil, &profile); err != nil {
+		return GmailProfile{}, fmt.Errorf("gmail users.getProfile: %w", err)
+	}
+	return profile, nil
+}
+
+// ListLabels returns the connected mailbox's system and user labels.
+func (c *Client) ListLabels(ctx context.Context, token string) ([]GmailLabel, error) {
+	var list struct {
+		Labels []GmailLabel `json:"labels"`
+	}
+	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/labels", nil, &list); err != nil {
+		return nil, fmt.Errorf("gmail labels.list: %w", err)
+	}
+	return list.Labels, nil
+}
+
+// GetLabel returns live total and unread counts for one exact label ID.
+func (c *Client) GetLabel(ctx context.Context, token, labelID string) (GmailLabelDetail, error) {
+	if labelID == "" {
+		return GmailLabelDetail{}, fmt.Errorf("gmail label id is required")
+	}
+	var label GmailLabelDetail
+	endpoint := c.cfg.GmailBaseURL + "/gmail/v1/users/me/labels/" + url.PathEscape(labelID)
+	if err := c.GetJSON(ctx, token, endpoint, nil, &label); err != nil {
+		return GmailLabelDetail{}, fmt.Errorf("gmail labels.get %s: %w", labelID, err)
+	}
+	return label, nil
+}
+
+// maxGmailCountPages bounds count-only scans at 10,000 message IDs.
+const maxGmailCountPages = 20
+
+// CountMessages counts matching message IDs without fetching message content.
+// Complete is false when the safety cap is reached.
+func (c *Client) CountMessages(ctx context.Context, token, query string) (count int, complete bool, err error) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return 0, false, fmt.Errorf("gmail count query is required")
+	}
+	q := url.Values{}
+	q.Set("q", query)
+	q.Set("maxResults", "500")
+	for range maxGmailCountPages {
+		var list struct {
+			Messages []struct {
+				ID string `json:"id"`
+			} `json:"messages"`
+			NextPageToken string `json:"nextPageToken"`
+		}
+		if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages", q, &list); err != nil {
+			return 0, false, fmt.Errorf("gmail messages.list count: %w", err)
+		}
+		count += len(list.Messages)
+		if list.NextPageToken == "" {
+			return count, true, nil
+		}
+		q.Set("pageToken", list.NextPageToken)
+	}
+	return count, false, nil
+}
+
+// ListMessages searches one page of the connected mailbox (Gmail query syntax)
+// and returns up to limit message summaries plus the next opaque page token.
+func (c *Client) ListMessages(ctx context.Context, token, query string, limit int, pageToken string) ([]GmailMessage, string, error) {
 	if limit <= 0 || limit > maxGmailMessages {
 		limit = maxGmailMessages
 	}
@@ -42,15 +136,19 @@ func (c *Client) ListMessages(ctx context.Context, token, query string, limit in
 		q.Set("q", query)
 	}
 	q.Set("maxResults", strconv.Itoa(limit))
+	if pageToken != "" {
+		q.Set("pageToken", pageToken)
+	}
 
 	var list struct {
 		Messages []struct {
 			ID       string `json:"id"`
 			ThreadID string `json:"threadId"`
 		} `json:"messages"`
+		NextPageToken string `json:"nextPageToken"`
 	}
 	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages", q, &list); err != nil {
-		return nil, fmt.Errorf("gmail messages.list: %w", err)
+		return nil, "", fmt.Errorf("gmail messages.list: %w", err)
 	}
 
 	out := make([]GmailMessage, 0, len(list.Messages))
@@ -76,7 +174,7 @@ func (c *Client) ListMessages(ctx context.Context, token, query string, limit in
 			} `json:"payload"`
 		}
 		if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages/"+url.PathEscape(m.ID), mq, &detail); err != nil {
-			return nil, fmt.Errorf("gmail messages.get %s: %w", m.ID, err)
+			return nil, "", fmt.Errorf("gmail messages.get %s: %w", m.ID, err)
 		}
 		msg := GmailMessage{ID: detail.ID, ThreadID: detail.ThreadID, Snippet: detail.Snippet, Labels: detail.LabelIDs}
 		for _, label := range detail.LabelIDs {
@@ -105,7 +203,7 @@ func (c *Client) ListMessages(ctx context.Context, token, query string, limit in
 		}
 		out = append(out, msg)
 	}
-	return out, nil
+	return out, list.NextPageToken, nil
 }
 
 // CreateDraft creates a Gmail draft (it does NOT send) addressed to `to` with the
@@ -187,7 +285,7 @@ func (c *Client) FindMessageByRFC822MessageID(ctx context.Context, token, messag
 		return nil, fmt.Errorf("gmail reconciliation message id is required")
 	}
 	// Gmail documents rfc822msgid with the RFC 822 angle brackets intact.
-	messages, err := c.ListMessages(ctx, token, "in:anywhere rfc822msgid:"+messageID, 2)
+	messages, _, err := c.ListMessages(ctx, token, "in:anywhere rfc822msgid:"+messageID, 2, "")
 	if err != nil {
 		return nil, err
 	}
@@ -243,6 +341,15 @@ type GmailThreadMessage struct {
 	Labels []string `json:"labels,omitempty"`
 }
 
+type gmailAPIMessage struct {
+	ID           string    `json:"id"`
+	ThreadID     string    `json:"threadId"`
+	Snippet      string    `json:"snippet"`
+	LabelIDs     []string  `json:"labelIds"`
+	InternalDate string    `json:"internalDate"`
+	Payload      gmailPart `json:"payload"`
+}
+
 // ListThreadIDs searches the mailbox (Gmail query syntax) and returns up to
 // max thread ids (clamped to maxGmailThreads). One API call.
 func (c *Client) ListThreadIDs(ctx context.Context, token, query string, limit int) ([]string, error) {
@@ -278,19 +385,7 @@ func (c *Client) GetThreadMessages(ctx context.Context, token, threadID string) 
 	q.Add("metadataHeaders", "To")
 	q.Add("metadataHeaders", "Subject")
 	var thread struct {
-		Messages []struct {
-			ID           string   `json:"id"`
-			ThreadID     string   `json:"threadId"`
-			Snippet      string   `json:"snippet"`
-			LabelIDs     []string `json:"labelIds"`
-			InternalDate string   `json:"internalDate"`
-			Payload      struct {
-				Headers []struct {
-					Name  string `json:"name"`
-					Value string `json:"value"`
-				} `json:"headers"`
-			} `json:"payload"`
-		} `json:"messages"`
+		Messages []gmailAPIMessage `json:"messages"`
 	}
 	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/threads/"+url.PathEscape(threadID), q, &thread); err != nil {
 		return nil, fmt.Errorf("gmail threads.get %s: %w", threadID, err)
@@ -321,6 +416,7 @@ func (c *Client) GetThreadMessages(ctx context.Context, token, threadID string) 
 	return out, nil
 }
 
+// GmailAttachment is one attachment's metadata on a message.
 type GmailAttachment struct {
 	ID       string `json:"id,omitempty"`
 	Filename string `json:"filename"`
@@ -328,6 +424,7 @@ type GmailAttachment struct {
 	Size     int    `json:"size,omitempty"`
 }
 
+// GmailMessageContent is one message with its body and attachment metadata.
 type GmailMessageContent struct {
 	MessageID   string            `json:"messageId"`
 	ThreadID    string            `json:"threadId"`
@@ -343,23 +440,7 @@ type GmailMessageContent struct {
 	Attachments []GmailAttachment `json:"attachments"`
 }
 
-// GetMessageContent fetches one message with format=full and returns its
-// plain-text body plus attachment metadata. It never downloads attachment
-// bytes or renders HTML. One API call.
-func (c *Client) GetMessageContent(ctx context.Context, token, messageID string) (GmailMessageContent, error) {
-	q := url.Values{}
-	q.Set("format", "full")
-	var msg struct {
-		ID           string    `json:"id"`
-		ThreadID     string    `json:"threadId"`
-		Snippet      string    `json:"snippet"`
-		LabelIDs     []string  `json:"labelIds"`
-		InternalDate string    `json:"internalDate"`
-		Payload      gmailPart `json:"payload"`
-	}
-	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages/"+url.PathEscape(messageID), q, &msg); err != nil {
-		return GmailMessageContent{}, fmt.Errorf("gmail messages.get content %s: %w", messageID, err)
-	}
+func (msg gmailAPIMessage) content() GmailMessageContent {
 	content := GmailMessageContent{
 		MessageID: msg.ID, ThreadID: msg.ThreadID, Snippet: msg.Snippet, Labels: msg.LabelIDs,
 		Body: extractPlainText(&msg.Payload), Attachments: []GmailAttachment{},
@@ -389,7 +470,39 @@ func (c *Client) GetMessageContent(ctx context.Context, token, messageID string)
 		}
 	}
 	collectAttachments(&msg.Payload, &content.Attachments)
-	return content, nil
+	return content
+}
+
+// GetMessageContent fetches one message with format=full and returns its
+// plain-text body plus attachment metadata. It never downloads attachment
+// bytes or renders HTML. One API call.
+func (c *Client) GetMessageContent(ctx context.Context, token, messageID string) (GmailMessageContent, error) {
+	q := url.Values{}
+	q.Set("format", "full")
+	var msg gmailAPIMessage
+	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages/"+url.PathEscape(messageID), q, &msg); err != nil {
+		return GmailMessageContent{}, fmt.Errorf("gmail messages.get content %s: %w", messageID, err)
+	}
+	return msg.content(), nil
+}
+
+// GetThreadContent fetches every message in one thread with format=full. It
+// returns plain-text bodies and attachment metadata without downloading bytes.
+// One API call.
+func (c *Client) GetThreadContent(ctx context.Context, token, threadID string) ([]GmailMessageContent, error) {
+	q := url.Values{}
+	q.Set("format", "full")
+	var thread struct {
+		Messages []gmailAPIMessage `json:"messages"`
+	}
+	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/threads/"+url.PathEscape(threadID), q, &thread); err != nil {
+		return nil, fmt.Errorf("gmail threads.get content %s: %w", threadID, err)
+	}
+	messages := make([]GmailMessageContent, 0, len(thread.Messages))
+	for _, msg := range thread.Messages {
+		messages = append(messages, msg.content())
+	}
+	return messages, nil
 }
 
 // GetMessageBody preserves the ingestion path's body-only contract.
@@ -427,29 +540,81 @@ func collectAttachments(part *gmailPart, out *[]GmailAttachment) {
 	}
 }
 
-// extractPlainText returns the first text/plain body found in the MIME tree,
-// decoding Gmail's URL-safe base64.
+// extractPlainText prefers a text/plain MIME body, then converts an HTML-only
+// body to readable text. Gmail body data is URL-safe base64.
 func extractPlainText(p *gmailPart) string {
+	if text := extractMIMEText(p, "text/plain"); text != "" {
+		return text
+	}
+	if markup := extractMIMEText(p, "text/html"); markup != "" {
+		return htmlToText(markup)
+	}
+	return extractBareText(p)
+}
+
+func extractMIMEText(p *gmailPart, mimeType string) string {
 	if p == nil {
 		return ""
 	}
-	if strings.HasPrefix(p.MimeType, "text/plain") && p.Body.Data != "" {
-		if decoded, err := base64.URLEncoding.DecodeString(p.Body.Data); err == nil {
+	if strings.HasPrefix(p.MimeType, mimeType) && p.Body.Data != "" {
+		if decoded, err := decodeGmailData(p.Body.Data); err == nil {
 			return string(decoded)
 		}
 	}
 	for i := range p.Parts {
-		if s := extractPlainText(&p.Parts[i]); s != "" {
+		if s := extractMIMEText(&p.Parts[i], mimeType); s != "" {
 			return s
 		}
 	}
-	// Fall back to a bare body on a leaf with no explicit text/plain part.
+	return ""
+}
+
+func extractBareText(p *gmailPart) string {
+	if p == nil {
+		return ""
+	}
+	for i := range p.Parts {
+		if s := extractBareText(&p.Parts[i]); s != "" {
+			return s
+		}
+	}
 	if len(p.Parts) == 0 && p.Body.Data != "" && !strings.HasPrefix(p.MimeType, "text/html") {
-		if decoded, err := base64.URLEncoding.DecodeString(p.Body.Data); err == nil {
+		if decoded, err := decodeGmailData(p.Body.Data); err == nil {
 			return string(decoded)
 		}
 	}
 	return ""
+}
+
+func htmlToText(markup string) string {
+	doc, err := html.Parse(strings.NewReader(markup))
+	if err != nil {
+		return ""
+	}
+	var text strings.Builder
+	var walk func(*html.Node)
+	walk = func(node *html.Node) {
+		if node.Type == html.ElementNode && (node.Data == "head" || node.Data == "script" || node.Data == "style") {
+			return
+		}
+		if node.Type == html.TextNode {
+			text.WriteString(node.Data)
+			text.WriteByte(' ')
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			walk(child)
+		}
+	}
+	walk(doc)
+	return strings.Join(strings.Fields(text.String()), " ")
+}
+
+func decodeGmailData(data string) ([]byte, error) {
+	decoded, err := base64.URLEncoding.DecodeString(data)
+	if err != nil {
+		decoded, err = base64.RawURLEncoding.DecodeString(data)
+	}
+	return decoded, err
 }
 
 // ErrHistoryGap means the startHistoryId is older than Gmail retains (a 404):

@@ -142,7 +142,7 @@ func countParticipantInteraction(
 	input RelationshipObservationInput,
 	participant RelationshipParticipantInput,
 ) error {
-	if p == nil {
+	if p == nil || input.EventType == "person_added" {
 		return nil
 	}
 	direction := participant.Direction

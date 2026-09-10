@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
@@ -123,6 +125,49 @@ func TestStatusReturnsSafeConnectionMetadata(t *testing.T) {
 	if body := rec.Body.String(); !strings.Contains(body, `"connected":true`) ||
 		!strings.Contains(body, `"accountId":"owner@example.com"`) || strings.Contains(body, "sealed-secret") {
 		t.Fatalf("unsafe or incomplete status: %s", body)
+	}
+}
+
+func TestGoogleConnectionsStayTenantScoped(t *testing.T) {
+	client, ctx, u, sealer, h := setup(t)
+	other := client.User.Create().SetWorkosUserID("user_2").SaveX(context.Background())
+	client.OAuthConnection.Create().
+		SetUser(other).
+		SetProvider("google").
+		SetExternalAccountID("other@example.com").
+		SetRefreshTokenEncrypted([]byte("other-secret")).
+		SaveX(auth.WithUser(context.Background(), other))
+	parkTicket(t, client, sealer, "tenant-scope", time.Now().Add(time.Minute), map[string]any{
+		"workos_user_id": u.WorkosUserID,
+		"access_token":   "ya29.owner",
+		"refresh_token":  "owner-secret",
+		"account_email":  "owner@example.com",
+		"expires_at":     time.Now().Add(time.Hour).Unix(),
+	})
+
+	rec := httptest.NewRecorder()
+	h.Claim(rec, httptest.NewRequest(http.MethodPost, "/v1/google-oauth/claim", strings.NewReader(`{"session":"tenant-scope"}`)).WithContext(ctx))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("claim = %d: %s", rec.Code, rec.Body.String())
+	}
+	if got := client.OAuthConnection.Query().CountX(ctx); got != 1 {
+		t.Fatalf("google account upsert did not create the current tenant connection: got %d", got)
+	}
+	otherCtx := auth.WithUser(context.Background(), other)
+	if got := client.OAuthConnection.Query().CountX(otherCtx); got != 1 {
+		t.Fatalf("google account upsert changed another tenant: got %d connections", got)
+	}
+
+	rec = httptest.NewRecorder()
+	h.Disconnect(rec, httptest.NewRequest(http.MethodDelete, "/v1/google-oauth", nil).WithContext(ctx))
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("disconnect = %d: %s", rec.Code, rec.Body.String())
+	}
+	if got := client.OAuthConnection.Query().Where(oauthconnection.HasUserWith(user.IDEQ(u.ID))).CountX(ctx); got != 0 {
+		t.Fatalf("disconnect kept %d current-user connections", got)
+	}
+	if got := client.OAuthConnection.Query().Where(oauthconnection.HasUserWith(user.IDEQ(other.ID))).CountX(otherCtx); got != 1 {
+		t.Fatalf("disconnect removed another tenant's connection: got %d", got)
 	}
 }
 

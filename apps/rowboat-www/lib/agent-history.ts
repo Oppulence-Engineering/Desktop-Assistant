@@ -10,6 +10,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
+export function friendlyAgentError(message: string): string {
+  if (/openrouter_credits|upstream_credits_exhausted|upstream provider account/i.test(message)) {
+    return "Oppulence's AI provider is temporarily unavailable. Your workspace credits were not charged. Try again later.";
+  }
+  if (
+    /status 402|requires more credits|insufficient_credits|credits_exhausted|out of (?:AI )?credits/i.test(
+      message,
+    )
+  ) {
+    return "This workspace is out of AI credits. Ask an administrator to add credits, then try again.";
+  }
+  if (/activity error|scheduledEventID|startedEventID/i.test(message)) {
+    return "The agent could not complete this request. Please try again.";
+  }
+  return message;
+}
+
 export function parseAgentSessionsResponse(value: unknown): AgentSessionSummary[] {
   if (!isRecord(value) || !Array.isArray(value.sessions)) {
     throw new Error("Invalid agent sessions response");

@@ -71,11 +71,17 @@ func (d *DigestSender) sweep(ctx context.Context) {
 	ictx := auth.WithInternal(ctx)
 	cutoff := d.svc.now().Add(-d.cfg.MinPerUser)
 
-	// Candidates: users with at least one OPEN action, whose workspace was not
+	// Candidates: users with an open or elapsed-snooze action, whose workspace was not
 	// digested since the cutoff. The cross-tenant discovery runs internal.
 	users, err := d.svc.client.User.Query().
 		Where(
-			user.HasRevenueActionsWith(revenueaction.QueueStatusEQ(QueueOpen)),
+			user.HasRevenueActionsWith(revenueaction.Or(
+				revenueaction.QueueStatusEQ(QueueOpen),
+				revenueaction.And(
+					revenueaction.QueueStatusEQ(QueueSnoozed),
+					revenueaction.SnoozedUntilLTE(d.svc.now()),
+				),
+			)),
 			user.HasRevenueWorkspacesWith(
 				revenueworkspace.Or(
 					revenueworkspace.LastDigestAtIsNil(),

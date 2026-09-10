@@ -169,13 +169,22 @@ func (s *Service) ingestTrustedRelationshipObservations(
 	u *ent.User,
 	inputs []RelationshipObservationInput,
 ) ([]RelationshipObservationResult, error) {
+	return s.ingestTrustedRelationshipObservationsForWorkspace(ctx, u, uuid.Nil, inputs)
+}
+
+func (s *Service) ingestTrustedRelationshipObservationsForWorkspace(
+	ctx context.Context,
+	u *ent.User,
+	workspaceID uuid.UUID,
+	inputs []RelationshipObservationInput,
+) ([]RelationshipObservationResult, error) {
 	if len(inputs) == 0 {
 		return nil, fmt.Errorf("%w: observations are required", ErrInvalidInput)
 	}
 	if len(inputs) > 100 {
 		return nil, fmt.Errorf("%w: at most 100 observations per batch", ErrInvalidInput)
 	}
-	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceContribute)
+	ws, err := s.workspaceWithCapability(ctx, u, workspaceID, WorkspaceContribute)
 	if err != nil {
 		return nil, err
 	}
@@ -304,6 +313,29 @@ func (s *Service) IngestRelationshipObservationCandidates(
 	u *ent.User,
 	inputs []RelationshipObservationInput,
 ) ([]RelationshipObservationResult, error) {
+	return s.ingestRelationshipObservationCandidates(ctx, u, uuid.Nil, inputs)
+}
+
+// IngestRelationshipObservationCandidatesInWorkspace admits user evidence in
+// one exact accessible workspace without selecting or creating a default.
+func (s *Service) IngestRelationshipObservationCandidatesInWorkspace(
+	ctx context.Context,
+	u *ent.User,
+	workspaceID uuid.UUID,
+	inputs []RelationshipObservationInput,
+) ([]RelationshipObservationResult, error) {
+	if workspaceID == uuid.Nil {
+		return nil, fmt.Errorf("%w: workspaceId is required", ErrInvalidInput)
+	}
+	return s.ingestRelationshipObservationCandidates(ctx, u, workspaceID, inputs)
+}
+
+func (s *Service) ingestRelationshipObservationCandidates(
+	ctx context.Context,
+	u *ent.User,
+	workspaceID uuid.UUID,
+	inputs []RelationshipObservationInput,
+) ([]RelationshipObservationResult, error) {
 	admitted := make([]RelationshipObservationInput, len(inputs))
 	copy(admitted, inputs)
 	reviewedAt := s.now().UTC()
@@ -316,7 +348,7 @@ func (s *Service) IngestRelationshipObservationCandidates(
 			}
 		}
 	}
-	return s.ingestTrustedRelationshipObservations(ctx, u, admitted)
+	return s.ingestTrustedRelationshipObservationsForWorkspace(ctx, u, workspaceID, admitted)
 }
 
 func uniqueProjectionBoundaries(values []time.Time) []time.Time {
@@ -1243,6 +1275,11 @@ func mergeRelationshipIdentityFields(
 		update.SetAccountDomain(domain)
 		changed = true
 	}
+	if rel.Kind == "company" && input.PreferredKind == "person" &&
+		rel.AccountDomain == "" && isPublicMailboxDomain(emailDomain(email)) {
+		update.SetKind("person")
+		changed = true
+	}
 	if !changed {
 		return rel, nil
 	}
@@ -1972,6 +2009,7 @@ type RelationshipCorrectionInput struct {
 	Reason                string
 	SupersedesAssertionID string
 	ValidTo               *time.Time
+	IdempotencyKey        string `json:"-"`
 }
 
 // CorrectRelationship appends a user correction and its projection job in one
@@ -2003,6 +2041,21 @@ func (s *Service) CorrectRelationship(
 	if err != nil {
 		return rollback(err)
 	}
+	assertionID := uuid.Nil
+	if key := strings.TrimSpace(input.IdempotencyKey); key != "" {
+		assertionID = uuid.NewSHA1(uuid.NameSpaceOID, []byte("relationship-correction:"+u.ID.String()+":"+relationshipID.String()+":"+key))
+		_, err = txc.RelationshipAssertion.Query().Where(
+			relationshipassertion.IDEQ(assertionID),
+			relationshipassertion.HasRelationshipWith(relationship.IDEQ(rel.ID)),
+		).Only(ctx)
+		if err == nil {
+			_ = tx.Rollback()
+			return s.GetRelationship(ctx, relationshipID)
+		}
+		if !ent.IsNotFound(err) {
+			return rollback(err)
+		}
+	}
 	evaluatedAt := s.now().UTC()
 	var superseded *ent.RelationshipAssertion
 	if rawID := strings.TrimSpace(input.SupersedesAssertionID); rawID != "" {
@@ -2028,6 +2081,7 @@ func (s *Service) CorrectRelationship(
 		}
 	}
 	created, err := createRelationshipAssertion(ctx, txc, ws, u, rel, nil, RelationshipAssertionInput{
+		ID:                     assertionID,
 		Dimension:              input.Dimension,
 		Value:                  input.Value,
 		SourceType:             "user_correction",

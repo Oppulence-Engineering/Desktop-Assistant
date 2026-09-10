@@ -77,6 +77,57 @@ const TOOL_CATALOG = [
     description: "Read results produced by another tool.",
   },
   {
+    name: "relationship.read",
+    label: "Read relationship memory",
+    description:
+      "Read accounts, people, conversations, notes, tasks, commitments, risks, and source health.",
+  },
+  {
+    name: "source.retry_sync",
+    label: "Retry source sync",
+    description: "Retry an existing source sync without reconnecting or starting OAuth.",
+  },
+  {
+    name: "task.create",
+    label: "Create internal task",
+    description: "Create an Oppulence task; never send a message or calendar invite.",
+  },
+  {
+    name: "task.update",
+    label: "Edit internal task",
+    description: "Edit an Oppulence task title, due time, or priority; never send anything.",
+  },
+  {
+    name: "task.complete",
+    label: "Complete internal task",
+    description: "Complete an Oppulence task; cannot dismiss other actions or send anything.",
+  },
+  {
+    name: "task.snooze",
+    label: "Snooze internal task",
+    description: "Snooze an Oppulence task until a future time; never send anything.",
+  },
+  {
+    name: "note.create",
+    label: "Create internal note",
+    description: "Create an Oppulence note; never send a message or external event.",
+  },
+  {
+    name: "note.update",
+    label: "Edit internal note",
+    description: "Edit an Oppulence note while keeping its append-only history.",
+  },
+  {
+    name: "note.delete",
+    label: "Delete internal note",
+    description: "Delete an Oppulence note while keeping a tombstone in its history.",
+  },
+  {
+    name: "action.propose",
+    label: "Propose finance action",
+    description: "Create a pending action for human review; never execute it automatically.",
+  },
+  {
     name: "slack.read_thread",
     label: "Read Slack",
     description: "Read messages from a Slack thread.",

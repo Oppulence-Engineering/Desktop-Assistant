@@ -76,6 +76,7 @@ import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
 import { readAgentEventStream } from "@/lib/agent-stream";
 import {
   conversationFromAgentEvents,
+  friendlyAgentError,
   parseAgentSessionEventsResponse,
   parseAgentSessionsResponse,
   type AgentHistoryItem,
@@ -768,7 +769,7 @@ function PageBody({
       case "agent.limit_exceeded":
         setChatError(
           typeof payload.error === "string"
-            ? payload.error
+            ? friendlyAgentError(payload.error)
             : event.type === "agent.limit_exceeded"
               ? "This run reached its configured limit."
               : "The agent run failed.",

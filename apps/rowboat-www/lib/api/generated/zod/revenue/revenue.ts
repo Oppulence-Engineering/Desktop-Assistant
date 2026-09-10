@@ -2327,6 +2327,87 @@ export const GetRevenueImpact401Response = zod
   );
 
 /**
+ * Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions.
+ * @summary List revenue leak scans
+ */
+export const listRevenueLeakScansQueryLimitMax = 100;
+
+export const ListRevenueLeakScansQueryParams = zod.object({
+  limit: zod.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(listRevenueLeakScansQueryLimitMax)
+    .optional()
+    .describe("Maximum scans to return (default 10, max 100)."),
+});
+
+export const ListRevenueLeakScans200Response = zod
+  .strictObject({
+    scans: zod
+      .array(
+        zod
+          .strictObject({
+            actionsCreated: zod.int().optional().describe("New queue actions created."),
+            candidatesSeen: zod.int().optional().describe("Detector candidates found."),
+            completedAt: zod.iso.datetime({ offset: true }).nullish().describe("Completion time."),
+            error: zod.string().optional().describe("Bounded failure reason."),
+            evidencesCreated: zod.int().optional().describe("New evidence rows recorded."),
+            id: zod.uuid().describe("Stable UUID primary key."),
+            lookbackDays: zod.int().describe("Historical lookback in days."),
+            mode: zod.enum(["local", "linked"]).describe("Workspace mode at scan time."),
+            relationshipsCreated: zod.int().optional().describe("New relationships recorded."),
+            sourceFreshnessAt: zod.iso
+              .datetime({ offset: true })
+              .nullish()
+              .describe("Newest source timestamp observed (incremental cursor)."),
+            startedAt: zod.iso.datetime({ offset: true }).nullish().describe("Start time."),
+            status: zod
+              .enum(["pending", "running", "completed", "failed"])
+              .describe(
+                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+              ),
+            threadsSeen: zod.int().optional().describe("Threads examined."),
+          })
+          .describe(
+            "One bounded historical scan over connected sources (Gmail first). Detectors are deterministic; counts, errors, and freshness make runs incremental and auditable.",
+          ),
+      )
+      .describe("Scans newest first."),
+  })
+  .describe("Audit history.");
+
+export const ListRevenueLeakScans400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ListRevenueLeakScans401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
  * Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.
  * @summary Start a revenue leak scan
  */
@@ -2447,6 +2528,83 @@ export const GetRevenueLeakScan401Response = zod
   );
 
 export const GetRevenueLeakScan404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.
+ * @summary Get the open promises report
+ */
+export const GetOpenPromisesReportParams = zod.object({
+  scanId: zod.uuid().describe("Scan id."),
+});
+
+export const GetOpenPromisesReportQueryParams = zod.object({
+  format: zod.string().optional().describe("md for Markdown; JSON otherwise."),
+});
+
+export const GetOpenPromisesReport200Response = zod
+  .strictObject({
+    byAccount: zod.record(zod.string(), zod.int()).describe("Open promise count by account."),
+    generatedAt: zod.iso.datetime({ offset: true }).describe("When the report was produced."),
+    inboundCount: zod.int().describe("Promises made to us."),
+    items: zod
+      .array(
+        zod
+          .strictObject({
+            account: zod.string().describe("Counterparty account."),
+            commitmentId: zod.string().describe("Commitment id."),
+            direction: zod.string().describe("Who owes the promise."),
+            dueAt: zod.iso.datetime({ offset: true }).nullish().describe("Resolved due time."),
+            duePhrase: zod.string().optional().describe("Due condition as stated."),
+            occurredAt: zod.iso
+              .datetime({ offset: true })
+              .optional()
+              .describe("When the source was created."),
+            owner: zod.string().optional().describe("Promise owner."),
+            sourceQuote: zod.string().optional().describe("The exact message that created it."),
+            sourceUri: zod.string().optional().describe("Link to the source."),
+            state: zod.string().describe("Register state."),
+            text: zod.string().describe("The obligation."),
+          })
+          .describe("Open promise."),
+      )
+      .describe("Open promises, at risk first."),
+    lookbackDays: zod.int().describe("Scan window in days."),
+    outboundCount: zod.int().describe("Promises we made."),
+    scanStatus: zod.string().describe("Scan status."),
+    threadsSeen: zod.int().describe("Conversations read."),
+    truncated: zod.boolean().describe("Whether more than 200 matching promises exist."),
+  })
+  .describe("Open promises report.");
+
+export const GetOpenPromisesReport401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const GetOpenPromisesReport404Response = zod
   .strictObject({
     code: zod.string().describe("Stable machine-readable error code."),
     detail: zod.string().optional().describe("Human-readable error detail."),

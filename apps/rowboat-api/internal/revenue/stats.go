@@ -18,24 +18,24 @@ import (
 // what came back. It is the ROI view's data source (RFC 030 product quality
 // metrics). Everything here is scoped to the caller by the tenant interceptors.
 type Impact struct {
-	Surfaced              int            // total actions ever created
-	Open                  int            // queue_status = open
-	Handled               int            // queue_status = handled
-	Snoozed               int            // queue_status = snoozed
-	Dismissed             int            // queue_status = dismissed
-	Approved              int            // approval_status = approved
-	Executed              int            // execution_status = sent (draft created or email sent)
-	Outcomes              map[string]int // outcome kind -> count
-	Detectors             []DetectorStat // per-detector surfaced/handled
-	Relationships         int
-	AtRiskRelationships   int
-	CriticalRelationships int
-	PortfolioRiskScore    int
-	OverdueCommitments    int
-	OverdueByUs           int
-	OverdueByThem         int
-	LongestOverdueDays    int
-	RiskReasons           []RiskStat
+	Surfaced              int            `json:"surfaced"`   // total actions ever created
+	Open                  int            `json:"open"`       // queue_status = open
+	Handled               int            `json:"handled"`    // queue_status = handled
+	Snoozed               int            `json:"snoozed"`    // queue_status = snoozed
+	Dismissed             int            `json:"dismissed"`  // queue_status = dismissed
+	Approved              int            `json:"approved"`   // approval_status = approved
+	Executed              int            `json:"executed"`   // execution_status = sent (draft created or email sent)
+	Outcomes              map[string]int `json:"outcomes"`   // outcome kind -> count
+	Detectors             []DetectorStat `json:"byDetector"` // per-detector surfaced/handled
+	Relationships         int            `json:"relationships"`
+	AtRiskRelationships   int            `json:"atRiskRelationships"`
+	CriticalRelationships int            `json:"criticalRelationships"`
+	PortfolioRiskScore    int            `json:"portfolioRiskScore"`
+	OverdueCommitments    int            `json:"overdueCommitments"`
+	OverdueByUs           int            `json:"overdueByUs"`
+	OverdueByThem         int            `json:"overdueByThem"`
+	LongestOverdueDays    int            `json:"longestOverdueDays"`
+	RiskReasons           []RiskStat     `json:"riskReasons"`
 }
 
 // DetectorStat is one detector's contribution.

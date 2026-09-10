@@ -157,8 +157,10 @@ func (s *Service) ReportSourceAuthorization(ctx context.Context, u *ent.User, so
 		granted := sortedUniqueStrings(in.GrantedScopes)
 		missing := differenceStrings(status.RequiredScopes, granted)
 		update.SetStatus("connected").SetAuthorizedAt(now).SetGrantedScopes(granted).
-			SetMissingScopes(missing).SetCompleteness("partial").ClearLastError().ClearErrorCode().
-			ClearDisconnectedAt().ClearRevokedAt()
+			SetMissingScopes(missing).SetCompleteness("partial").SetBackfillPhase("idle").
+			SetBackfillCompleted(0).SetBackfillTotal(0).SetRetryCount(0).
+			ClearSyncStartedAt().ClearBackfillCompletedAt().ClearLastFailedSyncAt().ClearNextRetryAt().
+			ClearLastError().ClearErrorCode().ClearDisconnectedAt().ClearRevokedAt()
 		event.Name, event.Outcome, event.ReasonCode = "source_authorization_succeeded", "succeeded", "provider_consent"
 	case "canceled":
 		update.SetStatus("not_connected").SetCompleteness("partial").SetErrorCode("authorization_canceled").
@@ -424,6 +426,34 @@ func (s *Service) MarkSourceDisconnected(
 	})
 	_ = s.RefreshRelationshipAttention(ctx, u)
 	return updated, nil
+}
+
+// MarkSourceAccountsDisconnected disconnects every existing account for a
+// user-level provider grant and creates no synthetic source rows.
+func (s *Service) MarkSourceAccountsDisconnected(
+	ctx context.Context,
+	u *ent.User,
+	source string,
+) (int, error) {
+	source = canonicalSource(source)
+	if err := validateBetaSource(source); err != nil {
+		return 0, err
+	}
+	statuses, err := s.RelationshipSourceStatuses(ctx, u)
+	if err != nil {
+		return 0, err
+	}
+	marked := 0
+	for _, status := range statuses {
+		if canonicalSource(status.Source) != source {
+			continue
+		}
+		if _, err := s.MarkSourceDisconnected(ctx, u, source, status.SourceAccountID); err != nil {
+			return marked, err
+		}
+		marked++
+	}
+	return marked, nil
 }
 
 func (s *Service) ensureSourceStatus(

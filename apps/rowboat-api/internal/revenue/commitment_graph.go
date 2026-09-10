@@ -340,6 +340,8 @@ func (s *Service) AppendCommitmentTransition(
 		update.SetStatus("fulfilled").SetCompletedAt(s.now().UTC())
 	case "missed", "waived":
 		update.SetStatus(input.Kind)
+	case "renegotiated":
+		update.SetStatus("open").ClearBlocker()
 	case "cancelled", "superseded":
 		update.SetStatus(input.Kind)
 	}

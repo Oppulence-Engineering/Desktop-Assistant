@@ -2,9 +2,30 @@ import { describe, expect, it } from "vitest";
 
 import {
   conversationFromAgentEvents,
+  friendlyAgentError,
   parseAgentSessionEventsResponse,
   parseAgentSessionsResponse,
 } from "@/lib/agent-history";
+
+it("hides provider and workflow details from agent failures", () => {
+  expect(
+    friendlyAgentError(
+      "activity error: agent llm call: llm upstream returned status 402: openrouter_credits",
+    ),
+  ).toBe(
+    "Oppulence's AI provider is temporarily unavailable. Your workspace credits were not charged. Try again later.",
+  );
+  expect(friendlyAgentError("upstream provider account is out of credits")).toBe(
+    "Oppulence's AI provider is temporarily unavailable. Your workspace credits were not charged. Try again later.",
+  );
+  expect(friendlyAgentError("insufficient_credits")).toBe(
+    "This workspace is out of AI credits. Ask an administrator to add credits, then try again.",
+  );
+  expect(friendlyAgentError("activity error: scheduledEventID=1 startedEventID=2")).toBe(
+    "The agent could not complete this request. Please try again.",
+  );
+  expect(friendlyAgentError("The agent was canceled.")).toBe("The agent was canceled.");
+});
 
 describe("conversationFromAgentEvents", () => {
   it("reconstructs durable messages, tools, and approvals", () => {

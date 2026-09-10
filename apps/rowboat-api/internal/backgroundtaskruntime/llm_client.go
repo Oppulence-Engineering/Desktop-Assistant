@@ -3,6 +3,7 @@ package backgroundtaskruntime
 import (
 	"context"
 	"errors"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -76,14 +77,7 @@ func (g *GatewayLLM) Complete(ctx context.Context, callIndex int, messages []Mes
 	})
 	latency := time.Since(start)
 	if err != nil {
-		if errors.Is(err, llm.ErrAlreadyCompleted) || errors.Is(err, llm.ErrInProgress) {
-			return Turn{}, &RuntimeError{
-				Code:    CodeLLMCallFailed,
-				Message: "deterministic llm request-id replayed within the same attempt; the transcript cannot be resumed",
-				Cause:   err,
-			}
-		}
-		return Turn{}, &RuntimeError{Code: CodeLLMCallFailed, Message: "llm gateway call failed", Cause: err}
+		return Turn{}, gatewayLLMError(err)
 	}
 	backgroundtaskmetrics.RuntimeLLMCalls.WithLabelValues(res.Provider).Inc()
 	backgroundtaskmetrics.RuntimeLLMLatency.WithLabelValues(res.Provider).Observe(latency.Seconds())
@@ -100,6 +94,21 @@ func (g *GatewayLLM) Complete(ctx context.Context, callIndex int, messages []Mes
 		turn.Message.ToolCalls = append(turn.Message.ToolCalls, ToolCallRequest{ID: tc.ID, Name: tc.Name, Arguments: tc.Arguments})
 	}
 	return turn, nil
+}
+
+func gatewayLLMError(err error) error {
+	if errors.Is(err, llm.ErrAlreadyCompleted) || errors.Is(err, llm.ErrInProgress) {
+		return &RuntimeError{
+			Code:    CodeLLMCallFailed,
+			Message: "deterministic llm request-id replayed within the same attempt; the transcript cannot be resumed",
+			Cause:   err,
+		}
+	}
+	var upstream *llm.UpstreamStatusError
+	if errors.As(err, &upstream) && upstream.StatusCode == http.StatusPaymentRequired {
+		return &RuntimeError{Code: CodeUpstreamCreditsExhausted, Message: "upstream provider account is out of credits", Cause: err}
+	}
+	return &RuntimeError{Code: CodeLLMCallFailed, Message: "llm gateway call failed", Cause: err}
 }
 
 // runtimeRequestID derives the deterministic per-(run, attempt, call)

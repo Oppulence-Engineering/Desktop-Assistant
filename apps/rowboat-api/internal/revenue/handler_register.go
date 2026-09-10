@@ -100,12 +100,20 @@ func (h *Handler) ListCommitments(w http.ResponseWriter, r *http.Request) {
 		}
 		filter.Offset = n
 	}
+	if raw := strings.TrimSpace(query.Get("includeCandidates")); raw != "" {
+		include, err := strconv.ParseBool(raw)
+		if err != nil {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid includeCandidates", ErrInvalidInput))
+			return
+		}
+		filter.IncludeCandidates = include
+	}
 	rows, err := h.svc.ListCommitments(r.Context(), u, filter)
 	if err != nil {
 		h.writeServiceError(w, err)
 		return
 	}
-	now := time.Now().UTC()
+	now := h.svc.now().UTC()
 	out := make([]registerEntryDTO, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, registerEntryToDTO(row, now))

@@ -2523,7 +2523,11 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    /**
+     * List revenue leak scans
+     * @description Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions.
+     */
+    get: operations["listRevenueLeakScans"];
     put?: never;
     /**
      * Start a revenue leak scan
@@ -5162,6 +5166,8 @@ export interface components {
         | "due_date_changed"
         | "renegotiated"
         | "fulfilled"
+        | "missed"
+        | "waived"
         | "cancelled"
         | "superseded";
       /**
@@ -5205,6 +5211,34 @@ export interface components {
        */
       supersedesCommitmentId?: string;
       version: number;
+    };
+    /** @description One cross-account register row with its reader-facing state and account. */
+    CommitmentRegisterEntry: components["schemas"]["RelationshipCommitment"] & {
+      /**
+       * Format: uuid
+       * @description Counterparty relationship id.
+       * @example 9c8dfa9b-a7b2-46ea-982c-622a914c00e5
+       */
+      relationshipId?: string;
+      /**
+       * @description Counterparty account.
+       * @example Acme
+       */
+      relationshipName?: string;
+      /**
+       * @description Reader-facing state.
+       * @example at_risk
+       * @enum {string}
+       */
+      state:
+        | "open"
+        | "at_risk"
+        | "met"
+        | "missed"
+        | "waived"
+        | "disputed"
+        | "cancelled"
+        | "superseded";
     };
     /** @description Public bootstrap values consumed by the desktop before sign-in. */
     ConfigResponse: {
@@ -8761,15 +8795,48 @@ export interface components {
     /** @description An open or completed promise attached to the relationship. */
     RelationshipCommitment: {
       /**
+       * @description Acceptance state.
+       * @example internally_confirmed
+       * @enum {string}
+       */
+      acceptance?: "candidate" | "internally_confirmed" | "offered" | "accepted" | "disputed";
+      /**
+       * @description Promise beneficiary.
+       * @example customer:acme
+       */
+      beneficiaryParticipantRef?: string;
+      /**
+       * @description Current blocker.
+       * @example Waiting on security review.
+       */
+      blocker?: string;
+      /**
+       * Format: date-time
+       * @description Completion time.
+       * @example 2026-07-22T17:00:00Z
+       */
+      completedAt?: string | null;
+      /**
        * @description Extraction confidence.
        * @example 0.94
        */
       confidence: number;
       /**
-       * @description Who owes the commitment.
-       * @example us_to_them
+       * @description Promise counterparty.
+       * @example jordan@example.com
        */
-      direction: string;
+      counterpartyParticipantRef?: string;
+      /**
+       * @description Current transition version.
+       * @example 3
+       */
+      currentEventVersion?: number;
+      /**
+       * @description Who owes the commitment.
+       * @example promised_by_me
+       * @enum {string}
+       */
+      direction: "promised_by_me" | "promised_by_them" | "mutual";
       /**
        * Format: date-time
        * @description Due time.
@@ -8777,16 +8844,37 @@ export interface components {
        */
       dueAt?: string | null;
       /**
+       * @description Due condition as stated.
+       * @example by Friday
+       */
+      duePhrase?: string;
+      /**
+       * @description Timezone used to resolve the due date.
+       * @example America/Los_Angeles
+       */
+      dueTimezone?: string;
+      /**
        * Format: uuid
        * @description Stable UUID primary key.
        * @example 123e4567-e89b-12d3-a456-426614174000
        */
       id: string;
       /**
+       * @description Promise owner.
+       * @example alex@example.com
+       */
+      ownerParticipantRef?: string;
+      /**
+       * @description Exact source phrase.
+       * @example I will send it by Friday.
+       */
+      sourcePhrase?: string;
+      /**
        * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
        * @example active
+       * @enum {string}
        */
-      status: string;
+      status: "open" | "fulfilled" | "missed" | "waived" | "cancelled" | "superseded";
       /**
        * @description Commitment text.
        * @example Send the security packet.
@@ -14302,6 +14390,8 @@ export interface operations {
         limit?: number;
         /** @description Page offset. */
         offset?: number;
+        /** @description Include unconfirmed extractions for a review surface. */
+        includeCandidates?: boolean;
       };
       header?: never;
       path?: never;
@@ -14317,7 +14407,7 @@ export interface operations {
         content: {
           "application/json": {
             /** @description Register rows, each with its derived state and account. */
-            commitments: components["schemas"]["RelationshipCommitment"][];
+            commitments: components["schemas"]["CommitmentRegisterEntry"][];
           };
         };
       };
@@ -14351,35 +14441,56 @@ export interface operations {
              * @description Counterparty account.
              * @example Acme
              */
-            account?: string;
+            account: string;
+            /**
+             * @description Extraction confidence.
+             * @example 0.95
+             */
+            confidence: number;
+            /**
+             * @description Promise counterparty.
+             * @example jordan@example.com
+             */
+            counterparty?: string;
             /**
              * @description promised_by_me, promised_by_them, or mutual.
              * @example promised_by_me
              */
-            direction?: string;
+            direction: string;
+            /**
+             * Format: date-time
+             * @description Resolved due time.
+             * @example 2026-09-14T17:00:00Z
+             */
+            dueAt?: string | null;
+            /**
+             * @description Due condition as stated.
+             * @example by the 14th
+             */
+            duePhrase?: string;
             /** @description Verbatim cited sources. */
             evidence: {
               /**
                * @description Content hash of the source.
                * @example sha256:abc123
                */
-              contentHash?: string;
+              contentHash: string;
               /**
                * @description Verbatim quote.
                * @example We will have the migration live by the 14th.
                */
-              excerpt?: string;
+              excerpt: string;
               /**
                * Format: date-time
                * @description When the source was created.
                * @example 2026-09-06T12:00:00Z
                */
-              occurredAt?: string;
+              occurredAt: string;
               /**
                * @description Source system.
                * @example gmail
                */
-              source?: string;
+              source: string;
               /**
                * @description Link to the source.
                * @example https://mail.google.com/thread-1
@@ -14391,36 +14502,46 @@ export interface operations {
              * @description When the record was produced.
              * @example 2026-09-09T12:00:00Z
              */
-            generatedAt?: string;
+            generatedAt: string;
             /** @description Ordered state changes. */
             history: {
+              /**
+               * @description Actor reference.
+               * @example alex@example.com
+               */
+              actorRef?: string;
               /**
                * @description Who caused it.
                * @example user
                */
-              actorType?: string;
+              actorType: string;
               /**
                * @description Event kind.
                * @example internally_confirmed
                */
-              kind?: string;
+              kind: string;
               /**
                * Format: date-time
                * @description When.
                * @example 2026-09-07T09:00:00Z
                */
-              occurredAt?: string;
+              occurredAt: string;
               /**
                * @description Event version.
                * @example 2
                */
-              version?: number;
+              version: number;
             }[];
             /**
              * @description Commitment id.
              * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
              */
             id: string;
+            /**
+             * @description Promise owner.
+             * @example alex@example.com
+             */
+            owner?: string;
             /**
              * @description Register state.
              * @example at_risk
@@ -14430,8 +14551,9 @@ export interface operations {
              * @description The obligation.
              * @example Migration live by the 14th
              */
-            text?: string;
+            text: string;
           };
+          "text/markdown": string;
         };
       };
       401: components["responses"]["401"];
@@ -18718,6 +18840,34 @@ export interface operations {
       401: components["responses"]["401"];
     };
   };
+  listRevenueLeakScans: {
+    parameters: {
+      query?: {
+        /** @description Maximum scans to return (default 10, max 100). */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Audit history. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @description Scans newest first. */
+            scans: components["schemas"]["RevenueLeakScan"][];
+          };
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+    };
+  };
   startRevenueLeakScan: {
     parameters: {
       query?: never;
@@ -18821,6 +18971,10 @@ export interface operations {
         };
         content: {
           "application/json": {
+            /** @description Open promise count by account. */
+            byAccount: {
+              [key: string]: number;
+            };
             /**
              * Format: date-time
              * @description When the report was produced.
@@ -18831,56 +18985,94 @@ export interface operations {
              * @description Promises made to us.
              * @example 5
              */
-            inboundCount?: number;
+            inboundCount: number;
             /** @description Open promises, at risk first. */
             items: {
               /**
                * @description Counterparty account.
                * @example Acme
                */
-              account?: string;
+              account: string;
               /**
                * @description Commitment id.
                * @example 8b8dfa9b-a7b2-46ea-982c-622a914c00e5
                */
-              commitmentId?: string;
+              commitmentId: string;
+              /**
+               * @description Who owes the promise.
+               * @example promised_by_me
+               */
+              direction: string;
+              /**
+               * Format: date-time
+               * @description Resolved due time.
+               * @example 2026-09-14T17:00:00Z
+               */
+              dueAt?: string | null;
+              /**
+               * @description Due condition as stated.
+               * @example by the 14th
+               */
+              duePhrase?: string;
+              /**
+               * Format: date-time
+               * @description When the source was created.
+               * @example 2026-09-06T12:00:00Z
+               */
+              occurredAt?: string;
+              /**
+               * @description Promise owner.
+               * @example alex@example.com
+               */
+              owner?: string;
               /**
                * @description The exact message that created it.
                * @example We will have the migration live by the 14th.
                */
               sourceQuote?: string;
               /**
+               * @description Link to the source.
+               * @example https://mail.google.com/thread-1
+               */
+              sourceUri?: string;
+              /**
                * @description Register state.
                * @example at_risk
                */
-              state?: string;
+              state: string;
               /**
                * @description The obligation.
                * @example Migration live by the 14th
                */
-              text?: string;
+              text: string;
             }[];
             /**
              * @description Scan window in days.
              * @example 90
              */
-            lookbackDays?: number;
+            lookbackDays: number;
             /**
              * @description Promises we made.
              * @example 12
              */
-            outboundCount?: number;
+            outboundCount: number;
             /**
              * @description Scan status.
              * @example completed
              */
-            scanStatus?: string;
+            scanStatus: string;
             /**
              * @description Conversations read.
              * @example 412
              */
-            threadsSeen?: number;
+            threadsSeen: number;
+            /**
+             * @description Whether more than 200 matching promises exist.
+             * @example false
+             */
+            truncated: boolean;
           };
+          "text/markdown": string;
         };
       };
       401: components["responses"]["401"];

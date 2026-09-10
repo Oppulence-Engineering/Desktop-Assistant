@@ -105,6 +105,9 @@ func TestScanGroupsBusinessContactsByCompany(t *testing.T) {
 	if personal.PreferredKind != "person" || personal.PrimaryEmail != "person@gmail.com" || personal.AccountDomain != "" {
 		t.Fatalf("public mailbox identity = %+v", personal)
 	}
+	if got := threadRelationshipInput(&threadSummary{ThreadID: "thread-1", Counterparty: "person@gmail.com", LastAt: now}).ExternalID; got != "thread-1" {
+		t.Fatalf("gmail person evidence key = %q, want thread-1", got)
+	}
 }
 
 // A rerun must not fork the account.

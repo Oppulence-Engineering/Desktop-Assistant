@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
@@ -78,37 +79,153 @@ func NewGmailReadTool(client *ent.Client, sealer *crypto.Sealer, sec *secrets.St
 type gmailReadTool struct{ deps connectorDeps }
 
 func (t *gmailReadTool) Name() string { return "connector.read.gmail" }
-func (t *gmailReadTool) AuditInfo(json.RawMessage) ToolAudit {
-	return ToolAudit{TrustTier: TierRead, Connector: "google", Operation: "gmail.search", RequiredScopes: []string{ScopeGmailReadonly}}
+func (t *gmailReadTool) AuditInfo(args json.RawMessage) ToolAudit {
+	operation := "gmail.search"
+	var input struct {
+		Query          string `json:"query"`
+		MessageID      string `json:"messageId"`
+		ThreadID       string `json:"threadId"`
+		LabelID        string `json:"labelId"`
+		IncludeBodies  bool   `json:"includeBodies"`
+		CountOnly      bool   `json:"countOnly"`
+		ListLabels     bool   `json:"listLabels"`
+		MailboxProfile bool   `json:"mailboxProfile"`
+	}
+	if json.Unmarshal(args, &input) == nil {
+		switch {
+		case strings.TrimSpace(input.Query) != "" && input.CountOnly:
+			operation = "gmail.search.count"
+		case strings.TrimSpace(input.LabelID) != "":
+			operation = "gmail.label.read"
+		case input.MailboxProfile:
+			operation = "gmail.profile.read"
+		case input.ListLabels:
+			operation = "gmail.labels.read"
+		case strings.TrimSpace(input.MessageID) != "":
+			operation = "gmail.message.read"
+		case strings.TrimSpace(input.ThreadID) != "" && input.IncludeBodies:
+			operation = "gmail.thread.read.full"
+		case strings.TrimSpace(input.ThreadID) != "":
+			operation = "gmail.thread.read"
+		}
+	}
+	return ToolAudit{TrustTier: TierRead, Connector: "google", Operation: operation, RequiredScopes: []string{ScopeGmailReadonly}}
 }
 func (t *gmailReadTool) Description() string {
-	return "Search the user's Gmail (read-only). Returns message headers and snippets, never full bodies."
+	return "Read the authorized Gmail account identity and totals; list labels or read one label's counts; count, search, and page through matching messages; read one thread's summaries or complete plain-text messages; or read one exact message's body and attachment metadata. Read-only."
 }
 
 func (t *gmailReadTool) JSONSchema() json.RawMessage {
-	return json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","description":"Gmail search query, e.g. \"from:acme.com newer_than:30d\"."},"limit":{"type":"integer","description":"Max messages (1-10)."}},"required":["query"]}`)
+	return json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","description":"Gmail search query, e.g. \"from:acme.com newer_than:30d\"."},"countOnly":{"type":"boolean","const":true,"description":"Query mode only. Count matching message IDs without fetching message content; complete=false means the result is a lower bound."},"pageToken":{"type":"string","description":"Opaque nextPageToken returned by a prior search; repeat the same query and limit to read the next page."},"threadId":{"type":"string","description":"Exact thread ID returned by a prior search; returns chronological message headers and snippets by default."},"includeBodies":{"type":"boolean","description":"Thread mode only. Return every message's plain-text body and attachment metadata in one read."},"messageId":{"type":"string","description":"Exact message ID returned by a search or thread read; returns headers, labels, direction, plain-text body, and attachment metadata without downloading attachment bytes."},"listLabels":{"type":"boolean","const":true,"description":"Return the connected mailbox's system and user label names and IDs."},"labelId":{"type":"string","description":"Exact label ID returned by listLabels; returns live message and thread total and unread counts."},"mailboxProfile":{"type":"boolean","const":true,"description":"Return the Gmail account Google actually authorized plus live message and thread totals."},"limit":{"type":"integer","description":"Max messages (1-10); search mode only."}},"oneOf":[{"required":["query"]},{"required":["threadId"]},{"required":["messageId"]},{"required":["listLabels"]},{"required":["labelId"]},{"required":["mailboxProfile"]}],"additionalProperties":false}`)
 }
 
 func (t *gmailReadTool) Invoke(ctx context.Context, _ ToolScope, args json.RawMessage) (json.RawMessage, error) {
 	var in struct {
-		Query string `json:"query"`
-		Limit int    `json:"limit"`
+		Query          string `json:"query"`
+		MessageID      string `json:"messageId"`
+		ThreadID       string `json:"threadId"`
+		LabelID        string `json:"labelId"`
+		Limit          int    `json:"limit"`
+		IncludeBodies  bool   `json:"includeBodies"`
+		CountOnly      bool   `json:"countOnly"`
+		PageToken      string `json:"pageToken"`
+		ListLabels     bool   `json:"listLabels"`
+		MailboxProfile bool   `json:"mailboxProfile"`
 	}
 	if err := json.Unmarshal(args, &in); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
 	}
-	if in.Query == "" {
-		return nil, fmt.Errorf("query is required")
+	in.Query = strings.TrimSpace(in.Query)
+	in.MessageID = strings.TrimSpace(in.MessageID)
+	in.ThreadID = strings.TrimSpace(in.ThreadID)
+	in.LabelID = strings.TrimSpace(in.LabelID)
+	in.PageToken = strings.TrimSpace(in.PageToken)
+	modes := 0
+	for _, value := range []string{in.Query, in.ThreadID, in.MessageID, in.LabelID} {
+		if value != "" {
+			modes++
+		}
+	}
+	if in.ListLabels {
+		modes++
+	}
+	if in.MailboxProfile {
+		modes++
+	}
+	if modes != 1 {
+		return nil, fmt.Errorf("provide exactly one of query, threadId, messageId, listLabels, labelId, or mailboxProfile")
+	}
+	if in.IncludeBodies && in.ThreadID == "" {
+		return nil, fmt.Errorf("includeBodies is only valid with threadId")
+	}
+	if in.PageToken != "" && in.Query == "" {
+		return nil, fmt.Errorf("pageToken is only valid with query")
+	}
+	if in.CountOnly && (in.Query == "" || in.PageToken != "" || in.Limit != 0) {
+		return nil, fmt.Errorf("countOnly requires query and cannot be combined with limit or pageToken")
 	}
 	token, err := t.deps.accessToken(ctx, ScopeGmailReadonly)
 	if err != nil {
 		return nil, err
 	}
-	messages, err := t.deps.google.ListMessages(ctx, token, in.Query, in.Limit)
+	if in.LabelID != "" {
+		label, err := t.deps.google.GetLabel(ctx, token, in.LabelID)
+		if err != nil {
+			return nil, fmt.Errorf("gmail label detail read: %w", err)
+		}
+		return json.Marshal(label)
+	}
+	if in.MailboxProfile {
+		profile, err := t.deps.google.GetProfile(ctx, token)
+		if err != nil {
+			return nil, fmt.Errorf("gmail profile read: %w", err)
+		}
+		return json.Marshal(profile)
+	}
+	if in.ListLabels {
+		labels, err := t.deps.google.ListLabels(ctx, token)
+		if err != nil {
+			return nil, fmt.Errorf("gmail label read: %w", err)
+		}
+		return json.Marshal(map[string]any{"labels": labels})
+	}
+	if in.CountOnly {
+		matchingMessages, complete, err := t.deps.google.CountMessages(ctx, token, in.Query)
+		if err != nil {
+			return nil, fmt.Errorf("gmail search count: %w", err)
+		}
+		return json.Marshal(map[string]any{"matchingMessages": matchingMessages, "complete": complete})
+	}
+	if in.MessageID != "" {
+		content, err := t.deps.google.GetMessageContent(ctx, token, in.MessageID)
+		if err != nil {
+			return nil, fmt.Errorf("gmail message read: %w", err)
+		}
+		return json.Marshal(content)
+	}
+	if in.ThreadID != "" {
+		if in.IncludeBodies {
+			messages, err := t.deps.google.GetThreadContent(ctx, token, in.ThreadID)
+			if err != nil {
+				return nil, fmt.Errorf("gmail full thread read: %w", err)
+			}
+			return json.Marshal(map[string]any{"threadId": in.ThreadID, "messages": messages})
+		}
+		messages, err := t.deps.google.GetThreadMessages(ctx, token, in.ThreadID)
+		if err != nil {
+			return nil, fmt.Errorf("gmail thread read: %w", err)
+		}
+		return json.Marshal(map[string]any{"threadId": in.ThreadID, "messages": messages})
+	}
+	messages, nextPageToken, err := t.deps.google.ListMessages(ctx, token, in.Query, in.Limit, in.PageToken)
 	if err != nil {
 		return nil, fmt.Errorf("gmail search: %w", err)
 	}
-	return json.Marshal(map[string]any{"messages": messages})
+	result := map[string]any{"messages": messages}
+	if nextPageToken != "" {
+		result["nextPageToken"] = nextPageToken
+	}
+	return json.Marshal(result)
 }
 
 // NewGmailDraftTool builds connector.write.gmail_draft (creates a draft; never
@@ -198,7 +315,7 @@ func (t *gmailSendTool) Invoke(ctx context.Context, _ ToolScope, args json.RawMe
 	return json.Marshal(map[string]any{"messageId": id, "status": "sent"})
 }
 
-// NewCalendarReadTool builds connector.read.calendar (read-only events list).
+// NewCalendarReadTool builds connector.read.calendar (read-only event list/detail).
 func NewCalendarReadTool(client *ent.Client, sealer *crypto.Sealer, sec *secrets.Store, google *googleapi.Client, userID uuid.UUID) Tool {
 	return &calendarReadTool{deps: connectorDeps{client: client, sealer: sealer, secrets: sec, google: google, userID: userID}}
 }
@@ -206,38 +323,94 @@ func NewCalendarReadTool(client *ent.Client, sealer *crypto.Sealer, sec *secrets
 type calendarReadTool struct{ deps connectorDeps }
 
 func (t *calendarReadTool) Name() string { return "connector.read.calendar" }
-func (t *calendarReadTool) AuditInfo(json.RawMessage) ToolAudit {
-	return ToolAudit{TrustTier: TierRead, Connector: "google", Operation: "calendar.events.list", RequiredScopes: []string{ScopeCalendarReadonly}}
+func (t *calendarReadTool) AuditInfo(args json.RawMessage) ToolAudit {
+	operation := "calendar.events.list"
+	var input struct {
+		EventID         string `json:"eventId"`
+		DurationMinutes int    `json:"durationMinutes"`
+		CountOnly       bool   `json:"countOnly"`
+	}
+	if json.Unmarshal(args, &input) == nil {
+		switch {
+		case strings.TrimSpace(input.EventID) != "":
+			operation = "calendar.event.read"
+		case input.DurationMinutes != 0:
+			operation = "calendar.availability.read"
+		case input.CountOnly:
+			operation = "calendar.events.count"
+		}
+	}
+	return ToolAudit{TrustTier: TierRead, Connector: "google", Operation: operation, RequiredScopes: []string{ScopeCalendarReadonly}}
 }
 func (t *calendarReadTool) Description() string {
-	return "List events on the user's primary Google Calendar (read-only)."
+	return "Count events in a bounded window without details; list and page through events; find free windows without details; or read one exact event. Read-only."
 }
 
 func (t *calendarReadTool) JSONSchema() json.RawMessage {
-	return json.RawMessage(`{"type":"object","properties":{"timeMin":{"type":"string","description":"RFC3339 lower bound."},"timeMax":{"type":"string","description":"RFC3339 upper bound."},"query":{"type":"string","description":"Free-text filter."},"limit":{"type":"integer","description":"Max events (1-10)."}}}`)
+	return json.RawMessage(`{"type":"object","properties":{"eventId":{"type":"string","description":"Exact event ID returned by a prior list; returns description, location, organizer, status, attendees, and meeting links."},"timeMin":{"type":"string","description":"RFC3339 lower bound."},"timeMax":{"type":"string","description":"RFC3339 upper bound."},"durationMinutes":{"type":"integer","minimum":1,"maximum":1440,"description":"With timeMin and timeMax, returns maximal free windows at least this long without event details."},"countOnly":{"type":"boolean","const":true,"description":"With exact timeMin and timeMax, count event instances without returning event details; complete=false means the result is a lower bound."},"query":{"type":"string","description":"Free-text filter; list or count mode."},"limit":{"type":"integer","description":"Max events (1-10); list mode only."},"pageToken":{"type":"string","description":"Opaque nextPageToken returned by a prior event list; repeat the same list filters to read the next page."}},"additionalProperties":false}`)
 }
 
 func (t *calendarReadTool) Invoke(ctx context.Context, _ ToolScope, args json.RawMessage) (json.RawMessage, error) {
 	var in struct {
-		TimeMin string `json:"timeMin"`
-		TimeMax string `json:"timeMax"`
-		Query   string `json:"query"`
-		Limit   int    `json:"limit"`
+		EventID         string `json:"eventId"`
+		TimeMin         string `json:"timeMin"`
+		TimeMax         string `json:"timeMax"`
+		DurationMinutes int    `json:"durationMinutes"`
+		CountOnly       bool   `json:"countOnly"`
+		Query           string `json:"query"`
+		Limit           int    `json:"limit"`
+		PageToken       string `json:"pageToken"`
 	}
 	if err := json.Unmarshal(args, &in); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
+	}
+	in.EventID = strings.TrimSpace(in.EventID)
+	in.PageToken = strings.TrimSpace(in.PageToken)
+	if in.EventID != "" && (strings.TrimSpace(in.TimeMin) != "" || strings.TrimSpace(in.TimeMax) != "" || in.DurationMinutes != 0 || in.CountOnly || strings.TrimSpace(in.Query) != "" || in.Limit != 0 || in.PageToken != "") {
+		return nil, fmt.Errorf("eventId cannot be combined with calendar list filters")
+	}
+	if in.DurationMinutes != 0 && (strings.TrimSpace(in.TimeMin) == "" || strings.TrimSpace(in.TimeMax) == "" || in.CountOnly || strings.TrimSpace(in.Query) != "" || in.Limit != 0 || in.PageToken != "") {
+		return nil, fmt.Errorf("durationMinutes requires timeMin and timeMax and cannot be combined with query, limit, or pageToken")
+	}
+	if in.CountOnly && (strings.TrimSpace(in.TimeMin) == "" || strings.TrimSpace(in.TimeMax) == "" || in.Limit != 0 || in.PageToken != "") {
+		return nil, fmt.Errorf("countOnly requires timeMin and timeMax and cannot be combined with limit or pageToken")
 	}
 	token, err := t.deps.accessToken(ctx, ScopeCalendarReadonly)
 	if err != nil {
 		return nil, err
 	}
-	events, err := t.deps.google.ListEvents(ctx, token, googleapi.CalendarQuery{
-		TimeMin: in.TimeMin, TimeMax: in.TimeMax, Text: in.Query, Limit: in.Limit,
+	if in.EventID != "" {
+		event, err := t.deps.google.GetEvent(ctx, token, in.EventID)
+		if err != nil {
+			return nil, fmt.Errorf("calendar event read: %w", err)
+		}
+		return json.Marshal(map[string]any{"event": event})
+	}
+	if in.DurationMinutes != 0 {
+		availability, err := t.deps.google.FindAvailability(ctx, token, in.TimeMin, in.TimeMax, in.DurationMinutes)
+		if err != nil {
+			return nil, fmt.Errorf("calendar availability: %w", err)
+		}
+		return json.Marshal(availability)
+	}
+	if in.CountOnly {
+		matchingEvents, complete, err := t.deps.google.CountEvents(ctx, token, in.TimeMin, in.TimeMax, strings.TrimSpace(in.Query))
+		if err != nil {
+			return nil, fmt.Errorf("calendar count: %w", err)
+		}
+		return json.Marshal(map[string]any{"matchingEvents": matchingEvents, "complete": complete})
+	}
+	events, nextPageToken, err := t.deps.google.ListEvents(ctx, token, googleapi.CalendarQuery{
+		TimeMin: in.TimeMin, TimeMax: in.TimeMax, Text: in.Query, Limit: in.Limit, PageToken: in.PageToken,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("calendar list: %w", err)
 	}
-	return json.Marshal(map[string]any{"events": events})
+	result := map[string]any{"events": events}
+	if nextPageToken != "" {
+		result["nextPageToken"] = nextPageToken
+	}
+	return json.Marshal(result)
 }
 
 // NewCalendarCreateTool builds connector.write.calendar_create.

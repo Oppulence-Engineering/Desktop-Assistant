@@ -544,6 +544,7 @@ func (s *Service) DecideRelationshipAttention(ctx context.Context, u *ent.User, 
 	now := s.now().UTC()
 	update := s.client.RelationshipAttentionItem.Update().Where(
 		relationshipattentionitem.IDEQ(id), relationshipattentionitem.VersionEQ(input.ExpectedVersion),
+		relationshipattentionitem.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
 		relationshipattentionitem.StatusIn("open", "acknowledged", "snoozed"),
 	).SetVersion(input.ExpectedVersion + 1).SetStateReason(strings.TrimSpace(input.Reason))
 	switch input.Decision {
@@ -566,12 +567,24 @@ func (s *Service) DecideRelationshipAttention(ctx context.Context, u *ent.User, 
 	if err != nil {
 		return nil, err
 	}
+	item, loadErr := s.client.RelationshipAttentionItem.Query().Where(
+		relationshipattentionitem.IDEQ(id),
+		relationshipattentionitem.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+	).WithRelationship().Only(ctx)
 	if count != 1 {
-		return nil, ErrConflict
+		if loadErr != nil || item.Version != input.ExpectedVersion+1 || item.StateReason != strings.TrimSpace(input.Reason) {
+			return nil, ErrConflict
+		}
+		sameDecision := item.Status == "acknowledged" && input.Decision == "acknowledge" ||
+			item.Status == "dismissed" && input.Decision == "dismiss" ||
+			item.Status == "snoozed" && input.Decision == "snooze" && item.SnoozedUntil != nil && input.SnoozedUntil != nil && item.SnoozedUntil.Equal(input.SnoozedUntil.UTC())
+		if !sameDecision {
+			return nil, ErrConflict
+		}
+		return item, nil
 	}
-	item, err := s.client.RelationshipAttentionItem.Query().Where(relationshipattentionitem.IDEQ(id)).WithRelationship().Only(ctx)
-	if err != nil {
-		return nil, err
+	if loadErr != nil {
+		return nil, loadErr
 	}
 	_ = appendTrustEvent(ctx, s.client, ws, u, TrustEventInput{
 		Name: "attention_item_decided", Outcome: "accepted", ReasonCode: input.Decision,

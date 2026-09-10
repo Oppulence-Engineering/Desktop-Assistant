@@ -74,12 +74,12 @@ func GmailSendCapability() Capability {
 	}
 }
 
-// CalendarReadCapability lists events on the user's primary Google Calendar.
+// CalendarReadCapability reads events on the user's primary Google Calendar.
 func CalendarReadCapability() Capability {
 	return Capability{
 		Name:        "connector.read.calendar",
-		Description: "List events on the user's primary Google Calendar (read-only). Requires a connected Google account with the calendar.events.readonly scope.",
-		Parameters:  json.RawMessage(`{"type":"object","properties":{"timeMin":{"type":"string","description":"RFC3339 lower bound"},"timeMax":{"type":"string","description":"RFC3339 upper bound"},"query":{"type":"string","description":"free-text filter"},"limit":{"type":"integer","description":"max events (1-10)"}}}`),
+		Description: "Count or list events on the user's primary Google Calendar (read-only). Requires a connected Google account with the calendar.events.readonly scope.",
+		Parameters:  json.RawMessage(`{"type":"object","properties":{"timeMin":{"type":"string","description":"RFC3339 lower bound"},"timeMax":{"type":"string","description":"RFC3339 upper bound"},"countOnly":{"type":"boolean","const":true,"description":"count event instances in the bounded time window without details"},"query":{"type":"string","description":"free-text filter"},"limit":{"type":"integer","description":"max events (1-10)"}}}`),
 		TrustTier:   TierRead,
 		Kind:        KindTool,
 		Build: func(d ToolDeps) backgroundtaskruntime.Tool {

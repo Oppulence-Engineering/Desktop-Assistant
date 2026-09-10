@@ -5,7 +5,10 @@ import {
   companyLinkedInURL,
   friendlyRevenueError,
   getRelationshipGraph,
+  googleSourceHealth,
   interactionCountLabel,
+  latestCompletedScan,
+  listScans,
 } from "@/lib/revenue";
 
 vi.mock("@/lib/auth/client", () => ({
@@ -38,6 +41,39 @@ describe("getRelationshipGraph", () => {
     expect(graph).toMatchObject({ scope: "portfolio", depth: 1, nodes: [], edges: [] });
     expect(mockFetch.mock.calls[1]?.[0]).toBe("/relationships");
   });
+});
+
+describe("listScans", () => {
+  it("loads server audit history instead of browser-local ids", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ scans: [{ id: "scan-1", status: "completed" }] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(listScans()).resolves.toEqual([{ id: "scan-1", status: "completed" }]);
+    expect(mockFetch.mock.calls[0]?.[0]).toBe("/revenue-leak-scans?limit=10");
+  });
+});
+
+it("opens the latest report for a stale but authorized Google source", () => {
+  expect(
+    googleSourceHealth([
+      {
+        source: "google",
+        accounts: [{ status: "stale", missingScopes: [] }],
+      },
+    ]),
+  ).toBe("ready");
+  expect(
+    latestCompletedScan([
+      { id: "failed", status: "failed" },
+      { id: "empty-complete", status: "completed", threadsSeen: 0 },
+      { id: "latest-complete", status: "completed", threadsSeen: 12 },
+      { id: "older-complete", status: "completed", threadsSeen: 8 },
+    ])?.id,
+  ).toBe("latest-complete");
 });
 
 describe("friendlyRevenueError", () => {
