@@ -288,7 +288,11 @@ type scanStats struct {
 	// extractor, and how many promises it proposed.
 	aiCalls    int
 	aiProposed int
-	freshest   *time.Time
+	// ruleProposed counts promises the deterministic rules found that the
+	// model did not, which is the only honest way to know whether the fallback
+	// still earns its place.
+	ruleProposed int
+	freshest     *time.Time
 }
 
 func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLeakScan) (scanStats, error) {
@@ -386,16 +390,35 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		// read. Same detector, same evidence rules, same one-commitment-per-
 		// thread cap — it simply stops discarding the messages the promise was
 		// actually in.
-		anchor, promise, readBody := s.findExplicitCommitment(ctx, u, sum)
-		// The deterministic detector gets first refusal. Only when it finds
-		// nothing, and only on a thread whose body we could actually read, is
-		// the model asked — a proposal is worth nothing without evidence to
-		// quote from.
-		if promise == nil && readBody && s.promiseExtractor != nil && stats.aiCalls < scanMaxAIExtractions {
-			stats.aiCalls++
-			if proposed := s.proposePromise(ctx, u, sum, scan.ID); proposed != nil {
-				anchor, promise = proposed.anchor, proposed.promise
+		// The model reads first. A rule can only match phrasings somebody
+		// thought of in advance, and the measured cost of that was most real
+		// promises: "I'll get you the report", "we'll turn that around" and
+		// anything with an adverb in it were all invisible to the pattern.
+		//
+		// The rules stay as the floor, not the gate. They run when there is no
+		// extractor, when the model is over its budget for this scan, when it
+		// errors, and when it proposes nothing — so extraction degrades to
+		// deterministic rather than disappearing.
+		var anchor googleapi.GmailThreadMessage
+		var promise *scannedCommitment
+		readBody := false
+		if s.promiseExtractor != nil && stats.aiCalls < scanMaxAIExtractions {
+			proposed, spent := s.proposePromise(ctx, u, sum, scan.ID, scanMaxAIExtractions-stats.aiCalls)
+			// Every message read costs a call, so the budget is spent in
+			// messages. Counting threads instead would have let one long
+			// thread quietly cost twelve times what it appeared to.
+			stats.aiCalls += spent
+			if proposed != nil {
+				anchor, promise, readBody = proposed.anchor, proposed.promise, true
 				stats.aiProposed++
+			}
+		}
+		if promise == nil {
+			var ruleRead bool
+			anchor, promise, ruleRead = s.findExplicitCommitment(ctx, u, sum)
+			readBody = readBody || ruleRead
+			if promise != nil {
+				stats.ruleProposed++
 			}
 		}
 		if readBody {
@@ -909,25 +932,44 @@ func (s *Service) proposePromise(
 	u *ent.User,
 	sum *threadSummary,
 	scanID uuid.UUID,
-) *proposedPromise {
-	message := lastMessage(sum)
-	body, err := s.MessageBody(ctx, u, message.ID)
-	if err != nil || strings.TrimSpace(body) == "" {
-		return nil
-	}
-	promises, err := s.promiseExtractor.ExtractPromises(ctx, PromiseExtractInput{
-		UserID:    u.ID,
-		Subject:   sum.Subject,
-		Body:      commitmentQuote2(body),
-		Outbound:  message.Outbound,
-		RequestID: uuid.NewSHA1(scanID, []byte(message.ID)),
-	})
-	if err != nil {
-		s.log.Debug("revenue: promise extraction", zap.Error(err))
-		return nil
+	budget int,
+) (*proposedPromise, int) {
+	// Read the thread, not only its final message. A promise is made once and
+	// then buried by whatever was said after it, and the rules path already
+	// learned this the hard way.
+	ordered := append([]googleapi.GmailThreadMessage(nil), sum.Messages...)
+	sort.SliceStable(ordered, func(i, j int) bool { return ordered[i].At.After(ordered[j].At) })
+
+	var message googleapi.GmailThreadMessage
+	var promises []ExtractedPromise
+	spent := 0
+	for i, candidate := range ordered {
+		if i >= commitmentScanDepth || spent >= budget {
+			break
+		}
+		body, err := s.MessageBody(ctx, u, candidate.ID)
+		if err != nil || strings.TrimSpace(body) == "" {
+			continue
+		}
+		spent++
+		found, err := s.promiseExtractor.ExtractPromises(ctx, PromiseExtractInput{
+			UserID:    u.ID,
+			Subject:   sum.Subject,
+			Body:      commitmentQuote2(body),
+			Outbound:  candidate.Outbound,
+			RequestID: uuid.NewSHA1(scanID, []byte(candidate.ID)),
+		})
+		if err != nil {
+			s.log.Debug("revenue: promise extraction", zap.Error(err))
+			continue
+		}
+		if len(found) > 0 {
+			message, promises = candidate, found
+			break
+		}
 	}
 	if len(promises) == 0 {
-		return nil
+		return nil, spent
 	}
 	first := promises[0]
 	direction, owner, counterparty := "promised_by_them", sum.Counterparty, "local-user"
@@ -944,7 +986,7 @@ func (s *Service) proposePromise(
 			CounterpartyRef: counterparty,
 			SourcePhrase:    first.Quote,
 		},
-	}
+	}, spent
 }
 
 // commitmentQuote2 strips the quoted thread so the model reads only what this

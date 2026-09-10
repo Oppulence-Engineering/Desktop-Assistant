@@ -2,6 +2,7 @@ package revenue
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -192,5 +193,51 @@ func TestDisabledExtractorIsTrulyNil(t *testing.T) {
 	f.svc.SetPromiseExtractor(NewLLMPromiseExtractor(nil, ""))
 	if f.svc.promiseExtractor != nil {
 		t.Error("a disabled extractor was installed as if it were real")
+	}
+}
+
+// The model is now the primary extractor, so the budget has to be spent in
+// messages read, not threads visited. Counting threads would let one long
+// thread quietly cost twelve times what it appeared to.
+func TestExtractionBudgetIsSpentInMessagesNotThreads(t *testing.T) {
+	f := newFixture(t)
+	base := time.Now().UTC().Add(-3 * 24 * time.Hour)
+
+	// Two threads of six messages each: twelve messages, none containing a
+	// promise, against a budget the scan enforces.
+	var threads [][]googleapi.GmailThreadMessage
+	for tIdx := 0; tIdx < 2; tIdx++ {
+		var msgs []googleapi.GmailThreadMessage
+		for mIdx := 0; mIdx < 6; mIdx++ {
+			msgs = append(msgs, googleapi.GmailThreadMessage{
+				ID:       fmt.Sprintf("t%d-m%d", tIdx, mIdx),
+				ThreadID: fmt.Sprintf("t%d", tIdx),
+				From:     selfAddr, To: fmt.Sprintf("buyer%d@example.com", tIdx),
+				Subject: "Thread", Snippet: "Nothing promised here.",
+				Outbound: true, At: base.Add(time.Duration(mIdx) * time.Hour),
+			})
+		}
+		threads = append(threads, msgs)
+	}
+	f.svc.SetSweeper(&fakeSweeper{threads: threads, email: selfAddr})
+	f.svc.SetBodyFetcher(&fakeBodyFetcher{body: "Nothing promised here."}, newSealer(t), time.Hour)
+
+	extractor := &fakeExtractor{}
+	f.svc.SetPromiseExtractor(extractor)
+
+	scan, err := f.svc.StartScan(f.ctx, f.user, 90)
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	waitForScan(t, f, scan.ID)
+
+	// Twelve messages exist and none yield a promise, so every one is read —
+	// but never more than the scan's ceiling.
+	if extractor.calls > scanMaxAIExtractions {
+		t.Errorf("model called %d times, over the %d call budget",
+			extractor.calls, scanMaxAIExtractions)
+	}
+	if extractor.calls < 2 {
+		t.Errorf("model called %d times; it should read past the first message", extractor.calls)
 	}
 }
