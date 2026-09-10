@@ -237,6 +237,7 @@ func (s *Service) runScan(ctx context.Context, u *ent.User, scan *ent.RevenueLea
 		SetThreadsDeepRead(stats.deepRead).
 		SetThreadsSnippetOnly(stats.snippetOnly).
 		SetThreadsSkipped(stats.skipped).
+		SetExtractionFailures(stats.aiFailed).
 		ClearActiveClaim().
 		SetCompletedAt(s.now())
 	if stats.freshest != nil {
@@ -292,7 +293,11 @@ type scanStats struct {
 	// model did not, which is the only honest way to know whether the fallback
 	// still earns its place.
 	ruleProposed int
-	freshest     *time.Time
+	// aiFailed counts messages the model could not read — a billing failure,
+	// an outage, a timeout. Without it the audit silently degrades to rules
+	// and reports its results as if the model had looked and found nothing.
+	aiFailed int
+	freshest *time.Time
 }
 
 func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLeakScan) (scanStats, error) {
@@ -403,7 +408,8 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		var promise *scannedCommitment
 		readBody := false
 		if s.promiseExtractor != nil && stats.aiCalls < scanMaxAIExtractions {
-			proposed, spent := s.proposePromise(ctx, u, sum, scan.ID, scanMaxAIExtractions-stats.aiCalls)
+			proposed, spent, failed := s.proposePromise(ctx, u, sum, scan.ID, scanMaxAIExtractions-stats.aiCalls)
+			stats.aiFailed += failed
 			// Every message read costs a call, so the budget is spent in
 			// messages. Counting threads instead would have let one long
 			// thread quietly cost twelve times what it appeared to.
@@ -933,7 +939,7 @@ func (s *Service) proposePromise(
 	sum *threadSummary,
 	scanID uuid.UUID,
 	budget int,
-) (*proposedPromise, int) {
+) (*proposedPromise, int, int) {
 	// Read the thread, not only its final message. A promise is made once and
 	// then buried by whatever was said after it, and the rules path already
 	// learned this the hard way.
@@ -942,7 +948,7 @@ func (s *Service) proposePromise(
 
 	var message googleapi.GmailThreadMessage
 	var promises []ExtractedPromise
-	spent := 0
+	spent, failed := 0, 0
 	for i, candidate := range ordered {
 		if i >= commitmentScanDepth || spent >= budget {
 			break
@@ -960,6 +966,7 @@ func (s *Service) proposePromise(
 			RequestID: uuid.NewSHA1(scanID, []byte(candidate.ID)),
 		})
 		if err != nil {
+			failed++
 			s.log.Debug("revenue: promise extraction", zap.Error(err))
 			continue
 		}
@@ -969,7 +976,7 @@ func (s *Service) proposePromise(
 		}
 	}
 	if len(promises) == 0 {
-		return nil, spent
+		return nil, spent, failed
 	}
 	first := promises[0]
 	direction, owner, counterparty := "promised_by_them", sum.Counterparty, "local-user"
@@ -986,7 +993,7 @@ func (s *Service) proposePromise(
 			CounterpartyRef: counterparty,
 			SourcePhrase:    first.Quote,
 		},
-	}, spent
+	}, spent, failed
 }
 
 // commitmentQuote2 strips the quoted thread so the model reads only what this
@@ -1095,18 +1102,60 @@ func commitmentQuote(text string) string {
 	if match == nil {
 		return ""
 	}
-	start := strings.LastIndexAny(text[:match[0]], ".!?") + 1
+	start := sentenceStart(text, match[0])
 	end := len(text)
 	if i := strings.IndexAny(text[match[1]:], ".!?"); i >= 0 {
 		end = match[1] + i + 1
 	}
-	sentence := strings.TrimSpace(text[start:end])
+	sentence := trimLeadingLinks(strings.TrimSpace(text[start:end]))
 	// "I'll have to check with legal" states a constraint, not an obligation,
 	// and matches on have. Judge the whole sentence, not the fragment.
 	if commitmentHedgeRe.MatchString(sentence) {
 		return ""
 	}
 	return truncateRunes(sentence, excerptMaxRunes)
+}
+
+// trimLeadingLinks drops links and their surrounding filler from the front of a
+// quote.
+//
+// Bodies arrive with newlines already collapsed, so a promise written under a
+// link has no sentence boundary in front of it and the quote begins with the
+// whole URL. The evidence a customer is shown to prove what they were promised
+// should read as the sentence somebody wrote, not as a path.
+func trimLeadingLinks(sentence string) string {
+	words := strings.Fields(sentence)
+	cut := 0
+	for i, word := range words {
+		if strings.Contains(word, "://") || strings.HasPrefix(word, "www.") {
+			cut = i + 1
+		}
+	}
+	if cut == 0 || cut >= len(words) {
+		return sentence
+	}
+	return strings.Join(words[cut:], " ")
+}
+
+// sentenceStart finds where the sentence containing the match begins.
+//
+// A full stop is only a sentence boundary when whitespace follows it. Treating
+// every dot as one meant a promise after a link began inside the link:
+// "…signoz.io/docs/general/others/new-billing-model Please bear with us; we
+// will get back to you" was quoted from "com/general/…" onward, which is the
+// evidence a customer would be shown to prove what they were promised.
+func sentenceStart(text string, matchAt int) int {
+	for i := matchAt - 1; i >= 0; i-- {
+		switch text[i] {
+		case '.', '!', '?':
+			// The boundary is real only if the next character starts a new
+			// word rather than continuing a hostname, path or decimal.
+			if i+1 < len(text) && (text[i+1] == ' ' || text[i+1] == '\t' || text[i+1] == '\n') {
+				return i + 1
+			}
+		}
+	}
+	return 0
 }
 
 // summarizeThread derives the detector input for one thread. Returns nil for

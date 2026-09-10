@@ -46,6 +46,8 @@ const (
 	FieldThreadsSnippetOnly = "threads_snippet_only"
 	// FieldThreadsSkipped holds the string denoting the threads_skipped field in the database.
 	FieldThreadsSkipped = "threads_skipped"
+	// FieldExtractionFailures holds the string denoting the extraction_failures field in the database.
+	FieldExtractionFailures = "extraction_failures"
 	// FieldStartedAt holds the string denoting the started_at field in the database.
 	FieldStartedAt = "started_at"
 	// FieldCompletedAt holds the string denoting the completed_at field in the database.
@@ -94,6 +96,7 @@ var Columns = []string{
 	FieldThreadsDeepRead,
 	FieldThreadsSnippetOnly,
 	FieldThreadsSkipped,
+	FieldExtractionFailures,
 	FieldStartedAt,
 	FieldCompletedAt,
 	FieldError,
@@ -184,6 +187,10 @@ var (
 	DefaultThreadsSkipped int
 	// ThreadsSkippedValidator is a validator for the "threads_skipped" field. It is called by the builders before save.
 	ThreadsSkippedValidator func(int) error
+	// DefaultExtractionFailures holds the default value on creation for the "extraction_failures" field.
+	DefaultExtractionFailures int
+	// ExtractionFailuresValidator is a validator for the "extraction_failures" field. It is called by the builders before save.
+	ExtractionFailuresValidator func(int) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -269,6 +276,11 @@ func ByThreadsSnippetOnly(opts ...sql.OrderTermOption) OrderOption {
 // ByThreadsSkipped orders the results by the threads_skipped field.
 func ByThreadsSkipped(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldThreadsSkipped, opts...).ToFunc()
+}
+
+// ByExtractionFailures orders the results by the extraction_failures field.
+func ByExtractionFailures(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExtractionFailures, opts...).ToFunc()
 }
 
 // ByStartedAt orders the results by the started_at field.

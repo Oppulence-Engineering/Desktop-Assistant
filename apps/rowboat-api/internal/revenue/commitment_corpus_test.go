@@ -2,6 +2,7 @@ package revenue
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -152,5 +153,29 @@ func TestCommitmentCorpusRecall(t *testing.T) {
 	}
 	if recall < floor {
 		t.Errorf("recall %.0f%% is below the %.0f%% floor", recall*100, floor*100)
+	}
+}
+
+// Found by running an audit over a real mailbox: a promise that followed a link
+// was quoted from inside the link. The evidence a customer is shown to prove
+// what they were promised began "com/general/others/new-billing-model".
+func TestCommitmentQuoteDoesNotStartInsideAURL(t *testing.T) {
+	body := "See https://signoz.io/docs/general/others/new-billing-model Please bear with us; we will get back to you shortly."
+
+	quote := commitmentQuote(body)
+	if quote == "" {
+		t.Fatal("the promise was not found at all")
+	}
+	if strings.Contains(quote, "signoz.io") || strings.HasPrefix(quote, "com/") {
+		t.Fatalf("quote begins inside the URL: %q", quote)
+	}
+	if !strings.HasPrefix(quote, "Please bear with us") {
+		t.Fatalf("quote does not start at the sentence: %q", quote)
+	}
+
+	// A decimal point is not a sentence boundary either.
+	priced := commitmentQuote("The total is 1.5k. I'll send the invoice today.")
+	if !strings.HasPrefix(priced, "I'll send") {
+		t.Fatalf("quote mis-split on a decimal: %q", priced)
 	}
 }

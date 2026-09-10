@@ -47945,6 +47945,16 @@ type RevenueLeakScanWhereInput struct {
 	ThreadsSkippedLT    *int  `json:"threadsSkippedLT,omitempty"`
 	ThreadsSkippedLTE   *int  `json:"threadsSkippedLTE,omitempty"`
 
+	// "extraction_failures" field predicates.
+	ExtractionFailures      *int  `json:"extractionFailures,omitempty"`
+	ExtractionFailuresNEQ   *int  `json:"extractionFailuresNEQ,omitempty"`
+	ExtractionFailuresIn    []int `json:"extractionFailuresIn,omitempty"`
+	ExtractionFailuresNotIn []int `json:"extractionFailuresNotIn,omitempty"`
+	ExtractionFailuresGT    *int  `json:"extractionFailuresGT,omitempty"`
+	ExtractionFailuresGTE   *int  `json:"extractionFailuresGTE,omitempty"`
+	ExtractionFailuresLT    *int  `json:"extractionFailuresLT,omitempty"`
+	ExtractionFailuresLTE   *int  `json:"extractionFailuresLTE,omitempty"`
+
 	// "started_at" field predicates.
 	StartedAt       *time.Time  `json:"startedAt,omitempty"`
 	StartedAtNEQ    *time.Time  `json:"startedAtNEQ,omitempty"`
@@ -48512,6 +48522,30 @@ func (i *RevenueLeakScanWhereInput) P() (predicate.RevenueLeakScan, error) {
 	}
 	if i.ThreadsSkippedLTE != nil {
 		predicates = append(predicates, revenueleakscan.ThreadsSkippedLTE(*i.ThreadsSkippedLTE))
+	}
+	if i.ExtractionFailures != nil {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresEQ(*i.ExtractionFailures))
+	}
+	if i.ExtractionFailuresNEQ != nil {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresNEQ(*i.ExtractionFailuresNEQ))
+	}
+	if len(i.ExtractionFailuresIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresIn(i.ExtractionFailuresIn...))
+	}
+	if len(i.ExtractionFailuresNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresNotIn(i.ExtractionFailuresNotIn...))
+	}
+	if i.ExtractionFailuresGT != nil {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresGT(*i.ExtractionFailuresGT))
+	}
+	if i.ExtractionFailuresGTE != nil {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresGTE(*i.ExtractionFailuresGTE))
+	}
+	if i.ExtractionFailuresLT != nil {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresLT(*i.ExtractionFailuresLT))
+	}
+	if i.ExtractionFailuresLTE != nil {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresLTE(*i.ExtractionFailuresLTE))
 	}
 	if i.StartedAt != nil {
 		predicates = append(predicates, revenueleakscan.StartedAtEQ(*i.StartedAt))

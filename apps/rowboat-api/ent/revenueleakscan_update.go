@@ -292,6 +292,27 @@ func (_u *RevenueLeakScanUpdate) AddThreadsSkipped(v int) *RevenueLeakScanUpdate
 	return _u
 }
 
+// SetExtractionFailures sets the "extraction_failures" field.
+func (_u *RevenueLeakScanUpdate) SetExtractionFailures(v int) *RevenueLeakScanUpdate {
+	_u.mutation.ResetExtractionFailures()
+	_u.mutation.SetExtractionFailures(v)
+	return _u
+}
+
+// SetNillableExtractionFailures sets the "extraction_failures" field if the given value is not nil.
+func (_u *RevenueLeakScanUpdate) SetNillableExtractionFailures(v *int) *RevenueLeakScanUpdate {
+	if v != nil {
+		_u.SetExtractionFailures(*v)
+	}
+	return _u
+}
+
+// AddExtractionFailures adds value to the "extraction_failures" field.
+func (_u *RevenueLeakScanUpdate) AddExtractionFailures(v int) *RevenueLeakScanUpdate {
+	_u.mutation.AddExtractionFailures(v)
+	return _u
+}
+
 // SetStartedAt sets the "started_at" field.
 func (_u *RevenueLeakScanUpdate) SetStartedAt(v time.Time) *RevenueLeakScanUpdate {
 	_u.mutation.SetStartedAt(v)
@@ -481,6 +502,11 @@ func (_u *RevenueLeakScanUpdate) check() error {
 			return &ValidationError{Name: "threads_skipped", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.threads_skipped": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ExtractionFailures(); ok {
+		if err := revenueleakscan.ExtractionFailuresValidator(v); err != nil {
+			return &ValidationError{Name: "extraction_failures", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.extraction_failures": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RevenueLeakScan.workspace"`)
 	}
@@ -576,6 +602,12 @@ func (_u *RevenueLeakScanUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if value, ok := _u.mutation.AddedThreadsSkipped(); ok {
 		_spec.AddField(revenueleakscan.FieldThreadsSkipped, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ExtractionFailures(); ok {
+		_spec.SetField(revenueleakscan.FieldExtractionFailures, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedExtractionFailures(); ok {
+		_spec.AddField(revenueleakscan.FieldExtractionFailures, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.StartedAt(); ok {
 		_spec.SetField(revenueleakscan.FieldStartedAt, field.TypeTime, value)
@@ -885,6 +917,27 @@ func (_u *RevenueLeakScanUpdateOne) AddThreadsSkipped(v int) *RevenueLeakScanUpd
 	return _u
 }
 
+// SetExtractionFailures sets the "extraction_failures" field.
+func (_u *RevenueLeakScanUpdateOne) SetExtractionFailures(v int) *RevenueLeakScanUpdateOne {
+	_u.mutation.ResetExtractionFailures()
+	_u.mutation.SetExtractionFailures(v)
+	return _u
+}
+
+// SetNillableExtractionFailures sets the "extraction_failures" field if the given value is not nil.
+func (_u *RevenueLeakScanUpdateOne) SetNillableExtractionFailures(v *int) *RevenueLeakScanUpdateOne {
+	if v != nil {
+		_u.SetExtractionFailures(*v)
+	}
+	return _u
+}
+
+// AddExtractionFailures adds value to the "extraction_failures" field.
+func (_u *RevenueLeakScanUpdateOne) AddExtractionFailures(v int) *RevenueLeakScanUpdateOne {
+	_u.mutation.AddExtractionFailures(v)
+	return _u
+}
+
 // SetStartedAt sets the "started_at" field.
 func (_u *RevenueLeakScanUpdateOne) SetStartedAt(v time.Time) *RevenueLeakScanUpdateOne {
 	_u.mutation.SetStartedAt(v)
@@ -1087,6 +1140,11 @@ func (_u *RevenueLeakScanUpdateOne) check() error {
 			return &ValidationError{Name: "threads_skipped", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.threads_skipped": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ExtractionFailures(); ok {
+		if err := revenueleakscan.ExtractionFailuresValidator(v); err != nil {
+			return &ValidationError{Name: "extraction_failures", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.extraction_failures": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RevenueLeakScan.workspace"`)
 	}
@@ -1199,6 +1257,12 @@ func (_u *RevenueLeakScanUpdateOne) sqlSave(ctx context.Context) (_node *Revenue
 	}
 	if value, ok := _u.mutation.AddedThreadsSkipped(); ok {
 		_spec.AddField(revenueleakscan.FieldThreadsSkipped, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ExtractionFailures(); ok {
+		_spec.SetField(revenueleakscan.FieldExtractionFailures, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedExtractionFailures(); ok {
+		_spec.AddField(revenueleakscan.FieldExtractionFailures, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.StartedAt(); ok {
 		_spec.SetField(revenueleakscan.FieldStartedAt, field.TypeTime, value)

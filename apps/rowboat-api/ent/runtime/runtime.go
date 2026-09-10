@@ -4030,6 +4030,12 @@ func init() {
 	revenueleakscan.DefaultThreadsSkipped = revenueleakscanDescThreadsSkipped.Default.(int)
 	// revenueleakscan.ThreadsSkippedValidator is a validator for the "threads_skipped" field. It is called by the builders before save.
 	revenueleakscan.ThreadsSkippedValidator = revenueleakscanDescThreadsSkipped.Validators[0].(func(int) error)
+	// revenueleakscanDescExtractionFailures is the schema descriptor for extraction_failures field.
+	revenueleakscanDescExtractionFailures := revenueleakscanFields[13].Descriptor()
+	// revenueleakscan.DefaultExtractionFailures holds the default value on creation for the extraction_failures field.
+	revenueleakscan.DefaultExtractionFailures = revenueleakscanDescExtractionFailures.Default.(int)
+	// revenueleakscan.ExtractionFailuresValidator is a validator for the "extraction_failures" field. It is called by the builders before save.
+	revenueleakscan.ExtractionFailuresValidator = revenueleakscanDescExtractionFailures.Validators[0].(func(int) error)
 	// revenueleakscanDescID is the schema descriptor for id field.
 	revenueleakscanDescID := revenueleakscanMixinFields0[0].Descriptor()
 	// revenueleakscan.DefaultID holds the default value on creation for the id field.

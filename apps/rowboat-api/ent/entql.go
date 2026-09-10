@@ -1920,6 +1920,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			revenueleakscan.FieldThreadsDeepRead:      {Type: field.TypeInt, Column: revenueleakscan.FieldThreadsDeepRead},
 			revenueleakscan.FieldThreadsSnippetOnly:   {Type: field.TypeInt, Column: revenueleakscan.FieldThreadsSnippetOnly},
 			revenueleakscan.FieldThreadsSkipped:       {Type: field.TypeInt, Column: revenueleakscan.FieldThreadsSkipped},
+			revenueleakscan.FieldExtractionFailures:   {Type: field.TypeInt, Column: revenueleakscan.FieldExtractionFailures},
 			revenueleakscan.FieldStartedAt:            {Type: field.TypeTime, Column: revenueleakscan.FieldStartedAt},
 			revenueleakscan.FieldCompletedAt:          {Type: field.TypeTime, Column: revenueleakscan.FieldCompletedAt},
 			revenueleakscan.FieldError:                {Type: field.TypeString, Column: revenueleakscan.FieldError},
@@ -16089,6 +16090,11 @@ func (f *RevenueLeakScanFilter) WhereThreadsSnippetOnly(p entql.IntP) {
 // WhereThreadsSkipped applies the entql int predicate on the threads_skipped field.
 func (f *RevenueLeakScanFilter) WhereThreadsSkipped(p entql.IntP) {
 	f.Where(p.Field(revenueleakscan.FieldThreadsSkipped))
+}
+
+// WhereExtractionFailures applies the entql int predicate on the extraction_failures field.
+func (f *RevenueLeakScanFilter) WhereExtractionFailures(p entql.IntP) {
+	f.Where(p.Field(revenueleakscan.FieldExtractionFailures))
 }
 
 // WhereStartedAt applies the entql time.Time predicate on the started_at field.

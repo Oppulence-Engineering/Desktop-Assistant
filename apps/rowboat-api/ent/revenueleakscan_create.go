@@ -236,6 +236,20 @@ func (_c *RevenueLeakScanCreate) SetNillableThreadsSkipped(v *int) *RevenueLeakS
 	return _c
 }
 
+// SetExtractionFailures sets the "extraction_failures" field.
+func (_c *RevenueLeakScanCreate) SetExtractionFailures(v int) *RevenueLeakScanCreate {
+	_c.mutation.SetExtractionFailures(v)
+	return _c
+}
+
+// SetNillableExtractionFailures sets the "extraction_failures" field if the given value is not nil.
+func (_c *RevenueLeakScanCreate) SetNillableExtractionFailures(v *int) *RevenueLeakScanCreate {
+	if v != nil {
+		_c.SetExtractionFailures(*v)
+	}
+	return _c
+}
+
 // SetStartedAt sets the "started_at" field.
 func (_c *RevenueLeakScanCreate) SetStartedAt(v time.Time) *RevenueLeakScanCreate {
 	_c.mutation.SetStartedAt(v)
@@ -427,6 +441,10 @@ func (_c *RevenueLeakScanCreate) defaults() error {
 		v := revenueleakscan.DefaultThreadsSkipped
 		_c.mutation.SetThreadsSkipped(v)
 	}
+	if _, ok := _c.mutation.ExtractionFailures(); !ok {
+		v := revenueleakscan.DefaultExtractionFailures
+		_c.mutation.SetExtractionFailures(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		if revenueleakscan.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized revenueleakscan.DefaultID (forgotten import ent/runtime?)")
@@ -541,6 +559,14 @@ func (_c *RevenueLeakScanCreate) check() error {
 			return &ValidationError{Name: "threads_skipped", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.threads_skipped": %w`, err)}
 		}
 	}
+	if _, ok := _c.mutation.ExtractionFailures(); !ok {
+		return &ValidationError{Name: "extraction_failures", err: errors.New(`ent: missing required field "RevenueLeakScan.extraction_failures"`)}
+	}
+	if v, ok := _c.mutation.ExtractionFailures(); ok {
+		if err := revenueleakscan.ExtractionFailuresValidator(v); err != nil {
+			return &ValidationError{Name: "extraction_failures", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.extraction_failures": %w`, err)}
+		}
+	}
 	if len(_c.mutation.WorkspaceIDs()) == 0 {
 		return &ValidationError{Name: "workspace", err: errors.New(`ent: missing required edge "RevenueLeakScan.workspace"`)}
 	}
@@ -642,6 +668,10 @@ func (_c *RevenueLeakScanCreate) createSpec() (*RevenueLeakScan, *sqlgraph.Creat
 	if value, ok := _c.mutation.ThreadsSkipped(); ok {
 		_spec.SetField(revenueleakscan.FieldThreadsSkipped, field.TypeInt, value)
 		_node.ThreadsSkipped = value
+	}
+	if value, ok := _c.mutation.ExtractionFailures(); ok {
+		_spec.SetField(revenueleakscan.FieldExtractionFailures, field.TypeInt, value)
+		_node.ExtractionFailures = value
 	}
 	if value, ok := _c.mutation.StartedAt(); ok {
 		_spec.SetField(revenueleakscan.FieldStartedAt, field.TypeTime, value)
@@ -976,6 +1006,24 @@ func (u *RevenueLeakScanUpsert) UpdateThreadsSkipped() *RevenueLeakScanUpsert {
 // AddThreadsSkipped adds v to the "threads_skipped" field.
 func (u *RevenueLeakScanUpsert) AddThreadsSkipped(v int) *RevenueLeakScanUpsert {
 	u.Add(revenueleakscan.FieldThreadsSkipped, v)
+	return u
+}
+
+// SetExtractionFailures sets the "extraction_failures" field.
+func (u *RevenueLeakScanUpsert) SetExtractionFailures(v int) *RevenueLeakScanUpsert {
+	u.Set(revenueleakscan.FieldExtractionFailures, v)
+	return u
+}
+
+// UpdateExtractionFailures sets the "extraction_failures" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsert) UpdateExtractionFailures() *RevenueLeakScanUpsert {
+	u.SetExcluded(revenueleakscan.FieldExtractionFailures)
+	return u
+}
+
+// AddExtractionFailures adds v to the "extraction_failures" field.
+func (u *RevenueLeakScanUpsert) AddExtractionFailures(v int) *RevenueLeakScanUpsert {
+	u.Add(revenueleakscan.FieldExtractionFailures, v)
 	return u
 }
 
@@ -1372,6 +1420,27 @@ func (u *RevenueLeakScanUpsertOne) AddThreadsSkipped(v int) *RevenueLeakScanUpse
 func (u *RevenueLeakScanUpsertOne) UpdateThreadsSkipped() *RevenueLeakScanUpsertOne {
 	return u.Update(func(s *RevenueLeakScanUpsert) {
 		s.UpdateThreadsSkipped()
+	})
+}
+
+// SetExtractionFailures sets the "extraction_failures" field.
+func (u *RevenueLeakScanUpsertOne) SetExtractionFailures(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetExtractionFailures(v)
+	})
+}
+
+// AddExtractionFailures adds v to the "extraction_failures" field.
+func (u *RevenueLeakScanUpsertOne) AddExtractionFailures(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddExtractionFailures(v)
+	})
+}
+
+// UpdateExtractionFailures sets the "extraction_failures" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertOne) UpdateExtractionFailures() *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateExtractionFailures()
 	})
 }
 
@@ -1947,6 +2016,27 @@ func (u *RevenueLeakScanUpsertBulk) AddThreadsSkipped(v int) *RevenueLeakScanUps
 func (u *RevenueLeakScanUpsertBulk) UpdateThreadsSkipped() *RevenueLeakScanUpsertBulk {
 	return u.Update(func(s *RevenueLeakScanUpsert) {
 		s.UpdateThreadsSkipped()
+	})
+}
+
+// SetExtractionFailures sets the "extraction_failures" field.
+func (u *RevenueLeakScanUpsertBulk) SetExtractionFailures(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetExtractionFailures(v)
+	})
+}
+
+// AddExtractionFailures adds v to the "extraction_failures" field.
+func (u *RevenueLeakScanUpsertBulk) AddExtractionFailures(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddExtractionFailures(v)
+	})
+}
+
+// UpdateExtractionFailures sets the "extraction_failures" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertBulk) UpdateExtractionFailures() *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateExtractionFailures()
 	})
 }
 

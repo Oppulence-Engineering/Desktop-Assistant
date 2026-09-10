@@ -94319,6 +94319,8 @@ type RevenueLeakScanMutation struct {
 	addthreads_snippet_only  *int
 	threads_skipped          *int
 	addthreads_skipped       *int
+	extraction_failures      *int
+	addextraction_failures   *int
 	started_at               *time.Time
 	completed_at             *time.Time
 	error                    *string
@@ -95190,6 +95192,62 @@ func (m *RevenueLeakScanMutation) ResetThreadsSkipped() {
 	m.addthreads_skipped = nil
 }
 
+// SetExtractionFailures sets the "extraction_failures" field.
+func (m *RevenueLeakScanMutation) SetExtractionFailures(i int) {
+	m.extraction_failures = &i
+	m.addextraction_failures = nil
+}
+
+// ExtractionFailures returns the value of the "extraction_failures" field in the mutation.
+func (m *RevenueLeakScanMutation) ExtractionFailures() (r int, exists bool) {
+	v := m.extraction_failures
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExtractionFailures returns the old "extraction_failures" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldExtractionFailures(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExtractionFailures is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExtractionFailures requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExtractionFailures: %w", err)
+	}
+	return oldValue.ExtractionFailures, nil
+}
+
+// AddExtractionFailures adds i to the "extraction_failures" field.
+func (m *RevenueLeakScanMutation) AddExtractionFailures(i int) {
+	if m.addextraction_failures != nil {
+		*m.addextraction_failures += i
+	} else {
+		m.addextraction_failures = &i
+	}
+}
+
+// AddedExtractionFailures returns the value that was added to the "extraction_failures" field in this mutation.
+func (m *RevenueLeakScanMutation) AddedExtractionFailures() (r int, exists bool) {
+	v := m.addextraction_failures
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetExtractionFailures resets all changes to the "extraction_failures" field.
+func (m *RevenueLeakScanMutation) ResetExtractionFailures() {
+	m.extraction_failures = nil
+	m.addextraction_failures = nil
+}
+
 // SetStartedAt sets the "started_at" field.
 func (m *RevenueLeakScanMutation) SetStartedAt(t time.Time) {
 	m.started_at = &t
@@ -95498,7 +95556,7 @@ func (m *RevenueLeakScanMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RevenueLeakScanMutation) Fields() []string {
-	fields := make([]string, 0, 19)
+	fields := make([]string, 0, 20)
 	if m.created_at != nil {
 		fields = append(fields, revenueleakscan.FieldCreatedAt)
 	}
@@ -95543,6 +95601,9 @@ func (m *RevenueLeakScanMutation) Fields() []string {
 	}
 	if m.threads_skipped != nil {
 		fields = append(fields, revenueleakscan.FieldThreadsSkipped)
+	}
+	if m.extraction_failures != nil {
+		fields = append(fields, revenueleakscan.FieldExtractionFailures)
 	}
 	if m.started_at != nil {
 		fields = append(fields, revenueleakscan.FieldStartedAt)
@@ -95594,6 +95655,8 @@ func (m *RevenueLeakScanMutation) Field(name string) (ent.Value, bool) {
 		return m.ThreadsSnippetOnly()
 	case revenueleakscan.FieldThreadsSkipped:
 		return m.ThreadsSkipped()
+	case revenueleakscan.FieldExtractionFailures:
+		return m.ExtractionFailures()
 	case revenueleakscan.FieldStartedAt:
 		return m.StartedAt()
 	case revenueleakscan.FieldCompletedAt:
@@ -95641,6 +95704,8 @@ func (m *RevenueLeakScanMutation) OldField(ctx context.Context, name string) (en
 		return m.OldThreadsSnippetOnly(ctx)
 	case revenueleakscan.FieldThreadsSkipped:
 		return m.OldThreadsSkipped(ctx)
+	case revenueleakscan.FieldExtractionFailures:
+		return m.OldExtractionFailures(ctx)
 	case revenueleakscan.FieldStartedAt:
 		return m.OldStartedAt(ctx)
 	case revenueleakscan.FieldCompletedAt:
@@ -95763,6 +95828,13 @@ func (m *RevenueLeakScanMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetThreadsSkipped(v)
 		return nil
+	case revenueleakscan.FieldExtractionFailures:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExtractionFailures(v)
+		return nil
 	case revenueleakscan.FieldStartedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -95829,6 +95901,9 @@ func (m *RevenueLeakScanMutation) AddedFields() []string {
 	if m.addthreads_skipped != nil {
 		fields = append(fields, revenueleakscan.FieldThreadsSkipped)
 	}
+	if m.addextraction_failures != nil {
+		fields = append(fields, revenueleakscan.FieldExtractionFailures)
+	}
 	return fields
 }
 
@@ -95857,6 +95932,8 @@ func (m *RevenueLeakScanMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedThreadsSnippetOnly()
 	case revenueleakscan.FieldThreadsSkipped:
 		return m.AddedThreadsSkipped()
+	case revenueleakscan.FieldExtractionFailures:
+		return m.AddedExtractionFailures()
 	}
 	return nil, false
 }
@@ -95935,6 +96012,13 @@ func (m *RevenueLeakScanMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddThreadsSkipped(v)
+		return nil
+	case revenueleakscan.FieldExtractionFailures:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddExtractionFailures(v)
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueLeakScan numeric field %s", name)
@@ -96040,6 +96124,9 @@ func (m *RevenueLeakScanMutation) ResetField(name string) error {
 		return nil
 	case revenueleakscan.FieldThreadsSkipped:
 		m.ResetThreadsSkipped()
+		return nil
+	case revenueleakscan.FieldExtractionFailures:
+		m.ResetExtractionFailures()
 		return nil
 	case revenueleakscan.FieldStartedAt:
 		m.ResetStartedAt()

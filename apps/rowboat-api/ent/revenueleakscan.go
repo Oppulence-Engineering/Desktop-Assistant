@@ -50,6 +50,8 @@ type RevenueLeakScan struct {
 	ThreadsSnippetOnly int `json:"threads_snippet_only,omitempty"`
 	// ThreadsSkipped holds the value of the "threads_skipped" field.
 	ThreadsSkipped int `json:"threads_skipped,omitempty"`
+	// ExtractionFailures holds the value of the "extraction_failures" field.
+	ExtractionFailures int `json:"extraction_failures,omitempty"`
 	// StartedAt holds the value of the "started_at" field.
 	StartedAt *time.Time `json:"started_at,omitempty"`
 	// CompletedAt holds the value of the "completed_at" field.
@@ -106,7 +108,7 @@ func (*RevenueLeakScan) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case revenueleakscan.FieldLookbackDays, revenueleakscan.FieldThreadsSeen, revenueleakscan.FieldCandidatesSeen, revenueleakscan.FieldRelationshipsCreated, revenueleakscan.FieldEvidencesCreated, revenueleakscan.FieldActionsCreated, revenueleakscan.FieldCommitmentsCreated, revenueleakscan.FieldThreadsDeepRead, revenueleakscan.FieldThreadsSnippetOnly, revenueleakscan.FieldThreadsSkipped:
+		case revenueleakscan.FieldLookbackDays, revenueleakscan.FieldThreadsSeen, revenueleakscan.FieldCandidatesSeen, revenueleakscan.FieldRelationshipsCreated, revenueleakscan.FieldEvidencesCreated, revenueleakscan.FieldActionsCreated, revenueleakscan.FieldCommitmentsCreated, revenueleakscan.FieldThreadsDeepRead, revenueleakscan.FieldThreadsSnippetOnly, revenueleakscan.FieldThreadsSkipped, revenueleakscan.FieldExtractionFailures:
 			values[i] = new(sql.NullInt64)
 		case revenueleakscan.FieldStatus, revenueleakscan.FieldActiveClaim, revenueleakscan.FieldMode, revenueleakscan.FieldError:
 			values[i] = new(sql.NullString)
@@ -229,6 +231,12 @@ func (_m *RevenueLeakScan) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field threads_skipped", values[i])
 			} else if value.Valid {
 				_m.ThreadsSkipped = int(value.Int64)
+			}
+		case revenueleakscan.FieldExtractionFailures:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field extraction_failures", values[i])
+			} else if value.Valid {
+				_m.ExtractionFailures = int(value.Int64)
 			}
 		case revenueleakscan.FieldStartedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -363,6 +371,9 @@ func (_m *RevenueLeakScan) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("threads_skipped=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ThreadsSkipped))
+	builder.WriteString(", ")
+	builder.WriteString("extraction_failures=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ExtractionFailures))
 	builder.WriteString(", ")
 	if v := _m.StartedAt; v != nil {
 		builder.WriteString("started_at=")
