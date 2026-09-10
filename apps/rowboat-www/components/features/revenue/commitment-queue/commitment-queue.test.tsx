@@ -117,7 +117,7 @@ describe("CommitmentQueue", () => {
     expect(screen.getByRole("button", { name: /Connect Gmail & Calendar/ })).toBeEnabled();
   });
 
-  it("explains a clean audit when Google is connected", () => {
+  it("does not send a stale Google source through OAuth", () => {
     render(
       <CommitmentQueue
         {...props({
@@ -130,13 +130,13 @@ describe("CommitmentQueue", () => {
                   connectionId: "google-1",
                   source: "google",
                   sourceAccountId: "me@gmail.com",
-                  status: "live",
+                  status: "stale",
                   backfillPhase: "completed",
                   backfillCompleted: 1,
                   backfillTotal: 1,
-                  completeness: "complete",
+                  completeness: "stale",
                   expectedCadenceSeconds: 900,
-                  lagSeconds: 0,
+                  lagSeconds: 1_801,
                   retryCount: 0,
                   requiredScopes: [],
                   grantedScopes: [],
@@ -150,6 +150,8 @@ describe("CommitmentQueue", () => {
     );
 
     expect(screen.getByText(/No explicit promises were found/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Google connected/ })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: /Connect Gmail & Calendar/ })).not.toBeInTheDocument();
     expect(screen.queryByText(/Connect Google and run/)).not.toBeInTheDocument();
   });
 
@@ -164,6 +166,7 @@ describe("CommitmentQueue", () => {
             lookbackDays: 90,
             threadsSeen: 12,
             candidatesSeen: 2,
+            relationshipsCreated: 2,
           },
         })}
       />,
@@ -171,8 +174,10 @@ describe("CommitmentQueue", () => {
 
     expect(screen.getByText("Latest 90-day audit")).toBeInTheDocument();
     expect(screen.getByText("12", { selector: "dd" })).toBeInTheDocument();
-    expect(screen.getByText("Relationships mapped")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Review 1 relationship" })).toBeEnabled();
+    expect(screen.getByText("New relationships").closest("div")).toHaveTextContent(
+      "2New relationships",
+    );
+    expect(screen.getByRole("button", { name: "Review relationships" })).toBeEnabled();
   });
 
   it("asks for a scope before loading an owner view", () => {
@@ -235,13 +240,17 @@ describe("when the register is empty for a reason", () => {
   // connected back through an OAuth flow that could not help them.
   it("names the dead grant and offers to reconnect", () => {
     render(
-      <CommitmentQueue {...props({ entries: [], failedScan: deadGrant, sources: brokenSources })} />,
+      <CommitmentQueue
+        {...props({ entries: [], failedScan: deadGrant, sources: brokenSources })}
+      />,
     );
 
     expect(screen.getByText("Google needs reconnecting")).toBeInTheDocument();
     expect(screen.getByText(/stopped accepting the authorization/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Reconnect Google/ })).toBeEnabled();
-    expect(screen.queryByRole("button", { name: /Connect Gmail & Calendar/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Connect Gmail & Calendar/ }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Google connected/ })).not.toBeInTheDocument();
     expect(screen.queryByText(/Connect Gmail and Calendar to find/)).not.toBeInTheDocument();
   });
@@ -344,4 +353,33 @@ it("stops demanding a reconnect once the source is healthy again", () => {
   expect(screen.queryByRole("button", { name: /Reconnect Google/ })).not.toBeInTheDocument();
   expect(screen.getByText(/connection looks healthy now/)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /Run the audit again/ })).toBeInTheDocument();
+});
+
+// "90 conversations reviewed" counted every thread swept, including inbox mail
+// the audit never judged. The number now reflects what was examined.
+it("reports what the audit examined, not everything it swept", () => {
+  render(
+    <CommitmentQueue
+      {...props({
+        entries: entries(),
+        latestScan: {
+          id: "scan-cov",
+          status: "completed",
+          mode: "linked",
+          lookbackDays: 90,
+          threadsSeen: 90,
+          candidatesSeen: 0,
+          threadsDeepRead: 8,
+          threadsSnippetOnly: 2,
+          threadsSkipped: 80,
+        },
+      })}
+    />,
+  );
+
+  // 8 deep + 2 preview = 10 examined, not 90 swept.
+  expect(screen.getByText("10")).toBeInTheDocument();
+  expect(screen.queryByText("90")).not.toBeInTheDocument();
+  expect(screen.getByText("Not a conversation")).toBeInTheDocument();
+  expect(screen.getByText("80")).toBeInTheDocument();
 });

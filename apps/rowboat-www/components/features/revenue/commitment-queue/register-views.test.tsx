@@ -32,6 +32,8 @@ describe("the five register views", () => {
 
   it("scopes 'what changed' to a window rather than a direction", () => {
     const filter = registerFilterFor("changed");
+    expect(filter).not.toBeNull();
+    if (!filter) throw new Error("changed view did not produce a filter");
     expect(filter.changedSince).toBeTruthy();
     expect(filter.direction).toBeUndefined();
     expect(new Date(filter.changedSince as string).getTime()).toBeLessThan(Date.now());
@@ -46,9 +48,27 @@ describe("the five register views", () => {
     });
   });
 
-  it("every view is bounded, so no view can fetch the whole ledger", () => {
-    for (const view of REGISTER_VIEWS) {
-      expect(registerFilterFor(view.id).limit).toBeGreaterThan(0);
+  it("does not turn an unscoped account or owner view into a full-ledger request", () => {
+    expect(registerFilterFor("by_account")).toBeNull();
+    expect(registerFilterFor("by_owner", { owner: "  " })).toBeNull();
+  });
+
+  it("includes candidates only when the review filter asks for them", () => {
+    expect(registerFilterFor("we_owe", { includeCandidates: true })).toMatchObject({
+      includeCandidates: true,
+    });
+    expect(registerFilterFor("we_owe")?.includeCandidates).toBeUndefined();
+  });
+
+  it("every request is bounded, so no view can fetch the whole ledger", () => {
+    for (const filter of [
+      registerFilterFor("we_owe"),
+      registerFilterFor("they_owe"),
+      registerFilterFor("changed"),
+      registerFilterFor("by_account", { relationshipId: "rel-1" }),
+      registerFilterFor("by_owner", { owner: "sam@x.co" }),
+    ]) {
+      expect(filter?.limit).toBeGreaterThan(0);
     }
   });
 });

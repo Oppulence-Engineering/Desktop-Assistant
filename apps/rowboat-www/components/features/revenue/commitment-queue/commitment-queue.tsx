@@ -44,7 +44,7 @@ import type {
 } from "@/types/revenue";
 
 const THREE_DAYS = 72 * 60 * 60 * 1000;
-const ACTIVE_SOURCE_STATES = new Set(["connected", "backfilling", "live"]);
+const ACTIVE_SOURCE_STATES = new Set(["connected", "backfilling", "live", "stale"]);
 
 export interface CommitmentQueueTransition {
   kind: string;
@@ -277,10 +277,7 @@ function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQue
 
 // A dead Google grant and a transient provider fault need different words and
 // a different button. Everything else is "try again".
-function scanFailure(
-  scan: RevenueLeakScan | null | undefined,
-  sourceStillBroken: boolean,
-) {
+function scanFailure(scan: RevenueLeakScan | null | undefined, sourceStillBroken: boolean) {
   if (!scan?.error) return null;
   const wasAuthFailure = /invalid authentication|invalid_grant|unauthorized|returned 40[13]/i.test(
     scan.error,
@@ -414,6 +411,14 @@ export function CommitmentQueue({
   // After a successful reconnect the old 401 must stop demanding another one —
   // it becomes "that audit did not finish", with a retry.
   const failure = scanFailure(failedScan, googleNeedsReconnect);
+  // Coverage, read straight from the scan. An older scan that predates
+  // these counters reports zero for them, so fall back to the sweep total
+  // rather than claiming nothing was examined.
+  const swept = latestScan?.threadsSeen ?? 0;
+  const skipped = latestScan?.threadsSkipped ?? 0;
+  const snippetOnly = latestScan?.threadsSnippetOnly ?? 0;
+  const deepRead = latestScan?.threadsDeepRead ?? 0;
+  const examined = deepRead + snippetOnly > 0 || skipped > 0 ? deepRead + snippetOnly : swept;
   const googleConnected = !googleNeedsReconnect && sourceConnected(google);
   const needsReview = items.filter(
     (item) => item.urgency !== "closed" && item.missingEvidence.length > 0,
@@ -583,18 +588,40 @@ export function CommitmentQueue({
       </div>
 
       {latestScan?.status === "completed" ? (
-        <div className="flex min-h-12 items-center gap-4 border-b border-border bg-background-50 px-3 text-[12px] text-primary/55">
+        <div className="flex min-h-12 flex-wrap items-center gap-4 border-b border-border bg-background-50 px-3 text-[12px] text-primary/55">
           <span className="font-medium text-primary">
             Latest {latestScan.lookbackDays}-day audit
           </span>
           <dl className="flex items-center gap-4">
+            {/* "Conversations reviewed" used to show every thread swept,
+                including inbox mail the audit never judged. It now counts what
+                was actually examined, and says separately what was passed
+                over, so the number cannot imply a depth the scan did not have. */}
             <div className="flex items-center gap-1.5">
-              <dd className="font-medium text-primary">{latestScan.threadsSeen ?? 0}</dd>
+              <dd className="font-medium text-primary">{examined}</dd>
               <dt>Conversations reviewed</dt>
             </div>
+            {skipped > 0 ? (
+              <div
+                className="flex items-center gap-1.5"
+                title="Swept but not judged: no message from you in the thread, so there was no promise of yours to find. Usually newsletters, receipts and notifications."
+              >
+                <dd className="font-medium text-primary/70">{skipped}</dd>
+                <dt>Not a conversation</dt>
+              </div>
+            ) : null}
+            {snippetOnly > 0 ? (
+              <div
+                className="hidden items-center gap-1.5 xl:flex"
+                title="Judged on a short preview because the message body could not be read. A promise further down the message can be missed."
+              >
+                <dd className="font-medium text-amber-500">{snippetOnly}</dd>
+                <dt>Preview only</dt>
+              </div>
+            ) : null}
             <div className="flex items-center gap-1.5">
-              <dd className="font-medium text-primary">{relationshipCount}</dd>
-              <dt>Relationships mapped</dt>
+              <dd className="font-medium text-primary">{latestScan.relationshipsCreated ?? 0}</dd>
+              <dt>New relationships</dt>
             </div>
             <div className="hidden items-center gap-1.5 lg:flex">
               <dd className="font-medium text-primary">{latestScan.candidatesSeen ?? 0}</dd>
@@ -609,8 +636,7 @@ export function CommitmentQueue({
               type="button"
               variant="outline"
             >
-              Review {relationshipCount}{" "}
-              {relationshipCount === 1 ? "relationship" : "relationships"}
+              Review relationships
             </Button>
           ) : null}
         </div>
@@ -1018,9 +1044,7 @@ export function CommitmentQueue({
                 <Fact
                   label="Evidence missing"
                   value={
-                    selected.missingEvidence.length
-                      ? selected.missingEvidence.join(", ")
-                      : "None"
+                    selected.missingEvidence.length ? selected.missingEvidence.join(", ") : "None"
                   }
                 />
               </dl>

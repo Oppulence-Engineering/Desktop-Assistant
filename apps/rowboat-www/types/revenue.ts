@@ -519,6 +519,11 @@ export interface RevenueLeakScan {
   relationshipsCreated?: number;
   evidencesCreated?: number;
   actionsCreated?: number;
+  commitmentsCreated?: number;
+  /** Coverage: how much of what was swept was actually examined. */
+  threadsDeepRead?: number;
+  threadsSnippetOnly?: number;
+  threadsSkipped?: number;
   startedAt?: string;
   completedAt?: string;
   sourceFreshnessAt?: string;
@@ -1104,14 +1109,7 @@ export type RelationshipGraphSavedView = z.infer<typeof RelationshipGraphSavedVi
 /** The state a reader sees, which is not the status the database stores:
  *  "met" is stored as "fulfilled" and "at risk" is derived from the due date. */
 export type RegisterState =
-  | "open"
-  | "at_risk"
-  | "met"
-  | "missed"
-  | "waived"
-  | "disputed"
-  | "cancelled"
-  | "superseded";
+  "open" | "at_risk" | "met" | "missed" | "waived" | "disputed" | "cancelled" | "superseded";
 
 export interface RegisterEntry extends RelationshipCommitment {
   state: RegisterState;
@@ -1126,6 +1124,7 @@ export interface CommitmentRegisterFilter {
   relationshipId?: string;
   dueBefore?: string;
   changedSince?: string;
+  includeCandidates?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -1184,5 +1183,6 @@ export interface OpenPromisesReport {
   outboundCount: number;
   inboundCount: number;
   byAccount: Record<string, number>;
+  truncated: boolean;
   items: OpenPromisesReportItem[];
 }
