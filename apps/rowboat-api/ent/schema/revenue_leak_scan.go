@@ -44,6 +44,12 @@ func (RevenueLeakScan) Fields() []ent.Field {
 		field.Int("evidences_created").Default(0).Min(0),
 		field.Int("actions_created").Default(0).Min(0),
 		field.Int("commitments_created").Default(0).Min(0),
+		// Coverage, so "conversations reviewed" cannot imply a depth the scan
+		// did not have. A thread whose body could not be read was judged on a
+		// ~200 character snippet; a skipped thread was not judged at all.
+		field.Int("threads_deep_read").Default(0).Min(0),
+		field.Int("threads_snippet_only").Default(0).Min(0),
+		field.Int("threads_skipped").Default(0).Min(0),
 		field.Time("started_at").Optional().Nillable(),
 		field.Time("completed_at").Optional().Nillable(),
 		field.Text("error").Optional(),

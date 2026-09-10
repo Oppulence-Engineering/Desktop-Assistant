@@ -19,12 +19,16 @@ const maxGmailMessages = 10
 // GmailMessage is the narrow read shape the runtime's connector tool returns
 // (RFC 004 contract): headers + snippet, never raw bodies in v1.
 type GmailMessage struct {
-	ID         string `json:"id"`
-	ThreadID   string `json:"threadId"`
-	From       string `json:"from"`
-	Subject    string `json:"subject"`
-	ReceivedAt string `json:"receivedAt"`
-	Snippet    string `json:"snippet"`
+	ID         string   `json:"id"`
+	ThreadID   string   `json:"threadId"`
+	From       string   `json:"from"`
+	To         string   `json:"to,omitempty"`
+	Cc         string   `json:"cc,omitempty"`
+	Subject    string   `json:"subject"`
+	ReceivedAt string   `json:"receivedAt"`
+	Snippet    string   `json:"snippet"`
+	Labels     []string `json:"labels,omitempty"`
+	Outbound   bool     `json:"outbound"`
 }
 
 // ListMessages searches the connected mailbox (Gmail query syntax) and
@@ -54,13 +58,17 @@ func (c *Client) ListMessages(ctx context.Context, token, query string, limit in
 		mq := url.Values{}
 		mq.Set("format", "metadata")
 		mq.Add("metadataHeaders", "From")
+		mq.Add("metadataHeaders", "To")
+		mq.Add("metadataHeaders", "Cc")
 		mq.Add("metadataHeaders", "Subject")
 		mq.Add("metadataHeaders", "Date")
 		var detail struct {
-			ID       string `json:"id"`
-			ThreadID string `json:"threadId"`
-			Snippet  string `json:"snippet"`
-			Payload  struct {
+			ID           string   `json:"id"`
+			ThreadID     string   `json:"threadId"`
+			Snippet      string   `json:"snippet"`
+			LabelIDs     []string `json:"labelIds"`
+			InternalDate string   `json:"internalDate"`
+			Payload      struct {
 				Headers []struct {
 					Name  string `json:"name"`
 					Value string `json:"value"`
@@ -70,15 +78,29 @@ func (c *Client) ListMessages(ctx context.Context, token, query string, limit in
 		if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages/"+url.PathEscape(m.ID), mq, &detail); err != nil {
 			return nil, fmt.Errorf("gmail messages.get %s: %w", m.ID, err)
 		}
-		msg := GmailMessage{ID: detail.ID, ThreadID: detail.ThreadID, Snippet: detail.Snippet}
+		msg := GmailMessage{ID: detail.ID, ThreadID: detail.ThreadID, Snippet: detail.Snippet, Labels: detail.LabelIDs}
+		for _, label := range detail.LabelIDs {
+			if label == "SENT" {
+				msg.Outbound = true
+			}
+		}
+		if ms, err := strconv.ParseInt(detail.InternalDate, 10, 64); err == nil && ms > 0 {
+			msg.ReceivedAt = time.UnixMilli(ms).UTC().Format(time.RFC3339)
+		}
 		for _, h := range detail.Payload.Headers {
-			switch h.Name {
-			case "From":
+			switch strings.ToLower(h.Name) {
+			case "from":
 				msg.From = h.Value
-			case "Subject":
+			case "to":
+				msg.To = h.Value
+			case "cc":
+				msg.Cc = h.Value
+			case "subject":
 				msg.Subject = h.Value
-			case "Date":
-				msg.ReceivedAt = h.Value
+			case "date":
+				if msg.ReceivedAt == "" {
+					msg.ReceivedAt = h.Value
+				}
 			}
 		}
 		out = append(out, msg)
@@ -216,6 +238,9 @@ type GmailThreadMessage struct {
 	Snippet  string    `json:"snippet"`
 	Outbound bool      `json:"outbound"`
 	At       time.Time `json:"at"`
+	// Labels is kept so that "this thread has no outbound message", on a sweep
+	// anchored to in:sent, is diagnosable rather than a guess.
+	Labels []string `json:"labels,omitempty"`
 }
 
 // ListThreadIDs searches the mailbox (Gmail query syntax) and returns up to
@@ -272,7 +297,7 @@ func (c *Client) GetThreadMessages(ctx context.Context, token, threadID string) 
 	}
 	out := make([]GmailThreadMessage, 0, len(thread.Messages))
 	for _, m := range thread.Messages {
-		msg := GmailThreadMessage{ID: m.ID, ThreadID: m.ThreadID, Snippet: m.Snippet}
+		msg := GmailThreadMessage{ID: m.ID, ThreadID: m.ThreadID, Snippet: m.Snippet, Labels: m.LabelIDs}
 		for _, l := range m.LabelIDs {
 			if l == "SENT" {
 				msg.Outbound = true
@@ -296,34 +321,110 @@ func (c *Client) GetThreadMessages(ctx context.Context, token, threadID string) 
 	return out, nil
 }
 
-// GetMessageBody fetches one message with format=full and returns its
-// plain-text body (RFC 031 Layer 3, on-demand). It walks the MIME parts for a
-// text/plain payload, falling back to the top-level body, and decodes Gmail's
-// base64url. HTML parts are ignored — the caller wants readable text, and not
-// rendering remote HTML is the safer default. One API call.
-func (c *Client) GetMessageBody(ctx context.Context, token, messageID string) (string, error) {
+type GmailAttachment struct {
+	ID       string `json:"id,omitempty"`
+	Filename string `json:"filename"`
+	MIMEType string `json:"mimeType,omitempty"`
+	Size     int    `json:"size,omitempty"`
+}
+
+type GmailMessageContent struct {
+	MessageID   string            `json:"messageId"`
+	ThreadID    string            `json:"threadId"`
+	From        string            `json:"from,omitempty"`
+	To          string            `json:"to,omitempty"`
+	Cc          string            `json:"cc,omitempty"`
+	Subject     string            `json:"subject,omitempty"`
+	ReceivedAt  string            `json:"receivedAt,omitempty"`
+	Snippet     string            `json:"snippet,omitempty"`
+	Labels      []string          `json:"labels,omitempty"`
+	Outbound    bool              `json:"outbound"`
+	Body        string            `json:"body"`
+	Attachments []GmailAttachment `json:"attachments"`
+}
+
+// GetMessageContent fetches one message with format=full and returns its
+// plain-text body plus attachment metadata. It never downloads attachment
+// bytes or renders HTML. One API call.
+func (c *Client) GetMessageContent(ctx context.Context, token, messageID string) (GmailMessageContent, error) {
 	q := url.Values{}
 	q.Set("format", "full")
 	var msg struct {
-		Payload gmailPart `json:"payload"`
+		ID           string    `json:"id"`
+		ThreadID     string    `json:"threadId"`
+		Snippet      string    `json:"snippet"`
+		LabelIDs     []string  `json:"labelIds"`
+		InternalDate string    `json:"internalDate"`
+		Payload      gmailPart `json:"payload"`
 	}
 	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages/"+url.PathEscape(messageID), q, &msg); err != nil {
-		return "", fmt.Errorf("gmail messages.get body %s: %w", messageID, err)
+		return GmailMessageContent{}, fmt.Errorf("gmail messages.get content %s: %w", messageID, err)
 	}
-	if body := extractPlainText(&msg.Payload); body != "" {
-		return body, nil
+	content := GmailMessageContent{
+		MessageID: msg.ID, ThreadID: msg.ThreadID, Snippet: msg.Snippet, Labels: msg.LabelIDs,
+		Body: extractPlainText(&msg.Payload), Attachments: []GmailAttachment{},
 	}
-	return "", nil
+	for _, label := range msg.LabelIDs {
+		if label == "SENT" {
+			content.Outbound = true
+		}
+	}
+	if ms, err := strconv.ParseInt(msg.InternalDate, 10, 64); err == nil && ms > 0 {
+		content.ReceivedAt = time.UnixMilli(ms).UTC().Format(time.RFC3339)
+	}
+	for _, header := range msg.Payload.Headers {
+		switch strings.ToLower(header.Name) {
+		case "from":
+			content.From = header.Value
+		case "to":
+			content.To = header.Value
+		case "cc":
+			content.Cc = header.Value
+		case "subject":
+			content.Subject = header.Value
+		case "date":
+			if content.ReceivedAt == "" {
+				content.ReceivedAt = header.Value
+			}
+		}
+	}
+	collectAttachments(&msg.Payload, &content.Attachments)
+	return content, nil
+}
+
+// GetMessageBody preserves the ingestion path's body-only contract.
+func (c *Client) GetMessageBody(ctx context.Context, token, messageID string) (string, error) {
+	content, err := c.GetMessageContent(ctx, token, messageID)
+	return content.Body, err
 }
 
 type gmailPart struct {
+	Filename string      `json:"filename"`
 	MimeType string      `json:"mimeType"`
 	Body     gmailBody   `json:"body"`
 	Parts    []gmailPart `json:"parts"`
+	Headers  []struct {
+		Name  string `json:"name"`
+		Value string `json:"value"`
+	} `json:"headers"`
 }
 
 type gmailBody struct {
-	Data string `json:"data"`
+	AttachmentID string `json:"attachmentId"`
+	Data         string `json:"data"`
+	Size         int    `json:"size"`
+}
+
+func collectAttachments(part *gmailPart, out *[]GmailAttachment) {
+	if part == nil {
+		return
+	}
+	if part.Filename != "" {
+		*out = append(*out, GmailAttachment{ID: part.Body.AttachmentID, Filename: part.Filename, MIMEType: part.MimeType, Size: part.Body.Size})
+	}
+	for i := range part.Parts {
+		collectAttachments(&part.Parts[i], out)
+	}
 }
 
 // extractPlainText returns the first text/plain body found in the MIME tree,

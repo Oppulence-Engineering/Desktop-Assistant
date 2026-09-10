@@ -94313,6 +94313,12 @@ type RevenueLeakScanMutation struct {
 	addactions_created       *int
 	commitments_created      *int
 	addcommitments_created   *int
+	threads_deep_read        *int
+	addthreads_deep_read     *int
+	threads_snippet_only     *int
+	addthreads_snippet_only  *int
+	threads_skipped          *int
+	addthreads_skipped       *int
 	started_at               *time.Time
 	completed_at             *time.Time
 	error                    *string
@@ -95016,6 +95022,174 @@ func (m *RevenueLeakScanMutation) ResetCommitmentsCreated() {
 	m.addcommitments_created = nil
 }
 
+// SetThreadsDeepRead sets the "threads_deep_read" field.
+func (m *RevenueLeakScanMutation) SetThreadsDeepRead(i int) {
+	m.threads_deep_read = &i
+	m.addthreads_deep_read = nil
+}
+
+// ThreadsDeepRead returns the value of the "threads_deep_read" field in the mutation.
+func (m *RevenueLeakScanMutation) ThreadsDeepRead() (r int, exists bool) {
+	v := m.threads_deep_read
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldThreadsDeepRead returns the old "threads_deep_read" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldThreadsDeepRead(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldThreadsDeepRead is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldThreadsDeepRead requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldThreadsDeepRead: %w", err)
+	}
+	return oldValue.ThreadsDeepRead, nil
+}
+
+// AddThreadsDeepRead adds i to the "threads_deep_read" field.
+func (m *RevenueLeakScanMutation) AddThreadsDeepRead(i int) {
+	if m.addthreads_deep_read != nil {
+		*m.addthreads_deep_read += i
+	} else {
+		m.addthreads_deep_read = &i
+	}
+}
+
+// AddedThreadsDeepRead returns the value that was added to the "threads_deep_read" field in this mutation.
+func (m *RevenueLeakScanMutation) AddedThreadsDeepRead() (r int, exists bool) {
+	v := m.addthreads_deep_read
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetThreadsDeepRead resets all changes to the "threads_deep_read" field.
+func (m *RevenueLeakScanMutation) ResetThreadsDeepRead() {
+	m.threads_deep_read = nil
+	m.addthreads_deep_read = nil
+}
+
+// SetThreadsSnippetOnly sets the "threads_snippet_only" field.
+func (m *RevenueLeakScanMutation) SetThreadsSnippetOnly(i int) {
+	m.threads_snippet_only = &i
+	m.addthreads_snippet_only = nil
+}
+
+// ThreadsSnippetOnly returns the value of the "threads_snippet_only" field in the mutation.
+func (m *RevenueLeakScanMutation) ThreadsSnippetOnly() (r int, exists bool) {
+	v := m.threads_snippet_only
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldThreadsSnippetOnly returns the old "threads_snippet_only" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldThreadsSnippetOnly(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldThreadsSnippetOnly is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldThreadsSnippetOnly requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldThreadsSnippetOnly: %w", err)
+	}
+	return oldValue.ThreadsSnippetOnly, nil
+}
+
+// AddThreadsSnippetOnly adds i to the "threads_snippet_only" field.
+func (m *RevenueLeakScanMutation) AddThreadsSnippetOnly(i int) {
+	if m.addthreads_snippet_only != nil {
+		*m.addthreads_snippet_only += i
+	} else {
+		m.addthreads_snippet_only = &i
+	}
+}
+
+// AddedThreadsSnippetOnly returns the value that was added to the "threads_snippet_only" field in this mutation.
+func (m *RevenueLeakScanMutation) AddedThreadsSnippetOnly() (r int, exists bool) {
+	v := m.addthreads_snippet_only
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetThreadsSnippetOnly resets all changes to the "threads_snippet_only" field.
+func (m *RevenueLeakScanMutation) ResetThreadsSnippetOnly() {
+	m.threads_snippet_only = nil
+	m.addthreads_snippet_only = nil
+}
+
+// SetThreadsSkipped sets the "threads_skipped" field.
+func (m *RevenueLeakScanMutation) SetThreadsSkipped(i int) {
+	m.threads_skipped = &i
+	m.addthreads_skipped = nil
+}
+
+// ThreadsSkipped returns the value of the "threads_skipped" field in the mutation.
+func (m *RevenueLeakScanMutation) ThreadsSkipped() (r int, exists bool) {
+	v := m.threads_skipped
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldThreadsSkipped returns the old "threads_skipped" field's value of the RevenueLeakScan entity.
+// If the RevenueLeakScan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RevenueLeakScanMutation) OldThreadsSkipped(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldThreadsSkipped is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldThreadsSkipped requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldThreadsSkipped: %w", err)
+	}
+	return oldValue.ThreadsSkipped, nil
+}
+
+// AddThreadsSkipped adds i to the "threads_skipped" field.
+func (m *RevenueLeakScanMutation) AddThreadsSkipped(i int) {
+	if m.addthreads_skipped != nil {
+		*m.addthreads_skipped += i
+	} else {
+		m.addthreads_skipped = &i
+	}
+}
+
+// AddedThreadsSkipped returns the value that was added to the "threads_skipped" field in this mutation.
+func (m *RevenueLeakScanMutation) AddedThreadsSkipped() (r int, exists bool) {
+	v := m.addthreads_skipped
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetThreadsSkipped resets all changes to the "threads_skipped" field.
+func (m *RevenueLeakScanMutation) ResetThreadsSkipped() {
+	m.threads_skipped = nil
+	m.addthreads_skipped = nil
+}
+
 // SetStartedAt sets the "started_at" field.
 func (m *RevenueLeakScanMutation) SetStartedAt(t time.Time) {
 	m.started_at = &t
@@ -95324,7 +95498,7 @@ func (m *RevenueLeakScanMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RevenueLeakScanMutation) Fields() []string {
-	fields := make([]string, 0, 16)
+	fields := make([]string, 0, 19)
 	if m.created_at != nil {
 		fields = append(fields, revenueleakscan.FieldCreatedAt)
 	}
@@ -95360,6 +95534,15 @@ func (m *RevenueLeakScanMutation) Fields() []string {
 	}
 	if m.commitments_created != nil {
 		fields = append(fields, revenueleakscan.FieldCommitmentsCreated)
+	}
+	if m.threads_deep_read != nil {
+		fields = append(fields, revenueleakscan.FieldThreadsDeepRead)
+	}
+	if m.threads_snippet_only != nil {
+		fields = append(fields, revenueleakscan.FieldThreadsSnippetOnly)
+	}
+	if m.threads_skipped != nil {
+		fields = append(fields, revenueleakscan.FieldThreadsSkipped)
 	}
 	if m.started_at != nil {
 		fields = append(fields, revenueleakscan.FieldStartedAt)
@@ -95405,6 +95588,12 @@ func (m *RevenueLeakScanMutation) Field(name string) (ent.Value, bool) {
 		return m.ActionsCreated()
 	case revenueleakscan.FieldCommitmentsCreated:
 		return m.CommitmentsCreated()
+	case revenueleakscan.FieldThreadsDeepRead:
+		return m.ThreadsDeepRead()
+	case revenueleakscan.FieldThreadsSnippetOnly:
+		return m.ThreadsSnippetOnly()
+	case revenueleakscan.FieldThreadsSkipped:
+		return m.ThreadsSkipped()
 	case revenueleakscan.FieldStartedAt:
 		return m.StartedAt()
 	case revenueleakscan.FieldCompletedAt:
@@ -95446,6 +95635,12 @@ func (m *RevenueLeakScanMutation) OldField(ctx context.Context, name string) (en
 		return m.OldActionsCreated(ctx)
 	case revenueleakscan.FieldCommitmentsCreated:
 		return m.OldCommitmentsCreated(ctx)
+	case revenueleakscan.FieldThreadsDeepRead:
+		return m.OldThreadsDeepRead(ctx)
+	case revenueleakscan.FieldThreadsSnippetOnly:
+		return m.OldThreadsSnippetOnly(ctx)
+	case revenueleakscan.FieldThreadsSkipped:
+		return m.OldThreadsSkipped(ctx)
 	case revenueleakscan.FieldStartedAt:
 		return m.OldStartedAt(ctx)
 	case revenueleakscan.FieldCompletedAt:
@@ -95547,6 +95742,27 @@ func (m *RevenueLeakScanMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCommitmentsCreated(v)
 		return nil
+	case revenueleakscan.FieldThreadsDeepRead:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetThreadsDeepRead(v)
+		return nil
+	case revenueleakscan.FieldThreadsSnippetOnly:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetThreadsSnippetOnly(v)
+		return nil
+	case revenueleakscan.FieldThreadsSkipped:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetThreadsSkipped(v)
+		return nil
 	case revenueleakscan.FieldStartedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -95604,6 +95820,15 @@ func (m *RevenueLeakScanMutation) AddedFields() []string {
 	if m.addcommitments_created != nil {
 		fields = append(fields, revenueleakscan.FieldCommitmentsCreated)
 	}
+	if m.addthreads_deep_read != nil {
+		fields = append(fields, revenueleakscan.FieldThreadsDeepRead)
+	}
+	if m.addthreads_snippet_only != nil {
+		fields = append(fields, revenueleakscan.FieldThreadsSnippetOnly)
+	}
+	if m.addthreads_skipped != nil {
+		fields = append(fields, revenueleakscan.FieldThreadsSkipped)
+	}
 	return fields
 }
 
@@ -95626,6 +95851,12 @@ func (m *RevenueLeakScanMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedActionsCreated()
 	case revenueleakscan.FieldCommitmentsCreated:
 		return m.AddedCommitmentsCreated()
+	case revenueleakscan.FieldThreadsDeepRead:
+		return m.AddedThreadsDeepRead()
+	case revenueleakscan.FieldThreadsSnippetOnly:
+		return m.AddedThreadsSnippetOnly()
+	case revenueleakscan.FieldThreadsSkipped:
+		return m.AddedThreadsSkipped()
 	}
 	return nil, false
 }
@@ -95683,6 +95914,27 @@ func (m *RevenueLeakScanMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddCommitmentsCreated(v)
+		return nil
+	case revenueleakscan.FieldThreadsDeepRead:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddThreadsDeepRead(v)
+		return nil
+	case revenueleakscan.FieldThreadsSnippetOnly:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddThreadsSnippetOnly(v)
+		return nil
+	case revenueleakscan.FieldThreadsSkipped:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddThreadsSkipped(v)
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueLeakScan numeric field %s", name)
@@ -95779,6 +96031,15 @@ func (m *RevenueLeakScanMutation) ResetField(name string) error {
 		return nil
 	case revenueleakscan.FieldCommitmentsCreated:
 		m.ResetCommitmentsCreated()
+		return nil
+	case revenueleakscan.FieldThreadsDeepRead:
+		m.ResetThreadsDeepRead()
+		return nil
+	case revenueleakscan.FieldThreadsSnippetOnly:
+		m.ResetThreadsSnippetOnly()
+		return nil
+	case revenueleakscan.FieldThreadsSkipped:
+		m.ResetThreadsSkipped()
 		return nil
 	case revenueleakscan.FieldStartedAt:
 		m.ResetStartedAt()

@@ -67,6 +67,7 @@ func (h *Handler) Mount(r chi.Router) {
 	r.Get("/v1/revenue-digest", h.Digest)
 	r.Get("/v1/revenue-search", h.SemanticSearch)
 	r.Route("/v1/revenue-leak-scans", func(r chi.Router) {
+		r.Get("/", h.ListScans)
 		r.Post("/", h.StartScan)
 		r.Get("/{scanId}", h.GetScan)
 		// The wedge: what a prospect reads on their first day.
@@ -1458,19 +1459,26 @@ func (h *Handler) SourceBody(w http.ResponseWriter, r *http.Request) {
 // --- scan endpoints ----------------------------------------------------------
 
 type scanDTO struct {
-	ID                   string     `json:"id"`
-	Status               string     `json:"status"`
-	Mode                 string     `json:"mode"`
-	LookbackDays         int        `json:"lookbackDays"`
-	ThreadsSeen          int        `json:"threadsSeen"`
-	CandidatesSeen       int        `json:"candidatesSeen"`
-	RelationshipsCreated int        `json:"relationshipsCreated"`
-	EvidencesCreated     int        `json:"evidencesCreated"`
-	ActionsCreated       int        `json:"actionsCreated"`
-	StartedAt            *time.Time `json:"startedAt,omitempty"`
-	CompletedAt          *time.Time `json:"completedAt,omitempty"`
-	SourceFreshnessAt    *time.Time `json:"sourceFreshnessAt,omitempty"`
-	Error                string     `json:"error,omitempty"`
+	ID                   string `json:"id"`
+	Status               string `json:"status"`
+	Mode                 string `json:"mode"`
+	LookbackDays         int    `json:"lookbackDays"`
+	ThreadsSeen          int    `json:"threadsSeen"`
+	CandidatesSeen       int    `json:"candidatesSeen"`
+	RelationshipsCreated int    `json:"relationshipsCreated"`
+	EvidencesCreated     int    `json:"evidencesCreated"`
+	ActionsCreated       int    `json:"actionsCreated"`
+	CommitmentsCreated   int    `json:"commitmentsCreated"`
+	// Coverage: how much of what was swept was actually examined. Without
+	// these, "conversations reviewed" implies a depth the scan may not have
+	// had.
+	ThreadsDeepRead    int        `json:"threadsDeepRead"`
+	ThreadsSnippetOnly int        `json:"threadsSnippetOnly"`
+	ThreadsSkipped     int        `json:"threadsSkipped"`
+	StartedAt          *time.Time `json:"startedAt,omitempty"`
+	CompletedAt        *time.Time `json:"completedAt,omitempty"`
+	SourceFreshnessAt  *time.Time `json:"sourceFreshnessAt,omitempty"`
+	Error              string     `json:"error,omitempty"`
 }
 
 func scanToDTO(sc *ent.RevenueLeakScan) scanDTO {
@@ -1484,11 +1492,42 @@ func scanToDTO(sc *ent.RevenueLeakScan) scanDTO {
 		RelationshipsCreated: sc.RelationshipsCreated,
 		EvidencesCreated:     sc.EvidencesCreated,
 		ActionsCreated:       sc.ActionsCreated,
+		CommitmentsCreated:   sc.CommitmentsCreated,
+		ThreadsDeepRead:      sc.ThreadsDeepRead,
+		ThreadsSnippetOnly:   sc.ThreadsSnippetOnly,
+		ThreadsSkipped:       sc.ThreadsSkipped,
 		StartedAt:            sc.StartedAt,
 		CompletedAt:          sc.CompletedAt,
 		SourceFreshnessAt:    sc.SourceFreshnessAt,
-		Error:                sc.Error,
+		Error:                UserSafeScanError(sc.Error),
 	}
+}
+
+// ListScans returns persisted audit history across sessions and automatic runs.
+func (h *Handler) ListScans(w http.ResponseWriter, r *http.Request) {
+	u, ok := h.viewer(w, r)
+	if !ok {
+		return
+	}
+	limit := 10
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil || value < 1 {
+			h.writeServiceError(w, fmt.Errorf("%w: invalid limit", ErrInvalidInput))
+			return
+		}
+		limit = value
+	}
+	scans, err := h.svc.ListScans(r.Context(), u, limit)
+	if err != nil {
+		h.writeServiceError(w, err)
+		return
+	}
+	out := make([]scanDTO, 0, len(scans))
+	for _, scan := range scans {
+		out = append(out, scanToDTO(scan))
+	}
+	httpx.WriteJSON(w, http.StatusOK, map[string]any{"scans": out})
 }
 
 // StartScan starts a bounded historical scan.

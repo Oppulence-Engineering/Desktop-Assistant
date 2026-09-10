@@ -234,6 +234,9 @@ func (s *Service) runScan(ctx context.Context, u *ent.User, scan *ent.RevenueLea
 		SetEvidencesCreated(stats.evidences).
 		SetActionsCreated(stats.actions).
 		SetCommitmentsCreated(stats.commitments).
+		SetThreadsDeepRead(stats.deepRead).
+		SetThreadsSnippetOnly(stats.snippetOnly).
+		SetThreadsSkipped(stats.skipped).
 		ClearActiveClaim().
 		SetCompletedAt(s.now())
 	if stats.freshest != nil {
@@ -276,7 +279,12 @@ type scanStats struct {
 	evidences     int
 	actions       int
 	commitments   int
-	freshest      *time.Time
+	// Coverage. threads counts everything swept; these say how much of it was
+	// actually examined, so a scan cannot claim a depth it did not have.
+	deepRead    int
+	snippetOnly int
+	skipped     int
+	freshest    *time.Time
 }
 
 func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLeakScan) (scanStats, error) {
@@ -315,6 +323,25 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		stats.threads++
 		sum := summarizeThread(selfEmail, msgs)
 		if sum == nil || sum.OutboundCount == 0 {
+			// Not judged at all: no external counterparty (self-mail, or every
+			// participant a no-reply address), or nothing outbound to promise
+			// with. Sampled into the log so the share is diagnosable rather
+			// than guessed at.
+			stats.skipped++
+			if stats.skipped <= scanSkipLogSample {
+				reason := "no_external_counterparty"
+				if sum != nil {
+					reason = "no_outbound_message"
+				}
+				s.log.Info("revenue: scan skipped thread",
+					zap.String("reason", reason),
+					zap.Int("messages", len(msgs)),
+					zap.Strings("firstMessageLabels", msgs[0].Labels),
+					zap.Bool("firstMessageOutbound", msgs[0].Outbound),
+					zap.Bool("hasFrom", strings.TrimSpace(msgs[0].From) != ""),
+					zap.Bool("hasTo", strings.TrimSpace(msgs[0].To) != ""),
+					zap.String("threadId", msgs[0].ThreadID))
+			}
 			continue
 		}
 		if stats.freshest == nil || sum.LastAt.After(*stats.freshest) {
@@ -355,7 +382,14 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		// read. Same detector, same evidence rules, same one-commitment-per-
 		// thread cap — it simply stops discarding the messages the promise was
 		// actually in.
-		anchor, promise := s.findExplicitCommitment(ctx, u, sum)
+		anchor, promise, readBody := s.findExplicitCommitment(ctx, u, sum)
+		if readBody {
+			stats.deepRead++
+		} else {
+			// Judged on a ~200 character Gmail snippet, because the body was
+			// not available. Most promises do not survive that truncation.
+			stats.snippetOnly++
+		}
 		if hit == nil && promise != nil {
 			anchor.Snippet = promise.Text
 			hit = &detectorHit{
@@ -837,15 +871,22 @@ var (
 // are found to hide deeper than this.
 const commitmentScanDepth = 12
 
+// scanSkipLogSample bounds how many skipped threads are described in the log.
+// The count is always exact; the sample is only there to name the reason.
+const scanSkipLogSample = 20
+
 // findExplicitCommitment returns the newest message in the thread that states
 // an explicit promise, and the promise. It returns the thread's last message
 // and a nil promise when there is none, so callers still have an anchor for
 // the other detectors' evidence.
+// The bool reports whether any message body was actually read. False means the
+// whole thread was judged on snippets.
 func (s *Service) findExplicitCommitment(
 	ctx context.Context,
 	u *ent.User,
 	sum *threadSummary,
-) (googleapi.GmailThreadMessage, *scannedCommitment) {
+) (googleapi.GmailThreadMessage, *scannedCommitment, bool) {
+	readBody := false
 	ordered := append([]googleapi.GmailThreadMessage(nil), sum.Messages...)
 	sort.SliceStable(ordered, func(i, j int) bool { return ordered[i].At.After(ordered[j].At) })
 	for i, message := range ordered {
@@ -855,12 +896,13 @@ func (s *Service) findExplicitCommitment(
 		text := message.Snippet
 		if body, err := s.MessageBody(ctx, u, message.ID); err == nil {
 			text = body
+			readBody = true
 		}
 		if promise := detectExplicitCommitmentIn(message, sum, text); promise != nil {
-			return message, promise
+			return message, promise, readBody
 		}
 	}
-	return lastMessage(sum), nil
+	return lastMessage(sum), nil, readBody
 }
 
 func detectExplicitCommitment(sum *threadSummary, text string) *scannedCommitment {

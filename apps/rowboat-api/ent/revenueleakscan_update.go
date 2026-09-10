@@ -229,6 +229,69 @@ func (_u *RevenueLeakScanUpdate) AddCommitmentsCreated(v int) *RevenueLeakScanUp
 	return _u
 }
 
+// SetThreadsDeepRead sets the "threads_deep_read" field.
+func (_u *RevenueLeakScanUpdate) SetThreadsDeepRead(v int) *RevenueLeakScanUpdate {
+	_u.mutation.ResetThreadsDeepRead()
+	_u.mutation.SetThreadsDeepRead(v)
+	return _u
+}
+
+// SetNillableThreadsDeepRead sets the "threads_deep_read" field if the given value is not nil.
+func (_u *RevenueLeakScanUpdate) SetNillableThreadsDeepRead(v *int) *RevenueLeakScanUpdate {
+	if v != nil {
+		_u.SetThreadsDeepRead(*v)
+	}
+	return _u
+}
+
+// AddThreadsDeepRead adds value to the "threads_deep_read" field.
+func (_u *RevenueLeakScanUpdate) AddThreadsDeepRead(v int) *RevenueLeakScanUpdate {
+	_u.mutation.AddThreadsDeepRead(v)
+	return _u
+}
+
+// SetThreadsSnippetOnly sets the "threads_snippet_only" field.
+func (_u *RevenueLeakScanUpdate) SetThreadsSnippetOnly(v int) *RevenueLeakScanUpdate {
+	_u.mutation.ResetThreadsSnippetOnly()
+	_u.mutation.SetThreadsSnippetOnly(v)
+	return _u
+}
+
+// SetNillableThreadsSnippetOnly sets the "threads_snippet_only" field if the given value is not nil.
+func (_u *RevenueLeakScanUpdate) SetNillableThreadsSnippetOnly(v *int) *RevenueLeakScanUpdate {
+	if v != nil {
+		_u.SetThreadsSnippetOnly(*v)
+	}
+	return _u
+}
+
+// AddThreadsSnippetOnly adds value to the "threads_snippet_only" field.
+func (_u *RevenueLeakScanUpdate) AddThreadsSnippetOnly(v int) *RevenueLeakScanUpdate {
+	_u.mutation.AddThreadsSnippetOnly(v)
+	return _u
+}
+
+// SetThreadsSkipped sets the "threads_skipped" field.
+func (_u *RevenueLeakScanUpdate) SetThreadsSkipped(v int) *RevenueLeakScanUpdate {
+	_u.mutation.ResetThreadsSkipped()
+	_u.mutation.SetThreadsSkipped(v)
+	return _u
+}
+
+// SetNillableThreadsSkipped sets the "threads_skipped" field if the given value is not nil.
+func (_u *RevenueLeakScanUpdate) SetNillableThreadsSkipped(v *int) *RevenueLeakScanUpdate {
+	if v != nil {
+		_u.SetThreadsSkipped(*v)
+	}
+	return _u
+}
+
+// AddThreadsSkipped adds value to the "threads_skipped" field.
+func (_u *RevenueLeakScanUpdate) AddThreadsSkipped(v int) *RevenueLeakScanUpdate {
+	_u.mutation.AddThreadsSkipped(v)
+	return _u
+}
+
 // SetStartedAt sets the "started_at" field.
 func (_u *RevenueLeakScanUpdate) SetStartedAt(v time.Time) *RevenueLeakScanUpdate {
 	_u.mutation.SetStartedAt(v)
@@ -403,6 +466,21 @@ func (_u *RevenueLeakScanUpdate) check() error {
 			return &ValidationError{Name: "commitments_created", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.commitments_created": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ThreadsDeepRead(); ok {
+		if err := revenueleakscan.ThreadsDeepReadValidator(v); err != nil {
+			return &ValidationError{Name: "threads_deep_read", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.threads_deep_read": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ThreadsSnippetOnly(); ok {
+		if err := revenueleakscan.ThreadsSnippetOnlyValidator(v); err != nil {
+			return &ValidationError{Name: "threads_snippet_only", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.threads_snippet_only": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ThreadsSkipped(); ok {
+		if err := revenueleakscan.ThreadsSkippedValidator(v); err != nil {
+			return &ValidationError{Name: "threads_skipped", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.threads_skipped": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RevenueLeakScan.workspace"`)
 	}
@@ -480,6 +558,24 @@ func (_u *RevenueLeakScanUpdate) sqlSave(ctx context.Context) (_node int, err er
 	}
 	if value, ok := _u.mutation.AddedCommitmentsCreated(); ok {
 		_spec.AddField(revenueleakscan.FieldCommitmentsCreated, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ThreadsDeepRead(); ok {
+		_spec.SetField(revenueleakscan.FieldThreadsDeepRead, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedThreadsDeepRead(); ok {
+		_spec.AddField(revenueleakscan.FieldThreadsDeepRead, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ThreadsSnippetOnly(); ok {
+		_spec.SetField(revenueleakscan.FieldThreadsSnippetOnly, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedThreadsSnippetOnly(); ok {
+		_spec.AddField(revenueleakscan.FieldThreadsSnippetOnly, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ThreadsSkipped(); ok {
+		_spec.SetField(revenueleakscan.FieldThreadsSkipped, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedThreadsSkipped(); ok {
+		_spec.AddField(revenueleakscan.FieldThreadsSkipped, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.StartedAt(); ok {
 		_spec.SetField(revenueleakscan.FieldStartedAt, field.TypeTime, value)
@@ -726,6 +822,69 @@ func (_u *RevenueLeakScanUpdateOne) AddCommitmentsCreated(v int) *RevenueLeakSca
 	return _u
 }
 
+// SetThreadsDeepRead sets the "threads_deep_read" field.
+func (_u *RevenueLeakScanUpdateOne) SetThreadsDeepRead(v int) *RevenueLeakScanUpdateOne {
+	_u.mutation.ResetThreadsDeepRead()
+	_u.mutation.SetThreadsDeepRead(v)
+	return _u
+}
+
+// SetNillableThreadsDeepRead sets the "threads_deep_read" field if the given value is not nil.
+func (_u *RevenueLeakScanUpdateOne) SetNillableThreadsDeepRead(v *int) *RevenueLeakScanUpdateOne {
+	if v != nil {
+		_u.SetThreadsDeepRead(*v)
+	}
+	return _u
+}
+
+// AddThreadsDeepRead adds value to the "threads_deep_read" field.
+func (_u *RevenueLeakScanUpdateOne) AddThreadsDeepRead(v int) *RevenueLeakScanUpdateOne {
+	_u.mutation.AddThreadsDeepRead(v)
+	return _u
+}
+
+// SetThreadsSnippetOnly sets the "threads_snippet_only" field.
+func (_u *RevenueLeakScanUpdateOne) SetThreadsSnippetOnly(v int) *RevenueLeakScanUpdateOne {
+	_u.mutation.ResetThreadsSnippetOnly()
+	_u.mutation.SetThreadsSnippetOnly(v)
+	return _u
+}
+
+// SetNillableThreadsSnippetOnly sets the "threads_snippet_only" field if the given value is not nil.
+func (_u *RevenueLeakScanUpdateOne) SetNillableThreadsSnippetOnly(v *int) *RevenueLeakScanUpdateOne {
+	if v != nil {
+		_u.SetThreadsSnippetOnly(*v)
+	}
+	return _u
+}
+
+// AddThreadsSnippetOnly adds value to the "threads_snippet_only" field.
+func (_u *RevenueLeakScanUpdateOne) AddThreadsSnippetOnly(v int) *RevenueLeakScanUpdateOne {
+	_u.mutation.AddThreadsSnippetOnly(v)
+	return _u
+}
+
+// SetThreadsSkipped sets the "threads_skipped" field.
+func (_u *RevenueLeakScanUpdateOne) SetThreadsSkipped(v int) *RevenueLeakScanUpdateOne {
+	_u.mutation.ResetThreadsSkipped()
+	_u.mutation.SetThreadsSkipped(v)
+	return _u
+}
+
+// SetNillableThreadsSkipped sets the "threads_skipped" field if the given value is not nil.
+func (_u *RevenueLeakScanUpdateOne) SetNillableThreadsSkipped(v *int) *RevenueLeakScanUpdateOne {
+	if v != nil {
+		_u.SetThreadsSkipped(*v)
+	}
+	return _u
+}
+
+// AddThreadsSkipped adds value to the "threads_skipped" field.
+func (_u *RevenueLeakScanUpdateOne) AddThreadsSkipped(v int) *RevenueLeakScanUpdateOne {
+	_u.mutation.AddThreadsSkipped(v)
+	return _u
+}
+
 // SetStartedAt sets the "started_at" field.
 func (_u *RevenueLeakScanUpdateOne) SetStartedAt(v time.Time) *RevenueLeakScanUpdateOne {
 	_u.mutation.SetStartedAt(v)
@@ -913,6 +1072,21 @@ func (_u *RevenueLeakScanUpdateOne) check() error {
 			return &ValidationError{Name: "commitments_created", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.commitments_created": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ThreadsDeepRead(); ok {
+		if err := revenueleakscan.ThreadsDeepReadValidator(v); err != nil {
+			return &ValidationError{Name: "threads_deep_read", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.threads_deep_read": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ThreadsSnippetOnly(); ok {
+		if err := revenueleakscan.ThreadsSnippetOnlyValidator(v); err != nil {
+			return &ValidationError{Name: "threads_snippet_only", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.threads_snippet_only": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.ThreadsSkipped(); ok {
+		if err := revenueleakscan.ThreadsSkippedValidator(v); err != nil {
+			return &ValidationError{Name: "threads_skipped", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.threads_skipped": %w`, err)}
+		}
+	}
 	if _u.mutation.WorkspaceCleared() && len(_u.mutation.WorkspaceIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "RevenueLeakScan.workspace"`)
 	}
@@ -1007,6 +1181,24 @@ func (_u *RevenueLeakScanUpdateOne) sqlSave(ctx context.Context) (_node *Revenue
 	}
 	if value, ok := _u.mutation.AddedCommitmentsCreated(); ok {
 		_spec.AddField(revenueleakscan.FieldCommitmentsCreated, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ThreadsDeepRead(); ok {
+		_spec.SetField(revenueleakscan.FieldThreadsDeepRead, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedThreadsDeepRead(); ok {
+		_spec.AddField(revenueleakscan.FieldThreadsDeepRead, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ThreadsSnippetOnly(); ok {
+		_spec.SetField(revenueleakscan.FieldThreadsSnippetOnly, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedThreadsSnippetOnly(); ok {
+		_spec.AddField(revenueleakscan.FieldThreadsSnippetOnly, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.ThreadsSkipped(); ok {
+		_spec.SetField(revenueleakscan.FieldThreadsSkipped, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedThreadsSkipped(); ok {
+		_spec.AddField(revenueleakscan.FieldThreadsSkipped, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.StartedAt(); ok {
 		_spec.SetField(revenueleakscan.FieldStartedAt, field.TypeTime, value)

@@ -128,13 +128,15 @@ func (e *GmailExecutor) SweepThreads(ctx context.Context, userID uuid.UUID, look
 	// With a cursor, bound the lower edge by the last freshness timestamp
 	// (Gmail's after: is second-granularity) so a recurring scan only reads
 	// new mail; the first scan uses the full lookback window.
-	var query string
-	if since != nil {
-		query = fmt.Sprintf("in:sent after:%d", since.Unix())
-	} else {
-		query = fmt.Sprintf("in:sent newer_than:%dd", lookbackDays)
-	}
-	ids, err := e.google.ListThreadIDs(ctx, token, query, maxThreads)
+	//
+	// in:sent belongs in BOTH branches. Dropping it from the incremental one
+	// meant that the moment a first scan set a cursor, every scan after it
+	// queried the whole mailbox instead of sent mail: ninety inbox
+	// promotions and updates came back, none of them had an outbound message,
+	// every one was skipped, and the audit reported "90 conversations
+	// reviewed, 0 promises". The first scan of a mailbox worked and no scan
+	// after it ever did again.
+	ids, err := e.google.ListThreadIDs(ctx, token, sweepQuery(lookbackDays, since), maxThreads)
 	if err != nil {
 		return nil, "", fmt.Errorf("revenue: gmail thread sweep: %w", err)
 	}
@@ -148,6 +150,31 @@ func (e *GmailExecutor) SweepThreads(ctx context.Context, userID uuid.UUID, look
 		threads = append(threads, msgs)
 	}
 	return threads, conn.ExternalAccountID, nil
+}
+
+// sweepQuery is the Gmail search the scan reads from.
+//
+// The two branches are deliberately different, and the difference is easy to
+// mistake for a bug — it was, once, by someone who then had to be corrected by
+// TestGmailIncrementalSweepIncludesReplies.
+//
+// The first scan of a mailbox is anchored to in:sent: every managed
+// relationship starts with something we sent, and the anchor keeps newsletters
+// and notification traffic out of a cold read.
+//
+// Every scan after it drops that anchor on purpose. A reply is inbound, and
+// replies are how fulfilment is observed and how inbound obligations arrive —
+// restricting the incremental sweep to sent mail would make the ledger blind
+// to every answer it ever gets. The cost is that unrelated inbound mail is
+// swept too and then discarded by scanOnce, which is why a scan's coverage
+// counters exist: they say how much of what was swept was a conversation with
+// somebody rather than a promotion.
+func sweepQuery(lookbackDays int, since *time.Time) string {
+	if since != nil {
+		// Gmail's after: is second-granularity.
+		return fmt.Sprintf("after:%d", since.Unix())
+	}
+	return fmt.Sprintf("in:sent newer_than:%dd", lookbackDays)
 }
 
 // FetchBody implements MailBodyFetcher (RFC 031 Layer 3): the plain-text body

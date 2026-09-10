@@ -10,6 +10,8 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 )
@@ -539,5 +541,74 @@ func TestScanFindsAPromiseBuriedMidThread(t *testing.T) {
 	// reply: direction follows the message the promise was written in.
 	if rows[0].Direction != "promised_by_me" {
 		t.Fatalf("direction = %q, want promised_by_me", rows[0].Direction)
+	}
+}
+
+// Coverage must add up. "90 conversations reviewed" implied the scan had read
+// ninety conversations; it had read ten and glanced at the rest. A scan that
+// reports a total it did not examine is the same confidently-wrong claim the
+// product exists to avoid.
+func TestScanReportsHonestCoverage(t *testing.T) {
+	f := newFixture(t)
+	base := time.Now().UTC().Add(-5 * 24 * time.Hour)
+	threads := [][]googleapi.GmailThreadMessage{
+		// judged: real counterparty, outbound
+		{{
+			ID: "a1", ThreadID: "ta", From: selfAddr, To: "buyer@example.com",
+			Subject: "Kickoff", Snippet: "Thanks for the call.",
+			Outbound: true, At: base,
+		}},
+		// skipped: self-mail only, no external counterparty
+		{{
+			ID: "b1", ThreadID: "tb", From: selfAddr, To: selfAddr,
+			Subject: "Note to self", Snippet: "Remember the deck.",
+			Outbound: true, At: base,
+		}},
+		// skipped: no-reply counterparty
+		{{
+			ID: "c1", ThreadID: "tc", From: selfAddr, To: "no-reply@vendor.com",
+			Subject: "Receipt", Snippet: "Thanks.",
+			Outbound: true, At: base,
+		}},
+	}
+	f.svc.SetSweeper(&fakeSweeper{threads: threads, email: selfAddr})
+
+	scan, err := f.svc.StartScan(f.ctx, f.user, 90)
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	var got *ent.RevenueLeakScan
+	for {
+		got, err = f.svc.GetScan(f.ctx, scan.ID)
+		if err != nil {
+			t.Fatalf("get: %v", err)
+		}
+		if got.Status == "completed" || got.Status == "failed" {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("scan did not finish: %s", got.Status)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	if got.ThreadsSeen != 3 {
+		t.Fatalf("threads seen = %d, want 3", got.ThreadsSeen)
+	}
+	if got.ThreadsSkipped != 2 {
+		t.Errorf("threads skipped = %d, want 2 (self-mail and no-reply)", got.ThreadsSkipped)
+	}
+	// Every thread is either judged or skipped; none may go uncounted.
+	judged := got.ThreadsDeepRead + got.ThreadsSnippetOnly
+	if judged+got.ThreadsSkipped != got.ThreadsSeen {
+		t.Errorf("coverage does not add up: %d judged + %d skipped != %d seen",
+			judged, got.ThreadsSkipped, got.ThreadsSeen)
+	}
+	// No body is available in this fixture, so the judged thread was read on a
+	// snippet — and must say so rather than claim a deep read.
+	if got.ThreadsDeepRead != 0 || got.ThreadsSnippetOnly != 1 {
+		t.Errorf("deep=%d snippet=%d, want deep=0 snippet=1",
+			got.ThreadsDeepRead, got.ThreadsSnippetOnly)
 	}
 }

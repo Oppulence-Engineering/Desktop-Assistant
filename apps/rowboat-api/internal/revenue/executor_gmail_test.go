@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
@@ -92,6 +93,10 @@ func newGmailFixture(t *testing.T, scopes []string) *gmailFixture {
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{"messages": messages})
 	})
+	mux.HandleFunc("/gmail/v1/users/me/threads", func(w http.ResponseWriter, r *http.Request) {
+		g.gmailQuery = r.URL.Query().Get("q")
+		_ = json.NewEncoder(w).Encode(map[string]any{"threads": []any{}})
+	})
 	mux.HandleFunc("/gmail/v1/users/me/messages/msg_recovered", func(w http.ResponseWriter, _ *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"id": "msg_recovered", "threadId": "thr_recovered", "payload": map[string]any{"headers": []any{}},
@@ -148,6 +153,17 @@ func TestGmailExecutorDraft(t *testing.T) {
 	}
 	if !strings.Contains(g.lastMIME, "Message-ID: "+gmailActionMessageID(req.IdempotencyKey)) {
 		t.Fatalf("draft MIME is missing reconciliation marker: %q", g.lastMIME)
+	}
+}
+
+func TestGmailIncrementalSweepIncludesReplies(t *testing.T) {
+	g := newGmailFixture(t, []string{scopeGmailReadonly})
+	since := time.Unix(1234, 0)
+	if _, _, err := g.exec.SweepThreads(g.ctx, g.user.ID, 90, 10, &since); err != nil {
+		t.Fatalf("sweep: %v", err)
+	}
+	if g.gmailQuery != "after:1234" {
+		t.Fatalf("query = %q, want incoming and outgoing mail after cursor", g.gmailQuery)
 	}
 }
 
@@ -246,3 +262,26 @@ func TestServiceWithGmailExecutorAmbiguous(t *testing.T) {
 }
 
 var _ Executor = (*GmailExecutor)(nil)
+
+// The two branches differ on purpose, and the difference reads like a bug: a
+// cold scan is anchored to sent mail, an incremental one is not, because
+// replies are inbound and replies are how fulfilment is observed. This pins
+// both so neither can be "fixed" into the other.
+func TestSweepQueryAnchorsTheColdScanAndOpensTheIncrementalOne(t *testing.T) {
+	first := sweepQuery(90, nil)
+	if !strings.Contains(first, "in:sent") {
+		t.Errorf("a cold scan must be anchored to sent mail: %q", first)
+	}
+	if !strings.Contains(first, "newer_than:90d") {
+		t.Errorf("a cold scan lost its lookback window: %q", first)
+	}
+
+	cursor := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+	incremental := sweepQuery(90, &cursor)
+	if strings.Contains(incremental, "in:sent") {
+		t.Errorf("an incremental sweep restricted to sent mail cannot see replies: %q", incremental)
+	}
+	if !strings.Contains(incremental, "after:") {
+		t.Errorf("incremental query lost its cursor: %q", incremental)
+	}
+}

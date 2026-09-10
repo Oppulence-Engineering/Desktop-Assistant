@@ -44,6 +44,12 @@ type RevenueLeakScan struct {
 	ActionsCreated int `json:"actions_created,omitempty"`
 	// CommitmentsCreated holds the value of the "commitments_created" field.
 	CommitmentsCreated int `json:"commitments_created,omitempty"`
+	// ThreadsDeepRead holds the value of the "threads_deep_read" field.
+	ThreadsDeepRead int `json:"threads_deep_read,omitempty"`
+	// ThreadsSnippetOnly holds the value of the "threads_snippet_only" field.
+	ThreadsSnippetOnly int `json:"threads_snippet_only,omitempty"`
+	// ThreadsSkipped holds the value of the "threads_skipped" field.
+	ThreadsSkipped int `json:"threads_skipped,omitempty"`
 	// StartedAt holds the value of the "started_at" field.
 	StartedAt *time.Time `json:"started_at,omitempty"`
 	// CompletedAt holds the value of the "completed_at" field.
@@ -100,7 +106,7 @@ func (*RevenueLeakScan) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case revenueleakscan.FieldLookbackDays, revenueleakscan.FieldThreadsSeen, revenueleakscan.FieldCandidatesSeen, revenueleakscan.FieldRelationshipsCreated, revenueleakscan.FieldEvidencesCreated, revenueleakscan.FieldActionsCreated, revenueleakscan.FieldCommitmentsCreated:
+		case revenueleakscan.FieldLookbackDays, revenueleakscan.FieldThreadsSeen, revenueleakscan.FieldCandidatesSeen, revenueleakscan.FieldRelationshipsCreated, revenueleakscan.FieldEvidencesCreated, revenueleakscan.FieldActionsCreated, revenueleakscan.FieldCommitmentsCreated, revenueleakscan.FieldThreadsDeepRead, revenueleakscan.FieldThreadsSnippetOnly, revenueleakscan.FieldThreadsSkipped:
 			values[i] = new(sql.NullInt64)
 		case revenueleakscan.FieldStatus, revenueleakscan.FieldActiveClaim, revenueleakscan.FieldMode, revenueleakscan.FieldError:
 			values[i] = new(sql.NullString)
@@ -205,6 +211,24 @@ func (_m *RevenueLeakScan) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field commitments_created", values[i])
 			} else if value.Valid {
 				_m.CommitmentsCreated = int(value.Int64)
+			}
+		case revenueleakscan.FieldThreadsDeepRead:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field threads_deep_read", values[i])
+			} else if value.Valid {
+				_m.ThreadsDeepRead = int(value.Int64)
+			}
+		case revenueleakscan.FieldThreadsSnippetOnly:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field threads_snippet_only", values[i])
+			} else if value.Valid {
+				_m.ThreadsSnippetOnly = int(value.Int64)
+			}
+		case revenueleakscan.FieldThreadsSkipped:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field threads_skipped", values[i])
+			} else if value.Valid {
+				_m.ThreadsSkipped = int(value.Int64)
 			}
 		case revenueleakscan.FieldStartedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -330,6 +354,15 @@ func (_m *RevenueLeakScan) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("commitments_created=")
 	builder.WriteString(fmt.Sprintf("%v", _m.CommitmentsCreated))
+	builder.WriteString(", ")
+	builder.WriteString("threads_deep_read=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ThreadsDeepRead))
+	builder.WriteString(", ")
+	builder.WriteString("threads_snippet_only=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ThreadsSnippetOnly))
+	builder.WriteString(", ")
+	builder.WriteString("threads_skipped=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ThreadsSkipped))
 	builder.WriteString(", ")
 	if v := _m.StartedAt; v != nil {
 		builder.WriteString("started_at=")
