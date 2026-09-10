@@ -284,7 +284,11 @@ type scanStats struct {
 	deepRead    int
 	snippetOnly int
 	skipped     int
-	freshest    *time.Time
+	// Model spend and yield for one scan: how many messages were read by the
+	// extractor, and how many promises it proposed.
+	aiCalls    int
+	aiProposed int
+	freshest   *time.Time
 }
 
 func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLeakScan) (scanStats, error) {
@@ -383,6 +387,17 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		// thread cap — it simply stops discarding the messages the promise was
 		// actually in.
 		anchor, promise, readBody := s.findExplicitCommitment(ctx, u, sum)
+		// The deterministic detector gets first refusal. Only when it finds
+		// nothing, and only on a thread whose body we could actually read, is
+		// the model asked — a proposal is worth nothing without evidence to
+		// quote from.
+		if promise == nil && readBody && s.promiseExtractor != nil && stats.aiCalls < scanMaxAIExtractions {
+			stats.aiCalls++
+			if proposed := s.proposePromise(ctx, u, sum, scan.ID); proposed != nil {
+				anchor, promise = proposed.anchor, proposed.promise
+				stats.aiProposed++
+			}
+		}
 		if readBody {
 			stats.deepRead++
 		} else {
@@ -772,7 +787,7 @@ func (s *Service) materializeScannedCommitment(
 		SetWorkspace(txws).SetRelationship(txrel).SetUser(txu).
 		SetDirection(draft.Direction).SetText(draft.Text).SetConfidence(1).
 		SetOwnerParticipantRef(draft.OwnerRef).SetCounterpartyParticipantRef(draft.CounterpartyRef).
-		SetSourcePhrase(draft.Text).SetAcceptance("candidate").SetCurrentEventVersion(1).
+		SetSourcePhrase(draft.sourcePhrase()).SetAcceptance("candidate").SetCurrentEventVersion(1).
 		AddEvidences(txev).Save(ctx)
 	if err != nil {
 		return false, err
@@ -829,6 +844,20 @@ type scannedCommitment struct {
 	Text            string
 	OwnerRef        string
 	CounterpartyRef string
+	// SourcePhrase is the sender's own sentence. A reviewer has to read what
+	// was actually written, not a summary of it — that is what makes the
+	// review a check on the extraction rather than a vote of confidence in it.
+	// Empty means Text is already the verbatim sentence, which is true of the
+	// deterministic detector.
+	SourcePhrase string
+}
+
+// sourcePhrase is the sentence a reviewer sees.
+func (c scannedCommitment) sourcePhrase() string {
+	if strings.TrimSpace(c.SourcePhrase) != "" {
+		return c.SourcePhrase
+	}
+	return c.Text
 }
 
 var (
@@ -863,6 +892,76 @@ var (
 		`|\brun into\b|\bhold off\b|\bhave a look\b|\btake (that|this|it) as\b|\bstart \w+ing\b)`)
 )
 
+type proposedPromise struct {
+	anchor  googleapi.GmailThreadMessage
+	promise *scannedCommitment
+}
+
+// proposePromise asks the model about the newest message of a thread the
+// deterministic detector had nothing to say about.
+//
+// Whatever comes back is a candidate. It carries the model's verified quote as
+// its source phrase, so the review queue shows a person the sender's own words
+// rather than the model's summary, and direction is taken from the message
+// rather than from the model — who sent it is a fact, not a judgement.
+func (s *Service) proposePromise(
+	ctx context.Context,
+	u *ent.User,
+	sum *threadSummary,
+	scanID uuid.UUID,
+) *proposedPromise {
+	message := lastMessage(sum)
+	body, err := s.MessageBody(ctx, u, message.ID)
+	if err != nil || strings.TrimSpace(body) == "" {
+		return nil
+	}
+	promises, err := s.promiseExtractor.ExtractPromises(ctx, PromiseExtractInput{
+		UserID:    u.ID,
+		Subject:   sum.Subject,
+		Body:      commitmentQuote2(body),
+		Outbound:  message.Outbound,
+		RequestID: uuid.NewSHA1(scanID, []byte(message.ID)),
+	})
+	if err != nil {
+		s.log.Debug("revenue: promise extraction", zap.Error(err))
+		return nil
+	}
+	if len(promises) == 0 {
+		return nil
+	}
+	first := promises[0]
+	direction, owner, counterparty := "promised_by_them", sum.Counterparty, "local-user"
+	if message.Outbound {
+		direction, owner, counterparty = "promised_by_me", "local-user", sum.Counterparty
+	}
+	message.Snippet = first.Quote
+	return &proposedPromise{
+		anchor: message,
+		promise: &scannedCommitment{
+			Direction:       direction,
+			Text:            first.Text,
+			OwnerRef:        owner,
+			CounterpartyRef: counterparty,
+			SourcePhrase:    first.Quote,
+		},
+	}
+}
+
+// commitmentQuote2 strips the quoted thread so the model reads only what this
+// sender wrote, the same way the deterministic detector does.
+func commitmentQuote2(text string) string {
+	lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
+	newest := lines[:0]
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, ">") || (strings.HasPrefix(trimmed, "On ") && strings.HasSuffix(trimmed, " wrote:")) {
+			break
+		}
+		newest = append(newest, line)
+	}
+	return strings.TrimSpace(strings.Join(newest, "\n"))
+}
+
 // commitmentScanDepth bounds how many messages of one thread are read for a
 // promise, newest first.
 //
@@ -874,6 +973,13 @@ const commitmentScanDepth = 12
 // scanSkipLogSample bounds how many skipped threads are described in the log.
 // The count is always exact; the sample is only there to name the reason.
 const scanSkipLogSample = 20
+
+// scanMaxAIExtractions bounds model spend for one scan. Each call reads one
+// message, so this is the ceiling on cost per audit.
+//
+// ponytail: a flat cap. Make it a workspace setting when somebody wants to pay
+// for a deeper read.
+const scanMaxAIExtractions = 25
 
 // findExplicitCommitment returns the newest message in the thread that states
 // an explicit promise, and the promise. It returns the thread's last message

@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/policydecisionsnapshot"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueaction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -159,14 +160,17 @@ type Service struct {
 	sweeper      ThreadSweeper
 	entitlements Entitlements
 	bodyFetcher  MailBodyFetcher
-	sealer       *crypto.Sealer
-	evidenceKeys *TenantEvidenceKeyManager
-	mailBodyTTL  time.Duration
-	embedder     embeddings.Embedder
-	mailSyncer   MailSyncer
-	research     ResearchConfig
-	log          *zap.Logger
-	now          func() time.Time
+	// promiseExtractor proposes promises the deterministic detector missed.
+	// Nil leaves extraction deterministic-only, which is the default.
+	promiseExtractor PromiseExtractor
+	sealer           *crypto.Sealer
+	evidenceKeys     *TenantEvidenceKeyManager
+	mailBodyTTL      time.Duration
+	embedder         embeddings.Embedder
+	mailSyncer       MailSyncer
+	research         ResearchConfig
+	log              *zap.Logger
+	now              func() time.Time
 }
 
 // NewService builds the lifecycle service. A nil facade falls back to the
@@ -400,6 +404,32 @@ func (s *Service) currentWorkspaceWithCapability(
 	return ws, nil
 }
 
+// workspaceWithCapability resolves an exact workspace without creating or
+// backfilling access. A nil ID preserves the existing current-workspace path.
+func (s *Service) workspaceWithCapability(
+	ctx context.Context,
+	u *ent.User,
+	workspaceID uuid.UUID,
+	capability WorkspaceCapability,
+) (*ent.RevenueWorkspace, error) {
+	if workspaceID == uuid.Nil {
+		return s.currentWorkspaceWithCapability(ctx, u, capability)
+	}
+	ws, err := s.client.RevenueWorkspace.Get(ctx, workspaceID)
+	if ent.IsNotFound(err) {
+		return nil, fmt.Errorf("%w: workspace", ErrNotFound)
+	}
+	if err != nil {
+		return nil, err
+	}
+	role, err := s.RequireWorkspaceCapability(ctx, u, ws, capability)
+	if err != nil {
+		return nil, err
+	}
+	auth.GrantRevenueWorkspace(ctx, ws.ID, role)
+	return ws, nil
+}
+
 // ListWorkspaceMembers returns the active and removed membership audit rows.
 func (s *Service) ListWorkspaceMembers(ctx context.Context, u *ent.User) ([]*ent.RevenueWorkspaceMember, error) {
 	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
@@ -531,12 +561,14 @@ func (s *Service) LinkWorkspace(ctx context.Context, u *ent.User, in LinkInput) 
 
 // RelationshipInput creates a revenue-memory relationship.
 type RelationshipInput struct {
-	Kind          string
-	DisplayName   string
-	PrimaryEmail  string
-	AccountDomain string
-	Summary       string
-	ResourceRefs  []string
+	Kind           string
+	DisplayName    string
+	PrimaryEmail   string
+	AccountDomain  string
+	Summary        string
+	ResourceRefs   []string
+	WorkspaceID    uuid.UUID
+	IdempotencyKey string
 }
 
 // CreateRelationship records a relationship in the caller's workspace.
@@ -544,11 +576,40 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 	if strings.TrimSpace(in.DisplayName) == "" {
 		return nil, fmt.Errorf("%w: displayName is required", ErrInvalidInput)
 	}
-	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceContribute)
+	refs, err := normalizeResourceRefs(in.ResourceRefs)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
+	}
+	ws, err := s.workspaceWithCapability(ctx, u, in.WorkspaceID, WorkspaceContribute)
 	if err != nil {
 		return nil, err
 	}
-	create := s.client.Relationship.Create().
+
+	var idempotencySignal relationshipIdentitySignal
+	if key := strings.TrimSpace(in.IdempotencyKey); key != "" {
+		if len(key) > 400 {
+			return nil, fmt.Errorf("%w: idempotencyKey exceeds 400 bytes", ErrInvalidInput)
+		}
+		idempotencySignal = newRelationshipIdentitySignal("resource_ref", "oppulence", "oppulence:agent_create:"+key, 1)
+		existing, lookupErr := s.client.RelationshipIdentity.Query().Where(
+			relationshipidentity.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			relationshipidentity.KeyHashEQ(idempotencySignal.KeyHash),
+		).WithRelationship().Only(ctx)
+		if lookupErr == nil {
+			return existing.Edges.RelationshipOrErr()
+		}
+		if !ent.IsNotFound(lookupErr) {
+			return nil, lookupErr
+		}
+	}
+
+	tx, err := s.client.Tx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	txc := tx.Client()
+	create := txc.Relationship.Create().
 		SetWorkspace(ws).
 		SetUser(u).
 		SetKind(in.Kind).
@@ -561,10 +622,6 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 	}
 	if in.Summary != "" {
 		create.SetSummary(in.Summary)
-	}
-	refs, err := normalizeResourceRefs(in.ResourceRefs)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrInvalidInput, err)
 	}
 	if len(refs) > 0 {
 		create.SetResourceRefs(refs)
@@ -580,12 +637,36 @@ func (s *Service) CreateRelationship(ctx context.Context, u *ent.User, in Relati
 	// invisible to the identity engine, so the next observation for the same address
 	// resolved to nothing and forked a second relationship for the same account.
 	// A collision surfaces as a reviewable candidate, exactly as it does on ingest.
-	if err := bindRelationshipIdentities(
-		ctx, s.client, ws, u, rel, relationshipIdentitySignals(rel), "user", rel.CreatedAt,
-	); err != nil {
+	signals := relationshipIdentitySignals(rel)
+	if idempotencySignal.KeyHash != "" {
+		signals = append(signals, idempotencySignal)
+	}
+	if err := bindRelationshipIdentities(ctx, txc, ws, u, rel, signals, "user", rel.CreatedAt); err != nil {
 		return nil, err
 	}
-	return rel, nil
+	if idempotencySignal.KeyHash != "" {
+		winner, err := txc.RelationshipIdentity.Query().Where(
+			relationshipidentity.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			relationshipidentity.KeyHashEQ(idempotencySignal.KeyHash),
+		).WithRelationship().Only(ctx)
+		if err != nil {
+			return nil, err
+		}
+		owner, err := winner.Edges.RelationshipOrErr()
+		if err != nil {
+			return nil, err
+		}
+		if owner.ID != rel.ID {
+			if err := tx.Rollback(); err != nil {
+				return nil, err
+			}
+			return s.client.Relationship.Get(ctx, owner.ID)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return rel.Unwrap(), nil
 }
 
 // relationshipListLimit bounds the relationships listing (the queue, not the
@@ -617,6 +698,9 @@ func (s *Service) ListRelationshipsFiltered(
 ) ([]*ent.Relationship, error) {
 	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.reopenDueSnoozes(ctx, ws.ID); err != nil {
 		return nil, err
 	}
 	q := s.client.Relationship.Query().
@@ -884,6 +968,9 @@ func (s *Service) ListActions(ctx context.Context, u *ent.User, f ListFilter) ([
 	if err != nil {
 		return nil, err
 	}
+	if err := s.reopenDueSnoozes(ctx, ws.ID); err != nil {
+		return nil, err
+	}
 	q := s.client.RevenueAction.Query().
 		Where(revenueaction.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)))
 	status := f.QueueStatus
@@ -897,6 +984,28 @@ func (s *Service) ListActions(ctx context.Context, u *ent.User, f ListFilter) ([
 		Order(ent.Desc(revenueaction.FieldPriorityScore), ent.Asc(revenueaction.FieldCreatedAt)).
 		Limit(limit).
 		All(ctx)
+}
+
+// ReopenDueSnoozes returns elapsed snoozes to the caller's open queue.
+func (s *Service) ReopenDueSnoozes(ctx context.Context, u *ent.User) error {
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceView)
+	if err != nil {
+		return err
+	}
+	return s.reopenDueSnoozes(ctx, ws.ID)
+}
+
+func (s *Service) reopenDueSnoozes(ctx context.Context, workspaceID uuid.UUID) error {
+	_, err := s.client.RevenueAction.Update().
+		Where(
+			revenueaction.HasWorkspaceWith(revenueworkspace.IDEQ(workspaceID)),
+			revenueaction.QueueStatusEQ(QueueSnoozed),
+			revenueaction.SnoozedUntilLTE(s.now()),
+		).
+		SetQueueStatus(QueueOpen).
+		ClearSnoozedUntil().
+		Save(ctx)
+	return err
 }
 
 // GetAction returns one action with relationship context.
@@ -917,6 +1026,7 @@ func (s *Service) Audit(ctx context.Context, id uuid.UUID) (*ent.RevenueAction, 
 	action, err := s.client.RevenueAction.Query().
 		Where(revenueaction.IDEQ(id)).
 		WithRelationship().
+		WithEvidences().
 		WithRevisions(func(q *ent.RevenueActionRevisionQuery) {
 			q.Order(ent.Asc("revision"))
 		}).
@@ -933,8 +1043,7 @@ func (s *Service) Audit(ctx context.Context, id uuid.UUID) (*ent.RevenueAction, 
 
 // --- edit (invariant 3) ------------------------------------------------------
 
-// EditInput carries the revision-bearing fields of an edit. Nil pointers keep
-// the current value.
+// EditInput carries editable action fields. Nil pointers keep the current value.
 type EditInput struct {
 	Reason           *string
 	RecipientEmail   *string
@@ -944,6 +1053,9 @@ type EditInput struct {
 	Channel          *string
 	ActionType       *string
 	ExecutionMode    *string
+	DueAt            *time.Time
+	ClearDueAt       bool
+	PriorityScore    *int
 }
 
 // EditAction creates a new revision and invalidates the previous policy
@@ -980,8 +1092,12 @@ func (s *Service) EditAction(ctx context.Context, u *ent.User, id uuid.UUID, in 
 		next.AssignedUserID = action.AssignedUserID.String()
 	}
 	hash := next.Hash()
-	if hash == action.RevisionHash {
-		// No revision-bearing change: nothing to invalidate.
+	revisionChanged := hash != action.RevisionHash
+	metadataChanged := in.Reason != nil && *in.Reason != action.Reason ||
+		in.PriorityScore != nil && *in.PriorityScore != action.PriorityScore ||
+		in.ClearDueAt && action.DueAt != nil ||
+		in.DueAt != nil && (action.DueAt == nil || !in.DueAt.Equal(*action.DueAt))
+	if !revisionChanged && !metadataChanged {
 		return action, nil
 	}
 
@@ -991,32 +1107,41 @@ func (s *Service) EditAction(ctx context.Context, u *ent.User, id uuid.UUID, in 
 	}
 	txc := tx.Client()
 
-	// Conditional bump: the WHERE on the old revision makes concurrent edits
-	// serialize instead of both writing revision N+1.
+	// The old revision prevents metadata edits from racing a policy-bearing edit.
 	upd := txc.RevenueAction.Update().
 		Where(
 			revenueaction.IDEQ(action.ID),
 			revenueaction.RevisionEQ(action.Revision),
 			revenueaction.ExecutionStatusEQ(ExecPending),
-		).
-		SetRevision(action.Revision + 1).
-		SetRevisionHash(hash).
-		SetActionType(next.ActionType).
-		SetChannel(next.Channel).
-		SetRecipientEmail(next.RecipientEmail).
-		SetProposedSubject(next.ProposedSubject).
-		SetProposedMessage(next.ProposedMessage).
-		SetSenderAccountRef(next.SenderAccountRef).
-		SetExecutionMode(next.ExecutionMode).
-		// Invalidate policy and approval (invariant 3).
-		SetPolicyStatus(PolicyPending).
-		SetApprovalStatus(ApprovalPending).
-		ClearApprovedRevision().
-		ClearApprovedDecisionID().
-		ClearApprovedBy().
-		ClearApprovedAt()
+		)
+	if revisionChanged {
+		upd.SetRevision(action.Revision + 1).
+			SetRevisionHash(hash).
+			SetActionType(next.ActionType).
+			SetChannel(next.Channel).
+			SetRecipientEmail(next.RecipientEmail).
+			SetProposedSubject(next.ProposedSubject).
+			SetProposedMessage(next.ProposedMessage).
+			SetSenderAccountRef(next.SenderAccountRef).
+			SetExecutionMode(next.ExecutionMode).
+			// Invalidate policy and approval (invariant 3).
+			SetPolicyStatus(PolicyPending).
+			SetApprovalStatus(ApprovalPending).
+			ClearApprovedRevision().
+			ClearApprovedDecisionID().
+			ClearApprovedBy().
+			ClearApprovedAt()
+	}
 	if in.Reason != nil {
 		upd.SetReason(*in.Reason)
+	}
+	if in.PriorityScore != nil {
+		upd.SetPriorityScore(*in.PriorityScore)
+	}
+	if in.ClearDueAt {
+		upd.ClearDueAt()
+	} else if in.DueAt != nil {
+		upd.SetDueAt(in.DueAt.UTC())
 	}
 	n, err := upd.Save(ctx)
 	if err != nil {
@@ -1035,9 +1160,11 @@ func (s *Service) EditAction(ctx context.Context, u *ent.User, id uuid.UUID, in 
 		_ = tx.Rollback()
 		return nil, err
 	}
-	if err := s.snapshotRevision(ctx, txc, updated, u); err != nil {
-		_ = tx.Rollback()
-		return nil, err
+	if revisionChanged {
+		if err := s.snapshotRevision(ctx, txc, updated, u); err != nil {
+			_ = tx.Rollback()
+			return nil, err
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
