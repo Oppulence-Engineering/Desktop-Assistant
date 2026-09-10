@@ -798,12 +798,35 @@ type scannedCommitment struct {
 }
 
 var (
-	proposalRe           = regexp.MustCompile(`(?i)\b(proposal|quote|quotation|pricing|estimate|contract|sow|statement of work|invoice)\b`)
-	followUpRe           = regexp.MustCompile(`(?i)\b(follow up|follow-up|circle back|check back|touch base|reconnect|next (week|month|quarter))\b`)
-	introRe              = regexp.MustCompile(`(?i)\b(intro|introduc|referr|connect(ing)? you|looping in|cc'?ing)\b`)
-	askRe                = regexp.MustCompile(`(?i)(\?|can you|could you|would you|let me know|what do you think|any update|thoughts)`)
-	closedLoopRe         = regexp.MustCompile(`(?i)\b(no (payment|action|response|reply) (is )?required|unsubscribe|manage (your )?email preferences)\b`)
-	explicitCommitmentRe = regexp.MustCompile(`(?i)\b(i|we)(['’]ll|\s+(will|shall|commit(ted)? to|promise(d)? to|agree(d)? to))\s+(send|share|deliver|provide|complete|finish|review|schedule|book|call|email|follow up|update|prepare|resolve|fix|return|introduce|connect|pay|sign|submit|confirm)\b`)
+	proposalRe   = regexp.MustCompile(`(?i)\b(proposal|quote|quotation|pricing|estimate|contract|sow|statement of work|invoice)\b`)
+	followUpRe   = regexp.MustCompile(`(?i)\b(follow up|follow-up|circle back|check back|touch base|reconnect|next (week|month|quarter))\b`)
+	introRe      = regexp.MustCompile(`(?i)\b(intro|introduc|referr|connect(ing)? you|looping in|cc'?ing)\b`)
+	askRe        = regexp.MustCompile(`(?i)(\?|can you|could you|would you|let me know|what do you think|any update|thoughts)`)
+	closedLoopRe = regexp.MustCompile(`(?i)\b(no (payment|action|response|reply) (is )?required|unsubscribe|manage (your )?email preferences)\b`)
+	// An explicit first-person promise: who + a committing modal + a verb that
+	// delivers something. Measured against commitment_corpus_test.go, which is
+	// the gate — precision must stay perfect, recall is allowed to rise.
+	//
+	// Three things the original shape got wrong, each costing real promises:
+	// the verb had to follow the modal immediately, so "I'll DEFINITELY send"
+	// missed; the verb list held twenty-one words, so ordinary ones like get,
+	// have, put together and turn around missed; and multi-word verbs had to be
+	// spelled out to match at all.
+	//
+	// Subject stays "i" or "we" on purpose. "They will send the contract" and
+	// "Legal will review the redlines" are somebody else's promise, and
+	// recording them as ours is exactly the confidently-wrong claim §6 forbids.
+	explicitCommitmentRe = regexp.MustCompile(`(?i)\b(i|we)(['’]ll|\s+(will|shall|commit(ted)? to|promise(d)? to|agree(d)? to))\s+((just|also|then|now|still|definitely|certainly|absolutely|personally|quickly|shortly|soon|go ahead and|make sure to|be sure to)\s+){0,2}(follow up|circle back|set up|put together|write up|walk through|turn around|loop in|sign off|send over|get back|reach out|check in|` +
+		`send|share|deliver|provide|complete|finish|review|schedule|book|call|email|update|prepare|resolve|fix|return|introduce|connect|pay|sign|submit|confirm|` +
+		`get (?:you|back|that|this|it|them)|have|take|put|write|add|check|cover|walk|turn|draft|build|ship|issue|invoice|refund|waive|hold|extend|migrate|onboard|enable|deploy|publish|arrange|organise|organize|forward|upload|apply|credit|replace|reissue|revert|respond|reply|sync|meet|host|run|create|implement|configure|integrate|provision|escalate|circulate|document|cancel)\b`)
+
+	// Hedges that survive the pattern above because the modal and the verb are
+	// both present. RE2 has no lookahead, so they are rejected after matching.
+	// "I'll have to check with legal" reports a constraint, not an obligation.
+	commitmentHedgeRe = regexp.MustCompile(`(?i)(\b(have to|need to|try to|hope to|want to|be able to|see if|check if|find out if)\b` +
+		// Phrasal verbs that read as delivery but are not: encountering a
+		// problem, deferring, accepting a point, or glancing at something.
+		`|\brun into\b|\bhold off\b|\bhave a look\b|\btake (that|this|it) as\b|\bstart \w+ing\b)`)
 )
 
 // commitmentScanDepth bounds how many messages of one thread are read for a
@@ -887,7 +910,13 @@ func commitmentQuote(text string) string {
 	if i := strings.IndexAny(text[match[1]:], ".!?"); i >= 0 {
 		end = match[1] + i + 1
 	}
-	return truncateRunes(strings.TrimSpace(text[start:end]), excerptMaxRunes)
+	sentence := strings.TrimSpace(text[start:end])
+	// "I'll have to check with legal" states a constraint, not an obligation,
+	// and matches on have. Judge the whole sentence, not the fragment.
+	if commitmentHedgeRe.MatchString(sentence) {
+		return ""
+	}
+	return truncateRunes(sentence, excerptMaxRunes)
 }
 
 // summarizeThread derives the detector input for one thread. Returns nil for
