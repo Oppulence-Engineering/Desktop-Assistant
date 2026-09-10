@@ -8,6 +8,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
 )
 
 // fakeExtractor returns scripted proposals, including dishonest ones.
@@ -172,5 +173,24 @@ func TestExtractorFailureDoesNotFailTheScan(t *testing.T) {
 	}
 	if got := waitForScan(t, f, scan.ID); got != "completed" {
 		t.Fatalf("a model timeout failed the whole audit: %s", got)
+	}
+}
+
+// A disabled extractor must be a nil interface, not a typed nil pointer. The
+// second kind is not nil to an interface comparison, so the scan would think
+// one was installed and panic on the first message it read.
+func TestDisabledExtractorIsTrulyNil(t *testing.T) {
+	if got := NewLLMPromiseExtractor(nil, "some-model"); got != nil {
+		t.Error("no handler must yield no extractor")
+	}
+	if got := NewLLMPromiseExtractor(&llm.Handler{}, "   "); got != nil {
+		t.Error("a blank model must yield no extractor")
+	}
+
+	// And the scan must stay deterministic when handed that value.
+	f := newFixture(t)
+	f.svc.SetPromiseExtractor(NewLLMPromiseExtractor(nil, ""))
+	if f.svc.promiseExtractor != nil {
+		t.Error("a disabled extractor was installed as if it were real")
 	}
 }

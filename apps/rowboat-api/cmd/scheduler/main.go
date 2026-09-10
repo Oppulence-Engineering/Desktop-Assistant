@@ -196,6 +196,14 @@ func startRevenueAutoScan(ctx context.Context, cfg appconfig.Config, log *zap.Lo
 	}))
 	svc := revenue.NewService(database.Client, nil, gmail, log)
 	svc.SetSweeper(gmail)
+	// Deliberately no promise extractor here. Automatic scans run for every
+	// eligible user on a cycle, so switching model extraction on in this
+	// process multiplies spend by the whole customer base without anyone
+	// asking for it. Extraction runs on audits a person started — including
+	// the open promises report, which is the one that has to be good.
+	//
+	// If scheduled extraction is wanted later, it needs its own budget
+	// decision and an llm.Handler built here; it is not an oversight.
 	scanner := revenue.NewAutoScanner(svc, revenue.AutoScanConfig{
 		Interval:        cfg.RevenueAutoScanInterval,
 		MinPerUser:      cfg.RevenueAutoScanMinInterval,

@@ -476,6 +476,15 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}()
 	// The Gmail backend also feeds the leak scan (read-only sweep).
 	revenueSvc.SetSweeper(gmailExec)
+	// Promise extraction: the model proposes what the deterministic rules miss,
+	// every proposal must quote the message verbatim to survive, and what
+	// survives is a candidate for review rather than a claim. Blank model
+	// disables it and leaves the scan deterministic-only.
+	if extractor := revenue.NewLLMPromiseExtractor(llmH, cfg.RevenuePromiseExtractionModel); extractor != nil {
+		revenueSvc.SetPromiseExtractor(extractor)
+		log.Info("revenue: promise extraction enabled",
+			zap.String("model", cfg.RevenuePromiseExtractionModel))
+	}
 	// Source status rows are the durable backfill queue. Every replica runs the
 	// compare-and-set worker; provider reads emit bounded idempotent observations,
 	// and lifecycle progress advances only after those observations commit.
@@ -566,15 +575,18 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// Layer-4 evidence quotes survive as the user's own action history.
 	googleH.SetOnDisconnect(func(ctx context.Context, u *ent.User) error {
 		_, purgeErr := revenueSvc.PurgeMailIndex(ctx, u)
-		_, statusErr := revenueSvc.MarkSourceDisconnected(ctx, u, "google", "default")
+		_, statusErr := revenueSvc.MarkSourceAccountsDisconnected(ctx, u, "google")
 		return errors.Join(purgeErr, statusErr)
 	})
 	googleH.SetOnConnect(func(ctx context.Context, u *ent.User, accountEmail string, scopes []string) error {
-		_, err := revenueSvc.ReportSourceAuthorization(ctx, u, "google", revenue.SourceAuthorizationInput{
+		if _, err := revenueSvc.ReportSourceAuthorization(ctx, u, "google", revenue.SourceAuthorizationInput{
 			SourceAccountID: accountEmail,
 			State:           "completed",
 			GrantedScopes:   scopes,
-		})
+		}); err != nil {
+			return err
+		}
+		_, err := revenueSvc.BeginSourceBackfill(ctx, u, "google", accountEmail)
 		return err
 	})
 

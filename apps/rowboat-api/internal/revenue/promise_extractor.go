@@ -64,8 +64,14 @@ type LLMPromiseExtractor struct {
 	model   string
 }
 
-// NewLLMPromiseExtractor builds the extractor. A blank model disables it.
-func NewLLMPromiseExtractor(handler *llm.Handler, model string) *LLMPromiseExtractor {
+// NewLLMPromiseExtractor builds the extractor. A blank model disables it, which
+// is how extraction is switched off.
+//
+// It returns the interface, not the concrete type, on purpose: handing a typed
+// nil pointer to SetPromiseExtractor would produce a non-nil interface holding
+// nil, so the scan would believe an extractor was installed and panic on the
+// first message it tried to read.
+func NewLLMPromiseExtractor(handler *llm.Handler, model string) PromiseExtractor {
 	if handler == nil || strings.TrimSpace(model) == "" {
 		return nil
 	}
