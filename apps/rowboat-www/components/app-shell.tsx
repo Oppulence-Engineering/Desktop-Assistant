@@ -3,7 +3,6 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   ArrowLeft,
   AddressBook,
@@ -12,9 +11,11 @@ import {
   Brain,
   BookOpen,
   Buildings,
+  CaretLeft,
   CaretRight,
   CaretUpDown,
   ChartLineUp,
+  CheckCircle,
   CheckSquare,
   Clock,
   Cpu,
@@ -35,17 +36,19 @@ import {
   ShieldCheck,
   SidebarSimple,
   SignOut,
+  Stack,
   Sun,
   Tag,
   TerminalWindow,
   Tray,
   Waveform,
   Wallet,
+  WarningCircle,
+  X,
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 
 import { AppIcon } from "@/components/ui/app-icon";
-import { Avatar, AvatarFallback, AvatarImage } from "@oppulence/ui/components/avatar";
 import {
   Collapsible,
   CollapsibleContent,
@@ -60,9 +63,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@oppulence/ui/components/dropdown-menu";
-import { Separator } from "@oppulence/ui/components/separator";
 import { dashboardFetch } from "@/lib/auth/client";
-import { usePref } from "@/lib/console-prefs";
+import { getPref, setPref, usePref } from "@/lib/console-prefs";
+import { listRelationshipSourceStatuses } from "@/lib/revenue";
+import { loadChangelog, type ChangelogEntry } from "@/lib/api/changelog/changelog";
+import type { ProductView } from "@/lib/product-navigation";
+import type { RelationshipSourceStatus } from "@/types/revenue";
 import { cn } from "@/lib/utils";
 
 export type ResourceKind = "agent" | "config" | "run" | "task" | "taskrun";
@@ -335,8 +341,287 @@ type SidebarSelect = (item: { kind: ResourceKind; name: string }) => void;
 type ShellUser = {
   name: string;
   email: string;
-  avatar: string;
 };
+
+/** The billing facts the shell renders: the plan badge and the trial banner. */
+export type ShellBilling = {
+  plan?: string | null;
+  status?: string | null;
+  trialExpiresAt?: string | null;
+};
+
+/**
+ * The single workspace is the account itself. We do not model named
+ * organizations, so the switcher is labelled with the person rather than an
+ * invented org name; an email is trimmed to its local part to read as a name.
+ */
+export function useWorkspaceLabel(user: { name: string; email: string }) {
+  const displayName = usePref("display-name") || user.name;
+  const label = displayName.includes("@") ? displayName.split("@")[0] : displayName;
+  return label || "Workspace";
+}
+
+/** Whole days left on a trial, or null when the account is not trialing. */
+export function trialDaysRemaining(billing?: ShellBilling) {
+  if (billing?.status !== "trialing" || !billing.trialExpiresAt) return null;
+  const remaining = new Date(billing.trialExpiresAt).getTime() - Date.now();
+  if (!Number.isFinite(remaining)) return null;
+  return Math.max(0, Math.ceil(remaining / 86_400_000));
+}
+
+/* ------------------------------- view boundary ----------------------------- */
+
+/**
+ * Keeps one view's crash inside the content pane.
+ *
+ * Without this the nearest boundary is the route's, so a single undefined
+ * field in any tab replaced the whole workspace — sidebar included — with
+ * "The workspace could not be loaded", leaving no way to navigate off the
+ * broken view.
+ */
+export class ViewBoundary extends React.Component<
+  { children: React.ReactNode; viewKey: string },
+  { failed: boolean }
+> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidUpdate(previous: { viewKey: string }) {
+    // Moving to another view clears the failure; the next one deserves a try.
+    if (previous.viewKey !== this.props.viewKey && this.state.failed) {
+      this.setState({ failed: false });
+    }
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error("View crashed", error);
+  }
+
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <div className="flex flex-1 items-center justify-center p-8" role="alert">
+        <div className="max-w-sm text-center">
+          <WarningCircle className="mx-auto size-6 text-destructive" />
+          <p className="mt-3 text-sm font-medium text-primary">This view could not be shown</p>
+          <p className="mt-1 text-[13px] text-primary/55">
+            The rest of the workspace still works. Open another view, or try this one again.
+          </p>
+          <button
+            className="mt-4 h-8 border border-border bg-background px-3 text-[13px] text-primary transition-colors hover:bg-background-100"
+            onClick={() => this.setState({ failed: false })}
+            type="button"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+}
+
+/* ------------------------------ sidebar footer ----------------------------- */
+
+const CHANGELOG_SEEN_PREF = "sidebar-changelog-seen";
+
+// One gradient per position, so paging through releases is visible at a glance.
+const CHANGELOG_GRADIENTS = [
+  "from-oppulence-blue to-indigo-900",
+  "from-oppulence-orange to-rose-900",
+  "from-oppulence-green to-emerald-900",
+];
+
+function releaseDate(value: string) {
+  const date = new Date(value);
+  return Number.isFinite(date.getTime())
+    ? date
+        .toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+        .toUpperCase()
+    : "LATEST RELEASE";
+}
+
+/**
+ * The newest releases, paged. The card carries a version the user can check
+ * against the release notes, so it is hidden entirely when the feed is empty
+ * or unreachable — an announcement we cannot source is worse than none.
+ */
+function SidebarChangelog() {
+  const [entries, setEntries] = React.useState<ChangelogEntry[]>([]);
+  const [index, setIndex] = React.useState(0);
+  // The sidebar only ever renders on the client (AuthGate holds the tree until
+  // the session resolves), so reading the pref during render cannot desync
+  // hydration and a dismissed card never flashes.
+  const [seen, setSeen] = React.useState(() => getPref(CHANGELOG_SEEN_PREF));
+
+  React.useEffect(() => {
+    let cancelled = false;
+    loadChangelog()
+      .then((loaded) => {
+        if (!cancelled) setEntries(loaded);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (entries.length === 0) return null;
+  // Dismissal is per release: the card returns on its own when the next one
+  // ships, so nobody has to remember to re-enable it.
+  if (seen === entries[0].version) return null;
+  const card = entries[index];
+  const step = (delta: number) =>
+    setIndex((current) => (current + delta + entries.length) % entries.length);
+
+  return (
+    <div className="relative mb-2 border border-border bg-background">
+      <button
+        aria-label="Dismiss"
+        className="absolute right-1.5 top-1.5 z-10 flex size-6 items-center justify-center text-white/70 transition-colors hover:bg-white/15 hover:text-white"
+        onClick={() => {
+          setPref(CHANGELOG_SEEN_PREF, entries[0].version);
+          setSeen(entries[0].version);
+        }}
+        type="button"
+      >
+        <X className="size-3.5" />
+      </button>
+      <Link
+        className="block overflow-hidden"
+        href={card.url}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <span
+          className={cn(
+            "relative flex h-[72px] flex-col items-center justify-center gap-0.5 bg-gradient-to-br px-4 text-center",
+            CHANGELOG_GRADIENTS[index % CHANGELOG_GRADIENTS.length],
+          )}
+        >
+          <span className="text-[15px] font-semibold leading-tight text-white">{card.version}</span>
+          <span className="font-mono text-[9px] tracking-[0.12em] text-white/70">
+            {releaseDate(card.date)}
+          </span>
+        </span>
+        <span className="block px-3 pb-2 pt-2.5">
+          <span className="block text-[13px] font-medium leading-snug text-primary">
+            {card.title}
+          </span>
+          <span className="mt-1 block text-[12px] leading-snug text-primary/50">{card.body}</span>
+        </span>
+      </Link>
+      {entries.length > 1 ? (
+        <div className="flex items-center justify-between px-3 pb-2.5">
+          <div className="flex items-center gap-1.5">
+            {entries.map((entry, position) => (
+              <button
+                aria-label={entry.version}
+                className={cn(
+                  "size-1.5 rounded-full transition-colors",
+                  position === index ? "bg-oppulence-blue" : "bg-primary/20",
+                )}
+                key={entry.version}
+                onClick={() => setIndex(position)}
+                type="button"
+              />
+            ))}
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              aria-label="Previous"
+              className="flex size-6 items-center justify-center border border-border text-primary/60 transition-colors hover:bg-background-100 hover:text-primary"
+              onClick={() => step(-1)}
+              type="button"
+            >
+              <CaretLeft className="size-3" />
+            </button>
+            <button
+              aria-label="Next"
+              className="flex size-6 items-center justify-center border border-border text-primary/60 transition-colors hover:bg-background-100 hover:text-primary"
+              onClick={() => step(1)}
+              type="button"
+            >
+              <CaretRight className="size-3" />
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export type SourceHealth = { tone: "ok" | "syncing" | "attention" | "idle"; label: string };
+
+/**
+ * One line for the state of the evidence sources. A source that stopped
+ * reporting is the difference between "no risk" and "we cannot see the risk",
+ * so a stalled or disconnected source outranks anything else here.
+ */
+export function sourceHealth(sources: RelationshipSourceStatus[]): SourceHealth {
+  if (sources.length === 0) return { tone: "idle", label: "No sources connected" };
+  const stopped = sources.filter(
+    (source) => source.status === "reconnect_required" || source.status === "disconnected",
+  ).length;
+  if (stopped > 0) {
+    return {
+      tone: "attention",
+      label: stopped === 1 ? "1 source needs reconnecting" : `${stopped} sources need reconnecting`,
+    };
+  }
+  const behind = sources.filter(
+    (source) => source.status === "stale" || source.completeness !== "complete",
+  ).length;
+  if (behind > 0) {
+    return {
+      tone: "attention",
+      label: behind === 1 ? "1 source is behind" : `${behind} sources are behind`,
+    };
+  }
+  if (sources.some((source) => source.status === "backfilling" || source.status === "rebuilding")) {
+    return { tone: "syncing", label: "Syncing sources" };
+  }
+  return { tone: "ok", label: "Sources are current" };
+}
+
+const SOURCE_TONE_DOT: Record<SourceHealth["tone"], string> = {
+  ok: "bg-oppulence-green",
+  syncing: "bg-oppulence-blue",
+  attention: "bg-amber-500",
+  idle: "bg-primary/25",
+};
+
+function SidebarSources({ onOpen }: { onOpen?: () => void }) {
+  const [health, setHealth] = React.useState<SourceHealth | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    listRelationshipSourceStatuses()
+      .then((sources) => {
+        if (!cancelled) setHealth(sourceHealth(sources));
+      })
+      .catch(() => {
+        if (!cancelled) setHealth({ tone: "idle", label: "Source status unavailable" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!health) return null;
+  return (
+    <button
+      className="mb-1 flex h-9 w-full items-center gap-2 border border-border bg-background px-2.5 text-left text-[13px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary"
+      onClick={onOpen}
+      type="button"
+    >
+      <span className={cn("size-2 shrink-0 rounded-full", SOURCE_TONE_DOT[health.tone])} />
+      <span className="truncate">{health.label}</span>
+    </button>
+  );
+}
 
 /* --------------------------------- sidebar --------------------------------- */
 
@@ -448,9 +733,11 @@ export function AppShellSidebar({
   open,
   onToggle,
   user,
+  billing,
   selected,
   onSelectResource,
   onNavigateChat,
+  onNavigateReport,
   onNavigateRevenue,
   onNavigateAgents,
   onNavigateScheduled,
@@ -470,9 +757,11 @@ export function AppShellSidebar({
   open: boolean;
   onToggle: () => void;
   user: ShellUser;
+  billing?: ShellBilling;
   selected: { kind: ResourceKind; name: string } | null;
   onSelectResource?: SidebarSelect;
   onNavigateChat?: () => void;
+  onNavigateReport?: () => void;
   onNavigateRevenue?: (tab: RevenueTab) => void;
   onNavigateAgents?: () => void;
   onNavigateScheduled?: () => void;
@@ -480,7 +769,7 @@ export function AppShellSidebar({
   onOpenSearch?: () => void;
   activeRevenueTab?: RevenueTab;
   activeResourceGroup?: "agents" | "scheduled" | "runs";
-  view?: "chat" | "settings" | "revenue" | "workflows" | "agents";
+  view?: ProductView;
   settingsSection?: SettingsSection;
   onOpenSettings?: (section: SettingsSection) => void;
   onCloseSettings?: () => void;
@@ -489,7 +778,6 @@ export function AppShellSidebar({
   onOpenSession?: (runId: string) => void;
   onNewChat?: () => void;
 }) {
-  const pathname = usePathname();
   const [agents, setAgents] = React.useState<string[]>([]);
   const [tasks, setTasks] = React.useState<{ label: string; value: string }[]>([]);
   const [taskRuns, setTaskRuns] = React.useState<{ label: string; value: string }[]>([]);
@@ -581,8 +869,9 @@ export function AppShellSidebar({
     load();
   }, []);
 
-  const displayName = usePref("display-name") || user.name;
-  const fallback = (displayName || user.email || "U").slice(0, 2).toUpperCase();
+  const workspace = useWorkspaceLabel(user);
+  const trialDaysLeft = trialDaysRemaining(billing);
+  const planLabel = billing?.plan ? billing.plan[0].toUpperCase() + billing.plan.slice(1) : null;
 
   const groups: {
     key: string;
@@ -639,20 +928,115 @@ export function AppShellSidebar({
       )}
     >
       <div className="flex h-full w-[274px] shrink-0 flex-col bg-background-50/70 dark:bg-background-50">
-        <div className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
-          <span className="relative size-6 overflow-hidden" aria-hidden="true">
-            <Image
-              alt=""
-              className="scale-[1.85] object-contain dark:invert"
-              fill
-              sizes="24px"
-              src="/marketing/oppulence-icon.png"
-            />
-          </span>
-          <span className="text-[15px] font-medium tracking-tight text-primary">Oppulence</span>
+        <div className="flex h-12 shrink-0 items-center gap-1 border-b px-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-none border border-border bg-background px-2 text-left transition-colors hover:bg-background-100 data-[state=open]:bg-background-100 dark:hover:bg-background-200 dark:data-[state=open]:bg-background-200"
+                type="button"
+              >
+                <span className="relative size-4 shrink-0 overflow-hidden" aria-hidden="true">
+                  <Image
+                    alt=""
+                    className="scale-[1.85] object-contain dark:invert"
+                    fill
+                    sizes="16px"
+                    src="/marketing/oppulence-icon.png"
+                  />
+                </span>
+                <span className="truncate text-[13px] font-medium text-primary">{workspace}</span>
+                <CaretUpDown className="ml-auto size-3.5 shrink-0 text-primary/40" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="app-shell w-[264px] rounded-none"
+              side="bottom"
+              sideOffset={6}
+            >
+              <DropdownMenuItem onSelect={() => onOpenSettings?.("overview")}>
+                <GearSix />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="p-0 font-normal">
+                <div className="px-2 py-1.5">
+                  <div className="truncate text-sm font-medium text-primary">{workspace}</div>
+                  <div className="truncate font-mono text-[11px] text-primary/50">{user.email}</div>
+                </div>
+              </DropdownMenuLabel>
+              {/* Sessions are reviewed in Settings > Security; this is the same
+                  surface the account menu in the screenshot opens. */}
+              <DropdownMenuItem onSelect={() => onOpenSettings?.("security")}>
+                <Stack />
+                Manage sessions
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                  window.location.assign("/api/auth/logout");
+                }}
+              >
+                <SignOut />
+                Sign out
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="text-xs uppercase tracking-wider text-primary/50">
+                  Theme
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  className={theme === "light" ? "bg-muted" : ""}
+                  onClick={() => handleTheme("light")}
+                >
+                  <Sun />
+                  Light
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className={theme === "dark" ? "bg-muted" : ""}
+                  onClick={() => handleTheme("dark")}
+                >
+                  <Moon />
+                  Dark
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className={theme === "system" ? "bg-muted" : ""}
+                  onClick={() => handleTheme("system")}
+                >
+                  <Monitor />
+                  System
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs uppercase tracking-wider text-primary/50">
+                Workspaces
+              </DropdownMenuLabel>
+              <DropdownMenuItem className="gap-2" onSelect={(event) => event.preventDefault()}>
+                <span className="relative size-4 shrink-0 overflow-hidden" aria-hidden="true">
+                  <Image
+                    alt=""
+                    className="scale-[1.85] object-contain dark:invert"
+                    fill
+                    sizes="16px"
+                    src="/marketing/oppulence-icon.png"
+                  />
+                </span>
+                <span className="truncate">{workspace}</span>
+                <CheckCircle
+                  className="ml-auto size-4 shrink-0 text-oppulence-orange"
+                  weight="fill"
+                />
+                {planLabel ? (
+                  <span className="shrink-0 border border-border px-1.5 py-0.5 text-[10px] text-primary/60">
+                    {planLabel}
+                  </span>
+                ) : null}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button
             aria-label="Close sidebar"
-            className="ml-auto flex size-8 items-center justify-center rounded-none text-primary/50 hover:bg-background-100 hover:text-primary md:hidden"
+            className="flex size-8 shrink-0 items-center justify-center rounded-none text-primary/50 hover:bg-background-100 hover:text-primary md:hidden"
             onClick={onToggle}
             type="button"
           >
@@ -717,10 +1101,10 @@ export function AppShellSidebar({
             {/* The wedge, first in the list: the report is what a new account
                 reads before anything else. */}
             <SidebarNavItem
-              active={pathname === "/app/report"}
-              href="/app/report"
+              active={view === "report"}
               icon={FileText}
               label="Open promises"
+              onClick={onNavigateReport}
             />
             {(
               [
@@ -836,7 +1220,9 @@ export function AppShellSidebar({
           </nav>
         )}
 
-        <div className="flex flex-col gap-1 px-2 py-2">
+        <div className="flex shrink-0 flex-col gap-1 px-2 py-2">
+          <SidebarChangelog />
+          <SidebarSources onOpen={() => onNavigateRevenue?.("workspace")} />
           <Link
             className="group/item flex h-9 w-full items-center gap-2.5 rounded-none px-2.5 py-1 text-sm text-primary/70 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200"
             href="/api/reference"
@@ -857,85 +1243,20 @@ export function AppShellSidebar({
             label="Settings"
             onClick={() => onOpenSettings?.("overview")}
           />
-          <Separator className="my-1 opacity-30" />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="flex w-full items-center gap-2.5 rounded-none px-2 py-1.5 text-left transition-colors hover:bg-background-100 data-[state=open]:bg-background-100 dark:hover:bg-background-200 dark:data-[state=open]:bg-background-200"
-                type="button"
-              >
-                <Avatar className="size-8 rounded-full ring-1 ring-border">
-                  <AvatarImage alt={user.name} src={user.avatar} />
-                  <AvatarFallback className="rounded-full font-mono text-xs">
-                    {fallback}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="grid flex-1 text-left leading-tight">
-                  <span className="truncate text-sm font-medium text-primary">{displayName}</span>
-                  <span className="truncate text-xs text-primary/50">{user.email}</span>
-                </span>
-                <CaretUpDown className="size-4 text-primary/40" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="app-shell min-w-56 rounded-none"
-              side="right"
-              sideOffset={8}
-            >
-              <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar className="size-8 rounded-full ring-1 ring-border">
-                    <AvatarImage alt={user.name} src={user.avatar} />
-                    <AvatarFallback className="rounded-full font-mono text-xs">
-                      {fallback}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">{displayName}</span>
-                    <span className="truncate text-xs text-primary/50">{user.email}</span>
-                  </div>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuLabel className="text-xs uppercase tracking-wider text-primary/50">
-                  Theme
-                </DropdownMenuLabel>
-                <DropdownMenuItem
-                  className={theme === "light" ? "bg-muted" : ""}
-                  onClick={() => handleTheme("light")}
-                >
-                  <Sun />
-                  Light
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className={theme === "dark" ? "bg-muted" : ""}
-                  onClick={() => handleTheme("dark")}
-                >
-                  <Moon />
-                  Dark
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className={theme === "system" ? "bg-muted" : ""}
-                  onClick={() => handleTheme("system")}
-                >
-                  <Monitor />
-                  System
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={(event) => {
-                  event.preventDefault();
-                  window.location.assign("/api/auth/logout");
-                }}
-              >
-                <SignOut />
-                Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {trialDaysLeft === null ? null : (
+            <div className="mt-1 border border-amber-500/30 bg-amber-500/[0.07] px-2.5 py-2">
+              <div className="flex items-center gap-1.5 text-[12px] font-medium text-primary">
+                <Clock className="size-3.5 shrink-0 text-amber-500" />
+                You are on a trial plan
+              </div>
+              <p className="mt-0.5 text-[12px] text-primary/55">
+                <span className="font-medium text-primary">
+                  {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"}
+                </span>{" "}
+                left on your trial.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

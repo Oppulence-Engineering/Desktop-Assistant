@@ -7,6 +7,8 @@ import {
   AppShellSidebar,
   REVENUE_TAB_LABELS,
   SETTINGS_SECTIONS,
+  useWorkspaceLabel,
+  ViewBoundary,
   type RevenueTab,
   type SettingsSection,
 } from "@/components/app-shell";
@@ -53,10 +55,14 @@ import {
 import { useState, useEffect, useRef, type ReactNode, useCallback, useMemo } from "react";
 import {
   AddressBook,
+  ArrowSquareOut,
+  BookOpen,
   CheckSquare,
   CircleNotch,
+  FileText,
   FloppyDisk,
   LockSimple,
+  Question,
   SidebarSimple,
   Tray,
 } from "@phosphor-icons/react";
@@ -83,6 +89,8 @@ import {
 } from "@/lib/agent-history";
 import type { DurableAgentSessionEvent } from "@/lib/api/generated/client/model/durableAgentSessionEvent";
 import { getPref } from "@/lib/console-prefs";
+import { getImpact } from "@/lib/revenue";
+import type { RevenueImpact } from "@/types/revenue";
 import {
   prepareWebChatInput,
   WEB_CHAT_ACCEPT,
@@ -113,6 +121,9 @@ const RevenuePanel = dynamic(() =>
 );
 const SettingsView = dynamic(() =>
   import("@/components/app-settings").then((module) => module.SettingsView),
+);
+const OpenPromisesReportClient = dynamic(() =>
+  import("./report/report-client").then((module) => module.OpenPromisesReportClient),
 );
 
 type ChatMessage = Extract<AgentHistoryItem, { type: "message" }>;
@@ -195,6 +206,125 @@ function agentViewToDocument(value: unknown, fallbackSlug: string): Record<strin
   };
 }
 
+// The home cards read the same aggregate the Impact tab does, so a number here
+// and a number there can never disagree.
+const HOME_STATS: {
+  tab: RevenueTab;
+  icon: typeof CheckSquare;
+  caption: string;
+  read: (impact: RevenueImpact) => number;
+}[] = [
+  {
+    tab: "commitments",
+    icon: CheckSquare,
+    caption: "Overdue commitments",
+    read: (impact) => impact.overdueCommitments,
+  },
+  { tab: "queue", icon: Tray, caption: "Open actions", read: (impact) => impact.open },
+  {
+    tab: "relationships",
+    icon: AddressBook,
+    caption: "Accounts at risk",
+    read: (impact) => impact.atRiskRelationships,
+  },
+];
+
+const HOME_LINKS = [
+  {
+    href: "/app/report",
+    icon: FileText,
+    label: "Open promises",
+    detail: "The commitments with no evidence of fulfilment",
+    external: false,
+  },
+  {
+    href: "/api/reference",
+    icon: BookOpen,
+    label: "API",
+    detail: "Drive the workspace programmatically",
+    external: true,
+  },
+  {
+    href: "/blog",
+    icon: Question,
+    label: "Help",
+    detail: "Guides, changes, and how the scoring works",
+    external: true,
+  },
+];
+
+function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
+  const [impact, setImpact] = useState<RevenueImpact | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    getImpact()
+      .then((data) => {
+        if (!cancelled) setImpact(data);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <>
+      <section className="mt-10 grid gap-3 sm:grid-cols-3">
+        {HOME_STATS.map((stat) => (
+          <button
+            className="border border-border text-left transition-colors hover:bg-background-100/70"
+            key={stat.tab}
+            onClick={() => onOpenTab(stat.tab)}
+            type="button"
+          >
+            <span className="flex items-center gap-2 border-b border-border px-3 py-2.5 text-[13px] font-medium text-primary">
+              <stat.icon className="size-4 text-primary/45" />
+              {REVENUE_TAB_LABELS[stat.tab]}
+            </span>
+            <span className="block px-3 pb-3 pt-4">
+              <span className="block text-3xl font-semibold tabular-nums text-primary">
+                {impact ? (
+                  stat.read(impact)
+                ) : failed ? (
+                  "\u2014"
+                ) : (
+                  <span className="inline-block h-7 w-10 animate-pulse bg-background-200 align-middle" />
+                )}
+              </span>
+              <span className="mt-1 block text-[12px] text-primary/45">{stat.caption}</span>
+            </span>
+          </button>
+        ))}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="mb-3 text-[13px] font-medium text-primary">Explore</h2>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {HOME_LINKS.map((link) => (
+            <Link
+              className="block"
+              href={link.href}
+              key={link.href}
+              {...(link.external ? { rel: "noopener noreferrer", target: "_blank" } : {})}
+            >
+              <span className="flex items-center gap-1.5 text-[13px] font-medium text-primary">
+                <link.icon className="size-4 text-primary/45" />
+                {link.label}
+                {link.external ? <ArrowSquareOut className="size-3 text-primary/35" /> : null}
+              </span>
+              <span className="mt-1 block text-[12px] text-primary/45">{link.detail}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </>
+  );
+}
+
 function PageBody({
   initialView,
   initialSettingsSection,
@@ -210,6 +340,14 @@ function PageBody({
     }),
     [session.user.email, session.user.id, session.user.organizationId, session.user.workosUserId],
   );
+  const shellUser = useMemo(
+    () => ({
+      name: session.user.email || session.user.workosUserId || "User",
+      email: session.user.email || session.user.workosUserId || "",
+    }),
+    [session.user.email, session.user.workosUserId],
+  );
+  const workspace = useWorkspaceLabel(shellUser);
   const [text, setText] = useState<string>("");
   const [status, setStatus] = useState<"submitted" | "streaming" | "ready" | "error">("ready");
   const [chatError, setChatError] = useState<string | null>(null);
@@ -1446,6 +1584,10 @@ function PageBody({
               navigateTo("chat");
               setSelectedResource(null);
             }}
+            onNavigateReport={() => {
+              navigateTo("report");
+              setSelectedResource(null);
+            }}
             onNavigateRevenue={(tab) => {
               setRevenueTab(tab);
               navigateTo("revenue");
@@ -1494,11 +1636,8 @@ function PageBody({
             selected={selectedResource}
             sessions={sessions}
             settingsSection={settingsSection}
-            user={{
-              name: session.user.email || session.user.workosUserId || "User",
-              email: session.user.email || session.user.workosUserId || "",
-              avatar: "",
-            }}
+            user={shellUser}
+            billing={session.billing}
             view={view}
           />
           <main
@@ -1534,13 +1673,15 @@ function PageBody({
                     ? SETTINGS_SECTIONS.find((s) => s.key === settingsSection)?.label || "Settings"
                     : view === "revenue"
                       ? REVENUE_TAB_LABELS[revenueTab]
-                      : view === "agents"
-                        ? "Agents"
-                        : view === "workflows"
-                          ? workflowFocus === "runs"
-                            ? "Runs"
-                            : "Workflows"
-                          : "Home"}
+                      : view === "report"
+                        ? "Open promises"
+                        : view === "agents"
+                          ? "Agents"
+                          : view === "workflows"
+                            ? workflowFocus === "runs"
+                              ? "Runs"
+                              : "Workflows"
+                            : "Home"}
                 </span>
               </div>
               {view !== "settings" ? (
@@ -1568,349 +1709,315 @@ function PageBody({
               ) : null}
             </header>
 
-            {view === "settings" ? (
-              <SettingsView
-                onNavigate={setSettingsSection}
-                section={settingsSection}
-                session={session}
-              />
-            ) : view === "revenue" ? (
-              <div className="flex-1 overflow-hidden">
-                <RevenuePanel
-                  tab={revenueTab}
-                  onTabChange={setRevenueTab}
-                  onOpenConnectors={() => {
-                    setSettingsSection("extensions");
-                    navigateTo("settings");
+            <ViewBoundary viewKey={`${view}:${revenueTab}:${settingsSection}`}>
+              {view === "settings" ? (
+                <SettingsView
+                  onNavigate={setSettingsSection}
+                  section={settingsSection}
+                  session={session}
+                />
+              ) : view === "revenue" ? (
+                <div className="flex-1 overflow-hidden">
+                  <RevenuePanel
+                    tab={revenueTab}
+                    onTabChange={setRevenueTab}
+                    onOpenConnectors={() => {
+                      setSettingsSection("extensions");
+                      navigateTo("settings");
+                    }}
+                  />
+                </div>
+              ) : view === "report" ? (
+                <div className="flex-1 overflow-y-auto">
+                  <OpenPromisesReportClient />
+                </div>
+              ) : view === "agents" ? (
+                <AgentsView
+                  onAgentsChanged={loadAgentOptions}
+                  onOpenDefinition={(slug) => {
+                    setSelectedResource({ kind: "agent", name: slug });
+                    navigateTo("chat");
+                  }}
+                  onUseAgent={(slug) => {
+                    startNewChat();
+                    setSelectedAgent(slug);
                   }}
                 />
-              </div>
-            ) : view === "agents" ? (
-              <AgentsView
-                onAgentsChanged={loadAgentOptions}
-                onOpenDefinition={(slug) => {
-                  setSelectedResource({ kind: "agent", name: slug });
-                  navigateTo("chat");
-                }}
-                onUseAgent={(slug) => {
-                  startNewChat();
-                  setSelectedAgent(slug);
-                }}
-              />
-            ) : view === "workflows" ? (
-              <CloudWorkflowsView
-                key={
-                  selectedResource?.kind === "task" || selectedResource?.kind === "taskrun"
-                    ? `${workflowFocus}:${selectedResource.name}`
-                    : workflowFocus
-                }
-                focus={workflowFocus}
-                initialRunId={
-                  selectedResource?.kind === "taskrun"
-                    ? selectedResource.name.split("/").slice(1).join("/")
-                    : undefined
-                }
-                initialSlug={
-                  selectedResource?.kind === "task"
-                    ? selectedResource.name
-                    : selectedResource?.kind === "taskrun"
-                      ? selectedResource.name.split("/")[0]
+              ) : view === "workflows" ? (
+                <CloudWorkflowsView
+                  key={
+                    selectedResource?.kind === "task" || selectedResource?.kind === "taskrun"
+                      ? `${workflowFocus}:${selectedResource.name}`
+                      : workflowFocus
+                  }
+                  focus={workflowFocus}
+                  initialRunId={
+                    selectedResource?.kind === "taskrun"
+                      ? selectedResource.name.split("/").slice(1).join("/")
                       : undefined
-                }
-              />
-            ) : (
-              <div className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pb-0 md:flex-row">
-                <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">
-                  {isRunProcessing && (
-                    <div className="pointer-events-none absolute left-1/2 top-4 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-primary/70 shadow-sm">
-                      <CircleNotch className="h-3.5 w-3.5 animate-spin" />
-                      <span>Working…</span>
-                    </div>
-                  )}
-                  {/* Messages area */}
-                  <Conversation className="flex-1 min-h-0 overflow-y-auto">
-                    {!isEmptyConversation && (
-                      <div className="pointer-events-none sticky bottom-0 z-10 h-16 bg-gradient-to-t from-background via-background/80 to-transparent" />
+                  }
+                  initialSlug={
+                    selectedResource?.kind === "task"
+                      ? selectedResource.name
+                      : selectedResource?.kind === "taskrun"
+                        ? selectedResource.name.split("/")[0]
+                        : undefined
+                  }
+                />
+              ) : (
+                <div className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pb-0 md:flex-row">
+                  <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">
+                    {isRunProcessing && (
+                      <div className="pointer-events-none absolute left-1/2 top-4 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-primary/70 shadow-sm">
+                        <CircleNotch className="h-3.5 w-3.5 animate-spin" />
+                        <span>Working…</span>
+                      </div>
                     )}
-                    <ConversationContent className="!flex !flex-col !items-center !gap-8 !p-4 pt-4 pb-32">
-                      <div className="w-full max-w-3xl mx-auto space-y-4">
-                        {/* Render conversation items in order */}
-                        {conversation.map((item) => {
-                          if (item.type === "message") {
-                            return (
-                              <Message key={item.id} from={item.role}>
-                                <MessageContent>
-                                  <MessageResponse>{item.content}</MessageResponse>
-                                </MessageContent>
-                              </Message>
-                            );
-                          } else if (item.type === "tool") {
-                            const stateMap: Record<
-                              ToolCall["status"],
-                              | "input-streaming"
-                              | "input-available"
-                              | "output-available"
-                              | "output-error"
-                            > = {
-                              pending: "input-streaming",
-                              running: "input-available",
-                              completed: "output-available",
-                              error: "output-error",
-                            };
+                    {/* Messages area */}
+                    <Conversation className="flex-1 min-h-0 overflow-y-auto">
+                      {!isEmptyConversation && (
+                        <div className="pointer-events-none sticky bottom-0 z-10 h-16 bg-gradient-to-t from-background via-background/80 to-transparent" />
+                      )}
+                      <ConversationContent className="!flex !flex-col !items-center !gap-8 !p-4 pt-4 pb-32">
+                        <div className="w-full max-w-3xl mx-auto space-y-4">
+                          {/* Render conversation items in order */}
+                          {conversation.map((item) => {
+                            if (item.type === "message") {
+                              return (
+                                <Message key={item.id} from={item.role}>
+                                  <MessageContent>
+                                    <MessageResponse>{item.content}</MessageResponse>
+                                  </MessageContent>
+                                </Message>
+                              );
+                            } else if (item.type === "tool") {
+                              const stateMap: Record<
+                                ToolCall["status"],
+                                | "input-streaming"
+                                | "input-available"
+                                | "output-available"
+                                | "output-error"
+                              > = {
+                                pending: "input-streaming",
+                                running: "input-available",
+                                completed: "output-available",
+                                error: "output-error",
+                              };
 
-                            return (
-                              <div key={item.id} className="mb-2">
-                                <Tool>
-                                  <ToolHeader
-                                    title={item.name}
-                                    type="tool-call"
-                                    state={stateMap[item.status] || "input-streaming"}
-                                  />
-                                  <ToolContent>
-                                    <ToolInput input={item.input} />
-                                    {item.result != null && (
-                                      <ToolOutput
-                                        output={item.result as ReactNode}
-                                        errorText={undefined}
-                                      />
-                                    )}
-                                  </ToolContent>
-                                </Tool>
-                              </div>
-                            );
-                          } else if (item.type === "reasoning") {
-                            return (
-                              <div key={item.id} className="mb-2">
-                                <Reasoning isStreaming={item.isStreaming}>
-                                  <ReasoningTrigger />
-                                  <ReasoningContent>{item.content}</ReasoningContent>
-                                </Reasoning>
-                              </div>
-                            );
-                          } else if (item.type === "approval") {
-                            return (
-                              <div
-                                className="rounded-none border border-amber-500/30 bg-amber-500/5 p-4"
-                                key={item.id}
-                              >
-                                <p className="text-sm font-medium text-primary">
-                                  Approval required: {item.name}
-                                </p>
-                                <p className="mt-1 text-xs text-primary/55">
-                                  Trust tier: {item.trustTier.replaceAll("_", " ")}
-                                </p>
-                                <div className="mt-3">
-                                  <ToolInput input={item.input} />
+                              return (
+                                <div key={item.id} className="mb-2">
+                                  <Tool>
+                                    <ToolHeader
+                                      title={item.name}
+                                      type="tool-call"
+                                      state={stateMap[item.status] || "input-streaming"}
+                                    />
+                                    <ToolContent>
+                                      <ToolInput input={item.input} />
+                                      {item.result != null && (
+                                        <ToolOutput
+                                          output={item.result as ReactNode}
+                                          errorText={undefined}
+                                        />
+                                      )}
+                                    </ToolContent>
+                                  </Tool>
                                 </div>
-                                {item.status === "pending" ? (
-                                  <div className="mt-3 flex gap-2">
-                                    <Button
-                                      onClick={() => void resolveApproval(item, "granted")}
-                                      size="sm"
-                                    >
-                                      Approve
-                                    </Button>
-                                    <Button
-                                      onClick={() => void resolveApproval(item, "denied")}
-                                      size="sm"
-                                      variant="outline"
-                                    >
-                                      Deny
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <p className="mt-3 text-xs capitalize text-primary/60">
-                                    {item.status === "resolving"
-                                      ? "Submitting decision…"
-                                      : item.status}
+                              );
+                            } else if (item.type === "reasoning") {
+                              return (
+                                <div key={item.id} className="mb-2">
+                                  <Reasoning isStreaming={item.isStreaming}>
+                                    <ReasoningTrigger />
+                                    <ReasoningContent>{item.content}</ReasoningContent>
+                                  </Reasoning>
+                                </div>
+                              );
+                            } else if (item.type === "approval") {
+                              return (
+                                <div
+                                  className="rounded-none border border-amber-500/30 bg-amber-500/5 p-4"
+                                  key={item.id}
+                                >
+                                  <p className="text-sm font-medium text-primary">
+                                    Approval required: {item.name}
                                   </p>
-                                )}
-                              </div>
-                            );
-                          }
-                          return null;
-                        })}
+                                  <p className="mt-1 text-xs text-primary/55">
+                                    Trust tier: {item.trustTier.replaceAll("_", " ")}
+                                  </p>
+                                  <div className="mt-3">
+                                    <ToolInput input={item.input} />
+                                  </div>
+                                  {item.status === "pending" ? (
+                                    <div className="mt-3 flex gap-2">
+                                      <Button
+                                        onClick={() => void resolveApproval(item, "granted")}
+                                        size="sm"
+                                      >
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        onClick={() => void resolveApproval(item, "denied")}
+                                        size="sm"
+                                        variant="outline"
+                                      >
+                                        Deny
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <p className="mt-3 text-xs capitalize text-primary/60">
+                                      {item.status === "resolving"
+                                        ? "Submitting decision…"
+                                        : item.status}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            }
+                            return null;
+                          })}
 
-                        {/* Streaming reasoning */}
-                        {currentReasoning && (
-                          <div className="mb-2">
-                            <Reasoning isStreaming={true}>
-                              <ReasoningTrigger />
-                              <ReasoningContent>{currentReasoning}</ReasoningContent>
-                            </Reasoning>
-                          </div>
-                        )}
+                          {/* Streaming reasoning */}
+                          {currentReasoning && (
+                            <div className="mb-2">
+                              <Reasoning isStreaming={true}>
+                                <ReasoningTrigger />
+                                <ReasoningContent>{currentReasoning}</ReasoningContent>
+                              </Reasoning>
+                            </div>
+                          )}
 
-                        {/* Streaming message */}
-                        {currentAssistantMessage && (
-                          <Message from="assistant">
-                            <MessageContent>
-                              <MessageResponse>{currentAssistantMessage}</MessageResponse>
-                              <span className="inline-block w-2 h-4 ml-1 bg-oppulence-orange animate-pulse" />
-                            </MessageContent>
-                          </Message>
-                        )}
+                          {/* Streaming message */}
+                          {currentAssistantMessage && (
+                            <Message from="assistant">
+                              <MessageContent>
+                                <MessageResponse>{currentAssistantMessage}</MessageResponse>
+                                <span className="inline-block w-2 h-4 ml-1 bg-oppulence-orange animate-pulse" />
+                              </MessageContent>
+                            </Message>
+                          )}
+                        </div>
+                      </ConversationContent>
+                    </Conversation>
+
+                    {/* Input area */}
+                    {isEmptyConversation ? (
+                      <div className="absolute inset-0 overflow-y-auto px-4">
+                        <div className="mx-auto w-full max-w-3xl pb-12 pt-20">
+                          <p className="text-[13px] text-primary/50">👋 Welcome back</p>
+                          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+                            {workspace}
+                          </h1>
+                          <p className="mt-1 text-[13px] text-primary/50">
+                            Find the promises, relationship risks, and next steps that need
+                            attention.
+                          </p>
+                          <div className="mt-5">{renderPromptInput()}</div>
+                          <HomeOverview
+                            onOpenTab={(tab) => {
+                              setRevenueTab(tab);
+                              navigateTo("revenue");
+                            }}
+                          />
+                        </div>
                       </div>
-                    </ConversationContent>
-                  </Conversation>
+                    ) : (
+                      <div className="w-full px-4 pb-5 pt-2">
+                        <div className="w-full max-w-3xl mx-auto">{renderPromptInput()}</div>
+                      </div>
+                    )}
+                  </div>
 
-                  {/* Input area */}
-                  {isEmptyConversation ? (
-                    <div className="absolute inset-0 overflow-y-auto px-4">
-                      <div className="mx-auto w-full max-w-3xl pb-12 pt-20">
-                        <h1 className="text-lg font-medium tracking-tight text-foreground">
-                          Welcome back
-                        </h1>
-                        <p className="mt-1 text-[13px] text-primary/50">
-                          Find the promises, relationship risks, and next steps that need attention.
-                        </p>
-                        <div className="mt-5">{renderPromptInput()}</div>
-                        <section className="mt-10">
-                          <h2 className="mb-2 text-[12px] font-medium text-primary/45">Today</h2>
-                          <div className="border-y border-border">
-                            {[
-                              {
-                                label: "Review commitments",
-                                detail: "Confirm promises, owners, evidence, and due dates",
-                                icon: CheckSquare,
-                                tab: "commitments" as const,
-                              },
-                              {
-                                label: "Resolve recovery drafts",
-                                detail: "Approve the next step before anything is sent",
-                                icon: Tray,
-                                tab: "queue" as const,
-                              },
-                              {
-                                label: "Check relationship health",
-                                detail: "See enriched context, risk, and the next best action",
-                                icon: AddressBook,
-                                tab: "relationships" as const,
-                              },
-                            ].map((item) => (
-                              <button
-                                aria-label={item.label}
-                                className="flex w-full items-center gap-3 border-b border-border px-2 py-3 text-left last:border-b-0 hover:bg-background-100/70"
-                                key={item.tab}
-                                onClick={() => {
-                                  setRevenueTab(item.tab);
-                                  navigateTo("revenue");
-                                }}
-                                type="button"
+                  {selectedResource && (
+                    <div className="flex w-full flex-col md:w-[70%] md:max-w-4xl md:shrink-0 min-h-[260px] md:min-h-0 py-5">
+                      <Artifact className="flex-1 min-h-0 h-full">
+                        <ArtifactHeader>
+                          <div className="flex flex-col">
+                            <ArtifactTitle className="truncate">{artifactTitle}</ArtifactTitle>
+                            <ArtifactDescription className="text-xs">
+                              {artifactSubtitle || selectedResource.kind}
+                              {artifactReadOnly && (
+                                <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground">
+                                  <LockSimple className="h-3 w-3" /> Read-only
+                                </span>
+                              )}
+                            </ArtifactDescription>
+                          </div>
+                          <ArtifactActions>
+                            {!artifactReadOnly && (
+                              <ArtifactAction
+                                className="w-auto gap-1.5 px-3"
+                                tooltip={artifactDirty ? "Save changes" : "Saved"}
+                                disabled={!artifactDirty || artifactLoading}
+                                onClick={handleSave}
                               >
-                                <span className="flex size-8 items-center justify-center rounded-none border border-border text-primary/50">
-                                  <item.icon className="size-4" />
-                                </span>
-                                <span className="min-w-0">
-                                  <span className="block text-[13px] font-medium text-primary">
-                                    {item.label}
-                                  </span>
-                                  <span className="block truncate text-[12px] text-primary/45">
-                                    {item.detail}
-                                  </span>
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        </section>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="w-full px-4 pb-5 pt-2">
-                      <div className="w-full max-w-3xl mx-auto">{renderPromptInput()}</div>
+                                {artifactLoading ? (
+                                  <CircleNotch className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <FloppyDisk className="h-4 w-4" />
+                                )}
+                                <span>{artifactDirty ? "Save changes" : "Saved"}</span>
+                              </ArtifactAction>
+                            )}
+                            <ArtifactClose onClick={() => setSelectedResource(null)} />
+                          </ArtifactActions>
+                        </ArtifactHeader>
+                        <ArtifactContent className="bg-muted/30">
+                          {artifactLoading ? (
+                            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                              <CircleNotch className="mr-2 h-4 w-4 animate-spin" /> Loading
+                            </div>
+                          ) : artifactError ? (
+                            <div className="text-sm text-red-500 whitespace-pre-wrap break-words">
+                              {artifactError}
+                            </div>
+                          ) : (
+                            <div className="flex h-full flex-col gap-2">
+                              {selectedResource.kind === "agent" && artifactFileType === "json" ? (
+                                <AgentConfigurationForm
+                                  agentSlugs={agentOptions}
+                                  content={artifactText}
+                                  onChange={setArtifactText}
+                                  readOnly={artifactReadOnly}
+                                />
+                              ) : artifactReadOnly ? (
+                                artifactFileType === "markdown" ? (
+                                  <MarkdownViewer content={artifactText} />
+                                ) : (
+                                  <pre className="h-full min-h-[240px] max-h-[70vh] w-full overflow-auto whitespace-pre-wrap rounded-none border bg-background p-4 font-mono text-sm leading-relaxed text-foreground">
+                                    {artifactText}
+                                  </pre>
+                                )
+                              ) : artifactFileType === "markdown" ? (
+                                <TiptapMarkdownEditor
+                                  content={artifactText}
+                                  onChange={(newContent) => setArtifactText(newContent)}
+                                  readOnly={false}
+                                  placeholder="Start writing your markdown..."
+                                />
+                              ) : (
+                                <JsonEditor
+                                  content={artifactText}
+                                  onChange={(newContent) => setArtifactText(newContent)}
+                                  readOnly={false}
+                                />
+                              )}
+                              {artifactReadOnly && (
+                                <p className="text-xs text-muted-foreground">
+                                  {selectedResource.kind === "agent"
+                                    ? "This managed agent can be viewed here but cannot be changed from the workspace."
+                                    : "Runs are read-only; use the API to replay or inspect in detail."}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </ArtifactContent>
+                      </Artifact>
                     </div>
                   )}
                 </div>
-
-                {selectedResource && (
-                  <div className="flex w-full flex-col md:w-[70%] md:max-w-4xl md:shrink-0 min-h-[260px] md:min-h-0 py-5">
-                    <Artifact className="flex-1 min-h-0 h-full">
-                      <ArtifactHeader>
-                        <div className="flex flex-col">
-                          <ArtifactTitle className="truncate">{artifactTitle}</ArtifactTitle>
-                          <ArtifactDescription className="text-xs">
-                            {artifactSubtitle || selectedResource.kind}
-                            {artifactReadOnly && (
-                              <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground">
-                                <LockSimple className="h-3 w-3" /> Read-only
-                              </span>
-                            )}
-                          </ArtifactDescription>
-                        </div>
-                        <ArtifactActions>
-                          {!artifactReadOnly && (
-                            <ArtifactAction
-                              className="w-auto gap-1.5 px-3"
-                              tooltip={artifactDirty ? "Save changes" : "Saved"}
-                              disabled={!artifactDirty || artifactLoading}
-                              onClick={handleSave}
-                            >
-                              {artifactLoading ? (
-                                <CircleNotch className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <FloppyDisk className="h-4 w-4" />
-                              )}
-                              <span>{artifactDirty ? "Save changes" : "Saved"}</span>
-                            </ArtifactAction>
-                          )}
-                          <ArtifactClose onClick={() => setSelectedResource(null)} />
-                        </ArtifactActions>
-                      </ArtifactHeader>
-                      <ArtifactContent className="bg-muted/30">
-                        {artifactLoading ? (
-                          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                            <CircleNotch className="mr-2 h-4 w-4 animate-spin" /> Loading
-                          </div>
-                        ) : artifactError ? (
-                          <div className="text-sm text-red-500 whitespace-pre-wrap break-words">
-                            {artifactError}
-                          </div>
-                        ) : (
-                          <div className="flex h-full flex-col gap-2">
-                            {selectedResource.kind === "agent" && artifactFileType === "json" ? (
-                              <AgentConfigurationForm
-                                agentSlugs={agentOptions}
-                                content={artifactText}
-                                onChange={setArtifactText}
-                                readOnly={artifactReadOnly}
-                              />
-                            ) : artifactReadOnly ? (
-                              artifactFileType === "markdown" ? (
-                                <MarkdownViewer content={artifactText} />
-                              ) : (
-                                <pre className="h-full min-h-[240px] max-h-[70vh] w-full overflow-auto whitespace-pre-wrap rounded-none border bg-background p-4 font-mono text-sm leading-relaxed text-foreground">
-                                  {artifactText}
-                                </pre>
-                              )
-                            ) : artifactFileType === "markdown" ? (
-                              <TiptapMarkdownEditor
-                                content={artifactText}
-                                onChange={(newContent) => setArtifactText(newContent)}
-                                readOnly={false}
-                                placeholder="Start writing your markdown..."
-                              />
-                            ) : (
-                              <JsonEditor
-                                content={artifactText}
-                                onChange={(newContent) => setArtifactText(newContent)}
-                                readOnly={false}
-                              />
-                            )}
-                            {artifactReadOnly && (
-                              <p className="text-xs text-muted-foreground">
-                                {selectedResource.kind === "agent"
-                                  ? "This managed agent can be viewed here but cannot be changed from the workspace."
-                                  : "Runs are read-only; use the API to replay or inspect in detail."}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </ArtifactContent>
-                    </Artifact>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </ViewBoundary>
           </main>
         </section>
       </div>

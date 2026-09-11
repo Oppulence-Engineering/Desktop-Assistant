@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowLeftIcon,
   ArrowRightIcon,
   CircleNotchIcon,
   ExportIcon,
@@ -16,7 +15,6 @@ import {
 } from "@phosphor-icons/react";
 
 import { Button } from "@oppulence/ui/components/button";
-import { AuthGate } from "@/components/auth-gate";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import {
   downloadMarkdown,
@@ -34,12 +32,12 @@ import {
 import type { OpenPromisesReport } from "@/types/revenue";
 
 export function OpenPromisesReportClient() {
+  // The app shell already holds the session; Suspense is here for the scan id,
+  // which this page reads from the URL.
   return (
-    <AuthGate>
-      <React.Suspense fallback={null}>
-        <ReportBody />
-      </React.Suspense>
-    </AuthGate>
+    <React.Suspense fallback={null}>
+      <ReportBody />
+    </React.Suspense>
   );
 }
 
@@ -112,16 +110,8 @@ function ReportBody() {
   }, [setScanId]);
 
   return (
-    <main className="mx-auto flex min-h-svh w-full max-w-3xl flex-col gap-6 px-6 py-12">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-10">
       <header>
-        {/* This page renders outside the app shell, so without this there is no
-            way back into the product from it. */}
-        <Link
-          className="mb-4 inline-flex items-center gap-1.5 text-[13px] text-primary/50 hover:text-primary"
-          href="/app"
-        >
-          <ArrowLeftIcon className="size-3.5" /> Back to Oppulence
-        </Link>
         <h1 className="text-[28px] font-medium leading-tight text-primary">Open promises</h1>
         <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-primary/60">
           The commitments your team made in the last 90 days that have no evidence of fulfilment,
@@ -183,7 +173,7 @@ function ReportBody() {
           <CircleNotchIcon className="size-4 animate-spin" /> Building the report.
         </p>
       )}
-    </main>
+    </div>
   );
 }
 

@@ -1,4 +1,4 @@
-import { OpenPromisesReportClient } from "./report-client";
+import ProductDashboardClient from "../product-dashboard-client";
 
 // The Open Promises report is the wedge (one-pager §11). Signup lands here:
 // connect Gmail, scan 90 days, read the document. The sale and the activation
@@ -10,5 +10,5 @@ export const metadata = {
 };
 
 export default function ReportPage() {
-  return <OpenPromisesReportClient />;
+  return <ProductDashboardClient initialView="report" />;
 }
