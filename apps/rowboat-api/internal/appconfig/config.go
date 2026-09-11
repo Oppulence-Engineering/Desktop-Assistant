@@ -187,6 +187,13 @@ type Config struct {
 	// staging).
 	ParallelBaseURL string
 
+	// ComposioAPIKey is the one project key Oppulence holds for the long-tail
+	// action surface. It is optional: with no key the Composio tools report
+	// themselves unconfigured, the same way WebSearchAPIKey gates web.search.
+	// End users never hold a Composio key; they are scoped inside the project
+	// by user id.
+	ComposioAPIKey string
+
 	// Plain (plain.com) feedback relay. Label type ids are workspace data and
 	// differ per environment; the raw JSON maps category -> lt_… id.
 	PlainAPIURL       string
@@ -919,6 +926,7 @@ func Load() Config {
 
 		WebSearchAPIURL: getenv("WEB_SEARCH_API_URL", "https://api.tavily.com/search"),
 		WebSearchAPIKey: getenv("WEB_SEARCH_API_KEY", ""),
+		ComposioAPIKey:  getenv("COMPOSIO_API_KEY", ""),
 
 		ConduitBaseURL: getenv("CONDUIT_BASE_URL", ""),
 		EigenBaseURL:   getenv("EIGEN_BASE_URL", ""),

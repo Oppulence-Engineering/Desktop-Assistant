@@ -47,6 +47,11 @@ linters:
       - path: ^internal/(search|voice)/handler\.go
         linters: [gosec]
         text: "G704"
+      # Same shape: the Composio origin is trusted configuration and the request
+      # contributes only a PathEscape'd tool slug, url.Values query, or body.
+      - path: ^internal/composioapi/client\.go
+        linters: [gosec]
+        text: "G704"
       # OAuth deep-link state is random, URL-escaped, and JavaScript-encoded;
       # gosec taint analysis does not model jsString.
       - path: ^internal/(google|slack)/oauthflow\.go

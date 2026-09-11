@@ -25,6 +25,7 @@ import {
 import { startHostedOAuth } from "@/lib/api/connectors/hosted-oauth";
 import { listRelationshipSourceStatuses } from "@/lib/revenue";
 import { cn } from "@/lib/utils";
+import { ComposioConnections } from "@/components/features/connectors/composio-connections";
 import { parseConnectorsResponse } from "@/lib/api/connectors/schema";
 import { dashboardFetch } from "@/lib/auth/client";
 import {
@@ -288,6 +289,9 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
   const connectedAt = displayDate(connector.connectedAt);
   const lastUsedAt = displayDate(connector.lastUsedAt);
   const isHubSpot = connector.name === "hubspot";
+  const credentialLabel = isHubSpot
+    ? "HubSpot private app token"
+    : `${connector.displayName} API key`;
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -428,7 +432,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
               size="sm"
               variant="outline"
             >
-              {keyOpen ? "Cancel" : isHubSpot ? "Connect HubSpot" : "Add API key"}
+              {keyOpen ? "Cancel" : `Connect ${connector.displayName}`}
             </Button>
           ) : connector.authType === "oauth" ? (
             <form
@@ -500,8 +504,8 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
           <Input
             className="max-w-sm"
             onChange={(event) => setApiKey(event.target.value)}
-            aria-label={isHubSpot ? "HubSpot private app token" : "Vendor API key"}
-            placeholder={isHubSpot ? "HubSpot private app token" : "Vendor API key"}
+            aria-label={credentialLabel}
+            placeholder={credentialLabel}
             type="password"
             value={apiKey}
           />
@@ -576,6 +580,7 @@ export function ConnectorSettings() {
         </div>
       ) : null}
       <GoogleConnectionSettings />
+      <ComposioConnections />
       <div className="settings-panel flex flex-col">
         {state === "loading" ? (
           <p className="p-4 text-sm text-muted-foreground">Loading connectors…</p>

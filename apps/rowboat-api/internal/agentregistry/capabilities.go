@@ -24,6 +24,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composioapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
@@ -92,6 +93,7 @@ type ToolDeps struct {
 	Secrets        *secrets.Store
 	Google         *googleapi.Client
 	HubSpot        *hubspotapi.Client
+	Composio       *composioapi.Client
 	Web            *websearch.Client
 	Conduit        *faculties.Client
 	Eigen          *faculties.Client

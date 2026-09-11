@@ -41,7 +41,9 @@ const jsonLd = {
       name: "Playbook Media",
       alternateName: "Oppulence",
       url: "https://oppulence.io",
-      logo: "https://oppulence.io/icon.png",
+      // Structured data wants a full-size logo; /icon.png is sized for a
+      // browser tab, so the schema points at the full asset instead.
+      logo: "https://oppulence.io/marketing/oppulence-icon.png",
     },
     {
       "@type": "SoftwareApplication",

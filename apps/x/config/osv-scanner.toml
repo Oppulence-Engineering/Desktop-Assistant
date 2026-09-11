@@ -20,3 +20,13 @@ reason = "Transitive image-size advisory has no upstream fixed release."
 id = "GHSA-w3rx-r6r6-pgpr"
 ignoreUntil = 2026-11-21
 reason = "Transitive image-size advisory has no upstream fixed release."
+
+[[IgnoredVulns]]
+id = "GHSA-vwc7-r8mq-g2x9"
+ignoreUntil = 2026-11-21
+reason = "Transitive adm-zip advisory has no upstream fixed release; 0.6.0 is already the latest."
+
+[[IgnoredVulns]]
+id = "GHSA-7pqw-9j4j-h8q3"
+ignoreUntil = 2026-11-21
+reason = "Second transitive extract-zip advisory with no upstream fixed release, alongside GHSA-jmr9-qjv8-65gv."

@@ -432,4 +432,5 @@ secretValues: {}
   # INFISICAL_TOKEN: ""
   # INFISICAL_PROJECT_ID: ""
   # PLAIN_API_KEY: ""
+  # COMPOSIO_API_KEY: ""  # optional; the long-tail action tools
   # PARALLEL_API_KEY: ""   # optional; see PARALLEL_BASE_URL above
