@@ -51,6 +51,8 @@ Use connector names exactly as returned by \`rowboat-list-integrations\`. Curren
 | Notion | \`notion\` |
 | Stripe | \`stripe\` |
 
+Composio covers the long tail — products with no connector of their own, such as Jira or Asana. It is not listed by \`rowboat-list-integrations\`: the user links those products under Settings → Connected Accounts → More products, and a cloud agent reaches them through \`connector.read.composio_tool_search\` and \`connector.write.composio_tool_execute\`. Hand such a request to a cloud agent rather than saying the service is unavailable, and point the user at that settings panel if nothing is linked yet. Nothing it returns is relationship evidence, so never cite it as proof of a commitment.
+
 Slack is not listed by \`rowboat-list-integrations\`; use \`rowboat-list-slack-workspaces\` instead.
 
 Do not guess unsupported connectors. If the requested service is absent from \`rowboat-list-integrations\`, say the integration is not available yet and fall back to other MCP tools only when appropriate.
