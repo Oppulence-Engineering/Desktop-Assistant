@@ -7,8 +7,8 @@
 | Track      | Desktop email                                         |
 | Owner      | TBD                                                   |
 | Created    | 2026-06-12                                            |
-| Depends on | email-003, email-004, email-005, email-011, email-012 |
-| Related    | email-015, email-018, email-020                       |
+| Depends on | email-012 |
+| Related    | email-015, email-020 |
 
 ## Summary
 
@@ -16,7 +16,7 @@ Create an evaluation harness and release gates for email AI behavior. Email auto
 
 ## Inbox Zero Implementation References
 
-Implementation agents should first read [email-000](./email-000-inbox-zero-agent-reference.md), then inspect existing Inbox Zero tests before writing Rowboat equivalents:
+Implementation agents should first read then inspect existing Inbox Zero tests before writing Rowboat equivalents:
 
 - `apps/web/utils/ai/choose-rule/*.test.ts`
 - `apps/web/utils/ai/reply/*.test.ts`
@@ -176,7 +176,7 @@ Store:
 
 ## Detailed Code Examples
 
-See [email-021](./email-021-implementation-blueprints-and-code-examples.md) for fixture and runner examples.
+See for fixture and runner examples.
 
 ### Quality Gate
 

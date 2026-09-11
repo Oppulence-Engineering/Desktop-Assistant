@@ -7,8 +7,8 @@
 | Track      | Desktop email                              |
 | Owner      | TBD                                        |
 | Created    | 2026-06-12                                 |
-| Depends on | email-001, email-004, email-007, email-012 |
-| Related    | email-006, email-010, email-015            |
+| Depends on | email-001, email-012 |
+| Related    | email-015 |
 
 ## Summary
 
@@ -16,7 +16,7 @@ Add meeting briefs generated from email history, calendar context, previous meet
 
 ## Inbox Zero Implementation References
 
-Implementation agents should first read [email-000](./email-000-inbox-zero-agent-reference.md), then inspect:
+Implementation agents should first read then inspect:
 
 - `docs/essentials/meeting-briefs.mdx`
 - `apps/web/prisma/schema.prisma` models `MeetingBriefing`, `CalendarConnection`, `Calendar`, `BookingLink`
@@ -162,7 +162,7 @@ Slack/Telegram:
 
 - Summary only by default.
 - Link to full brief.
-- Respect channel payload policy from email-007.
+- Respect the content governance policy in email-015.
 
 ## Failure Handling
 

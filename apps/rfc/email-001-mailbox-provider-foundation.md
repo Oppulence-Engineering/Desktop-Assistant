@@ -8,7 +8,7 @@
 | Owner      | TBD                                |
 | Created    | 2026-06-12                         |
 | Depends on | RFC 003, RFC 012, RFC 019, RFC 020 |
-| Related    | email-002, email-003               |
+| Related    | None |
 
 ## Summary
 
@@ -18,7 +18,7 @@ This RFC proposes a `MailboxProvider` layer, normalized mailbox data model, acco
 
 ## Inbox Zero Implementation References
 
-Implementation agents should first read [email-000](./email-000-inbox-zero-agent-reference.md), then inspect these Inbox Zero files:
+Implementation agents should first read then inspect these Inbox Zero files:
 
 - `apps/web/utils/email/provider.ts`
 - `apps/web/utils/email/types.ts`
@@ -300,7 +300,7 @@ The broker should start with actions needed by background tasks and only expose 
 
 ## Detailed Code Examples
 
-See [email-021](./email-021-implementation-blueprints-and-code-examples.md) for the full implementation blueprint. This RFC's minimum useful first step is to wrap the existing Gmail sync/action code behind a provider interface without changing renderer behavior.
+See for the full implementation blueprint. This RFC's minimum useful first step is to wrap the existing Gmail sync/action code behind a provider interface without changing renderer behavior.
 
 ### Adapter Wrapper Around Existing Gmail Code
 

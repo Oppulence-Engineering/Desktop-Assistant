@@ -7,8 +7,8 @@
 | Track      | Desktop email                          |
 | Owner      | TBD                                    |
 | Created    | 2026-06-12                             |
-| Depends on | email-001, email-008, email-015        |
-| Related    | RFC 011, RFC 012, email-010, email-017 |
+| Depends on | email-001, email-015 |
+| Related    | RFC 011, RFC 012, email-017 |
 
 ## Summary
 
@@ -16,7 +16,7 @@ Define how Rowboat email features behave with multiple mailbox accounts and futu
 
 ## Inbox Zero Implementation References
 
-Implementation agents should first read [email-000](./email-000-inbox-zero-agent-reference.md), then inspect:
+Implementation agents should first read then inspect:
 
 - `apps/web/prisma/schema.prisma` models `EmailAccount`, `ApiKey`, `Rule`, `ExecutedRule`
 - `apps/web/app/api/user/email-accounts/route.ts`
@@ -148,7 +148,7 @@ Do not include raw subjects, bodies, or personal sender lists by default.
 
 ## API Scope
 
-API keys from email-008 can be:
+Scoped API keys, if the platform API is ever revisited, can be:
 
 - User-level all permitted accounts.
 - Account-scoped.

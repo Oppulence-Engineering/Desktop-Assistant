@@ -7,8 +7,8 @@
 | Track      | Desktop email                              |
 | Owner      | TBD                                        |
 | Created    | 2026-06-12                                 |
-| Depends on | email-001, email-003, email-014, email-015 |
-| Related    | email-004, email-016, email-018            |
+| Depends on | email-001, email-014, email-015 |
+| Related    | email-016 |
 
 ## Summary
 
@@ -16,7 +16,7 @@ Build a first-class debug console for email sync, rules, drafts, memories, provi
 
 ## Inbox Zero Implementation References
 
-Implementation agents should first read [email-000](./email-000-inbox-zero-agent-reference.md), then inspect:
+Implementation agents should first read then inspect:
 
 - `apps/web/app/(app)/[emailAccountId]/debug/page.tsx`
 - `apps/web/app/(app)/[emailAccountId]/debug/drafts/page.tsx`

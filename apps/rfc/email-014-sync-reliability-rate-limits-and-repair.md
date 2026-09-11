@@ -16,7 +16,7 @@ Make mailbox sync and automation reliable under provider rate limits, webhook du
 
 ## Inbox Zero Implementation References
 
-Implementation agents should first read [email-000](./email-000-inbox-zero-agent-reference.md), then inspect:
+Implementation agents should first read then inspect:
 
 - `apps/web/utils/email/rate-limit.ts`
 - `apps/web/utils/email/rate-limit-mode-error.ts`
@@ -152,7 +152,7 @@ Logs should include account ID hash/provider/job ID/error code, not email bodies
 
 ## Detailed Code Examples
 
-See [email-021](./email-021-implementation-blueprints-and-code-examples.md) for full sync job and backoff examples.
+See for full sync job and backoff examples.
 
 ### Repair Trigger
 
