@@ -10,10 +10,6 @@ export const metadata: Metadata = {
   title: "Oppulence — The Commitment Ledger",
   description:
     "Oppulence is the independent record of business promises: what you owe, what they owe, what changed, and the proof behind it.",
-  icons: {
-    icon: "/icon.png",
-    apple: "/icon.png",
-  },
 };
 
 const geist = Geist({
