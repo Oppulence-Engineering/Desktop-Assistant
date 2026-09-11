@@ -196,7 +196,7 @@ export function ActionsView() {
         </div>
       ) : null}
 
-      {proposals === null ? (
+      {!proposals ? (
         <ListSkeleton rows={3} />
       ) : disabled ? (
         <EmptyBlock

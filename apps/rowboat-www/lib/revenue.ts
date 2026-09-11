@@ -58,6 +58,28 @@ export class RevenueAPIError extends Error {
   }
 }
 
+/**
+ * Validates a response against its contract.
+ *
+ * A mismatch means this client and the API disagree about the shape, which is
+ * a deployment fact, not something the reader did. A zod issue list is a
+ * developer artifact — printed verbatim it put
+ * `[{"expected":"array","code":"invalid_type",…}]` in front of the user — so
+ * the issues go to the console and the caller gets a sentence it can render.
+ */
+function parsed<T>(schema: { parse: (value: unknown) => T }, value: unknown, subject: string): T {
+  try {
+    return schema.parse(value);
+  } catch (error) {
+    console.error(`Unexpected ${subject} response`, error);
+    throw new RevenueAPIError(
+      `The ${subject} response did not match what this app expects. The app and the API are probably running different versions.`,
+      0,
+      "schema_mismatch",
+    );
+  }
+}
+
 export function friendlyRevenueError(message: string) {
   if (/gmail.*(?:returned 429|user-rate limit exceeded)/i.test(message)) {
     return "Google is temporarily limiting Gmail reads for this account. Please try the audit again in about 15 minutes.";
@@ -350,35 +372,43 @@ export async function getRelationshipGraph(
       (latest, graph) => (graph.generatedAt > latest ? graph.generatedAt : latest),
       new Date().toISOString(),
     );
-    return RelationshipGraphSchema.parse({
-      contractVersion: "2026-08-01",
-      generatedAt,
-      asOf: input.asOf || generatedAt,
-      historical: Boolean(input.asOf),
-      scope: "portfolio",
-      depth: input.depth || 2,
-      nodes: [
-        ...new Map(graphs.flatMap((graph) => graph.nodes).map((node) => [node.id, node])).values(),
-      ],
-      edges: [
-        ...new Map(graphs.flatMap((graph) => graph.edges).map((edge) => [edge.id, edge])).values(),
-      ],
-      permissions: graphs.length
-        ? {
-            canView: graphs.every((graph) => graph.permissions.canView),
-            canContribute: graphs.every((graph) => graph.permissions.canContribute),
-            canApprove: graphs.every((graph) => graph.permissions.canApprove),
-            canExecute: graphs.every((graph) => graph.permissions.canExecute),
-            canSaveViews: graphs.every((graph) => graph.permissions.canSaveViews),
-          }
-        : {
-            canView: true,
-            canContribute: false,
-            canApprove: false,
-            canExecute: false,
-            canSaveViews: false,
-          },
-    });
+    return parsed(
+      RelationshipGraphSchema,
+      {
+        contractVersion: "2026-08-01",
+        generatedAt,
+        asOf: input.asOf || generatedAt,
+        historical: Boolean(input.asOf),
+        scope: "portfolio",
+        depth: input.depth || 2,
+        nodes: [
+          ...new Map(
+            graphs.flatMap((graph) => graph.nodes).map((node) => [node.id, node]),
+          ).values(),
+        ],
+        edges: [
+          ...new Map(
+            graphs.flatMap((graph) => graph.edges).map((edge) => [edge.id, edge]),
+          ).values(),
+        ],
+        permissions: graphs.length
+          ? {
+              canView: graphs.every((graph) => graph.permissions.canView),
+              canContribute: graphs.every((graph) => graph.permissions.canContribute),
+              canApprove: graphs.every((graph) => graph.permissions.canApprove),
+              canExecute: graphs.every((graph) => graph.permissions.canExecute),
+              canSaveViews: graphs.every((graph) => graph.permissions.canSaveViews),
+            }
+          : {
+              canView: true,
+              canContribute: false,
+              canApprove: false,
+              canExecute: false,
+              canSaveViews: false,
+            },
+      },
+      "relationship graph",
+    );
   }
 }
 
@@ -842,8 +872,10 @@ export async function listCommitments(
   if (filter.limit) params.set("limit", String(filter.limit));
   if (filter.offset) params.set("offset", String(filter.offset));
   const query = params.toString();
-  const res = ListCommitments200Response.parse(
+  const res = parsed(
+    ListCommitments200Response,
     await call<unknown>(`/commitments${query ? `?${query}` : ""}`, { signal }),
+    "commitments",
   );
   return res.commitments.map((row) => ({
     ...row,
@@ -856,8 +888,10 @@ export async function getCommitmentRecord(
   commitmentId: string,
   signal?: AbortSignal,
 ): Promise<CommitmentRecord> {
-  const record = ExportCommitment200Response.parse(
+  const record = parsed(
+    ExportCommitment200Response,
     await call<unknown>(`/commitments/${encodeURIComponent(commitmentId)}/export`, { signal }),
+    "commitment record",
   );
   return { ...record, dueAt: record.dueAt ?? undefined } as CommitmentRecord;
 }
@@ -877,8 +911,10 @@ export async function getOpenPromisesReport(
   scanId: string,
   signal?: AbortSignal,
 ): Promise<OpenPromisesReport> {
-  const report = GetOpenPromisesReport200Response.parse(
+  const report = parsed(
+    GetOpenPromisesReport200Response,
     await call<unknown>(`/revenue-leak-scans/${encodeURIComponent(scanId)}/report`, { signal }),
+    "open promises report",
   );
   return {
     ...report,

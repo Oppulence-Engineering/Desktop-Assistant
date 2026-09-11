@@ -264,7 +264,16 @@ async function workflowRequest<T>(
           : `Workflow request failed (${response.status})`;
     throw new Error(message);
   }
-  return schema.parse(body);
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    // The zod issue list is a developer artifact. Printed verbatim it put
+    // `[{"expected":"array","code":"invalid_type",…}]` on the workflows page.
+    console.error(`Unexpected response from ${path}`, parsed.error);
+    throw new Error(
+      "The workflows response did not match what this app expects. The app and the API are probably running different versions.",
+    );
+  }
+  return parsed.data;
 }
 
 export async function ensureFirstPartyWorkflows(): Promise<CloudTask[]> {
