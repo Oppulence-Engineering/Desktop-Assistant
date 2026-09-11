@@ -12,7 +12,8 @@ import { CurrentYear } from "./current-year";
  * - `{ callout }` renders an emphasized box for the notices that have to stand
  *   out (arbitration, jury-trial waiver, and similar)
  */
-export type LegalBlock = string | string[] | { term: string; text: string }[] | { callout: string };
+// Used only to describe this file's own block renderers.
+type LegalBlock = string | string[] | { term: string; text: string }[] | { callout: string };
 
 export type LegalSection = {
   heading: string;

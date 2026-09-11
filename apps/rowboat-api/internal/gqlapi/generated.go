@@ -1374,10 +1374,12 @@ type ComplexityRoot struct {
 		ActionsCreated       func(childComplexity int) int
 		ActiveClaim          func(childComplexity int) int
 		CandidatesSeen       func(childComplexity int) int
+		CommitmentsCreated   func(childComplexity int) int
 		CompletedAt          func(childComplexity int) int
 		CreatedAt            func(childComplexity int) int
 		Error                func(childComplexity int) int
 		EvidencesCreated     func(childComplexity int) int
+		ExtractionFailures   func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		LookbackDays         func(childComplexity int) int
 		Mode                 func(childComplexity int) int
@@ -1385,7 +1387,10 @@ type ComplexityRoot struct {
 		SourceFreshnessAt    func(childComplexity int) int
 		StartedAt            func(childComplexity int) int
 		Status               func(childComplexity int) int
+		ThreadsDeepRead      func(childComplexity int) int
 		ThreadsSeen          func(childComplexity int) int
+		ThreadsSkipped       func(childComplexity int) int
+		ThreadsSnippetOnly   func(childComplexity int) int
 		UpdatedAt            func(childComplexity int) int
 		User                 func(childComplexity int) int
 		Workspace            func(childComplexity int) int
@@ -8312,6 +8317,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RevenueLeakScan.CandidatesSeen(childComplexity), true
+	case "RevenueLeakScan.commitmentsCreated":
+		if e.ComplexityRoot.RevenueLeakScan.CommitmentsCreated == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RevenueLeakScan.CommitmentsCreated(childComplexity), true
 	case "RevenueLeakScan.completedAt":
 		if e.ComplexityRoot.RevenueLeakScan.CompletedAt == nil {
 			break
@@ -8336,6 +8347,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RevenueLeakScan.EvidencesCreated(childComplexity), true
+	case "RevenueLeakScan.extractionFailures":
+		if e.ComplexityRoot.RevenueLeakScan.ExtractionFailures == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RevenueLeakScan.ExtractionFailures(childComplexity), true
 	case "RevenueLeakScan.id":
 		if e.ComplexityRoot.RevenueLeakScan.ID == nil {
 			break
@@ -8378,12 +8395,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.RevenueLeakScan.Status(childComplexity), true
+	case "RevenueLeakScan.threadsDeepRead":
+		if e.ComplexityRoot.RevenueLeakScan.ThreadsDeepRead == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RevenueLeakScan.ThreadsDeepRead(childComplexity), true
 	case "RevenueLeakScan.threadsSeen":
 		if e.ComplexityRoot.RevenueLeakScan.ThreadsSeen == nil {
 			break
 		}
 
 		return e.ComplexityRoot.RevenueLeakScan.ThreadsSeen(childComplexity), true
+	case "RevenueLeakScan.threadsSkipped":
+		if e.ComplexityRoot.RevenueLeakScan.ThreadsSkipped == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RevenueLeakScan.ThreadsSkipped(childComplexity), true
+	case "RevenueLeakScan.threadsSnippetOnly":
+		if e.ComplexityRoot.RevenueLeakScan.ThreadsSnippetOnly == nil {
+			break
+		}
+
+		return e.ComplexityRoot.RevenueLeakScan.ThreadsSnippetOnly(childComplexity), true
 	case "RevenueLeakScan.updatedAt":
 		if e.ComplexityRoot.RevenueLeakScan.UpdatedAt == nil {
 			break
@@ -12205,6 +12240,16 @@ func (ec *executionContext) childFields_RevenueLeakScan(ctx context.Context, fie
 		return ec.fieldContext_RevenueLeakScan_evidencesCreated(ctx, field)
 	case "actionsCreated":
 		return ec.fieldContext_RevenueLeakScan_actionsCreated(ctx, field)
+	case "commitmentsCreated":
+		return ec.fieldContext_RevenueLeakScan_commitmentsCreated(ctx, field)
+	case "threadsDeepRead":
+		return ec.fieldContext_RevenueLeakScan_threadsDeepRead(ctx, field)
+	case "threadsSnippetOnly":
+		return ec.fieldContext_RevenueLeakScan_threadsSnippetOnly(ctx, field)
+	case "threadsSkipped":
+		return ec.fieldContext_RevenueLeakScan_threadsSkipped(ctx, field)
+	case "extractionFailures":
+		return ec.fieldContext_RevenueLeakScan_extractionFailures(ctx, field)
 	case "startedAt":
 		return ec.fieldContext_RevenueLeakScan_startedAt(ctx, field)
 	case "completedAt":
@@ -40947,6 +40992,121 @@ func (ec *executionContext) _RevenueLeakScan_actionsCreated(ctx context.Context,
 	)
 }
 func (ec *executionContext) fieldContext_RevenueLeakScan_actionsCreated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RevenueLeakScan", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _RevenueLeakScan_commitmentsCreated(ctx context.Context, field graphql.CollectedField, obj *ent.RevenueLeakScan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RevenueLeakScan_commitmentsCreated(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.CommitmentsCreated, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RevenueLeakScan_commitmentsCreated(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RevenueLeakScan", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _RevenueLeakScan_threadsDeepRead(ctx context.Context, field graphql.CollectedField, obj *ent.RevenueLeakScan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RevenueLeakScan_threadsDeepRead(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ThreadsDeepRead, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RevenueLeakScan_threadsDeepRead(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RevenueLeakScan", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _RevenueLeakScan_threadsSnippetOnly(ctx context.Context, field graphql.CollectedField, obj *ent.RevenueLeakScan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RevenueLeakScan_threadsSnippetOnly(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ThreadsSnippetOnly, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RevenueLeakScan_threadsSnippetOnly(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RevenueLeakScan", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _RevenueLeakScan_threadsSkipped(ctx context.Context, field graphql.CollectedField, obj *ent.RevenueLeakScan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RevenueLeakScan_threadsSkipped(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ThreadsSkipped, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RevenueLeakScan_threadsSkipped(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	return graphql.NewScalarFieldContext("RevenueLeakScan", field, false, false, errors.New("field of type Int does not have child fields"))
+}
+
+func (ec *executionContext) _RevenueLeakScan_extractionFailures(ctx context.Context, field graphql.CollectedField, obj *ent.RevenueLeakScan) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return ec.fieldContext_RevenueLeakScan_extractionFailures(ctx, field)
+		},
+		func(ctx context.Context) (any, error) {
+			return obj.ExtractionFailures, nil
+		},
+		nil,
+		func(ctx context.Context, selections ast.SelectionSet, v int) graphql.Marshaler {
+			return ec.marshalNInt2int(ctx, selections, v)
+		},
+		true,
+		true,
+	)
+}
+func (ec *executionContext) fieldContext_RevenueLeakScan_extractionFailures(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	return graphql.NewScalarFieldContext("RevenueLeakScan", field, false, false, errors.New("field of type Int does not have child fields"))
 }
 
@@ -112672,7 +112832,7 @@ func (ec *executionContext) unmarshalInputRevenueLeakScanWhereInput(ctx context.
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "activeClaim", "activeClaimNEQ", "activeClaimIn", "activeClaimNotIn", "activeClaimGT", "activeClaimGTE", "activeClaimLT", "activeClaimLTE", "activeClaimContains", "activeClaimHasPrefix", "activeClaimHasSuffix", "activeClaimIsNil", "activeClaimNotNil", "activeClaimEqualFold", "activeClaimContainsFold", "mode", "modeNEQ", "modeIn", "modeNotIn", "modeGT", "modeGTE", "modeLT", "modeLTE", "modeContains", "modeHasPrefix", "modeHasSuffix", "modeEqualFold", "modeContainsFold", "lookbackDays", "lookbackDaysNEQ", "lookbackDaysIn", "lookbackDaysNotIn", "lookbackDaysGT", "lookbackDaysGTE", "lookbackDaysLT", "lookbackDaysLTE", "threadsSeen", "threadsSeenNEQ", "threadsSeenIn", "threadsSeenNotIn", "threadsSeenGT", "threadsSeenGTE", "threadsSeenLT", "threadsSeenLTE", "candidatesSeen", "candidatesSeenNEQ", "candidatesSeenIn", "candidatesSeenNotIn", "candidatesSeenGT", "candidatesSeenGTE", "candidatesSeenLT", "candidatesSeenLTE", "relationshipsCreated", "relationshipsCreatedNEQ", "relationshipsCreatedIn", "relationshipsCreatedNotIn", "relationshipsCreatedGT", "relationshipsCreatedGTE", "relationshipsCreatedLT", "relationshipsCreatedLTE", "evidencesCreated", "evidencesCreatedNEQ", "evidencesCreatedIn", "evidencesCreatedNotIn", "evidencesCreatedGT", "evidencesCreatedGTE", "evidencesCreatedLT", "evidencesCreatedLTE", "actionsCreated", "actionsCreatedNEQ", "actionsCreatedIn", "actionsCreatedNotIn", "actionsCreatedGT", "actionsCreatedGTE", "actionsCreatedLT", "actionsCreatedLTE", "startedAt", "startedAtNEQ", "startedAtIn", "startedAtNotIn", "startedAtGT", "startedAtGTE", "startedAtLT", "startedAtLTE", "startedAtIsNil", "startedAtNotNil", "completedAt", "completedAtNEQ", "completedAtIn", "completedAtNotIn", "completedAtGT", "completedAtGTE", "completedAtLT", "completedAtLTE", "completedAtIsNil", "completedAtNotNil", "error", "errorNEQ", "errorIn", "errorNotIn", "errorGT", "errorGTE", "errorLT", "errorLTE", "errorContains", "errorHasPrefix", "errorHasSuffix", "errorIsNil", "errorNotNil", "errorEqualFold", "errorContainsFold", "sourceFreshnessAt", "sourceFreshnessAtNEQ", "sourceFreshnessAtIn", "sourceFreshnessAtNotIn", "sourceFreshnessAtGT", "sourceFreshnessAtGTE", "sourceFreshnessAtLT", "sourceFreshnessAtLTE", "sourceFreshnessAtIsNil", "sourceFreshnessAtNotNil", "hasWorkspace", "hasWorkspaceWith", "hasUser", "hasUserWith"}
+	fieldsInOrder := [...]string{"not", "and", "or", "id", "idNEQ", "idIn", "idNotIn", "idGT", "idGTE", "idLT", "idLTE", "createdAt", "createdAtNEQ", "createdAtIn", "createdAtNotIn", "createdAtGT", "createdAtGTE", "createdAtLT", "createdAtLTE", "updatedAt", "updatedAtNEQ", "updatedAtIn", "updatedAtNotIn", "updatedAtGT", "updatedAtGTE", "updatedAtLT", "updatedAtLTE", "status", "statusNEQ", "statusIn", "statusNotIn", "statusGT", "statusGTE", "statusLT", "statusLTE", "statusContains", "statusHasPrefix", "statusHasSuffix", "statusEqualFold", "statusContainsFold", "activeClaim", "activeClaimNEQ", "activeClaimIn", "activeClaimNotIn", "activeClaimGT", "activeClaimGTE", "activeClaimLT", "activeClaimLTE", "activeClaimContains", "activeClaimHasPrefix", "activeClaimHasSuffix", "activeClaimIsNil", "activeClaimNotNil", "activeClaimEqualFold", "activeClaimContainsFold", "mode", "modeNEQ", "modeIn", "modeNotIn", "modeGT", "modeGTE", "modeLT", "modeLTE", "modeContains", "modeHasPrefix", "modeHasSuffix", "modeEqualFold", "modeContainsFold", "lookbackDays", "lookbackDaysNEQ", "lookbackDaysIn", "lookbackDaysNotIn", "lookbackDaysGT", "lookbackDaysGTE", "lookbackDaysLT", "lookbackDaysLTE", "threadsSeen", "threadsSeenNEQ", "threadsSeenIn", "threadsSeenNotIn", "threadsSeenGT", "threadsSeenGTE", "threadsSeenLT", "threadsSeenLTE", "candidatesSeen", "candidatesSeenNEQ", "candidatesSeenIn", "candidatesSeenNotIn", "candidatesSeenGT", "candidatesSeenGTE", "candidatesSeenLT", "candidatesSeenLTE", "relationshipsCreated", "relationshipsCreatedNEQ", "relationshipsCreatedIn", "relationshipsCreatedNotIn", "relationshipsCreatedGT", "relationshipsCreatedGTE", "relationshipsCreatedLT", "relationshipsCreatedLTE", "evidencesCreated", "evidencesCreatedNEQ", "evidencesCreatedIn", "evidencesCreatedNotIn", "evidencesCreatedGT", "evidencesCreatedGTE", "evidencesCreatedLT", "evidencesCreatedLTE", "actionsCreated", "actionsCreatedNEQ", "actionsCreatedIn", "actionsCreatedNotIn", "actionsCreatedGT", "actionsCreatedGTE", "actionsCreatedLT", "actionsCreatedLTE", "commitmentsCreated", "commitmentsCreatedNEQ", "commitmentsCreatedIn", "commitmentsCreatedNotIn", "commitmentsCreatedGT", "commitmentsCreatedGTE", "commitmentsCreatedLT", "commitmentsCreatedLTE", "threadsDeepRead", "threadsDeepReadNEQ", "threadsDeepReadIn", "threadsDeepReadNotIn", "threadsDeepReadGT", "threadsDeepReadGTE", "threadsDeepReadLT", "threadsDeepReadLTE", "threadsSnippetOnly", "threadsSnippetOnlyNEQ", "threadsSnippetOnlyIn", "threadsSnippetOnlyNotIn", "threadsSnippetOnlyGT", "threadsSnippetOnlyGTE", "threadsSnippetOnlyLT", "threadsSnippetOnlyLTE", "threadsSkipped", "threadsSkippedNEQ", "threadsSkippedIn", "threadsSkippedNotIn", "threadsSkippedGT", "threadsSkippedGTE", "threadsSkippedLT", "threadsSkippedLTE", "extractionFailures", "extractionFailuresNEQ", "extractionFailuresIn", "extractionFailuresNotIn", "extractionFailuresGT", "extractionFailuresGTE", "extractionFailuresLT", "extractionFailuresLTE", "startedAt", "startedAtNEQ", "startedAtIn", "startedAtNotIn", "startedAtGT", "startedAtGTE", "startedAtLT", "startedAtLTE", "startedAtIsNil", "startedAtNotNil", "completedAt", "completedAtNEQ", "completedAtIn", "completedAtNotIn", "completedAtGT", "completedAtGTE", "completedAtLT", "completedAtLTE", "completedAtIsNil", "completedAtNotNil", "error", "errorNEQ", "errorIn", "errorNotIn", "errorGT", "errorGTE", "errorLT", "errorLTE", "errorContains", "errorHasPrefix", "errorHasSuffix", "errorIsNil", "errorNotNil", "errorEqualFold", "errorContainsFold", "sourceFreshnessAt", "sourceFreshnessAtNEQ", "sourceFreshnessAtIn", "sourceFreshnessAtNotIn", "sourceFreshnessAtGT", "sourceFreshnessAtGTE", "sourceFreshnessAtLT", "sourceFreshnessAtLTE", "sourceFreshnessAtIsNil", "sourceFreshnessAtNotNil", "hasWorkspace", "hasWorkspaceWith", "hasUser", "hasUserWith"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -113491,6 +113651,286 @@ func (ec *executionContext) unmarshalInputRevenueLeakScanWhereInput(ctx context.
 				return it, err
 			}
 			it.ActionsCreatedLTE = data
+		case "commitmentsCreated":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreated"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreated = data
+		case "commitmentsCreatedNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedNEQ = data
+		case "commitmentsCreatedIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedIn = data
+		case "commitmentsCreatedNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedNotIn = data
+		case "commitmentsCreatedGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedGT = data
+		case "commitmentsCreatedGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedGTE = data
+		case "commitmentsCreatedLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedLT = data
+		case "commitmentsCreatedLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("commitmentsCreatedLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CommitmentsCreatedLTE = data
+		case "threadsDeepRead":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsDeepRead"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsDeepRead = data
+		case "threadsDeepReadNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsDeepReadNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsDeepReadNEQ = data
+		case "threadsDeepReadIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsDeepReadIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsDeepReadIn = data
+		case "threadsDeepReadNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsDeepReadNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsDeepReadNotIn = data
+		case "threadsDeepReadGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsDeepReadGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsDeepReadGT = data
+		case "threadsDeepReadGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsDeepReadGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsDeepReadGTE = data
+		case "threadsDeepReadLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsDeepReadLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsDeepReadLT = data
+		case "threadsDeepReadLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsDeepReadLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsDeepReadLTE = data
+		case "threadsSnippetOnly":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSnippetOnly"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSnippetOnly = data
+		case "threadsSnippetOnlyNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSnippetOnlyNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSnippetOnlyNEQ = data
+		case "threadsSnippetOnlyIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSnippetOnlyIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSnippetOnlyIn = data
+		case "threadsSnippetOnlyNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSnippetOnlyNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSnippetOnlyNotIn = data
+		case "threadsSnippetOnlyGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSnippetOnlyGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSnippetOnlyGT = data
+		case "threadsSnippetOnlyGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSnippetOnlyGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSnippetOnlyGTE = data
+		case "threadsSnippetOnlyLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSnippetOnlyLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSnippetOnlyLT = data
+		case "threadsSnippetOnlyLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSnippetOnlyLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSnippetOnlyLTE = data
+		case "threadsSkipped":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSkipped"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSkipped = data
+		case "threadsSkippedNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSkippedNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSkippedNEQ = data
+		case "threadsSkippedIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSkippedIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSkippedIn = data
+		case "threadsSkippedNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSkippedNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSkippedNotIn = data
+		case "threadsSkippedGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSkippedGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSkippedGT = data
+		case "threadsSkippedGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSkippedGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSkippedGTE = data
+		case "threadsSkippedLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSkippedLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSkippedLT = data
+		case "threadsSkippedLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("threadsSkippedLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ThreadsSkippedLTE = data
+		case "extractionFailures":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("extractionFailures"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExtractionFailures = data
+		case "extractionFailuresNEQ":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("extractionFailuresNEQ"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExtractionFailuresNEQ = data
+		case "extractionFailuresIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("extractionFailuresIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExtractionFailuresIn = data
+		case "extractionFailuresNotIn":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("extractionFailuresNotIn"))
+			data, err := ec.unmarshalOInt2ᚕintᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExtractionFailuresNotIn = data
+		case "extractionFailuresGT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("extractionFailuresGT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExtractionFailuresGT = data
+		case "extractionFailuresGTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("extractionFailuresGTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExtractionFailuresGTE = data
+		case "extractionFailuresLT":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("extractionFailuresLT"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExtractionFailuresLT = data
+		case "extractionFailuresLTE":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("extractionFailuresLTE"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExtractionFailuresLTE = data
 		case "startedAt":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startedAt"))
 			data, err := ec.unmarshalOTime2ᚖtimeᚐTime(ctx, v)
@@ -134405,6 +134845,31 @@ func (ec *executionContext) _RevenueLeakScan(ctx context.Context, sel ast.Select
 			}
 		case "actionsCreated":
 			out.Values[i] = ec._RevenueLeakScan_actionsCreated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "commitmentsCreated":
+			out.Values[i] = ec._RevenueLeakScan_commitmentsCreated(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "threadsDeepRead":
+			out.Values[i] = ec._RevenueLeakScan_threadsDeepRead(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "threadsSnippetOnly":
+			out.Values[i] = ec._RevenueLeakScan_threadsSnippetOnly(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "threadsSkipped":
+			out.Values[i] = ec._RevenueLeakScan_threadsSkipped(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "extractionFailures":
+			out.Values[i] = ec._RevenueLeakScan_extractionFailures(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&out.Invalids, 1)
 			}

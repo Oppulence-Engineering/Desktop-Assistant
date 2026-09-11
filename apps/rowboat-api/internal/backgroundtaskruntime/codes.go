@@ -12,6 +12,7 @@ const (
 	CodeRuntimeArtifactTooLarge   = "runtime_artifact_too_large"
 	CodeRuntimeEventTooLarge      = "runtime_event_too_large"
 	CodeLLMCallFailed             = "llm_call_failed"
+	CodeUpstreamCreditsExhausted  = "upstream_credits_exhausted"
 	CodeToolNotAllowed            = "tool_not_allowed"
 	CodeToolInvokeFailed          = "tool_invoke_failed"
 	CodeConnectorUnavailable      = "connector_unavailable"

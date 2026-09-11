@@ -11,11 +11,15 @@ import type {
   DismissRevenueActionBody,
   EditRevenueActionBody,
   ErrorEnvelope,
+  GetOpenPromisesReport200One,
+  GetOpenPromisesReportParams,
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
   LinkRevenueWorkspaceBody,
   ListRevenueActions200,
   ListRevenueActionsParams,
+  ListRevenueLeakScans200,
+  ListRevenueLeakScansParams,
   N400Response,
   N401Response,
   N404Response,
@@ -862,6 +866,68 @@ export const getRevenueImpact = async (
   return { data, status: res.status, headers: res.headers } as getRevenueImpactResponse;
 };
 
+export type listRevenueLeakScansResponse200 = {
+  data: ListRevenueLeakScans200;
+  status: 200;
+};
+
+export type listRevenueLeakScansResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type listRevenueLeakScansResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listRevenueLeakScansResponseSuccess = listRevenueLeakScansResponse200 & {
+  headers: Headers;
+};
+export type listRevenueLeakScansResponseError = (
+  listRevenueLeakScansResponse400 | listRevenueLeakScansResponse401
+) & {
+  headers: Headers;
+};
+
+export type listRevenueLeakScansResponse =
+  listRevenueLeakScansResponseSuccess | listRevenueLeakScansResponseError;
+
+export const getListRevenueLeakScansUrl = (params?: ListRevenueLeakScansParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/revenue-leak-scans?${stringifiedParams}`
+    : `/v1/revenue-leak-scans`;
+};
+
+/**
+ * Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions.
+ * @summary List revenue leak scans
+ */
+export const listRevenueLeakScans = async (
+  params?: ListRevenueLeakScansParams,
+  options?: RequestInit,
+): Promise<listRevenueLeakScansResponse> => {
+  const res = await fetch(getListRevenueLeakScansUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listRevenueLeakScansResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listRevenueLeakScansResponse;
+};
+
 export type startRevenueLeakScanResponse202 = {
   data: RevenueLeakScan;
   status: 202;
@@ -962,6 +1028,84 @@ export const getRevenueLeakScan = async (
 
   const data: getRevenueLeakScanResponse["data"] = body ? JSON.parse(body) : {};
   return { data, status: res.status, headers: res.headers } as getRevenueLeakScanResponse;
+};
+
+export type getOpenPromisesReportResponse200ApplicationJson = {
+  data: GetOpenPromisesReport200One;
+  status: 200;
+};
+
+export type getOpenPromisesReportResponse200TextMarkdown = {
+  data: string;
+  status: 200;
+};
+
+export type getOpenPromisesReportResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type getOpenPromisesReportResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type getOpenPromisesReportResponseSuccess = (
+  getOpenPromisesReportResponse200ApplicationJson | getOpenPromisesReportResponse200TextMarkdown
+) & {
+  headers: Headers;
+};
+export type getOpenPromisesReportResponseError = (
+  getOpenPromisesReportResponse401 | getOpenPromisesReportResponse404
+) & {
+  headers: Headers;
+};
+
+export type getOpenPromisesReportResponse =
+  getOpenPromisesReportResponseSuccess | getOpenPromisesReportResponseError;
+
+export const getGetOpenPromisesReportUrl = (
+  scanId: string,
+  params?: GetOpenPromisesReportParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/revenue-leak-scans/${scanId}/report?${stringifiedParams}`
+    : `/v1/revenue-leak-scans/${scanId}/report`;
+};
+
+/**
+ * Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.
+ * @summary Get the open promises report
+ */
+export const getOpenPromisesReport = async (
+  scanId: string,
+  params?: GetOpenPromisesReportParams,
+  options?: RequestInit,
+): Promise<getOpenPromisesReportResponse> => {
+  const res = await fetch(getGetOpenPromisesReportUrl(scanId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getOpenPromisesReportResponse["data"] = body
+    ? contentType.includes("json")
+      ? JSON.parse(body)
+      : body
+    : {};
+  return { data, status: res.status, headers: res.headers } as getOpenPromisesReportResponse;
 };
 
 export type revenueSemanticSearchResponse200 = {

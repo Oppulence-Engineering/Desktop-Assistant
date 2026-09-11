@@ -12,6 +12,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrun"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/backgroundtaskrunevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
@@ -71,6 +72,28 @@ func TestStartScheduledRunCreatesRun(t *testing.T) {
 	}
 	if payload["requestedBy"] != "temporal-schedule" {
 		t.Fatalf("queued event requestedBy = %v, want temporal-schedule", payload["requestedBy"])
+	}
+}
+
+func TestStartScheduledRunCreditPreflightRequiresOneAffordableCall(t *testing.T) {
+	client, u, task := setup(t)
+	task = setCron(t, client, task)
+	client.Subscription.Create().SetUser(u).SetSanctionedCredits(400).SaveX(auth.WithInternal(context.Background()))
+	ctrl := &fakeController{}
+	starter := backgroundtaskruns.New(client, ctrl, zap.NewNop())
+	starter.SetAdmission(backgroundtaskruns.AdmissionFromConfig(appconfig.Config{
+		CloudRunAdmissionEnabled:       true,
+		CloudRunCreditPreflightEnabled: true,
+		CloudRuntimeModel:              "openai/gpt-4.1",
+		CloudRuntimeMaxLLMCalls:        12,
+	}, quota.New(client, zap.NewNop()), pricing.DefaultTable()))
+
+	out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))
+	if err != nil {
+		t.Fatalf("StartScheduledRun: %v", err)
+	}
+	if out.DeadLettered || out.Skipped || len(ctrl.starts) != 1 {
+		t.Fatalf("one affordable call should start the run: out=%+v starts=%d", out, len(ctrl.starts))
 	}
 }
 
@@ -141,7 +164,6 @@ func TestStartScheduledRunDeadLettersCreditPreflightVariants(t *testing.T) {
 				Prices:                 pricing.DefaultTable(),
 				SpendLimits:            tc.limits,
 				DefaultModel:           "anthropic/claude-sonnet-4-5",
-				MaxLLMCalls:            1,
 			})
 
 			out, err := starter.StartScheduledRun(context.Background(), fireInput(task, u))

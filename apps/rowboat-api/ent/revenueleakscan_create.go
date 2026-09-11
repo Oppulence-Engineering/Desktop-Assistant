@@ -180,6 +180,76 @@ func (_c *RevenueLeakScanCreate) SetNillableActionsCreated(v *int) *RevenueLeakS
 	return _c
 }
 
+// SetCommitmentsCreated sets the "commitments_created" field.
+func (_c *RevenueLeakScanCreate) SetCommitmentsCreated(v int) *RevenueLeakScanCreate {
+	_c.mutation.SetCommitmentsCreated(v)
+	return _c
+}
+
+// SetNillableCommitmentsCreated sets the "commitments_created" field if the given value is not nil.
+func (_c *RevenueLeakScanCreate) SetNillableCommitmentsCreated(v *int) *RevenueLeakScanCreate {
+	if v != nil {
+		_c.SetCommitmentsCreated(*v)
+	}
+	return _c
+}
+
+// SetThreadsDeepRead sets the "threads_deep_read" field.
+func (_c *RevenueLeakScanCreate) SetThreadsDeepRead(v int) *RevenueLeakScanCreate {
+	_c.mutation.SetThreadsDeepRead(v)
+	return _c
+}
+
+// SetNillableThreadsDeepRead sets the "threads_deep_read" field if the given value is not nil.
+func (_c *RevenueLeakScanCreate) SetNillableThreadsDeepRead(v *int) *RevenueLeakScanCreate {
+	if v != nil {
+		_c.SetThreadsDeepRead(*v)
+	}
+	return _c
+}
+
+// SetThreadsSnippetOnly sets the "threads_snippet_only" field.
+func (_c *RevenueLeakScanCreate) SetThreadsSnippetOnly(v int) *RevenueLeakScanCreate {
+	_c.mutation.SetThreadsSnippetOnly(v)
+	return _c
+}
+
+// SetNillableThreadsSnippetOnly sets the "threads_snippet_only" field if the given value is not nil.
+func (_c *RevenueLeakScanCreate) SetNillableThreadsSnippetOnly(v *int) *RevenueLeakScanCreate {
+	if v != nil {
+		_c.SetThreadsSnippetOnly(*v)
+	}
+	return _c
+}
+
+// SetThreadsSkipped sets the "threads_skipped" field.
+func (_c *RevenueLeakScanCreate) SetThreadsSkipped(v int) *RevenueLeakScanCreate {
+	_c.mutation.SetThreadsSkipped(v)
+	return _c
+}
+
+// SetNillableThreadsSkipped sets the "threads_skipped" field if the given value is not nil.
+func (_c *RevenueLeakScanCreate) SetNillableThreadsSkipped(v *int) *RevenueLeakScanCreate {
+	if v != nil {
+		_c.SetThreadsSkipped(*v)
+	}
+	return _c
+}
+
+// SetExtractionFailures sets the "extraction_failures" field.
+func (_c *RevenueLeakScanCreate) SetExtractionFailures(v int) *RevenueLeakScanCreate {
+	_c.mutation.SetExtractionFailures(v)
+	return _c
+}
+
+// SetNillableExtractionFailures sets the "extraction_failures" field if the given value is not nil.
+func (_c *RevenueLeakScanCreate) SetNillableExtractionFailures(v *int) *RevenueLeakScanCreate {
+	if v != nil {
+		_c.SetExtractionFailures(*v)
+	}
+	return _c
+}
+
 // SetStartedAt sets the "started_at" field.
 func (_c *RevenueLeakScanCreate) SetStartedAt(v time.Time) *RevenueLeakScanCreate {
 	_c.mutation.SetStartedAt(v)
@@ -355,6 +425,26 @@ func (_c *RevenueLeakScanCreate) defaults() error {
 		v := revenueleakscan.DefaultActionsCreated
 		_c.mutation.SetActionsCreated(v)
 	}
+	if _, ok := _c.mutation.CommitmentsCreated(); !ok {
+		v := revenueleakscan.DefaultCommitmentsCreated
+		_c.mutation.SetCommitmentsCreated(v)
+	}
+	if _, ok := _c.mutation.ThreadsDeepRead(); !ok {
+		v := revenueleakscan.DefaultThreadsDeepRead
+		_c.mutation.SetThreadsDeepRead(v)
+	}
+	if _, ok := _c.mutation.ThreadsSnippetOnly(); !ok {
+		v := revenueleakscan.DefaultThreadsSnippetOnly
+		_c.mutation.SetThreadsSnippetOnly(v)
+	}
+	if _, ok := _c.mutation.ThreadsSkipped(); !ok {
+		v := revenueleakscan.DefaultThreadsSkipped
+		_c.mutation.SetThreadsSkipped(v)
+	}
+	if _, ok := _c.mutation.ExtractionFailures(); !ok {
+		v := revenueleakscan.DefaultExtractionFailures
+		_c.mutation.SetExtractionFailures(v)
+	}
 	if _, ok := _c.mutation.ID(); !ok {
 		if revenueleakscan.DefaultID == nil {
 			return fmt.Errorf("ent: uninitialized revenueleakscan.DefaultID (forgotten import ent/runtime?)")
@@ -435,6 +525,46 @@ func (_c *RevenueLeakScanCreate) check() error {
 	if v, ok := _c.mutation.ActionsCreated(); ok {
 		if err := revenueleakscan.ActionsCreatedValidator(v); err != nil {
 			return &ValidationError{Name: "actions_created", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.actions_created": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.CommitmentsCreated(); !ok {
+		return &ValidationError{Name: "commitments_created", err: errors.New(`ent: missing required field "RevenueLeakScan.commitments_created"`)}
+	}
+	if v, ok := _c.mutation.CommitmentsCreated(); ok {
+		if err := revenueleakscan.CommitmentsCreatedValidator(v); err != nil {
+			return &ValidationError{Name: "commitments_created", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.commitments_created": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ThreadsDeepRead(); !ok {
+		return &ValidationError{Name: "threads_deep_read", err: errors.New(`ent: missing required field "RevenueLeakScan.threads_deep_read"`)}
+	}
+	if v, ok := _c.mutation.ThreadsDeepRead(); ok {
+		if err := revenueleakscan.ThreadsDeepReadValidator(v); err != nil {
+			return &ValidationError{Name: "threads_deep_read", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.threads_deep_read": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ThreadsSnippetOnly(); !ok {
+		return &ValidationError{Name: "threads_snippet_only", err: errors.New(`ent: missing required field "RevenueLeakScan.threads_snippet_only"`)}
+	}
+	if v, ok := _c.mutation.ThreadsSnippetOnly(); ok {
+		if err := revenueleakscan.ThreadsSnippetOnlyValidator(v); err != nil {
+			return &ValidationError{Name: "threads_snippet_only", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.threads_snippet_only": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ThreadsSkipped(); !ok {
+		return &ValidationError{Name: "threads_skipped", err: errors.New(`ent: missing required field "RevenueLeakScan.threads_skipped"`)}
+	}
+	if v, ok := _c.mutation.ThreadsSkipped(); ok {
+		if err := revenueleakscan.ThreadsSkippedValidator(v); err != nil {
+			return &ValidationError{Name: "threads_skipped", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.threads_skipped": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.ExtractionFailures(); !ok {
+		return &ValidationError{Name: "extraction_failures", err: errors.New(`ent: missing required field "RevenueLeakScan.extraction_failures"`)}
+	}
+	if v, ok := _c.mutation.ExtractionFailures(); ok {
+		if err := revenueleakscan.ExtractionFailuresValidator(v); err != nil {
+			return &ValidationError{Name: "extraction_failures", err: fmt.Errorf(`ent: validator failed for field "RevenueLeakScan.extraction_failures": %w`, err)}
 		}
 	}
 	if len(_c.mutation.WorkspaceIDs()) == 0 {
@@ -522,6 +652,26 @@ func (_c *RevenueLeakScanCreate) createSpec() (*RevenueLeakScan, *sqlgraph.Creat
 	if value, ok := _c.mutation.ActionsCreated(); ok {
 		_spec.SetField(revenueleakscan.FieldActionsCreated, field.TypeInt, value)
 		_node.ActionsCreated = value
+	}
+	if value, ok := _c.mutation.CommitmentsCreated(); ok {
+		_spec.SetField(revenueleakscan.FieldCommitmentsCreated, field.TypeInt, value)
+		_node.CommitmentsCreated = value
+	}
+	if value, ok := _c.mutation.ThreadsDeepRead(); ok {
+		_spec.SetField(revenueleakscan.FieldThreadsDeepRead, field.TypeInt, value)
+		_node.ThreadsDeepRead = value
+	}
+	if value, ok := _c.mutation.ThreadsSnippetOnly(); ok {
+		_spec.SetField(revenueleakscan.FieldThreadsSnippetOnly, field.TypeInt, value)
+		_node.ThreadsSnippetOnly = value
+	}
+	if value, ok := _c.mutation.ThreadsSkipped(); ok {
+		_spec.SetField(revenueleakscan.FieldThreadsSkipped, field.TypeInt, value)
+		_node.ThreadsSkipped = value
+	}
+	if value, ok := _c.mutation.ExtractionFailures(); ok {
+		_spec.SetField(revenueleakscan.FieldExtractionFailures, field.TypeInt, value)
+		_node.ExtractionFailures = value
 	}
 	if value, ok := _c.mutation.StartedAt(); ok {
 		_spec.SetField(revenueleakscan.FieldStartedAt, field.TypeTime, value)
@@ -784,6 +934,96 @@ func (u *RevenueLeakScanUpsert) UpdateActionsCreated() *RevenueLeakScanUpsert {
 // AddActionsCreated adds v to the "actions_created" field.
 func (u *RevenueLeakScanUpsert) AddActionsCreated(v int) *RevenueLeakScanUpsert {
 	u.Add(revenueleakscan.FieldActionsCreated, v)
+	return u
+}
+
+// SetCommitmentsCreated sets the "commitments_created" field.
+func (u *RevenueLeakScanUpsert) SetCommitmentsCreated(v int) *RevenueLeakScanUpsert {
+	u.Set(revenueleakscan.FieldCommitmentsCreated, v)
+	return u
+}
+
+// UpdateCommitmentsCreated sets the "commitments_created" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsert) UpdateCommitmentsCreated() *RevenueLeakScanUpsert {
+	u.SetExcluded(revenueleakscan.FieldCommitmentsCreated)
+	return u
+}
+
+// AddCommitmentsCreated adds v to the "commitments_created" field.
+func (u *RevenueLeakScanUpsert) AddCommitmentsCreated(v int) *RevenueLeakScanUpsert {
+	u.Add(revenueleakscan.FieldCommitmentsCreated, v)
+	return u
+}
+
+// SetThreadsDeepRead sets the "threads_deep_read" field.
+func (u *RevenueLeakScanUpsert) SetThreadsDeepRead(v int) *RevenueLeakScanUpsert {
+	u.Set(revenueleakscan.FieldThreadsDeepRead, v)
+	return u
+}
+
+// UpdateThreadsDeepRead sets the "threads_deep_read" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsert) UpdateThreadsDeepRead() *RevenueLeakScanUpsert {
+	u.SetExcluded(revenueleakscan.FieldThreadsDeepRead)
+	return u
+}
+
+// AddThreadsDeepRead adds v to the "threads_deep_read" field.
+func (u *RevenueLeakScanUpsert) AddThreadsDeepRead(v int) *RevenueLeakScanUpsert {
+	u.Add(revenueleakscan.FieldThreadsDeepRead, v)
+	return u
+}
+
+// SetThreadsSnippetOnly sets the "threads_snippet_only" field.
+func (u *RevenueLeakScanUpsert) SetThreadsSnippetOnly(v int) *RevenueLeakScanUpsert {
+	u.Set(revenueleakscan.FieldThreadsSnippetOnly, v)
+	return u
+}
+
+// UpdateThreadsSnippetOnly sets the "threads_snippet_only" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsert) UpdateThreadsSnippetOnly() *RevenueLeakScanUpsert {
+	u.SetExcluded(revenueleakscan.FieldThreadsSnippetOnly)
+	return u
+}
+
+// AddThreadsSnippetOnly adds v to the "threads_snippet_only" field.
+func (u *RevenueLeakScanUpsert) AddThreadsSnippetOnly(v int) *RevenueLeakScanUpsert {
+	u.Add(revenueleakscan.FieldThreadsSnippetOnly, v)
+	return u
+}
+
+// SetThreadsSkipped sets the "threads_skipped" field.
+func (u *RevenueLeakScanUpsert) SetThreadsSkipped(v int) *RevenueLeakScanUpsert {
+	u.Set(revenueleakscan.FieldThreadsSkipped, v)
+	return u
+}
+
+// UpdateThreadsSkipped sets the "threads_skipped" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsert) UpdateThreadsSkipped() *RevenueLeakScanUpsert {
+	u.SetExcluded(revenueleakscan.FieldThreadsSkipped)
+	return u
+}
+
+// AddThreadsSkipped adds v to the "threads_skipped" field.
+func (u *RevenueLeakScanUpsert) AddThreadsSkipped(v int) *RevenueLeakScanUpsert {
+	u.Add(revenueleakscan.FieldThreadsSkipped, v)
+	return u
+}
+
+// SetExtractionFailures sets the "extraction_failures" field.
+func (u *RevenueLeakScanUpsert) SetExtractionFailures(v int) *RevenueLeakScanUpsert {
+	u.Set(revenueleakscan.FieldExtractionFailures, v)
+	return u
+}
+
+// UpdateExtractionFailures sets the "extraction_failures" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsert) UpdateExtractionFailures() *RevenueLeakScanUpsert {
+	u.SetExcluded(revenueleakscan.FieldExtractionFailures)
+	return u
+}
+
+// AddExtractionFailures adds v to the "extraction_failures" field.
+func (u *RevenueLeakScanUpsert) AddExtractionFailures(v int) *RevenueLeakScanUpsert {
+	u.Add(revenueleakscan.FieldExtractionFailures, v)
 	return u
 }
 
@@ -1096,6 +1336,111 @@ func (u *RevenueLeakScanUpsertOne) AddActionsCreated(v int) *RevenueLeakScanUpse
 func (u *RevenueLeakScanUpsertOne) UpdateActionsCreated() *RevenueLeakScanUpsertOne {
 	return u.Update(func(s *RevenueLeakScanUpsert) {
 		s.UpdateActionsCreated()
+	})
+}
+
+// SetCommitmentsCreated sets the "commitments_created" field.
+func (u *RevenueLeakScanUpsertOne) SetCommitmentsCreated(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetCommitmentsCreated(v)
+	})
+}
+
+// AddCommitmentsCreated adds v to the "commitments_created" field.
+func (u *RevenueLeakScanUpsertOne) AddCommitmentsCreated(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddCommitmentsCreated(v)
+	})
+}
+
+// UpdateCommitmentsCreated sets the "commitments_created" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertOne) UpdateCommitmentsCreated() *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateCommitmentsCreated()
+	})
+}
+
+// SetThreadsDeepRead sets the "threads_deep_read" field.
+func (u *RevenueLeakScanUpsertOne) SetThreadsDeepRead(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetThreadsDeepRead(v)
+	})
+}
+
+// AddThreadsDeepRead adds v to the "threads_deep_read" field.
+func (u *RevenueLeakScanUpsertOne) AddThreadsDeepRead(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddThreadsDeepRead(v)
+	})
+}
+
+// UpdateThreadsDeepRead sets the "threads_deep_read" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertOne) UpdateThreadsDeepRead() *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateThreadsDeepRead()
+	})
+}
+
+// SetThreadsSnippetOnly sets the "threads_snippet_only" field.
+func (u *RevenueLeakScanUpsertOne) SetThreadsSnippetOnly(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetThreadsSnippetOnly(v)
+	})
+}
+
+// AddThreadsSnippetOnly adds v to the "threads_snippet_only" field.
+func (u *RevenueLeakScanUpsertOne) AddThreadsSnippetOnly(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddThreadsSnippetOnly(v)
+	})
+}
+
+// UpdateThreadsSnippetOnly sets the "threads_snippet_only" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertOne) UpdateThreadsSnippetOnly() *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateThreadsSnippetOnly()
+	})
+}
+
+// SetThreadsSkipped sets the "threads_skipped" field.
+func (u *RevenueLeakScanUpsertOne) SetThreadsSkipped(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetThreadsSkipped(v)
+	})
+}
+
+// AddThreadsSkipped adds v to the "threads_skipped" field.
+func (u *RevenueLeakScanUpsertOne) AddThreadsSkipped(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddThreadsSkipped(v)
+	})
+}
+
+// UpdateThreadsSkipped sets the "threads_skipped" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertOne) UpdateThreadsSkipped() *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateThreadsSkipped()
+	})
+}
+
+// SetExtractionFailures sets the "extraction_failures" field.
+func (u *RevenueLeakScanUpsertOne) SetExtractionFailures(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetExtractionFailures(v)
+	})
+}
+
+// AddExtractionFailures adds v to the "extraction_failures" field.
+func (u *RevenueLeakScanUpsertOne) AddExtractionFailures(v int) *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddExtractionFailures(v)
+	})
+}
+
+// UpdateExtractionFailures sets the "extraction_failures" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertOne) UpdateExtractionFailures() *RevenueLeakScanUpsertOne {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateExtractionFailures()
 	})
 }
 
@@ -1587,6 +1932,111 @@ func (u *RevenueLeakScanUpsertBulk) AddActionsCreated(v int) *RevenueLeakScanUps
 func (u *RevenueLeakScanUpsertBulk) UpdateActionsCreated() *RevenueLeakScanUpsertBulk {
 	return u.Update(func(s *RevenueLeakScanUpsert) {
 		s.UpdateActionsCreated()
+	})
+}
+
+// SetCommitmentsCreated sets the "commitments_created" field.
+func (u *RevenueLeakScanUpsertBulk) SetCommitmentsCreated(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetCommitmentsCreated(v)
+	})
+}
+
+// AddCommitmentsCreated adds v to the "commitments_created" field.
+func (u *RevenueLeakScanUpsertBulk) AddCommitmentsCreated(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddCommitmentsCreated(v)
+	})
+}
+
+// UpdateCommitmentsCreated sets the "commitments_created" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertBulk) UpdateCommitmentsCreated() *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateCommitmentsCreated()
+	})
+}
+
+// SetThreadsDeepRead sets the "threads_deep_read" field.
+func (u *RevenueLeakScanUpsertBulk) SetThreadsDeepRead(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetThreadsDeepRead(v)
+	})
+}
+
+// AddThreadsDeepRead adds v to the "threads_deep_read" field.
+func (u *RevenueLeakScanUpsertBulk) AddThreadsDeepRead(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddThreadsDeepRead(v)
+	})
+}
+
+// UpdateThreadsDeepRead sets the "threads_deep_read" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertBulk) UpdateThreadsDeepRead() *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateThreadsDeepRead()
+	})
+}
+
+// SetThreadsSnippetOnly sets the "threads_snippet_only" field.
+func (u *RevenueLeakScanUpsertBulk) SetThreadsSnippetOnly(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetThreadsSnippetOnly(v)
+	})
+}
+
+// AddThreadsSnippetOnly adds v to the "threads_snippet_only" field.
+func (u *RevenueLeakScanUpsertBulk) AddThreadsSnippetOnly(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddThreadsSnippetOnly(v)
+	})
+}
+
+// UpdateThreadsSnippetOnly sets the "threads_snippet_only" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertBulk) UpdateThreadsSnippetOnly() *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateThreadsSnippetOnly()
+	})
+}
+
+// SetThreadsSkipped sets the "threads_skipped" field.
+func (u *RevenueLeakScanUpsertBulk) SetThreadsSkipped(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetThreadsSkipped(v)
+	})
+}
+
+// AddThreadsSkipped adds v to the "threads_skipped" field.
+func (u *RevenueLeakScanUpsertBulk) AddThreadsSkipped(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddThreadsSkipped(v)
+	})
+}
+
+// UpdateThreadsSkipped sets the "threads_skipped" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertBulk) UpdateThreadsSkipped() *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateThreadsSkipped()
+	})
+}
+
+// SetExtractionFailures sets the "extraction_failures" field.
+func (u *RevenueLeakScanUpsertBulk) SetExtractionFailures(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.SetExtractionFailures(v)
+	})
+}
+
+// AddExtractionFailures adds v to the "extraction_failures" field.
+func (u *RevenueLeakScanUpsertBulk) AddExtractionFailures(v int) *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.AddExtractionFailures(v)
+	})
+}
+
+// UpdateExtractionFailures sets the "extraction_failures" field to the value that was provided on create.
+func (u *RevenueLeakScanUpsertBulk) UpdateExtractionFailures() *RevenueLeakScanUpsertBulk {
+	return u.Update(func(s *RevenueLeakScanUpsert) {
+		s.UpdateExtractionFailures()
 	})
 }
 

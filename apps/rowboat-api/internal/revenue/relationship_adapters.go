@@ -27,7 +27,14 @@ type AdapterEvent struct {
 
 // AdaptGmailEvent converts a Gmail adapter event into a relationship observation.
 func AdaptGmailEvent(event AdapterEvent) (RelationshipObservationInput, error) {
-	return adaptRelationshipEvent("gmail", event)
+	observation, err := adaptRelationshipEvent("gmail", event)
+	if err == nil {
+		observation.PreferredKind = "company"
+		if observation.PrimaryEmail != "" && observation.AccountDomain == "" {
+			observation.PreferredKind = "person"
+		}
+	}
+	return observation, err
 }
 
 // AdaptCalendarEvent converts a calendar adapter event into a relationship observation.

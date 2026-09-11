@@ -33,7 +33,7 @@ func TestScanHitAnchorsAndPopulatesTheRelationship(t *testing.T) {
 		Anchor:          googleapi.GmailThreadMessage{ID: "m1", ThreadID: "thread-1", At: now, Snippet: "any update?"},
 	}
 
-	if _, _, _, err := f.svc.materializeHit(f.ctx, f.user, sum, hit); err != nil {
+	if _, _, _, _, err := f.svc.materializeHit(f.ctx, f.user, sum, hit); err != nil {
 		t.Fatalf("materializeHit: %v", err)
 	}
 
@@ -93,7 +93,7 @@ func TestScanGroupsBusinessContactsByCompany(t *testing.T) {
 			LastAt: now.Add(time.Duration(i) * time.Minute), OutboundCount: 1, InboundCount: 1,
 		}
 		hit.Anchor = googleapi.GmailThreadMessage{ID: email, ThreadID: email, At: sum.LastAt, Snippet: "any update?"}
-		if _, _, _, err := f.svc.materializeHit(f.ctx, f.user, sum, hit); err != nil {
+		if _, _, _, _, err := f.svc.materializeHit(f.ctx, f.user, sum, hit); err != nil {
 			t.Fatalf("materialize %s: %v", email, err)
 		}
 	}
@@ -104,6 +104,9 @@ func TestScanGroupsBusinessContactsByCompany(t *testing.T) {
 	personal := threadRelationshipInput(&threadSummary{Counterparty: "person@gmail.com", LastAt: now})
 	if personal.PreferredKind != "person" || personal.PrimaryEmail != "person@gmail.com" || personal.AccountDomain != "" {
 		t.Fatalf("public mailbox identity = %+v", personal)
+	}
+	if got := threadRelationshipInput(&threadSummary{ThreadID: "thread-1", Counterparty: "person@gmail.com", LastAt: now}).ExternalID; got != "thread-1" {
+		t.Fatalf("gmail person evidence key = %q, want thread-1", got)
 	}
 }
 
@@ -124,7 +127,7 @@ func TestScanHitIsIdempotentAcrossReruns(t *testing.T) {
 	}
 
 	for round := 0; round < 3; round++ {
-		if _, _, _, err := f.svc.materializeHit(f.ctx, f.user, sum, hit); err != nil {
+		if _, _, _, _, err := f.svc.materializeHit(f.ctx, f.user, sum, hit); err != nil {
 			t.Fatalf("round %d: %v", round, err)
 		}
 	}

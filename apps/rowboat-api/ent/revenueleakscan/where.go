@@ -111,6 +111,31 @@ func ActionsCreated(v int) predicate.RevenueLeakScan {
 	return predicate.RevenueLeakScan(sql.FieldEQ(FieldActionsCreated, v))
 }
 
+// CommitmentsCreated applies equality check predicate on the "commitments_created" field. It's identical to CommitmentsCreatedEQ.
+func CommitmentsCreated(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldCommitmentsCreated, v))
+}
+
+// ThreadsDeepRead applies equality check predicate on the "threads_deep_read" field. It's identical to ThreadsDeepReadEQ.
+func ThreadsDeepRead(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldThreadsDeepRead, v))
+}
+
+// ThreadsSnippetOnly applies equality check predicate on the "threads_snippet_only" field. It's identical to ThreadsSnippetOnlyEQ.
+func ThreadsSnippetOnly(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldThreadsSnippetOnly, v))
+}
+
+// ThreadsSkipped applies equality check predicate on the "threads_skipped" field. It's identical to ThreadsSkippedEQ.
+func ThreadsSkipped(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldThreadsSkipped, v))
+}
+
+// ExtractionFailures applies equality check predicate on the "extraction_failures" field. It's identical to ExtractionFailuresEQ.
+func ExtractionFailures(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldExtractionFailures, v))
+}
+
 // StartedAt applies equality check predicate on the "started_at" field. It's identical to StartedAtEQ.
 func StartedAt(v time.Time) predicate.RevenueLeakScan {
 	return predicate.RevenueLeakScan(sql.FieldEQ(FieldStartedAt, v))
@@ -654,6 +679,206 @@ func ActionsCreatedLT(v int) predicate.RevenueLeakScan {
 // ActionsCreatedLTE applies the LTE predicate on the "actions_created" field.
 func ActionsCreatedLTE(v int) predicate.RevenueLeakScan {
 	return predicate.RevenueLeakScan(sql.FieldLTE(FieldActionsCreated, v))
+}
+
+// CommitmentsCreatedEQ applies the EQ predicate on the "commitments_created" field.
+func CommitmentsCreatedEQ(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldCommitmentsCreated, v))
+}
+
+// CommitmentsCreatedNEQ applies the NEQ predicate on the "commitments_created" field.
+func CommitmentsCreatedNEQ(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNEQ(FieldCommitmentsCreated, v))
+}
+
+// CommitmentsCreatedIn applies the In predicate on the "commitments_created" field.
+func CommitmentsCreatedIn(vs ...int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldIn(FieldCommitmentsCreated, vs...))
+}
+
+// CommitmentsCreatedNotIn applies the NotIn predicate on the "commitments_created" field.
+func CommitmentsCreatedNotIn(vs ...int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNotIn(FieldCommitmentsCreated, vs...))
+}
+
+// CommitmentsCreatedGT applies the GT predicate on the "commitments_created" field.
+func CommitmentsCreatedGT(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGT(FieldCommitmentsCreated, v))
+}
+
+// CommitmentsCreatedGTE applies the GTE predicate on the "commitments_created" field.
+func CommitmentsCreatedGTE(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGTE(FieldCommitmentsCreated, v))
+}
+
+// CommitmentsCreatedLT applies the LT predicate on the "commitments_created" field.
+func CommitmentsCreatedLT(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLT(FieldCommitmentsCreated, v))
+}
+
+// CommitmentsCreatedLTE applies the LTE predicate on the "commitments_created" field.
+func CommitmentsCreatedLTE(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLTE(FieldCommitmentsCreated, v))
+}
+
+// ThreadsDeepReadEQ applies the EQ predicate on the "threads_deep_read" field.
+func ThreadsDeepReadEQ(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldThreadsDeepRead, v))
+}
+
+// ThreadsDeepReadNEQ applies the NEQ predicate on the "threads_deep_read" field.
+func ThreadsDeepReadNEQ(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNEQ(FieldThreadsDeepRead, v))
+}
+
+// ThreadsDeepReadIn applies the In predicate on the "threads_deep_read" field.
+func ThreadsDeepReadIn(vs ...int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldIn(FieldThreadsDeepRead, vs...))
+}
+
+// ThreadsDeepReadNotIn applies the NotIn predicate on the "threads_deep_read" field.
+func ThreadsDeepReadNotIn(vs ...int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNotIn(FieldThreadsDeepRead, vs...))
+}
+
+// ThreadsDeepReadGT applies the GT predicate on the "threads_deep_read" field.
+func ThreadsDeepReadGT(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGT(FieldThreadsDeepRead, v))
+}
+
+// ThreadsDeepReadGTE applies the GTE predicate on the "threads_deep_read" field.
+func ThreadsDeepReadGTE(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGTE(FieldThreadsDeepRead, v))
+}
+
+// ThreadsDeepReadLT applies the LT predicate on the "threads_deep_read" field.
+func ThreadsDeepReadLT(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLT(FieldThreadsDeepRead, v))
+}
+
+// ThreadsDeepReadLTE applies the LTE predicate on the "threads_deep_read" field.
+func ThreadsDeepReadLTE(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLTE(FieldThreadsDeepRead, v))
+}
+
+// ThreadsSnippetOnlyEQ applies the EQ predicate on the "threads_snippet_only" field.
+func ThreadsSnippetOnlyEQ(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldThreadsSnippetOnly, v))
+}
+
+// ThreadsSnippetOnlyNEQ applies the NEQ predicate on the "threads_snippet_only" field.
+func ThreadsSnippetOnlyNEQ(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNEQ(FieldThreadsSnippetOnly, v))
+}
+
+// ThreadsSnippetOnlyIn applies the In predicate on the "threads_snippet_only" field.
+func ThreadsSnippetOnlyIn(vs ...int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldIn(FieldThreadsSnippetOnly, vs...))
+}
+
+// ThreadsSnippetOnlyNotIn applies the NotIn predicate on the "threads_snippet_only" field.
+func ThreadsSnippetOnlyNotIn(vs ...int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNotIn(FieldThreadsSnippetOnly, vs...))
+}
+
+// ThreadsSnippetOnlyGT applies the GT predicate on the "threads_snippet_only" field.
+func ThreadsSnippetOnlyGT(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGT(FieldThreadsSnippetOnly, v))
+}
+
+// ThreadsSnippetOnlyGTE applies the GTE predicate on the "threads_snippet_only" field.
+func ThreadsSnippetOnlyGTE(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGTE(FieldThreadsSnippetOnly, v))
+}
+
+// ThreadsSnippetOnlyLT applies the LT predicate on the "threads_snippet_only" field.
+func ThreadsSnippetOnlyLT(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLT(FieldThreadsSnippetOnly, v))
+}
+
+// ThreadsSnippetOnlyLTE applies the LTE predicate on the "threads_snippet_only" field.
+func ThreadsSnippetOnlyLTE(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLTE(FieldThreadsSnippetOnly, v))
+}
+
+// ThreadsSkippedEQ applies the EQ predicate on the "threads_skipped" field.
+func ThreadsSkippedEQ(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldThreadsSkipped, v))
+}
+
+// ThreadsSkippedNEQ applies the NEQ predicate on the "threads_skipped" field.
+func ThreadsSkippedNEQ(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNEQ(FieldThreadsSkipped, v))
+}
+
+// ThreadsSkippedIn applies the In predicate on the "threads_skipped" field.
+func ThreadsSkippedIn(vs ...int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldIn(FieldThreadsSkipped, vs...))
+}
+
+// ThreadsSkippedNotIn applies the NotIn predicate on the "threads_skipped" field.
+func ThreadsSkippedNotIn(vs ...int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNotIn(FieldThreadsSkipped, vs...))
+}
+
+// ThreadsSkippedGT applies the GT predicate on the "threads_skipped" field.
+func ThreadsSkippedGT(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGT(FieldThreadsSkipped, v))
+}
+
+// ThreadsSkippedGTE applies the GTE predicate on the "threads_skipped" field.
+func ThreadsSkippedGTE(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGTE(FieldThreadsSkipped, v))
+}
+
+// ThreadsSkippedLT applies the LT predicate on the "threads_skipped" field.
+func ThreadsSkippedLT(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLT(FieldThreadsSkipped, v))
+}
+
+// ThreadsSkippedLTE applies the LTE predicate on the "threads_skipped" field.
+func ThreadsSkippedLTE(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLTE(FieldThreadsSkipped, v))
+}
+
+// ExtractionFailuresEQ applies the EQ predicate on the "extraction_failures" field.
+func ExtractionFailuresEQ(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldEQ(FieldExtractionFailures, v))
+}
+
+// ExtractionFailuresNEQ applies the NEQ predicate on the "extraction_failures" field.
+func ExtractionFailuresNEQ(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNEQ(FieldExtractionFailures, v))
+}
+
+// ExtractionFailuresIn applies the In predicate on the "extraction_failures" field.
+func ExtractionFailuresIn(vs ...int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldIn(FieldExtractionFailures, vs...))
+}
+
+// ExtractionFailuresNotIn applies the NotIn predicate on the "extraction_failures" field.
+func ExtractionFailuresNotIn(vs ...int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldNotIn(FieldExtractionFailures, vs...))
+}
+
+// ExtractionFailuresGT applies the GT predicate on the "extraction_failures" field.
+func ExtractionFailuresGT(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGT(FieldExtractionFailures, v))
+}
+
+// ExtractionFailuresGTE applies the GTE predicate on the "extraction_failures" field.
+func ExtractionFailuresGTE(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldGTE(FieldExtractionFailures, v))
+}
+
+// ExtractionFailuresLT applies the LT predicate on the "extraction_failures" field.
+func ExtractionFailuresLT(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLT(FieldExtractionFailures, v))
+}
+
+// ExtractionFailuresLTE applies the LTE predicate on the "extraction_failures" field.
+func ExtractionFailuresLTE(v int) predicate.RevenueLeakScan {
+	return predicate.RevenueLeakScan(sql.FieldLTE(FieldExtractionFailures, v))
 }
 
 // StartedAtEQ applies the EQ predicate on the "started_at" field.

@@ -1,18 +1,130 @@
 package agentregistry
 
 import (
+	"slices"
 	"testing"
 )
 
 func TestDefaultCatalogHasCoreCapabilities(t *testing.T) {
 	c := DefaultCatalog()
-	for _, name := range []string{"current_time", "echo", "demo.payment", "subagent.delegate"} {
+	for _, name := range []string{"current_time", "echo", "demo.payment", "relationship.read", "relationship.create", "relationship.correct", "relationship.assertion.retract", "relationship.review.acknowledge", "relationship.identity.decide", "relationship.attention.decide", "conversation.delete", "source.retry_sync", "task.create", "task.update", "task.complete", "task.snooze", "recommendation.create", "recommendation.dismiss", "recommendation.snooze", "recommendation.update", "action.audit", "action.outcome.record", "commitment.export", "commitment.accept", "commitment.block", "commitment.confirm", "commitment.correct", "commitment.complete", "commitment.dispute", "commitment.unblock", "person.create", "person.correct", "person.attribute.retract", "person.identity.decide", "person.delete", "note.create", "note.update", "note.delete", "action_proposal.read", "action.propose", "subagent.delegate"} {
 		if _, ok := c.Get(name); !ok {
 			t.Fatalf("DefaultCatalog missing %q", name)
 		}
 	}
+	if capability, ok := c.Get("workspace.read"); !ok || capability.TrustTier != TierRead {
+		t.Fatalf("workspace.read capability = %+v, want read tier", capability)
+	}
+	if capability, ok := c.Get("run_history.read"); !ok || capability.TrustTier != TierRead {
+		t.Fatalf("run_history.read capability = %+v, want read tier", capability)
+	}
+	if capability, ok := c.Get("workflow.read"); !ok || capability.TrustTier != TierRead {
+		t.Fatalf("workflow.read capability = %+v, want read tier", capability)
+	}
 	if capability, _ := c.Get("demo.payment"); capability.TrustTier != TierMoneyMoving {
 		t.Fatalf("demo.payment tier = %q, want %q", capability.TrustTier, TierMoneyMoving)
+	}
+	if capability, _ := c.Get("action.propose"); capability.TrustTier != TierWrite {
+		t.Fatalf("action.propose tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("action_proposal.read"); capability.TrustTier != TierRead {
+		t.Fatalf("action_proposal.read tier = %q, want %q", capability.TrustTier, TierRead)
+	}
+	if capability, _ := c.Get("action.audit"); capability.TrustTier != TierRead {
+		t.Fatalf("action.audit tier = %q, want %q", capability.TrustTier, TierRead)
+	}
+	if capability, _ := c.Get("action.outcome.record"); capability.TrustTier != TierWrite {
+		t.Fatalf("action.outcome.record tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("relationship.correct"); capability.TrustTier != TierWrite {
+		t.Fatalf("relationship.correct tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("relationship.assertion.retract"); capability.TrustTier != TierWrite {
+		t.Fatalf("relationship.assertion.retract tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("relationship.review.acknowledge"); capability.TrustTier != TierWrite {
+		t.Fatalf("relationship.review.acknowledge tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("relationship.identity.decide"); capability.TrustTier != TierWrite {
+		t.Fatalf("relationship.identity.decide tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("relationship.attention.decide"); capability.TrustTier != TierWrite {
+		t.Fatalf("relationship.attention.decide tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("conversation.delete"); capability.TrustTier != TierAct {
+		t.Fatalf("conversation.delete tier = %q, want %q", capability.TrustTier, TierAct)
+	}
+	if capability, _ := c.Get("task.create"); capability.TrustTier != TierWrite {
+		t.Fatalf("task.create tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("source.retry_sync"); capability.TrustTier != TierWrite {
+		t.Fatalf("source.retry_sync tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("task.update"); capability.TrustTier != TierWrite {
+		t.Fatalf("task.update tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("task.complete"); capability.TrustTier != TierWrite {
+		t.Fatalf("task.complete tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("task.snooze"); capability.TrustTier != TierWrite {
+		t.Fatalf("task.snooze tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("recommendation.create"); capability.TrustTier != TierWrite {
+		t.Fatalf("recommendation.create tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("recommendation.dismiss"); capability.TrustTier != TierWrite {
+		t.Fatalf("recommendation.dismiss tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("recommendation.snooze"); capability.TrustTier != TierWrite {
+		t.Fatalf("recommendation.snooze tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("recommendation.update"); capability.TrustTier != TierWrite {
+		t.Fatalf("recommendation.update tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("commitment.complete"); capability.TrustTier != TierWrite {
+		t.Fatalf("commitment.complete tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("commitment.export"); capability.TrustTier != TierRead {
+		t.Fatalf("commitment.export tier = %q, want %q", capability.TrustTier, TierRead)
+	}
+	if capability, _ := c.Get("commitment.correct"); capability.TrustTier != TierWrite {
+		t.Fatalf("commitment.correct tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("commitment.confirm"); capability.TrustTier != TierWrite {
+		t.Fatalf("commitment.confirm tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("commitment.accept"); capability.TrustTier != TierWrite {
+		t.Fatalf("commitment.accept tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("commitment.block"); capability.TrustTier != TierWrite {
+		t.Fatalf("commitment.block tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("commitment.unblock"); capability.TrustTier != TierWrite {
+		t.Fatalf("commitment.unblock tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("commitment.dispute"); capability.TrustTier != TierWrite {
+		t.Fatalf("commitment.dispute tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("person.correct"); capability.TrustTier != TierWrite {
+		t.Fatalf("person.correct tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("person.attribute.retract"); capability.TrustTier != TierWrite {
+		t.Fatalf("person.attribute.retract tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("person.identity.decide"); capability.TrustTier != TierWrite {
+		t.Fatalf("person.identity.decide tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("person.delete"); capability.TrustTier != TierAct {
+		t.Fatalf("person.delete tier = %q, want %q", capability.TrustTier, TierAct)
+	}
+	if capability, _ := c.Get("note.create"); capability.TrustTier != TierWrite {
+		t.Fatalf("note.create tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("note.update"); capability.TrustTier != TierWrite {
+		t.Fatalf("note.update tier = %q, want %q", capability.TrustTier, TierWrite)
+	}
+	if capability, _ := c.Get("note.delete"); capability.TrustTier != TierWrite {
+		t.Fatalf("note.delete tier = %q, want %q", capability.TrustTier, TierWrite)
 	}
 	if capability, _ := c.Get("subagent.delegate"); capability.Kind != KindSubagent {
 		t.Fatalf("subagent.delegate kind = %q, want %q", capability.Kind, KindSubagent)
@@ -102,6 +214,20 @@ func TestLoaderBuiltins(t *testing.T) {
 	}
 	if len(assistant.EnabledTools) == 0 || assistant.Instructions == "" {
 		t.Fatalf("assistant spec under-populated: %+v", assistant)
+	}
+	for _, tool := range []string{"web.search", "tool_result.read", "relationship.read", "relationship.create", "relationship.correct", "relationship.assertion.retract", "relationship.review.acknowledge", "relationship.identity.decide", "relationship.attention.decide", "conversation.delete", "source.retry_sync", "task.create", "task.update", "task.complete", "task.snooze", "recommendation.create", "recommendation.dismiss", "recommendation.snooze", "recommendation.update", "action.audit", "action.outcome.record", "commitment.export", "commitment.accept", "commitment.block", "commitment.confirm", "commitment.correct", "commitment.complete", "commitment.dispute", "commitment.unblock", "person.create", "person.correct", "person.attribute.retract", "person.identity.decide", "person.delete", "note.create", "note.update", "note.delete", "action_proposal.read", "action.propose", "connector.read.gmail", "connector.write.gmail_draft", "connector.write.gmail_send", "connector.read.calendar"} {
+		if !slices.Contains(assistant.EnabledTools, tool) {
+			t.Fatalf("assistant missing capability %q", tool)
+		}
+	}
+	if !slices.Contains(assistant.EnabledTools, "workspace.read") {
+		t.Fatal("assistant missing capability \"workspace.read\"")
+	}
+	if !slices.Contains(assistant.EnabledTools, "run_history.read") {
+		t.Fatal("assistant missing capability \"run_history.read\"")
+	}
+	if !slices.Contains(assistant.EnabledTools, "workflow.read") {
+		t.Fatal("assistant missing capability \"workflow.read\"")
 	}
 	// Every built-in's allowlist must validate against the catalog (the loader
 	// enforces this at construction; assert the property holds).

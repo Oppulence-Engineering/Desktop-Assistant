@@ -9770,6 +9770,31 @@ func (_q *RevenueLeakScanQuery) collectField(ctx context.Context, oneNode bool, 
 				selectedFields = append(selectedFields, revenueleakscan.FieldActionsCreated)
 				fieldSeen[revenueleakscan.FieldActionsCreated] = struct{}{}
 			}
+		case "commitmentsCreated":
+			if _, ok := fieldSeen[revenueleakscan.FieldCommitmentsCreated]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldCommitmentsCreated)
+				fieldSeen[revenueleakscan.FieldCommitmentsCreated] = struct{}{}
+			}
+		case "threadsDeepRead":
+			if _, ok := fieldSeen[revenueleakscan.FieldThreadsDeepRead]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldThreadsDeepRead)
+				fieldSeen[revenueleakscan.FieldThreadsDeepRead] = struct{}{}
+			}
+		case "threadsSnippetOnly":
+			if _, ok := fieldSeen[revenueleakscan.FieldThreadsSnippetOnly]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldThreadsSnippetOnly)
+				fieldSeen[revenueleakscan.FieldThreadsSnippetOnly] = struct{}{}
+			}
+		case "threadsSkipped":
+			if _, ok := fieldSeen[revenueleakscan.FieldThreadsSkipped]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldThreadsSkipped)
+				fieldSeen[revenueleakscan.FieldThreadsSkipped] = struct{}{}
+			}
+		case "extractionFailures":
+			if _, ok := fieldSeen[revenueleakscan.FieldExtractionFailures]; !ok {
+				selectedFields = append(selectedFields, revenueleakscan.FieldExtractionFailures)
+				fieldSeen[revenueleakscan.FieldExtractionFailures] = struct{}{}
+			}
 		case "startedAt":
 			if _, ok := fieldSeen[revenueleakscan.FieldStartedAt]; !ok {
 				selectedFields = append(selectedFields, revenueleakscan.FieldStartedAt)

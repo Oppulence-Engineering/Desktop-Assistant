@@ -15,6 +15,7 @@ import (
 	"mime"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5/middleware"
@@ -45,6 +46,45 @@ func WriteJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(v)
+}
+
+// WriteMarkdownAttachment writes a generated Markdown document as a download.
+//
+// The body contains customer content — quoted email excerpts — so it is never
+// served as something a browser will render. Three things make that safe and
+// they belong together in one place rather than at each call site:
+//
+//   - "attachment" disposition, so the browser saves the file instead of
+//     displaying it,
+//   - "nosniff", so the browser may not second-guess the content type and
+//     treat the body as HTML,
+//   - a sanitized filename, so the header cannot be split or escaped.
+func WriteMarkdownAttachment(w http.ResponseWriter, filename, body string) {
+	w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Disposition", "attachment; filename="+strconv.Quote(safeFilename(filename)))
+	w.WriteHeader(http.StatusOK)
+	// #nosec G705 -- not rendered: attachment disposition plus nosniff above.
+	_, _ = io.WriteString(w, body)
+}
+
+// safeFilename keeps a download name to characters that cannot break out of the
+// Content-Disposition header.
+func safeFilename(name string) string {
+	cleaned := strings.Map(func(r rune) rune {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9':
+			return r
+		case r == '-', r == '_', r == '.':
+			return r
+		default:
+			return '-'
+		}
+	}, name)
+	if cleaned == "" {
+		return "download.md"
+	}
+	return cleaned
 }
 
 // Error writes an RFC 9457 problem document. The request context is recovered

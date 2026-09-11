@@ -1,6 +1,11 @@
 package backgroundtaskruntime
 
-import "testing"
+import (
+	"net/http"
+	"testing"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
+)
 
 // TestRuntimeRequestIDAttemptSeeding: each activity attempt derives distinct
 // request ids (fresh reservations on retry), while the same (run, attempt,
@@ -26,5 +31,13 @@ func TestNewGatewayLLMClampsAttempt(t *testing.T) {
 	g := NewGatewayLLM(nil, nil, "m", "slug", "run", 0)
 	if g.attempt != 1 {
 		t.Fatalf("attempt = %d, want clamp to 1", g.attempt)
+	}
+}
+
+func TestGatewayLLMErrorDistinguishesUpstreamCredits(t *testing.T) {
+	err := gatewayLLMError(&llm.UpstreamStatusError{StatusCode: http.StatusPaymentRequired})
+	runtimeErr, ok := AsRuntimeError(err)
+	if !ok || runtimeErr.Code != CodeUpstreamCreditsExhausted {
+		t.Fatalf("gateway error = %v, want %s", err, CodeUpstreamCreditsExhausted)
 	}
 }

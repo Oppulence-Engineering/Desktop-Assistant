@@ -8,6 +8,203 @@
 import * as zod from "zod";
 
 /**
+ * Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register.
+ * @summary List the commitment register
+ */
+export const ListCommitmentsQueryParams = zod.object({
+  direction: zod.string().optional().describe("promised_by_me, promised_by_them, or mutual."),
+  state: zod
+    .string()
+    .optional()
+    .describe(
+      "Comma-separated register states: open, at_risk, met, missed, waived, disputed. at_risk is derived from the due date.",
+    ),
+  owner: zod.string().optional().describe("Owner participant reference."),
+  relationshipId: zod.uuid().optional().describe("Restrict to one account."),
+  dueBefore: zod.iso
+    .datetime({ offset: true })
+    .optional()
+    .describe("Only commitments due before this instant."),
+  changedSince: zod.iso
+    .datetime({ offset: true })
+    .optional()
+    .describe("Only commitments updated at or after this instant."),
+  limit: zod.coerce.number().int().optional().describe("Page size (default 50, max 200)."),
+  offset: zod.coerce.number().int().optional().describe("Page offset."),
+  includeCandidates: zod.coerce
+    .boolean()
+    .optional()
+    .describe("Include unconfirmed extractions for a review surface."),
+});
+
+export const ListCommitments200Response = zod
+  .strictObject({
+    commitments: zod
+      .array(
+        zod
+          .strictObject({
+            acceptance: zod
+              .enum(["candidate", "internally_confirmed", "offered", "accepted", "disputed"])
+              .optional()
+              .describe("Acceptance state."),
+            beneficiaryParticipantRef: zod.string().optional().describe("Promise beneficiary."),
+            blocker: zod.string().optional().describe("Current blocker."),
+            completedAt: zod.iso.datetime({ offset: true }).nullish().describe("Completion time."),
+            confidence: zod.number().describe("Extraction confidence."),
+            counterpartyParticipantRef: zod.string().optional().describe("Promise counterparty."),
+            currentEventVersion: zod.int().optional().describe("Current transition version."),
+            direction: zod
+              .enum(["promised_by_me", "promised_by_them", "mutual"])
+              .describe("Who owes the commitment."),
+            dueAt: zod.iso.datetime({ offset: true }).nullish().describe("Due time."),
+            duePhrase: zod.string().optional().describe("Due condition as stated."),
+            dueTimezone: zod.string().optional().describe("Timezone used to resolve the due date."),
+            id: zod.uuid().describe("Stable UUID primary key."),
+            ownerParticipantRef: zod.string().optional().describe("Promise owner."),
+            sourcePhrase: zod.string().optional().describe("Exact source phrase."),
+            status: zod
+              .enum(["open", "fulfilled", "missed", "waived", "cancelled", "superseded"])
+              .describe(
+                "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
+              ),
+            text: zod.string().describe("Commitment text."),
+            userConfirmed: zod.boolean().describe("Whether a human confirmed it."),
+            relationshipId: zod.uuid().optional().describe("Counterparty relationship id."),
+            relationshipName: zod.string().optional().describe("Counterparty account."),
+            state: zod
+              .enum([
+                "open",
+                "at_risk",
+                "met",
+                "missed",
+                "waived",
+                "disputed",
+                "cancelled",
+                "superseded",
+              ])
+              .describe("Reader-facing state."),
+          })
+          .describe("One cross-account register row with its reader-facing state and account."),
+      )
+      .describe("Register rows, each with its derived state and account."),
+  })
+  .describe("Commitment register.");
+
+export const ListCommitments400Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ListCommitments401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
+ * Returns one commitment as a standalone record: the obligation, its full state history, and the verbatim cited evidence with timestamps. Pass format=md for the Markdown document a user forwards. A record that cannot leave the tool cannot settle an argument.
+ * @summary Export a commitment record
+ */
+export const ExportCommitmentParams = zod.object({
+  commitmentId: zod.uuid().describe("Commitment id."),
+});
+
+export const ExportCommitmentQueryParams = zod.object({
+  format: zod.string().optional().describe("md for Markdown; JSON otherwise."),
+});
+
+export const ExportCommitment200Response = zod
+  .strictObject({
+    account: zod.string().describe("Counterparty account."),
+    confidence: zod.number().describe("Extraction confidence."),
+    counterparty: zod.string().optional().describe("Promise counterparty."),
+    direction: zod.string().describe("promised_by_me, promised_by_them, or mutual."),
+    dueAt: zod.iso.datetime({ offset: true }).nullish().describe("Resolved due time."),
+    duePhrase: zod.string().optional().describe("Due condition as stated."),
+    evidence: zod
+      .array(
+        zod
+          .strictObject({
+            contentHash: zod.string().describe("Content hash of the source."),
+            excerpt: zod.string().describe("Verbatim quote."),
+            occurredAt: zod.iso.datetime({ offset: true }).describe("When the source was created."),
+            source: zod.string().describe("Source system."),
+            sourceUri: zod.string().optional().describe("Link to the source."),
+          })
+          .describe("Cited source."),
+      )
+      .describe("Verbatim cited sources."),
+    generatedAt: zod.iso.datetime({ offset: true }).describe("When the record was produced."),
+    history: zod
+      .array(
+        zod
+          .strictObject({
+            actorRef: zod.string().optional().describe("Actor reference."),
+            actorType: zod.string().describe("Who caused it."),
+            kind: zod.string().describe("Event kind."),
+            occurredAt: zod.iso.datetime({ offset: true }).describe("When."),
+            version: zod.int().describe("Event version."),
+          })
+          .describe("Transition."),
+      )
+      .describe("Ordered state changes."),
+    id: zod.string().describe("Commitment id."),
+    owner: zod.string().optional().describe("Promise owner."),
+    state: zod.string().describe("Register state."),
+    text: zod.string().describe("The obligation."),
+  })
+  .describe("Commitment record.");
+
+export const ExportCommitment401Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+export const ExportCommitment404Response = zod
+  .strictObject({
+    code: zod.string().describe("Stable machine-readable error code."),
+    detail: zod.string().optional().describe("Human-readable error detail."),
+    instance: zod.string().nullish().describe("Optional occurrence URI."),
+    requestId: zod.string().nullish().describe("Request id emitted by the API middleware."),
+    status: zod.int().describe("HTTP status code."),
+    title: zod.string().describe("Short HTTP-status summary."),
+    traceId: zod.string().nullish().describe("OpenTelemetry trace id when tracing is active."),
+    type: zod.string().describe("Problem type URI."),
+  })
+  .describe(
+    "RFC 9457 problem details returned by Solomon AI API handlers. code, requestId, and traceId are extension members.",
+  );
+
+/**
  * Returns only the externally authorized plan revision with internal evidence references removed and policy redactions applied.
  * @summary Open a scoped mutual action plan
  */
@@ -3358,12 +3555,27 @@ export const GetRelationship200Response = zod
       .array(
         zod
           .strictObject({
+            acceptance: zod
+              .enum(["candidate", "internally_confirmed", "offered", "accepted", "disputed"])
+              .optional()
+              .describe("Acceptance state."),
+            beneficiaryParticipantRef: zod.string().optional().describe("Promise beneficiary."),
+            blocker: zod.string().optional().describe("Current blocker."),
+            completedAt: zod.iso.datetime({ offset: true }).nullish().describe("Completion time."),
             confidence: zod.number().describe("Extraction confidence."),
-            direction: zod.string().describe("Who owes the commitment."),
+            counterpartyParticipantRef: zod.string().optional().describe("Promise counterparty."),
+            currentEventVersion: zod.int().optional().describe("Current transition version."),
+            direction: zod
+              .enum(["promised_by_me", "promised_by_them", "mutual"])
+              .describe("Who owes the commitment."),
             dueAt: zod.iso.datetime({ offset: true }).nullish().describe("Due time."),
+            duePhrase: zod.string().optional().describe("Due condition as stated."),
+            dueTimezone: zod.string().optional().describe("Timezone used to resolve the due date."),
             id: zod.uuid().describe("Stable UUID primary key."),
+            ownerParticipantRef: zod.string().optional().describe("Promise owner."),
+            sourcePhrase: zod.string().optional().describe("Exact source phrase."),
             status: zod
-              .string()
+              .enum(["open", "fulfilled", "missed", "waived", "cancelled", "superseded"])
               .describe(
                 "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
               ),
@@ -4531,6 +4743,8 @@ export const GetCommitmentEvents200Response = zod
                 "due_date_changed",
                 "renegotiated",
                 "fulfilled",
+                "missed",
+                "waived",
                 "cancelled",
                 "superseded",
               ])
@@ -4621,6 +4835,8 @@ export const AppendCommitmentTransitionBody = zod
         "due_date_changed",
         "renegotiated",
         "fulfilled",
+        "missed",
+        "waived",
         "cancelled",
         "superseded",
       ])
@@ -4631,12 +4847,27 @@ export const AppendCommitmentTransitionBody = zod
 
 export const AppendCommitmentTransition200Response = zod
   .strictObject({
+    acceptance: zod
+      .enum(["candidate", "internally_confirmed", "offered", "accepted", "disputed"])
+      .optional()
+      .describe("Acceptance state."),
+    beneficiaryParticipantRef: zod.string().optional().describe("Promise beneficiary."),
+    blocker: zod.string().optional().describe("Current blocker."),
+    completedAt: zod.iso.datetime({ offset: true }).nullish().describe("Completion time."),
     confidence: zod.number().describe("Extraction confidence."),
-    direction: zod.string().describe("Who owes the commitment."),
+    counterpartyParticipantRef: zod.string().optional().describe("Promise counterparty."),
+    currentEventVersion: zod.int().optional().describe("Current transition version."),
+    direction: zod
+      .enum(["promised_by_me", "promised_by_them", "mutual"])
+      .describe("Who owes the commitment."),
     dueAt: zod.iso.datetime({ offset: true }).nullish().describe("Due time."),
+    duePhrase: zod.string().optional().describe("Due condition as stated."),
+    dueTimezone: zod.string().optional().describe("Timezone used to resolve the due date."),
     id: zod.uuid().describe("Stable UUID primary key."),
+    ownerParticipantRef: zod.string().optional().describe("Promise owner."),
+    sourcePhrase: zod.string().optional().describe("Exact source phrase."),
     status: zod
-      .string()
+      .enum(["open", "fulfilled", "missed", "waived", "cancelled", "superseded"])
       .describe(
         "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),

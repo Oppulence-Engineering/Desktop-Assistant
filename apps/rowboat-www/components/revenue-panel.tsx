@@ -9,11 +9,14 @@ import type { RevenueTab } from "@/components/app-shell";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import {
   appendCommitmentTransition,
+  downloadMarkdown,
   friendlyRevenueError,
   getRelationshipGraph,
   getScan,
-  getScans,
+  getCommitmentRecordMarkdown,
   getWorkspace,
+  listScans,
+  listCommitments,
   listRelationshipSources,
   RevenueAPIError,
   runCommitmentRecovery,
@@ -21,8 +24,10 @@ import {
 } from "@/lib/revenue";
 import {
   CommitmentQueue,
+  registerFilterFor,
   type CommitmentQueueItem,
   type CommitmentQueueTransition,
+  type RegisterView,
 } from "@/components/features/revenue/commitment-queue/commitment-queue";
 import { ImpactView } from "@/components/revenue/impact-view";
 import { QueueView } from "@/components/revenue/queue-view";
@@ -37,25 +42,21 @@ import { WorkspaceView } from "@/components/revenue/workspace-view";
 import { ActionsView } from "@/components/actions/actions-view";
 import type { RevenueLeakScan, RevenueWorkspace } from "@/types/revenue";
 
-const SCAN_IDS_KEY = "oppulence.revenue.scanIds";
-
-function loadScanIds(): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(SCAN_IDS_KEY);
-    const ids = raw ? (JSON.parse(raw) as string[]) : [];
-    return Array.isArray(ids) ? ids.slice(0, 10) : [];
-  } catch {
-    return [];
+// The register's own failures, in words a customer can act on. A raw "not
+// found" from the proxy tells them nothing; worse, the old code showed no
+// message at all and rendered the onboarding prompt instead.
+function registerErrorMessage(reason: unknown): string {
+  const status = reason instanceof RevenueAPIError ? reason.status : 0;
+  if (status === 404) {
+    return "The commitment register is unavailable on this server. This usually means the app is newer than the API it is talking to.";
   }
-}
-
-function saveScanIds(ids: string[]) {
-  try {
-    window.localStorage.setItem(SCAN_IDS_KEY, JSON.stringify(ids.slice(0, 10)));
-  } catch {
-    // storage unavailable — history is best-effort
+  if (status === 403) {
+    return "You do not have access to the commitment register in this workspace.";
   }
+  if (reason instanceof Error && reason.message.trim()) {
+    return friendlyRevenueError(reason.message);
+  }
+  return "The commitment register could not be loaded.";
 }
 
 export function RevenuePanel({
@@ -76,7 +77,7 @@ export function RevenuePanel({
   const [scanning, setScanning] = React.useState(false);
   const [refreshKey, setRefreshKey] = React.useState(0);
 
-  // Load workspace + hydrate any prior scans this browser started.
+  // Load workspace and persisted audit history, including automatic runs.
   React.useEffect(() => {
     void getWorkspace()
       .then(setWorkspace)
@@ -84,11 +85,9 @@ export function RevenuePanel({
         if (e instanceof RevenueAPIError && (e.status === 401 || e.status === 404)) return;
         setError(e instanceof Error ? e.message : "Could not load the revenue workspace.");
       });
-    const ids = loadScanIds();
-    if (ids.length)
-      void getScans(ids)
-        .then(setScans)
-        .catch(() => {});
+    void listScans()
+      .then(setScans)
+      .catch(() => {});
   }, []);
 
   const setBanner = React.useCallback((msg: string | null) => setError(msg || null), []);
@@ -107,15 +106,56 @@ export function RevenuePanel({
       return status === "completed" || status === "failed" ? false : 2_000;
     },
   });
+  // The register comes from its own route now. The relationship graph is still
+  // fetched, but only for the account count in the empty state — the rows
+  // themselves are no longer reassembled from graph nodes in the browser.
+  const [registerView, setRegisterView] = React.useState<RegisterView>("we_owe");
+  const [registerAccountId, setRegisterAccountId] = React.useState("");
+  const [registerOwner, setRegisterOwner] = React.useState("");
+  const [includeCandidates, setIncludeCandidates] = React.useState(false);
   const commitmentQuery = useQuery({
-    queryKey: ["commitment-queue", refreshKey],
-    queryFn: async () => {
-      const [graph, sources] = await Promise.allSettled([
-        getRelationshipGraph({ scope: "portfolio", depth: 1 }),
+    queryKey: [
+      "commitment-queue",
+      refreshKey,
+      registerView,
+      registerAccountId,
+      registerOwner,
+      includeCandidates,
+    ],
+    queryFn: async ({ signal }) => {
+      const filter = registerFilterFor(registerView, {
+        relationshipId: registerAccountId,
+        owner: registerOwner,
+        includeCandidates,
+      });
+      const [entries, sources, graph] = await Promise.allSettled([
+        filter ? listCommitments(filter, signal) : Promise.resolve([]),
         listRelationshipSources(),
+        getRelationshipGraph({ scope: "portfolio", depth: 1 }),
       ]);
-      if (graph.status === "rejected") throw graph.reason;
-      return { graph: graph.value, sources: sources.status === "fulfilled" ? sources.value : [] };
+      // A failed register fetch must not erase a source list that loaded fine.
+      // Throwing here used to discard the whole result, so the panel fell back
+      // to sources=[] and rendered "Connect Gmail & Calendar" — telling a user
+      // whose Google account was connected and healthy to go connect it. A
+      // request that fails has to say so, not impersonate onboarding.
+      return {
+        entries: entries.status === "fulfilled" ? entries.value : [],
+        registerError:
+          entries.status === "rejected" ? registerErrorMessage(entries.reason) : undefined,
+        sources: sources.status === "fulfilled" ? sources.value : [],
+        accounts:
+          graph.status === "fulfilled"
+            ? graph.value.nodes.flatMap((node) =>
+                node.kind === "relationship" && node.relationshipId
+                  ? [{ id: node.relationshipId, label: node.label }]
+                  : [],
+              )
+            : [],
+        relationshipCount:
+          graph.status === "fulfilled"
+            ? graph.value.nodes.filter((node) => node.kind === "relationship").length
+            : 0,
+      };
     },
     enabled: tab === "commitments",
   });
@@ -147,7 +187,6 @@ export function RevenuePanel({
       const s = await startScan(90);
       setActiveScan(s);
       setScans((prev) => [s, ...prev.filter((p) => p.id !== s.id)]);
-      saveScanIds([s.id, ...loadScanIds().filter((id) => id !== s.id)]);
     } catch (e) {
       setScanning(false);
       if (e instanceof RevenueAPIError && e.code === "scan_unavailable") {
@@ -173,6 +212,22 @@ export function RevenuePanel({
     [commitmentQuery, setBanner, setNoticeMsg],
   );
 
+  // The record leaves the tool as Markdown, because the place it gets used is
+  // an email thread and Markdown pastes.
+  const exportRecord = React.useCallback(
+    async (item: CommitmentQueueItem) => {
+      try {
+        const markdown = await getCommitmentRecordMarkdown(item.id);
+        downloadMarkdown(`commitment-${item.id}.md`, markdown);
+        capture(RevenueEvents.CommitmentExported, { commitmentId: item.id, state: item.state });
+        setNoticeMsg("Commitment record exported.");
+      } catch (error) {
+        setBanner(error instanceof Error ? error.message : "Could not export the record.");
+      }
+    },
+    [setBanner, setNoticeMsg],
+  );
+
   const draftRecovery = React.useCallback(
     async (relationshipId: string) => {
       try {
@@ -193,13 +248,20 @@ export function RevenuePanel({
     [commitmentQuery, setBanner, setNoticeMsg],
   );
 
-  const latestCompletedScan = (activeScan ? [activeScan, ...scans] : scans)
-    .filter((scan) => scan.status === "completed")
-    .sort((left, right) =>
-      (right.completedAt || right.startedAt || "").localeCompare(
-        left.completedAt || left.startedAt || "",
-      ),
-    )[0];
+  const scansNewestFirst = (activeScan ? [activeScan, ...scans] : scans).sort((left, right) =>
+    (right.completedAt || right.startedAt || "").localeCompare(
+      left.completedAt || left.startedAt || "",
+    ),
+  );
+  const latestCompletedScan = scansNewestFirst.find((scan) => scan.status === "completed");
+  // A failed audit is the answer to "why is my register empty", and it was only
+  // visible on the audits screen — somewhere a user has no reason to open. The
+  // failure belongs next to the empty register that it caused.
+  const latestScanFailure = scansNewestFirst.find((scan) => scan.status === "failed");
+  const showFailure =
+    latestScanFailure &&
+    (!latestCompletedScan ||
+      (latestScanFailure.completedAt || "") > (latestCompletedScan.completedAt || ""));
 
   return (
     <div className="flex h-full min-w-0 w-full flex-col overflow-hidden">
@@ -220,16 +282,27 @@ export function RevenuePanel({
 
         {tab === "commitments" ? (
           <CommitmentQueue
-            graph={commitmentQuery.data?.graph ?? null}
+            entries={commitmentQuery.data?.entries ?? []}
+            view={registerView}
+            onViewChange={setRegisterView}
+            onExport={exportRecord}
+            relationshipCount={commitmentQuery.data?.relationshipCount ?? 0}
+            accounts={commitmentQuery.data?.accounts ?? []}
+            accountId={registerAccountId}
+            onAccountChange={setRegisterAccountId}
+            owner={registerOwner}
+            onOwnerChange={setRegisterOwner}
+            onIncludeCandidatesChange={setIncludeCandidates}
             sources={commitmentQuery.data?.sources ?? []}
             latestScan={latestCompletedScan}
+            failedScan={showFailure ? latestScanFailure : undefined}
             loading={commitmentQuery.isLoading}
             error={
               commitmentQuery.error instanceof Error
                 ? commitmentQuery.error.message
                 : commitmentQuery.error
                   ? "Could not load the Commitment Queue."
-                  : undefined
+                  : commitmentQuery.data?.registerError
             }
             scanning={scanning}
             onScan={runScan}

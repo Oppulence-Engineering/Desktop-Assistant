@@ -17,12 +17,12 @@ import (
 // approval-eligible. When the Google deps are not wired, Build returns a tool
 // that reports the capability as unavailable rather than panicking.
 
-// GmailReadCapability searches the user's Gmail (read-only).
+// GmailReadCapability reads the user's Gmail (read-only).
 func GmailReadCapability() Capability {
 	return Capability{
 		Name:        "connector.read.gmail",
-		Description: "Search the user's Gmail (read-only): returns message headers and snippets, never full bodies. Requires a connected Google account with the gmail.readonly scope.",
-		Parameters:  json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","description":"Gmail search query, e.g. \"from:acme.com newer_than:30d\""},"limit":{"type":"integer","description":"max messages (1-10)"}},"required":["query"]}`),
+		Description: "Read the authorized Gmail account identity and totals; list labels or read exact label counts singly or in a bounded batch; count, search, and page through matching messages or distinct conversation threads with Gmail, RFC 822, and reply-parent identities, To, Cc, Bcc, mailing-list unsubscribe, and estimated-size metadata; optionally read complete plain-text bodies or attachment metadata for a search or exact thread; read exact messages or bounded text attachments. Requires gmail.readonly.",
+		Parameters:  json.RawMessage(`{"type":"object","properties":{"query":{"type":"string","description":"Gmail search query"},"countOnly":{"type":"boolean","const":true,"description":"count matching messages and distinct threads without content"},"groupByThread":{"type":"boolean","const":true,"description":"return up to 10 distinct matching conversations with chronological headers and snippets; supports pagination and never returns bodies"},"includeAttachments":{"type":"boolean","const":true,"description":"With query or threadId, return attachment metadata and sealed references without message bodies"},"pageToken":{"type":"string"},"threadId":{"type":"string","description":"Exact thread ID; add includeAttachments for attachment metadata without bodies"},"includeBodies":{"type":"boolean","description":"With query or threadId, return complete plain-text messages and attachment metadata; query mode keeps the 10-message limit and pagination"},"messageId":{"type":"string","description":"Exact message ID; returns message content and sealed attachment references"},"attachmentRef":{"type":"string","description":"Sealed reference returned by a message or full thread read; text only, maximum 256 KiB"},"listLabels":{"type":"boolean","const":true},"labelId":{"type":"string"},"labelIds":{"type":"array","minItems":1,"maxItems":20,"items":{"type":"string","minLength":1},"description":"Exact label IDs; returns live counts for each label"},"mailboxProfile":{"type":"boolean","const":true},"limit":{"type":"integer","description":"max messages or threads (1-10)"}},"oneOf":[{"required":["query"]},{"required":["threadId"]},{"required":["messageId"]},{"required":["attachmentRef"]},{"required":["listLabels"]},{"required":["labelId"]},{"required":["labelIds"]},{"required":["mailboxProfile"]}],"additionalProperties":false}`),
 		TrustTier:   TierRead,
 		Kind:        KindTool,
 		Build: func(d ToolDeps) backgroundtaskruntime.Tool {
@@ -74,12 +74,12 @@ func GmailSendCapability() Capability {
 	}
 }
 
-// CalendarReadCapability lists events on the user's primary Google Calendar.
+// CalendarReadCapability reads events on the user's primary Google Calendar.
 func CalendarReadCapability() Capability {
 	return Capability{
 		Name:        "connector.read.calendar",
-		Description: "List events on the user's primary Google Calendar (read-only). Requires a connected Google account with the calendar.events.readonly scope.",
-		Parameters:  json.RawMessage(`{"type":"object","properties":{"timeMin":{"type":"string","description":"RFC3339 lower bound"},"timeMax":{"type":"string","description":"RFC3339 upper bound"},"query":{"type":"string","description":"free-text filter"},"limit":{"type":"integer","description":"max events (1-10)"}}}`),
+		Description: "Count, group by day, read availability, list and page through events with Google and iCalendar identities, explicit all-day, event-type, provenance, recurring-series, recurrence-rule, reminder, attendee-response, blocks-time, conference-provider, and attachment metadata, or read one exact event on the user's primary Google Calendar (read-only). Requires a connected Google account with the calendar.events.readonly scope.",
+		Parameters:  json.RawMessage(`{"type":"object","properties":{"eventId":{"type":"string","description":"Exact Google event ID returned by a prior list; returns the cross-system iCalUID, whether it is all-day, Google's event type, creator and create/update times, recurring-series metadata and recurrence rules, default/custom reminder metadata, whether it blocks time, description, location, organizer, status, attendees, attendee invitation responses, conference provider, meeting link, and attachment titles, MIME types, and links"},"timeMin":{"type":"string","description":"RFC3339 lower bound"},"timeMax":{"type":"string","description":"RFC3339 upper bound"},"durationMinutes":{"type":"integer","minimum":1,"maximum":1440,"description":"return occupied time, timed-event load, all-day busy-event count, and free windows at least this long"},"countOnly":{"type":"boolean","const":true,"description":"count event instances in the bounded time window without details"},"countByDay":{"type":"boolean","const":true,"description":"count event instances by date in the primary calendar timezone without details"},"query":{"type":"string","description":"free-text filter"},"limit":{"type":"integer","description":"max events (1-10)"},"pageToken":{"type":"string","description":"Opaque nextPageToken returned by a prior event list; repeat the same filters to read the next page"}}}`),
 		TrustTier:   TierRead,
 		Kind:        KindTool,
 		Build: func(d ToolDeps) backgroundtaskruntime.Tool {

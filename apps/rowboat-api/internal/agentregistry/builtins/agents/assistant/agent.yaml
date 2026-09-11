@@ -8,4 +8,50 @@ spec:
   tools:
     - current_time
     - echo
+    - web.search
+    - tool_result.read
+    - run_history.read
+    - workflow.read
+    - workspace.read
+    - relationship.read
+    - relationship.create
+    - relationship.correct
+    - relationship.assertion.retract
+    - relationship.review.acknowledge
+    - relationship.identity.decide
+    - relationship.attention.decide
+    - conversation.delete
+    - source.retry_sync
+    - task.create
+    - task.update
+    - task.complete
+    - task.snooze
+    - recommendation.create
+    - recommendation.dismiss
+    - recommendation.snooze
+    - recommendation.update
+    - action.audit
+    - action.outcome.record
+    - commitment.export
+    - commitment.accept
+    - commitment.block
+    - commitment.confirm
+    - commitment.correct
+    - commitment.complete
+    - commitment.dispute
+    - commitment.unblock
+    - person.create
+    - person.correct
+    - person.attribute.retract
+    - person.identity.decide
+    - person.delete
+    - note.create
+    - note.update
+    - note.delete
+    - action_proposal.read
+    - action.propose
+    - connector.read.gmail
+    - connector.write.gmail_draft
+    - connector.write.gmail_send
+    - connector.read.calendar
   channels: [http]

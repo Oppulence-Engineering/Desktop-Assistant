@@ -47,6 +47,11 @@ export const RevenueEvents = {
   ActionDismissed: "revenue_action_dismissed",
   OutcomeLogged: "revenue_outcome_logged",
   WorkspaceLinked: "revenue_workspace_linked",
+  // The strongest available signal that the ledger is believed: a record was
+  // taken out of the tool and into a real conversation (one-pager §18).
+  CommitmentExported: "revenue_commitment_exported",
+  RegisterViewed: "revenue_register_viewed",
+  ReportViewed: "revenue_open_promises_report_viewed",
   UpgradeClicked: "revenue_upgrade_clicked",
 } as const;
 

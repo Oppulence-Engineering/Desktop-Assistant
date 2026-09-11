@@ -44,3 +44,15 @@ func TestRelationshipAdaptersNormalizeFourEvidenceSources(t *testing.T) {
 		})
 	}
 }
+
+func TestGmailAdapterTreatsPublicMailboxAsPerson(t *testing.T) {
+	observation, err := AdaptGmailEvent(AdapterEvent{
+		ExternalID:   "thread-1",
+		AccountName:  "Alexis Serra",
+		PrimaryEmail: "alexisyserra@gmail.com",
+		Payload:      map[string]any{},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "person", observation.PreferredKind)
+	require.Empty(t, observation.AccountDomain)
+}

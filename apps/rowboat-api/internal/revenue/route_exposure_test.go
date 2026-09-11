@@ -45,3 +45,31 @@ func TestPersonRoutesAreMounted(t *testing.T) {
 		}
 	}
 }
+
+// The register was the missing route: every commitment endpoint was nested
+// under a relationship id, so "what do we owe anyone" had no answer over HTTP
+// even though the data was there. A service method nobody can reach is a
+// service method that does not exist.
+func TestCommitmentRegisterRoutesAreMounted(t *testing.T) {
+	router := chi.NewRouter()
+	NewHandler(nil, zap.NewNop()).Mount(router)
+
+	mounted := map[string]bool{}
+	if err := chi.Walk(router, func(method, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
+		mounted[method+" "+route] = true
+		return nil
+	}); err != nil {
+		t.Fatalf("walk: %v", err)
+	}
+
+	for _, want := range []string{
+		"GET /v1/commitments",
+		"GET /v1/commitments/{commitmentId}/export",
+		"GET /v1/revenue-leak-scans/",
+		"GET /v1/revenue-leak-scans/{scanId}/report",
+	} {
+		if !mounted[want] {
+			t.Errorf("route not mounted: %s", want)
+		}
+	}
+}

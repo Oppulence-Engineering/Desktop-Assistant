@@ -44,6 +44,7 @@ const (
 	ErrCodeRuntimeArtifactTooLarge   = "runtime_artifact_too_large"   // Final artifact over CLOUD_RUNTIME_MAX_ARTIFACT_BYTES.
 	ErrCodeRuntimeEventTooLarge      = "runtime_event_too_large"      // Emitted event over CLOUD_RUNTIME_MAX_EVENT_BYTES.
 	ErrCodeLLMCallFailed             = "llm_call_failed"              // Gateway/upstream/quota failure during a runtime LLM call.
+	ErrCodeUpstreamCreditsExhausted  = "upstream_credits_exhausted"   // Oppulence's upstream model account cannot fund the call.
 	ErrCodeToolNotAllowed            = "tool_not_allowed"             // Registry denied a tool (terminal escalation only).
 	ErrCodeToolInvokeFailed          = "tool_invoke_failed"           // A permitted tool's implementation failed terminally.
 	ErrCodeConnectorUnavailable      = "connector_unavailable"        // Connector token missing/expired/unscoped.
@@ -76,6 +77,7 @@ var knownErrorCodes = map[string]struct{}{
 	ErrCodeRuntimeArtifactTooLarge:   {},
 	ErrCodeRuntimeEventTooLarge:      {},
 	ErrCodeLLMCallFailed:             {},
+	ErrCodeUpstreamCreditsExhausted:  {},
 	ErrCodeToolNotAllowed:            {},
 	ErrCodeToolInvokeFailed:          {},
 	ErrCodeConnectorUnavailable:      {},

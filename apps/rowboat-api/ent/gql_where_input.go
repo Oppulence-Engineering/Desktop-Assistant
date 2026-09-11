@@ -47905,6 +47905,56 @@ type RevenueLeakScanWhereInput struct {
 	ActionsCreatedLT    *int  `json:"actionsCreatedLT,omitempty"`
 	ActionsCreatedLTE   *int  `json:"actionsCreatedLTE,omitempty"`
 
+	// "commitments_created" field predicates.
+	CommitmentsCreated      *int  `json:"commitmentsCreated,omitempty"`
+	CommitmentsCreatedNEQ   *int  `json:"commitmentsCreatedNEQ,omitempty"`
+	CommitmentsCreatedIn    []int `json:"commitmentsCreatedIn,omitempty"`
+	CommitmentsCreatedNotIn []int `json:"commitmentsCreatedNotIn,omitempty"`
+	CommitmentsCreatedGT    *int  `json:"commitmentsCreatedGT,omitempty"`
+	CommitmentsCreatedGTE   *int  `json:"commitmentsCreatedGTE,omitempty"`
+	CommitmentsCreatedLT    *int  `json:"commitmentsCreatedLT,omitempty"`
+	CommitmentsCreatedLTE   *int  `json:"commitmentsCreatedLTE,omitempty"`
+
+	// "threads_deep_read" field predicates.
+	ThreadsDeepRead      *int  `json:"threadsDeepRead,omitempty"`
+	ThreadsDeepReadNEQ   *int  `json:"threadsDeepReadNEQ,omitempty"`
+	ThreadsDeepReadIn    []int `json:"threadsDeepReadIn,omitempty"`
+	ThreadsDeepReadNotIn []int `json:"threadsDeepReadNotIn,omitempty"`
+	ThreadsDeepReadGT    *int  `json:"threadsDeepReadGT,omitempty"`
+	ThreadsDeepReadGTE   *int  `json:"threadsDeepReadGTE,omitempty"`
+	ThreadsDeepReadLT    *int  `json:"threadsDeepReadLT,omitempty"`
+	ThreadsDeepReadLTE   *int  `json:"threadsDeepReadLTE,omitempty"`
+
+	// "threads_snippet_only" field predicates.
+	ThreadsSnippetOnly      *int  `json:"threadsSnippetOnly,omitempty"`
+	ThreadsSnippetOnlyNEQ   *int  `json:"threadsSnippetOnlyNEQ,omitempty"`
+	ThreadsSnippetOnlyIn    []int `json:"threadsSnippetOnlyIn,omitempty"`
+	ThreadsSnippetOnlyNotIn []int `json:"threadsSnippetOnlyNotIn,omitempty"`
+	ThreadsSnippetOnlyGT    *int  `json:"threadsSnippetOnlyGT,omitempty"`
+	ThreadsSnippetOnlyGTE   *int  `json:"threadsSnippetOnlyGTE,omitempty"`
+	ThreadsSnippetOnlyLT    *int  `json:"threadsSnippetOnlyLT,omitempty"`
+	ThreadsSnippetOnlyLTE   *int  `json:"threadsSnippetOnlyLTE,omitempty"`
+
+	// "threads_skipped" field predicates.
+	ThreadsSkipped      *int  `json:"threadsSkipped,omitempty"`
+	ThreadsSkippedNEQ   *int  `json:"threadsSkippedNEQ,omitempty"`
+	ThreadsSkippedIn    []int `json:"threadsSkippedIn,omitempty"`
+	ThreadsSkippedNotIn []int `json:"threadsSkippedNotIn,omitempty"`
+	ThreadsSkippedGT    *int  `json:"threadsSkippedGT,omitempty"`
+	ThreadsSkippedGTE   *int  `json:"threadsSkippedGTE,omitempty"`
+	ThreadsSkippedLT    *int  `json:"threadsSkippedLT,omitempty"`
+	ThreadsSkippedLTE   *int  `json:"threadsSkippedLTE,omitempty"`
+
+	// "extraction_failures" field predicates.
+	ExtractionFailures      *int  `json:"extractionFailures,omitempty"`
+	ExtractionFailuresNEQ   *int  `json:"extractionFailuresNEQ,omitempty"`
+	ExtractionFailuresIn    []int `json:"extractionFailuresIn,omitempty"`
+	ExtractionFailuresNotIn []int `json:"extractionFailuresNotIn,omitempty"`
+	ExtractionFailuresGT    *int  `json:"extractionFailuresGT,omitempty"`
+	ExtractionFailuresGTE   *int  `json:"extractionFailuresGTE,omitempty"`
+	ExtractionFailuresLT    *int  `json:"extractionFailuresLT,omitempty"`
+	ExtractionFailuresLTE   *int  `json:"extractionFailuresLTE,omitempty"`
+
 	// "started_at" field predicates.
 	StartedAt       *time.Time  `json:"startedAt,omitempty"`
 	StartedAtNEQ    *time.Time  `json:"startedAtNEQ,omitempty"`
@@ -48376,6 +48426,126 @@ func (i *RevenueLeakScanWhereInput) P() (predicate.RevenueLeakScan, error) {
 	}
 	if i.ActionsCreatedLTE != nil {
 		predicates = append(predicates, revenueleakscan.ActionsCreatedLTE(*i.ActionsCreatedLTE))
+	}
+	if i.CommitmentsCreated != nil {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedEQ(*i.CommitmentsCreated))
+	}
+	if i.CommitmentsCreatedNEQ != nil {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedNEQ(*i.CommitmentsCreatedNEQ))
+	}
+	if len(i.CommitmentsCreatedIn) > 0 {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedIn(i.CommitmentsCreatedIn...))
+	}
+	if len(i.CommitmentsCreatedNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedNotIn(i.CommitmentsCreatedNotIn...))
+	}
+	if i.CommitmentsCreatedGT != nil {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedGT(*i.CommitmentsCreatedGT))
+	}
+	if i.CommitmentsCreatedGTE != nil {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedGTE(*i.CommitmentsCreatedGTE))
+	}
+	if i.CommitmentsCreatedLT != nil {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedLT(*i.CommitmentsCreatedLT))
+	}
+	if i.CommitmentsCreatedLTE != nil {
+		predicates = append(predicates, revenueleakscan.CommitmentsCreatedLTE(*i.CommitmentsCreatedLTE))
+	}
+	if i.ThreadsDeepRead != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsDeepReadEQ(*i.ThreadsDeepRead))
+	}
+	if i.ThreadsDeepReadNEQ != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsDeepReadNEQ(*i.ThreadsDeepReadNEQ))
+	}
+	if len(i.ThreadsDeepReadIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ThreadsDeepReadIn(i.ThreadsDeepReadIn...))
+	}
+	if len(i.ThreadsDeepReadNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ThreadsDeepReadNotIn(i.ThreadsDeepReadNotIn...))
+	}
+	if i.ThreadsDeepReadGT != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsDeepReadGT(*i.ThreadsDeepReadGT))
+	}
+	if i.ThreadsDeepReadGTE != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsDeepReadGTE(*i.ThreadsDeepReadGTE))
+	}
+	if i.ThreadsDeepReadLT != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsDeepReadLT(*i.ThreadsDeepReadLT))
+	}
+	if i.ThreadsDeepReadLTE != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsDeepReadLTE(*i.ThreadsDeepReadLTE))
+	}
+	if i.ThreadsSnippetOnly != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSnippetOnlyEQ(*i.ThreadsSnippetOnly))
+	}
+	if i.ThreadsSnippetOnlyNEQ != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSnippetOnlyNEQ(*i.ThreadsSnippetOnlyNEQ))
+	}
+	if len(i.ThreadsSnippetOnlyIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ThreadsSnippetOnlyIn(i.ThreadsSnippetOnlyIn...))
+	}
+	if len(i.ThreadsSnippetOnlyNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ThreadsSnippetOnlyNotIn(i.ThreadsSnippetOnlyNotIn...))
+	}
+	if i.ThreadsSnippetOnlyGT != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSnippetOnlyGT(*i.ThreadsSnippetOnlyGT))
+	}
+	if i.ThreadsSnippetOnlyGTE != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSnippetOnlyGTE(*i.ThreadsSnippetOnlyGTE))
+	}
+	if i.ThreadsSnippetOnlyLT != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSnippetOnlyLT(*i.ThreadsSnippetOnlyLT))
+	}
+	if i.ThreadsSnippetOnlyLTE != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSnippetOnlyLTE(*i.ThreadsSnippetOnlyLTE))
+	}
+	if i.ThreadsSkipped != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSkippedEQ(*i.ThreadsSkipped))
+	}
+	if i.ThreadsSkippedNEQ != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSkippedNEQ(*i.ThreadsSkippedNEQ))
+	}
+	if len(i.ThreadsSkippedIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ThreadsSkippedIn(i.ThreadsSkippedIn...))
+	}
+	if len(i.ThreadsSkippedNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ThreadsSkippedNotIn(i.ThreadsSkippedNotIn...))
+	}
+	if i.ThreadsSkippedGT != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSkippedGT(*i.ThreadsSkippedGT))
+	}
+	if i.ThreadsSkippedGTE != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSkippedGTE(*i.ThreadsSkippedGTE))
+	}
+	if i.ThreadsSkippedLT != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSkippedLT(*i.ThreadsSkippedLT))
+	}
+	if i.ThreadsSkippedLTE != nil {
+		predicates = append(predicates, revenueleakscan.ThreadsSkippedLTE(*i.ThreadsSkippedLTE))
+	}
+	if i.ExtractionFailures != nil {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresEQ(*i.ExtractionFailures))
+	}
+	if i.ExtractionFailuresNEQ != nil {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresNEQ(*i.ExtractionFailuresNEQ))
+	}
+	if len(i.ExtractionFailuresIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresIn(i.ExtractionFailuresIn...))
+	}
+	if len(i.ExtractionFailuresNotIn) > 0 {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresNotIn(i.ExtractionFailuresNotIn...))
+	}
+	if i.ExtractionFailuresGT != nil {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresGT(*i.ExtractionFailuresGT))
+	}
+	if i.ExtractionFailuresGTE != nil {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresGTE(*i.ExtractionFailuresGTE))
+	}
+	if i.ExtractionFailuresLT != nil {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresLT(*i.ExtractionFailuresLT))
+	}
+	if i.ExtractionFailuresLTE != nil {
+		predicates = append(predicates, revenueleakscan.ExtractionFailuresLTE(*i.ExtractionFailuresLTE))
 	}
 	if i.StartedAt != nil {
 		predicates = append(predicates, revenueleakscan.StartedAtEQ(*i.StartedAt))

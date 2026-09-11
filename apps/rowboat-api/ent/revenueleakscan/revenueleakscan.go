@@ -38,6 +38,16 @@ const (
 	FieldEvidencesCreated = "evidences_created"
 	// FieldActionsCreated holds the string denoting the actions_created field in the database.
 	FieldActionsCreated = "actions_created"
+	// FieldCommitmentsCreated holds the string denoting the commitments_created field in the database.
+	FieldCommitmentsCreated = "commitments_created"
+	// FieldThreadsDeepRead holds the string denoting the threads_deep_read field in the database.
+	FieldThreadsDeepRead = "threads_deep_read"
+	// FieldThreadsSnippetOnly holds the string denoting the threads_snippet_only field in the database.
+	FieldThreadsSnippetOnly = "threads_snippet_only"
+	// FieldThreadsSkipped holds the string denoting the threads_skipped field in the database.
+	FieldThreadsSkipped = "threads_skipped"
+	// FieldExtractionFailures holds the string denoting the extraction_failures field in the database.
+	FieldExtractionFailures = "extraction_failures"
 	// FieldStartedAt holds the string denoting the started_at field in the database.
 	FieldStartedAt = "started_at"
 	// FieldCompletedAt holds the string denoting the completed_at field in the database.
@@ -82,6 +92,11 @@ var Columns = []string{
 	FieldRelationshipsCreated,
 	FieldEvidencesCreated,
 	FieldActionsCreated,
+	FieldCommitmentsCreated,
+	FieldThreadsDeepRead,
+	FieldThreadsSnippetOnly,
+	FieldThreadsSkipped,
+	FieldExtractionFailures,
 	FieldStartedAt,
 	FieldCompletedAt,
 	FieldError,
@@ -156,6 +171,26 @@ var (
 	DefaultActionsCreated int
 	// ActionsCreatedValidator is a validator for the "actions_created" field. It is called by the builders before save.
 	ActionsCreatedValidator func(int) error
+	// DefaultCommitmentsCreated holds the default value on creation for the "commitments_created" field.
+	DefaultCommitmentsCreated int
+	// CommitmentsCreatedValidator is a validator for the "commitments_created" field. It is called by the builders before save.
+	CommitmentsCreatedValidator func(int) error
+	// DefaultThreadsDeepRead holds the default value on creation for the "threads_deep_read" field.
+	DefaultThreadsDeepRead int
+	// ThreadsDeepReadValidator is a validator for the "threads_deep_read" field. It is called by the builders before save.
+	ThreadsDeepReadValidator func(int) error
+	// DefaultThreadsSnippetOnly holds the default value on creation for the "threads_snippet_only" field.
+	DefaultThreadsSnippetOnly int
+	// ThreadsSnippetOnlyValidator is a validator for the "threads_snippet_only" field. It is called by the builders before save.
+	ThreadsSnippetOnlyValidator func(int) error
+	// DefaultThreadsSkipped holds the default value on creation for the "threads_skipped" field.
+	DefaultThreadsSkipped int
+	// ThreadsSkippedValidator is a validator for the "threads_skipped" field. It is called by the builders before save.
+	ThreadsSkippedValidator func(int) error
+	// DefaultExtractionFailures holds the default value on creation for the "extraction_failures" field.
+	DefaultExtractionFailures int
+	// ExtractionFailuresValidator is a validator for the "extraction_failures" field. It is called by the builders before save.
+	ExtractionFailuresValidator func(int) error
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -221,6 +256,31 @@ func ByEvidencesCreated(opts ...sql.OrderTermOption) OrderOption {
 // ByActionsCreated orders the results by the actions_created field.
 func ByActionsCreated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActionsCreated, opts...).ToFunc()
+}
+
+// ByCommitmentsCreated orders the results by the commitments_created field.
+func ByCommitmentsCreated(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCommitmentsCreated, opts...).ToFunc()
+}
+
+// ByThreadsDeepRead orders the results by the threads_deep_read field.
+func ByThreadsDeepRead(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldThreadsDeepRead, opts...).ToFunc()
+}
+
+// ByThreadsSnippetOnly orders the results by the threads_snippet_only field.
+func ByThreadsSnippetOnly(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldThreadsSnippetOnly, opts...).ToFunc()
+}
+
+// ByThreadsSkipped orders the results by the threads_skipped field.
+func ByThreadsSkipped(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldThreadsSkipped, opts...).ToFunc()
+}
+
+// ByExtractionFailures orders the results by the extraction_failures field.
+func ByExtractionFailures(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExtractionFailures, opts...).ToFunc()
 }
 
 // ByStartedAt orders the results by the started_at field.

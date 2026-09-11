@@ -68,6 +68,17 @@ type ChatResult struct {
 	OutputTokens int
 }
 
+// UpstreamStatusError preserves the provider status so callers can distinguish
+// permanent account/configuration failures from transient outages.
+type UpstreamStatusError struct {
+	StatusCode int
+	detail     string
+}
+
+func (e *UpstreamStatusError) Error() string {
+	return fmt.Sprintf("llm upstream returned status %d: %s", e.StatusCode, e.detail)
+}
+
 // wire shapes for the OpenAI chat completions request.
 type wireToolCall struct {
 	ID       string `json:"id"`
@@ -155,7 +166,7 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 		// The body carries the only actionable detail (which field the provider
 		// rejected). Dropping it turned a one-line schema bug into a blind hunt,
 		// so include a bounded prefix; it is provider error text, not user data.
-		return ChatResult{}, fmt.Errorf("llm upstream returned status %d: %s", resp.StatusCode, truncateForError(raw))
+		return ChatResult{}, &UpstreamStatusError{StatusCode: resp.StatusCode, detail: truncateForError(raw)}
 	}
 
 	var parsed struct {
@@ -178,8 +189,8 @@ func (h *Handler) ChatComplete(ctx context.Context, req ChatRequest) (ChatResult
 	msg := ChatMessage{Role: "assistant", Content: choice.Message.Content}
 	for _, tc := range choice.Message.ToolCalls {
 		name := tc.Function.Name
-		if real, ok := wireToReal[name]; ok {
-			name = real
+		if canonical, ok := wireToReal[name]; ok {
+			name = canonical
 		}
 		msg.ToolCalls = append(msg.ToolCalls, ToolCall{
 			ID:        tc.ID,
@@ -301,10 +312,10 @@ func marshalChatBody(upstreamModel string, req ChatRequest) (body []byte, inputB
 // truncateForError bounds an upstream error body so it can be logged and
 // surfaced on a run record without pasting an unbounded provider response.
 func truncateForError(raw []byte) string {
-	const max = 512
+	const maxLen = 512
 	s := strings.TrimSpace(string(raw))
-	if len(s) > max {
-		return s[:max] + "…"
+	if len(s) > maxLen {
+		return s[:maxLen] + "…"
 	}
 	return s
 }

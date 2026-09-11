@@ -8,6 +8,7 @@ import {
   ArrowClockwise,
   Check,
   CircleNotch,
+  Export,
   MagnifyingGlass,
   PencilSimple,
   Plugs,
@@ -36,14 +37,14 @@ import {
 import { cn } from "@oppulence/ui/lib/utils";
 
 import type {
-  RelationshipGraph,
-  RelationshipGraphNode,
+  CommitmentRegisterFilter,
+  RegisterEntry,
   RelationshipSourceInventoryItem,
   RevenueLeakScan,
 } from "@/types/revenue";
 
 const THREE_DAYS = 72 * 60 * 60 * 1000;
-const ACTIVE_SOURCE_STATES = new Set(["connected", "backfilling", "live"]);
+const ACTIVE_SOURCE_STATES = new Set(["connected", "backfilling", "live", "stale"]);
 
 export interface CommitmentQueueTransition {
   kind: string;
@@ -64,7 +65,12 @@ export interface CommitmentQueueItem {
   owner: string;
   counterparty: string;
   dueAt?: string;
+  /** The register state a reader sees: open, at_risk, met, missed, waived… */
   state: string;
+  /** Where the promise sits in the confirm/offer/accept chain. A separate axis
+   *  from state: a commitment can be accepted AND at risk. */
+  acceptance: string;
+  blocker?: string;
   quote?: string;
   missingEvidence: string[];
   nextAction: string;
@@ -72,13 +78,102 @@ export interface CommitmentQueueItem {
   currentEventVersion: number;
 }
 
+/** The five views of the commitment register (one-pager §3). Each one is a
+ *  different query against GET /v1/commitments, not a different screen. */
+export type RegisterView = "we_owe" | "they_owe" | "changed" | "by_account" | "by_owner";
+
+export const REGISTER_VIEWS: { id: RegisterView; label: string; hint: string }[] = [
+  { id: "we_owe", label: "What we owe", hint: "Outbound obligations by risk, then by date." },
+  {
+    id: "they_owe",
+    label: "What they owe us",
+    hint: "Inbound obligations. The view no other tool offers.",
+  },
+  {
+    id: "changed",
+    label: "What changed",
+    hint: "New commitments and slippage since the last review.",
+  },
+  {
+    id: "by_account",
+    label: "By account",
+    hint: "The full two-sided history for one relationship.",
+  },
+  {
+    id: "by_owner",
+    label: "By owner",
+    hint: "What each person has promised. Used for load and handover.",
+  },
+];
+
+/** The filter each view sends to the register. Kept beside the labels so the
+ *  view and its query cannot drift apart. */
+export function registerFilterFor(
+  view: RegisterView,
+  options: {
+    relationshipId?: string;
+    owner?: string;
+    since?: string;
+    includeCandidates?: boolean;
+  } = {},
+): CommitmentRegisterFilter | null {
+  const includeCandidates = options.includeCandidates || undefined;
+  switch (view) {
+    case "we_owe":
+      return {
+        direction: "promised_by_me",
+        state: ["open", "at_risk"],
+        includeCandidates,
+        limit: 200,
+      };
+    case "they_owe":
+      return {
+        direction: "promised_by_them",
+        state: ["open", "at_risk"],
+        includeCandidates,
+        limit: 200,
+      };
+    case "changed":
+      return {
+        changedSince: options.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        includeCandidates,
+        limit: 200,
+      };
+    case "by_account":
+      return options.relationshipId
+        ? { relationshipId: options.relationshipId, includeCandidates, limit: 200 }
+        : null;
+    case "by_owner":
+      return options.owner?.trim()
+        ? { owner: options.owner.trim(), includeCandidates, limit: 200 }
+        : null;
+  }
+}
+
 export interface CommitmentQueueProps extends Omit<
   React.ComponentPropsWithoutRef<"section">,
   "children"
 > {
-  graph: RelationshipGraph | null;
+  /** Register rows from GET /v1/commitments. */
+  entries: RegisterEntry[];
+  view?: RegisterView;
+  onViewChange?: (view: RegisterView) => void;
+  /** Fetches the Markdown record a user forwards. */
+  onExport?: (item: CommitmentQueueItem) => Promise<void>;
+  /** Accounts in the workspace, for the "no accounts yet" empty state. */
+  relationshipCount?: number;
+  accounts?: { id: string; label: string }[];
+  accountId?: string;
+  onAccountChange?: (relationshipId: string) => void;
+  owner?: string;
+  onOwnerChange?: (owner: string) => void;
+  onIncludeCandidatesChange?: (include: boolean) => void;
   sources: RelationshipSourceInventoryItem[];
   latestScan?: RevenueLeakScan | null;
+  /** The most recent audit that failed, when it is newer than the last success.
+   *  A failed audit is the reason the register is empty, so it belongs here
+   *  rather than only on the audits screen. */
+  failedScan?: RevenueLeakScan | null;
   loading?: boolean;
   error?: string;
   scanning?: boolean;
@@ -93,79 +188,55 @@ export interface CommitmentQueueProps extends Omit<
   onDraftRecovery: (relationshipId: string) => Promise<boolean>;
 }
 
-function metadataString(node: RelationshipGraphNode, key: string) {
-  const value = node.metadata[key];
-  return typeof value === "string" ? value.trim() : "";
-}
+// The register already carries direction, owner, counterparty, the derived
+// state and the account name, so the queue no longer reconstructs commitments
+// from relationship-graph nodes and edges. That reconstruction could not page,
+// could not filter server-side, and could not answer "by owner" at all.
 
-function metadataNumber(node: RelationshipGraphNode, key: string) {
-  const value = node.metadata[key];
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
-function commitmentState(node: RelationshipGraphNode) {
-  if (node.status && node.status !== "open") return node.status;
-  if (metadataString(node, "blocker")) return "blocked";
-  const acceptance = metadataString(node, "acceptance");
-  if (acceptance) return acceptance;
-  return node.metadata.userConfirmed === true ? "internally_confirmed" : "candidate";
-}
-
-function missingEvidence(node: RelationshipGraphNode, hasOwner: boolean) {
+function missingEvidence(entry: RegisterEntry) {
   const missing: string[] = [];
-  if (!hasOwner && !metadataString(node, "ownerParticipantRef")) missing.push("promiser");
-  if (
-    !metadataString(node, "counterpartyParticipantRef") &&
-    !metadataString(node, "beneficiaryParticipantRef")
-  )
+  if (!entry.ownerParticipantRef?.trim()) missing.push("promiser");
+  if (!entry.counterpartyParticipantRef?.trim() && !entry.beneficiaryParticipantRef?.trim()) {
     missing.push("recipient");
-  if (!node.dueAt) missing.push("due date");
-  if (!node.summary?.trim()) missing.push("exact quote");
-  if (node.evidenceRefs.length === 0) missing.push("supporting record");
-  if (commitmentState(node) === "candidate") missing.push("confirmation");
+  }
+  if (!entry.dueAt) missing.push("due date");
+  if (!entry.sourcePhrase?.trim()) missing.push("exact quote");
+  if (entry.acceptance === "candidate") missing.push("confirmation");
   return missing;
 }
 
-function nextAction(state: string, missing: string[], urgency: CommitmentQueueItem["urgency"]) {
-  if (state === "fulfilled") return "Closed from observed or confirmed evidence.";
+function nextAction(
+  state: string,
+  missing: string[],
+  urgency: CommitmentQueueItem["urgency"],
+  blocked = false,
+) {
+  if (state === "met") return "Closed from observed or confirmed evidence.";
+  if (state === "waived") return "Released by the counterparty. No action required.";
   if (state === "cancelled" || state === "superseded") return "No action required.";
-  if (state === "blocked") return "Resolve the blocker or renegotiate the promise.";
+  if (state === "missed") return "Acknowledge with the counterparty or renegotiate.";
   if (state === "disputed") return "Clarify the promise with the counterparty.";
+  if (blocked) return "Resolve the blocker or renegotiate the promise.";
   if (missing.length > 0) return `Confirm or correct ${missing[0]}.`;
   if (urgency === "overdue") return "Draft a recovery message or task now.";
   if (urgency === "due_soon") return "Review and warn the owner before it is overdue.";
   return "Watch connected sources for fulfillment or a reply.";
 }
 
-function buildCommitmentQueue(graph: RelationshipGraph, now = new Date()) {
-  const nodes = new Map(graph.nodes.map((node) => [node.id, node]));
-  const ownerByCommitment = new Map<string, RelationshipGraphNode>();
-  for (const edge of graph.edges) {
-    if (edge.kind === "owns") {
-      const owner = nodes.get(edge.source);
-      if (owner) ownerByCommitment.set(edge.target, owner);
-    }
-  }
-
-  return graph.nodes
-    .filter((node) => node.kind === "commitment" && node.relationshipId && node.resourceRef)
-    .map((node): CommitmentQueueItem => {
-      const relationship = nodes.get(`relationship:${node.relationshipId}`);
-      const ownerNode = ownerByCommitment.get(node.id);
-      const direction = metadataString(node, "direction");
-      const beneficiaryRef = metadataString(node, "beneficiaryParticipantRef");
-      const counterpartyRef = metadataString(node, "counterpartyParticipantRef");
-      const relationshipName = relationship?.label || "Unknown account";
+function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQueueItem[] {
+  return entries
+    .map((entry): CommitmentQueueItem => {
+      const relationshipName = entry.relationshipName || "Unknown account";
       const owner =
-        ownerNode?.label ||
-        metadataString(node, "ownerParticipantRef") ||
-        (direction === "promised_by_me" ? "You" : relationshipName);
+        entry.ownerParticipantRef ||
+        (entry.direction === "promised_by_me" ? "You" : relationshipName);
       const counterparty =
-        beneficiaryRef ||
-        (direction === "promised_by_them" ? "You" : counterpartyRef || relationshipName);
-      const state = commitmentState(node);
-      const due = node.dueAt ? new Date(node.dueAt).getTime() : undefined;
-      const closed = ["fulfilled", "cancelled", "superseded"].includes(state);
+        entry.beneficiaryParticipantRef ||
+        (entry.direction === "promised_by_them"
+          ? "You"
+          : entry.counterpartyParticipantRef || relationshipName);
+      const due = entry.dueAt ? new Date(entry.dueAt).getTime() : undefined;
+      const closed = ["met", "waived", "cancelled", "superseded"].includes(entry.state);
       const urgency: CommitmentQueueItem["urgency"] = closed
         ? "closed"
         : due !== undefined && due < now.getTime()
@@ -173,22 +244,24 @@ function buildCommitmentQueue(graph: RelationshipGraph, now = new Date()) {
           : due !== undefined && due <= now.getTime() + THREE_DAYS
             ? "due_soon"
             : "open";
-      const missing = missingEvidence(node, Boolean(ownerNode));
+      const missing = missingEvidence(entry);
       return {
-        id: node.resourceRef!,
-        relationshipId: node.relationshipId!,
+        id: entry.id,
+        relationshipId: entry.relationshipId ?? "",
         relationshipName,
-        text: node.label,
-        direction,
+        text: entry.text,
+        direction: entry.direction,
         owner,
         counterparty,
-        dueAt: node.dueAt,
-        state,
-        quote: node.summary,
+        dueAt: entry.dueAt,
+        state: entry.state,
+        acceptance: entry.acceptance ?? "candidate",
+        blocker: entry.blocker,
+        quote: entry.sourcePhrase,
         missingEvidence: missing,
-        nextAction: nextAction(state, missing, urgency),
+        nextAction: nextAction(entry.state, missing, urgency, Boolean(entry.blocker?.trim())),
         urgency,
-        currentEventVersion: metadataNumber(node, "currentEventVersion"),
+        currentEventVersion: entry.currentEventVersion ?? 0,
       };
     })
     .sort((left, right) => {
@@ -202,7 +275,46 @@ function buildCommitmentQueue(graph: RelationshipGraph, now = new Date()) {
     });
 }
 
+// A dead Google grant and a transient provider fault need different words and
+// a different button. Everything else is "try again".
+function scanFailure(scan: RevenueLeakScan | null | undefined, sourceStillBroken: boolean) {
+  if (!scan?.error) return null;
+  const wasAuthFailure = /invalid authentication|invalid_grant|unauthorized|returned 40[13]/i.test(
+    scan.error,
+  );
+  // Only ask for a reconnect while the grant is actually broken. Reading the
+  // old error alone kept telling a user who had just reconnected that Google
+  // still needed reconnecting.
+  const needsReconnect = wasAuthFailure && sourceStillBroken;
+  return {
+    needsReconnect,
+    headline: needsReconnect ? "Google needs reconnecting" : "The last audit did not finish",
+    detail: needsReconnect
+      ? "Google stopped accepting the authorization, so we could not read your mail. Reconnect to run the audit again."
+      : wasAuthFailure
+        ? "The last audit could not read your mail. The connection looks healthy now, so running it again should work."
+        : scan.error,
+  };
+}
+
+// Health reports the WORST account, never the best.
+//
+// This used to be a .some() over accounts, so a workspace with one healthy
+// account and one whose grant had died read as fully connected — and the
+// broken one is the one an audit trips over. An account that needs the user
+// back through OAuth outranks any number of healthy siblings.
+const ATTENTION_SOURCE_STATES = new Set(["reconnect_required", "disconnected"]);
+
+function sourceNeedsReconnect(source: RelationshipSourceInventoryItem | undefined) {
+  return Boolean(
+    source?.accounts.some(
+      (account) => ATTENTION_SOURCE_STATES.has(account.status) || account.missingScopes.length > 0,
+    ),
+  );
+}
+
 function sourceConnected(source: RelationshipSourceInventoryItem | undefined) {
+  if (sourceNeedsReconnect(source)) return false;
   return Boolean(
     source?.accounts.some(
       (account) => ACTIVE_SOURCE_STATES.has(account.status) && account.missingScopes.length === 0,
@@ -212,15 +324,25 @@ function sourceConnected(source: RelationshipSourceInventoryItem | undefined) {
 
 function statusLabel(value: string) {
   const labels: Record<string, string> = {
+    open: "Open",
+    at_risk: "At risk",
+    met: "Met",
+    missed: "Missed",
+    waived: "Waived",
+    disputed: "Disputed",
+    cancelled: "Cancelled",
+    superseded: "Superseded",
+  };
+  return labels[value] || value.replaceAll("_", " ");
+}
+
+function acceptanceLabel(value: string) {
+  const labels: Record<string, string> = {
     candidate: "Needs confirmation",
     internally_confirmed: "Confirmed",
     offered: "Offered",
     accepted: "Accepted",
     disputed: "Disputed",
-    blocked: "Blocked",
-    fulfilled: "Fulfilled",
-    cancelled: "Cancelled",
-    superseded: "Superseded",
   };
   return labels[value] || value.replaceAll("_", " ");
 }
@@ -234,9 +356,20 @@ function localDateTime(iso?: string) {
 
 export function CommitmentQueue({
   className,
-  graph,
+  entries,
+  view = "we_owe",
+  onViewChange,
+  onExport,
+  relationshipCount = 0,
+  accounts = [],
+  accountId,
+  onAccountChange,
+  owner = "",
+  onOwnerChange,
+  onIncludeCandidatesChange,
   sources,
   latestScan,
+  failedScan,
   loading = false,
   error,
   scanning = false,
@@ -251,12 +384,14 @@ export function CommitmentQueue({
   const [query, setQuery] = React.useState("");
   const [filter, setFilter] = React.useState("active");
   const [busy, setBusy] = React.useState<string | null>(null);
+  const [exporting, setExporting] = React.useState(false);
   const [selected, setSelected] = React.useState<CommitmentQueueItem | null>(null);
   const [editing, setEditing] = React.useState<CommitmentQueueItem | null>(null);
   const [correctedText, setCorrectedText] = React.useState("");
   const [correctedDueAt, setCorrectedDueAt] = React.useState("");
-  const items = React.useMemo(() => (graph ? buildCommitmentQueue(graph) : []), [graph]);
-  const relationshipCount = graph?.nodes.filter((node) => node.kind === "relationship").length ?? 0;
+  const items = React.useMemo(() => toQueueItems(entries), [entries]);
+  const scopeMissing =
+    (view === "by_account" && !accountId) || (view === "by_owner" && !owner.trim());
   const filtered = items.filter((item) => {
     if (filter === "review" && item.missingEvidence.length === 0) return false;
     if (filter === "due" && item.urgency !== "overdue" && item.urgency !== "due_soon") return false;
@@ -271,6 +406,20 @@ export function CommitmentQueue({
     );
   });
   const google = sources.find((source) => source.source === "google");
+  const googleNeedsReconnect = sourceNeedsReconnect(google);
+  // A past failure is history; the source status says whether it is still true.
+  // After a successful reconnect the old 401 must stop demanding another one —
+  // it becomes "that audit did not finish", with a retry.
+  const failure = scanFailure(failedScan, googleNeedsReconnect);
+  // Coverage, read straight from the scan. An older scan that predates
+  // these counters reports zero for them, so fall back to the sweep total
+  // rather than claiming nothing was examined.
+  const swept = latestScan?.threadsSeen ?? 0;
+  const skipped = latestScan?.threadsSkipped ?? 0;
+  const snippetOnly = latestScan?.threadsSnippetOnly ?? 0;
+  const deepRead = latestScan?.threadsDeepRead ?? 0;
+  const examined = deepRead + snippetOnly > 0 || skipped > 0 ? deepRead + snippetOnly : swept;
+  const googleConnected = !googleNeedsReconnect && sourceConnected(google);
   const needsReview = items.filter(
     (item) => item.urgency !== "closed" && item.missingEvidence.length > 0,
   ).length;
@@ -303,6 +452,30 @@ export function CommitmentQueue({
       className={cn("relative flex min-h-full w-full min-w-0 flex-col", className)}
       {...props}
     >
+      <div
+        className="flex shrink-0 flex-wrap items-center gap-1 border-b border-border px-3 py-1.5"
+        role="tablist"
+        aria-label="Register views"
+      >
+        {REGISTER_VIEWS.map((registerView) => (
+          <button
+            key={registerView.id}
+            role="tab"
+            type="button"
+            aria-selected={view === registerView.id}
+            title={registerView.hint}
+            onClick={() => onViewChange?.(registerView.id)}
+            className={cn(
+              "h-7 rounded-none border px-2.5 text-[12px] transition-colors",
+              view === registerView.id
+                ? "border-border bg-background-100 text-primary"
+                : "border-transparent text-primary/55 hover:text-primary",
+            )}
+          >
+            {registerView.label}
+          </button>
+        ))}
+      </div>
       <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         <div className="relative min-w-[220px] max-w-sm flex-1">
           <MagnifyingGlass className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-primary/35" />
@@ -314,7 +487,36 @@ export function CommitmentQueue({
             className="h-8 border-border bg-background pl-8 text-[13px]"
           />
         </div>
-        <Select value={filter} onValueChange={setFilter}>
+        {view === "by_account" ? (
+          <Select value={accountId} onValueChange={onAccountChange}>
+            <SelectTrigger className="h-8 w-48" aria-label="Choose account">
+              <SelectValue placeholder="Choose an account" />
+            </SelectTrigger>
+            <SelectContent className="app-shell rounded-none">
+              {accounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
+        {view === "by_owner" ? (
+          <Input
+            aria-label="Filter by owner"
+            className="h-8 w-48 border-border bg-background text-[13px]"
+            onChange={(event) => onOwnerChange?.(event.target.value)}
+            placeholder="Owner name or email"
+            value={owner}
+          />
+        ) : null}
+        <Select
+          value={filter}
+          onValueChange={(value) => {
+            setFilter(value);
+            onIncludeCandidatesChange?.(value === "review");
+          }}
+        >
           <SelectTrigger className="h-8 w-40" aria-label="Filter commitments">
             <SelectValue />
           </SelectTrigger>
@@ -336,11 +538,11 @@ export function CommitmentQueue({
           Recovery drafts
         </Button>
         <div className="ml-auto flex items-center gap-2">
-          {!sourceConnected(google) ? (
+          {!failure?.needsReconnect && !googleConnected ? (
             <Button type="button" variant="outline" size="sm" onClick={onOpenConnectors}>
-              <Plugs /> Connect Gmail &amp; Calendar
+              <Plugs /> {googleNeedsReconnect ? "Reconnect Google" : "Connect Gmail & Calendar"}
             </Button>
-          ) : (
+          ) : googleConnected ? (
             <button
               className="hidden h-8 items-center gap-1.5 text-[12px] text-emerald-400 2xl:flex"
               onClick={onOpenAccounts}
@@ -348,7 +550,7 @@ export function CommitmentQueue({
             >
               <span className="size-1.5 rounded-full bg-emerald-400" /> Google connected
             </button>
-          )}
+          ) : null}
           <Button
             type="button"
             size="sm"
@@ -378,7 +580,7 @@ export function CommitmentQueue({
           </span>
           <span>
             <b className="font-medium text-primary">
-              {items.filter((item) => item.state === "fulfilled").length}
+              {items.filter((item) => item.state === "met").length}
             </b>{" "}
             fulfilled
           </span>
@@ -386,18 +588,40 @@ export function CommitmentQueue({
       </div>
 
       {latestScan?.status === "completed" ? (
-        <div className="flex min-h-12 items-center gap-4 border-b border-border bg-background-50 px-3 text-[12px] text-primary/55">
+        <div className="flex min-h-12 flex-wrap items-center gap-4 border-b border-border bg-background-50 px-3 text-[12px] text-primary/55">
           <span className="font-medium text-primary">
             Latest {latestScan.lookbackDays}-day audit
           </span>
           <dl className="flex items-center gap-4">
+            {/* "Conversations reviewed" used to show every thread swept,
+                including inbox mail the audit never judged. It now counts what
+                was actually examined, and says separately what was passed
+                over, so the number cannot imply a depth the scan did not have. */}
             <div className="flex items-center gap-1.5">
-              <dd className="font-medium text-primary">{latestScan.threadsSeen ?? 0}</dd>
+              <dd className="font-medium text-primary">{examined}</dd>
               <dt>Conversations reviewed</dt>
             </div>
+            {skipped > 0 ? (
+              <div
+                className="flex items-center gap-1.5"
+                title="Swept but not judged: no message from you in the thread, so there was no promise of yours to find. Usually newsletters, receipts and notifications."
+              >
+                <dd className="font-medium text-primary/70">{skipped}</dd>
+                <dt>Not a conversation</dt>
+              </div>
+            ) : null}
+            {snippetOnly > 0 ? (
+              <div
+                className="hidden items-center gap-1.5 xl:flex"
+                title="Judged on a short preview because the message body could not be read. A promise further down the message can be missed."
+              >
+                <dd className="font-medium text-amber-500">{snippetOnly}</dd>
+                <dt>Preview only</dt>
+              </div>
+            ) : null}
             <div className="flex items-center gap-1.5">
-              <dd className="font-medium text-primary">{relationshipCount}</dd>
-              <dt>Relationships mapped</dt>
+              <dd className="font-medium text-primary">{latestScan.relationshipsCreated ?? 0}</dd>
+              <dt>New relationships</dt>
             </div>
             <div className="hidden items-center gap-1.5 lg:flex">
               <dd className="font-medium text-primary">{latestScan.candidatesSeen ?? 0}</dd>
@@ -412,10 +636,39 @@ export function CommitmentQueue({
               type="button"
               variant="outline"
             >
-              Review {relationshipCount}{" "}
-              {relationshipCount === 1 ? "relationship" : "relationships"}
+              Review relationships
             </Button>
           ) : null}
+        </div>
+      ) : null}
+
+      {/* A broken source is not only an empty-register problem. With rows on
+          screen the register still looks authoritative while it is quietly
+          going out of date, so the warning rides above the list too — the
+          empty state below repeats it at full size when there is nothing else
+          to show. */}
+      {failure && items.length > 0 ? (
+        <div
+          role="alert"
+          className="mx-3 mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-none border border-destructive/40 bg-destructive/[0.04] px-3 py-2 text-[13px] text-destructive"
+        >
+          <Warning className="size-4 shrink-0" />
+          <span className="font-medium">{failure.headline}</span>
+          <span className="text-destructive/80">
+            {failure.needsReconnect
+              ? "This register is not being updated until you reconnect."
+              : "The last audit did not finish, so this register may be incomplete."}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="ml-auto h-7 border-destructive/40 px-2 text-[12px] text-destructive"
+            onClick={failure.needsReconnect ? onOpenConnectors : onScan}
+            disabled={!failure.needsReconnect && scanning}
+          >
+            {failure.needsReconnect ? "Reconnect Google" : "Run the audit again"}
+          </Button>
         </div>
       ) : null}
 
@@ -429,6 +682,60 @@ export function CommitmentQueue({
       ) : loading ? (
         <div className="flex flex-1 items-center justify-center gap-2 p-6 text-sm text-primary/55">
           <CircleNotch className="animate-spin" /> Loading commitments…
+        </div>
+      ) : scopeMissing ? (
+        <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
+          <h2 className="text-[20px] font-semibold leading-6 text-primary">
+            {view === "by_account" ? "Choose an account" : "Enter an owner"}
+          </h2>
+          <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+            {view === "by_account"
+              ? "Select one relationship to see its two-sided promise history."
+              : "Use a name or email to see what that person has promised."}
+          </p>
+        </div>
+      ) : filtered.length === 0 && scanning ? (
+        // Mid-scan the register is empty because nothing has been read yet, not
+        // because nothing was found. Saying "no promises were found" here reads
+        // as a result and it is the wrong one.
+        <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
+          <CircleNotch className="mb-3 size-7 animate-spin text-primary/40" />
+          <h2 className="text-[20px] font-semibold leading-6 text-primary">
+            Reading your last 90 days
+          </h2>
+          <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+            This takes a few minutes. You can keep working and come back.
+          </p>
+        </div>
+      ) : filtered.length === 0 && failure ? (
+        // The empty register and the reason for it, together.
+        <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
+          <Warning className="mb-3 size-7 text-destructive" />
+          <h2 className="text-[20px] font-semibold leading-6 text-primary">{failure.headline}</h2>
+          <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">{failure.detail}</p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            {failure.needsReconnect ? (
+              <Button
+                type="button"
+                size="sm"
+                className="bg-[#3478f6] text-white"
+                onClick={onOpenConnectors}
+              >
+                <Plugs /> Reconnect Google
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                className="bg-[#3478f6] text-white"
+                onClick={onScan}
+                disabled={scanning}
+              >
+                {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />}
+                Run the audit again
+              </Button>
+            )}
+          </div>
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[84px] text-center">
@@ -446,21 +753,23 @@ export function CommitmentQueue({
           </h2>
           <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
             {items.length === 0
-              ? sourceConnected(google)
+              ? googleConnected
                 ? "No explicit promises were found. Run another audit after new conversations or import reviewed meeting evidence."
-                : "Connect Gmail and Calendar to find who promised what, when it is due, and the exact evidence behind it."
+                : googleNeedsReconnect
+                  ? "Reconnect Google to resume finding who promised what, when it is due, and the exact evidence behind it."
+                  : "Connect Gmail and Calendar to find who promised what, when it is due, and the exact evidence behind it."
               : "Change the filter or search query."}
           </p>
           {items.length === 0 ? (
             <div className="mt-5 flex flex-wrap justify-center gap-2">
-              {!sourceConnected(google) ? (
+              {!googleConnected ? (
                 <Button
                   type="button"
                   size="sm"
                   className="bg-[#3478f6] text-white"
                   onClick={onOpenConnectors}
                 >
-                  <Plugs /> Connect Gmail &amp; Calendar
+                  <Plugs /> {googleNeedsReconnect ? "Reconnect Google" : "Connect Gmail & Calendar"}
                 </Button>
               ) : (
                 <Button
@@ -591,7 +900,7 @@ export function CommitmentQueue({
                   </td>
                   <td className="px-2 py-1.5">
                     <div className="flex items-center gap-1">
-                      {item.state === "candidate" ? (
+                      {item.acceptance === "candidate" ? (
                         <ActionButton
                           busy={busy === `${item.id}:internally_confirmed`}
                           disabled={busy !== null}
@@ -647,6 +956,24 @@ export function CommitmentQueue({
                 <X className="size-4" />
               </button>
               <span className="text-[12px] text-primary/45">Commitment record</span>
+              {/* One-pager §3: a record that cannot leave the tool cannot
+                  settle an argument. */}
+              {onExport ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="ml-auto h-7 px-2 text-[12px]"
+                  disabled={exporting}
+                  onClick={() => {
+                    setExporting(true);
+                    void onExport(selected).finally(() => setExporting(false));
+                  }}
+                >
+                  {exporting ? <CircleNotch className="animate-spin" /> : <Export />}
+                  Export record
+                </Button>
+              ) : null}
             </div>
             <div className="border-b border-border p-4">
               <div className="flex items-start gap-3">
@@ -662,7 +989,7 @@ export function CommitmentQueue({
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {(selected.urgency === "overdue" || selected.urgency === "due_soon") &&
-                selected.state !== "candidate" ? (
+                selected.acceptance !== "candidate" ? (
                   <Button
                     type="button"
                     size="sm"
@@ -717,9 +1044,7 @@ export function CommitmentQueue({
                 <Fact
                   label="Evidence missing"
                   value={
-                    selected.missingEvidence.length
-                      ? selected.missingEvidence.join(", ")
-                      : "Nothing"
+                    selected.missingEvidence.length ? selected.missingEvidence.join(", ") : "None"
                   }
                 />
               </dl>
@@ -745,6 +1070,7 @@ export function CommitmentQueue({
                   }
                 />
                 <DetailCard label="Promise status" value={statusLabel(selected.state)} />
+                <DetailCard label="Acceptance" value={acceptanceLabel(selected.acceptance)} />
                 <DetailCard
                   label="Evidence completeness"
                   value={
@@ -781,7 +1107,7 @@ export function CommitmentQueue({
                     </p>
                   ) : null}
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {selected.state === "candidate" ? (
+                    {selected.acceptance === "candidate" ? (
                       <ActionButton
                         busy={busy === `${selected.id}:internally_confirmed`}
                         disabled={busy !== null}
@@ -790,7 +1116,9 @@ export function CommitmentQueue({
                         <Check /> Confirm promise
                       </ActionButton>
                     ) : null}
-                    {["internally_confirmed", "offered", "disputed"].includes(selected.state) ? (
+                    {["internally_confirmed", "offered", "disputed"].includes(
+                      selected.acceptance,
+                    ) ? (
                       <ActionButton
                         busy={busy === `${selected.id}:accepted`}
                         disabled={busy !== null}
@@ -799,7 +1127,7 @@ export function CommitmentQueue({
                         <Check /> Mark accepted
                       </ActionButton>
                     ) : null}
-                    {selected.state === "accepted" || selected.state === "offered" ? (
+                    {selected.acceptance === "accepted" || selected.acceptance === "offered" ? (
                       <Button
                         type="button"
                         size="sm"
@@ -810,7 +1138,7 @@ export function CommitmentQueue({
                         Mark disputed
                       </Button>
                     ) : null}
-                    {selected.state === "accepted" ? (
+                    {selected.acceptance === "accepted" ? (
                       <Button
                         type="button"
                         size="sm"
@@ -825,7 +1153,7 @@ export function CommitmentQueue({
                         Mark blocked
                       </Button>
                     ) : null}
-                    {selected.state === "blocked" ? (
+                    {selected.blocker ? (
                       <Button
                         type="button"
                         size="sm"
@@ -836,7 +1164,8 @@ export function CommitmentQueue({
                         Unblock
                       </Button>
                     ) : null}
-                    {["internally_confirmed", "accepted", "blocked"].includes(selected.state) ? (
+                    {["internally_confirmed", "accepted"].includes(selected.acceptance) ||
+                    selected.blocker ? (
                       <Button
                         type="button"
                         size="sm"
@@ -936,9 +1265,10 @@ function StatusBadge({ state }: { state: string }) {
       variant="outline"
       className={cn(
         "rounded-[2px] capitalize",
-        state === "fulfilled" && "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
-        state === "blocked" && "border-amber-500/40 text-amber-600 dark:text-amber-400",
-        state === "disputed" && "border-red-500/40 text-red-600 dark:text-red-400",
+        state === "met" && "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
+        state === "at_risk" && "border-amber-500/40 text-amber-600 dark:text-amber-400",
+        (state === "missed" || state === "disputed") &&
+          "border-red-500/40 text-red-600 dark:text-red-400",
       )}
     >
       {statusLabel(state)}

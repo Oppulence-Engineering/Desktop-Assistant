@@ -8,9 +8,11 @@
 import { faker } from "@faker-js/faker";
 
 import type {
+  GetOpenPromisesReport200One,
   GetRevenueActionAudit200,
   GetRevenueActionSourceBody200,
   ListRevenueActions200,
+  ListRevenueLeakScans200,
   RevenueAction,
   RevenueDigest,
   RevenueImpact,
@@ -1919,6 +1921,39 @@ export const getGetRevenueImpactResponseMock = (
   ...overrideResponse,
 });
 
+export const getListRevenueLeakScansResponseMock = (
+  overrideResponse: Partial<Extract<ListRevenueLeakScans200, object>> = {},
+): ListRevenueLeakScans200 => ({
+  scans: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+    actionsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    candidatesSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    completedAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    error: faker.helpers.arrayElement([
+      faker.string.alpha({ length: { min: 10, max: 20 } }),
+      undefined,
+    ]),
+    evidencesCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    id: faker.string.uuid(),
+    lookbackDays: faker.number.int(),
+    mode: faker.helpers.arrayElement(["local", "linked"] as const),
+    relationshipsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    sourceFreshnessAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    startedAt: faker.helpers.arrayElement([
+      faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+      undefined,
+    ]),
+    status: faker.helpers.arrayElement(["pending", "running", "completed", "failed"] as const),
+    threadsSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  })),
+  ...overrideResponse,
+});
+
 export const getStartRevenueLeakScanResponseMock = (
   overrideResponse: Partial<Extract<RevenueLeakScan, object>> = {},
 ): RevenueLeakScan => ({
@@ -1980,6 +2015,59 @@ export const getGetRevenueLeakScanResponseMock = (
   threadsSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
   ...overrideResponse,
 });
+
+export const getGetOpenPromisesReportResponseMock = (
+  overrideResponse: Partial<Extract<GetOpenPromisesReport200One | string, object>> = {},
+): GetOpenPromisesReport200One | string =>
+  faker.helpers.arrayElement([
+    {
+      byAccount: {
+        [faker.string.alphanumeric(5)]: faker.number.int(),
+      },
+      generatedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+      inboundCount: faker.number.int(),
+      items: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+        () => ({
+          account: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          commitmentId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          direction: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          dueAt: faker.helpers.arrayElement([
+            faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+            undefined,
+          ]),
+          duePhrase: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          occurredAt: faker.helpers.arrayElement([
+            faker.date.past().toISOString().slice(0, 19) + "Z",
+            undefined,
+          ]),
+          owner: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          sourceQuote: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          sourceUri: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          state: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          text: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        }),
+      ),
+      lookbackDays: faker.number.int(),
+      outboundCount: faker.number.int(),
+      scanStatus: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      threadsSeen: faker.number.int(),
+      truncated: faker.datatype.boolean(),
+      ...overrideResponse,
+    },
+    faker.word.sample(),
+  ]);
 
 export const getRevenueSemanticSearchResponseMock = (
   overrideResponse: Partial<Extract<RevenueSemanticSearch200, object>> = {},

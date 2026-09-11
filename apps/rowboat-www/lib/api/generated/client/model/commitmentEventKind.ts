@@ -23,6 +23,8 @@ export const CommitmentEventKind = {
   due_date_changed: "due_date_changed",
   renegotiated: "renegotiated",
   fulfilled: "fulfilled",
+  missed: "missed",
+  waived: "waived",
   cancelled: "cancelled",
   superseded: "superseded",
 } as const;

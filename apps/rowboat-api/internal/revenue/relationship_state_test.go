@@ -581,6 +581,22 @@ func TestPublicMailboxDomainsNeverMergeUnrelatedPeople(t *testing.T) {
 	}
 }
 
+func TestGmailObservationRepairsLegacyPublicMailboxCompany(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 9, 12, 0, 0, 0, time.UTC)
+	inputs := []RelationshipObservationInput{
+		{DisplayName: "Alexis Serra", PrimaryEmail: "alexisyserra@gmail.com", PreferredKind: "company", Source: "gmail", ExternalID: "legacy", EventType: "thread", OccurredAt: now},
+		{DisplayName: "Alexis Serra", PrimaryEmail: "alexisyserra@gmail.com", PreferredKind: "person", Source: "gmail", ExternalID: "current", EventType: "thread", OccurredAt: now.Add(time.Minute)},
+	}
+	results, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, inputs)
+	if err != nil {
+		t.Fatalf("ingest gmail observations: %v", err)
+	}
+	if results[0].Relationship.ID != results[1].Relationship.ID || results[1].Relationship.Kind != "person" {
+		t.Fatalf("gmail person must repair the legacy company: %#v", results)
+	}
+}
+
 func TestCorporateDomainDoesNotCollapsePersonRelationships(t *testing.T) {
 	f := newFixture(t)
 	avery, err := f.svc.CreateRelationship(f.ctx, f.user, RelationshipInput{

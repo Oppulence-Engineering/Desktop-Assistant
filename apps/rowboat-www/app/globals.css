@@ -7094,7 +7094,9 @@
     justify-content: center;
     gap: 10px;
     background: var(--attio-soft);
-    color: #9aa4b1;
+    /* #9aa4b1 on this band is 2.41:1. WCAG AA wants 4.5:1 for body text, and
+       axe fails the marketing home on it. #6b7280 reads 4.63:1. */
+    color: #6b7280;
     font-size: 18px;
     font-weight: 500;
     letter-spacing: -0.019em;
@@ -7104,7 +7106,9 @@
   .sm-attio-logo-grid svg {
     width: 20px;
     height: 20px;
-    color: #aab3bf;
+    /* The mark stays lighter than its label, but not so light that it reads as
+       disabled beside the darkened text. */
+    color: #8b95a3;
   }
 
   /* Shared section rhythm. Attio alternates #ffffff and #fafafb bands and

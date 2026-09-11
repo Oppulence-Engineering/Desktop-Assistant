@@ -157,8 +157,10 @@ func (s *Service) ReportSourceAuthorization(ctx context.Context, u *ent.User, so
 		granted := sortedUniqueStrings(in.GrantedScopes)
 		missing := differenceStrings(status.RequiredScopes, granted)
 		update.SetStatus("connected").SetAuthorizedAt(now).SetGrantedScopes(granted).
-			SetMissingScopes(missing).SetCompleteness("partial").ClearLastError().ClearErrorCode().
-			ClearDisconnectedAt().ClearRevokedAt()
+			SetMissingScopes(missing).SetCompleteness("partial").SetBackfillPhase("idle").
+			SetBackfillCompleted(0).SetBackfillTotal(0).SetRetryCount(0).
+			ClearSyncStartedAt().ClearBackfillCompletedAt().ClearLastFailedSyncAt().ClearNextRetryAt().
+			ClearLastError().ClearErrorCode().ClearDisconnectedAt().ClearRevokedAt()
 		event.Name, event.Outcome, event.ReasonCode = "source_authorization_succeeded", "succeeded", "provider_consent"
 	case "canceled":
 		update.SetStatus("not_connected").SetCompleteness("partial").SetErrorCode("authorization_canceled").
@@ -350,6 +352,46 @@ func (s *Service) MarkSourceSyncFailure(
 	return updated, err
 }
 
+// MarkSourceGrantFailure marks every connected account of one source as needing
+// reconnection, and creates none.
+//
+// A provider grant is held per user, not per account: one dead Google
+// authorization stops every mailbox under it. Reporting the failure against a
+// synthetic "default" account instead left a row that described no real
+// connection — so reconnecting, which updates the accounts that actually exist,
+// could never clear it, and the product went on telling a user who had just
+// reconnected that Google still needed reconnecting.
+//
+// Returns how many accounts were marked. Zero means the source has no accounts
+// yet, which is not an error: there is nothing to reconnect.
+func (s *Service) MarkSourceGrantFailure(
+	ctx context.Context,
+	u *ent.User,
+	source string,
+	errorCode string,
+) (int, error) {
+	ws, err := s.currentWorkspaceWithCapability(ctx, u, WorkspaceManageSources)
+	if err != nil {
+		return 0, err
+	}
+	source = canonicalSource(source)
+	rows, err := s.client.RelationshipSourceStatus.Query().Where(
+		relationshipsourcestatus.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+		relationshipsourcestatus.SourceEQ(source),
+	).All(ctx)
+	if err != nil {
+		return 0, err
+	}
+	marked := 0
+	for _, row := range rows {
+		if _, err := s.MarkSourceSyncFailure(ctx, u, source, row.SourceAccountID, errorCode); err != nil {
+			return marked, err
+		}
+		marked++
+	}
+	return marked, nil
+}
+
 // MarkSourceDisconnected makes an operator disconnect sticky and clears all
 // resumable provider cursors.
 func (s *Service) MarkSourceDisconnected(
@@ -384,6 +426,34 @@ func (s *Service) MarkSourceDisconnected(
 	})
 	_ = s.RefreshRelationshipAttention(ctx, u)
 	return updated, nil
+}
+
+// MarkSourceAccountsDisconnected disconnects every existing account for a
+// user-level provider grant and creates no synthetic source rows.
+func (s *Service) MarkSourceAccountsDisconnected(
+	ctx context.Context,
+	u *ent.User,
+	source string,
+) (int, error) {
+	source = canonicalSource(source)
+	if err := validateBetaSource(source); err != nil {
+		return 0, err
+	}
+	statuses, err := s.RelationshipSourceStatuses(ctx, u)
+	if err != nil {
+		return 0, err
+	}
+	marked := 0
+	for _, status := range statuses {
+		if canonicalSource(status.Source) != source {
+			continue
+		}
+		if _, err := s.MarkSourceDisconnected(ctx, u, source, status.SourceAccountID); err != nil {
+			return marked, err
+		}
+		marked++
+	}
+	return marked, nil
 }
 
 func (s *Service) ensureSourceStatus(
@@ -461,10 +531,20 @@ func applySourceFreshness(status *ent.RelationshipSourceStatus, now time.Time) {
 	}
 	status.LagSeconds = int64(lag.Seconds())
 	boundary := time.Duration(status.ExpectedCadenceSeconds*2) * time.Second
-	if lag > boundary {
-		status.Status = "stale"
-		status.Completeness = "stale"
+	if lag <= boundary {
+		return
 	}
+	// Staleness is derived from the clock and must never overwrite a state that
+	// asks the user for something. A grant that needs reconnecting always goes
+	// stale — no sync can succeed without it — so relabelling it "stale" hid
+	// the one fact the user could act on behind the symptom it causes. The lag
+	// is still recorded; only the headline state is protected.
+	if status.Status == "reconnect_required" {
+		status.Completeness = "stale"
+		return
+	}
+	status.Status = "stale"
+	status.Completeness = "stale"
 }
 
 func canonicalSource(source string) string {

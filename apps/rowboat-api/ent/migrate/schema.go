@@ -992,6 +992,18 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "commitment_status_due_at_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{CommitmentsColumns[5], CommitmentsColumns[6], CommitmentsColumns[20]},
+			},
+			{
+				Name:    "commitment_direction_status_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{CommitmentsColumns[3], CommitmentsColumns[5], CommitmentsColumns[20]},
+			},
+		},
 	}
 	// CommitmentDependenciesColumns holds the columns for the "commitment_dependencies" table.
 	CommitmentDependenciesColumns = []*schema.Column{
@@ -3514,6 +3526,11 @@ var (
 		{Name: "relationships_created", Type: field.TypeInt, Default: 0},
 		{Name: "evidences_created", Type: field.TypeInt, Default: 0},
 		{Name: "actions_created", Type: field.TypeInt, Default: 0},
+		{Name: "commitments_created", Type: field.TypeInt, Default: 0},
+		{Name: "threads_deep_read", Type: field.TypeInt, Default: 0},
+		{Name: "threads_snippet_only", Type: field.TypeInt, Default: 0},
+		{Name: "threads_skipped", Type: field.TypeInt, Default: 0},
+		{Name: "extraction_failures", Type: field.TypeInt, Default: 0},
 		{Name: "started_at", Type: field.TypeTime, Nullable: true},
 		{Name: "completed_at", Type: field.TypeTime, Nullable: true},
 		{Name: "error", Type: field.TypeString, Nullable: true, Size: 2147483647},
@@ -3529,13 +3546,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "revenue_leak_scans_revenue_workspaces_scans",
-				Columns:    []*schema.Column{RevenueLeakScansColumns[16]},
+				Columns:    []*schema.Column{RevenueLeakScansColumns[21]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "revenue_leak_scans_users_revenue_leak_scans",
-				Columns:    []*schema.Column{RevenueLeakScansColumns[17]},
+				Columns:    []*schema.Column{RevenueLeakScansColumns[22]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -3544,7 +3561,7 @@ var (
 			{
 				Name:    "revenueleakscan_status_revenue_workspace_id",
 				Unique:  false,
-				Columns: []*schema.Column{RevenueLeakScansColumns[3], RevenueLeakScansColumns[16]},
+				Columns: []*schema.Column{RevenueLeakScansColumns[3], RevenueLeakScansColumns[21]},
 			},
 			{
 				Name:    "revenueleakscan_active_claim",

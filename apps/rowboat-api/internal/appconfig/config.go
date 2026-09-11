@@ -333,15 +333,19 @@ type Config struct {
 	// provider webhooks) is always mounted; ROUTING — the Temporal workflow that
 	// matches events to tasks via LLM and fires trigger=event runs — is gated.
 	// Routing requires Temporal, exactly like the run path.
-	CloudEventsRoutingEnabled  bool
-	CloudEventsMatchThreshold  float64 // pass-2 confidence gate; fixed in v1
-	CloudEventsRouterModel     string  // model for pass-1/pass-2 routing calls
-	CloudEventsMaxPayloadBytes int     // reject larger payloads before sealing
-	SlackSigningSecret         string  // verifies /v1/webhooks/slack signatures
-	GoogleWebhookToken         string  // shared token for /v1/webhooks/google
-	GoogleWebhookOIDCAudience  string  // expected aud on authenticated Gmail Pub/Sub pushes
-	GoogleWebhookOIDCEmail     string  // expected service-account email on Gmail Pub/Sub pushes
-	WebhookSigningSecret       string  // verifies /v1/webhooks/events HMACs
+	CloudEventsRoutingEnabled bool
+	CloudEventsMatchThreshold float64 // pass-2 confidence gate; fixed in v1
+	CloudEventsRouterModel    string  // model for pass-1/pass-2 routing calls
+	// RevenuePromiseExtractionModel reads mail bodies during a leak scan to
+	// propose promises the deterministic rules miss. Blank disables extraction
+	// and leaves the scan deterministic-only.
+	RevenuePromiseExtractionModel string
+	CloudEventsMaxPayloadBytes    int    // reject larger payloads before sealing
+	SlackSigningSecret            string // verifies /v1/webhooks/slack signatures
+	GoogleWebhookToken            string // shared token for /v1/webhooks/google
+	GoogleWebhookOIDCAudience     string // expected aud on authenticated Gmail Pub/Sub pushes
+	GoogleWebhookOIDCEmail        string // expected service-account email on Gmail Pub/Sub pushes
+	WebhookSigningSecret          string // verifies /v1/webhooks/events HMACs
 
 	// Web search backs the durable-agent web.search tool (Tavily-shaped API).
 	// Empty WebSearchAPIKey disables the tool (it reports itself unavailable).
@@ -902,13 +906,16 @@ func Load() Config {
 		CloudEventsMatchThreshold: getfloat("CLOUD_EVENTS_MATCH_THRESHOLD", 0.7),
 		// Routing is two cheap bounded calls per event; default to the cheapest
 		// priced model (see internal/pricing DefaultTable).
-		CloudEventsRouterModel:     getenv("CLOUD_EVENTS_ROUTER_MODEL", defaultRouterModel),
-		CloudEventsMaxPayloadBytes: getint("CLOUD_EVENTS_MAX_PAYLOAD_BYTES", 256<<10),
-		SlackSigningSecret:         getenv("SLACK_SIGNING_SECRET", ""),
-		GoogleWebhookToken:         getenv("GOOGLE_WEBHOOK_TOKEN", ""),
-		GoogleWebhookOIDCAudience:  getenv("GOOGLE_WEBHOOK_OIDC_AUDIENCE", ""),
-		GoogleWebhookOIDCEmail:     getenv("GOOGLE_WEBHOOK_OIDC_SERVICE_ACCOUNT", ""),
-		WebhookSigningSecret:       getenv("WEBHOOK_SIGNING_SECRET", ""),
+		CloudEventsRouterModel: getenv("CLOUD_EVENTS_ROUTER_MODEL", defaultRouterModel),
+		// Extraction is a small, high-volume classification over one message,
+		// so it follows the cheaper router model rather than the default.
+		RevenuePromiseExtractionModel: getenv("REVENUE_PROMISE_EXTRACTION_MODEL", defaultRouterModel),
+		CloudEventsMaxPayloadBytes:    getint("CLOUD_EVENTS_MAX_PAYLOAD_BYTES", 256<<10),
+		SlackSigningSecret:            getenv("SLACK_SIGNING_SECRET", ""),
+		GoogleWebhookToken:            getenv("GOOGLE_WEBHOOK_TOKEN", ""),
+		GoogleWebhookOIDCAudience:     getenv("GOOGLE_WEBHOOK_OIDC_AUDIENCE", ""),
+		GoogleWebhookOIDCEmail:        getenv("GOOGLE_WEBHOOK_OIDC_SERVICE_ACCOUNT", ""),
+		WebhookSigningSecret:          getenv("WEBHOOK_SIGNING_SECRET", ""),
 
 		WebSearchAPIURL: getenv("WEB_SEARCH_API_URL", "https://api.tavily.com/search"),
 		WebSearchAPIKey: getenv("WEB_SEARCH_API_KEY", ""),

@@ -62,6 +62,28 @@ func (s *Service) SetSweeper(sw ThreadSweeper) { s.sweeper = sw }
 // running for the workspace.
 var ErrScanUnavailable = errors.New("revenue: scan unavailable")
 
+// UserSafeScanError keeps provider and implementation details in the audit
+// record while returning only actionable text to product and agent surfaces.
+func UserSafeScanError(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	lower := strings.ToLower(raw)
+	if strings.Contains(lower, "invalid_grant") || strings.Contains(lower, "invalid authentication") ||
+		strings.Contains(lower, "returned 401") || strings.Contains(lower, "returned 403") {
+		return "Google reported invalid authentication; reconnect is required."
+	}
+	switch raw {
+	case "scan abandoned (process restart)":
+		return "The audit stopped during a restart. Run it again."
+	case "scan aborted by an internal error":
+		return "The audit stopped because of an internal error. Run it again."
+	default:
+		return "The audit did not finish. Try again or check the connected source."
+	}
+}
+
 // StartScan creates the scan row and runs the bounded sweep in the
 // background; GET /v1/revenue-leak-scans/{id} polls progress. One running
 // scan per workspace at a time.
@@ -181,6 +203,21 @@ func (s *Service) GetScan(ctx context.Context, id uuid.UUID) (*ent.RevenueLeakSc
 	return scan, err
 }
 
+// ListScans returns the caller's persisted audit history newest first.
+func (s *Service) ListScans(ctx context.Context, u *ent.User, limit int) ([]*ent.RevenueLeakScan, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	return s.client.RevenueLeakScan.Query().
+		Where(revenueleakscan.HasUserWith(user.IDEQ(u.ID))).
+		Order(ent.Desc(revenueleakscan.FieldCreatedAt)).
+		Limit(limit).
+		All(ctx)
+}
+
 // runScan performs the sweep, detection, and queue writes, then finalizes the
 // scan row. Errors mark the scan failed; partial progress is kept (actions
 // already written stay — they dedupe on rerun).
@@ -196,6 +233,11 @@ func (s *Service) runScan(ctx context.Context, u *ent.User, scan *ent.RevenueLea
 		SetRelationshipsCreated(stats.relationships).
 		SetEvidencesCreated(stats.evidences).
 		SetActionsCreated(stats.actions).
+		SetCommitmentsCreated(stats.commitments).
+		SetThreadsDeepRead(stats.deepRead).
+		SetThreadsSnippetOnly(stats.snippetOnly).
+		SetThreadsSkipped(stats.skipped).
+		SetExtractionFailures(stats.aiFailed).
 		ClearActiveClaim().
 		SetCompletedAt(s.now())
 	if stats.freshest != nil {
@@ -209,6 +251,19 @@ func (s *Service) runScan(ctx context.Context, u *ent.User, scan *ent.RevenueLea
 		}
 		upd.SetStatus("failed").SetError(msg)
 		revenuemetrics.Scans.WithLabelValues("failed", scan.Mode).Inc()
+		// A dead Google grant is the one scan failure the user can fix, and the
+		// only one they must be told about. Recording it on the scan row alone
+		// buried it on the audits screen while every other surface kept
+		// reporting the connection as healthy — so the register looked empty
+		// for no visible reason and "reconnect Google" was never suggested.
+		if googleapi.IsAuthError(err) {
+			// Every Google account, not a synthetic "default" one: the grant is
+			// held per user, so its death stops all of them, and a row for an
+			// account that does not exist is a row no reconnect can clear.
+			if _, merr := s.MarkSourceGrantFailure(ctx, u, "google", "invalid_grant"); merr != nil {
+				s.log.Error("revenue: mark google reconnect required", zap.Error(merr))
+			}
+		}
 	} else {
 		upd.SetStatus("completed")
 		revenuemetrics.Scans.WithLabelValues("completed", scan.Mode).Inc()
@@ -224,7 +279,25 @@ type scanStats struct {
 	relationships int
 	evidences     int
 	actions       int
-	freshest      *time.Time
+	commitments   int
+	// Coverage. threads counts everything swept; these say how much of it was
+	// actually examined, so a scan cannot claim a depth it did not have.
+	deepRead    int
+	snippetOnly int
+	skipped     int
+	// Model spend and yield for one scan: how many messages were read by the
+	// extractor, and how many promises it proposed.
+	aiCalls    int
+	aiProposed int
+	// ruleProposed counts promises the deterministic rules found that the
+	// model did not, which is the only honest way to know whether the fallback
+	// still earns its place.
+	ruleProposed int
+	// aiFailed counts messages the model could not read — a billing failure,
+	// an outage, a timeout. Without it the audit silently degrades to rules
+	// and reports its results as if the model had looked and found nothing.
+	aiFailed int
+	freshest *time.Time
 }
 
 func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLeakScan) (scanStats, error) {
@@ -262,7 +335,26 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 	for _, msgs := range threads {
 		stats.threads++
 		sum := summarizeThread(selfEmail, msgs)
-		if sum == nil {
+		if sum == nil || sum.OutboundCount == 0 {
+			// Not judged at all: no external counterparty (self-mail, or every
+			// participant a no-reply address), or nothing outbound to promise
+			// with. Sampled into the log so the share is diagnosable rather
+			// than guessed at.
+			stats.skipped++
+			if stats.skipped <= scanSkipLogSample {
+				reason := "no_external_counterparty"
+				if sum != nil {
+					reason = "no_outbound_message"
+				}
+				s.log.Info("revenue: scan skipped thread",
+					zap.String("reason", reason),
+					zap.Int("messages", len(msgs)),
+					zap.Strings("firstMessageLabels", msgs[0].Labels),
+					zap.Bool("firstMessageOutbound", msgs[0].Outbound),
+					zap.Bool("hasFrom", strings.TrimSpace(msgs[0].From) != ""),
+					zap.Bool("hasTo", strings.TrimSpace(msgs[0].To) != ""),
+					zap.String("threadId", msgs[0].ThreadID))
+			}
 			continue
 		}
 		if stats.freshest == nil || sum.LastAt.After(*stats.freshest) {
@@ -290,12 +382,58 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 			}
 		}
 		hit := detectThread(sum, now)
-		anchor := lastMessage(sum)
-		promiseText := anchor.Snippet
-		if body, err := s.MessageBody(ctx, u, anchor.ID); err == nil {
-			promiseText = body
+		if hit == nil {
+			if err := s.resolveScanAction(ctx, ws.ID, sum); err != nil {
+				s.log.Warn("revenue: resolve stale scan action", zap.Error(err))
+			}
 		}
-		promise := detectExplicitCommitment(sum, promiseText)
+		// Look through the thread, not only its final message.
+		//
+		// A promise is made once and then buried by whatever was said after
+		// it: "I'll send the contract Friday" in message three of a ten
+		// message thread was invisible, because only the last message was ever
+		// read. Same detector, same evidence rules, same one-commitment-per-
+		// thread cap — it simply stops discarding the messages the promise was
+		// actually in.
+		// The model reads first. A rule can only match phrasings somebody
+		// thought of in advance, and the measured cost of that was most real
+		// promises: "I'll get you the report", "we'll turn that around" and
+		// anything with an adverb in it were all invisible to the pattern.
+		//
+		// The rules stay as the floor, not the gate. They run when there is no
+		// extractor, when the model is over its budget for this scan, when it
+		// errors, and when it proposes nothing — so extraction degrades to
+		// deterministic rather than disappearing.
+		var anchor googleapi.GmailThreadMessage
+		var promise *scannedCommitment
+		readBody := false
+		if s.promiseExtractor != nil && stats.aiCalls < scanMaxAIExtractions {
+			proposed, spent, failed := s.proposePromise(ctx, u, sum, scan.ID, scanMaxAIExtractions-stats.aiCalls)
+			stats.aiFailed += failed
+			// Every message read costs a call, so the budget is spent in
+			// messages. Counting threads instead would have let one long
+			// thread quietly cost twelve times what it appeared to.
+			stats.aiCalls += spent
+			if proposed != nil {
+				anchor, promise, readBody = proposed.anchor, proposed.promise, true
+				stats.aiProposed++
+			}
+		}
+		if promise == nil {
+			var ruleRead bool
+			anchor, promise, ruleRead = s.findExplicitCommitment(ctx, u, sum)
+			readBody = readBody || ruleRead
+			if promise != nil {
+				stats.ruleProposed++
+			}
+		}
+		if readBody {
+			stats.deepRead++
+		} else {
+			// Judged on a ~200 character Gmail snippet, because the body was
+			// not available. Most promises do not survive that truncation.
+			stats.snippetOnly++
+		}
 		if hit == nil && promise != nil {
 			anchor.Snippet = promise.Text
 			hit = &detectorHit{
@@ -328,7 +466,7 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		if stats.actions >= scanMaxActions {
 			break
 		}
-		created, madeRel, madeEv, err := s.materializeHit(ctx, u, c.sum, c.hit)
+		created, madeRel, madeEv, madeCommitment, err := s.materializeHit(ctx, u, c.sum, c.hit)
 		if err != nil {
 			s.log.Warn("revenue: materialize scan hit", zap.String("detector", c.hit.Detector), zap.Error(err))
 			continue
@@ -338,6 +476,9 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 		}
 		if madeEv {
 			stats.evidences++
+		}
+		if madeCommitment {
+			stats.commitments++
 		}
 		if created {
 			stats.actions++
@@ -351,18 +492,36 @@ func (s *Service) scanOnce(ctx context.Context, u *ent.User, scan *ent.RevenueLe
 	return stats, nil
 }
 
+// resolveScanAction removes a recommendation when newer mail proves its
+// detector no longer applies. It does not touch writes already in flight.
+func (s *Service) resolveScanAction(ctx context.Context, workspaceID uuid.UUID, sum *threadSummary) error {
+	_, err := s.client.RevenueAction.Update().
+		Where(
+			revenueaction.DedupeKeyEQ("scan:"+sum.ThreadID),
+			revenueaction.QueueStatusIn(QueueOpen, QueueSnoozed),
+			revenueaction.ExecutionStatusEQ(ExecPending),
+			revenueaction.HasWorkspaceWith(revenueworkspace.IDEQ(workspaceID)),
+			revenueaction.HasEvidencesWith(revenueevidence.OccurredAtLT(sum.LastAt)),
+		).
+		SetQueueStatus(QueueDismissed).
+		SetDismissReason("resolved_by_new_evidence").
+		ClearSnoozedUntil().
+		Save(ctx)
+	return err
+}
+
 // materializeHit writes relationship + evidence + queue action for one
 // detector hit. Reruns dedupe: the relationship by primary email, the
 // evidence by (source, record, hash), the action by its dedupe key.
-func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSummary, hit *detectorHit) (createdAction, createdRel, createdEv bool, err error) {
+func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSummary, hit *detectorHit) (createdAction, createdRel, createdEv, createdCommitment bool, err error) {
 	ws, err := s.CurrentWorkspace(ctx, u)
 	if err != nil {
-		return false, false, false, err
+		return false, false, false, createdCommitment, err
 	}
 	resolution := threadRelationshipInput(sum)
 	rel, linkedPersons, createdRel, err := s.syncThreadRelationshipWithPeople(ctx, u, ws, sum)
 	if err != nil {
-		return false, false, false, err
+		return false, false, false, createdCommitment, err
 	}
 
 	// An account whose identity is under review must not generate queue work: the
@@ -371,12 +530,12 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 	// declining to create keeps the queue honest rather than merely safe.
 	unresolved, err := s.relationshipHasUnresolvedIdentity(ctx, rel.ID)
 	if err != nil {
-		return false, createdRel, false, err
+		return false, createdRel, false, createdCommitment, err
 	}
 	if unresolved {
 		s.log.Info("revenue: scan hit deferred pending identity review",
 			zap.String("relationship", rel.ID.String()))
-		return false, createdRel, false, nil
+		return false, createdRel, false, createdCommitment, nil
 	}
 
 	anchorHash := sha256.Sum256([]byte(hit.Anchor.ID + ":" + hit.Anchor.Snippet))
@@ -404,10 +563,10 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 			revenueevidence.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
 		).Only(ctx)
 		if err != nil {
-			return false, createdRel, false, err
+			return false, createdRel, false, createdCommitment, err
 		}
 	default:
-		return false, createdRel, false, err
+		return false, createdRel, false, createdCommitment, err
 	}
 
 	// The evidence row's (source, record, content hash) uniqueness is the scan's
@@ -419,17 +578,17 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 			if err = countParticipantInteraction(
 				ctx, s.client, ws, u, rel, linkedPersons[participant.Email], resolution, participant,
 			); err != nil {
-				return false, createdRel, createdEv, err
+				return false, createdRel, createdEv, createdCommitment, err
 			}
 		}
 	}
 	if hit.Commitment != nil {
-		if err = s.materializeScannedCommitment(ctx, u, ws, rel, ev, *hit.Commitment); err != nil {
-			return false, createdRel, createdEv, err
+		if createdCommitment, err = s.materializeScannedCommitment(ctx, u, ws, rel, ev, *hit.Commitment); err != nil {
+			return false, createdRel, createdEv, createdCommitment, err
 		}
 	}
 	if hit.ActionType == "" {
-		return false, createdRel, createdEv, nil
+		return false, createdRel, createdEv, createdCommitment, nil
 	}
 
 	// Thread-scoped, NOT detector-scoped: a thread yields at most one queue
@@ -441,7 +600,7 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 		Where(revenueaction.DedupeKeyEQ(dedupeKey)).
 		Exist(ctx)
 	if err != nil {
-		return false, createdRel, createdEv, err
+		return false, createdRel, createdEv, createdCommitment, err
 	}
 	action, err := s.CreateAction(ctx, u, ActionInput{
 		RelationshipID:  rel.ID,
@@ -458,14 +617,14 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 		PriorityParts:   hit.Components,
 	})
 	if err != nil {
-		return false, createdRel, createdEv, err
+		return false, createdRel, createdEv, createdCommitment, err
 	}
 	createdAction = !existed
 	if existed {
 		if current, queryErr := action.QueryRelationship().Only(ctx); queryErr == nil && current.ID != rel.ID {
 			action, err = action.Update().SetRelationship(rel).Save(ctx)
 			if err != nil {
-				return false, createdRel, createdEv, err
+				return false, createdRel, createdEv, createdCommitment, err
 			}
 		}
 	}
@@ -473,7 +632,7 @@ func (s *Service) materializeHit(ctx context.Context, u *ent.User, sum *threadSu
 		// Best-effort evidence link; the action stands without it.
 		_ = s.client.RevenueAction.UpdateOneID(action.ID).AddEvidences(ev).Exec(ctx)
 	}
-	return createdAction, createdRel, createdEv, nil
+	return createdAction, createdRel, createdEv, createdCommitment, nil
 }
 
 func threadRelationshipInput(sum *threadSummary) RelationshipObservationInput {
@@ -484,7 +643,8 @@ func threadRelationshipInput(sum *threadSummary) RelationshipObservationInput {
 	}
 	return RelationshipObservationInput{
 		DisplayName: displayName, PrimaryEmail: primaryEmail, AccountDomain: domain,
-		PreferredKind: kind, Source: "gmail", OccurredAt: sum.LastAt, ReceivedAt: sum.LastAt,
+		PreferredKind: kind, Source: "gmail", ExternalID: sum.ThreadID,
+		OccurredAt: sum.LastAt, ReceivedAt: sum.LastAt,
 		Channel: "email", Direction: directionOf(sum.LastOutbound),
 		Participants: []RelationshipParticipantInput{{
 			DisplayName: coalesce(sum.CounterpartyName, sum.Counterparty),
@@ -615,12 +775,12 @@ func (s *Service) materializeScannedCommitment(
 	rel *ent.Relationship,
 	ev *ent.RevenueEvidence,
 	draft scannedCommitment,
-) error {
+) (bool, error) {
 	exists, err := s.client.Commitment.Query().Where(
 		commitment.HasEvidencesWith(revenueevidence.IDEQ(ev.ID)),
 	).Exist(ctx)
 	if err != nil || exists {
-		return err
+		return false, err
 	}
 	payload, err := json.Marshal(map[string]string{
 		"action":                     draft.Text,
@@ -628,47 +788,47 @@ func (s *Service) materializeScannedCommitment(
 		"counterpartyParticipantRef": draft.CounterpartyRef,
 	})
 	if err != nil {
-		return err
+		return false, err
 	}
 	tx, err := s.client.Tx(ctx)
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer func() { _ = tx.Rollback() }()
 	txc := tx.Client()
 	txws, err := txc.RevenueWorkspace.Get(ctx, ws.ID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	txu, err := txc.User.Get(ctx, u.ID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	txrel, err := txc.Relationship.Get(ctx, rel.ID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	txev, err := txc.RevenueEvidence.Get(ctx, ev.ID)
 	if err != nil {
-		return err
+		return false, err
 	}
 	row, err := txc.Commitment.Create().
 		SetWorkspace(txws).SetRelationship(txrel).SetUser(txu).
 		SetDirection(draft.Direction).SetText(draft.Text).SetConfidence(1).
 		SetOwnerParticipantRef(draft.OwnerRef).SetCounterpartyParticipantRef(draft.CounterpartyRef).
-		SetSourcePhrase(draft.Text).SetAcceptance("candidate").SetCurrentEventVersion(1).
+		SetSourcePhrase(draft.sourcePhrase()).SetAcceptance("candidate").SetCurrentEventVersion(1).
 		AddEvidences(txev).Save(ctx)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if _, err = txc.CommitmentEvent.Create().
 		SetWorkspace(txws).SetRelationship(txrel).SetUser(txu).SetCommitment(row).
 		SetSourceEventID("gmail-commitment:" + ev.ID.String()).SetVersion(1).SetKind("proposed").
 		SetActorType("deterministic_rule").SetActorRef("gmail-scan").SetOccurredAt(ev.OccurredAt.UTC()).
 		SetEvidenceRefs([]string{"revenue-evidence:" + ev.ID.String()}).SetPayloadJSON(string(payload)).Save(ctx); err != nil {
-		return err
+		return false, err
 	}
-	return tx.Commit()
+	return true, tx.Commit()
 }
 
 // directionOf maps a thread's latest message onto the interaction direction the
@@ -713,18 +873,205 @@ type scannedCommitment struct {
 	Text            string
 	OwnerRef        string
 	CounterpartyRef string
+	// SourcePhrase is the sender's own sentence. A reviewer has to read what
+	// was actually written, not a summary of it — that is what makes the
+	// review a check on the extraction rather than a vote of confidence in it.
+	// Empty means Text is already the verbatim sentence, which is true of the
+	// deterministic detector.
+	SourcePhrase string
+}
+
+// sourcePhrase is the sentence a reviewer sees.
+func (c scannedCommitment) sourcePhrase() string {
+	if strings.TrimSpace(c.SourcePhrase) != "" {
+		return c.SourcePhrase
+	}
+	return c.Text
 }
 
 var (
-	proposalRe           = regexp.MustCompile(`(?i)\b(proposal|quote|quotation|pricing|estimate|contract|sow|statement of work|invoice)\b`)
-	followUpRe           = regexp.MustCompile(`(?i)\b(follow up|follow-up|circle back|check back|touch base|reconnect|next (week|month|quarter))\b`)
-	introRe              = regexp.MustCompile(`(?i)\b(intro|introduc|referr|connect(ing)? you|looping in|cc'?ing)\b`)
-	askRe                = regexp.MustCompile(`(?i)(\?|can you|could you|would you|let me know|what do you think|any update|thoughts)`)
-	explicitCommitmentRe = regexp.MustCompile(`(?i)\b(i|we)(['’]ll|\s+(will|shall|commit(ted)? to|promise(d)? to|agree(d)? to))\s+(send|share|deliver|provide|complete|finish|review|schedule|book|call|email|follow up|update|prepare|resolve|fix|return|introduce|connect|pay|sign|submit|confirm)\b`)
+	proposalRe   = regexp.MustCompile(`(?i)\b(proposal|quote|quotation|pricing|estimate|contract|sow|statement of work|invoice)\b`)
+	followUpRe   = regexp.MustCompile(`(?i)\b(follow up|follow-up|circle back|check back|touch base|reconnect|next (week|month|quarter))\b`)
+	introRe      = regexp.MustCompile(`(?i)\b(intro|introduc|referr|connect(ing)? you|looping in|cc'?ing)\b`)
+	askRe        = regexp.MustCompile(`(?i)(\?|can you|could you|would you|let me know|what do you think|any update|thoughts)`)
+	closedLoopRe = regexp.MustCompile(`(?i)\b(no (payment|action|response|reply) (is )?required|unsubscribe|manage (your )?email preferences)\b`)
+	// An explicit first-person promise: who + a committing modal + a verb that
+	// delivers something. Measured against commitment_corpus_test.go, which is
+	// the gate — precision must stay perfect, recall is allowed to rise.
+	//
+	// Three things the original shape got wrong, each costing real promises:
+	// the verb had to follow the modal immediately, so "I'll DEFINITELY send"
+	// missed; the verb list held twenty-one words, so ordinary ones like get,
+	// have, put together and turn around missed; and multi-word verbs had to be
+	// spelled out to match at all.
+	//
+	// Subject stays "i" or "we" on purpose. "They will send the contract" and
+	// "Legal will review the redlines" are somebody else's promise, and
+	// recording them as ours is exactly the confidently-wrong claim §6 forbids.
+	explicitCommitmentRe = regexp.MustCompile(`(?i)\b(i|we)(['’]ll|\s+(will|shall|commit(ted)? to|promise(d)? to|agree(d)? to))\s+((just|also|then|now|still|definitely|certainly|absolutely|personally|quickly|shortly|soon|go ahead and|make sure to|be sure to)\s+){0,2}(follow up|circle back|set up|put together|write up|walk through|turn around|loop in|sign off|send over|get back|reach out|check in|` +
+		`send|share|deliver|provide|complete|finish|review|schedule|book|call|email|update|prepare|resolve|fix|return|introduce|connect|pay|sign|submit|confirm|` +
+		`get (?:you|back|that|this|it|them)|have|take|put|write|add|check|cover|walk|turn|draft|build|ship|issue|invoice|refund|waive|hold|extend|migrate|onboard|enable|deploy|publish|arrange|organise|organize|forward|upload|apply|credit|replace|reissue|revert|respond|reply|sync|meet|host|run|create|implement|configure|integrate|provision|escalate|circulate|document|cancel)\b`)
+
+	// Hedges that survive the pattern above because the modal and the verb are
+	// both present. RE2 has no lookahead, so they are rejected after matching.
+	// "I'll have to check with legal" reports a constraint, not an obligation.
+	commitmentHedgeRe = regexp.MustCompile(`(?i)(\b(have to|need to|try to|hope to|want to|be able to|see if|check if|find out if)\b` +
+		// Phrasal verbs that read as delivery but are not: encountering a
+		// problem, deferring, accepting a point, or glancing at something.
+		`|\brun into\b|\bhold off\b|\bhave a look\b|\btake (that|this|it) as\b|\bstart \w+ing\b)`)
 )
 
+type proposedPromise struct {
+	anchor  googleapi.GmailThreadMessage
+	promise *scannedCommitment
+}
+
+// proposePromise asks the model about the newest message of a thread the
+// deterministic detector had nothing to say about.
+//
+// Whatever comes back is a candidate. It carries the model's verified quote as
+// its source phrase, so the review queue shows a person the sender's own words
+// rather than the model's summary, and direction is taken from the message
+// rather than from the model — who sent it is a fact, not a judgement.
+func (s *Service) proposePromise(
+	ctx context.Context,
+	u *ent.User,
+	sum *threadSummary,
+	scanID uuid.UUID,
+	budget int,
+) (*proposedPromise, int, int) {
+	// Read the thread, not only its final message. A promise is made once and
+	// then buried by whatever was said after it, and the rules path already
+	// learned this the hard way.
+	ordered := append([]googleapi.GmailThreadMessage(nil), sum.Messages...)
+	sort.SliceStable(ordered, func(i, j int) bool { return ordered[i].At.After(ordered[j].At) })
+
+	var message googleapi.GmailThreadMessage
+	var promises []ExtractedPromise
+	spent, failed := 0, 0
+	for i, candidate := range ordered {
+		if i >= commitmentScanDepth || spent >= budget {
+			break
+		}
+		body, err := s.MessageBody(ctx, u, candidate.ID)
+		if err != nil || strings.TrimSpace(body) == "" {
+			continue
+		}
+		spent++
+		found, err := s.promiseExtractor.ExtractPromises(ctx, PromiseExtractInput{
+			UserID:    u.ID,
+			Subject:   sum.Subject,
+			Body:      commitmentQuote2(body),
+			Outbound:  candidate.Outbound,
+			RequestID: uuid.NewSHA1(scanID, []byte(candidate.ID)),
+		})
+		if err != nil {
+			failed++
+			s.log.Debug("revenue: promise extraction", zap.Error(err))
+			continue
+		}
+		if len(found) > 0 {
+			message, promises = candidate, found
+			break
+		}
+	}
+	if len(promises) == 0 {
+		return nil, spent, failed
+	}
+	first := promises[0]
+	direction, owner, counterparty := "promised_by_them", sum.Counterparty, "local-user"
+	if message.Outbound {
+		direction, owner, counterparty = "promised_by_me", "local-user", sum.Counterparty
+	}
+	message.Snippet = first.Quote
+	return &proposedPromise{
+		anchor: message,
+		promise: &scannedCommitment{
+			Direction:       direction,
+			Text:            first.Text,
+			OwnerRef:        owner,
+			CounterpartyRef: counterparty,
+			SourcePhrase:    first.Quote,
+		},
+	}, spent, failed
+}
+
+// commitmentQuote2 strips the quoted thread so the model reads only what this
+// sender wrote, the same way the deterministic detector does.
+func commitmentQuote2(text string) string {
+	lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
+	newest := lines[:0]
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, ">") || (strings.HasPrefix(trimmed, "On ") && strings.HasSuffix(trimmed, " wrote:")) {
+			break
+		}
+		newest = append(newest, line)
+	}
+	return strings.TrimSpace(strings.Join(newest, "\n"))
+}
+
+// commitmentScanDepth bounds how many messages of one thread are read for a
+// promise, newest first.
+//
+// ponytail: each message costs one body fetch, so a long thread is the only
+// thing this protects against. Raise it, or index bodies up front, if promises
+// are found to hide deeper than this.
+const commitmentScanDepth = 12
+
+// scanSkipLogSample bounds how many skipped threads are described in the log.
+// The count is always exact; the sample is only there to name the reason.
+const scanSkipLogSample = 20
+
+// scanMaxAIExtractions bounds model spend for one scan. Each call reads one
+// message, so this is the ceiling on cost per audit.
+//
+// ponytail: a flat cap. Make it a workspace setting when somebody wants to pay
+// for a deeper read.
+const scanMaxAIExtractions = 25
+
+// findExplicitCommitment returns the newest message in the thread that states
+// an explicit promise, and the promise. It returns the thread's last message
+// and a nil promise when there is none, so callers still have an anchor for
+// the other detectors' evidence.
+// The bool reports whether any message body was actually read. False means the
+// whole thread was judged on snippets.
+func (s *Service) findExplicitCommitment(
+	ctx context.Context,
+	u *ent.User,
+	sum *threadSummary,
+) (googleapi.GmailThreadMessage, *scannedCommitment, bool) {
+	readBody := false
+	ordered := append([]googleapi.GmailThreadMessage(nil), sum.Messages...)
+	sort.SliceStable(ordered, func(i, j int) bool { return ordered[i].At.After(ordered[j].At) })
+	for i, message := range ordered {
+		if i >= commitmentScanDepth {
+			break
+		}
+		text := message.Snippet
+		if body, err := s.MessageBody(ctx, u, message.ID); err == nil {
+			text = body
+			readBody = true
+		}
+		if promise := detectExplicitCommitmentIn(message, sum, text); promise != nil {
+			return message, promise, readBody
+		}
+	}
+	return lastMessage(sum), nil, readBody
+}
+
 func detectExplicitCommitment(sum *threadSummary, text string) *scannedCommitment {
-	message := lastMessage(sum)
+	return detectExplicitCommitmentIn(lastMessage(sum), sum, text)
+}
+
+// detectExplicitCommitmentIn attributes the promise to the message it was
+// actually written in, so direction and owner follow that message rather than
+// whichever one happened to be last.
+func detectExplicitCommitmentIn(
+	message googleapi.GmailThreadMessage,
+	sum *threadSummary,
+	text string,
+) *scannedCommitment {
 	quote := commitmentQuote(text)
 	if quote == "" {
 		return nil
@@ -755,12 +1102,60 @@ func commitmentQuote(text string) string {
 	if match == nil {
 		return ""
 	}
-	start := strings.LastIndexAny(text[:match[0]], ".!?") + 1
+	start := sentenceStart(text, match[0])
 	end := len(text)
 	if i := strings.IndexAny(text[match[1]:], ".!?"); i >= 0 {
 		end = match[1] + i + 1
 	}
-	return truncateRunes(strings.TrimSpace(text[start:end]), excerptMaxRunes)
+	sentence := trimLeadingLinks(strings.TrimSpace(text[start:end]))
+	// "I'll have to check with legal" states a constraint, not an obligation,
+	// and matches on have. Judge the whole sentence, not the fragment.
+	if commitmentHedgeRe.MatchString(sentence) {
+		return ""
+	}
+	return truncateRunes(sentence, excerptMaxRunes)
+}
+
+// trimLeadingLinks drops links and their surrounding filler from the front of a
+// quote.
+//
+// Bodies arrive with newlines already collapsed, so a promise written under a
+// link has no sentence boundary in front of it and the quote begins with the
+// whole URL. The evidence a customer is shown to prove what they were promised
+// should read as the sentence somebody wrote, not as a path.
+func trimLeadingLinks(sentence string) string {
+	words := strings.Fields(sentence)
+	cut := 0
+	for i, word := range words {
+		if strings.Contains(word, "://") || strings.HasPrefix(word, "www.") {
+			cut = i + 1
+		}
+	}
+	if cut == 0 || cut >= len(words) {
+		return sentence
+	}
+	return strings.Join(words[cut:], " ")
+}
+
+// sentenceStart finds where the sentence containing the match begins.
+//
+// A full stop is only a sentence boundary when whitespace follows it. Treating
+// every dot as one meant a promise after a link began inside the link:
+// "…signoz.io/docs/general/others/new-billing-model Please bear with us; we
+// will get back to you" was quoted from "com/general/…" onward, which is the
+// evidence a customer would be shown to prove what they were promised.
+func sentenceStart(text string, matchAt int) int {
+	for i := matchAt - 1; i >= 0; i-- {
+		switch text[i] {
+		case '.', '!', '?':
+			// The boundary is real only if the next character starts a new
+			// word rather than continuing a hostname, path or decimal.
+			if i+1 < len(text) && (text[i+1] == ' ' || text[i+1] == '\t' || text[i+1] == '\n') {
+				return i + 1
+			}
+		}
+	}
+	return 0
 }
 
 // summarizeThread derives the detector input for one thread. Returns nil for
@@ -840,6 +1235,9 @@ func detectThread(sum *threadSummary, now time.Time) *detectorHit {
 	// the latest message actually said. The subject is still used to compose
 	// the proposed reply, never as a trigger.
 	text := lastSnippet(sum)
+	if closedLoopRe.MatchString(text) {
+		return nil
+	}
 
 	// requested_follow_up_due: an explicit follow-up promise with nothing after it.
 	if followUpRe.MatchString(text) && age >= 14*24*time.Hour {

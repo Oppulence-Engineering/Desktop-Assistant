@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -29,6 +30,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/websearch"
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/activity"
+	"go.temporal.io/sdk/temporal"
 	"go.uber.org/zap"
 )
 
@@ -77,6 +79,9 @@ type Activities struct {
 	// corresponding tool report "unavailable".
 	Conduit *faculties.Client
 	Eigen   *faculties.Client
+	// ActionProposer records pending finance proposals for later human approval;
+	// it never exposes approve or execute to the model.
+	ActionProposer backgroundtaskruntime.ActionProposer
 }
 
 // LLMComplete advances the conversation one turn through the billing gateway
@@ -128,10 +133,7 @@ func (a *Activities) LLMComplete(ctx context.Context, in LLMCompleteInput) (LLMC
 		RequestID:  sessionRequestID(in.SessionID, in.TurnSeq, in.CallIndex, attempt),
 	})
 	if err != nil {
-		// A replay surfacing the idempotency-state errors here is terminal (the
-		// transcript cannot resume); with attempt-seeded ids a normal retry never
-		// hits it. All other gateway errors are retryable.
-		return LLMCompleteResult{}, fmt.Errorf("agent llm call: %w", err)
+		return LLMCompleteResult{}, agentLLMError(err)
 	}
 
 	out := LLMCompleteResult{
@@ -150,6 +152,18 @@ func (a *Activities) LLMComplete(ctx context.Context, in LLMCompleteInput) (LLMC
 	return out, nil
 }
 
+func agentLLMError(err error) error {
+	var upstreamErr *llm.UpstreamStatusError
+	if errors.As(err, &upstreamErr) && upstreamErr.StatusCode == http.StatusPaymentRequired {
+		return temporal.NewNonRetryableApplicationError(
+			"agent llm call: upstream provider account is out of credits",
+			"upstream_credits_exhausted",
+			err,
+		)
+	}
+	return fmt.Errorf("agent llm call: %w", err)
+}
+
 // ToolInvoke looks up the tool in a per-session deny-by-default registry built
 // from the allowlist and invokes it (RFC 027 ActivityToolInvoke). An unknown or
 // non-allowlisted name (model hallucination, "shell", etc.) resolves to
@@ -166,7 +180,9 @@ func (a *Activities) ToolInvoke(ctx context.Context, in ToolInvokeInput) (ToolIn
 			ResultJSON: fmt.Sprintf(`{"error":"tool %q is not available"}`, in.ToolName),
 		}, nil
 	}
-	scope := backgroundtaskruntime.ToolScope{UserID: in.UserID, RunID: in.SessionID}
+	scope := backgroundtaskruntime.ToolScope{
+		UserID: in.UserID, RunID: in.SessionID, TurnSeq: in.TurnSeq, ToolCallIndex: in.CallIndex,
+	}
 	result, ierr := tool.Invoke(ctx, scope, in.Args)
 	if ierr != nil {
 		code := backgroundtaskruntime.CodeToolInvokeFailed
@@ -242,7 +258,7 @@ func (a *Activities) buildToolRegistry(allowed []string, userID string) backgrou
 			continue
 		}
 		tools = append(tools, capability.Build(agentregistry.ToolDeps{
-			Client: a.Client, Creds: a.Creds, SlackTokens: a.SlackTokens, Slack: a.Slack,
+			Client: a.Client, ActionProposer: a.ActionProposer, Creds: a.Creds, SlackTokens: a.SlackTokens, Slack: a.Slack,
 			Sealer: a.Sealer, Secrets: a.Secrets, Google: a.Google, HubSpot: a.HubSpot, Web: a.Web,
 			Conduit: a.Conduit, Eigen: a.Eigen, UserID: userID,
 		}))

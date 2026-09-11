@@ -3,16 +3,35 @@ package agentworkflow
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentregistry"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agenttoken"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/llm"
+	"go.temporal.io/sdk/temporal"
 )
 
 func newTestActivities() *Activities {
 	return &Activities{Catalog: agentregistry.DefaultCatalog()}
+}
+
+func TestAgentLLMErrorDoesNotRetryCreditFailure(t *testing.T) {
+	err := agentLLMError(&llm.UpstreamStatusError{StatusCode: http.StatusPaymentRequired})
+	var appErr *temporal.ApplicationError
+	if !errors.As(err, &appErr) || !appErr.NonRetryable() || appErr.Type() != "upstream_credits_exhausted" {
+		t.Fatalf("error = %v, want non-retryable upstream_credits_exhausted", err)
+	}
+
+	appErr = nil
+	err = agentLLMError(&llm.UpstreamStatusError{StatusCode: http.StatusBadGateway})
+	if errors.As(err, &appErr) && appErr.NonRetryable() {
+		t.Fatalf("transient upstream failure became non-retryable: %v", err)
+	}
 }
 
 // TestToolInvokeDenyByDefault is the P1 gate: a non-allowlisted tool name
@@ -51,6 +70,36 @@ func TestToolInvokeAllowedRunsTool(t *testing.T) {
 	if !strings.Contains(res.ResultJSON, "hello-durable-agent") {
 		t.Fatalf("echo result missing input: %q", res.ResultJSON)
 	}
+}
+
+func TestToolInvokePassesDurableInvocationIdentity(t *testing.T) {
+	var got backgroundtaskruntime.ToolScope
+	tool := &scopeCaptureTool{got: &got}
+	a := &Activities{Catalog: agentregistry.NewCatalog(agentregistry.Capability{
+		Name: tool.Name(), Build: func(agentregistry.ToolDeps) backgroundtaskruntime.Tool { return tool },
+	})}
+	res, err := a.ToolInvoke(context.Background(), ToolInvokeInput{
+		UserID: "user-1", SessionID: "session-1", TurnSeq: 6, CallIndex: 3,
+		ToolName: tool.Name(), AllowedTools: []string{tool.Name()},
+	})
+	if err != nil || res.Denied || res.Failed {
+		t.Fatalf("ToolInvoke = %+v, %v", res, err)
+	}
+	if got.UserID != "user-1" || got.RunID != "session-1" || got.TurnSeq != 6 || got.ToolCallIndex != 3 {
+		t.Fatalf("tool scope = %+v, want durable invocation identity", got)
+	}
+}
+
+type scopeCaptureTool struct {
+	got *backgroundtaskruntime.ToolScope
+}
+
+func (t *scopeCaptureTool) Name() string                { return "scope.capture" }
+func (t *scopeCaptureTool) Description() string         { return "Capture scope." }
+func (t *scopeCaptureTool) JSONSchema() json.RawMessage { return json.RawMessage(`{"type":"object"}`) }
+func (t *scopeCaptureTool) Invoke(_ context.Context, scope backgroundtaskruntime.ToolScope, _ json.RawMessage) (json.RawMessage, error) {
+	*t.got = scope
+	return json.RawMessage(`{"ok":true}`), nil
 }
 
 // TestToolInvokeDeniesSubagentPseudoTool confirms the subagent pseudo-tool is

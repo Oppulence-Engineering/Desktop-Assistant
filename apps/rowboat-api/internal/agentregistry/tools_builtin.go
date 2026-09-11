@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/google/uuid"
 )
 
 // DefaultCatalog is the production capability set. It is intentionally small and
@@ -20,6 +21,46 @@ func DefaultCatalog() *Catalog {
 		echoCapability(),
 		demoPaymentCapability(),
 		toolResultReadCapability(),
+		RunHistoryReadCapability(),
+		WorkflowReadCapability(),
+		WorkspaceReadCapability(),
+		RelationshipReadCapability(),
+		RelationshipCreateCapability(),
+		RelationshipCorrectCapability(),
+		RelationshipAssertionRetractCapability(),
+		RelationshipReviewAcknowledgeCapability(),
+		RelationshipIdentityDecideCapability(),
+		RelationshipAttentionDecideCapability(),
+		ConversationDeleteCapability(),
+		SourceRetrySyncCapability(),
+		TaskCreateCapability(),
+		TaskUpdateCapability(),
+		TaskCompleteCapability(),
+		TaskSnoozeCapability(),
+		RecommendationCreateCapability(),
+		RecommendationDismissCapability(),
+		RecommendationSnoozeCapability(),
+		RecommendationUpdateCapability(),
+		ActionAuditCapability(),
+		ActionOutcomeRecordCapability(),
+		CommitmentExportCapability(),
+		CommitmentAcceptCapability(),
+		CommitmentBlockCapability(),
+		CommitmentConfirmCapability(),
+		CommitmentCorrectCapability(),
+		CommitmentCompleteCapability(),
+		CommitmentDisputeCapability(),
+		CommitmentUnblockCapability(),
+		PersonCreateCapability(),
+		PersonCorrectCapability(),
+		PersonAttributeRetractCapability(),
+		PersonIdentityDecideCapability(),
+		PersonDeleteCapability(),
+		NoteCreateCapability(),
+		NoteUpdateCapability(),
+		NoteDeleteCapability(),
+		ActionProposalReadCapability(),
+		actionProposeCapability(),
 		SubagentDelegateCapability(),
 		SlackReadThreadCapability(),
 		SlackPostMessageCapability(),
@@ -38,6 +79,108 @@ func DefaultCatalog() *Catalog {
 		ConduitReadCapability(),
 		EigenSimulateCapability(),
 	)
+}
+
+// WorkflowReadCapability exposes configured workflow definitions and health.
+func WorkflowReadCapability() Capability {
+	tool := backgroundtaskruntime.NewWorkflowReadTool(nil, uuid.Nil)
+	return Capability{
+		Name: tool.Name(), Description: tool.Description(), Parameters: tool.JSONSchema(),
+		TrustTier: TierRead, Kind: KindTool,
+		Build: func(d ToolDeps) backgroundtaskruntime.Tool {
+			uid, err := uuid.Parse(d.UserID)
+			if err != nil || d.Client == nil {
+				return newUnavailableTool("workflow.read", "workflow configuration is not available on this server")
+			}
+			return backgroundtaskruntime.NewWorkflowReadTool(d.Client, uid)
+		},
+	}
+}
+
+// RunHistoryReadCapability exposes the signed-in user's workflow outcomes.
+func RunHistoryReadCapability() Capability {
+	tool := backgroundtaskruntime.NewUserRunHistoryTool(nil, uuid.Nil)
+	return Capability{
+		Name: tool.Name(), Description: tool.Description(), Parameters: tool.JSONSchema(),
+		TrustTier: TierRead, Kind: KindTool,
+		Build: func(d ToolDeps) backgroundtaskruntime.Tool {
+			uid, err := uuid.Parse(d.UserID)
+			if err != nil || d.Client == nil {
+				return newUnavailableTool("run_history.read", "workflow run history is not configured on this server")
+			}
+			return backgroundtaskruntime.NewUserRunHistoryTool(d.Client, uid)
+		},
+	}
+}
+
+// WorkspaceReadCapability exposes existing workspace access and release controls.
+func WorkspaceReadCapability() Capability {
+	tool := backgroundtaskruntime.NewWorkspaceReadTool(nil, uuid.Nil)
+	return Capability{
+		Name: tool.Name(), Description: tool.Description(), Parameters: tool.JSONSchema(),
+		TrustTier: TierRead, Kind: KindTool,
+		Build: func(d ToolDeps) backgroundtaskruntime.Tool {
+			uid, err := uuid.Parse(d.UserID)
+			if err != nil || d.Client == nil {
+				return newUnavailableTool("workspace.read", "workspace access is not configured on this server")
+			}
+			return backgroundtaskruntime.NewWorkspaceReadTool(d.Client, uid)
+		},
+	}
+}
+
+// ActionProposalReadCapability exposes closed-loop finance proposal state
+// without approval tokens or any state transition.
+func ActionProposalReadCapability() Capability {
+	tool := backgroundtaskruntime.NewActionProposalReadTool(nil, uuid.Nil)
+	return Capability{
+		Name: tool.Name(), Description: tool.Description(), Parameters: tool.JSONSchema(),
+		TrustTier: TierRead, Kind: KindTool,
+		Build: func(d ToolDeps) backgroundtaskruntime.Tool {
+			uid, err := uuid.Parse(d.UserID)
+			if err != nil || d.Client == nil {
+				return newUnavailableTool("action_proposal.read", "finance action proposals are not available on this server")
+			}
+			return backgroundtaskruntime.NewActionProposalReadTool(d.Client, uid)
+		},
+	}
+}
+
+func actionProposeCapability() Capability {
+	tool := backgroundtaskruntime.NewProposeActionTool(nil)
+	return Capability{
+		Name:        tool.Name(),
+		Description: tool.Description(),
+		Parameters:  tool.JSONSchema(),
+		TrustTier:   TierWrite,
+		Kind:        KindTool,
+		Build: func(d ToolDeps) backgroundtaskruntime.Tool {
+			if d.ActionProposer == nil {
+				return newUnavailableTool("action.propose", "action proposing is not configured on this server")
+			}
+			return backgroundtaskruntime.NewProposeActionTool(d.ActionProposer)
+		},
+	}
+}
+
+// RelationshipReadCapability exposes the user's existing Oppulence
+// relationship memory without requiring another connector grant.
+func RelationshipReadCapability() Capability {
+	tool := backgroundtaskruntime.NewRelationshipReadTool(nil, uuid.Nil)
+	return Capability{
+		Name:        tool.Name(),
+		Description: tool.Description(),
+		Parameters:  tool.JSONSchema(),
+		TrustTier:   TierRead,
+		Kind:        KindTool,
+		Build: func(d ToolDeps) backgroundtaskruntime.Tool {
+			uid, err := uuid.Parse(d.UserID)
+			if err != nil || d.Client == nil {
+				return newUnavailableTool("relationship.read", "relationship memory is not configured on this server")
+			}
+			return backgroundtaskruntime.NewRelationshipReadTool(d.Client, uid)
+		},
+	}
 }
 
 // currentTimeCapability returns the current UTC time. Read-only, no deps.

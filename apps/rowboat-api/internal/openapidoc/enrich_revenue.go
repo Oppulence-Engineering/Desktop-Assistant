@@ -59,14 +59,35 @@ func addRevenueSchemas(schemas obj) {
 	}, "id", "displayName", "role", "active", "externalRefs")
 
 	schemas["RelationshipCommitment"] = objectSchema("An open or completed promise attached to the relationship.", obj{
-		"id":            uuidSchema("Commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
-		"direction":     stringSchema("Who owes the commitment.", "us_to_them"),
-		"text":          stringSchema("Commitment text.", "Send the security packet."),
-		"status":        stringSchema("Commitment status.", "open"),
-		"dueAt":         stringSchema("Due time.", "2026-07-22T17:00:00Z", obj{"format": "date-time"}, nullable()),
-		"confidence":    numberSchema("Extraction confidence.", 0.94),
-		"userConfirmed": boolSchema("Whether a human confirmed it.", false),
+		"id":                         uuidSchema("Commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"direction":                  stringEnum("Who owes the commitment.", "promised_by_me", "promised_by_me", "promised_by_them", "mutual"),
+		"text":                       stringSchema("Commitment text.", "Send the security packet."),
+		"status":                     stringEnum("Stored commitment status.", "open", "open", "fulfilled", "missed", "waived", "cancelled", "superseded"),
+		"dueAt":                      stringSchema("Due time.", "2026-07-22T17:00:00Z", obj{"format": "date-time"}, nullable()),
+		"confidence":                 numberSchema("Extraction confidence.", 0.94),
+		"userConfirmed":              boolSchema("Whether a human confirmed it.", false),
+		"ownerParticipantRef":        stringSchema("Promise owner.", "alex@example.com"),
+		"counterpartyParticipantRef": stringSchema("Promise counterparty.", "jordan@example.com"),
+		"beneficiaryParticipantRef":  stringSchema("Promise beneficiary.", "customer:acme"),
+		"sourcePhrase":               stringSchema("Exact source phrase.", "I will send it by Friday."),
+		"duePhrase":                  stringSchema("Due condition as stated.", "by Friday"),
+		"dueTimezone":                stringSchema("Timezone used to resolve the due date.", "America/Los_Angeles"),
+		"acceptance":                 stringEnum("Acceptance state.", "internally_confirmed", "candidate", "internally_confirmed", "offered", "accepted", "disputed"),
+		"blocker":                    stringSchema("Current blocker.", "Waiting on security review."),
+		"completedAt":                stringSchema("Completion time.", "2026-07-22T17:00:00Z", obj{"format": "date-time"}, nullable()),
+		"currentEventVersion":        intSchema("Current transition version.", 3),
 	}, "id", "direction", "text", "status", "confidence", "userConfirmed")
+	schemas["CommitmentRegisterEntry"] = obj{
+		"description": "One cross-account register row with its reader-facing state and account.",
+		"allOf": []any{
+			ref("RelationshipCommitment"),
+			objectSchema("Register projection.", obj{
+				"state":            stringEnum("Reader-facing state.", "at_risk", "open", "at_risk", "met", "missed", "waived", "disputed", "cancelled", "superseded"),
+				"relationshipId":   uuidSchema("Counterparty relationship id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+				"relationshipName": stringSchema("Counterparty account.", "Acme"),
+			}, "state"),
+		},
+	}
 	schemas["CommitmentDependency"] = objectSchema("An evidence-backed directed edge between two commitments.", obj{
 		"dependencyId":     uuidSchema("Dependency id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
 		"relationshipId":   uuidSchema("Relationship id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
@@ -81,7 +102,7 @@ func addRevenueSchemas(schemas obj) {
 		"commitmentId":               uuidSchema("Commitment id.", "26cdbdc9-d0fc-4f8c-8660-2f0d62cfef51"),
 		"sourceEventId":              stringSchema("Idempotent source event id.", "user-accept:commitment-1"),
 		"version":                    obj{"type": "integer", "minimum": 1},
-		"kind":                       stringEnum("Transition kind.", "accepted", "proposed", "internally_confirmed", "offered", "accepted", "disputed", "blocked", "unblocked", "corrected", "due_date_changed", "renegotiated", "fulfilled", "cancelled", "superseded"),
+		"kind":                       stringEnum("Transition kind.", "accepted", "proposed", "internally_confirmed", "offered", "accepted", "disputed", "blocked", "unblocked", "corrected", "due_date_changed", "renegotiated", "fulfilled", "missed", "waived", "cancelled", "superseded"),
 		"actorType":                  stringEnum("Transition authority.", "user", "user", "source_fact", "deterministic_rule", "ai_candidate"),
 		"actorRef":                   stringSchema("Actor reference.", "participant:owner"),
 		"occurredAt":                 stringSchema("Event time.", "2026-08-01T14:00:00Z", obj{"format": "date-time"}),
@@ -624,17 +645,85 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"),
 	})}
 
-	paths["/v1/revenue-leak-scans"] = obj{"post": operation("Revenue", "Start a revenue leak scan", "Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.", "startRevenueLeakScan", bearer(), nil, jsonRequestOptional("Scan options.", objectSchema("Scan request.", obj{
-		"lookbackDays": intSchema("Historical lookback in days (default 90, max 365).", 90),
-	}), obj{"lookbackDays": 90}), obj{
-		"202": jsonResponse("Scan started.", ref("RevenueLeakScan"), nil),
-		"401": responseRef("401"),
-		"409": problemResponse("A scan is already running, or no scan source is configured.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "revenue: scan unavailable: a scan is already running", "scan_unavailable")),
-	})}
+	paths["/v1/revenue-leak-scans"] = obj{
+		"get": operation("Revenue", "List revenue leak scans", "Returns the caller's persisted audit history newest first, including automatic runs and runs started in other sessions.", "listRevenueLeakScans", bearer(), []any{obj{"name": "limit", "in": "query", "required": false, "description": "Maximum scans to return (default 10, max 100).", "schema": obj{"type": "integer", "minimum": 1, "maximum": 100}}}, nil, obj{
+			"200": jsonResponse("Audit history.", objectSchema("Audit history.", obj{"scans": arraySchema("Scans newest first.", ref("RevenueLeakScan"))}, "scans"), nil),
+			"400": responseRef("400"),
+			"401": responseRef("401"),
+		}),
+		"post": operation("Revenue", "Start a revenue leak scan", "Starts a bounded historical scan over the user's connected Gmail (deterministic detectors, draft-first actions). One scan runs per workspace at a time; poll the scan id for progress.", "startRevenueLeakScan", bearer(), nil, jsonRequestOptional("Scan options.", objectSchema("Scan request.", obj{
+			"lookbackDays": intSchema("Historical lookback in days (default 90, max 365).", 90),
+		}), obj{"lookbackDays": 90}), obj{
+			"202": jsonResponse("Scan started.", ref("RevenueLeakScan"), nil),
+			"401": responseRef("401"),
+			"409": problemResponse("A scan is already running, or no scan source is configured.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "revenue: scan unavailable: a scan is already running", "scan_unavailable")),
+		})}
 	paths["/v1/revenue-leak-scans/{scanId}"] = obj{"get": operation("Revenue", "Get scan progress", "Returns progress, counts, errors, and source freshness for one scan.", "getRevenueLeakScan", bearer(), []any{obj{"name": "scanId", "in": "path", "required": true, "description": "Scan id.", "schema": obj{"type": "string", "format": "uuid"}}}, nil, obj{
 		"200": jsonResponse("Scan state.", ref("RevenueLeakScan"), nil),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
+	})}
+
+	// The commitment register: obligations across every account. Every other
+	// commitment path is nested under a relationship id and cannot answer
+	// "what do we owe anyone", which is the product.
+	paths["/v1/commitments"] = obj{"get": operation("Relationship Intelligence", "List the commitment register", "Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register.", "listCommitments", bearer(), []any{
+		obj{"name": "direction", "in": "query", "required": false, "description": "promised_by_me, promised_by_them, or mutual.", "schema": obj{"type": "string"}},
+		obj{"name": "state", "in": "query", "required": false, "description": "Comma-separated register states: open, at_risk, met, missed, waived, disputed. at_risk is derived from the due date.", "schema": obj{"type": "string"}},
+		obj{"name": "owner", "in": "query", "required": false, "description": "Owner participant reference.", "schema": obj{"type": "string"}},
+		obj{"name": "relationshipId", "in": "query", "required": false, "description": "Restrict to one account.", "schema": obj{"type": "string", "format": "uuid"}},
+		obj{"name": "dueBefore", "in": "query", "required": false, "description": "Only commitments due before this instant.", "schema": obj{"type": "string", "format": "date-time"}},
+		obj{"name": "changedSince", "in": "query", "required": false, "description": "Only commitments updated at or after this instant.", "schema": obj{"type": "string", "format": "date-time"}},
+		obj{"name": "limit", "in": "query", "required": false, "description": "Page size (default 50, max 200).", "schema": obj{"type": "integer"}},
+		obj{"name": "offset", "in": "query", "required": false, "description": "Page offset.", "schema": obj{"type": "integer"}},
+		obj{"name": "includeCandidates", "in": "query", "required": false, "description": "Include unconfirmed extractions for a review surface.", "schema": obj{"type": "boolean"}},
+	}, nil, obj{
+		"200": jsonResponse("The register page.", objectSchema("Commitment register.", obj{"commitments": arraySchema("Register rows, each with its derived state and account.", ref("CommitmentRegisterEntry"))}, "commitments"), nil),
+		"400": responseRef("400"), "401": responseRef("401"),
+	})}
+	paths["/v1/commitments/{commitmentId}/export"] = obj{"get": operation("Relationship Intelligence", "Export a commitment record", "Returns one commitment as a standalone record: the obligation, its full state history, and the verbatim cited evidence with timestamps. Pass format=md for the Markdown document a user forwards. A record that cannot leave the tool cannot settle an argument.", "exportCommitment", bearer(), []any{
+		obj{"name": "commitmentId", "in": "path", "required": true, "description": "Commitment id.", "schema": obj{"type": "string", "format": "uuid"}},
+		obj{"name": "format", "in": "query", "required": false, "description": "md for Markdown; JSON otherwise.", "schema": obj{"type": "string"}},
+	}, nil, obj{
+		"200": jsonOrMarkdownResponse("The exportable record.", objectSchema("Commitment record.", obj{
+			"id":           stringSchema("Commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+			"generatedAt":  stringSchema("When the record was produced.", "2026-09-09T12:00:00Z", obj{"format": "date-time"}),
+			"account":      stringSchema("Counterparty account.", "Acme"),
+			"direction":    stringSchema("promised_by_me, promised_by_them, or mutual.", "promised_by_me"),
+			"text":         stringSchema("The obligation.", "Migration live by the 14th"),
+			"state":        stringSchema("Register state.", "at_risk"),
+			"dueAt":        stringSchema("Resolved due time.", "2026-09-14T17:00:00Z", obj{"format": "date-time"}, nullable()),
+			"duePhrase":    stringSchema("Due condition as stated.", "by the 14th"),
+			"owner":        stringSchema("Promise owner.", "alex@example.com"),
+			"counterparty": stringSchema("Promise counterparty.", "jordan@example.com"),
+			"confidence":   numberSchema("Extraction confidence.", 0.95),
+			"evidence": arraySchema("Verbatim cited sources.", objectSchema("Cited source.", obj{
+				"source": stringSchema("Source system.", "gmail"), "excerpt": stringSchema("Verbatim quote.", "We will have the migration live by the 14th."), "occurredAt": stringSchema("When the source was created.", "2026-09-06T12:00:00Z", obj{"format": "date-time"}), "contentHash": stringSchema("Content hash of the source.", "sha256:abc123"), "sourceUri": stringSchema("Link to the source.", "https://mail.google.com/thread-1"),
+			}, "source", "excerpt", "occurredAt", "contentHash")),
+			"history": arraySchema("Ordered state changes.", objectSchema("Transition.", obj{
+				"version": intSchema("Event version.", 2), "kind": stringSchema("Event kind.", "internally_confirmed"), "actorType": stringSchema("Who caused it.", "user"), "actorRef": stringSchema("Actor reference.", "alex@example.com"), "occurredAt": stringSchema("When.", "2026-09-07T09:00:00Z", obj{"format": "date-time"}),
+			}, "version", "kind", "actorType", "occurredAt")),
+		}, "id", "generatedAt", "account", "direction", "text", "state", "confidence", "evidence", "history"), nil),
+		"401": responseRef("401"), "404": responseRef("404"),
+	})}
+	paths["/v1/revenue-leak-scans/{scanId}/report"] = obj{"get": operation("Revenue", "Get the open promises report", "Returns the commitments found in the scan window that have no evidence of fulfilment, each with the exact message that created it. Pass format=md for the document handed to a prospect. Unlike the register this deliberately includes unconfirmed candidates, because the report is the surface on which they are reviewed.", "getOpenPromisesReport", bearer(), []any{
+		obj{"name": "scanId", "in": "path", "required": true, "description": "Scan id.", "schema": obj{"type": "string", "format": "uuid"}},
+		obj{"name": "format", "in": "query", "required": false, "description": "md for Markdown; JSON otherwise.", "schema": obj{"type": "string"}},
+	}, nil, obj{
+		"200": jsonOrMarkdownResponse("The open promises report.", objectSchema("Open promises report.", obj{
+			"generatedAt":   stringSchema("When the report was produced.", "2026-09-09T12:00:00Z", obj{"format": "date-time"}),
+			"lookbackDays":  intSchema("Scan window in days.", 90),
+			"threadsSeen":   intSchema("Conversations read.", 412),
+			"scanStatus":    stringSchema("Scan status.", "completed"),
+			"outboundCount": intSchema("Promises we made.", 12),
+			"inboundCount":  intSchema("Promises made to us.", 5),
+			"byAccount":     obj{"type": "object", "additionalProperties": obj{"type": "integer"}, "description": "Open promise count by account."},
+			"truncated":     boolSchema("Whether more than 200 matching promises exist.", false),
+			"items": arraySchema("Open promises, at risk first.", objectSchema("Open promise.", obj{
+				"commitmentId": stringSchema("Commitment id.", "8b8dfa9b-a7b2-46ea-982c-622a914c00e5"), "account": stringSchema("Counterparty account.", "Acme"), "direction": stringSchema("Who owes the promise.", "promised_by_me"), "text": stringSchema("The obligation.", "Migration live by the 14th"), "state": stringSchema("Register state.", "at_risk"), "dueAt": stringSchema("Resolved due time.", "2026-09-14T17:00:00Z", obj{"format": "date-time"}, nullable()), "duePhrase": stringSchema("Due condition as stated.", "by the 14th"), "owner": stringSchema("Promise owner.", "alex@example.com"), "sourceQuote": stringSchema("The exact message that created it.", "We will have the migration live by the 14th."), "sourceUri": stringSchema("Link to the source.", "https://mail.google.com/thread-1"), "occurredAt": stringSchema("When the source was created.", "2026-09-06T12:00:00Z", obj{"format": "date-time"}),
+			}, "commitmentId", "account", "direction", "text", "state")),
+		}, "generatedAt", "lookbackDays", "threadsSeen", "scanStatus", "outboundCount", "inboundCount", "byAccount", "items", "truncated"), nil),
+		"401": responseRef("401"), "404": responseRef("404"),
 	})}
 
 	paths["/v1/relationships"] = obj{
@@ -784,7 +873,7 @@ func addRevenuePaths(paths obj) {
 		"401": responseRef("401"), "404": responseRef("404"),
 	})}
 	paths["/v1/relationships/{relationshipId}/commitments/{commitmentId}/transitions"] = obj{"post": operation("Relationship Intelligence", "Append a commitment transition", "Validates the state machine and appends one idempotent event before atomically updating the materialized projection.", "appendCommitmentTransition", bearer(), commitmentParam, jsonRequest("Transition.", objectSchema("Commitment transition.", obj{
-		"kind":           stringEnum("Event kind.", "accepted", "internally_confirmed", "offered", "accepted", "disputed", "blocked", "unblocked", "corrected", "due_date_changed", "renegotiated", "fulfilled", "cancelled", "superseded"),
+		"kind":           stringEnum("Event kind.", "accepted", "internally_confirmed", "offered", "accepted", "disputed", "blocked", "unblocked", "corrected", "due_date_changed", "renegotiated", "fulfilled", "missed", "waived", "cancelled", "superseded"),
 		"idempotencyKey": stringSchema("Stable source event id.", "ui:accept:ab12"),
 		"reason":         stringSchema("Optional reason.", "Counterparty accepted in writing."),
 		"dueAt":          stringSchema("Replacement due date.", "2026-08-07T17:00:00Z", obj{"format": "date-time"}),

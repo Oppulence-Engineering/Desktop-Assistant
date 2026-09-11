@@ -7,6 +7,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/actionproposal"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/google/uuid"
 )
 
@@ -38,6 +42,103 @@ type ActionProposalRequest struct {
 // of a dependency on the broker (and of any execute capability).
 type ActionProposer interface {
 	ProposeAction(ctx context.Context, req ActionProposalRequest) (ActionProposal, error)
+}
+
+// NewActionProposalReadTool exposes the signed-in user's closed-loop finance
+// action queue without exposing approval tokens or changing proposal state.
+func NewActionProposalReadTool(client *ent.Client, ownerID uuid.UUID) Tool {
+	return &actionProposalReadTool{client: client, ownerID: ownerID}
+}
+
+type actionProposalReadTool struct {
+	client  *ent.Client
+	ownerID uuid.UUID
+}
+
+func (*actionProposalReadTool) Name() string { return "action_proposal.read" }
+
+func (*actionProposalReadTool) Description() string {
+	return "Read closed-loop finance action proposals for the signed-in user, including pending, approved, executed, failed, rejected, and expired state. This never approves, rejects, or executes an action and returns no approval tokens."
+}
+
+func (*actionProposalReadTool) AuditInfo(json.RawMessage) ToolAudit {
+	return ToolAudit{TrustTier: TierRead, Connector: "actions", Operation: "action_proposal.read"}
+}
+
+func (*actionProposalReadTool) JSONSchema() json.RawMessage {
+	return json.RawMessage(`{"type":"object","properties":{"proposalId":{"type":"string","format":"uuid","description":"Optional exact proposal ID."},"status":{"type":"string","enum":["pending","approved","rejected","executed","failed","executed_unconfirmed","expired"],"description":"Optional lifecycle status. Defaults to pending unless proposalId is provided."},"limit":{"type":"integer","minimum":1,"maximum":50,"description":"Maximum proposals to return; defaults to 20."}},"additionalProperties":false}`)
+}
+
+func (t *actionProposalReadTool) Invoke(ctx context.Context, scope ToolScope, args json.RawMessage) (json.RawMessage, error) {
+	if t == nil || t.client == nil || t.ownerID == uuid.Nil {
+		return nil, errors.New("action proposal reading is not configured")
+	}
+	if scope.UserID != t.ownerID.String() {
+		return nil, errors.New("action proposal reader scope does not match workflow owner")
+	}
+	var in struct {
+		ProposalID string `json:"proposalId"`
+		Status     string `json:"status"`
+		Limit      int    `json:"limit"`
+	}
+	if len(args) > 0 {
+		if err := json.Unmarshal(args, &in); err != nil {
+			return nil, fmt.Errorf("action_proposal.read: invalid arguments: %w", err)
+		}
+	}
+	if in.Limit == 0 {
+		in.Limit = 20
+	}
+	if in.Limit < 1 || in.Limit > 50 {
+		return nil, errors.New("action_proposal.read: limit must be between 1 and 50")
+	}
+	var proposalID uuid.UUID
+	if raw := strings.TrimSpace(in.ProposalID); raw != "" {
+		var err error
+		proposalID, err = uuid.Parse(raw)
+		if err != nil {
+			return nil, errors.New("action_proposal.read: proposalId must be a UUID")
+		}
+	}
+	status := strings.TrimSpace(in.Status)
+	if status == "" && proposalID == uuid.Nil {
+		status = "pending"
+	}
+	switch status {
+	case "", "pending", "approved", "rejected", "executed", "failed", "executed_unconfirmed", "expired":
+	default:
+		return nil, errors.New("action_proposal.read: unsupported status")
+	}
+
+	q := t.client.ActionProposal.Query().Where(actionproposal.HasUserWith(user.IDEQ(t.ownerID)))
+	if proposalID != uuid.Nil {
+		q = q.Where(actionproposal.IDEQ(proposalID))
+	}
+	if status != "" {
+		q = q.Where(actionproposal.StatusEQ(status))
+	}
+	// ponytail: 50 newest records are enough for the cockpit; add cursor
+	// pagination only when a real queue outgrows this bound.
+	list, err := q.Order(ent.Desc(actionproposal.FieldCreatedAt), ent.Desc(actionproposal.FieldID)).Limit(in.Limit).All(auth.WithInternal(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("action_proposal.read: %w", err)
+	}
+	proposals := make([]map[string]any, 0, len(list))
+	for _, p := range list {
+		proposals = append(proposals, map[string]any{
+			"id": p.ID.String(), "target": p.Target, "kind": p.Kind,
+			"paramsJson": truncate(p.ParamsJSON, 4000), "financial": p.Financial,
+			"rationale": truncate(p.Rationale, 1000), "status": p.Status,
+			"correlationId": p.CorrelationID, "entityId": p.EntityID, "originRunId": p.OriginRunID,
+			"resultRef": p.ResultRef, "reason": truncate(p.Reason, 1000), "returnEventId": p.ReturnEventID,
+			"expiresAt": p.ExpiresAt, "approvedAt": p.ApprovedAt, "executedAt": p.ExecutedAt,
+			"resolvedAt": p.ResolvedAt, "createdAt": p.CreatedAt, "updatedAt": p.UpdatedAt,
+		})
+	}
+	return json.Marshal(map[string]any{
+		"proposals": proposals, "count": len(proposals),
+		"note": "Finance action proposals read; no approval token was returned and no action was changed.",
+	})
 }
 
 // NewProposeActionTool exposes the allowlisted, propose-ONLY action tool. The
