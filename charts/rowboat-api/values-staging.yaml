@@ -23,8 +23,15 @@ config:
   LOG_LEVEL: debug
   AUTO_MIGRATE: "true" # staging may auto-migrate for fast iteration
   APP_URL: https://x.staging.oppulence.io
-  # All three issuer URLs share this origin in staging.
+  # All three issuer URLs share this origin in staging. AUTH_ISSUER_URL is the
+  # single knob the application falls back to, but the deployment contract
+  # asserts each rendered variable by name, so staging pins them the same way
+  # production does. Pinning here, not in values.yaml, keeps the knob working
+  # for any environment that does not override them.
   AUTH_ISSUER_URL: https://oauth.staging.oppulence.io
+  OIDC_ISSUER_URL: https://oauth.staging.oppulence.io
+  TOKEN_ISSUER: https://oauth.staging.oppulence.io
+  ORY_PUBLIC_URL: https://oauth.staging.oppulence.io
   JWKS_URL: https://oauth.staging.oppulence.io/.well-known/jwks.json
   ORY_ADMIN_URL: http://hydra-admin.ory-staging.svc.cluster.local:4445
   ORY_BROKER_CLIENT_ID: solomon-connector-broker-staging
