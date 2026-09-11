@@ -203,7 +203,7 @@ func (h *Handler) ListPersonMergeCandidates(w http.ResponseWriter, r *http.Reque
 	httpx.WriteJSON(w, http.StatusOK, map[string]any{"candidates": out})
 }
 
-// DecidePersonMergeCandidate applies a version-bound human merge decision.
+// DecidePersonMergeCandidate applies a version-bound human identity decision.
 func (h *Handler) DecidePersonMergeCandidate(w http.ResponseWriter, r *http.Request) {
 	u, ok := h.viewer(w, r)
 	if !ok {

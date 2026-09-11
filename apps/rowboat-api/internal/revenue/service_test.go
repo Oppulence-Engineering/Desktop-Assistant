@@ -270,6 +270,36 @@ func TestNoOpEditKeepsRevision(t *testing.T) {
 	}
 }
 
+func TestMetadataEditPersistsWithoutInvalidatingPolicy(t *testing.T) {
+	f := newFixture(t)
+	action := f.action(t, ExecModeDraft)
+	title := "Review the revised renewal plan"
+	dueAt := time.Now().UTC().Add(48 * time.Hour).Truncate(time.Second)
+	priority := 55
+	edited, err := f.svc.EditAction(f.ctx, f.user, action.ID, EditInput{
+		Reason: &title, DueAt: &dueAt, PriorityScore: &priority,
+	})
+	if err != nil {
+		t.Fatalf("metadata edit: %v", err)
+	}
+	if edited.Reason != title || edited.DueAt == nil || !edited.DueAt.Equal(dueAt) || edited.PriorityScore != priority {
+		t.Fatalf("metadata edit did not persist: %+v", edited)
+	}
+	if edited.Revision != action.Revision || edited.RevisionHash != action.RevisionHash || edited.PolicyStatus != action.PolicyStatus {
+		t.Fatalf("metadata edit changed policy revision: before=%+v after=%+v", action, edited)
+	}
+	cleared, err := f.svc.EditAction(f.ctx, f.user, action.ID, EditInput{ClearDueAt: true})
+	if err != nil {
+		t.Fatalf("clear due date: %v", err)
+	}
+	if cleared.DueAt != nil {
+		t.Fatalf("due date was not cleared: %+v", cleared)
+	}
+	if audit, err := f.svc.Audit(f.ctx, action.ID); err != nil || len(audit.Edges.Revisions) != 1 {
+		t.Fatalf("metadata edit created a policy revision: revisions=%d err=%v", len(audit.Edges.Revisions), err)
+	}
+}
+
 // Invariants 4 and 5: approval of a send needs a passed unexpired decision;
 // review_required needs explicit risk acceptance.
 func TestApproveRequiresDecision(t *testing.T) {
@@ -786,6 +816,39 @@ func TestSnoozeAndDismiss(t *testing.T) {
 			t.Fatalf("dismiss must record the outcome: %+v", audit.Edges.Outcomes)
 		}
 	})
+}
+
+func TestExpiredSnoozeReopensOnQueueRead(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, time.September, 9, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return now }
+	due := f.action(t, ExecModeDraft)
+	future := f.action(t, ExecModeDraft)
+	if _, err := f.svc.Snooze(f.ctx, f.user, due.ID, now.Add(time.Hour)); err != nil {
+		t.Fatalf("snooze due action: %v", err)
+	}
+	if _, err := f.svc.Snooze(f.ctx, f.user, future.ID, now.Add(3*time.Hour)); err != nil {
+		t.Fatalf("snooze future action: %v", err)
+	}
+	if actions, err := f.svc.ListActions(f.ctx, f.user, ListFilter{}); err != nil || len(actions) != 0 {
+		t.Fatalf("list before expiry: actions=%d err=%v", len(actions), err)
+	}
+
+	now = now.Add(2 * time.Hour)
+	actions, err := f.svc.ListActions(f.ctx, f.user, ListFilter{})
+	if err != nil {
+		t.Fatalf("list after expiry: %v", err)
+	}
+	if len(actions) != 1 || actions[0].ID != due.ID || actions[0].QueueStatus != QueueOpen || actions[0].SnoozedUntil != nil {
+		t.Fatalf("expired snooze was not reopened: %+v", actions)
+	}
+	stillSnoozed, err := f.svc.GetAction(f.ctx, future.ID)
+	if err != nil {
+		t.Fatalf("get future snooze: %v", err)
+	}
+	if stillSnoozed.QueueStatus != QueueSnoozed || stillSnoozed.SnoozedUntil == nil {
+		t.Fatalf("future snooze changed early: %+v", stillSnoozed)
+	}
 }
 
 // The default queue page is bounded (top-ten open actions).

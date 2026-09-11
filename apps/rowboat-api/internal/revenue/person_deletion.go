@@ -2,6 +2,7 @@ package revenue
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -43,6 +44,7 @@ type PersonDeletionReceipt struct {
 	Identities   int    `json:"identitiesDeleted"`
 	Interactions int    `json:"interactionStatsDeleted"`
 	Candidates   int    `json:"mergeCandidatesDeleted"`
+	Persons      int    `json:"personsDeleted"`
 }
 
 // DeletePerson removes a canonical person and every row derived from them, and
@@ -64,6 +66,13 @@ func (s *Service) DeletePerson(
 	reason string,
 	note string,
 ) (PersonDeletionReceipt, error) {
+	authorizedWorkspace, err := s.client.RevenueWorkspace.Get(ctx, workspaceID)
+	if err != nil {
+		return PersonDeletionReceipt{}, err
+	}
+	if _, err := s.RequireWorkspaceCapability(ctx, u, authorizedWorkspace, WorkspaceContribute); err != nil {
+		return PersonDeletionReceipt{}, err
+	}
 	if reason != "subject_request" {
 		reason = "user_action"
 	}
@@ -97,11 +106,46 @@ func (s *Service) DeletePerson(
 	if err != nil {
 		return PersonDeletionReceipt{}, err
 	}
+	canonical, err := followMergedPerson(ctx, txc, target)
+	if err != nil {
+		return PersonDeletionReceipt{}, err
+	}
+	canonical, err = txc.Person.Query().Where(
+		person.IDEQ(canonical.ID), person.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+	).Only(ctx)
+	if err != nil {
+		return PersonDeletionReceipt{}, fmt.Errorf("%w: merged person points outside its workspace", ErrConflict)
+	}
+	familyIDs := []uuid.UUID{canonical.ID}
+	seen := map[uuid.UUID]bool{canonical.ID: true}
+	frontier := []uuid.UUID{canonical.ID}
+	for depth := 0; len(frontier) > 0; depth++ {
+		children, queryErr := txc.Person.Query().Where(
+			person.HasWorkspaceWith(revenueworkspace.IDEQ(ws.ID)),
+			person.StatusEQ("merged"),
+			person.MergedIntoPersonIDIn(frontier...),
+		).All(ctx)
+		if queryErr != nil {
+			return PersonDeletionReceipt{}, queryErr
+		}
+		if depth >= personMergeFollowDepth && len(children) > 0 {
+			return PersonDeletionReceipt{}, fmt.Errorf("%w: person merge family is too deep", ErrConflict)
+		}
+		frontier = frontier[:0]
+		for _, child := range children {
+			if seen[child.ID] {
+				continue
+			}
+			seen[child.ID] = true
+			familyIDs = append(familyIDs, child.ID)
+			frontier = append(frontier, child.ID)
+		}
+	}
 
 	// Read the anchors before deleting anything — they are the only record of
 	// which identities must stay suppressed.
 	identities, err := txc.PersonIdentity.Query().
-		Where(personidentity.HasPersonWith(person.IDEQ(target.ID))).All(ctx)
+		Where(personidentity.HasPersonWith(person.IDIn(familyIDs...))).All(ctx)
 	if err != nil {
 		return PersonDeletionReceipt{}, err
 	}
@@ -136,34 +180,34 @@ func (s *Service) DeletePerson(
 	// Derived rows first: every person FK is ON DELETE NO ACTION, so the person
 	// row cannot be removed while anything still references it.
 	if receipt.Attributes, err = txc.PersonAttribute.Delete().
-		Where(personattribute.HasPersonWith(person.IDEQ(target.ID))).Exec(ctx); err != nil {
+		Where(personattribute.HasPersonWith(person.IDIn(familyIDs...))).Exec(ctx); err != nil {
 		return PersonDeletionReceipt{}, err
 	}
 	if receipt.Interactions, err = txc.PersonInteractionStat.Delete().
-		Where(personinteractionstat.HasPersonWith(person.IDEQ(target.ID))).Exec(ctx); err != nil {
+		Where(personinteractionstat.HasPersonWith(person.IDIn(familyIDs...))).Exec(ctx); err != nil {
 		return PersonDeletionReceipt{}, err
 	}
 	// A merge candidate references the person from either side.
 	if receipt.Candidates, err = txc.PersonMergeCandidate.Delete().
 		Where(personmergecandidate.Or(
-			personmergecandidate.HasProposedPersonWith(person.IDEQ(target.ID)),
-			personmergecandidate.HasExistingPersonWith(person.IDEQ(target.ID)),
+			personmergecandidate.HasProposedPersonWith(person.IDIn(familyIDs...)),
+			personmergecandidate.HasExistingPersonWith(person.IDIn(familyIDs...)),
 		)).Exec(ctx); err != nil {
 		return PersonDeletionReceipt{}, err
 	}
 	if receipt.Identities, err = txc.PersonIdentity.Delete().
-		Where(personidentity.HasPersonWith(person.IDEQ(target.ID))).Exec(ctx); err != nil {
+		Where(personidentity.HasPersonWith(person.IDIn(familyIDs...))).Exec(ctx); err != nil {
 		return PersonDeletionReceipt{}, err
 	}
 	// Participants keep their row — a participant is a statement about a
 	// relationship, not about the person — but must stop pointing at a person who
 	// no longer exists.
 	if _, err = txc.RelationshipParticipant.Update().
-		Where(relationshipparticipant.HasPersonWith(person.IDEQ(target.ID))).
+		Where(relationshipparticipant.HasPersonWith(person.IDIn(familyIDs...))).
 		ClearPerson().Save(ctx); err != nil {
 		return PersonDeletionReceipt{}, err
 	}
-	if err = txc.Person.DeleteOne(target).Exec(ctx); err != nil {
+	if receipt.Persons, err = txc.Person.Delete().Where(person.IDIn(familyIDs...)).Exec(ctx); err != nil {
 		return PersonDeletionReceipt{}, err
 	}
 	if err = tx.Commit(); err != nil {

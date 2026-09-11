@@ -151,7 +151,7 @@ export function ReviewSheet({
       setOriginal(await getSourceBody(action.id));
     } catch (e) {
       if (e instanceof RevenueAPIError && e.status === 404) {
-        setOriginal("(No original email is linked to this action.)");
+        setOriginal("(The original email body is not available.)");
       } else {
         onError(errMessage(e, "Could not load the original email."));
       }

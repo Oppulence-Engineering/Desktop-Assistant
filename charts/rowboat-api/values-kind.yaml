@@ -106,18 +106,23 @@ config:
   OTEL_EXPORTER_OTLP_ENDPOINT: ""
 
   OPENAI_BASE_URL: http://rowboat-api-devstack:8090/v1
-  # Overridden per-deploy by rowboat-api-kind.sh: empty (live OpenRouter) by
-  # default, the devstack mock when ROWBOAT_KIND_MOCK_LLM is set. Kept pointed at
-  # the mock here so a bare `helm install` with these values stays free.
-  OPENROUTER_BASE_URL: http://rowboat-api-devstack:8090/v1
-  GOOGLE_AUTHORIZE_URL: http://localhost:18090/o/oauth2/v2/auth
-  GOOGLE_TOKEN_URL: http://rowboat-api-devstack:8090/v1/google-oauth-mock/token
+  # Live OpenRouter is the dogfood default. rowboat-api-kind.sh points this at
+  # devstack only when ROWBOAT_KIND_MOCK_LLM is explicitly set.
+  OPENROUTER_BASE_URL: ""
+  # Local dogfooding uses the real Google OAuth endpoints. The kind helper can
+  # still opt into devstack explicitly with ROWBOAT_KIND_MOCK_GOOGLE=1.
+  GOOGLE_AUTHORIZE_URL: ""
+  GOOGLE_TOKEN_URL: ""
   GOOGLE_REDIRECT_URI: http://localhost:18080/oauth/google/callback
+  GOOGLE_WEB_RETURN_URL: http://localhost:18082/app/settings?settings=connections
   TEMPORAL_ENABLED: "true"
   TEMPORAL_ADDRESS: rowboat-api-temporal:7233
   TEMPORAL_NAMESPACE: default
   TEMPORAL_TASK_QUEUE: rowboat-api-background-tasks
   TEMPORAL_WORKER_ENABLED: "false"
+  # Let the Assistant record pending proposals for human review. No Act-seam
+  # endpoint is configured in kind, so approval can never execute externally.
+  ACTIONS_ENABLED: "true"
   CLOUD_EVENTS_ROUTING_ENABLED: "true"
   CLOUD_RUNTIME_SANDBOX_ENABLED: "true"
   CLOUD_RUNTIME_SANDBOX_BACKEND: kubernetes-job

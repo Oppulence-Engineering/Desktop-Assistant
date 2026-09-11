@@ -167,6 +167,10 @@ func TestChatCompleteRefundsOnFailure(t *testing.T) {
 	if err == nil {
 		t.Fatal("want error on upstream 502")
 	}
+	var upstreamErr *llm.UpstreamStatusError
+	if !errors.As(err, &upstreamErr) || upstreamErr.StatusCode != http.StatusBadGateway {
+		t.Fatalf("error = %v, want typed upstream status 502", err)
+	}
 	if avail, _ := credits.Available(ctx, client, 100000); avail != 100000 {
 		t.Fatalf("available = %d, want full refund", avail)
 	}

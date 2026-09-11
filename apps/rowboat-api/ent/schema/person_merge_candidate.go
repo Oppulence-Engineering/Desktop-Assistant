@@ -18,11 +18,10 @@ import (
 // relationship merge physically re-points observations, assertions, evidence,
 // commitments, actions and mail threads across accounts — destructive and hard to
 // reverse, so it needs an immutable decision ledger and compensation records. A
-// person merge in v1 moves exactly two things, both trivially reversible:
-// person_identities.person_id and relationship_participants.person_id. The loser is
-// tombstoned rather than deleted, and previous_state_json records the exact moved id
-// sets, which is the complete compensation record. If person merges ever move
-// evidence, add the ledger then.
+// person merge moves person-owned identities, profile attributes, participant links,
+// and interaction rollups. The loser is tombstoned rather than deleted, and
+// previous_state_json records the exact moved ids plus both sides of combined
+// rollups. If person merges ever move source evidence, add the ledger then.
 type PersonMergeCandidate struct{ ent.Schema }
 
 // Mixin adds the shared immutable ID and timestamp fields.
@@ -59,8 +58,8 @@ func (PersonMergeCandidate) Fields() []ent.Field {
 		field.UUID("decision_actor_id", uuid.UUID{}).Optional().Nillable(),
 		field.Time("decided_at").Optional().Nillable(),
 		field.String("idempotency_key").Optional(),
-		// The complete compensation record: the exact moved identity and
-		// participant ids, so a merge can be undone without guessing.
+		// The complete compensation record: moved ids and both sides of every
+		// combined interaction rollup, so undo never has to guess.
 		field.Text("previous_state_json").Default("{}").Sensitive(),
 	}
 }

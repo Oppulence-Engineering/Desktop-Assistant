@@ -5,24 +5,50 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
+import type { RelationshipCommitmentAcceptance } from "./relationshipCommitmentAcceptance";
+import type { RelationshipCommitmentDirection } from "./relationshipCommitmentDirection";
+import type { RelationshipCommitmentStatus } from "./relationshipCommitmentStatus";
 
 /**
  * An open or completed promise attached to the relationship.
  */
 export interface RelationshipCommitment {
+  /** Acceptance state. */
+  acceptance?: RelationshipCommitmentAcceptance;
+  /** Promise beneficiary. */
+  beneficiaryParticipantRef?: string;
+  /** Current blocker. */
+  blocker?: string;
+  /**
+   * Completion time.
+   * @nullable
+   */
+  completedAt?: string | null;
   /** Extraction confidence. */
   confidence: number;
+  /** Promise counterparty. */
+  counterpartyParticipantRef?: string;
+  /** Current transition version. */
+  currentEventVersion?: number;
   /** Who owes the commitment. */
-  direction: string;
+  direction: RelationshipCommitmentDirection;
   /**
    * Due time.
    * @nullable
    */
   dueAt?: string | null;
+  /** Due condition as stated. */
+  duePhrase?: string;
+  /** Timezone used to resolve the due date. */
+  dueTimezone?: string;
   /** Stable UUID primary key. */
   id: string;
+  /** Promise owner. */
+  ownerParticipantRef?: string;
+  /** Exact source phrase. */
+  sourcePhrase?: string;
   /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
-  status: string;
+  status: RelationshipCommitmentStatus;
   /** Commitment text. */
   text: string;
   /** Whether a human confirmed it. */

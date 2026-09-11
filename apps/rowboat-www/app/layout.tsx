@@ -7,9 +7,9 @@ import "./globals.css";
 import "./product-theme.css";
 
 export const metadata: Metadata = {
-  title: "Oppulence — Relationship Intelligence",
+  title: "Oppulence — The Commitment Ledger",
   description:
-    "Oppulence maintains a living model of every customer relationship and shows what changed, what needs action, and the evidence behind every recommendation.",
+    "Oppulence is the independent record of business promises: what you owe, what they owe, what changed, and the proof behind it.",
   icons: {
     icon: "/icon.png",
     apple: "/icon.png",
@@ -66,9 +66,7 @@ export default function RootLayout({
         className={`${geist.variable} ${geistMono.variable} ${f37Stout.variable} ${inter.variable} antialiased`}
         suppressHydrationWarning
       >
-        <AppRouterCacheProvider options={{ key: "css" }}>
-          {children}
-        </AppRouterCacheProvider>
+        <AppRouterCacheProvider options={{ key: "css" }}>{children}</AppRouterCacheProvider>
       </body>
     </html>
   );

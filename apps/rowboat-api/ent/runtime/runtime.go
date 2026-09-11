@@ -4006,6 +4006,36 @@ func init() {
 	revenueleakscan.DefaultActionsCreated = revenueleakscanDescActionsCreated.Default.(int)
 	// revenueleakscan.ActionsCreatedValidator is a validator for the "actions_created" field. It is called by the builders before save.
 	revenueleakscan.ActionsCreatedValidator = revenueleakscanDescActionsCreated.Validators[0].(func(int) error)
+	// revenueleakscanDescCommitmentsCreated is the schema descriptor for commitments_created field.
+	revenueleakscanDescCommitmentsCreated := revenueleakscanFields[9].Descriptor()
+	// revenueleakscan.DefaultCommitmentsCreated holds the default value on creation for the commitments_created field.
+	revenueleakscan.DefaultCommitmentsCreated = revenueleakscanDescCommitmentsCreated.Default.(int)
+	// revenueleakscan.CommitmentsCreatedValidator is a validator for the "commitments_created" field. It is called by the builders before save.
+	revenueleakscan.CommitmentsCreatedValidator = revenueleakscanDescCommitmentsCreated.Validators[0].(func(int) error)
+	// revenueleakscanDescThreadsDeepRead is the schema descriptor for threads_deep_read field.
+	revenueleakscanDescThreadsDeepRead := revenueleakscanFields[10].Descriptor()
+	// revenueleakscan.DefaultThreadsDeepRead holds the default value on creation for the threads_deep_read field.
+	revenueleakscan.DefaultThreadsDeepRead = revenueleakscanDescThreadsDeepRead.Default.(int)
+	// revenueleakscan.ThreadsDeepReadValidator is a validator for the "threads_deep_read" field. It is called by the builders before save.
+	revenueleakscan.ThreadsDeepReadValidator = revenueleakscanDescThreadsDeepRead.Validators[0].(func(int) error)
+	// revenueleakscanDescThreadsSnippetOnly is the schema descriptor for threads_snippet_only field.
+	revenueleakscanDescThreadsSnippetOnly := revenueleakscanFields[11].Descriptor()
+	// revenueleakscan.DefaultThreadsSnippetOnly holds the default value on creation for the threads_snippet_only field.
+	revenueleakscan.DefaultThreadsSnippetOnly = revenueleakscanDescThreadsSnippetOnly.Default.(int)
+	// revenueleakscan.ThreadsSnippetOnlyValidator is a validator for the "threads_snippet_only" field. It is called by the builders before save.
+	revenueleakscan.ThreadsSnippetOnlyValidator = revenueleakscanDescThreadsSnippetOnly.Validators[0].(func(int) error)
+	// revenueleakscanDescThreadsSkipped is the schema descriptor for threads_skipped field.
+	revenueleakscanDescThreadsSkipped := revenueleakscanFields[12].Descriptor()
+	// revenueleakscan.DefaultThreadsSkipped holds the default value on creation for the threads_skipped field.
+	revenueleakscan.DefaultThreadsSkipped = revenueleakscanDescThreadsSkipped.Default.(int)
+	// revenueleakscan.ThreadsSkippedValidator is a validator for the "threads_skipped" field. It is called by the builders before save.
+	revenueleakscan.ThreadsSkippedValidator = revenueleakscanDescThreadsSkipped.Validators[0].(func(int) error)
+	// revenueleakscanDescExtractionFailures is the schema descriptor for extraction_failures field.
+	revenueleakscanDescExtractionFailures := revenueleakscanFields[13].Descriptor()
+	// revenueleakscan.DefaultExtractionFailures holds the default value on creation for the extraction_failures field.
+	revenueleakscan.DefaultExtractionFailures = revenueleakscanDescExtractionFailures.Default.(int)
+	// revenueleakscan.ExtractionFailuresValidator is a validator for the "extraction_failures" field. It is called by the builders before save.
+	revenueleakscan.ExtractionFailuresValidator = revenueleakscanDescExtractionFailures.Validators[0].(func(int) error)
 	// revenueleakscanDescID is the schema descriptor for id field.
 	revenueleakscanDescID := revenueleakscanMixinFields0[0].Descriptor()
 	// revenueleakscan.DefaultID holds the default value on creation for the id field.

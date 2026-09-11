@@ -716,7 +716,7 @@ export function RelationshipsView({
                       </div>
                     </th>
                     <th className="w-32 border-r border-border px-3">Last interaction</th>
-                    <th className="w-40 border-r border-border px-3">Connection strength</th>
+                    <th className="w-40 border-r border-border px-3">Email threads</th>
                     <th className="w-[136px] border-r border-border px-3">Categories</th>
                     <th className="w-44 border-r border-border px-3">Domains</th>
                     <th className="w-[120px] border-r border-border px-3">LinkedIn</th>
@@ -779,7 +779,7 @@ export function RelationshipsView({
                       </td>
                       <td className="border-r border-border px-3">
                         <span className="text-[13px] text-primary/55">
-                          {interactionCountLabel(relationship.emailThreadCount ?? 0)}
+                          {interactionCountLabel(relationship.emailThreadCount)}
                         </span>
                       </td>
                       <td className="border-r border-border px-3">

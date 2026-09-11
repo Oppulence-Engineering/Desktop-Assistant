@@ -49,8 +49,8 @@ const post = (path: string, body?: unknown) =>
 
 /** The operator's pending action proposals awaiting approval. */
 export const listPending = () =>
-  call<{ proposals: ActionProposal[] }>("/action-proposals?status=pending").then(
-    (r) => r.proposals,
+  call<{ proposals?: ActionProposal[] }>("/action-proposals?status=pending").then(
+    (r) => r.proposals ?? [],
   );
 
 export const getProposal = (id: string) => call<ActionProposal>(`/action-proposals/${id}`);

@@ -1,6 +1,7 @@
 package revenue
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationship"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipobservation"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueevidence"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 )
 
 func TestConversationDeletionHonorsLegalHoldThenRemovesServerContentIdempotently(t *testing.T) {
@@ -21,6 +23,13 @@ func TestConversationDeletionHonorsLegalHoldThenRemovesServerContentIdempotently
 		t.Fatal(err)
 	}
 	rel := results[0].Relationship
+	viewer := newUser(t, f.client, "conversation-viewer@x.co", "conversation-viewer")
+	if _, err := f.svc.UpsertWorkspaceMember(f.ctx, f.user, viewer.ID, "viewer"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.svc.RequestConversationDeletion(auth.WithUser(f.ctx, viewer), viewer, rel.ID, "delete-viewer-1"); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("viewer conversation deletion = %v, want ErrForbidden", err)
+	}
 	policy := ConversationPolicyLayer{
 		LayerID: "account:deletion-test", Scope: "account", Enforced: true,
 		Capture: "require_consent", ModelRoute: "hosted_allowed", PublishEvidence: true,

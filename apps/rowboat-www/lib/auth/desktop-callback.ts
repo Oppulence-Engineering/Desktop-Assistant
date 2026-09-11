@@ -52,10 +52,7 @@ export function buildDesktopState(port: number, nonce: string): string {
  * when this is an ordinary web sign-in (the overwhelmingly common case) or when
  * the state names a port we do not hand codes to.
  */
-export function desktopCallbackTarget(
-  state: string | null,
-  code: string,
-): URL | null {
+export function desktopCallbackTarget(state: string | null, code: string): URL | null {
   if (!state?.startsWith(`${DESKTOP_STATE_PREFIX}.`)) return null;
 
   const parsed = DesktopStateSchema.safeParse(state);

@@ -7,6 +7,11 @@ import "client-only";
 // server-side and bounces the browser back through WorkOS on a 401.
 
 import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
+import {
+  ExportCommitment200Response,
+  ListCommitments200Response,
+} from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
+import { GetOpenPromisesReport200Response } from "@/lib/api/generated/zod/revenue/revenue";
 import { RelationshipGraphSchema } from "@/types/revenue";
 import type {
   ActionAudit,
@@ -36,6 +41,10 @@ import type {
   ResearchConsentState,
   ResearchEstimate,
   ResearchStatus,
+  CommitmentRegisterFilter,
+  CommitmentRecord,
+  OpenPromisesReport,
+  RegisterEntry,
 } from "@/types/revenue";
 
 export class RevenueAPIError extends Error {
@@ -46,6 +55,28 @@ export class RevenueAPIError extends Error {
     this.name = "RevenueAPIError";
     this.status = status;
     this.code = code;
+  }
+}
+
+/**
+ * Validates a response against its contract.
+ *
+ * A mismatch means this client and the API disagree about the shape, which is
+ * a deployment fact, not something the reader did. A zod issue list is a
+ * developer artifact — printed verbatim it put
+ * `[{"expected":"array","code":"invalid_type",…}]` in front of the user — so
+ * the issues go to the console and the caller gets a sentence it can render.
+ */
+function parsed<T>(schema: { parse: (value: unknown) => T }, value: unknown, subject: string): T {
+  try {
+    return schema.parse(value);
+  } catch (error) {
+    console.error(`Unexpected ${subject} response`, error);
+    throw new RevenueAPIError(
+      `The ${subject} response did not match what this app expects. The app and the API are probably running different versions.`,
+      0,
+      "schema_mismatch",
+    );
   }
 }
 
@@ -168,11 +199,42 @@ export const startScan = (lookbackDays?: number) =>
 export const getScan = (scanId: string, signal?: AbortSignal) =>
   call<RevenueLeakScan>(`/revenue-leak-scans/${scanId}`, { signal });
 
-// Scan history is not a server list endpoint; the panel keeps its own record of
-// scans it started this session and re-hydrates each by id.
-export async function getScans(ids: string[]): Promise<RevenueLeakScan[]> {
-  const rows = await Promise.all(ids.map((id) => getScan(id).catch(() => null)));
-  return rows.filter((r): r is RevenueLeakScan => r !== null);
+export const listScans = async () =>
+  call<{ scans: RevenueLeakScan[] }>("/revenue-leak-scans?limit=10").then(
+    (body) => body.scans ?? [],
+  );
+
+export function latestCompletedScan(
+  scans: Array<Pick<RevenueLeakScan, "id" | "status" | "threadsSeen">>,
+) {
+  return (
+    scans.find((scan) => scan.status === "completed" && (scan.threadsSeen ?? 0) > 0) ??
+    scans.find((scan) => scan.status === "completed")
+  );
+}
+
+export function googleSourceHealth(
+  sources: Array<{
+    source: string;
+    accounts: Array<{ status: string; missingScopes: string[] }>;
+  }>,
+) {
+  const accounts = sources.find((source) => source.source === "google")?.accounts ?? [];
+  if (
+    accounts.some(
+      (account) =>
+        account.status === "reconnect_required" ||
+        account.status === "disconnected" ||
+        account.missingScopes.length > 0,
+    )
+  ) {
+    return "needs_reconnect" as const;
+  }
+  return accounts.some((account) =>
+    ["connected", "backfilling", "live", "stale"].includes(account.status),
+  )
+    ? ("ready" as const)
+    : ("not_connected" as const);
 }
 
 // --- queue reads -------------------------------------------------------------
@@ -231,8 +293,20 @@ export const companyLinkedInURL = (
     : `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(displayName)}`;
 };
 
-export const interactionCountLabel = (count: number) =>
-  `${count} interaction${count === 1 ? "" : "s"}`;
+// An absent count is not a count of zero.
+//
+// This rendered `count ?? 0` as "0 interactions", so an account last touched
+// eighteen hours ago was labelled as having no interactions at all — the
+// number had simply never been computed. Stating a total nobody counted is the
+// product's worst failure mode: confidently wrong beats "we do not know".
+export const interactionCountLabel = (count: number | null | undefined) => {
+  if (count === null || count === undefined) return "—";
+  // It counts indexed email threads, so it says so. Called "interactions" it
+  // read as every touch of the account, which made "0 interactions" sit next
+  // to "last interaction 18 hours ago" and look like a contradiction — the
+  // account had been touched, just not over indexed mail.
+  return `${count} email thread${count === 1 ? "" : "s"}`;
+};
 
 export async function listRelationships(
   filters: RelationshipFilters = {},
@@ -298,35 +372,43 @@ export async function getRelationshipGraph(
       (latest, graph) => (graph.generatedAt > latest ? graph.generatedAt : latest),
       new Date().toISOString(),
     );
-    return RelationshipGraphSchema.parse({
-      contractVersion: "2026-08-01",
-      generatedAt,
-      asOf: input.asOf || generatedAt,
-      historical: Boolean(input.asOf),
-      scope: "portfolio",
-      depth: input.depth || 2,
-      nodes: [
-        ...new Map(graphs.flatMap((graph) => graph.nodes).map((node) => [node.id, node])).values(),
-      ],
-      edges: [
-        ...new Map(graphs.flatMap((graph) => graph.edges).map((edge) => [edge.id, edge])).values(),
-      ],
-      permissions: graphs.length
-        ? {
-            canView: graphs.every((graph) => graph.permissions.canView),
-            canContribute: graphs.every((graph) => graph.permissions.canContribute),
-            canApprove: graphs.every((graph) => graph.permissions.canApprove),
-            canExecute: graphs.every((graph) => graph.permissions.canExecute),
-            canSaveViews: graphs.every((graph) => graph.permissions.canSaveViews),
-          }
-        : {
-            canView: true,
-            canContribute: false,
-            canApprove: false,
-            canExecute: false,
-            canSaveViews: false,
-          },
-    });
+    return parsed(
+      RelationshipGraphSchema,
+      {
+        contractVersion: "2026-08-01",
+        generatedAt,
+        asOf: input.asOf || generatedAt,
+        historical: Boolean(input.asOf),
+        scope: "portfolio",
+        depth: input.depth || 2,
+        nodes: [
+          ...new Map(
+            graphs.flatMap((graph) => graph.nodes).map((node) => [node.id, node]),
+          ).values(),
+        ],
+        edges: [
+          ...new Map(
+            graphs.flatMap((graph) => graph.edges).map((edge) => [edge.id, edge]),
+          ).values(),
+        ],
+        permissions: graphs.length
+          ? {
+              canView: graphs.every((graph) => graph.permissions.canView),
+              canContribute: graphs.every((graph) => graph.permissions.canContribute),
+              canApprove: graphs.every((graph) => graph.permissions.canApprove),
+              canExecute: graphs.every((graph) => graph.permissions.canExecute),
+              canSaveViews: graphs.every((graph) => graph.permissions.canSaveViews),
+            }
+          : {
+              canView: true,
+              canContribute: false,
+              canApprove: false,
+              canExecute: false,
+              canSaveViews: false,
+            },
+      },
+      "relationship graph",
+    );
   }
 }
 
@@ -767,4 +849,94 @@ export function relativeTime(iso?: string): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+// --- the commitment register -------------------------------------------------
+//
+// One route, five views. Before this existed the register was assembled in the
+// browser from relationship-graph nodes, which could not page, could not filter
+// server-side, and could not answer "by owner" or "what changed" at all.
+
+export async function listCommitments(
+  filter: CommitmentRegisterFilter = {},
+  signal?: AbortSignal,
+): Promise<RegisterEntry[]> {
+  const params = new URLSearchParams();
+  if (filter.direction) params.set("direction", filter.direction);
+  if (filter.state?.length) params.set("state", filter.state.join(","));
+  if (filter.owner) params.set("owner", filter.owner);
+  if (filter.relationshipId) params.set("relationshipId", filter.relationshipId);
+  if (filter.dueBefore) params.set("dueBefore", filter.dueBefore);
+  if (filter.changedSince) params.set("changedSince", filter.changedSince);
+  if (filter.includeCandidates) params.set("includeCandidates", "true");
+  if (filter.limit) params.set("limit", String(filter.limit));
+  if (filter.offset) params.set("offset", String(filter.offset));
+  const query = params.toString();
+  const res = parsed(
+    ListCommitments200Response,
+    await call<unknown>(`/commitments${query ? `?${query}` : ""}`, { signal }),
+    "commitments",
+  );
+  return res.commitments.map((row) => ({
+    ...row,
+    dueAt: row.dueAt ?? undefined,
+    completedAt: row.completedAt ?? undefined,
+  })) as RegisterEntry[];
+}
+
+export async function getCommitmentRecord(
+  commitmentId: string,
+  signal?: AbortSignal,
+): Promise<CommitmentRecord> {
+  const record = parsed(
+    ExportCommitment200Response,
+    await call<unknown>(`/commitments/${encodeURIComponent(commitmentId)}/export`, { signal }),
+    "commitment record",
+  );
+  return { ...record, dueAt: record.dueAt ?? undefined } as CommitmentRecord;
+}
+
+/** The Markdown document a user forwards. Returned as text, not JSON. */
+export async function getCommitmentRecordMarkdown(commitmentId: string): Promise<string> {
+  const res = await dashboardFetch(
+    toDashboardAPIPath(`/commitments/${encodeURIComponent(commitmentId)}/export?format=md`),
+  );
+  if (!res.ok) {
+    throw new RevenueAPIError(`Export failed (${res.status})`, res.status);
+  }
+  return res.text();
+}
+
+export async function getOpenPromisesReport(
+  scanId: string,
+  signal?: AbortSignal,
+): Promise<OpenPromisesReport> {
+  const report = parsed(
+    GetOpenPromisesReport200Response,
+    await call<unknown>(`/revenue-leak-scans/${encodeURIComponent(scanId)}/report`, { signal }),
+    "open promises report",
+  );
+  return {
+    ...report,
+    items: report.items.map((item) => ({ ...item, dueAt: item.dueAt ?? undefined })),
+  } as OpenPromisesReport;
+}
+
+export async function getOpenPromisesReportMarkdown(scanId: string): Promise<string> {
+  const res = await dashboardFetch(
+    toDashboardAPIPath(`/revenue-leak-scans/${encodeURIComponent(scanId)}/report?format=md`),
+  );
+  if (!res.ok) throw new RevenueAPIError(`Report export failed (${res.status})`, res.status);
+  return res.text();
+}
+
+export function downloadMarkdown(filename: string, markdown: string) {
+  const url = URL.createObjectURL(new Blob([markdown], { type: "text/markdown;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }

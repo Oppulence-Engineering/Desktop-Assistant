@@ -44,7 +44,6 @@ type AdmissionConfig struct {
 	Prices                 *pricing.Table
 	SpendLimits            quota.SpendLimits
 	DefaultModel           string
-	MaxLLMCalls            int
 	MaxOutputTokens        int
 }
 
@@ -62,7 +61,6 @@ func AdmissionFromConfig(cfg appconfig.Config, gate *quota.Gate, prices *pricing
 		Prices:                    prices,
 		SpendLimits:               quota.SpendLimits{Daily: cfg.DailyCreditLimit, Monthly: cfg.MonthlyCreditLimit},
 		DefaultModel:              cfg.CloudRuntimeModel,
-		MaxLLMCalls:               cfg.CloudRuntimeMaxLLMCalls,
 		MaxOutputTokens:           defaultPreflightOutputToks,
 	}
 }
@@ -81,9 +79,6 @@ func (e *AdmissionRejectedError) Error() string { return e.Message }
 func (s *Starter) SetAdmission(cfg AdmissionConfig) {
 	if cfg.StartRateWindow <= 0 {
 		cfg.StartRateWindow = defaultStartRateWindow
-	}
-	if cfg.MaxLLMCalls <= 0 {
-		cfg.MaxLLMCalls = 1
 	}
 	if cfg.MaxOutputTokens <= 0 {
 		cfg.MaxOutputTokens = defaultPreflightOutputToks
@@ -206,15 +201,13 @@ func (cfg AdmissionConfig) estimateCredits(p Params) int {
 	if inputTokens < minPreflightInputToks {
 		inputTokens = minPreflightInputToks
 	}
-	maxCalls := cfg.MaxLLMCalls
-	if maxCalls <= 0 {
-		maxCalls = 1
-	}
 	maxOutput := cfg.MaxOutputTokens
 	if maxOutput <= 0 {
 		maxOutput = defaultPreflightOutputToks
 	}
-	return cfg.Prices.LLMEstimate(model, inputTokens, maxOutput) * maxCalls
+	// Admission only needs enough credit to begin. The gateway reserves each
+	// actual call, while the runtime independently enforces its call limit.
+	return cfg.Prices.LLMEstimate(model, inputTokens, maxOutput)
 }
 
 func (s *Starter) createDeadLetterRun(ctx context.Context, p Params, runID, trigger string, rejection *AdmissionRejectedError, priorityKey int) (*ent.BackgroundTaskRun, error) {

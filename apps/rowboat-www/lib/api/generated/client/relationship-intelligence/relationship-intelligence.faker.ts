@@ -16,6 +16,7 @@ import type {
   CorrectConversationEvidence201,
   CreateMutualActionPlan201,
   DecideConversationChange201,
+  ExportCommitment200One,
   GetCommitmentEvents200,
   GetConversationPolicy200,
   GetPublicMutualActionPlan200,
@@ -26,6 +27,7 @@ import type {
   GetRelationshipSourceStatuses200,
   GetRelationshipTimeline200,
   IngestRelationshipObservations201,
+  ListCommitments200,
   ListRelationshipAttention200,
   ListRelationshipIdentityCandidates200,
   ListRelationships200,
@@ -43,6 +45,156 @@ import type {
   RunCommitmentRecovery200,
   ShareMutualActionPlan200,
 } from "../model";
+
+export const getListCommitmentsResponseMock = (
+  overrideResponse: Partial<Extract<ListCommitments200, object>> = {},
+): ListCommitments200 => ({
+  commitments: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+    () => ({
+      ...{
+        acceptance: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([
+            "candidate",
+            "internally_confirmed",
+            "offered",
+            "accepted",
+            "disputed",
+          ] as const),
+          undefined,
+        ]),
+        beneficiaryParticipantRef: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        blocker: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        completedAt: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+          undefined,
+        ]),
+        confidence: faker.number.float({ fractionDigits: 2 }),
+        counterpartyParticipantRef: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        currentEventVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
+        direction: faker.helpers.arrayElement([
+          "promised_by_me",
+          "promised_by_them",
+          "mutual",
+        ] as const),
+        dueAt: faker.helpers.arrayElement([
+          faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+          undefined,
+        ]),
+        duePhrase: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        dueTimezone: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        id: faker.string.uuid(),
+        ownerParticipantRef: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        sourcePhrase: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        status: faker.helpers.arrayElement([
+          "open",
+          "fulfilled",
+          "missed",
+          "waived",
+          "cancelled",
+          "superseded",
+        ] as const),
+        text: faker.string.alpha({ length: { min: 10, max: 20 } }),
+        userConfirmed: faker.datatype.boolean(),
+      },
+      ...{
+        relationshipId: faker.helpers.arrayElement([faker.string.uuid(), undefined]),
+        relationshipName: faker.helpers.arrayElement([
+          faker.string.alpha({ length: { min: 10, max: 20 } }),
+          undefined,
+        ]),
+        state: faker.helpers.arrayElement([
+          "open",
+          "at_risk",
+          "met",
+          "missed",
+          "waived",
+          "disputed",
+          "cancelled",
+          "superseded",
+        ] as const),
+      },
+    }),
+  ),
+  ...overrideResponse,
+});
+
+export const getExportCommitmentResponseMock = (
+  overrideResponse: Partial<Extract<ExportCommitment200One | string, object>> = {},
+): ExportCommitment200One | string =>
+  faker.helpers.arrayElement([
+    {
+      account: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      confidence: faker.number.float({ fractionDigits: 2 }),
+      counterparty: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      direction: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      dueAt: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+        undefined,
+      ]),
+      duePhrase: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      evidence: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+        () => ({
+          contentHash: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          excerpt: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          occurredAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+          source: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          sourceUri: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+        }),
+      ),
+      generatedAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+      history: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(
+        () => ({
+          actorRef: faker.helpers.arrayElement([
+            faker.string.alpha({ length: { min: 10, max: 20 } }),
+            undefined,
+          ]),
+          actorType: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          kind: faker.string.alpha({ length: { min: 10, max: 20 } }),
+          occurredAt: faker.date.past().toISOString().slice(0, 19) + "Z",
+          version: faker.number.int(),
+        }),
+      ),
+      id: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      owner: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      state: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      text: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      ...overrideResponse,
+    },
+    faker.word.sample(),
+  ]);
 
 export const getGetPublicMutualActionPlanResponseMock = (): GetPublicMutualActionPlan200 => ({});
 
@@ -2743,14 +2895,68 @@ export const getGetRelationshipResponseMock = (
   ]),
   commitments: faker.helpers.arrayElement([
     Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
+      acceptance: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([
+          "candidate",
+          "internally_confirmed",
+          "offered",
+          "accepted",
+          "disputed",
+        ] as const),
+        undefined,
+      ]),
+      beneficiaryParticipantRef: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      blocker: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      completedAt: faker.helpers.arrayElement([
+        faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+        undefined,
+      ]),
       confidence: faker.number.float({ fractionDigits: 2 }),
-      direction: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      counterpartyParticipantRef: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      currentEventVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
+      direction: faker.helpers.arrayElement([
+        "promised_by_me",
+        "promised_by_them",
+        "mutual",
+      ] as const),
       dueAt: faker.helpers.arrayElement([
         faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
         undefined,
       ]),
+      duePhrase: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      dueTimezone: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
       id: faker.string.uuid(),
-      status: faker.string.alpha({ length: { min: 10, max: 20 } }),
+      ownerParticipantRef: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      sourcePhrase: faker.helpers.arrayElement([
+        faker.string.alpha({ length: { min: 10, max: 20 } }),
+        undefined,
+      ]),
+      status: faker.helpers.arrayElement([
+        "open",
+        "fulfilled",
+        "missed",
+        "waived",
+        "cancelled",
+        "superseded",
+      ] as const),
       text: faker.string.alpha({ length: { min: 10, max: 20 } }),
       userConfirmed: faker.datatype.boolean(),
     })),
@@ -3593,6 +3799,8 @@ export const getGetCommitmentEventsResponseMock = (
         "due_date_changed",
         "renegotiated",
         "fulfilled",
+        "missed",
+        "waived",
         "cancelled",
         "superseded",
       ] as const),
@@ -3628,14 +3836,64 @@ export const getGetCommitmentEventsResponseMock = (
 export const getAppendCommitmentTransitionResponseMock = (
   overrideResponse: Partial<Extract<RelationshipCommitment, object>> = {},
 ): RelationshipCommitment => ({
+  acceptance: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([
+      "candidate",
+      "internally_confirmed",
+      "offered",
+      "accepted",
+      "disputed",
+    ] as const),
+    undefined,
+  ]),
+  beneficiaryParticipantRef: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  blocker: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  completedAt: faker.helpers.arrayElement([
+    faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
+    undefined,
+  ]),
   confidence: faker.number.float({ fractionDigits: 2 }),
-  direction: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  counterpartyParticipantRef: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  currentEventVersion: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  direction: faker.helpers.arrayElement(["promised_by_me", "promised_by_them", "mutual"] as const),
   dueAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
   ]),
+  duePhrase: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  dueTimezone: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
   id: faker.string.uuid(),
-  status: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  ownerParticipantRef: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  sourcePhrase: faker.helpers.arrayElement([
+    faker.string.alpha({ length: { min: 10, max: 20 } }),
+    undefined,
+  ]),
+  status: faker.helpers.arrayElement([
+    "open",
+    "fulfilled",
+    "missed",
+    "waived",
+    "cancelled",
+    "superseded",
+  ] as const),
   text: faker.string.alpha({ length: { min: 10, max: 20 } }),
   userConfirmed: faker.datatype.boolean(),
   ...overrideResponse,

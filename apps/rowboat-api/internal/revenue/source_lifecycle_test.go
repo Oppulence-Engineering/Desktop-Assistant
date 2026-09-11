@@ -132,13 +132,17 @@ func TestSourceLifecycleProgressFreshnessRepairAndDisconnect(t *testing.T) {
 	if _, err := f.svc.BeginSourceBackfill(f.ctx, f.user, "hubspot", "portal-1"); !errors.Is(err, ErrSourceIncomplete) {
 		t.Fatalf("missing-scope source bypassed reconnect: %v", err)
 	}
-	if _, err := f.svc.ReportSourceAuthorization(f.ctx, f.user, "hubspot", SourceAuthorizationInput{
+	reauthorized, err := f.svc.ReportSourceAuthorization(f.ctx, f.user, "hubspot", SourceAuthorizationInput{
 		SourceAccountID: "portal-1", State: "completed",
 		GrantedScopes: []string{
 			"crm.objects.companies.read", "crm.objects.contacts.read", "crm.objects.deals.read",
 		},
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatalf("reauthorize source: %v", err)
+	}
+	if reauthorized.Status != "connected" || reauthorized.BackfillPhase != "idle" || reauthorized.RetryCount != 0 || reauthorized.SyncStartedAt != nil || reauthorized.LastFailedSyncAt != nil {
+		t.Fatalf("reauthorization retained failed backfill state: %#v", reauthorized)
 	}
 	rebuilding, err := f.svc.BeginSourceBackfill(f.ctx, f.user, "hubspot", "portal-1")
 	if err != nil || rebuilding.Status != "backfilling" || rebuilding.RetryCount != 0 {
@@ -199,6 +203,34 @@ func TestSourceBackfillRequiresCompletedAuthorizationAndAllReadScopes(t *testing
 	}
 	if _, err := f.svc.BeginSourceBackfill(f.ctx, f.user, "google", "owner@example.com"); !errors.Is(err, ErrConflict) {
 		t.Fatalf("running source accepted duplicate backfill: %v", err)
+	}
+}
+
+func TestMarkSourceAccountsDisconnectedCreatesNoSyntheticStatus(t *testing.T) {
+	f := newFixture(t)
+	for _, account := range []string{"owner@example.com", "second@example.com"} {
+		if _, err := f.svc.ReportSourceAuthorization(f.ctx, f.user, "google", SourceAuthorizationInput{
+			SourceAccountID: account,
+			State:           "completed",
+			GrantedScopes: []string{
+				"https://www.googleapis.com/auth/gmail.readonly",
+				"https://www.googleapis.com/auth/calendar.events.readonly",
+			},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if marked, err := f.svc.MarkSourceAccountsDisconnected(f.ctx, f.user, "google"); err != nil || marked != 2 {
+		t.Fatalf("disconnect accounts: marked=%d err=%v", marked, err)
+	}
+	statuses, err := f.svc.RelationshipSourceStatuses(f.ctx, f.user)
+	if err != nil || len(statuses) != 2 {
+		t.Fatalf("source statuses: %#v err=%v", statuses, err)
+	}
+	for _, status := range statuses {
+		if status.SourceAccountID == "default" || status.Status != "disconnected" {
+			t.Fatalf("unexpected disconnect status: %#v", status)
+		}
 	}
 }
 

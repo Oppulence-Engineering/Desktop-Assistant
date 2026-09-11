@@ -130,6 +130,9 @@ func (s *Service) RequestConversationDeletion(
 	if err != nil {
 		return ConversationDeletionReceipt{}, err
 	}
+	if _, err := s.RequireWorkspaceCapability(ctx, u, ws, WorkspaceContribute); err != nil {
+		return ConversationDeletionReceipt{}, err
+	}
 	if existing, ok, err := deletionReceiptFor(ctx, s.client, ws, receiptID); err != nil || ok {
 		if ok && existing.ScopeRef != relationshipID.String() {
 			return ConversationDeletionReceipt{}, fmt.Errorf("%w: deletion request id is already bound to another scope", ErrReviewRequired)
@@ -139,6 +142,13 @@ func (s *Service) RequestConversationDeletion(
 	rel, err := s.GetRelationship(ctx, relationshipID)
 	if err != nil {
 		return ConversationDeletionReceipt{}, err
+	}
+	inWorkspace, err := rel.QueryWorkspace().Where(revenueworkspace.IDEQ(ws.ID)).Exist(ctx)
+	if err != nil {
+		return ConversationDeletionReceipt{}, err
+	}
+	if !inWorkspace {
+		return ConversationDeletionReceipt{}, ErrNotFound
 	}
 
 	tx, err := s.client.Tx(ctx)

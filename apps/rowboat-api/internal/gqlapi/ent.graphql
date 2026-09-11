@@ -14228,6 +14228,11 @@ type RevenueLeakScan implements Node {
   relationshipsCreated: Int!
   evidencesCreated: Int!
   actionsCreated: Int!
+  commitmentsCreated: Int!
+  threadsDeepRead: Int!
+  threadsSnippetOnly: Int!
+  threadsSkipped: Int!
+  extractionFailures: Int!
   startedAt: Time
   completedAt: Time
   error: String
@@ -14392,6 +14397,61 @@ input RevenueLeakScanWhereInput {
   actionsCreatedGTE: Int
   actionsCreatedLT: Int
   actionsCreatedLTE: Int
+  """
+  commitments_created field predicates
+  """
+  commitmentsCreated: Int
+  commitmentsCreatedNEQ: Int
+  commitmentsCreatedIn: [Int!]
+  commitmentsCreatedNotIn: [Int!]
+  commitmentsCreatedGT: Int
+  commitmentsCreatedGTE: Int
+  commitmentsCreatedLT: Int
+  commitmentsCreatedLTE: Int
+  """
+  threads_deep_read field predicates
+  """
+  threadsDeepRead: Int
+  threadsDeepReadNEQ: Int
+  threadsDeepReadIn: [Int!]
+  threadsDeepReadNotIn: [Int!]
+  threadsDeepReadGT: Int
+  threadsDeepReadGTE: Int
+  threadsDeepReadLT: Int
+  threadsDeepReadLTE: Int
+  """
+  threads_snippet_only field predicates
+  """
+  threadsSnippetOnly: Int
+  threadsSnippetOnlyNEQ: Int
+  threadsSnippetOnlyIn: [Int!]
+  threadsSnippetOnlyNotIn: [Int!]
+  threadsSnippetOnlyGT: Int
+  threadsSnippetOnlyGTE: Int
+  threadsSnippetOnlyLT: Int
+  threadsSnippetOnlyLTE: Int
+  """
+  threads_skipped field predicates
+  """
+  threadsSkipped: Int
+  threadsSkippedNEQ: Int
+  threadsSkippedIn: [Int!]
+  threadsSkippedNotIn: [Int!]
+  threadsSkippedGT: Int
+  threadsSkippedGTE: Int
+  threadsSkippedLT: Int
+  threadsSkippedLTE: Int
+  """
+  extraction_failures field predicates
+  """
+  extractionFailures: Int
+  extractionFailuresNEQ: Int
+  extractionFailuresIn: [Int!]
+  extractionFailuresNotIn: [Int!]
+  extractionFailuresGT: Int
+  extractionFailuresGTE: Int
+  extractionFailuresLT: Int
+  extractionFailuresLTE: Int
   """
   started_at field predicates
   """

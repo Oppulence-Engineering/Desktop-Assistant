@@ -3,6 +3,7 @@ package revenue
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -98,13 +99,50 @@ func (s *Service) PersonAttributes(
 	if err != nil {
 		return nil, err
 	}
-	return s.client.PersonAttribute.Query().
+	attributes, err := s.client.PersonAttribute.Query().
 		Where(personattribute.HasPersonWith(person.IDEQ(p.ID))).
 		Order(
 			ent.Desc(personattribute.FieldValidFrom),
 			ent.Asc(personattribute.FieldDimension),
 		).
 		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return dedupePersonAttributes(attributes), nil
+}
+
+// dedupePersonAttributes collapses exact facts written by both the historical
+// Gmail scan path and the observation path. Distinct claims remain in the ledger.
+func dedupePersonAttributes(attributes []*ent.PersonAttribute) []*ent.PersonAttribute {
+	seen := make(map[string]int, len(attributes))
+	out := make([]*ent.PersonAttribute, 0, len(attributes))
+	for _, attribute := range attributes {
+		key := strings.Join([]string{
+			attribute.Dimension, attribute.Value, attribute.SourceType, attribute.Source,
+			attribute.Extractor, attribute.Status, strconv.FormatFloat(attribute.Confidence, 'g', -1, 64),
+			attribute.Reason, attribute.ObservedAt.UTC().Format(time.RFC3339Nano),
+			attribute.ValidFrom.UTC().Format(time.RFC3339Nano), optionalTime(attribute.ValidTo),
+			optionalTime(attribute.RetractedAt), attribute.SupersedesAttributeID,
+			attribute.ExtractorVersion, attribute.CitationsJSON,
+		}, "\x00")
+		if i, ok := seen[key]; ok {
+			if len(out[i].SupportingObservationIds) == 0 && len(attribute.SupportingObservationIds) > 0 {
+				out[i] = attribute
+			}
+			continue
+		}
+		seen[key] = len(out)
+		out = append(out, attribute)
+	}
+	return out
+}
+
+func optionalTime(value *time.Time) string {
+	if value == nil {
+		return ""
+	}
+	return value.UTC().Format(time.RFC3339Nano)
 }
 
 // PersonInteractions returns the per-account interaction rollups for a person.
@@ -124,9 +162,10 @@ func (s *Service) PersonInteractions(
 
 // PersonCorrectionInput is a human overriding a derived value.
 type PersonCorrectionInput struct {
-	Dimension string `json:"dimension"`
-	Value     string `json:"value"`
-	Reason    string `json:"reason"`
+	Dimension      string `json:"dimension"`
+	Value          string `json:"value"`
+	Reason         string `json:"reason"`
+	IdempotencyKey string `json:"-"`
 }
 
 // CorrectPerson records a user correction and reprojects.
@@ -151,6 +190,10 @@ func (s *Service) CorrectPerson(
 		return nil, fmt.Errorf("%w: dimension and value are required", ErrInvalidInput)
 	}
 	now := s.now()
+	externalID := strings.TrimSpace(input.IdempotencyKey)
+	if externalID == "" {
+		externalID = "correction:" + now.UTC().Format(time.RFC3339Nano)
+	}
 	if err := upsertPersonAttributes(ctx, s.client, ws, u, p, nil, []PersonAttributeInput{{
 		Dimension:  dimension,
 		Value:      value,
@@ -160,7 +203,7 @@ func (s *Service) CorrectPerson(
 		Confidence: 1,
 		Reason:     input.Reason,
 		ObservedAt: now,
-		ExternalID: "correction:" + now.UTC().Format(time.RFC3339Nano),
+		ExternalID: externalID,
 	}}); err != nil {
 		return nil, err
 	}
@@ -189,6 +232,9 @@ func (s *Service) RetractPersonAttribute(
 	}
 	if err != nil {
 		return nil, err
+	}
+	if attribute.Status == "retracted" {
+		return p, nil
 	}
 	now := s.now()
 	update := attribute.Update().SetStatus("retracted").SetRetractedAt(now.UTC())

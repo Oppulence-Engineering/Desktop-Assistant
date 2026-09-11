@@ -17,6 +17,7 @@ import type {
   CorrectConversationEvidence201,
   CreateMutualActionPlan201,
   DecideConversationChange201,
+  ExportCommitment200One,
   GetCommitmentEvents200,
   GetConversationPolicy200,
   GetPublicMutualActionPlan200,
@@ -27,6 +28,7 @@ import type {
   GetRelationshipSourceStatuses200,
   GetRelationshipTimeline200,
   IngestRelationshipObservations201,
+  ListCommitments200,
   ListRelationshipAttention200,
   ListRelationshipIdentityCandidates200,
   ListRelationships200,
@@ -59,6 +61,7 @@ import {
   getDecideRelationshipAttentionResponseMock,
   getDecideRelationshipIdentityCandidateResponseMock,
   getDisconnectRelationshipSourceResponseMock,
+  getExportCommitmentResponseMock,
   getGetCommitmentEventsResponseMock,
   getGetConversationPolicyResponseMock,
   getGetPublicMutualActionPlanResponseMock,
@@ -72,6 +75,7 @@ import {
   getGetRelationshipSourceStatusesResponseMock,
   getGetRelationshipTimelineResponseMock,
   getIngestRelationshipObservationsResponseMock,
+  getListCommitmentsResponseMock,
   getListRelationshipAttentionResponseMock,
   getListRelationshipIdentityCandidatesResponseMock,
   getListRelationshipsResponseMock,
@@ -89,6 +93,8 @@ import {
 } from "./relationship-intelligence.faker";
 
 export {
+  getListCommitmentsResponseMock,
+  getExportCommitmentResponseMock,
   getGetPublicMutualActionPlanResponseMock,
   getRespondPublicMutualActionPlanResponseMock,
   getListRelationshipAttentionResponseMock,
@@ -130,6 +136,59 @@ export {
   getShareMutualActionPlanResponseMock,
   getGetRelationshipTimelineResponseMock,
 } from "./relationship-intelligence.faker";
+
+export const getListCommitmentsMockHandler = (
+  overrideResponse?:
+    | ListCommitments200
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ListCommitments200> | ListCommitments200),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/commitments",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getListCommitmentsResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
+
+export const getExportCommitmentMockHandler = (
+  overrideResponse?:
+    | ExportCommitment200One
+    | string
+    | ((
+        info: Parameters<Parameters<typeof http.get>[1]>[0],
+      ) => Promise<ExportCommitment200One | string> | ExportCommitment200One | string),
+  options?: RequestHandlerOptions,
+) => {
+  return http.get(
+    "*/v1/commitments/:commitmentId/export",
+    async (info: Parameters<Parameters<typeof http.get>[1]>[0]) => {
+      const resolvedBody =
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getExportCommitmentResponseMock();
+      return typeof resolvedBody === "string"
+        ? HttpResponse.text(resolvedBody, {
+            status: 200,
+            headers: { "Content-Type": "text/markdown" },
+          })
+        : HttpResponse.json(resolvedBody, { status: 200 });
+    },
+    options,
+  );
+};
 
 export const getGetPublicMutualActionPlanMockHandler = (
   overrideResponse?:
@@ -1091,6 +1150,8 @@ export const getGetRelationshipTimelineMockHandler = (
   );
 };
 export const getRelationshipIntelligenceMock = () => [
+  getListCommitmentsMockHandler(),
+  getExportCommitmentMockHandler(),
   getGetPublicMutualActionPlanMockHandler(),
   getRespondPublicMutualActionPlanMockHandler(),
   getListRelationshipAttentionMockHandler(),

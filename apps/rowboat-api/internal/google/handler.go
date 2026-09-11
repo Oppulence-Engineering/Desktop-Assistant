@@ -163,7 +163,7 @@ func (h *Handler) Disconnect(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := r.Context()
 	_, err := h.client.OAuthConnection.Delete().
-		Where(oauthconnection.ProviderEQ("google")).
+		Where(oauthconnection.ProviderEQ("google"), oauthconnection.HasUserWith(user.IDEQ(u.ID))).
 		Exec(ctx)
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "could not disconnect", "internal_error")
@@ -527,9 +527,16 @@ func (h *Handler) persistConnection(ctx context.Context, u *ent.User, refreshTok
 	if err != nil {
 		return err
 	}
-	existing, err := h.client.OAuthConnection.Query().
-		Where(oauthconnection.ProviderEQ("google")).
-		Only(ctx)
+	query := h.client.OAuthConnection.Query().Where(
+		oauthconnection.ProviderEQ("google"),
+		oauthconnection.HasUserWith(user.IDEQ(u.ID)),
+	)
+	if accountEmail == "" {
+		query = query.Where(oauthconnection.ExternalAccountIDIsNil())
+	} else {
+		query = query.Where(oauthconnection.ExternalAccountIDEQ(strings.TrimSpace(accountEmail)))
+	}
+	existing, err := query.Only(ctx)
 	switch {
 	case err == nil:
 		update := existing.Update().SetRefreshTokenEncrypted(sealed).SetScopes(scopes)

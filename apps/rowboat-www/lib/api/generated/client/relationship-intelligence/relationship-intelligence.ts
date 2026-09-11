@@ -26,6 +26,8 @@ import type {
   DecideConversationChangeBody,
   DecideRelationshipAttentionBody,
   DecideRelationshipIdentityCandidateBody,
+  ExportCommitment200One,
+  ExportCommitmentParams,
   GetCommitmentEvents200,
   GetConversationPolicy200,
   GetPublicMutualActionPlan200,
@@ -39,6 +41,8 @@ import type {
   GetRelationshipTimelineParams,
   IngestRelationshipObservations201,
   IngestRelationshipObservationsBody,
+  ListCommitments200,
+  ListCommitmentsParams,
   ListRelationshipAttention200,
   ListRelationshipAttentionParams,
   ListRelationshipIdentityCandidates200,
@@ -75,6 +79,140 @@ import type {
   ShareMutualActionPlan200,
   ShareMutualActionPlanBody,
 } from "../model";
+
+export type listCommitmentsResponse200 = {
+  data: ListCommitments200;
+  status: 200;
+};
+
+export type listCommitmentsResponse400 = {
+  data: N400Response;
+  status: 400;
+};
+
+export type listCommitmentsResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type listCommitmentsResponseSuccess = listCommitmentsResponse200 & {
+  headers: Headers;
+};
+export type listCommitmentsResponseError = (
+  listCommitmentsResponse400 | listCommitmentsResponse401
+) & {
+  headers: Headers;
+};
+
+export type listCommitmentsResponse = listCommitmentsResponseSuccess | listCommitmentsResponseError;
+
+export const getListCommitmentsUrl = (params?: ListCommitmentsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/commitments?${stringifiedParams}` : `/v1/commitments`;
+};
+
+/**
+ * Lists confirmed commitments across every account in the workspace. The five register views are five query strings against this route: what we owe (direction=promised_by_me), what they owe us (direction=promised_by_them), what changed (changedSince), by account (relationshipId), and by owner (owner). Unconfirmed candidates are excluded unless includeCandidates is set, because a low-confidence extraction belongs in the review queue rather than the register.
+ * @summary List the commitment register
+ */
+export const listCommitments = async (
+  params?: ListCommitmentsParams,
+  options?: RequestInit,
+): Promise<listCommitmentsResponse> => {
+  const res = await fetch(getListCommitmentsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCommitmentsResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as listCommitmentsResponse;
+};
+
+export type exportCommitmentResponse200ApplicationJson = {
+  data: ExportCommitment200One;
+  status: 200;
+};
+
+export type exportCommitmentResponse200TextMarkdown = {
+  data: string;
+  status: 200;
+};
+
+export type exportCommitmentResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type exportCommitmentResponse404 = {
+  data: N404Response;
+  status: 404;
+};
+
+export type exportCommitmentResponseSuccess = (
+  exportCommitmentResponse200ApplicationJson | exportCommitmentResponse200TextMarkdown
+) & {
+  headers: Headers;
+};
+export type exportCommitmentResponseError = (
+  exportCommitmentResponse401 | exportCommitmentResponse404
+) & {
+  headers: Headers;
+};
+
+export type exportCommitmentResponse =
+  exportCommitmentResponseSuccess | exportCommitmentResponseError;
+
+export const getExportCommitmentUrl = (commitmentId: string, params?: ExportCommitmentParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : String(value));
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/commitments/${commitmentId}/export?${stringifiedParams}`
+    : `/v1/commitments/${commitmentId}/export`;
+};
+
+/**
+ * Returns one commitment as a standalone record: the obligation, its full state history, and the verbatim cited evidence with timestamps. Pass format=md for the Markdown document a user forwards. A record that cannot leave the tool cannot settle an argument.
+ * @summary Export a commitment record
+ */
+export const exportCommitment = async (
+  commitmentId: string,
+  params?: ExportCommitmentParams,
+  options?: RequestInit,
+): Promise<exportCommitmentResponse> => {
+  const res = await fetch(getExportCommitmentUrl(commitmentId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: exportCommitmentResponse["data"] = body
+    ? contentType.includes("json")
+      ? JSON.parse(body)
+      : body
+    : {};
+  return { data, status: res.status, headers: res.headers } as exportCommitmentResponse;
+};
 
 export type getPublicMutualActionPlanResponse200 = {
   data: GetPublicMutualActionPlan200;

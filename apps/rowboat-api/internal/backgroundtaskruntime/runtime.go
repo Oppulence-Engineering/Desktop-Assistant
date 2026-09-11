@@ -140,6 +140,7 @@ type ToolScope struct {
 	UserID        string
 	TaskSlug      string
 	RunID         string
+	TurnSeq       int
 	ToolCallIndex int
 	ApprovalID    string
 	Allowed       []string // capability scopes, e.g. ["gmail.readonly"]

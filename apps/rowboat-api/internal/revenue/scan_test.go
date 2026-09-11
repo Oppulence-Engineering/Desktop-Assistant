@@ -3,12 +3,16 @@ package revenue
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 )
 
@@ -118,6 +122,24 @@ func TestDetectSkipsFreshAndNoise(t *testing.T) {
 	}
 }
 
+func TestDetectSkipsClosedAndAutomatedThreads(t *testing.T) {
+	closed := summarizeThread(selfAddr, []googleapi.GmailThreadMessage{
+		msg("closed", "buyer@example.com", selfAddr, "Invoice follow up", "invoice attached", false, day(40)),
+		msg("closed", selfAddr, "buyer@example.com", "Invoice follow up", "Confirmed: I received the test invoice email. No payment is required.", true, day(35)),
+	})
+	automated := summarizeThread(selfAddr, []googleapi.GmailThreadMessage{
+		msg("closed", selfAddr, "buyer@example.com", "Invoice follow up", "proposal sent", true, day(50)),
+		msg("closed", "buyer@example.com", selfAddr, "Invoice follow up", "sounds good", false, day(45)),
+		msg("closed", selfAddr, "buyer@example.com", "Invoice follow up", "pricing attached", true, day(40)),
+		msg("closed", "buyer@example.com", selfAddr, "Invoice follow up", "We'd love your feedback! Unsubscribe from these emails or manage email preferences.", false, day(35)),
+	})
+	for _, sum := range []*threadSummary{closed, automated} {
+		if hit := detectThread(sum, time.Now().UTC()); hit != nil {
+			t.Fatalf("closed or automated thread must not fire, got %s for %q", hit.Detector, lastSnippet(sum))
+		}
+	}
+}
+
 func TestSummarizeThreadCollectsEveryExternalRecipient(t *testing.T) {
 	sum := summarizeThread(selfAddr, []googleapi.GmailThreadMessage{
 		msg("tm", selfAddr, `Avery <avery@acme.example>, Bea <bea@gmail.com>, no-reply@alerts.example`, "Intro", "connecting you", true, day(2)),
@@ -176,6 +198,7 @@ func scanFixtureThreads() [][]googleapi.GmailThreadMessage {
 			msg("tp", selfAddr, "buyer@example.com", "SOW draft", "attached the proposal and pricing", true, day(10)),
 		},
 		{ // waiting on me
+			msg("tw", selfAddr, "Casey Lee <casey@corp.com>", "Contract", "sharing the draft", true, day(8)),
 			msg("tw", "Casey Lee <casey@corp.com>", selfAddr, "Contract", "could you confirm the start date?", false, day(6)),
 		},
 		{ // fresh explicit promise: commitment candidate, not a recovery action
@@ -189,7 +212,10 @@ func scanFixtureThreads() [][]googleapi.GmailThreadMessage {
 
 func TestScanCreatesEvidenceBackedActions(t *testing.T) {
 	f := newFixture(t)
-	f.svc.SetSweeper(&fakeSweeper{threads: scanFixtureThreads(), email: selfAddr})
+	threads := append(scanFixtureThreads(), []googleapi.GmailThreadMessage{
+		msg("ti", "stranger@example.net", selfAddr, "Cold outreach", "could you review this?", false, day(6)),
+	})
+	f.svc.SetSweeper(&fakeSweeper{threads: threads, email: selfAddr})
 
 	scan, err := f.svc.StartScan(f.ctx, f.user, 90)
 	if err != nil {
@@ -214,7 +240,7 @@ func TestScanCreatesEvidenceBackedActions(t *testing.T) {
 	if scan.Status != "completed" {
 		t.Fatalf("scan failed: %s", scan.Error)
 	}
-	if scan.ThreadsSeen != 4 || scan.CandidatesSeen != 3 || scan.ActionsCreated != 2 {
+	if scan.ThreadsSeen != 5 || scan.CandidatesSeen != 3 || scan.ActionsCreated != 2 {
 		t.Fatalf("counts: threads=%d candidates=%d actions=%d",
 			scan.ThreadsSeen, scan.CandidatesSeen, scan.ActionsCreated)
 	}
@@ -282,6 +308,36 @@ func TestScanCreatesEvidenceBackedActions(t *testing.T) {
 	}
 }
 
+func TestResolveScanRecommendationAfterNewReply(t *testing.T) {
+	f := newFixture(t)
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatalf("workspace: %v", err)
+	}
+	proposal := summarizeThread(selfAddr, []googleapi.GmailThreadMessage{
+		msg("resolved-thread", selfAddr, "buyer@example.com", "Proposal", "proposal and pricing attached", true, day(10)),
+	})
+	hit := detectThread(proposal, time.Now().UTC())
+	if hit == nil {
+		t.Fatal("proposal must produce a recommendation")
+	}
+	if _, _, _, _, err := f.svc.materializeHit(f.ctx, f.user, proposal, hit); err != nil {
+		t.Fatalf("materialize: %v", err)
+	}
+	replied := summarizeThread(selfAddr, append(proposal.Messages,
+		msg("resolved-thread", "buyer@example.com", selfAddr, "Re: Proposal", "Thanks, we received it.", false, day(1))))
+	if hit := detectThread(replied, time.Now().UTC()); hit != nil {
+		t.Fatalf("reply must close the recommendation, got %+v", hit)
+	}
+	if err := f.svc.resolveScanAction(f.ctx, ws.ID, replied); err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	action := f.client.RevenueAction.Query().OnlyX(f.ctx)
+	if action.QueueStatus != QueueDismissed || action.DismissReason != "resolved_by_new_evidence" {
+		t.Fatalf("action was not resolved: status=%s reason=%s", action.QueueStatus, action.DismissReason)
+	}
+}
+
 func TestScanDetectsCommitmentFromActualBody(t *testing.T) {
 	f := newFixture(t)
 	f.svc.SetSweeper(&fakeSweeper{threads: [][]googleapi.GmailThreadMessage{{
@@ -322,6 +378,42 @@ func TestScanUnavailableWithoutSweeper(t *testing.T) {
 	f := newFixture(t)
 	if _, err := f.svc.StartScan(f.ctx, f.user, 90); err == nil {
 		t.Fatal("scan without a sweeper must fail")
+	}
+}
+
+func TestListScansIsTenantScopedAndNewestFirst(t *testing.T) {
+	f := newFixture(t)
+	internal := auth.WithInternal(context.Background())
+	workspace, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatalf("owner workspace: %v", err)
+	}
+	other := newUser(t, f.client, "other@x.co", "user_other")
+	otherWorkspace, err := f.svc.CurrentWorkspace(auth.WithUser(context.Background(), other), other)
+	if err != nil {
+		t.Fatalf("other workspace: %v", err)
+	}
+
+	older := f.client.RevenueLeakScan.Create().SetWorkspace(workspace).SetUser(f.user).
+		SetStatus("failed").SetLookbackDays(90).SaveX(internal)
+	newer := f.client.RevenueLeakScan.Create().SetWorkspace(workspace).SetUser(f.user).
+		SetStatus("completed").SetLookbackDays(90).SaveX(internal)
+	f.client.RevenueLeakScan.Create().SetWorkspace(otherWorkspace).SetUser(other).
+		SetStatus("completed").SetLookbackDays(90).SaveX(internal)
+
+	got, err := f.svc.ListScans(f.ctx, f.user, 10)
+	if err != nil {
+		t.Fatalf("list scans: %v", err)
+	}
+	if len(got) != 2 || got[0].ID != newer.ID || got[1].ID != older.ID {
+		t.Fatalf("scans = %v, want newest owner scans only", got)
+	}
+	limited, err := f.svc.ListScans(f.ctx, f.user, 1)
+	if err != nil {
+		t.Fatalf("list limited scans: %v", err)
+	}
+	if len(limited) != 1 || limited[0].ID != newer.ID {
+		t.Fatalf("limited scans = %v, want newest scan", limited)
 	}
 }
 
@@ -384,4 +476,139 @@ type blockingSweeper struct{ unblock chan struct{} }
 func (b *blockingSweeper) SweepThreads(context.Context, uuid.UUID, int, int, *time.Time) ([][]googleapi.GmailThreadMessage, string, error) {
 	<-b.unblock
 	return nil, selfAddr, nil
+}
+
+// A promise is made once and then buried by whatever was said after it. The
+// scan used to read only a thread's final message, so "I'll send the contract
+// Friday" in the middle of a long thread was never seen — which is how ninety
+// real conversations produced nothing.
+func TestScanFindsAPromiseBuriedMidThread(t *testing.T) {
+	f := newFixture(t)
+	base := time.Now().UTC().Add(-10 * 24 * time.Hour)
+	thread := [][]googleapi.GmailThreadMessage{{
+		{
+			ID: "m1", ThreadID: "t1", From: selfAddr, To: "buyer@example.com",
+			Subject: "Security review", Snippet: "Thanks for the call today.",
+			Outbound: true, At: base,
+		},
+		{
+			ID: "m2", ThreadID: "t1", From: selfAddr, To: "buyer@example.com",
+			Subject:  "Security review",
+			Snippet:  "I'll send the signed security packet on Friday.",
+			Outbound: true, At: base.Add(time.Hour),
+		},
+		{
+			ID: "m3", ThreadID: "t1", From: "buyer@example.com", To: selfAddr,
+			Subject: "Security review", Snippet: "Sounds good, thanks.",
+			Outbound: false, At: base.Add(2 * time.Hour),
+		},
+	}}
+	f.svc.SetSweeper(&fakeSweeper{threads: thread, email: selfAddr})
+
+	scan, err := f.svc.StartScan(f.ctx, f.user, 90)
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		got, err := f.svc.GetScan(f.ctx, scan.ID)
+		if err != nil {
+			t.Fatalf("get: %v", err)
+		}
+		if got.Status == "completed" || got.Status == "failed" {
+			if got.Status != "completed" {
+				t.Fatalf("scan failed: %s", got.Error)
+			}
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("scan did not finish: %s", got.Status)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	rows, err := f.svc.ListCommitments(f.ctx, f.user, CommitmentFilter{IncludeCandidates: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("want 1 commitment from the buried promise, got %d", len(rows))
+	}
+	if !strings.Contains(rows[0].Text, "signed security packet") {
+		t.Fatalf("wrong promise captured: %q", rows[0].Text)
+	}
+	// The promise was outbound even though the thread ends with an inbound
+	// reply: direction follows the message the promise was written in.
+	if rows[0].Direction != "promised_by_me" {
+		t.Fatalf("direction = %q, want promised_by_me", rows[0].Direction)
+	}
+}
+
+// Coverage must add up. "90 conversations reviewed" implied the scan had read
+// ninety conversations; it had read ten and glanced at the rest. A scan that
+// reports a total it did not examine is the same confidently-wrong claim the
+// product exists to avoid.
+func TestScanReportsHonestCoverage(t *testing.T) {
+	f := newFixture(t)
+	base := time.Now().UTC().Add(-5 * 24 * time.Hour)
+	threads := [][]googleapi.GmailThreadMessage{
+		// judged: real counterparty, outbound
+		{{
+			ID: "a1", ThreadID: "ta", From: selfAddr, To: "buyer@example.com",
+			Subject: "Kickoff", Snippet: "Thanks for the call.",
+			Outbound: true, At: base,
+		}},
+		// skipped: self-mail only, no external counterparty
+		{{
+			ID: "b1", ThreadID: "tb", From: selfAddr, To: selfAddr,
+			Subject: "Note to self", Snippet: "Remember the deck.",
+			Outbound: true, At: base,
+		}},
+		// skipped: no-reply counterparty
+		{{
+			ID: "c1", ThreadID: "tc", From: selfAddr, To: "no-reply@vendor.com",
+			Subject: "Receipt", Snippet: "Thanks.",
+			Outbound: true, At: base,
+		}},
+	}
+	f.svc.SetSweeper(&fakeSweeper{threads: threads, email: selfAddr})
+
+	scan, err := f.svc.StartScan(f.ctx, f.user, 90)
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	var got *ent.RevenueLeakScan
+	for {
+		got, err = f.svc.GetScan(f.ctx, scan.ID)
+		if err != nil {
+			t.Fatalf("get: %v", err)
+		}
+		if got.Status == "completed" || got.Status == "failed" {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("scan did not finish: %s", got.Status)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	if got.ThreadsSeen != 3 {
+		t.Fatalf("threads seen = %d, want 3", got.ThreadsSeen)
+	}
+	if got.ThreadsSkipped != 2 {
+		t.Errorf("threads skipped = %d, want 2 (self-mail and no-reply)", got.ThreadsSkipped)
+	}
+	// Every thread is either judged or skipped; none may go uncounted.
+	judged := got.ThreadsDeepRead + got.ThreadsSnippetOnly
+	if judged+got.ThreadsSkipped != got.ThreadsSeen {
+		t.Errorf("coverage does not add up: %d judged + %d skipped != %d seen",
+			judged, got.ThreadsSkipped, got.ThreadsSeen)
+	}
+	// No body is available in this fixture, so the judged thread was read on a
+	// snippet — and must say so rather than claim a deep read.
+	if got.ThreadsDeepRead != 0 || got.ThreadsSnippetOnly != 1 {
+		t.Errorf("deep=%d snippet=%d, want deep=0 snippet=1",
+			got.ThreadsDeepRead, got.ThreadsSnippetOnly)
+	}
 }

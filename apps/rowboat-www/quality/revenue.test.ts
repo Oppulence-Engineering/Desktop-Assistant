@@ -5,7 +5,10 @@ import {
   companyLinkedInURL,
   friendlyRevenueError,
   getRelationshipGraph,
+  googleSourceHealth,
   interactionCountLabel,
+  latestCompletedScan,
+  listScans,
 } from "@/lib/revenue";
 
 vi.mock("@/lib/auth/client", () => ({
@@ -40,6 +43,39 @@ describe("getRelationshipGraph", () => {
   });
 });
 
+describe("listScans", () => {
+  it("loads server audit history instead of browser-local ids", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ scans: [{ id: "scan-1", status: "completed" }] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(listScans()).resolves.toEqual([{ id: "scan-1", status: "completed" }]);
+    expect(mockFetch.mock.calls[0]?.[0]).toBe("/revenue-leak-scans?limit=10");
+  });
+});
+
+it("opens the latest report for a stale but authorized Google source", () => {
+  expect(
+    googleSourceHealth([
+      {
+        source: "google",
+        accounts: [{ status: "stale", missingScopes: [] }],
+      },
+    ]),
+  ).toBe("ready");
+  expect(
+    latestCompletedScan([
+      { id: "failed", status: "failed" },
+      { id: "empty-complete", status: "completed", threadsSeen: 0 },
+      { id: "latest-complete", status: "completed", threadsSeen: 12 },
+      { id: "older-complete", status: "completed", threadsSeen: 8 },
+    ])?.id,
+  ).toBe("latest-complete");
+});
+
 describe("friendlyRevenueError", () => {
   it("turns Gmail rate limits into an actionable message", () => {
     expect(
@@ -63,6 +99,15 @@ describe("companyLinkedInURL", () => {
 });
 
 it("labels interaction counts grammatically", () => {
-  expect(interactionCountLabel(1)).toBe("1 interaction");
-  expect(interactionCountLabel(2)).toBe("2 interactions");
+  expect(interactionCountLabel(1)).toBe("1 email thread");
+  expect(interactionCountLabel(2)).toBe("2 email threads");
+});
+
+// An absent count is not a count of zero. An account last touched eighteen
+// hours ago was labelled "0 interactions" because the total had never been
+// computed — a number nobody counted, stated as fact.
+it("interactionCountLabel does not invent a zero", () => {
+  expect(interactionCountLabel(undefined)).toBe("—");
+  expect(interactionCountLabel(null)).toBe("—");
+  expect(interactionCountLabel(0)).toBe("0 email threads");
 });

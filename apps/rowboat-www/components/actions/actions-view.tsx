@@ -196,13 +196,16 @@ export function ActionsView() {
         </div>
       ) : null}
 
-      {proposals === null ? (
+      {!proposals ? (
         <ListSkeleton rows={3} />
       ) : disabled ? (
         <EmptyBlock
           icon={<ListChecks className="size-6" />}
           title="Closed-loop actions are not enabled"
-          body="The action broker ships dark. Once ACTIONS_ENABLED is turned on for your workspace, proposals your agents make will appear here for approval."
+          // Was: "The action broker ships dark. Once ACTIONS_ENABLED is turned
+          // on for your workspace…" — an internal flag name shown to a customer
+          // who cannot set it, describing a rollout state in our own words.
+          body="Approvals are not switched on for this workspace yet. When they are, every action an agent proposes will wait here for you to approve before anything happens."
         />
       ) : proposals.length === 0 ? (
         <EmptyBlock

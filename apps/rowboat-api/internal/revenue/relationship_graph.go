@@ -185,6 +185,24 @@ func (s *Service) RelationshipGraph(
 	}, nil
 }
 
+// RelationshipGraphPayload returns the same governed graph document used by
+// the web and desktop clients for non-HTTP consumers such as assistant tools.
+func (s *Service) RelationshipGraphPayload(
+	ctx context.Context,
+	u *ent.User,
+	filter RelationshipGraphFilter,
+) (json.RawMessage, error) {
+	aggregate, err := s.RelationshipGraph(ctx, u, filter)
+	if err != nil {
+		return nil, err
+	}
+	payload, err := json.Marshal(buildRelationshipGraphDTO(aggregate, s.now()))
+	if err != nil {
+		return nil, fmt.Errorf("marshal relationship graph: %w", err)
+	}
+	return payload, nil
+}
+
 type relationshipGraphPermissionsDTO struct {
 	CanView       bool `json:"canView"`
 	CanContribute bool `json:"canContribute"`

@@ -87,10 +87,14 @@ export function AuthShell({
             <span>Oppulence</span>
           </Link>
 
-          <h1 className="sm-auth-title">Your relationship layer awaits</h1>
+          {/* The visitor clicked "Start for free" under "Every promise, on the
+              record". Greeting them with a different product ("your
+              relationship layer") at the highest-intent moment in the funnel
+              reads as the wrong site. */}
+          <h1 className="sm-auth-title">Every promise, on the record</h1>
           <p className="sm-auth-sub">
             {isSignUp
-              ? "Create an account to get started. Your first sign-in builds your workspace."
+              ? "Create an account to start tracking what you owe, what they owe, and the proof behind it. Your first sign-in builds your workspace."
               : "Sign in or create an account to get started."}
           </p>
 

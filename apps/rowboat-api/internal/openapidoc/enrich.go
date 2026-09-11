@@ -2046,6 +2046,12 @@ func jsonResponse(description string, schema any, example any) obj {
 	return obj{"description": description, "content": obj{"application/json": media}}
 }
 
+func jsonOrMarkdownResponse(description string, schema any, example any) obj {
+	response := jsonResponse(description, schema, example)
+	response["content"].(obj)["text/markdown"] = obj{"schema": obj{"type": "string"}}
+	return response
+}
+
 func problemResponse(description string, schema any, example any) obj {
 	media := obj{"schema": schema}
 	if example != nil {
