@@ -29,14 +29,22 @@ docker run -d --rm --name "$container" \
 host_port="$(docker port "$container" 5432/tcp | awk -F: 'NR == 1 { print $NF }')"
 [[ "$host_port" =~ ^[0-9]+$ ]] || fail "could not determine PostgreSQL host port"
 
+# The postgres entrypoint runs initdb against a temporary server before it
+# restarts on the real port, and pg_isready answers during that window. The
+# old loop broke on that first yes and the separate check that followed hit the
+# restart, which is why this gate failed in about a second rather than timing
+# out. Wait for a query the temporary server cannot serve, and let the loop
+# itself be the check so there is no gap to lose the race in.
+ready=""
 for _ in $(seq 1 60); do
-  if docker exec "$container" pg_isready -U oauth_consent -d oauth_consent_test >/dev/null 2>&1; then
+  if docker exec "$container" psql -U oauth_consent -d oauth_consent_test \
+      -c 'SELECT 1' >/dev/null 2>&1; then
+    ready=1
     break
   fi
   sleep 1
 done
-docker exec "$container" pg_isready -U oauth_consent -d oauth_consent_test >/dev/null 2>&1 || \
-  fail "PostgreSQL did not become ready"
+[[ -n "$ready" ]] || fail "PostgreSQL did not become ready"
 
 cd "$app_dir"
 npm ci --ignore-scripts
