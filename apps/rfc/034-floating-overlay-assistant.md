@@ -8,7 +8,7 @@
 | **Owners**       | `apps/x/apps/main` (window + shortcut), `apps/x/apps/renderer` (overlay UI), `apps/x/packages/core` (context assembly)                                                                                          |
 | **Created**      | 2026-07-23                                                                                                                                                                                                      |
 | **Last updated** | 2026-07-23                                                                                                                                                                                                      |
-| **Depends on**   | [RFC 021](./complete-021-semantic-memory-index.md) (recall), [email-010](./email-010-ai-mail-assistant-chat.md) (assistant tools), [RFC 035](./035-meeting-intelligence-commitment-ledger.md) (live transcript) |
+| **Depends on**   | [RFC 021](./complete-021-semantic-memory-index.md) (recall), [RFC 028](./028-declarative-agent-definitions.md) (assistant tools), [RFC 035](./035-meeting-intelligence-commitment-ledger.md) (live transcript) |
 | **Related**      | [RFC 029](./029-founder-operating-memory.md) (queue), [RFC 023](./023-closed-loop-actions.md) (approvals), [RFC 033](./033-integration-parity-surface.md), [RFC 025](./025-desktop-runtime-durability.md)       |
 | **Supersedes**   | none                                                                                                                                                                                                            |
 
@@ -22,7 +22,7 @@ Littlebird's **Hummingbird** — a floating chat window summoned by double-tappi
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Double-tap Option summon, configurable shortcut          | Same (double-tap modifier + configurable), registered via Electron `globalShortcut`                                                                                       |
 | Floating panel over any app; Mac first, Windows beta     | Same order; frameless always-on-top panel window                                                                                                                          |
-| Same chat as the main app, full memory context           | Same: assistant chat with mailbox/meetings/knowledge/queue context (email-010 tools, RFC 021 recall)                                                                      |
+| Same chat as the main app, full memory context           | Same: assistant chat with mailbox/meetings/knowledge/queue context (RFC 028 agent tools, RFC 021 recall)                                                                      |
 | Pulls the live meeting transcript mid-call               | Same, from RFC 035's local transcription session                                                                                                                          |
 | "Can see what's on your screen" (continuous observation) | **Refused.** Explicit per-invocation context only: frontmost-app name + window title, and text the user selects or pastes. No screenshots, no OCR, no background capture. |
 
@@ -42,7 +42,7 @@ The desktop app currently opens one window (`apps/x/apps/main/src/main.ts:271 cr
 
 **Three verbs.**
 
-1. **Ask** — assistant chat with full recall (RFC 021, email-010 tools).
+1. **Ask** — assistant chat with full recall (RFC 021, RFC 028 agent tools).
 2. **Capture** — one keystroke turns the current context into a note/commitment for the ledger (feeds RFC 035's commitment pipeline).
 3. **Approve** — the queue's pending actions render as cards; approve/edit/snooze/reject inline with the same step-up rules as the dashboard (RFC 023 approval tokens; money actions still require step-up). This verb is the wedge hook and ships in the first release, not as a follow-up.
 

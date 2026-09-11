@@ -8,7 +8,7 @@
 | Owner      | TBD                                                 |
 | Created    | 2026-06-12                                          |
 | Depends on | email-001                                           |
-| Related    | RFC 021, email-002, email-010, email-013, email-015 |
+| Related    | RFC 021, email-013, email-015 |
 
 ## Summary
 
@@ -16,7 +16,7 @@ Add a mailbox-specific search and memory layer for exact search, semantic retrie
 
 ## Inbox Zero Implementation References
 
-Implementation agents should first read [email-000](./email-000-inbox-zero-agent-reference.md), then inspect:
+Implementation agents should first read then inspect:
 
 - `apps/web/prisma/schema.prisma` models `Knowledge`, `ReplyMemory`, `ReplyMemorySource`, `ChatMemory`, `EmailMessage`
 - `apps/web/utils/ai/knowledge/extract.ts`

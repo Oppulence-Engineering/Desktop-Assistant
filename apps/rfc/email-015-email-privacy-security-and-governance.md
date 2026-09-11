@@ -7,8 +7,8 @@
 | Track      | Desktop email                                   |
 | Owner      | TBD                                             |
 | Created    | 2026-06-12                                      |
-| Depends on | email-001, email-008, email-012                 |
-| Related    | RFC 011, RFC 012, RFC 021, email-010, email-016 |
+| Depends on | email-001, email-012 |
+| Related    | RFC 011, RFC 012, RFC 021, email-016 |
 
 ## Summary
 
@@ -16,7 +16,7 @@ Define privacy, security, retention, model routing, and governance rules for Row
 
 ## Inbox Zero Implementation References
 
-Implementation agents should first read [email-000](./email-000-inbox-zero-agent-reference.md), then inspect:
+Implementation agents should first read then inspect:
 
 - `docs/essentials/api-keys.mdx`
 - `apps/web/utils/ai/security.ts`
@@ -156,7 +156,7 @@ Audit entries should be searchable and redacted.
 
 ## Detailed Code Examples
 
-See [email-021](./email-021-implementation-blueprints-and-code-examples.md) for prompt-injection and assistant-policy examples.
+See for prompt-injection and assistant-policy examples.
 
 ### External Payload Enforcement
 

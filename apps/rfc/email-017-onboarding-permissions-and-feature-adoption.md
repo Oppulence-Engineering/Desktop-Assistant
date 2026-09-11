@@ -7,8 +7,8 @@
 | Track      | Desktop email                                       |
 | Owner      | TBD                                                 |
 | Created    | 2026-06-12                                          |
-| Depends on | email-001, email-002, email-015                     |
-| Related    | RFC 012, email-003, email-004, email-005, email-007 |
+| Depends on | email-001, email-015 |
+| Related    | RFC 012 |
 
 ## Summary
 
@@ -16,7 +16,7 @@ Define the onboarding and permissions flow for Rowboat email features. Inbox Zer
 
 ## Inbox Zero Implementation References
 
-Implementation agents should first read [email-000](./email-000-inbox-zero-agent-reference.md), then inspect:
+Implementation agents should first read then inspect:
 
 - `apps/web/utils/connect-mailbox.ts`
 - `apps/web/utils/actions/email-account.ts`
