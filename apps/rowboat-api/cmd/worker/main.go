@@ -26,6 +26,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composioapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectorcreds"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
@@ -418,6 +419,11 @@ func runTemporalWorker(ctx context.Context, cfg appconfig.Config, log *zap.Logge
 				HubSpot: hubspotapi.New(client, deps.Sealer, outbound.Policy{
 					Timeout:          15 * time.Second,
 					MaxConcurrent:    64,
+					MaxResponseBytes: 4 << 20,
+				}),
+				Composio: composioapi.New(cfg.ComposioAPIKey, outbound.Policy{
+					Timeout:          20 * time.Second,
+					MaxConcurrent:    32,
 					MaxResponseBytes: 4 << 20,
 				}),
 				Web:            websearch.New(cfg.WebSearchAPIURL, cfg.WebSearchAPIKey, outbound.Policy{Timeout: 20 * time.Second, MaxConcurrent: 32, MaxResponseBytes: 4 << 20}),

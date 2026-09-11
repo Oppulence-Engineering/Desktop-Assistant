@@ -16,6 +16,9 @@ spec:
       requiresApproval: true
     - name: connector.write.hubspot_task
       requiresApproval: true
+    - connector.read.composio_tool_search
+    - connector.read.composio_tool_describe
+    - connector.write.composio_tool_execute
   subagents:
     - assistant
   channels: [http]
