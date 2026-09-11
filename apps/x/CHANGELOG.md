@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.33](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.32...v0.1.33) (2026-09-11)
+
+
+### Features
+
+* promote develop to main — Composio long-tail actions and the web favicon ([2a1b931](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/2a1b9316572f04ac28e9a2a9450363a5c631d4ef))
+* reach the long tail through Composio, with a hosted connect flow ([fd0da61](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/fd0da61d62feefc0ed382c6c4fd007c751978e35))
+* **x:** send long-tail requests to a cloud agent instead of refusing them ([66675c2](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/66675c2e74df0058d4c3e5a5a5321c3f1b745674))
+
+
+### Bug Fixes
+
+* **x:** clear the dependency advisories failing the desktop audit ([f08ac05](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/f08ac05871244f6835e23158c056a1ac1587bab8))
+
 ## [0.1.32](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.31...v0.1.32) (2026-09-09)
 
 
