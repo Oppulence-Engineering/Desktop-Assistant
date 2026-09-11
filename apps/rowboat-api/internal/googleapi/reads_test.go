@@ -35,8 +35,14 @@ func mockGoogleReads(t *testing.T) (*Client, *httptest.Server) {
 			"id": id, "threadId": "t-" + id, "snippet": "We dispute line 3...",
 			"payload": map[string]any{"headers": []map[string]string{
 				{"name": "From", "value": "ap@acme.com"},
+				{"name": "Bcc", "value": "Audit <audit@acme.com>"},
+				{"name": "Message-ID", "value": "<msg.4821@acme.com>"},
+				{"name": "In-Reply-To", "value": "<parent.4821@acme.com>"},
 				{"name": "Subject", "value": "Invoice #4821"},
 				{"name": "Date", "value": "Fri, 06 Jun 2026 14:00:00 +0000"},
+				{"name": "List-ID", "value": "Acme Updates <updates.acme.com>"},
+				{"name": "List-Unsubscribe", "value": "<https://acme.com/unsubscribe>"},
+				{"name": "List-Unsubscribe-Post", "value": "List-Unsubscribe=One-Click"},
 			}},
 		})
 	})
@@ -49,12 +55,13 @@ func mockGoogleReads(t *testing.T) (*Client, *httptest.Server) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"nextPageToken": "page_2",
 			"items": []map[string]any{{
-				"id": "evt_1", "summary": "Acme QBR",
+				"id": "evt_1", "iCalUID": "acme-qbr@calendar.example", "summary": "Acme QBR", "created": "2026-06-01T09:00:00Z", "updated": "2026-06-02T10:00:00Z", "hangoutLink": "https://meet.google.com/abc-defg-hij",
+				"creator": map[string]string{"email": "scheduler@acme.com"}, "conferenceData": map[string]any{"conferenceSolution": map[string]string{"name": "Google Meet"}, "entryPoints": []map[string]string{{"entryPointType": "video", "uri": "https://video.example.com/fallback"}}},
 				"start":     map[string]string{"dateTime": "2026-06-08T17:00:00Z"},
 				"end":       map[string]string{"dateTime": "2026-06-08T18:00:00Z"},
 				"attendees": []map[string]string{{"email": "champion@acme.com"}},
 			}, {
-				"id": "evt_2", "summary": "All-day",
+				"id": "evt_2", "summary": "All-day", "eventType": "outOfOffice",
 				"start": map[string]string{"date": "2026-06-09"},
 				"end":   map[string]string{"date": "2026-06-10"},
 			}},
@@ -90,7 +97,7 @@ func TestListMessages(t *testing.T) {
 		t.Fatalf("messages = %d, want 2", len(msgs))
 	}
 	m := msgs[0]
-	if m.ID != "m1" || m.From != "ap@acme.com" || m.Subject != "Invoice #4821" || m.Snippet == "" || m.ReceivedAt == "" {
+	if m.ID != "m1" || m.From != "ap@acme.com" || m.Bcc != "Audit <audit@acme.com>" || m.RFC822MessageID != "<msg.4821@acme.com>" || m.InReplyToMessageID != "<parent.4821@acme.com>" || m.Subject != "Invoice #4821" || m.ListID != "Acme Updates <updates.acme.com>" || m.ListUnsubscribe != "<https://acme.com/unsubscribe>" || !m.UnsubscribeOneClick || m.Snippet == "" || m.ReceivedAt == "" {
 		t.Fatalf("message = %+v", m)
 	}
 }
@@ -153,12 +160,12 @@ func TestListEvents(t *testing.T) {
 	if nextPageToken != "page_2" {
 		t.Fatalf("next page token = %q", nextPageToken)
 	}
-	if events[0].Summary != "Acme QBR" || events[0].StartsAt != "2026-06-08T17:00:00Z" || len(events[0].Attendees) != 1 {
+	if events[0].ICalUID != "acme-qbr@calendar.example" || events[0].Summary != "Acme QBR" || events[0].StartsAt != "2026-06-08T17:00:00Z" || events[0].AllDay || events[0].Creator != "scheduler@acme.com" || events[0].CreatedAt != "2026-06-01T09:00:00Z" || events[0].UpdatedAt != "2026-06-02T10:00:00Z" || events[0].ConferenceProvider != "Google Meet" || events[0].ConferenceLink != "https://meet.google.com/abc-defg-hij" || len(events[0].Attendees) != 1 {
 		t.Fatalf("event = %+v", events[0])
 	}
 	// All-day events fall back to the date field.
-	if events[1].StartsAt != "2026-06-09" {
-		t.Fatalf("all-day start = %q", events[1].StartsAt)
+	if events[1].StartsAt != "2026-06-09" || !events[1].AllDay || events[1].EventType != "outOfOffice" {
+		t.Fatalf("all-day event = %+v", events[1])
 	}
 }
 

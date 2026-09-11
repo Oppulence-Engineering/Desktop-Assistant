@@ -34,6 +34,12 @@ func TestGoogleToolsRegistered(t *testing.T) {
 		if RequiresApproval(c.TrustTier) {
 			t.Fatalf("%q must not require approval", name)
 		}
+		if name == "connector.read.gmail" && (!strings.Contains(string(c.Parameters), `"messageId"`) || !strings.Contains(string(c.Parameters), `"attachmentRef"`) || !strings.Contains(string(c.Parameters), `"includeAttachments"`) || !strings.Contains(string(c.Parameters), `"labelIds"`) || !strings.Contains(string(c.Parameters), `"groupByThread"`)) {
+			t.Fatalf("gmail capability does not advertise exact attachment reads: %s", c.Parameters)
+		}
+		if name == "connector.read.calendar" && (!strings.Contains(string(c.Parameters), `"eventId"`) || !strings.Contains(string(c.Parameters), `"pageToken"`) || !strings.Contains(string(c.Parameters), "recurrence rules") || !strings.Contains(string(c.Parameters), "reminder metadata")) {
+			t.Fatalf("calendar capability does not advertise exact event reads and pagination: %s", c.Parameters)
+		}
 	}
 }
 

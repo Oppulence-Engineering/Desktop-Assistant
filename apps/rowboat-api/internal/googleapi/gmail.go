@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"golang.org/x/net/html"
 )
@@ -18,19 +19,30 @@ import (
 // id costs one extra metadata GET, so one tool invoke is at most 1+N calls.
 const maxGmailMessages = 10
 
+const maxGmailTextAttachmentBytes = 256 << 10
+
 // GmailMessage is the narrow read shape the runtime's connector tool returns
 // (RFC 004 contract): headers + snippet, never raw bodies in v1.
 type GmailMessage struct {
-	ID         string   `json:"id"`
-	ThreadID   string   `json:"threadId"`
-	From       string   `json:"from"`
-	To         string   `json:"to,omitempty"`
-	Cc         string   `json:"cc,omitempty"`
-	Subject    string   `json:"subject"`
-	ReceivedAt string   `json:"receivedAt"`
-	Snippet    string   `json:"snippet"`
-	Labels     []string `json:"labels,omitempty"`
-	Outbound   bool     `json:"outbound"`
+	ID                  string   `json:"id"`
+	ThreadID            string   `json:"threadId"`
+	RFC822MessageID     string   `json:"rfc822MessageId,omitempty"`
+	InReplyToMessageID  string   `json:"inReplyToMessageId,omitempty"`
+	From                string   `json:"from"`
+	ReplyTo             string   `json:"replyTo,omitempty"`
+	DeliveredTo         string   `json:"deliveredTo,omitempty"`
+	To                  string   `json:"to,omitempty"`
+	Cc                  string   `json:"cc,omitempty"`
+	Bcc                 string   `json:"bcc,omitempty"`
+	Subject             string   `json:"subject"`
+	ListID              string   `json:"listId,omitempty"`
+	ListUnsubscribe     string   `json:"listUnsubscribe,omitempty"`
+	UnsubscribeOneClick bool     `json:"unsubscribeOneClick"`
+	ReceivedAt          string   `json:"receivedAt"`
+	SizeBytes           int64    `json:"sizeBytes,omitempty"`
+	Snippet             string   `json:"snippet"`
+	Labels              []string `json:"labels,omitempty"`
+	Outbound            bool     `json:"outbound"`
 }
 
 // GmailLabel is the stable identity needed to build exact Gmail label queries.
@@ -93,12 +105,22 @@ func (c *Client) GetLabel(ctx context.Context, token, labelID string) (GmailLabe
 	return label, nil
 }
 
-// maxGmailCountPages bounds count-only scans at 10,000 message IDs.
+// maxGmailCountPages bounds count-only scans at 10,000 message or thread IDs.
 const maxGmailCountPages = 20
 
 // CountMessages counts matching message IDs without fetching message content.
 // Complete is false when the safety cap is reached.
 func (c *Client) CountMessages(ctx context.Context, token, query string) (count int, complete bool, err error) {
+	return c.countGmailIDs(ctx, token, query, "messages")
+}
+
+// CountThreads counts matching thread IDs without fetching thread content.
+// Complete is false when the safety cap is reached.
+func (c *Client) CountThreads(ctx context.Context, token, query string) (count int, complete bool, err error) {
+	return c.countGmailIDs(ctx, token, query, "threads")
+}
+
+func (c *Client) countGmailIDs(ctx context.Context, token, query, resource string) (count int, complete bool, err error) {
 	query = strings.TrimSpace(query)
 	if query == "" {
 		return 0, false, fmt.Errorf("gmail count query is required")
@@ -111,12 +133,15 @@ func (c *Client) CountMessages(ctx context.Context, token, query string) (count 
 			Messages []struct {
 				ID string `json:"id"`
 			} `json:"messages"`
+			Threads []struct {
+				ID string `json:"id"`
+			} `json:"threads"`
 			NextPageToken string `json:"nextPageToken"`
 		}
-		if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages", q, &list); err != nil {
-			return 0, false, fmt.Errorf("gmail messages.list count: %w", err)
+		if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/"+resource, q, &list); err != nil {
+			return 0, false, fmt.Errorf("gmail %s.list count: %w", resource, err)
 		}
-		count += len(list.Messages)
+		count += len(list.Messages) + len(list.Threads)
 		if list.NextPageToken == "" {
 			return count, true, nil
 		}
@@ -156,14 +181,23 @@ func (c *Client) ListMessages(ctx context.Context, token, query string, limit in
 		mq := url.Values{}
 		mq.Set("format", "metadata")
 		mq.Add("metadataHeaders", "From")
+		mq.Add("metadataHeaders", "Reply-To")
+		mq.Add("metadataHeaders", "Delivered-To")
 		mq.Add("metadataHeaders", "To")
 		mq.Add("metadataHeaders", "Cc")
+		mq.Add("metadataHeaders", "Bcc")
 		mq.Add("metadataHeaders", "Subject")
 		mq.Add("metadataHeaders", "Date")
+		mq.Add("metadataHeaders", "Message-ID")
+		mq.Add("metadataHeaders", "In-Reply-To")
+		mq.Add("metadataHeaders", "List-ID")
+		mq.Add("metadataHeaders", "List-Unsubscribe")
+		mq.Add("metadataHeaders", "List-Unsubscribe-Post")
 		var detail struct {
 			ID           string   `json:"id"`
 			ThreadID     string   `json:"threadId"`
 			Snippet      string   `json:"snippet"`
+			SizeEstimate int64    `json:"sizeEstimate"`
 			LabelIDs     []string `json:"labelIds"`
 			InternalDate string   `json:"internalDate"`
 			Payload      struct {
@@ -176,7 +210,7 @@ func (c *Client) ListMessages(ctx context.Context, token, query string, limit in
 		if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages/"+url.PathEscape(m.ID), mq, &detail); err != nil {
 			return nil, "", fmt.Errorf("gmail messages.get %s: %w", m.ID, err)
 		}
-		msg := GmailMessage{ID: detail.ID, ThreadID: detail.ThreadID, Snippet: detail.Snippet, Labels: detail.LabelIDs}
+		msg := GmailMessage{ID: detail.ID, ThreadID: detail.ThreadID, Snippet: detail.Snippet, SizeBytes: detail.SizeEstimate, Labels: detail.LabelIDs}
 		for _, label := range detail.LabelIDs {
 			if label == "SENT" {
 				msg.Outbound = true
@@ -189,12 +223,28 @@ func (c *Client) ListMessages(ctx context.Context, token, query string, limit in
 			switch strings.ToLower(h.Name) {
 			case "from":
 				msg.From = h.Value
+			case "reply-to":
+				msg.ReplyTo = h.Value
+			case "delivered-to":
+				msg.DeliveredTo = h.Value
 			case "to":
 				msg.To = h.Value
 			case "cc":
 				msg.Cc = h.Value
+			case "bcc":
+				msg.Bcc = h.Value
 			case "subject":
 				msg.Subject = h.Value
+			case "message-id":
+				msg.RFC822MessageID = h.Value
+			case "in-reply-to":
+				msg.InReplyToMessageID = h.Value
+			case "list-id":
+				msg.ListID = h.Value
+			case "list-unsubscribe":
+				msg.ListUnsubscribe = h.Value
+			case "list-unsubscribe-post":
+				msg.UnsubscribeOneClick = isOneClickUnsubscribe(h.Value)
 			case "date":
 				if msg.ReceivedAt == "" {
 					msg.ReceivedAt = h.Value
@@ -328,14 +378,24 @@ const maxGmailThreads = 100
 // returns: headers and snippet, never bodies. Outbound reports whether the
 // message carries the SENT label (the user wrote it).
 type GmailThreadMessage struct {
-	ID       string    `json:"id"`
-	ThreadID string    `json:"threadId"`
-	From     string    `json:"from"`
-	To       string    `json:"to"`
-	Subject  string    `json:"subject"`
-	Snippet  string    `json:"snippet"`
-	Outbound bool      `json:"outbound"`
-	At       time.Time `json:"at"`
+	ID                  string    `json:"id"`
+	ThreadID            string    `json:"threadId"`
+	RFC822MessageID     string    `json:"rfc822MessageId,omitempty"`
+	InReplyToMessageID  string    `json:"inReplyToMessageId,omitempty"`
+	From                string    `json:"from"`
+	ReplyTo             string    `json:"replyTo,omitempty"`
+	DeliveredTo         string    `json:"deliveredTo,omitempty"`
+	To                  string    `json:"to"`
+	Cc                  string    `json:"cc,omitempty"`
+	Bcc                 string    `json:"bcc,omitempty"`
+	Subject             string    `json:"subject"`
+	ListID              string    `json:"listId,omitempty"`
+	ListUnsubscribe     string    `json:"listUnsubscribe,omitempty"`
+	UnsubscribeOneClick bool      `json:"unsubscribeOneClick"`
+	Snippet             string    `json:"snippet"`
+	SizeBytes           int64     `json:"sizeBytes,omitempty"`
+	Outbound            bool      `json:"outbound"`
+	At                  time.Time `json:"at"`
 	// Labels is kept so that "this thread has no outbound message", on a sweep
 	// anchored to in:sent, is diagnosable rather than a guess.
 	Labels []string `json:"labels,omitempty"`
@@ -345,6 +405,7 @@ type gmailAPIMessage struct {
 	ID           string    `json:"id"`
 	ThreadID     string    `json:"threadId"`
 	Snippet      string    `json:"snippet"`
+	SizeEstimate int64     `json:"sizeEstimate"`
 	LabelIDs     []string  `json:"labelIds"`
 	InternalDate string    `json:"internalDate"`
 	Payload      gmailPart `json:"payload"`
@@ -353,6 +414,13 @@ type gmailAPIMessage struct {
 // ListThreadIDs searches the mailbox (Gmail query syntax) and returns up to
 // max thread ids (clamped to maxGmailThreads). One API call.
 func (c *Client) ListThreadIDs(ctx context.Context, token, query string, limit int) ([]string, error) {
+	ids, _, err := c.ListThreadIDsPage(ctx, token, query, limit, "")
+	return ids, err
+}
+
+// ListThreadIDsPage returns one page of matching thread IDs and its opaque
+// continuation token. One API call.
+func (c *Client) ListThreadIDsPage(ctx context.Context, token, query string, limit int, pageToken string) ([]string, string, error) {
 	if limit <= 0 || limit > maxGmailThreads {
 		limit = maxGmailThreads
 	}
@@ -361,19 +429,23 @@ func (c *Client) ListThreadIDs(ctx context.Context, token, query string, limit i
 		q.Set("q", query)
 	}
 	q.Set("maxResults", strconv.Itoa(limit))
+	if pageToken != "" {
+		q.Set("pageToken", pageToken)
+	}
 	var list struct {
 		Threads []struct {
 			ID string `json:"id"`
 		} `json:"threads"`
+		NextPageToken string `json:"nextPageToken"`
 	}
 	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/threads", q, &list); err != nil {
-		return nil, fmt.Errorf("gmail threads.list: %w", err)
+		return nil, "", fmt.Errorf("gmail threads.list: %w", err)
 	}
 	ids := make([]string, 0, len(list.Threads))
 	for _, t := range list.Threads {
 		ids = append(ids, t.ID)
 	}
-	return ids, nil
+	return ids, list.NextPageToken, nil
 }
 
 // GetThreadMessages returns the metadata-only messages of one thread in
@@ -382,8 +454,17 @@ func (c *Client) GetThreadMessages(ctx context.Context, token, threadID string) 
 	q := url.Values{}
 	q.Set("format", "metadata")
 	q.Add("metadataHeaders", "From")
+	q.Add("metadataHeaders", "Reply-To")
+	q.Add("metadataHeaders", "Delivered-To")
 	q.Add("metadataHeaders", "To")
+	q.Add("metadataHeaders", "Cc")
+	q.Add("metadataHeaders", "Bcc")
 	q.Add("metadataHeaders", "Subject")
+	q.Add("metadataHeaders", "Message-ID")
+	q.Add("metadataHeaders", "In-Reply-To")
+	q.Add("metadataHeaders", "List-ID")
+	q.Add("metadataHeaders", "List-Unsubscribe")
+	q.Add("metadataHeaders", "List-Unsubscribe-Post")
 	var thread struct {
 		Messages []gmailAPIMessage `json:"messages"`
 	}
@@ -392,7 +473,7 @@ func (c *Client) GetThreadMessages(ctx context.Context, token, threadID string) 
 	}
 	out := make([]GmailThreadMessage, 0, len(thread.Messages))
 	for _, m := range thread.Messages {
-		msg := GmailThreadMessage{ID: m.ID, ThreadID: m.ThreadID, Snippet: m.Snippet, Labels: m.LabelIDs}
+		msg := GmailThreadMessage{ID: m.ID, ThreadID: m.ThreadID, Snippet: m.Snippet, SizeBytes: m.SizeEstimate, Labels: m.LabelIDs}
 		for _, l := range m.LabelIDs {
 			if l == "SENT" {
 				msg.Outbound = true
@@ -402,13 +483,31 @@ func (c *Client) GetThreadMessages(ctx context.Context, token, threadID string) 
 			msg.At = time.UnixMilli(ms).UTC()
 		}
 		for _, h := range m.Payload.Headers {
-			switch h.Name {
-			case "From":
+			switch strings.ToLower(h.Name) {
+			case "from":
 				msg.From = h.Value
-			case "To":
+			case "reply-to":
+				msg.ReplyTo = h.Value
+			case "delivered-to":
+				msg.DeliveredTo = h.Value
+			case "to":
 				msg.To = h.Value
-			case "Subject":
+			case "cc":
+				msg.Cc = h.Value
+			case "bcc":
+				msg.Bcc = h.Value
+			case "subject":
 				msg.Subject = h.Value
+			case "message-id":
+				msg.RFC822MessageID = h.Value
+			case "in-reply-to":
+				msg.InReplyToMessageID = h.Value
+			case "list-id":
+				msg.ListID = h.Value
+			case "list-unsubscribe":
+				msg.ListUnsubscribe = h.Value
+			case "list-unsubscribe-post":
+				msg.UnsubscribeOneClick = isOneClickUnsubscribe(h.Value)
 			}
 		}
 		out = append(out, msg)
@@ -418,31 +517,49 @@ func (c *Client) GetThreadMessages(ctx context.Context, token, threadID string) 
 
 // GmailAttachment is one attachment's metadata on a message.
 type GmailAttachment struct {
-	ID       string `json:"id,omitempty"`
+	ID        string `json:"-"`
+	Reference string `json:"attachmentRef,omitempty"`
+	Filename  string `json:"filename"`
+	MIMEType  string `json:"mimeType,omitempty"`
+	Size      int    `json:"size,omitempty"`
+}
+
+// GmailTextAttachment is the bounded UTF-8 content of one exact attachment.
+type GmailTextAttachment struct {
 	Filename string `json:"filename"`
-	MIMEType string `json:"mimeType,omitempty"`
-	Size     int    `json:"size,omitempty"`
+	MIMEType string `json:"mimeType"`
+	Size     int    `json:"size"`
+	Content  string `json:"content"`
 }
 
 // GmailMessageContent is one message with its body and attachment metadata.
 type GmailMessageContent struct {
-	MessageID   string            `json:"messageId"`
-	ThreadID    string            `json:"threadId"`
-	From        string            `json:"from,omitempty"`
-	To          string            `json:"to,omitempty"`
-	Cc          string            `json:"cc,omitempty"`
-	Subject     string            `json:"subject,omitempty"`
-	ReceivedAt  string            `json:"receivedAt,omitempty"`
-	Snippet     string            `json:"snippet,omitempty"`
-	Labels      []string          `json:"labels,omitempty"`
-	Outbound    bool              `json:"outbound"`
-	Body        string            `json:"body"`
-	Attachments []GmailAttachment `json:"attachments"`
+	MessageID           string            `json:"messageId"`
+	ThreadID            string            `json:"threadId"`
+	RFC822MessageID     string            `json:"rfc822MessageId,omitempty"`
+	InReplyToMessageID  string            `json:"inReplyToMessageId,omitempty"`
+	From                string            `json:"from,omitempty"`
+	ReplyTo             string            `json:"replyTo,omitempty"`
+	DeliveredTo         string            `json:"deliveredTo,omitempty"`
+	To                  string            `json:"to,omitempty"`
+	Cc                  string            `json:"cc,omitempty"`
+	Bcc                 string            `json:"bcc,omitempty"`
+	Subject             string            `json:"subject,omitempty"`
+	ListID              string            `json:"listId,omitempty"`
+	ListUnsubscribe     string            `json:"listUnsubscribe,omitempty"`
+	UnsubscribeOneClick bool              `json:"unsubscribeOneClick"`
+	ReceivedAt          string            `json:"receivedAt,omitempty"`
+	SizeBytes           int64             `json:"sizeBytes,omitempty"`
+	Snippet             string            `json:"snippet,omitempty"`
+	Labels              []string          `json:"labels,omitempty"`
+	Outbound            bool              `json:"outbound"`
+	Body                string            `json:"body"`
+	Attachments         []GmailAttachment `json:"attachments"`
 }
 
 func (msg gmailAPIMessage) content() GmailMessageContent {
 	content := GmailMessageContent{
-		MessageID: msg.ID, ThreadID: msg.ThreadID, Snippet: msg.Snippet, Labels: msg.LabelIDs,
+		MessageID: msg.ID, ThreadID: msg.ThreadID, Snippet: msg.Snippet, SizeBytes: msg.SizeEstimate, Labels: msg.LabelIDs,
 		Body: extractPlainText(&msg.Payload), Attachments: []GmailAttachment{},
 	}
 	for _, label := range msg.LabelIDs {
@@ -457,12 +574,28 @@ func (msg gmailAPIMessage) content() GmailMessageContent {
 		switch strings.ToLower(header.Name) {
 		case "from":
 			content.From = header.Value
+		case "reply-to":
+			content.ReplyTo = header.Value
+		case "delivered-to":
+			content.DeliveredTo = header.Value
 		case "to":
 			content.To = header.Value
 		case "cc":
 			content.Cc = header.Value
+		case "bcc":
+			content.Bcc = header.Value
 		case "subject":
 			content.Subject = header.Value
+		case "message-id":
+			content.RFC822MessageID = header.Value
+		case "in-reply-to":
+			content.InReplyToMessageID = header.Value
+		case "list-id":
+			content.ListID = header.Value
+		case "list-unsubscribe":
+			content.ListUnsubscribe = header.Value
+		case "list-unsubscribe-post":
+			content.UnsubscribeOneClick = isOneClickUnsubscribe(header.Value)
 		case "date":
 			if content.ReceivedAt == "" {
 				content.ReceivedAt = header.Value
@@ -471,6 +604,10 @@ func (msg gmailAPIMessage) content() GmailMessageContent {
 	}
 	collectAttachments(&msg.Payload, &content.Attachments)
 	return content
+}
+
+func isOneClickUnsubscribe(value string) bool {
+	return strings.EqualFold(strings.TrimSpace(value), "List-Unsubscribe=One-Click")
 }
 
 // GetMessageContent fetches one message with format=full and returns its
@@ -484,6 +621,41 @@ func (c *Client) GetMessageContent(ctx context.Context, token, messageID string)
 		return GmailMessageContent{}, fmt.Errorf("gmail messages.get content %s: %w", messageID, err)
 	}
 	return msg.content(), nil
+}
+
+// GetTextAttachment reads one attachment using metadata captured with its
+// provider-issued ID. Binary, oversized, and non-UTF-8 content is rejected.
+func (c *Client) GetTextAttachment(ctx context.Context, token, messageID string, attachment GmailAttachment) (GmailTextAttachment, error) {
+	mediaType, _, err := mime.ParseMediaType(attachment.MIMEType)
+	readable := strings.HasPrefix(mediaType, "text/") ||
+		mediaType == "application/json" || mediaType == "application/xml" ||
+		strings.HasSuffix(mediaType, "+json") || strings.HasSuffix(mediaType, "+xml")
+	if err != nil || !readable {
+		return GmailTextAttachment{}, fmt.Errorf("unsupported attachment type %q; only text, JSON, and XML attachments can be read", attachment.MIMEType)
+	}
+	if attachment.Size > maxGmailTextAttachmentBytes {
+		return GmailTextAttachment{}, fmt.Errorf("attachment is too large to read: %d bytes exceeds %d", attachment.Size, maxGmailTextAttachmentBytes)
+	}
+	var body gmailBody
+	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages/"+url.PathEscape(messageID)+"/attachments/"+url.PathEscape(attachment.ID), nil, &body); err != nil {
+		return GmailTextAttachment{}, fmt.Errorf("gmail attachments.get: %w", err)
+	}
+	if body.Size > maxGmailTextAttachmentBytes {
+		return GmailTextAttachment{}, fmt.Errorf("attachment is too large to read: %d bytes exceeds %d", body.Size, maxGmailTextAttachmentBytes)
+	}
+	decoded, err := decodeGmailData(body.Data)
+	if err != nil {
+		return GmailTextAttachment{}, fmt.Errorf("decode gmail attachment: %w", err)
+	}
+	if len(decoded) > maxGmailTextAttachmentBytes {
+		return GmailTextAttachment{}, fmt.Errorf("attachment is too large to read: %d bytes exceeds %d", len(decoded), maxGmailTextAttachmentBytes)
+	}
+	if !utf8.Valid(decoded) {
+		return GmailTextAttachment{}, fmt.Errorf("attachment is not valid UTF-8 text")
+	}
+	return GmailTextAttachment{
+		Filename: attachment.Filename, MIMEType: mediaType, Size: len(decoded), Content: string(decoded),
+	}, nil
 }
 
 // GetThreadContent fetches every message in one thread with format=full. It
