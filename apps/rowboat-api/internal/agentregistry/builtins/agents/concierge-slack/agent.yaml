@@ -17,4 +17,7 @@ spec:
     - web.search
     - conduit.read
     - eigen.simulate
+    - connector.read.composio_tool_search
+    - connector.read.composio_tool_describe
+    - connector.write.composio_tool_execute
   channels: [slack]

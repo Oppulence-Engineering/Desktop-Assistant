@@ -54,4 +54,7 @@ spec:
     - connector.write.gmail_draft
     - connector.write.gmail_send
     - connector.read.calendar
+    - connector.read.composio_tool_search
+    - connector.read.composio_tool_describe
+    - connector.write.composio_tool_execute
   channels: [http]

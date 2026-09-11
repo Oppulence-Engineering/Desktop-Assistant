@@ -20,6 +20,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agenttoken"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruntime"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composioapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/faculties"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
@@ -70,9 +71,10 @@ type Activities struct {
 	SlackTokens agentregistry.SlackTokenResolver
 	// Secrets + Google back the Google read tools (Gmail/Calendar), which reuse
 	// the RFC 004 connector tools. nil makes those tools report "unavailable".
-	Secrets *secrets.Store
-	Google  *googleapi.Client
-	HubSpot *hubspotapi.Client
+	Secrets  *secrets.Store
+	Google   *googleapi.Client
+	HubSpot  *hubspotapi.Client
+	Composio *composioapi.Client
 	// Web backs the web.search tool. nil makes it report "unavailable".
 	Web *websearch.Client
 	// Conduit + Eigen back the portfolio faculty tools (RFC 008). nil makes the
@@ -259,7 +261,7 @@ func (a *Activities) buildToolRegistry(allowed []string, userID string) backgrou
 		}
 		tools = append(tools, capability.Build(agentregistry.ToolDeps{
 			Client: a.Client, ActionProposer: a.ActionProposer, Creds: a.Creds, SlackTokens: a.SlackTokens, Slack: a.Slack,
-			Sealer: a.Sealer, Secrets: a.Secrets, Google: a.Google, HubSpot: a.HubSpot, Web: a.Web,
+			Sealer: a.Sealer, Secrets: a.Secrets, Google: a.Google, HubSpot: a.HubSpot, Composio: a.Composio, Web: a.Web,
 			Conduit: a.Conduit, Eigen: a.Eigen, UserID: userID,
 		}))
 	}

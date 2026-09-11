@@ -27,6 +27,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/billing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composioapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/config"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
@@ -375,6 +376,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	go connectorsH.RunCredentialCleanupWorker(ctx)
 	hubspotClient := hubspotapi.New(client, sealer, vendorPolicy)
 	hubspotH := hubspotapi.NewHandler(hubspotClient)
+	composioClient := composioapi.New(cfg.ComposioAPIKey, vendorPolicy)
+	composioH := composioapi.NewHandler(composioClient)
 
 	plainLabels, err := feedback.ParseLabelMap(cfg.PlainLabelTypeIDs)
 	if err != nil {
@@ -956,6 +959,16 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 			Delete("/v1/connectors/{name}/connections/{connectionID}", connectorsH.Delete)
 		r.With(rl.PerUserWindow(ratelimit.GroupConnections, 60, time.Minute)).
 			Post("/v1/hubspot/search", hubspotH.Search)
+		// The hosted Composio connect flow. Every route reads the user from the
+		// session; the project key can reach every connection in the project.
+		r.Route("/v1/composio", func(r chi.Router) {
+			r.Use(rl.PerUser(ratelimit.GroupConnections, 30))
+			r.Use(rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second))
+			r.Get("/toolkits", composioH.Toolkits)
+			r.Get("/connections", composioH.Connections)
+			r.Post("/connections", composioH.StartConnection)
+			r.Delete("/connections/{connectionID}", composioH.DeleteConnection)
+		})
 		r.Route("/v1/connections", func(r chi.Router) {
 			r.Use(rl.PerUser(ratelimit.GroupConnections, 30))
 			r.Use(rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second))
