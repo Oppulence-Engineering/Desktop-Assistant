@@ -119,9 +119,7 @@ export function CommandPalette({
         value={query}
       />
       <CommandList>
-        <CommandEmpty>
-          {searching ? "Searching…" : "No results found."}
-        </CommandEmpty>
+        <CommandEmpty>{searching ? "Searching…" : "No results found."}</CommandEmpty>
         {accounts.length > 0 ? (
           <>
             <CommandGroup heading="Accounts">

@@ -66,9 +66,7 @@ export default function RootLayout({
         className={`${geist.variable} ${geistMono.variable} ${f37Stout.variable} ${inter.variable} antialiased`}
         suppressHydrationWarning
       >
-        <AppRouterCacheProvider options={{ key: "css" }}>
-          {children}
-        </AppRouterCacheProvider>
+        <AppRouterCacheProvider options={{ key: "css" }}>{children}</AppRouterCacheProvider>
       </body>
     </html>
   );

@@ -151,7 +151,9 @@ describe("CommitmentQueue", () => {
 
     expect(screen.getByText(/No explicit promises were found/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Google connected/ })).toBeEnabled();
-    expect(screen.queryByRole("button", { name: /Connect Gmail & Calendar/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Connect Gmail & Calendar/ }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/Connect Google and run/)).not.toBeInTheDocument();
   });
 

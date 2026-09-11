@@ -12,7 +12,12 @@ const manifestPath = path.join(
 // These are intentionally repo-specific until feature routes split the legacy island.
 const budgets = {
   productJavaScriptBytes: 3_400 * 1024,
-  productCssBytes: 390 * 1024,
+  // Raised from 390 KiB when the commitment register landed: the branch adds
+  // the open promises page, the audit coverage strip, the source health list
+  // and the reconnect banners, and Tailwind emits utilities for each. Measured
+  // at 410.8 KiB, so this keeps roughly the same headroom the other two
+  // budgets were set with rather than being fitted to the current number.
+  productCssBytes: 430 * 1024,
   largestProductChunkBytes: 2_350 * 1024,
 };
 
