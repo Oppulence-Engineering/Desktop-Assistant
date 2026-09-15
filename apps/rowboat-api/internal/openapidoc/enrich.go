@@ -276,6 +276,19 @@ func addBillingSchemas(schemas obj) {
 		"trialExpiresAt": stringSchema("Trial expiry as RFC3339 when trialing; null otherwise.", "2026-07-01T00:00:00.000Z", nullable()),
 		"usage":          ref("BillingUsage"),
 	}, "plan", "status", "trialExpiresAt", "usage")
+	confirmSchema := stringSchema("Must be the literal value DELETE.", "DELETE")
+	confirmSchema["enum"] = []any{"DELETE"}
+	schemas["AccountDeletionRequest"] = objectSchema("Request body for DELETE /v1/me.", obj{"confirm": confirmSchema}, "confirm")
+	schemas["AccountDeletionReceipt"] = objectSchema("Response for DELETE /v1/me. Holds no personal data.", obj{
+		"receiptId":              stringSchema("Receipt identifier for support.", "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f"),
+		"requestedAt":            stringSchema("When the deletion started (RFC 3339).", "2026-09-15T10:00:00Z"),
+		"completedAt":            stringSchema("When the deletion finished (RFC 3339).", "2026-09-15T10:00:02Z"),
+		"subscriptionsCancelled": intSchema("Stripe subscriptions cancelled.", 1),
+		"connectorsRevoked":      intSchema("Connector grants revoked.", 2),
+		"workspacesTransferred":  intSchema("Shared workspaces given to another member.", 0),
+		"workspacesDeleted":      intSchema("Workspaces deleted with the account.", 1),
+		"identityDeleted":        boolSchema("Whether the WorkOS identity was deleted. False means support must delete it.", true),
+	}, "receiptId", "requestedAt", "completedAt", "subscriptionsCancelled", "connectorsRevoked", "workspacesTransferred", "workspacesDeleted", "identityDeleted")
 	schemas["MeResponse"] = objectSchema("Response for GET /v1/me.", obj{
 		"user":    ref("CurrentUser"),
 		"billing": ref("BillingState"),
@@ -1221,6 +1234,19 @@ func addBillingPaths(paths obj) {
 		"500": responseRef("500"),
 		"503": responseRef("503"),
 	})}
+	paths["/v1/me"].(obj)["delete"] = operation("Billing", "Delete the current account", "Permanently deletes the authenticated account. The API first cancels every live Stripe subscription of the user (an account that Stripe can still charge is never deleted), then revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, and deletes the WorkOS identity. The request body must confirm the deletion.", "deleteMe", bearer(), nil,
+		jsonRequest("Deletion confirmation.", ref("AccountDeletionRequest"), obj{"confirm": "DELETE"}),
+		obj{
+			"200": jsonResponse("Account deleted. The receipt records what the deletion did.", ref("AccountDeletionReceipt"), obj{
+				"receiptId": "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f", "requestedAt": "2026-09-15T10:00:00Z", "completedAt": "2026-09-15T10:00:02Z",
+				"subscriptionsCancelled": 1, "connectorsRevoked": 2, "workspacesTransferred": 0, "workspacesDeleted": 1, "identityDeleted": true,
+			}),
+			"400": problemResponse("The confirmation is missing or wrong.", ref("ErrorEnvelope"), problemExample(400, "Bad Request", `set "confirm" to "DELETE" to delete this account`, "confirmation_required")),
+			"401": responseRef("401"),
+			"409": problemResponse("A shared workspace has no member who can take ownership.", ref("ErrorEnvelope"), problemExample(409, "Conflict", "your workspace has other members and none of them can take ownership; remove the other members first", "workspace_successor_required")),
+			"500": responseRef("500"),
+			"502": problemResponse("Stripe did not cancel the subscription, so nothing was deleted.", ref("ErrorEnvelope"), problemExample(502, "Bad Gateway", "could not cancel the subscription, so the account was not deleted", "billing_cancellation_failed")),
+		})
 }
 
 func addBackgroundTaskPaths(paths obj) {

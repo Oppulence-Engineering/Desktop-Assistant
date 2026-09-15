@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Loader2, User, CreditCard, LogOut, ExternalLink } from "@/lib/icons";
+import { Loader2, User, CreditCard, LogOut, ExternalLink, Trash2 } from "@/lib/icons";
 import { Button } from "@oppulence/ui/components/button";
+import { Input } from "@oppulence/ui/components/input";
 import { Separator } from "@oppulence/ui/components/separator";
 import { useBilling } from "@/hooks/useBilling";
+import { accountDeletionErrorMessage } from "@/lib/account-deletion";
 import { toast } from "sonner";
 import type { BillingUsageBucket } from "@x/shared/billing";
 import {
@@ -65,6 +67,9 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
   const [disconnecting, setDisconnecting] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
   const [billingAction, setBillingAction] = useState<"checkout" | "portal" | null>(null);
   const {
     billing,
@@ -94,6 +99,8 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
       checkConnection();
     } else {
       setConfirmingLogout(false);
+      setConfirmingDelete(false);
+      setDeleteConfirmation("");
     }
   }, [dialogOpen, checkConnection]);
 
@@ -139,6 +146,25 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
       toast.error(`Failed to log out of ${PRODUCT_NAME}`);
     } finally {
       setDisconnecting(false);
+    }
+  }, []);
+
+  const handleDeleteAccount = useCallback(async () => {
+    try {
+      setDeleting(true);
+      const result = await window.ipc.invoke("account:delete", { confirm: "DELETE" });
+      if (result.success) {
+        setConfirmingDelete(false);
+        setIsSolomonConnected(false);
+        toast.success(`Your ${PRODUCT_NAME} account was deleted`);
+      } else {
+        toast.error(accountDeletionErrorMessage(result.code));
+      }
+    } catch {
+      toast.error(accountDeletionErrorMessage(null));
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmation("");
     }
   }, []);
 
@@ -382,7 +408,9 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setConfirmingLogout(false)}
+                onClick={() => {
+                  setConfirmingLogout(false);
+                }}
                 disabled={disconnecting}
               >
                 Cancel
@@ -403,9 +431,80 @@ export function AccountSettings({ dialogOpen }: AccountSettingsProps) {
             variant="outline"
             size="sm"
             className="text-destructive hover:text-destructive"
-            onClick={() => setConfirmingLogout(true)}
+            onClick={() => {
+              setConfirmingLogout(true);
+            }}
           >
             Log Out
+          </Button>
+        )}
+      </div>
+
+      <Separator />
+
+      {/* Delete Account Section */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Trash2 className="size-4 text-muted-foreground" />
+          <h4 className="text-sm font-medium">Delete Account</h4>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Permanently delete your {PRODUCT_NAME} account, your synced data, and your subscription.
+          Files on this computer stay.
+        </p>
+        {confirmingDelete ? (
+          <div className="space-y-3 rounded-none border border-destructive/30 bg-destructive/5 p-3">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Delete your {PRODUCT_NAME} account?</p>
+              <p className="text-xs text-muted-foreground">
+                We cancel your subscription immediately, disconnect your connected accounts, and
+                delete your synced data. A shared workspace goes to another member. You cannot undo
+                this.
+              </p>
+            </div>
+            <Input
+              aria-label="Type DELETE to confirm"
+              autoComplete="off"
+              placeholder="Type DELETE to confirm"
+              value={deleteConfirmation}
+              onChange={(event) => {
+                setDeleteConfirmation(event.target.value);
+              }}
+              disabled={deleting}
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setConfirmingDelete(false);
+                  setDeleteConfirmation("");
+                }}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => void handleDeleteAccount()}
+                disabled={deleting || deleteConfirmation !== "DELETE"}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleting ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+                Permanently Delete
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() => {
+              setConfirmingDelete(true);
+            }}
+          >
+            Delete Account
           </Button>
         )}
       </div>

@@ -39,13 +39,13 @@ var (
 				Symbol:     "action_outcomes_revenue_workspaces_outcomes",
 				Columns:    []*schema.Column{ActionOutcomesColumns[9]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "action_outcomes_users_action_outcomes",
 				Columns:    []*schema.Column{ActionOutcomesColumns[10]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -89,7 +89,7 @@ var (
 				Symbol:     "action_proposals_users_action_proposals",
 				Columns:    []*schema.Column{ActionProposalsColumns[19]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -147,7 +147,7 @@ var (
 				Symbol:     "agent_approvals_users_agent_approvals",
 				Columns:    []*schema.Column{AgentApprovalsColumns[17]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -200,7 +200,7 @@ var (
 				Symbol:     "agent_definitions_users_agent_definitions",
 				Columns:    []*schema.Column{AgentDefinitionsColumns[23]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -302,7 +302,7 @@ var (
 				Symbol:     "agent_sessions_users_agent_sessions",
 				Columns:    []*schema.Column{AgentSessionsColumns[24]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -357,7 +357,7 @@ var (
 				Symbol:     "agent_session_events_users_agent_session_events",
 				Columns:    []*schema.Column{AgentSessionEventsColumns[9]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -406,7 +406,7 @@ var (
 				Symbol:     "agent_tool_calls_users_agent_tool_calls",
 				Columns:    []*schema.Column{AgentToolCallsColumns[13]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -445,7 +445,7 @@ var (
 				Symbol:     "agent_tool_result_blobs_users_agent_tool_result_blobs",
 				Columns:    []*schema.Column{AgentToolResultBlobsColumns[9]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -490,7 +490,7 @@ var (
 				Symbol:     "agent_turns_users_agent_turns",
 				Columns:    []*schema.Column{AgentTurnsColumns[14]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -531,7 +531,7 @@ var (
 				Symbol:     "approval_tokens_users_approval_tokens",
 				Columns:    []*schema.Column{ApprovalTokensColumns[11]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -588,7 +588,7 @@ var (
 				Symbol:     "background_tasks_users_background_tasks",
 				Columns:    []*schema.Column{BackgroundTasksColumns[24]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -627,7 +627,7 @@ var (
 				Symbol:     "background_task_artifacts_users_background_task_artifacts",
 				Columns:    []*schema.Column{BackgroundTaskArtifactsColumns[8]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -698,7 +698,7 @@ var (
 				Symbol:     "background_task_runs_users_background_task_runs",
 				Columns:    []*schema.Column{BackgroundTaskRunsColumns[34]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -759,7 +759,7 @@ var (
 				Symbol:     "background_task_run_events_users_background_task_run_events",
 				Columns:    []*schema.Column{BackgroundTaskRunEventsColumns[9]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -808,7 +808,7 @@ var (
 				Symbol:     "background_task_schedule_states_users_background_task_schedule_states",
 				Columns:    []*schema.Column{BackgroundTaskScheduleStatesColumns[13]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -865,7 +865,7 @@ var (
 				Symbol:     "capture_artifacts_users_capture_artifacts",
 				Columns:    []*schema.Column{CaptureArtifactsColumns[14]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -913,7 +913,7 @@ var (
 				Symbol:     "cloud_events_users_cloud_events",
 				Columns:    []*schema.Column{CloudEventsColumns[18]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -983,13 +983,13 @@ var (
 				Symbol:     "commitments_revenue_workspaces_commitments",
 				Columns:    []*schema.Column{CommitmentsColumns[20]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "commitments_users_commitments",
 				Columns:    []*schema.Column{CommitmentsColumns[21]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1046,13 +1046,13 @@ var (
 				Symbol:     "commitment_dependencies_revenue_workspaces_commitment_dependencies",
 				Columns:    []*schema.Column{CommitmentDependenciesColumns[8]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "commitment_dependencies_users_commitment_dependencies",
 				Columns:    []*schema.Column{CommitmentDependenciesColumns[9]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1104,13 +1104,13 @@ var (
 				Symbol:     "commitment_events_revenue_workspaces_commitment_events",
 				Columns:    []*schema.Column{CommitmentEventsColumns[14]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "commitment_events_users_commitment_events",
 				Columns:    []*schema.Column{CommitmentEventsColumns[15]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1161,7 +1161,7 @@ var (
 				Symbol:     "connector_audit_events_users_connector_audit_events",
 				Columns:    []*schema.Column{ConnectorAuditEventsColumns[21]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1344,13 +1344,13 @@ var (
 				Symbol:     "conversation_intelligence_artifacts_revenue_workspaces_conversation_intelligence_artifacts",
 				Columns:    []*schema.Column{ConversationIntelligenceArtifactsColumns[13]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "conversation_intelligence_artifacts_users_conversation_intelligence_artifacts",
 				Columns:    []*schema.Column{ConversationIntelligenceArtifactsColumns[14]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1385,7 +1385,7 @@ var (
 				Symbol:     "credit_ledgers_users_ledger_entries",
 				Columns:    []*schema.Column{CreditLedgersColumns[5]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1428,13 +1428,13 @@ var (
 				Symbol:     "entities_revenue_workspaces_entities",
 				Columns:    []*schema.Column{EntitiesColumns[12]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "entities_users_entities",
 				Columns:    []*schema.Column{EntitiesColumns[13]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1482,13 +1482,13 @@ var (
 				Symbol:     "entity_identifiers_revenue_workspaces_entity_identifiers",
 				Columns:    []*schema.Column{EntityIdentifiersColumns[6]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "entity_identifiers_users_entity_identifiers",
 				Columns:    []*schema.Column{EntityIdentifiersColumns[7]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1530,13 +1530,13 @@ var (
 				Symbol:     "entity_resource_refs_revenue_workspaces_entity_resource_refs",
 				Columns:    []*schema.Column{EntityResourceRefsColumns[5]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "entity_resource_refs_users_entity_resource_refs",
 				Columns:    []*schema.Column{EntityResourceRefsColumns[6]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1577,7 +1577,7 @@ var (
 				Symbol:     "google_watches_users_google_watches",
 				Columns:    []*schema.Column{GoogleWatchesColumns[11]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1617,7 +1617,7 @@ var (
 				Symbol:     "llm_usages_users_llm_usages",
 				Columns:    []*schema.Column{LlmUsagesColumns[10]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1702,7 +1702,7 @@ var (
 				Symbol:     "mcp_connections_users_mcp_connections",
 				Columns:    []*schema.Column{McpConnectionsColumns[21]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1782,7 +1782,7 @@ var (
 				Symbol:     "mail_body_caches_users_mail_body_caches",
 				Columns:    []*schema.Column{MailBodyCachesColumns[7]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1829,7 +1829,7 @@ var (
 				Symbol:     "mail_message_meta_users_mail_message_metas",
 				Columns:    []*schema.Column{MailMessageMetaColumns[11]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1869,7 +1869,7 @@ var (
 				Symbol:     "mail_signals_users_mail_signals",
 				Columns:    []*schema.Column{MailSignalsColumns[9]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1921,7 +1921,7 @@ var (
 				Symbol:     "mail_threads_users_mail_threads",
 				Columns:    []*schema.Column{MailThreadsColumns[16]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1957,7 +1957,7 @@ var (
 				Symbol:     "meeting_minute_usages_users_meeting_minute_usages",
 				Columns:    []*schema.Column{MeetingMinuteUsagesColumns[6]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1991,7 +1991,7 @@ var (
 				Symbol:     "oauth_connections_users_oauth_connections",
 				Columns:    []*schema.Column{OauthConnectionsColumns[9]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -2134,13 +2134,13 @@ var (
 				Symbol:     "relationship_persons_revenue_workspaces_relationship_persons",
 				Columns:    []*schema.Column{RelationshipPersonsColumns[27]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationship_persons_users_relationship_persons",
 				Columns:    []*schema.Column{RelationshipPersonsColumns[28]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -2210,13 +2210,13 @@ var (
 				Symbol:     "person_attributes_revenue_workspaces_person_attributes",
 				Columns:    []*schema.Column{PersonAttributesColumns[22]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "person_attributes_users_person_attributes",
 				Columns:    []*schema.Column{PersonAttributesColumns[23]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -2270,13 +2270,13 @@ var (
 				Symbol:     "person_identities_revenue_workspaces_person_identities",
 				Columns:    []*schema.Column{PersonIdentitiesColumns[12]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "person_identities_users_person_identities",
 				Columns:    []*schema.Column{PersonIdentitiesColumns[13]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -2335,7 +2335,7 @@ var (
 				Symbol:     "person_interaction_stats_revenue_workspaces_person_interaction_stats",
 				Columns:    []*schema.Column{PersonInteractionStatsColumns[17]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -2402,13 +2402,13 @@ var (
 				Symbol:     "person_merge_candidates_revenue_workspaces_person_merge_candidates",
 				Columns:    []*schema.Column{PersonMergeCandidatesColumns[24]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "person_merge_candidates_users_person_merge_candidates",
 				Columns:    []*schema.Column{PersonMergeCandidatesColumns[25]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -2447,13 +2447,13 @@ var (
 				Symbol:     "person_suppressions_revenue_workspaces_person_suppressions",
 				Columns:    []*schema.Column{PersonSuppressionsColumns[8]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "person_suppressions_users_person_suppressions",
 				Columns:    []*schema.Column{PersonSuppressionsColumns[9]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -2502,13 +2502,13 @@ var (
 				Symbol:     "policy_decision_snapshots_revenue_workspaces_decisions",
 				Columns:    []*schema.Column{PolicyDecisionSnapshotsColumns[17]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "policy_decision_snapshots_users_policy_decision_snapshots",
 				Columns:    []*schema.Column{PolicyDecisionSnapshotsColumns[18]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 	}
@@ -2561,13 +2561,13 @@ var (
 				Symbol:     "relationships_revenue_workspaces_relationships",
 				Columns:    []*schema.Column{RelationshipsColumns[34]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationships_users_relationships",
 				Columns:    []*schema.Column{RelationshipsColumns[35]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -2635,13 +2635,13 @@ var (
 				Symbol:     "relationship_assertions_revenue_workspaces_relationship_assertions",
 				Columns:    []*schema.Column{RelationshipAssertionsColumns[25]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationship_assertions_users_relationship_assertions",
 				Columns:    []*schema.Column{RelationshipAssertionsColumns[26]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -2713,13 +2713,13 @@ var (
 				Symbol:     "relationship_attention_items_revenue_workspaces_relationship_attention_items",
 				Columns:    []*schema.Column{RelationshipAttentionItemsColumns[30]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationship_attention_items_users_relationship_attention_items",
 				Columns:    []*schema.Column{RelationshipAttentionItemsColumns[31]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -2773,13 +2773,13 @@ var (
 				Symbol:     "relationship_identities_revenue_workspaces_relationship_identities",
 				Columns:    []*schema.Column{RelationshipIdentitiesColumns[12]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationship_identities_users_relationship_identities",
 				Columns:    []*schema.Column{RelationshipIdentitiesColumns[13]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -2849,13 +2849,13 @@ var (
 				Symbol:     "relationship_identity_candidates_revenue_workspaces_identity_candidates",
 				Columns:    []*schema.Column{RelationshipIdentityCandidatesColumns[27]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationship_identity_candidates_users_relationship_identity_candidates",
 				Columns:    []*schema.Column{RelationshipIdentityCandidatesColumns[28]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -2903,13 +2903,13 @@ var (
 				Symbol:     "relationship_identity_decisions_revenue_workspaces_relationship_identity_decisions",
 				Columns:    []*schema.Column{RelationshipIdentityDecisionsColumns[11]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationship_identity_decisions_users_relationship_identity_decisions",
 				Columns:    []*schema.Column{RelationshipIdentityDecisionsColumns[12]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -2959,13 +2959,13 @@ var (
 				Symbol:     "relationship_lineage_events_revenue_workspaces_relationship_lineage_events",
 				Columns:    []*schema.Column{RelationshipLineageEventsColumns[13]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationship_lineage_events_users_relationship_lineage_events",
 				Columns:    []*schema.Column{RelationshipLineageEventsColumns[14]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3018,13 +3018,13 @@ var (
 				Symbol:     "relationship_observations_revenue_workspaces_relationship_observations",
 				Columns:    []*schema.Column{RelationshipObservationsColumns[16]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationship_observations_users_relationship_observations",
 				Columns:    []*schema.Column{RelationshipObservationsColumns[17]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3078,13 +3078,13 @@ var (
 				Symbol:     "relationship_participants_revenue_workspaces_relationship_participants",
 				Columns:    []*schema.Column{RelationshipParticipantsColumns[11]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationship_participants_users_relationship_participants",
 				Columns:    []*schema.Column{RelationshipParticipantsColumns[12]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3137,13 +3137,13 @@ var (
 				Symbol:     "relationship_projection_jobs_revenue_workspaces_relationship_projection_jobs",
 				Columns:    []*schema.Column{RelationshipProjectionJobsColumns[16]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationship_projection_jobs_users_relationship_projection_jobs",
 				Columns:    []*schema.Column{RelationshipProjectionJobsColumns[17]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3198,13 +3198,13 @@ var (
 				Symbol:     "relationship_review_acknowledgements_revenue_workspaces_relationship_review_acknowledgements",
 				Columns:    []*schema.Column{RelationshipReviewAcknowledgementsColumns[7]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationship_review_acknowledgements_users_relationship_review_acknowledgements",
 				Columns:    []*schema.Column{RelationshipReviewAcknowledgementsColumns[8]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3268,13 +3268,13 @@ var (
 				Symbol:     "relationship_source_status_revenue_workspaces_relationship_source_statuses",
 				Columns:    []*schema.Column{RelationshipSourceStatusColumns[33]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationship_source_status_users_relationship_source_statuses",
 				Columns:    []*schema.Column{RelationshipSourceStatusColumns[34]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3317,13 +3317,13 @@ var (
 				Symbol:     "relationship_state_snapshots_revenue_workspaces_relationship_state_snapshots",
 				Columns:    []*schema.Column{RelationshipStateSnapshotsColumns[11]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "relationship_state_snapshots_users_relationship_state_snapshots",
 				Columns:    []*schema.Column{RelationshipStateSnapshotsColumns[12]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3397,13 +3397,13 @@ var (
 				Symbol:     "revenue_actions_revenue_workspaces_actions",
 				Columns:    []*schema.Column{RevenueActionsColumns[42]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "revenue_actions_users_revenue_actions",
 				Columns:    []*schema.Column{RevenueActionsColumns[43]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3454,7 +3454,7 @@ var (
 				Symbol:     "revenue_action_revisions_users_revenue_action_revisions",
 				Columns:    []*schema.Column{RevenueActionRevisionsColumns[15]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3495,13 +3495,13 @@ var (
 				Symbol:     "revenue_evidences_revenue_workspaces_evidences",
 				Columns:    []*schema.Column{RevenueEvidencesColumns[15]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "revenue_evidences_users_revenue_evidences",
 				Columns:    []*schema.Column{RevenueEvidencesColumns[16]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3548,13 +3548,13 @@ var (
 				Symbol:     "revenue_leak_scans_revenue_workspaces_scans",
 				Columns:    []*schema.Column{RevenueLeakScansColumns[21]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "revenue_leak_scans_users_revenue_leak_scans",
 				Columns:    []*schema.Column{RevenueLeakScansColumns[22]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3603,13 +3603,13 @@ var (
 				Symbol:     "revenue_outbox_events_revenue_workspaces_outbox_events",
 				Columns:    []*schema.Column{RevenueOutboxEventsColumns[15]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "revenue_outbox_events_users_revenue_outbox_events",
 				Columns:    []*schema.Column{RevenueOutboxEventsColumns[16]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3664,13 +3664,13 @@ var (
 				Symbol:     "revenue_trust_events_revenue_workspaces_trust_events",
 				Columns:    []*schema.Column{RevenueTrustEventsColumns[14]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "revenue_trust_events_users_revenue_trust_events",
 				Columns:    []*schema.Column{RevenueTrustEventsColumns[15]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3713,7 +3713,7 @@ var (
 				Symbol:     "revenue_workspaces_users_revenue_workspaces",
 				Columns:    []*schema.Column{RevenueWorkspacesColumns[13]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3745,13 +3745,13 @@ var (
 				Symbol:     "revenue_workspace_members_revenue_workspaces_members",
 				Columns:    []*schema.Column{RevenueWorkspaceMembersColumns[6]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "revenue_workspace_members_users_revenue_workspace_members",
 				Columns:    []*schema.Column{RevenueWorkspaceMembersColumns[7]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3785,7 +3785,7 @@ var (
 				Symbol:     "subscriptions_users_subscription",
 				Columns:    []*schema.Column{SubscriptionsColumns[9]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 	}
@@ -3842,13 +3842,13 @@ var (
 				Symbol:     "tenant_evidence_keys_revenue_workspaces_evidence_keys",
 				Columns:    []*schema.Column{TenantEvidenceKeysColumns[10]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "tenant_evidence_keys_users_tenant_evidence_keys",
 				Columns:    []*schema.Column{TenantEvidenceKeysColumns[11]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3928,7 +3928,7 @@ var (
 				Symbol:     "voice_api_keys_users_voice_api_keys",
 				Columns:    []*schema.Column{VoiceAPIKeysColumns[10]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -3968,7 +3968,7 @@ var (
 				Symbol:     "voice_sync_items_users_voice_sync_items",
 				Columns:    []*schema.Column{VoiceSyncItemsColumns[15]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -4011,13 +4011,13 @@ var (
 				Symbol:     "workspace_feature_controls_revenue_workspaces_feature_controls",
 				Columns:    []*schema.Column{WorkspaceFeatureControlsColumns[7]},
 				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "workspace_feature_controls_users_workspace_feature_controls",
 				Columns:    []*schema.Column{WorkspaceFeatureControlsColumns[8]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
+				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{

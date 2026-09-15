@@ -7,7 +7,21 @@
  */
 import { faker } from "@faker-js/faker";
 
-import type { MeResponse } from "../model";
+import type { AccountDeletionReceipt, MeResponse } from "../model";
+
+export const getDeleteMeResponseMock = (
+  overrideResponse: Partial<Extract<AccountDeletionReceipt, object>> = {},
+): AccountDeletionReceipt => ({
+  completedAt: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  connectorsRevoked: faker.number.int(),
+  identityDeleted: faker.datatype.boolean(),
+  receiptId: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  requestedAt: faker.string.alpha({ length: { min: 10, max: 20 } }),
+  subscriptionsCancelled: faker.number.int(),
+  workspacesDeleted: faker.number.int(),
+  workspacesTransferred: faker.number.int(),
+  ...overrideResponse,
+});
 
 export const getGetMeResponseMock = (
   overrideResponse: Partial<Extract<MeResponse, object>> = {},

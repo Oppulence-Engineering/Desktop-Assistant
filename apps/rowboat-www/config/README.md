@@ -10,6 +10,7 @@ here.
 | `contracts/`    | OpenAPI client and runtime-schema generation        | `npm run contracts:generate`                  |
 | `deployment/`   | Platform-specific application deployment settings   | Fly.io CLI and deployment workflows           |
 | `quality/`      | Dead-code and security scanning policy              | `npm run knip` and `npm run security:semgrep` |
+| `e2e/`          | Browser end-to-end runs against the local stack     | `scripts/account-deletion-e2e.sh`             |
 
 Configuration moves must update `package.json`, repository-policy tests, contributor documentation,
 and any scripts that invoke the tool directly. Do not add a new root-level policy file when the tool

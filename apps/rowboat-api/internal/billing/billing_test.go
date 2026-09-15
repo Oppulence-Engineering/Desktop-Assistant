@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,8 +21,15 @@ import (
 
 func testClient(t *testing.T) *ent.Client {
 	t.Helper()
+	return testClientNamed(t, t.Name())
+}
+
+// testClientNamed opens a fresh in-memory database named after name, for tests
+// that need more than one database.
+func testClientNamed(t *testing.T, name string) *ent.Client {
+	t.Helper()
 	d, err := db.Open(context.Background(), appconfig.Config{
-		DatabaseURL: "file:" + t.Name() + "?mode=memory&cache=shared&_pragma=foreign_keys(1)",
+		DatabaseURL: "file:" + strings.ReplaceAll(name, "/", "_") + "?mode=memory&cache=shared&_pragma=foreign_keys(1)",
 		AutoMigrate: true,
 	}, zap.NewNop())
 	if err != nil {

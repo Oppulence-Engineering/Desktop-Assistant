@@ -2383,6 +2383,17 @@ const ipcSchemas = {
       success: z.boolean(),
     }),
   },
+  // Account deletion. The API cancels Stripe billing and deletes the account;
+  // `code` carries the API problem code when it refuses.
+  "account:delete": {
+    req: z.object({
+      confirm: z.literal("DELETE"),
+    }),
+    res: z.object({
+      success: z.boolean(),
+      code: z.string().nullable(),
+    }),
+  },
   // Cloud research (RFC 039). Read-only status plus the consent write; the
   // server holds the authoritative consent and re-checks it on every call, so
   // these channels move a decision rather than granting a permission.

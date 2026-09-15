@@ -10,10 +10,12 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/appconfig"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -207,5 +209,41 @@ func TestReconnectAmbiguousRevokeRetainsRetryAndNeverRevokesCurrent(t *testing.T
 	}
 	if count := client.ConnectorCredentialCleanupJob.Query().Where(connectorcredentialcleanupjob.IDEQ(firstCleanup)).CountX(auth.WithInternal(t.Context())); count != 0 {
 		t.Fatalf("completed superseded cleanup retained %d rows", count)
+	}
+}
+
+// TestRevocationJobRevokesGrantOfDeletedAccount covers account deletion: the
+// owner row is gone (cascaded), but the provider grant must still be revoked
+// and the job must finish instead of retrying forever.
+func TestRevocationJobRevokesGrantOfDeletedAccount(t *testing.T) {
+	database, sealer := openReconnectTestDatabase(t)
+	client := database.Client
+	var revoked atomic.Int64
+	provider := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		revoked.Add(1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer provider.Close()
+	h := New(client, sealer, DefaultRegistry(), Config{OryPublicURL: provider.URL, OryBrokerClientID: "broker", OryBrokerClientSecret: "secret"}, zap.NewNop())
+	sealed, err := sealer.SealString("refresh-of-deleted-account")
+	if err != nil {
+		t.Fatal(err)
+	}
+	internal := auth.WithInternal(t.Context())
+	job := client.ConnectorRevocationJob.Create().
+		SetConnectionID(uuid.New()).SetOwnerID(uuid.New()).SetConnector("canvas").
+		SetRefreshTokenEncrypted(sealed).SetCredentialGeneration(2).
+		SetTerminalStatus("revoked").SetTerminalReason("account_deleted").SetTerminalActor("user").
+		SetStatus("pending").SetNextAttemptAt(time.Now().Add(-time.Minute)).SaveX(internal)
+
+	completed, err := h.ProcessRevocationJobs(t.Context(), 10)
+	if err != nil || completed != 1 {
+		t.Fatalf("completed = %d, err = %v", completed, err)
+	}
+	if revoked.Load() != 1 {
+		t.Fatalf("provider revocations = %d, want 1", revoked.Load())
+	}
+	if client.ConnectorRevocationJob.Query().Where(connectorrevocationjob.IDEQ(job.ID)).ExistX(internal) {
+		t.Fatal("revocation job still exists")
 	}
 }

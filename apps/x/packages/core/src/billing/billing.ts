@@ -105,3 +105,25 @@ export async function getBillingPortalUrl(): Promise<string> {
 export async function syncBilling(): Promise<void> {
   await authedBillingPost("/v1/billing/sync");
 }
+
+/**
+ * Delete the signed-in account (DELETE /v1/me).
+ *
+ * The API cancels every Stripe subscription before it deletes any data, and it
+ * returns a problem code when it refuses (for example
+ * `workspace_successor_required`). The caller clears the local session.
+ */
+export async function deleteAccount(): Promise<void> {
+  const accessToken = await getAccessToken();
+  const response = await fetch(`${API_URL}/v1/me`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ confirm: "DELETE" }),
+  });
+  if (!response.ok) {
+    throw new BillingRequestError(response.status, await billingProblemCode(response));
+  }
+}

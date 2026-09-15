@@ -211,6 +211,75 @@
       }
     },
     "schemas": {
+      "AccountDeletionReceipt": {
+        "description": "Response for DELETE /v1/me. Holds no personal data.",
+        "properties": {
+          "completedAt": {
+            "description": "When the deletion finished (RFC 3339).",
+            "example": "2026-09-15T10:00:02Z",
+            "type": "string"
+          },
+          "connectorsRevoked": {
+            "description": "Connector grants revoked.",
+            "example": 2,
+            "type": "integer"
+          },
+          "identityDeleted": {
+            "description": "Whether the WorkOS identity was deleted. False means support must delete it.",
+            "example": true,
+            "type": "boolean"
+          },
+          "receiptId": {
+            "description": "Receipt identifier for support.",
+            "example": "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f",
+            "type": "string"
+          },
+          "requestedAt": {
+            "description": "When the deletion started (RFC 3339).",
+            "example": "2026-09-15T10:00:00Z",
+            "type": "string"
+          },
+          "subscriptionsCancelled": {
+            "description": "Stripe subscriptions cancelled.",
+            "example": 1,
+            "type": "integer"
+          },
+          "workspacesDeleted": {
+            "description": "Workspaces deleted with the account.",
+            "example": 1,
+            "type": "integer"
+          },
+          "workspacesTransferred": {
+            "description": "Shared workspaces given to another member.",
+            "example": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "receiptId",
+          "requestedAt",
+          "completedAt",
+          "subscriptionsCancelled",
+          "connectorsRevoked",
+          "workspacesTransferred",
+          "workspacesDeleted",
+          "identityDeleted"
+        ],
+        "type": "object"
+      },
+      "AccountDeletionRequest": {
+        "description": "Request body for DELETE /v1/me.",
+        "properties": {
+          "confirm": {
+            "description": "Must be the literal value DELETE.",
+            "enum": ["DELETE"],
+            "example": "DELETE",
+            "type": "string"
+          }
+        },
+        "required": ["confirm"],
+        "type": "object"
+      },
       "ActionOutcome": {
         "properties": {
           "action": {
@@ -19769,6 +19838,113 @@
       }
     },
     "/v1/me": {
+      "delete": {
+        "description": "Permanently deletes the authenticated account. The API first cancels every live Stripe subscription of the user (an account that Stripe can still charge is never deleted), then revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, and deletes the WorkOS identity. The request body must confirm the deletion.",
+        "operationId": "deleteMe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "confirm": "DELETE"
+              },
+              "schema": {
+                "$ref": "#/components/schemas/AccountDeletionRequest"
+              }
+            }
+          },
+          "description": "Deletion confirmation.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "completedAt": "2026-09-15T10:00:02Z",
+                  "connectorsRevoked": 2,
+                  "identityDeleted": true,
+                  "receiptId": "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f",
+                  "requestedAt": "2026-09-15T10:00:00Z",
+                  "subscriptionsCancelled": 1,
+                  "workspacesDeleted": 1,
+                  "workspacesTransferred": 0
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionReceipt"
+                }
+              }
+            },
+            "description": "Account deleted. The receipt records what the deletion did."
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "confirmation_required",
+                  "detail": "set \"confirm\" to \"DELETE\" to delete this account",
+                  "requestId": "req-abc123",
+                  "status": 400,
+                  "title": "Bad Request",
+                  "type": "https://api.rowboat.dev/problems/confirmation_required"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "The confirmation is missing or wrong."
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "workspace_successor_required",
+                  "detail": "your workspace has other members and none of them can take ownership; remove the other members first",
+                  "requestId": "req-abc123",
+                  "status": 409,
+                  "title": "Conflict",
+                  "type": "https://api.rowboat.dev/problems/workspace_successor_required"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "A shared workspace has no member who can take ownership."
+          },
+          "500": {
+            "$ref": "#/components/responses/500"
+          },
+          "502": {
+            "content": {
+              "application/problem+json": {
+                "example": {
+                  "code": "billing_cancellation_failed",
+                  "detail": "could not cancel the subscription, so the account was not deleted",
+                  "requestId": "req-abc123",
+                  "status": 502,
+                  "title": "Bad Gateway",
+                  "type": "https://api.rowboat.dev/problems/billing_cancellation_failed"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Stripe did not cancel the subscription, so nothing was deleted."
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "summary": "Delete the current account",
+        "tags": ["Billing"]
+      },
       "get": {
         "description": "Returns the authenticated user's local identity, plan, subscription status, and credit totals. Credit totals include top-level, monthly, and daily buckets consumed by the desktop billing UI.",
         "operationId": "getMe",
