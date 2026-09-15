@@ -80,7 +80,7 @@ jobs:
             BROKER_TOKEN_PRIVATE_KEY_PEM BROKER_TOKEN_KEYRING_JSON
             CONNECTOR_INVALIDATION_PRINCIPALS_JSON OPENAI_API_KEY ELEVENLABS_API_KEY
             EXA_API_KEY PARALLEL_API_KEY GOOGLE_OAUTH_CLIENT_ID GOOGLE_OAUTH_CLIENT_SECRET
-            GOOGLE_WEBHOOK_TOKEN TEMPORAL_API_KEY
+            GOOGLE_WEBHOOK_TOKEN TEMPORAL_API_KEY MIGRATION_DATABASE_URL
           )
           missing=()
           for key in "${required_keys[@]}"; do
@@ -100,7 +100,6 @@ jobs:
           done < <(jq -r '
             .[]
             | select((.value // "") != "")
-            | select(.key != "MIGRATION_DATABASE_URL")
             | select(.key != "TEMPORAL_ENABLED" and .key != "TEMPORAL_WORKER_ENABLED")
             | .key
           ' "${secrets_json}")
