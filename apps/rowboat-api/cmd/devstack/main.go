@@ -212,6 +212,8 @@ func main() {
 	// Gmail API mock, reached by pointing the desktop's googleapis client at
 	// this origin via its rootUrl option. See gmail.go.
 	registerGmailMock(mux)
+	// Stripe subscriptions and WorkOS identity delete for account deletion.
+	registerAccountDeletionMocks(mux, newAccountDeletionMocks(), strings.TrimSpace(os.Getenv("DEVSTACK_FIXTURE_SECRET")))
 
 	log.Printf("devstack OIDC+mock listening on %s (issuer=%s aud=%s)", addr, issuer, audience)
 	srv := &http.Server{

@@ -25,6 +25,7 @@ require (
 	github.com/redis/go-redis/v9 v9.20.0
 	github.com/slack-go/slack v0.27.0
 	github.com/stretchr/testify v1.11.1
+	github.com/stripe/stripe-go/v86 v86.4.2
 	github.com/vektah/gqlparser/v2 v2.5.33
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0
 	go.opentelemetry.io/otel v1.44.0

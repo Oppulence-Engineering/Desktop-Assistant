@@ -8,11 +8,35 @@
 import { HttpResponse, http } from "msw";
 import type { RequestHandlerOptions } from "msw";
 
-import type { MeResponse } from "../model";
+import type { AccountDeletionReceipt, MeResponse } from "../model";
 
-import { getGetMeResponseMock } from "./billing.faker";
+import { getDeleteMeResponseMock, getGetMeResponseMock } from "./billing.faker";
 
-export { getGetMeResponseMock } from "./billing.faker";
+export { getDeleteMeResponseMock, getGetMeResponseMock } from "./billing.faker";
+
+export const getDeleteMeMockHandler = (
+  overrideResponse?:
+    | AccountDeletionReceipt
+    | ((
+        info: Parameters<Parameters<typeof http.delete>[1]>[0],
+      ) => Promise<AccountDeletionReceipt> | AccountDeletionReceipt),
+  options?: RequestHandlerOptions,
+) => {
+  return http.delete(
+    "*/v1/me",
+    async (info: Parameters<Parameters<typeof http.delete>[1]>[0]) => {
+      return HttpResponse.json(
+        overrideResponse !== undefined
+          ? typeof overrideResponse === "function"
+            ? await overrideResponse(info)
+            : overrideResponse
+          : getDeleteMeResponseMock(),
+        { status: 200 },
+      );
+    },
+    options,
+  );
+};
 
 export const getGetMeMockHandler = (
   overrideResponse?:
@@ -35,4 +59,4 @@ export const getGetMeMockHandler = (
     options,
   );
 };
-export const getBillingMock = () => [getGetMeMockHandler()];
+export const getBillingMock = () => [getDeleteMeMockHandler(), getGetMeMockHandler()];

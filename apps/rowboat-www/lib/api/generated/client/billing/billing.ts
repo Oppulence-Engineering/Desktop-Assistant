@@ -5,7 +5,85 @@
  * Solomon AI's desktop API. The API brokers WorkOS sign-in, billing and credit state, OpenAI-compatible LLM calls, vendor proxies, Google OAuth handoff, connector OAuth, internal webhooks, and admin GraphQL. The ent-generated entity models remain in components as schema references; the documented paths below are the routes mounted by cmd/server/wire.go.
  * OpenAPI spec version: 0.1.0
  */
-import type { MeResponse, N401Response, N500Response, N503Response } from "../model";
+import type {
+  AccountDeletionReceipt,
+  AccountDeletionRequest,
+  ErrorEnvelope,
+  MeResponse,
+  N401Response,
+  N500Response,
+  N503Response,
+} from "../model";
+
+export type deleteMeResponse200 = {
+  data: AccountDeletionReceipt;
+  status: 200;
+};
+
+export type deleteMeResponse400 = {
+  data: ErrorEnvelope;
+  status: 400;
+};
+
+export type deleteMeResponse401 = {
+  data: N401Response;
+  status: 401;
+};
+
+export type deleteMeResponse409 = {
+  data: ErrorEnvelope;
+  status: 409;
+};
+
+export type deleteMeResponse500 = {
+  data: N500Response;
+  status: 500;
+};
+
+export type deleteMeResponse502 = {
+  data: ErrorEnvelope;
+  status: 502;
+};
+
+export type deleteMeResponseSuccess = deleteMeResponse200 & {
+  headers: Headers;
+};
+export type deleteMeResponseError = (
+  | deleteMeResponse400
+  | deleteMeResponse401
+  | deleteMeResponse409
+  | deleteMeResponse500
+  | deleteMeResponse502
+) & {
+  headers: Headers;
+};
+
+export type deleteMeResponse = deleteMeResponseSuccess | deleteMeResponseError;
+
+export const getDeleteMeUrl = () => {
+  return `/v1/me`;
+};
+
+/**
+ * Permanently deletes the authenticated account. The API first cancels every live Stripe subscription of the user (an account that Stripe can still charge is never deleted), then revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, and deletes the WorkOS identity. The request body must confirm the deletion.
+ * @summary Delete the current account
+ */
+export const deleteMe = async (
+  accountDeletionRequest: AccountDeletionRequest,
+  options?: RequestInit,
+): Promise<deleteMeResponse> => {
+  const res = await fetch(getDeleteMeUrl(), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(accountDeletionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteMeResponse["data"] = body ? JSON.parse(body) : {};
+  return { data, status: res.status, headers: res.headers } as deleteMeResponse;
+};
 
 export type getMeResponse200 = {
   data: MeResponse;

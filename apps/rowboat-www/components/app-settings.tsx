@@ -23,6 +23,7 @@ import {
   type SettingsSection,
   type ThemePreference,
 } from "@/components/app-shell";
+import { DeleteAccountRow } from "@/components/features/account/delete-account-row";
 import { ConnectorSettings } from "@/components/features/connectors/connector-settings";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
@@ -1168,7 +1169,7 @@ function AccountSection({ session }: { session: SessionShape }) {
         </div>
       </SettingsRow>
       <PlanSection session={session} />
-      <SettingsRow danger title="Session">
+      <SettingsRow danger title="Session and account">
         <div className="settings-row">
           <div className="settings-row-copy">
             <p className="settings-row-label">Sign out</p>
@@ -1184,6 +1185,7 @@ function AccountSection({ session }: { session: SessionShape }) {
             Sign out
           </Button>
         </div>
+        <DeleteAccountRow />
       </SettingsRow>
     </>
   );

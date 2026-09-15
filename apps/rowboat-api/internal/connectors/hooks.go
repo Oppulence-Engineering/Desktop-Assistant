@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -748,6 +749,28 @@ func (h *Handler) revokeConnection(ctx context.Context, owner *ent.User, connect
 	return nil
 }
 
+// RevokeAllForUser revokes every live connector grant of the user before the
+// account is deleted. Each revocation writes a durable job that keeps the sealed
+// credential, so a provider outage does not leave the grant live after the
+// user row is gone (see ProcessRevocationJobs). It returns the number of
+// connections it revoked.
+func (h *Handler) RevokeAllForUser(ctx context.Context, owner *ent.User) (int, error) {
+	ownerCtx := auth.WithUser(ctx, owner)
+	live, err := h.client.MCPConnection.Query().Where(
+		mcpconnection.HasUserWith(user.IDEQ(owner.ID)),
+		mcpconnection.StatusNotIn("revoked", "invalidated"),
+	).All(ownerCtx)
+	if err != nil {
+		return 0, err
+	}
+	for _, connection := range live {
+		if err := h.revokeConnection(ownerCtx, owner, connection, "account_deleted", "user", "revoked"); err != nil && !errors.Is(err, errConnectorCredentialSuperseded) {
+			return 0, err
+		}
+	}
+	return len(live), nil
+}
+
 // ProcessRevocationJobs retries the MCPConnection-backed durable revocation
 // outbox. Failed upstream attempts retain only the sealed credential while the
 // connection remains locally disabled. Success erases it permanently.
@@ -779,6 +802,12 @@ func (h *Handler) ProcessRevocationJobs(ctx context.Context, limit int) (int, er
 		}
 		job = claimed
 		owner, ownerErr := h.client.User.Get(auth.WithInternal(ctx), job.OwnerID)
+		// A deleted account removes the owner row, but the grant is still live at
+		// the provider. Revoke it anyway. Only the tombstone update and the audit
+		// event below need the owner.
+		if ent.IsNotFound(ownerErr) {
+			owner, ownerErr = nil, nil
+		}
 		if ownerErr != nil {
 			_ = job.Update().Where(connectorrevocationjob.ClaimIDEQ(claimID)).SetStatus("pending").ClearClaimID().ClearClaimedUntil().SetNextAttemptAt(now.Add(time.Minute)).Exec(auth.WithInternal(ctx))
 			continue
@@ -798,10 +827,12 @@ func (h *Handler) ProcessRevocationJobs(ctx context.Context, limit int) (int, er
 			continue
 		}
 		txc := tx.Client()
-		txErr = txc.MCPConnection.UpdateOneID(job.ConnectionID).
-			Where(mcpconnection.CredentialGenerationEQ(job.CredentialGeneration)).
-			SetStatus(job.TerminalStatus).SetRevokedAt(now).SetRevokedReason(job.TerminalReason).SetRevokedBy(job.TerminalActor).
-			SetRevocationSucceeded(true).SetRevocationAttemptedAt(now).ClearRefreshTokenEncrypted().ClearAPIKeyEncrypted().Exec(auth.WithUser(ctx, owner))
+		if owner != nil {
+			txErr = txc.MCPConnection.UpdateOneID(job.ConnectionID).
+				Where(mcpconnection.CredentialGenerationEQ(job.CredentialGeneration)).
+				SetStatus(job.TerminalStatus).SetRevokedAt(now).SetRevokedReason(job.TerminalReason).SetRevokedBy(job.TerminalActor).
+				SetRevocationSucceeded(true).SetRevocationAttemptedAt(now).ClearRefreshTokenEncrypted().ClearAPIKeyEncrypted().Exec(auth.WithUser(ctx, owner))
+		}
 		if ent.IsNotFound(txErr) {
 			txErr = nil // Replacement grant is newer; only retire this old job.
 		}
@@ -818,6 +849,8 @@ func (h *Handler) ProcessRevocationJobs(ctx context.Context, limit int) (int, er
 		}
 		if txErr == nil {
 			completed++
+		}
+		if txErr == nil && owner != nil {
 			h.appendAudit(ctx, owner, auditRecord{
 				EventType: "connection_revocation_completed", Connector: job.Connector,
 				ConnectionID: job.ConnectionID, Result: "retry_success",
