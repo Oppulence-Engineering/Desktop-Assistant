@@ -1458,7 +1458,11 @@ export interface paths {
     get: operations["getMe"];
     put?: never;
     post?: never;
-    delete?: never;
+    /**
+     * Delete the current account
+     * @description Permanently deletes the authenticated account. The API first cancels every live Stripe subscription of the user (an account that Stripe can still charge is never deleted), then revokes connector grants, gives each shared revenue workspace to another member, deletes all account data, and deletes the WorkOS identity. The request body must confirm the deletion.
+     */
+    delete: operations["deleteMe"];
     options?: never;
     head?: never;
     patch?: never;
@@ -2908,6 +2912,58 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** @description Response for DELETE /v1/me. Holds no personal data. */
+    AccountDeletionReceipt: {
+      /**
+       * @description When the deletion finished (RFC 3339).
+       * @example 2026-09-15T10:00:02Z
+       */
+      completedAt: string;
+      /**
+       * @description Connector grants revoked.
+       * @example 2
+       */
+      connectorsRevoked: number;
+      /**
+       * @description Whether the WorkOS identity was deleted. False means support must delete it.
+       * @example true
+       */
+      identityDeleted: boolean;
+      /**
+       * @description Receipt identifier for support.
+       * @example 5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f
+       */
+      receiptId: string;
+      /**
+       * @description When the deletion started (RFC 3339).
+       * @example 2026-09-15T10:00:00Z
+       */
+      requestedAt: string;
+      /**
+       * @description Stripe subscriptions cancelled.
+       * @example 1
+       */
+      subscriptionsCancelled: number;
+      /**
+       * @description Workspaces deleted with the account.
+       * @example 1
+       */
+      workspacesDeleted: number;
+      /**
+       * @description Shared workspaces given to another member.
+       * @example 0
+       */
+      workspacesTransferred: number;
+    };
+    /** @description Request body for DELETE /v1/me. */
+    AccountDeletionRequest: {
+      /**
+       * @description Must be the literal value DELETE.
+       * @example DELETE
+       * @enum {string}
+       */
+      confirm: "DELETE";
+    };
     ActionOutcome: {
       action: components["schemas"]["RevenueAction"];
       /**
@@ -16136,6 +16192,107 @@ export interface operations {
       401: components["responses"]["401"];
       500: components["responses"]["500"];
       503: components["responses"]["503"];
+    };
+  };
+  deleteMe: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Deletion confirmation. */
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "confirm": "DELETE"
+         *     }
+         */
+        "application/json": components["schemas"]["AccountDeletionRequest"];
+      };
+    };
+    responses: {
+      /** @description Account deleted. The receipt records what the deletion did. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "completedAt": "2026-09-15T10:00:02Z",
+           *       "connectorsRevoked": 2,
+           *       "identityDeleted": true,
+           *       "receiptId": "5d0f7c1e-2a8b-4c1d-9f3e-7b6a5c4d3e2f",
+           *       "requestedAt": "2026-09-15T10:00:00Z",
+           *       "subscriptionsCancelled": 1,
+           *       "workspacesDeleted": 1,
+           *       "workspacesTransferred": 0
+           *     }
+           */
+          "application/json": components["schemas"]["AccountDeletionReceipt"];
+        };
+      };
+      /** @description The confirmation is missing or wrong. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "confirmation_required",
+           *       "detail": "set \"confirm\" to \"DELETE\" to delete this account",
+           *       "requestId": "req-abc123",
+           *       "status": 400,
+           *       "title": "Bad Request",
+           *       "type": "https://api.rowboat.dev/problems/confirmation_required"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      401: components["responses"]["401"];
+      /** @description A shared workspace has no member who can take ownership. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "workspace_successor_required",
+           *       "detail": "your workspace has other members and none of them can take ownership; remove the other members first",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/workspace_successor_required"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
+      /** @description Stripe did not cancel the subscription, so nothing was deleted. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "billing_cancellation_failed",
+           *       "detail": "could not cancel the subscription, so the account was not deleted",
+           *       "requestId": "req-abc123",
+           *       "status": 502,
+           *       "title": "Bad Gateway",
+           *       "type": "https://api.rowboat.dev/problems/billing_cancellation_failed"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
     };
   };
   getPublicMutualActionPlan: {

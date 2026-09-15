@@ -11,6 +11,7 @@ import (
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/proto/entpb"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/account"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/actions"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentchannels"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/agentgitops"
@@ -152,7 +153,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	if cfg.TokenAudience == "" {
 		log.Warn("TOKEN_AUDIENCE is empty: JWT audience check is DISABLED (expected for WorkOS-direct tokens)")
 	}
-	enricher := auth.NewWorkOSEnricher(cfg.WorkOSAPIKey)
+	enricher := auth.NewWorkOSEnricher(cfg.WorkOSAPIKey, cfg.WorkOSBaseURL)
 	authMW := auth.NewMiddleware(verifier, client, enricher, cfg.FreeTierCredits, log)
 	// RFC 011: classify verified tokens by issuer for audit/metrics + actor kind,
 	// and set the step-up recent-auth window. WorkOS is the human-identity issuer;
@@ -368,6 +369,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	}
 	connectorsH.SetOutboundPolicy(vendorPolicy)
 	connectorsH.SetRefreshDedup(refreshCache, sealer)
+	accountH := account.New(database, billingH, connectorsH, enricher, log)
 	srv.AddReadyCheck("connector_credential_custody", connectorsH.CredentialCustodyReady)
 	srv.AddReadyCheck("connector_refresh_failure_persistence", connectorsH.RefreshFailurePersistenceReady)
 	srv.AddShutdownHook("connector_credential_custody", connectorsH.BeginCredentialCustodyShutdown)
@@ -774,6 +776,9 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		entitiesH.Mount(r)
 
 		r.Get("/v1/me", billingH.Me)
+		// Account deletion is irreversible and calls Stripe and WorkOS: a tight
+		// per-user bucket stops a loop or a replay from hammering either vendor.
+		r.With(rl.PerUserWindow(ratelimit.GroupDefault+":account_delete", 5, time.Hour)).Delete("/v1/me", accountH.Delete)
 		// Shape adapter for the upstream renderer's Better Auth useSession hook.
 		// RequireJWT above remains the sole credential verifier.
 		r.Get("/api/auth/get-session", voiceCloudH.Session)

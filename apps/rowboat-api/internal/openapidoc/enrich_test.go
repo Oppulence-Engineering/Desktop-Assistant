@@ -24,6 +24,9 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 	Enrich(spec)
 
 	paths := asObj(spec["paths"])
+	if asObj(paths["/v1/me"])["delete"] == nil {
+		t.Fatal("DELETE /v1/me (account deletion) is not documented")
+	}
 	for _, path := range []string{
 		"/healthz",
 		"/readyz",

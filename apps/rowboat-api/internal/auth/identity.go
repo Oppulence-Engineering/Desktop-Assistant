@@ -14,6 +14,8 @@ import (
 // The WorkOS implementation calls the WorkOS API; the noop is used in dev/test.
 type Enricher interface {
 	Email(ctx context.Context, workosUserID string) (string, error)
+	// DeleteUser removes the identity during account deletion.
+	DeleteUser(ctx context.Context, workosUserID string) error
 }
 
 // NoopEnricher returns no enrichment.
@@ -21,6 +23,9 @@ type NoopEnricher struct{}
 
 // Email implements Enricher.
 func (NoopEnricher) Email(context.Context, string) (string, error) { return "", nil }
+
+// DeleteUser does nothing: there is no WorkOS identity without an API key.
+func (NoopEnricher) DeleteUser(context.Context, string) error { return nil }
 
 // ResolveUser upserts the local user mirror for a verified token: it returns
 // the existing user (best-effort email refresh) or creates one on first sight,
