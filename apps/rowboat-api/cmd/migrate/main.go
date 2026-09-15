@@ -68,6 +68,7 @@ func run() error {
 
 func apply(ctx context.Context) error {
 	cfg := appconfig.Load()
+	cfg.DatabaseURL = migrationDatabaseURL(cfg.DatabaseURL)
 	if !isPostgres(cfg.DatabaseURL) {
 		log, err := telemetry.NewLogger(cfg)
 		if err != nil {
@@ -86,6 +87,16 @@ func apply(ctx context.Context) error {
 		return err
 	}
 	return applyPostgres(ctx, cfg.DatabaseURL)
+}
+
+// migrationDatabaseURL prefers MIGRATION_DATABASE_URL, the direct connection.
+// DATABASE_URL can point at a PgBouncer transaction pool. A pool breaks the
+// session advisory lock and the prepared revision writes that Atlas uses.
+func migrationDatabaseURL(databaseURL string) string {
+	if direct := os.Getenv("MIGRATION_DATABASE_URL"); direct != "" {
+		return direct
+	}
+	return databaseURL
 }
 
 // dumpPostgres renders the current Ent schema using PostgreSQL types. It is
