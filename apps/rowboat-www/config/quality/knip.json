@@ -4,6 +4,7 @@
     "app/**/*.{ts,tsx}",
     "scripts/**/*.{ts,mts,mjs}",
     "e2e/fake-rowboat-api.mjs",
+    "e2e-stack/**/*.spec.ts",
     "quality/**/*.{ts,tsx}",
     "*.config.{ts,mjs}",
     "config/**/*.{ts,mts}",
