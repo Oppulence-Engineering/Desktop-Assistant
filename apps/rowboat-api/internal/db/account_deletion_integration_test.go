@@ -178,6 +178,25 @@ func TestDeleteAccountReportsAMissingUser(t *testing.T) {
 	if !d.Client.User.Query().Where(user.IDEQ(kept.user.ID)).ExistX(deletionCtx) {
 		t.Fatal("a failed deletion removed another account")
 	}
+	if n := d.Client.DeletedIdentity.Query().CountX(deletionCtx); n != 0 {
+		t.Fatalf("a failed deletion wrote %d tombstones, want 0", n)
+	}
+}
+
+func TestDeleteAccountRecordsTheDeletedIdentity(t *testing.T) {
+	d := openTest(t)
+	gone := deletionOwner(d.Client, "tombstoned")
+	kept := deletionOwner(d.Client, "untouched")
+	if err := d.DeleteAccount(context.Background(), gone.user.ID, nil); err != nil {
+		t.Fatal(err)
+	}
+	tombstones := d.Client.DeletedIdentity.Query().AllX(deletionCtx)
+	if len(tombstones) != 1 || tombstones[0].KeyHash != auth.DeletedIdentityKey(gone.user.WorkosUserID) {
+		t.Fatalf("tombstones = %+v, want one for the deleted identity", tombstones)
+	}
+	if tombstones[0].KeyHash == gone.user.WorkosUserID || tombstones[0].KeyHash == auth.DeletedIdentityKey(kept.user.WorkosUserID) {
+		t.Fatal("the tombstone must hold only the hash of the deleted identity")
+	}
 }
 
 func assertOwner(t *testing.T, c *ent.Client, ws *ent.RevenueWorkspace, want *ent.User) {

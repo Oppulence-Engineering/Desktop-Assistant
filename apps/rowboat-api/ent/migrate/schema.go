@@ -1401,6 +1401,26 @@ var (
 			},
 		},
 	}
+	// DeletedIdentitiesColumns holds the columns for the "deleted_identities" table.
+	DeletedIdentitiesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "key_hash", Type: field.TypeString},
+	}
+	// DeletedIdentitiesTable holds the schema information for the "deleted_identities" table.
+	DeletedIdentitiesTable = &schema.Table{
+		Name:       "deleted_identities",
+		Columns:    DeletedIdentitiesColumns,
+		PrimaryKey: []*schema.Column{DeletedIdentitiesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "deletedidentity_key_hash",
+				Unique:  true,
+				Columns: []*schema.Column{DeletedIdentitiesColumns[3]},
+			},
+		},
+	}
 	// EntitiesColumns holds the columns for the "entities" table.
 	EntitiesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -4132,6 +4152,7 @@ var (
 		ConnectorRevocationJobsTable,
 		ConversationIntelligenceArtifactsTable,
 		CreditLedgersTable,
+		DeletedIdentitiesTable,
 		EntitiesTable,
 		EntityIdentifiersTable,
 		EntityResourceRefsTable,

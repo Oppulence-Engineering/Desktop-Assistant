@@ -55,20 +55,7 @@ func signMW(t *testing.T, key *rsa.PrivateKey, claims jwt.MapClaims) string {
 
 func newJWTMiddleware(t *testing.T) (*auth.Middleware, *rsa.PrivateKey) {
 	t.Helper()
-	jwksURL, key := jwksServerMW(t)
-	v, err := oauthrs.NewGeneric(context.Background(), oauthrs.GenericConfig{
-		IssuerURL:                 testIssuer,
-		Audience:                  "rowboat-api",
-		JWKSURL:                   jwksURL,
-		AllowedJWKSOrigins:        []string{jwksURL},
-		AllowLocalhostDevelopment: true,
-	})
-	if err != nil {
-		t.Fatalf("verifier: %v", err)
-	}
-	m := auth.NewMiddleware(v, testClient(t), nil, 10000, zap.NewNop())
-	m.SetIssuerPolicy(auth.IssuerPolicy{WorkOSIssuer: testIssuer, ServiceIssuer: "rowboat-internal", BrokerIssuer: "rowboat-broker"})
-	return m, key
+	return newJWTMiddlewareFor(t, testClient(t))
 }
 
 func doAuthed(m *auth.Middleware, token string, sink *auth.Actor) *httptest.ResponseRecorder {

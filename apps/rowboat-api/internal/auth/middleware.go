@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -94,6 +95,11 @@ func (m *Middleware) RequireJWT(next http.Handler) http.Handler {
 			return
 		}
 		u, err := m.ResolveUser(r.Context(), claims)
+		if errors.Is(err, ErrIdentityDeleted) {
+			m.audit.TokenRejected(r.Context(), m.issuers.IssuerType(claims.Issuer), m.issuers.WorkOSIssuer, routeGroup, ReasonAccountDeleted)
+			httpx.Error(w, http.StatusUnauthorized, "account deleted", "account_deleted")
+			return
+		}
 		if err != nil {
 			m.audit.TokenRejected(r.Context(), m.issuers.IssuerType(claims.Issuer), m.issuers.WorkOSIssuer, routeGroup, ReasonResolveFailed)
 			m.log.Error("identity resolution failed", zap.Error(err))

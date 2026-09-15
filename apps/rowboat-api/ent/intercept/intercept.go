@@ -35,6 +35,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
@@ -873,6 +874,33 @@ func (f TraverseCreditLedger) Traverse(ctx context.Context, q ent.Query) error {
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.CreditLedgerQuery", q)
+}
+
+// The DeletedIdentityFunc type is an adapter to allow the use of ordinary function as a Querier.
+type DeletedIdentityFunc func(context.Context, *ent.DeletedIdentityQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f DeletedIdentityFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.DeletedIdentityQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.DeletedIdentityQuery", q)
+}
+
+// The TraverseDeletedIdentity type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseDeletedIdentity func(context.Context, *ent.DeletedIdentityQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseDeletedIdentity) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseDeletedIdentity) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.DeletedIdentityQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.DeletedIdentityQuery", q)
 }
 
 // The EntityFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -2336,6 +2364,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.ConversationIntelligenceArtifactQuery, predicate.ConversationIntelligenceArtifact, conversationintelligenceartifact.OrderOption]{typ: ent.TypeConversationIntelligenceArtifact, tq: q}, nil
 	case *ent.CreditLedgerQuery:
 		return &query[*ent.CreditLedgerQuery, predicate.CreditLedger, creditledger.OrderOption]{typ: ent.TypeCreditLedger, tq: q}, nil
+	case *ent.DeletedIdentityQuery:
+		return &query[*ent.DeletedIdentityQuery, predicate.DeletedIdentity, deletedidentity.OrderOption]{typ: ent.TypeDeletedIdentity, tq: q}, nil
 	case *ent.EntityQuery:
 		return &query[*ent.EntityQuery, predicate.Entity, entity.OrderOption]{typ: ent.TypeEntity, tq: q}, nil
 	case *ent.EntityIdentifierQuery:
