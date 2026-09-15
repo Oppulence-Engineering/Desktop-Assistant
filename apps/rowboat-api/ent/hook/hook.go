@@ -333,6 +333,18 @@ func (f CreditLedgerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CreditLedgerMutation", m)
 }
 
+// The DeletedIdentityFunc type is an adapter to allow the use of ordinary
+// function as DeletedIdentity mutator.
+type DeletedIdentityFunc func(context.Context, *ent.DeletedIdentityMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f DeletedIdentityFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.DeletedIdentityMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DeletedIdentityMutation", m)
+}
+
 // The EntityFunc type is an adapter to allow the use of ordinary
 // function as Entity mutator.
 type EntityFunc func(context.Context, *ent.EntityMutation) (ent.Value, error)

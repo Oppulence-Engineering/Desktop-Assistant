@@ -93,6 +93,7 @@ func removeInternalSchemas(schemas obj) {
 	delete(schemas, "ConnectorCredentialCleanupJob")
 	delete(schemas, "ConnectorCredentialRecovery")
 	delete(schemas, "ConnectorRevocationJob")
+	delete(schemas, "DeletedIdentity")
 	for _, schemaValue := range schemas {
 		schema, ok := schemaValue.(obj)
 		if !ok {

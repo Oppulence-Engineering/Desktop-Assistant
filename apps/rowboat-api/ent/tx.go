@@ -66,6 +66,8 @@ type Tx struct {
 	ConversationIntelligenceArtifact *ConversationIntelligenceArtifactClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
+	// DeletedIdentity is the client for interacting with the DeletedIdentity builders.
+	DeletedIdentity *DeletedIdentityClient
 	// Entity is the client for interacting with the Entity builders.
 	Entity *EntityClient
 	// EntityIdentifier is the client for interacting with the EntityIdentifier builders.
@@ -328,6 +330,7 @@ func (tx *Tx) init() {
 	tx.ConnectorRevocationJob = NewConnectorRevocationJobClient(tx.config)
 	tx.ConversationIntelligenceArtifact = NewConversationIntelligenceArtifactClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)
+	tx.DeletedIdentity = NewDeletedIdentityClient(tx.config)
 	tx.Entity = NewEntityClient(tx.config)
 	tx.EntityIdentifier = NewEntityIdentifierClient(tx.config)
 	tx.EntityResourceRef = NewEntityResourceRefClient(tx.config)

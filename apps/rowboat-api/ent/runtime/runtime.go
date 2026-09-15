@@ -33,6 +33,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
@@ -1531,6 +1532,29 @@ func init() {
 	creditledgerDescID := creditledgerFields[0].Descriptor()
 	// creditledger.DefaultID holds the default value on creation for the id field.
 	creditledger.DefaultID = creditledgerDescID.Default.(func() uuid.UUID)
+	deletedidentityMixin := schema.DeletedIdentity{}.Mixin()
+	deletedidentityMixinFields0 := deletedidentityMixin[0].Fields()
+	_ = deletedidentityMixinFields0
+	deletedidentityFields := schema.DeletedIdentity{}.Fields()
+	_ = deletedidentityFields
+	// deletedidentityDescCreatedAt is the schema descriptor for created_at field.
+	deletedidentityDescCreatedAt := deletedidentityMixinFields0[1].Descriptor()
+	// deletedidentity.DefaultCreatedAt holds the default value on creation for the created_at field.
+	deletedidentity.DefaultCreatedAt = deletedidentityDescCreatedAt.Default.(func() time.Time)
+	// deletedidentityDescUpdatedAt is the schema descriptor for updated_at field.
+	deletedidentityDescUpdatedAt := deletedidentityMixinFields0[2].Descriptor()
+	// deletedidentity.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	deletedidentity.DefaultUpdatedAt = deletedidentityDescUpdatedAt.Default.(func() time.Time)
+	// deletedidentity.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	deletedidentity.UpdateDefaultUpdatedAt = deletedidentityDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// deletedidentityDescKeyHash is the schema descriptor for key_hash field.
+	deletedidentityDescKeyHash := deletedidentityFields[0].Descriptor()
+	// deletedidentity.KeyHashValidator is a validator for the "key_hash" field. It is called by the builders before save.
+	deletedidentity.KeyHashValidator = deletedidentityDescKeyHash.Validators[0].(func(string) error)
+	// deletedidentityDescID is the schema descriptor for id field.
+	deletedidentityDescID := deletedidentityMixinFields0[0].Descriptor()
+	// deletedidentity.DefaultID holds the default value on creation for the id field.
+	deletedidentity.DefaultID = deletedidentityDescID.Default.(func() uuid.UUID)
 	entityMixin := schema.Entity{}.Mixin()
 	entity.Policy = privacy.NewPolicies(entityMixin[0], schema.Entity{})
 	entity.Hooks[0] = func(next ent.Mutator) ent.Mutator {

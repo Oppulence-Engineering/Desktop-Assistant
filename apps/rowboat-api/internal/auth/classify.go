@@ -28,6 +28,8 @@ const (
 	// ReasonResolveFailed covers a verified token whose local identity could not
 	// be resolved (e.g. missing workos_user_id, DB error).
 	ReasonResolveFailed = "resolve_failed"
+	// ReasonAccountDeleted covers a still-valid token of a deleted account.
+	ReasonAccountDeleted = "account_deleted"
 	// ReasonInvalid is the catch-all for any other validation failure.
 	ReasonInvalid = "invalid"
 )

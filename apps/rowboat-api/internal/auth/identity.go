@@ -2,9 +2,13 @@ package auth
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"errors"
 	"fmt"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	oauthrs "github.com/Oppulence-Engineering/rowboat/packages/oauth-resource-server-go"
 	"go.uber.org/zap"
@@ -27,6 +31,18 @@ func (NoopEnricher) Email(context.Context, string) (string, error) { return "", 
 // DeleteUser does nothing: there is no WorkOS identity without an API key.
 func (NoopEnricher) DeleteUser(context.Context, string) error { return nil }
 
+// ErrIdentityDeleted means that the token belongs to a deleted account. The
+// token can stay valid until it expires, but it must not create the account
+// again.
+var ErrIdentityDeleted = errors.New("auth: account was deleted")
+
+// DeletedIdentityKey is the tombstone key of a deleted account: a SHA-256 hash
+// of the WorkOS user id, so the tombstone holds no personal data.
+func DeletedIdentityKey(workosUserID string) string {
+	sum := sha256.Sum256([]byte(workosUserID))
+	return hex.EncodeToString(sum[:])
+}
+
 // ResolveUser upserts the local user mirror for a verified token: it returns
 // the existing user (best-effort email refresh) or creates one on first sight,
 // minting a free-tier subscription. User is not a tenant-scoped entity, so this
@@ -43,6 +59,15 @@ func (m *Middleware) ResolveUser(ctx context.Context, claims *oauthrs.Claims) (*
 	case err == nil:
 		return m.refreshUser(ctx, u, claims), nil
 	case ent.IsNotFound(err):
+		deleted, dErr := m.client.DeletedIdentity.Query().
+			Where(deletedidentity.KeyHashEQ(DeletedIdentityKey(claims.WorkOSUserID))).
+			Exist(ctx)
+		if dErr != nil {
+			return nil, dErr
+		}
+		if deleted {
+			return nil, ErrIdentityDeleted
+		}
 		return m.createUser(ctx, claims)
 	default:
 		return nil, err
