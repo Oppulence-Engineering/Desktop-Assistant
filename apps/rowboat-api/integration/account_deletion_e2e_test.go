@@ -499,38 +499,28 @@ func TestAccountDeletionIsRateLimitedPerUser(t *testing.T) {
 	}
 }
 
-// A token issued before the deletion stays valid until it expires. The auth
-// middleware then creates a new local user for it. This test pins down that
-// such a token reaches only a fresh, empty account and never the deleted data.
-func TestAccountDeletionLeavesAPreDeletionTokenOnlyAFreshEmptyAccount(t *testing.T) {
+// A token issued before the deletion stays valid until it expires. The API
+// records a tombstone for the deleted identity, so the token gets 401 and
+// cannot create the account again.
+func TestAccountDeletionRefusesAPreDeletionToken(t *testing.T) {
 	s := newDeletionStack(t)
 	u := s.signIn(t, "stale_token")
-	data := s.seedAccountData(t, u.user)
+	s.seedAccountData(t, u.user)
 	s.linkStripe(t, u.user, s.id("cus_e2e_stale"), "")
 
 	if status, body := s.deleteAccount(t, u.token, "DELETE"); status != http.StatusOK {
 		t.Fatalf("DELETE /v1/me = %d: %v", status, body)
 	}
-	status, raw := s.send(t, http.MethodGet, s.api+"/v1/me", u.token, "", nil)
-	switch status {
-	case http.StatusUnauthorized:
-		return
-	case http.StatusOK:
-	default:
-		t.Fatalf("GET /v1/me after deletion = %d: %s", status, raw)
+	for _, request := range []struct{ method, body string }{
+		{http.MethodGet, ""},
+		{http.MethodDelete, `{"confirm":"DELETE"}`},
+	} {
+		status, raw := s.send(t, request.method, s.api+"/v1/me", u.token, request.body, nil)
+		if status != http.StatusUnauthorized || !strings.Contains(string(raw), `"account_deleted"`) {
+			t.Fatalf("%s /v1/me after deletion = %d: %s; want 401 account_deleted", request.method, status, raw)
+		}
 	}
-	fresh := s.client.User.Query().Where(user.WorkosUserIDEQ(u.workosID)).OnlyX(deletionInternal)
-	if fresh.ID == u.user.ID {
-		t.Fatal("the deleted user row came back")
-	}
-	if s.client.RevenueWorkspace.Query().Where(revenueworkspace.HasUserWith(user.IDEQ(fresh.ID))).ExistX(deletionInternal) {
-		t.Error("the fresh account owns a workspace")
-	}
-	if s.client.Relationship.Query().Where(relationship.IDEQ(data.relationship.ID)).ExistX(deletionInternal) {
-		t.Error("deleted relationship data is reachable again")
-	}
-	sub := s.client.Subscription.Query().Where(subscription.HasUserWith(user.IDEQ(fresh.ID))).OnlyX(deletionInternal)
-	if sub.StripeCustomerID != "" || sub.StripeSubscriptionID != "" || sub.Plan != "free" {
-		t.Errorf("fresh account billing = %+v, want an unlinked free plan", sub)
+	if n := s.client.User.Query().Where(user.WorkosUserIDEQ(u.workosID)).CountX(deletionInternal); n != 0 {
+		t.Fatalf("the pre-deletion token created %d accounts, want 0", n)
 	}
 }

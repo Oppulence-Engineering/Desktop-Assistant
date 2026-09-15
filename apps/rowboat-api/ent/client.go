@@ -44,6 +44,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
@@ -157,6 +158,8 @@ type Client struct {
 	ConversationIntelligenceArtifact *ConversationIntelligenceArtifactClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
 	CreditLedger *CreditLedgerClient
+	// DeletedIdentity is the client for interacting with the DeletedIdentity builders.
+	DeletedIdentity *DeletedIdentityClient
 	// Entity is the client for interacting with the Entity builders.
 	Entity *EntityClient
 	// EntityIdentifier is the client for interacting with the EntityIdentifier builders.
@@ -304,6 +307,7 @@ func (c *Client) init() {
 	c.ConnectorRevocationJob = NewConnectorRevocationJobClient(c.config)
 	c.ConversationIntelligenceArtifact = NewConversationIntelligenceArtifactClient(c.config)
 	c.CreditLedger = NewCreditLedgerClient(c.config)
+	c.DeletedIdentity = NewDeletedIdentityClient(c.config)
 	c.Entity = NewEntityClient(c.config)
 	c.EntityIdentifier = NewEntityIdentifierClient(c.config)
 	c.EntityResourceRef = NewEntityResourceRefClient(c.config)
@@ -503,6 +507,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ConnectorRevocationJob:            NewConnectorRevocationJobClient(cfg),
 		ConversationIntelligenceArtifact:  NewConversationIntelligenceArtifactClient(cfg),
 		CreditLedger:                      NewCreditLedgerClient(cfg),
+		DeletedIdentity:                   NewDeletedIdentityClient(cfg),
 		Entity:                            NewEntityClient(cfg),
 		EntityIdentifier:                  NewEntityIdentifierClient(cfg),
 		EntityResourceRef:                 NewEntityResourceRefClient(cfg),
@@ -601,6 +606,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ConnectorRevocationJob:            NewConnectorRevocationJobClient(cfg),
 		ConversationIntelligenceArtifact:  NewConversationIntelligenceArtifactClient(cfg),
 		CreditLedger:                      NewCreditLedgerClient(cfg),
+		DeletedIdentity:                   NewDeletedIdentityClient(cfg),
 		Entity:                            NewEntityClient(cfg),
 		EntityIdentifier:                  NewEntityIdentifierClient(cfg),
 		EntityResourceRef:                 NewEntityResourceRefClient(cfg),
@@ -690,23 +696,23 @@ func (c *Client) Use(hooks ...Hook) {
 		c.CommitmentDependency, c.CommitmentEvent, c.ConnectorAuditEvent,
 		c.ConnectorCredentialCleanupJob, c.ConnectorCredentialRecovery,
 		c.ConnectorRevocationJob, c.ConversationIntelligenceArtifact, c.CreditLedger,
-		c.Entity, c.EntityIdentifier, c.EntityResourceRef, c.GoogleWatch, c.LLMUsage,
-		c.LLMUsageHistory, c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache,
-		c.MailMessageMeta, c.MailSignal, c.MailThread, c.MeetingMinuteUsage,
-		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending, c.Person,
-		c.PersonAttribute, c.PersonIdentity, c.PersonInteractionStat,
-		c.PersonMergeCandidate, c.PersonSuppression, c.PolicyDecisionSnapshot,
-		c.Relationship, c.RelationshipAssertion, c.RelationshipAttentionItem,
-		c.RelationshipIdentity, c.RelationshipIdentityCandidate,
-		c.RelationshipIdentityDecision, c.RelationshipLineageEvent,
-		c.RelationshipObservation, c.RelationshipParticipant,
-		c.RelationshipProjectionJob, c.RelationshipReviewAcknowledgement,
-		c.RelationshipSourceStatus, c.RelationshipStateSnapshot, c.RevenueAction,
-		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
-		c.RevenueOutboxEvent, c.RevenueTrustEvent, c.RevenueWorkspace,
-		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory,
-		c.TenantEvidenceKey, c.User, c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem,
-		c.WorkspaceFeatureControl,
+		c.DeletedIdentity, c.Entity, c.EntityIdentifier, c.EntityResourceRef,
+		c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
+		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
+		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
+		c.OAuthConnectionHistory, c.OAuthPending, c.Person, c.PersonAttribute,
+		c.PersonIdentity, c.PersonInteractionStat, c.PersonMergeCandidate,
+		c.PersonSuppression, c.PolicyDecisionSnapshot, c.Relationship,
+		c.RelationshipAssertion, c.RelationshipAttentionItem, c.RelationshipIdentity,
+		c.RelationshipIdentityCandidate, c.RelationshipIdentityDecision,
+		c.RelationshipLineageEvent, c.RelationshipObservation,
+		c.RelationshipParticipant, c.RelationshipProjectionJob,
+		c.RelationshipReviewAcknowledgement, c.RelationshipSourceStatus,
+		c.RelationshipStateSnapshot, c.RevenueAction, c.RevenueActionRevision,
+		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent,
+		c.RevenueTrustEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
+		c.Subscription, c.SubscriptionHistory, c.TenantEvidenceKey, c.User,
+		c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem, c.WorkspaceFeatureControl,
 	} {
 		n.Use(hooks...)
 	}
@@ -724,23 +730,23 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.CommitmentDependency, c.CommitmentEvent, c.ConnectorAuditEvent,
 		c.ConnectorCredentialCleanupJob, c.ConnectorCredentialRecovery,
 		c.ConnectorRevocationJob, c.ConversationIntelligenceArtifact, c.CreditLedger,
-		c.Entity, c.EntityIdentifier, c.EntityResourceRef, c.GoogleWatch, c.LLMUsage,
-		c.LLMUsageHistory, c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache,
-		c.MailMessageMeta, c.MailSignal, c.MailThread, c.MeetingMinuteUsage,
-		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending, c.Person,
-		c.PersonAttribute, c.PersonIdentity, c.PersonInteractionStat,
-		c.PersonMergeCandidate, c.PersonSuppression, c.PolicyDecisionSnapshot,
-		c.Relationship, c.RelationshipAssertion, c.RelationshipAttentionItem,
-		c.RelationshipIdentity, c.RelationshipIdentityCandidate,
-		c.RelationshipIdentityDecision, c.RelationshipLineageEvent,
-		c.RelationshipObservation, c.RelationshipParticipant,
-		c.RelationshipProjectionJob, c.RelationshipReviewAcknowledgement,
-		c.RelationshipSourceStatus, c.RelationshipStateSnapshot, c.RevenueAction,
-		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
-		c.RevenueOutboxEvent, c.RevenueTrustEvent, c.RevenueWorkspace,
-		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory,
-		c.TenantEvidenceKey, c.User, c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem,
-		c.WorkspaceFeatureControl,
+		c.DeletedIdentity, c.Entity, c.EntityIdentifier, c.EntityResourceRef,
+		c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
+		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
+		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
+		c.OAuthConnectionHistory, c.OAuthPending, c.Person, c.PersonAttribute,
+		c.PersonIdentity, c.PersonInteractionStat, c.PersonMergeCandidate,
+		c.PersonSuppression, c.PolicyDecisionSnapshot, c.Relationship,
+		c.RelationshipAssertion, c.RelationshipAttentionItem, c.RelationshipIdentity,
+		c.RelationshipIdentityCandidate, c.RelationshipIdentityDecision,
+		c.RelationshipLineageEvent, c.RelationshipObservation,
+		c.RelationshipParticipant, c.RelationshipProjectionJob,
+		c.RelationshipReviewAcknowledgement, c.RelationshipSourceStatus,
+		c.RelationshipStateSnapshot, c.RevenueAction, c.RevenueActionRevision,
+		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent,
+		c.RevenueTrustEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
+		c.Subscription, c.SubscriptionHistory, c.TenantEvidenceKey, c.User,
+		c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem, c.WorkspaceFeatureControl,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -803,6 +809,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ConversationIntelligenceArtifact.mutate(ctx, m)
 	case *CreditLedgerMutation:
 		return c.CreditLedger.mutate(ctx, m)
+	case *DeletedIdentityMutation:
+		return c.DeletedIdentity.mutate(ctx, m)
 	case *EntityMutation:
 		return c.Entity.mutate(ctx, m)
 	case *EntityIdentifierMutation:
@@ -5516,6 +5524,139 @@ func (c *CreditLedgerClient) mutate(ctx context.Context, m *CreditLedgerMutation
 		return (&CreditLedgerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CreditLedger mutation op: %q", m.Op())
+	}
+}
+
+// DeletedIdentityClient is a client for the DeletedIdentity schema.
+type DeletedIdentityClient struct {
+	config
+}
+
+// NewDeletedIdentityClient returns a client for the DeletedIdentity from the given config.
+func NewDeletedIdentityClient(c config) *DeletedIdentityClient {
+	return &DeletedIdentityClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `deletedidentity.Hooks(f(g(h())))`.
+func (c *DeletedIdentityClient) Use(hooks ...Hook) {
+	c.hooks.DeletedIdentity = append(c.hooks.DeletedIdentity, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `deletedidentity.Intercept(f(g(h())))`.
+func (c *DeletedIdentityClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DeletedIdentity = append(c.inters.DeletedIdentity, interceptors...)
+}
+
+// Create returns a builder for creating a DeletedIdentity entity.
+func (c *DeletedIdentityClient) Create() *DeletedIdentityCreate {
+	mutation := newDeletedIdentityMutation(c.config, OpCreate)
+	return &DeletedIdentityCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DeletedIdentity entities.
+func (c *DeletedIdentityClient) CreateBulk(builders ...*DeletedIdentityCreate) *DeletedIdentityCreateBulk {
+	return &DeletedIdentityCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DeletedIdentityClient) MapCreateBulk(slice any, setFunc func(*DeletedIdentityCreate, int)) *DeletedIdentityCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DeletedIdentityCreateBulk{err: fmt.Errorf("calling to DeletedIdentityClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DeletedIdentityCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DeletedIdentityCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DeletedIdentity.
+func (c *DeletedIdentityClient) Update() *DeletedIdentityUpdate {
+	mutation := newDeletedIdentityMutation(c.config, OpUpdate)
+	return &DeletedIdentityUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DeletedIdentityClient) UpdateOne(_m *DeletedIdentity) *DeletedIdentityUpdateOne {
+	mutation := newDeletedIdentityMutation(c.config, OpUpdateOne, withDeletedIdentity(_m))
+	return &DeletedIdentityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DeletedIdentityClient) UpdateOneID(id uuid.UUID) *DeletedIdentityUpdateOne {
+	mutation := newDeletedIdentityMutation(c.config, OpUpdateOne, withDeletedIdentityID(id))
+	return &DeletedIdentityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DeletedIdentity.
+func (c *DeletedIdentityClient) Delete() *DeletedIdentityDelete {
+	mutation := newDeletedIdentityMutation(c.config, OpDelete)
+	return &DeletedIdentityDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DeletedIdentityClient) DeleteOne(_m *DeletedIdentity) *DeletedIdentityDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DeletedIdentityClient) DeleteOneID(id uuid.UUID) *DeletedIdentityDeleteOne {
+	builder := c.Delete().Where(deletedidentity.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DeletedIdentityDeleteOne{builder}
+}
+
+// Query returns a query builder for DeletedIdentity.
+func (c *DeletedIdentityClient) Query() *DeletedIdentityQuery {
+	return &DeletedIdentityQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDeletedIdentity},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DeletedIdentity entity by its id.
+func (c *DeletedIdentityClient) Get(ctx context.Context, id uuid.UUID) (*DeletedIdentity, error) {
+	return c.Query().Where(deletedidentity.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DeletedIdentityClient) GetX(ctx context.Context, id uuid.UUID) *DeletedIdentity {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *DeletedIdentityClient) Hooks() []Hook {
+	return c.hooks.DeletedIdentity
+}
+
+// Interceptors returns the client interceptors.
+func (c *DeletedIdentityClient) Interceptors() []Interceptor {
+	return c.inters.DeletedIdentity
+}
+
+func (c *DeletedIdentityClient) mutate(ctx context.Context, m *DeletedIdentityMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DeletedIdentityCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DeletedIdentityUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DeletedIdentityUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DeletedIdentityDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DeletedIdentity mutation op: %q", m.Op())
 	}
 }
 
@@ -16494,10 +16635,10 @@ type (
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
 		CommitmentDependency, CommitmentEvent, ConnectorAuditEvent,
 		ConnectorCredentialCleanupJob, ConnectorCredentialRecovery,
-		ConnectorRevocationJob, ConversationIntelligenceArtifact, CreditLedger, Entity,
-		EntityIdentifier, EntityResourceRef, GoogleWatch, LLMUsage, LLMUsageHistory,
-		MCPConnection, MCPConnectionHistory, MailBodyCache, MailMessageMeta,
-		MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
+		ConnectorRevocationJob, ConversationIntelligenceArtifact, CreditLedger,
+		DeletedIdentity, Entity, EntityIdentifier, EntityResourceRef, GoogleWatch,
+		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
+		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
 		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
 		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
 		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,
@@ -16519,10 +16660,10 @@ type (
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
 		CommitmentDependency, CommitmentEvent, ConnectorAuditEvent,
 		ConnectorCredentialCleanupJob, ConnectorCredentialRecovery,
-		ConnectorRevocationJob, ConversationIntelligenceArtifact, CreditLedger, Entity,
-		EntityIdentifier, EntityResourceRef, GoogleWatch, LLMUsage, LLMUsageHistory,
-		MCPConnection, MCPConnectionHistory, MailBodyCache, MailMessageMeta,
-		MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
+		ConnectorRevocationJob, ConversationIntelligenceArtifact, CreditLedger,
+		DeletedIdentity, Entity, EntityIdentifier, EntityResourceRef, GoogleWatch,
+		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
+		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
 		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
 		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
 		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,

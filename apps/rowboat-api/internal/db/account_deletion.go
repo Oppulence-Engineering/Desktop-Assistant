@@ -2,9 +2,11 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent/dialect"
 	"github.com/google/uuid"
@@ -17,6 +19,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityresourceref"
@@ -59,6 +62,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 )
 
 // WorkspaceTransfer gives a shared workspace to a new owner during account
@@ -152,6 +156,8 @@ var historyTables = []struct {
 //  3. History rows go while their source rows still identify the user.
 //  4. The user row goes, and the database cascades the delete.
 //  5. The user's own history rows go (they hold the email).
+//  6. A tombstone records the deleted identity, so a token issued before the
+//     deletion cannot create the account again.
 func (d *DB) DeleteAccount(ctx context.Context, userID uuid.UUID, transfers []WorkspaceTransfer) error {
 	tx, err := d.sqlDB.BeginTx(ctx, nil)
 	if err != nil {
@@ -222,15 +228,24 @@ func (d *DB) DeleteAccount(ctx context.Context, userID uuid.UUID, transfers []Wo
 		}
 	}
 
-	n, err := exec(fmt.Sprintf(`DELETE FROM "%s" WHERE "%s" = ?`, user.Table, user.FieldID), userID) // #nosec G201
+	var workosUserID string
+	err = tx.QueryRowContext(ctx, d.rebind(fmt.Sprintf(`DELETE FROM "%s" WHERE "%s" = ? RETURNING "%s"`,
+		user.Table, user.FieldID, user.FieldWorkosUserID)), userID).Scan(&workosUserID) // #nosec G201
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrAccountNotFound
+	}
 	if err != nil {
 		return fmt.Errorf("delete user: %w", err)
 	}
-	if n != 1 {
-		return ErrAccountNotFound
-	}
 	if _, err := exec(fmt.Sprintf(`DELETE FROM "%s" WHERE "%s" = ?`, userhistory.Table, userhistory.FieldRef), userID); err != nil { // #nosec G201
 		return fmt.Errorf("purge %s: %w", userhistory.Table, err)
+	}
+	now := time.Now().UTC()
+	if _, err := exec(fmt.Sprintf(`INSERT INTO "%s" ("%s", "%s", "%s", "%s") VALUES (?, ?, ?, ?) ON CONFLICT ("%s") DO NOTHING`,
+		deletedidentity.Table, deletedidentity.FieldID, deletedidentity.FieldKeyHash, deletedidentity.FieldCreatedAt,
+		deletedidentity.FieldUpdatedAt, deletedidentity.FieldKeyHash),
+		uuid.New(), auth.DeletedIdentityKey(workosUserID), now, now); err != nil { // #nosec G201
+		return fmt.Errorf("record deleted identity: %w", err)
 	}
 	return tx.Commit()
 }

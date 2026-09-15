@@ -16,9 +16,16 @@ import { DeleteAccountRow } from "./delete-account-row";
 const assign = vi.fn();
 const SUBMIT = "Permanently delete account";
 const CONFIRM_LABEL = "Type DELETE to confirm";
+const DELETED_TITLE = "Your account is deleted";
 const SUCCESSOR_MESSAGE = "Remove the other members first";
 const BILLING_MESSAGE = "We could not cancel your subscription, so your account was not deleted.";
 const FALLBACK_MESSAGE = "We could not delete your account. Try again, or contact support.";
+const RECEIPT = {
+  receiptId: "d3ba394b-873b-4219-8cf9-809e9f10aafb",
+  requestedAt: "2026-09-15T21:29:01Z",
+  completedAt: "2026-09-15T21:29:07Z",
+  identityDeleted: true,
+};
 
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -125,12 +132,13 @@ describe("DeleteAccountRow", () => {
       expect(screen.getByLabelText(CONFIRM_LABEL)).toHaveValue("");
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
       expect(screen.getByRole("button", { name: SUBMIT })).toBeDisabled();
+      expect(assign).not.toHaveBeenCalled();
     });
   });
 
   describe("a successful deletion", () => {
     it("sends DELETE /v1/me with a JSON confirmation body", async () => {
-      dashboardFetch.mockResolvedValue(json(200, { receiptId: "r1" }));
+      dashboardFetch.mockResolvedValue(json(200, RECEIPT));
       const user = await openSheet();
       await confirmAndSubmit(user);
 
@@ -142,13 +150,57 @@ describe("DeleteAccountRow", () => {
       expect(JSON.parse(init.body as string)).toEqual({ confirm: "DELETE" });
     });
 
-    it("signs the user out through the logout route", async () => {
-      dashboardFetch.mockResolvedValue(json(200, { receiptId: "r1" }));
+    it("shows the receipt and keeps the user on the page until they sign out", async () => {
+      dashboardFetch.mockResolvedValue(json(200, RECEIPT));
+      const user = await openSheet();
+      await confirmAndSubmit(user);
+
+      const dialog = await screen.findByRole("dialog");
+      expect(await within(dialog).findByText(DELETED_TITLE)).toBeInTheDocument();
+      expect(within(dialog).getByText(RECEIPT.receiptId)).toBeInTheDocument();
+      expect(within(dialog).getByText(RECEIPT.completedAt)).toBeInTheDocument();
+      expect(within(dialog).queryByLabelText(CONFIRM_LABEL)).not.toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(assign).not.toHaveBeenCalled();
+    });
+
+    it("signs the user out through the logout route from the receipt", async () => {
+      dashboardFetch.mockResolvedValue(json(200, RECEIPT));
+      const user = await openSheet();
+      await confirmAndSubmit(user);
+
+      await user.click(await screen.findByRole("button", { name: "Sign out" }));
+      expect(assign).toHaveBeenCalledWith("/api/auth/logout");
+      expect(assign).toHaveBeenCalledTimes(1);
+    });
+
+    it("signs the user out when they close the receipt", async () => {
+      dashboardFetch.mockResolvedValue(json(200, RECEIPT));
+      const user = await openSheet();
+      await confirmAndSubmit(user);
+      await screen.findByText(DELETED_TITLE);
+
+      await user.keyboard("{Escape}");
+      expect(assign).toHaveBeenCalledWith("/api/auth/logout");
+    });
+
+    it.each([
+      ["an empty body", {}],
+      ["a receipt without a completion time", { receiptId: "r1" }],
+      ["an empty receipt id", { receiptId: "", completedAt: "2026-09-15T21:29:07Z" }],
+    ])("signs the user out at once for %s", async (_label, body) => {
+      dashboardFetch.mockResolvedValue(json(200, body));
       const user = await openSheet();
       await confirmAndSubmit(user);
       await waitFor(() => expect(assign).toHaveBeenCalledWith("/api/auth/logout"));
-      expect(assign).toHaveBeenCalledTimes(1);
-      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.queryByText(DELETED_TITLE)).not.toBeInTheDocument();
+    });
+
+    it("signs the user out at once when the success body is not JSON", async () => {
+      dashboardFetch.mockResolvedValue(new Response("ok", { status: 200 }));
+      const user = await openSheet();
+      await confirmAndSubmit(user);
+      await waitFor(() => expect(assign).toHaveBeenCalledWith("/api/auth/logout"));
     });
 
     it("shows progress and ignores a second click while the request runs", async () => {
@@ -162,8 +214,8 @@ describe("DeleteAccountRow", () => {
       await user.click(pendingButton);
       expect(dashboardFetch).toHaveBeenCalledTimes(1);
 
-      finish(json(200, { receiptId: "r1" }));
-      await waitFor(() => expect(assign).toHaveBeenCalledWith("/api/auth/logout"));
+      finish(json(200, RECEIPT));
+      expect(await screen.findByText(DELETED_TITLE)).toBeInTheDocument();
     });
   });
 
@@ -186,6 +238,7 @@ describe("DeleteAccountRow", () => {
         expect(await screen.findByRole("alert")).toHaveTextContent(message);
         expect(assign).not.toHaveBeenCalled();
         expect(screen.getByRole("dialog")).toBeInTheDocument();
+        expect(screen.queryByText(DELETED_TITLE)).not.toBeInTheDocument();
       },
     );
 
@@ -222,16 +275,16 @@ describe("DeleteAccountRow", () => {
       expect(screen.getByLabelText(CONFIRM_LABEL)).toHaveValue("DELETE");
     });
 
-    it("clears the old error and signs out when the retry succeeds", async () => {
+    it("clears the old error and shows the receipt when the retry succeeds", async () => {
       dashboardFetch
         .mockResolvedValueOnce(json(502, { code: "billing_cancellation_failed" }))
-        .mockResolvedValueOnce(json(200, { receiptId: "r2" }));
+        .mockResolvedValueOnce(json(200, RECEIPT));
       const user = await openSheet();
       await confirmAndSubmit(user);
       await screen.findByRole("alert");
 
       await user.click(screen.getByRole("button", { name: SUBMIT }));
-      await waitFor(() => expect(assign).toHaveBeenCalledWith("/api/auth/logout"));
+      expect(await screen.findByText(DELETED_TITLE)).toBeInTheDocument();
       expect(dashboardFetch).toHaveBeenCalledTimes(2);
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     });

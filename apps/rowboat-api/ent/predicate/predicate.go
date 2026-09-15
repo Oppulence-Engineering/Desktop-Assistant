@@ -87,6 +87,9 @@ type ConversationIntelligenceArtifact func(*sql.Selector)
 // CreditLedger is the predicate function for creditledger builders.
 type CreditLedger func(*sql.Selector)
 
+// DeletedIdentity is the predicate function for deletedidentity builders.
+type DeletedIdentity func(*sql.Selector)
+
 // Entity is the predicate function for entity builders.
 type Entity func(*sql.Selector)
 
