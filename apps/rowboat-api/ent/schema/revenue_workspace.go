@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -85,6 +86,10 @@ func (RevenueWorkspace) Fields() []ent.Field {
 }
 
 // Edges of the RevenueWorkspace.
+//
+// Every outbound edge cascades on delete, so deleting a workspace also deletes
+// the rows that only the workspace owns (person_interaction_stats has no user
+// edge). TestRevenueWorkspaceEdgesCascadeOnDelete enforces this.
 func (RevenueWorkspace) Edges() []ent.Edge {
 	return []ent.Edge{
 		// The founding owner. MVP tenancy is founder-mode: every revenue row is
@@ -92,77 +97,113 @@ func (RevenueWorkspace) Edges() []ent.Edge {
 		// workspace edge in place for the WP6 member-scoped upgrade.
 		edge.From("user", User.Type).Ref("revenue_workspaces").Unique().Required().Immutable(),
 		edge.To("members", RevenueWorkspaceMember.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationships", Relationship.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("evidences", RevenueEvidence.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("commitments", Commitment.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("commitment_events", CommitmentEvent.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("commitment_dependencies", CommitmentDependency.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("conversation_intelligence_artifacts", ConversationIntelligenceArtifact.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("actions", RevenueAction.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("decisions", PolicyDecisionSnapshot.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("outcomes", ActionOutcome.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("outbox_events", RevenueOutboxEvent.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("scans", RevenueLeakScan.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationship_participants", RelationshipParticipant.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationship_identities", RelationshipIdentity.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationship_projection_jobs", RelationshipProjectionJob.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("evidence_keys", TenantEvidenceKey.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("feature_controls", WorkspaceFeatureControl.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("trust_events", RevenueTrustEvent.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("identity_candidates", RelationshipIdentityCandidate.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationship_lineage_events", RelationshipLineageEvent.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationship_identity_decisions", RelationshipIdentityDecision.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationship_review_acknowledgements", RelationshipReviewAcknowledgement.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationship_attention_items", RelationshipAttentionItem.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationship_observations", RelationshipObservation.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationship_assertions", RelationshipAssertion.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationship_state_snapshots", RelationshipStateSnapshot.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationship_source_statuses", RelationshipSourceStatus.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationship_persons", Person.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("entities", Entity.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("entity_resource_refs", EntityResourceRef.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("entity_identifiers", EntityIdentifier.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("person_identities", PersonIdentity.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("person_suppressions", PersonSuppression.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("person_attributes", PersonAttribute.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("person_interaction_stats", PersonInteractionStat.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("person_merge_candidates", PersonMergeCandidate.Type).
-			StorageKey(edge.Column("revenue_workspace_id")),
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
 
