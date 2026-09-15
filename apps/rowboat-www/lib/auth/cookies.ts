@@ -16,7 +16,9 @@ import {
 export const SESSION_COOKIE = "rowboat_www_session";
 const PKCE_COOKIE = "rowboat_www_pkce";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 14;
-const PKCE_MAX_AGE_SECONDS = 60 * 10;
+// Long enough for a slow identity-provider check, such as Google's "Verify it's
+// you" step. The sealed state is single-use and the callback clears it.
+const PKCE_MAX_AGE_SECONDS = 60 * 30;
 
 type CookiePayload = DashboardSessionCookie | WorkOSPKCECookie;
 
