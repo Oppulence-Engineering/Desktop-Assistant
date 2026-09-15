@@ -193,6 +193,10 @@ test("deleting cancels Stripe, deletes the account, and signs the user out", asy
   await openDeleteSheet();
   await confirmDeletion();
 
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("Your account is deleted")).toBeVisible();
+  await expect(dialog.getByText(/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/)).toBeVisible();
+  await dialog.getByRole("button", { name: "Sign out" }).click();
   await page.waitForURL((url) => url.pathname === "/");
   expect(userCount(userID)).toBe(0);
   expect(
