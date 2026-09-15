@@ -80,7 +80,6 @@ import {
   pcmStats,
   probeCapability,
   codeOf as whisperCodeOf,
-  type StreamPort,
 } from "@x/core/voice/whisper/index";
 import { parseVoiceCommand } from "@x/core/voice/commands/parser";
 import { transformDictationCommand } from "@x/core/voice/command-mode";
@@ -95,11 +94,15 @@ import type {
 } from "@x/shared/transcription";
 import { classifySchedule, processSolomonInstruction } from "@x/core/knowledge/inline_tasks";
 import {
+  BillingRequestError,
   createBillingCheckoutSession,
+  deleteAccount,
   getBillingInfo,
   getBillingPortalUrl,
   syncBilling,
 } from "@x/core/billing/billing";
+import { PRODUCT_PROVIDER_ID } from "@x/shared/branding";
+import { runAccountDeletion } from "./account-deletion.js";
 import { submitFeedback } from "@x/core/feedback/feedback";
 import { AuthUnavailableError } from "@x/core/auth/refresh-errors";
 import {
@@ -444,7 +447,7 @@ function processChangeQueue(): void {
 
   if (paths.length === 1) {
     // For single path, try to determine kind from file stats
-    const relPath = paths[0]!;
+    const relPath = paths[0];
     try {
       const absPath = workspace.resolveWorkspacePath(relPath);
       fs.lstat(absPath)
@@ -809,14 +812,14 @@ export function initMeetingCapture(): void {
     // controller at launch retries consented items left by an offline prior session.
     void controller
       .refreshSettings()
-      .catch((err) => console.error("[meeting] evidence retry failed:", err));
+      .catch((err) => { console.error("[meeting] evidence retry failed:", err); });
     return;
   }
   initMeetingTray(controller);
   void controller
     .refreshSettings()
     .then(() => controller.resumePending())
-    .catch((err) => console.error("[meeting] resume failed:", err));
+    .catch((err) => { console.error("[meeting] resume failed:", err); });
 }
 
 /** On-device transcription is viable only when the binary exists AND the device is capable (§13). */
@@ -884,7 +887,7 @@ async function remoteTranscriptionState(): Promise<RemoteTranscriptionState | nu
   try {
     const token = await getAccessToken();
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), REMOTE_TRANSCRIPTION_FETCH_TIMEOUT_MS);
+    const timer = setTimeout(() => { controller.abort(); }, REMOTE_TRANSCRIPTION_FETCH_TIMEOUT_MS);
     try {
       const res = await fetch(`${API_URL}/v1/transcription/quota`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -1014,13 +1017,13 @@ async function transcriptionRoutingMain() {
       // Renderer meetings summarize on stop. Native meetings do so as part of the
       // post-stop queue, which can be disabled explicitly.
       summariesEnabled: captureEngine === "renderer" || nativeProcessing,
-      commitmentsEnabled: nativeProcessing && cfg.meetings.extractCommitments !== false,
-      liveQuestionsEnabled: captureEngine === "native" && cfg.meetings.liveTranscript === true,
+      commitmentsEnabled: nativeProcessing && cfg.meetings.extractCommitments,
+      liveQuestionsEnabled: captureEngine === "native" && cfg.meetings.liveTranscript,
     },
     // Deliberately NOT one of the relationshipEvidence.sharing flags: that set
     // describes what the user publishes about themselves, and its `enabled` is
     // an OR across all of them. See CloudResearchRoute.
-    cloudResearch: { enabled: cfg.relationships.cloudResearch === true },
+    cloudResearch: { enabled: cfg.relationships.cloudResearch },
     relationshipEvidence: {
       // Read from the five live consent flags, not the deprecated
       // meetings.syncRelationshipEvidence, which no UI has written since the
@@ -1049,7 +1052,7 @@ async function transcriptionRoutingMain() {
 
 export function setupIpcHandlers() {
   // Forward knowledge commit events to renderer for panel refresh
-  versionHistory.onCommit(() => emitKnowledgeCommitEvent());
+  versionHistory.onCommit(() => { emitKnowledgeCommitEvent(); });
 
   registerIpcHandlers({
     "app:getVersions": async () => {
@@ -1375,7 +1378,8 @@ export function setupIpcHandlers() {
         invalidateCopilotInstructionsCache();
         return { success: true };
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "Failed to authorize integration scopes";
+        const message =
+          err instanceof Error ? err.message : "Failed to authorize integration scopes";
         return { success: false, error: message };
       }
     },
@@ -1751,7 +1755,7 @@ export function setupIpcHandlers() {
           footer: false,
           header: false,
         });
-        await fs.writeFile(filePath, Buffer.from(docxBuffer as ArrayBuffer));
+        await fs.writeFile(filePath, Buffer.from(docxBuffer));
         return { success: true };
       }
 
@@ -1862,7 +1866,7 @@ export function setupIpcHandlers() {
         if (result.success) {
           void staged
             .then((value) => (value ? store.discard(value) : undefined))
-            .catch((error) => console.warn("[dictation] could not discard staged audio", error));
+            .catch((error) => { console.warn("[dictation] could not discard staged audio", error); });
         } else {
           const value = await staged;
           const historyId =
@@ -2107,7 +2111,7 @@ export function setupIpcHandlers() {
       const { port1, port2 } = new MessageChannelMain();
       let streamId: string;
       try {
-        streamId = getWhisper().openStream(port1 as unknown as StreamPort, {
+        streamId = getWhisper().openStream(port1, {
           model: resolvedModel,
           channels,
         });
@@ -2457,6 +2461,14 @@ export function setupIpcHandlers() {
       await syncBilling();
       return { success: true };
     },
+    "account:delete": async () =>
+      runAccountDeletion({
+        deleteAccount,
+        // The account no longer exists. Clear the local session so the app stops
+        // sending a token for a deleted identity.
+        clearSession: () => disconnectProvider(PRODUCT_PROVIDER_ID),
+        problemCode: (err) => (err instanceof BillingRequestError ? err.code : null),
+      }),
     // Feedback handler (relayed to Plain via the backend)
     "feedback:submit": async (_event, args) => {
       try {
