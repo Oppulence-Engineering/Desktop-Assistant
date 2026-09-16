@@ -39,6 +39,27 @@ function isLocalRootFile(filename: string): boolean {
   );
 }
 
+// WEB021: a user sent to an external page (OAuth, hosted authorization) comes
+// back to a screen that still shows the old state unless the flow refreshes on
+// return. Composio connections shipped that way: the panel opened the consent
+// page and never refetched, so a finished connection read "not connected"
+// until a manual reload, and users reported the integration as broken.
+const externalFlowRefreshExemptions = new Map<string, string>([
+  [
+    "components/app-settings.tsx",
+    "opens a static documentation link; there is no state to refresh",
+  ],
+]);
+
+function sourceFilesBelow(root: string): string[] {
+  if (!fs.existsSync(root)) return [];
+  return fs.readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const target = path.join(root, entry.name);
+    if (entry.isDirectory()) return sourceFilesBelow(target);
+    return /\.(ts|tsx)$/.test(entry.name) && !entry.name.includes(".test.") ? [target] : [];
+  });
+}
+
 describe("repository architecture policies", () => {
   it("keeps the contributor-facing application root intentional", () => {
     const unexpectedFiles = fs
@@ -112,6 +133,28 @@ describe("repository architecture policies", () => {
   it("WEB018 keeps the source OpenAPI document and generator configuration in-repo", () => {
     expect(fs.existsSync(path.join(repoRoot, "apps/rowboat-api/api/openapi.json"))).toBe(true);
     expect(fs.existsSync(path.join(appRoot, "config/contracts/orval.config.ts"))).toBe(true);
+  });
+
+  it("WEB021 refreshes state when the user returns from an external page", () => {
+    const offenders: string[] = [];
+    for (const root of ["app", "components", "lib"]) {
+      for (const filename of sourceFilesBelow(path.join(appRoot, root))) {
+        const source = fs.readFileSync(filename, "utf8");
+        if (!source.includes("window.open(")) continue;
+
+        const relative = path.relative(appRoot, filename).replaceAll(path.sep, "/");
+        if (externalFlowRefreshExemptions.has(relative)) continue;
+
+        const refreshesOnReturn =
+          source.includes("visibilitychange") || source.includes('addEventListener("focus"');
+        if (!refreshesOnReturn) offenders.push(relative);
+      }
+    }
+
+    expect(
+      offenders,
+      "Sending a user to an external page must refresh on return: listen for visibilitychange or focus, or record an exemption in externalFlowRefreshExemptions with the reason",
+    ).toEqual([]);
   });
 
   it("scans the immutable deployment image before rollout", () => {
