@@ -124,7 +124,9 @@ export function ComposioConnections() {
         <h3 className="text-sm font-medium text-primary">More products</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           Connect the tools Oppulence does not track as relationship sources, such as Jira or Asana.
-          Agents can act in them; nothing they return counts as evidence for a commitment.
+          Agents can act in them; nothing they return counts as evidence for a commitment. Mail,
+          calendar and Slack are not listed here: connect those above, where they become
+          relationship evidence.
         </p>
       </div>
       {state === "loading" ? (

@@ -351,6 +351,18 @@ type ConnectLink struct {
 	ExpiresAt    string `json:"expiresAt,omitempty"`
 }
 
+// nativeRelationshipToolkits are the products Oppulence ingests itself through
+// its own connectors: mail, calendar and Slack become relationship evidence.
+// Composio reaches the same products, but an account linked there feeds nothing
+// into the relationship graph, so offering them here sends a user down a path
+// that looks identical and silently does less. They are hidden, and the native
+// connector stays the only way to link them.
+var nativeRelationshipToolkits = map[string]bool{
+	"gmail":          true,
+	"googlecalendar": true,
+	"slack":          true,
+}
+
 // ListToolkits returns connectable products, newest page only. Only toolkits
 // Composio can authorize on our behalf are offered: anything else would need an
 // OAuth app of our own before the connect button could work.
@@ -368,7 +380,7 @@ func (c *Client) ListToolkits(ctx context.Context, limit int) ([]Toolkit, error)
 	out := make([]Toolkit, 0, len(items))
 	for _, item := range items {
 		slug := firstString(item, "slug")
-		if slug == "" {
+		if slug == "" || nativeRelationshipToolkits[strings.ToLower(slug)] {
 			continue
 		}
 		out = append(out, Toolkit{

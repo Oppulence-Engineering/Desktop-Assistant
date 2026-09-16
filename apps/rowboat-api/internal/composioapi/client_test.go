@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -178,5 +179,38 @@ func TestUpstreamFailuresCarryTheProviderMessage(t *testing.T) {
 	_, err := client.SearchTools(context.Background(), "", "", 0)
 	if err == nil || !strings.Contains(err.Error(), "Validation error") {
 		t.Fatalf("err = %v, want the provider message", err)
+	}
+}
+
+// Gmail, Calendar and Slack become relationship evidence through Oppulence's own
+// connectors. Composio can link the same accounts, but nothing it returns reaches
+// the relationship graph, so the list must not offer a second path that looks the
+// same and quietly does less.
+func TestListToolkitsHidesProductsOppulenceIngestsItself(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"items":[
+			{"slug":"gmail","name":"Gmail"},
+			{"slug":"googlecalendar","name":"Google Calendar"},
+			{"slug":"slack","name":"Slack"},
+			{"slug":"jira","name":"Jira"},
+			{"slug":"notion","name":"Notion"}
+		]}`))
+	}))
+	defer server.Close()
+
+	client := New("key", outbound.Policy{})
+	client.SetBaseURL(server.URL)
+
+	toolkits, err := client.ListToolkits(context.Background(), 50)
+	if err != nil {
+		t.Fatalf("ListToolkits: %v", err)
+	}
+	got := make([]string, 0, len(toolkits))
+	for _, toolkit := range toolkits {
+		got = append(got, toolkit.Slug)
+	}
+	want := []string{"jira", "notion"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("toolkits = %v, want %v (gmail, googlecalendar and slack are ingested natively)", got, want)
 	}
 }
