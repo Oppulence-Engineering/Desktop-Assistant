@@ -21,7 +21,6 @@ import {
   Cpu,
   Folder,
   GearSix,
-  HardDrives,
   House,
   ListChecks,
   MagnifyingGlass,
@@ -38,10 +37,7 @@ import {
   SignOut,
   Stack,
   Sun,
-  Tag,
-  TerminalWindow,
   Tray,
-  Waveform,
   Wallet,
   WarningCircle,
   X,
@@ -106,16 +102,11 @@ export type SettingsSection =
   | "security"
   | "extensions"
   | "connections"
-  | "transcription"
-  | "note-tagging"
   | "advanced"
   | "models"
-  | "code-mode"
   | "customization"
   | "appearance"
-  | "mcp"
   | "environment"
-  | "updates"
   | "memory"
   | "recovery"
   | "account"
@@ -181,20 +172,6 @@ export const SETTINGS_SECTIONS: {
     description: "Manage connected accounts and available tools.",
   },
   {
-    key: "transcription",
-    label: "Transcription",
-    icon: Waveform,
-    group: "workspace",
-    description: "Review speech-to-text availability and desktop configuration.",
-  },
-  {
-    key: "note-tagging",
-    label: "Note Tagging",
-    icon: Tag,
-    group: "workspace",
-    description: "Manage the note and email taxonomy used by the desktop app.",
-  },
-  {
     key: "advanced",
     label: "Advanced",
     icon: Rocket,
@@ -207,13 +184,6 @@ export const SETTINGS_SECTIONS: {
     icon: Cpu,
     group: "global",
     description: "Choose the models that reason over relationship evidence.",
-  },
-  {
-    key: "code-mode",
-    label: "Code Mode",
-    icon: TerminalWindow,
-    group: "global",
-    description: "Review governed agent execution and approval behavior.",
   },
   {
     key: "customization",
@@ -230,25 +200,11 @@ export const SETTINGS_SECTIONS: {
     description: "Set theme, language, and window preferences.",
   },
   {
-    key: "mcp",
-    label: "MCP Servers",
-    icon: HardDrives,
-    group: "global",
-    description: "Review the tool servers available to desktop agents.",
-  },
-  {
     key: "environment",
     label: "Environment",
     icon: Monitor,
     group: "global",
     description: "Review the browser, runtime, and API environment.",
-  },
-  {
-    key: "updates",
-    label: "Updates",
-    icon: Play,
-    group: "global",
-    description: "Keep the product current with controlled release settings.",
   },
   {
     key: "memory",
