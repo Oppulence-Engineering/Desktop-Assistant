@@ -21,9 +21,14 @@ func (RelationshipObservation) Mixin() []ent.Mixin { return []ent.Mixin{mixin.Wo
 func (RelationshipObservation) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("source").
+			// "composio" is brokered: a third party holds the grant, so the
+			// provenance is weaker than a direct OAuth connection. It may inform
+			// relationship context, and createRelationshipAssertion refuses to cite it
+			// as evidence for a commitment.
 			Validate(oneOfRevenue("source",
 				"gmail", "calendar", "slack", "hubspot", "meeting",
-				"desktop_note", "voice_note", "browser", "crm", "user")),
+				"desktop_note", "voice_note", "browser", "crm", "user",
+				"composio")),
 		field.String("source_account_id").Optional(),
 		field.String("external_id").NotEmpty(),
 		field.String("source_version").Default("1"),

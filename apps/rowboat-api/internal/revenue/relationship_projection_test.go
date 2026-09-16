@@ -3,6 +3,7 @@ package revenue
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -754,5 +755,72 @@ func TestProjectionRunnerUsesWorkspaceOwnerAfterContributingMemberIsRemoved(t *t
 	rel, err := f.svc.GetRelationship(f.ctx, results[0].Relationship.ID)
 	if err != nil || rel.Health != "healthy" {
 		t.Fatalf("workspace owner did not publish scheduled projection: rel=%+v err=%v", rel, err)
+	}
+}
+
+// A Composio backfill provider would call the trusted ingestion path, the same
+// path the native Gmail and Calendar adapters use. That path mints accepted
+// source_fact evidence. Composio holds the grant, not Oppulence, so a Jira
+// ticket must inform context without becoming proof of a promise.
+func TestBrokeredObservationInformsContextButIsNeverCitedAsEvidence(t *testing.T) {
+	f := newFixture(t)
+	now := time.Date(2026, 9, 16, 10, 0, 0, 0, time.UTC)
+
+	assertion := RelationshipAssertionInput{
+		Dimension: "next_action", Value: "Ship the integration", SourceType: "source_fact",
+		Confidence: 1, Reason: "A ticket in a long-tail product says so.",
+	}
+
+	_, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Brokered Source", AccountDomain: "brokered-source.example",
+		Source: "composio", ExternalID: "brokered-1", EventType: "relationship.observed",
+		OccurredAt: now, ReceivedAt: now,
+		Assertions: []RelationshipAssertionInput{assertion},
+	}})
+	if err == nil {
+		t.Fatal("a brokered observation minted accepted evidence")
+	}
+	if !strings.Contains(err.Error(), "brokered") {
+		t.Fatalf("the error does not explain the boundary: %v", err)
+	}
+
+	// The observation itself must still be admissible without assertions, or
+	// long-tail context can never reach the product at all.
+	if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Brokered Source", AccountDomain: "brokered-source.example",
+		Source: "composio", ExternalID: "brokered-2", EventType: "relationship.observed",
+		OccurredAt: now, ReceivedAt: now, Summary: "A ticket moved to done.",
+	}}); err != nil {
+		t.Fatalf("a brokered observation without assertions was refused: %v", err)
+	}
+
+	// A commitment is the strongest claim the product makes, so the same broker
+	// must not be able to mint one by setting a confirmation flag.
+	_, err = f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Brokered Source", AccountDomain: "brokered-source.example",
+		Source: "composio", ExternalID: "brokered-3", EventType: "commitment_confirmed",
+		OccurredAt: now, ReceivedAt: now,
+		Facts: map[string]any{
+			"user_confirmed":       true,
+			"commitment_text":      "Send the revised quote",
+			"commitment_direction": "promised_by_me",
+		},
+	}})
+	if err == nil {
+		t.Fatal("a brokered observation minted a confirmed commitment")
+	}
+	if !strings.Contains(err.Error(), "brokered") {
+		t.Fatalf("the commitment error does not explain the boundary: %v", err)
+	}
+
+	// A directly connected source keeps its authority, so the rule narrows
+	// brokered data only.
+	if _, err := f.svc.IngestRelationshipObservations(f.ctx, f.user, []RelationshipObservationInput{{
+		DisplayName: "Direct Source", AccountDomain: "direct-source.example",
+		Source: "gmail", ExternalID: "direct-1", EventType: "relationship.observed",
+		OccurredAt: now, ReceivedAt: now,
+		Assertions: []RelationshipAssertionInput{assertion},
+	}}); err != nil {
+		t.Fatalf("a direct source was refused: %v", err)
 	}
 }
