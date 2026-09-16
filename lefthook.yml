@@ -13,6 +13,12 @@
 # file mutation. Pre-push and CI repeat it as authoritative defense in depth.
 min_version: 1.10.0
 
+# Pushes run three long gauntlets. Lefthook's spinner writes to the pipe git
+# holds open for the hook; when git stops reading, that write raises SIGPIPE and
+# `git push` dies with 141 after every check has already passed. Disabling the
+# spinner keeps the hook's output plain and the exit code honest.
+no_tty: true
+
 # Don't run hooks during merge/rebase resolution.
 skip_output:
   - meta
