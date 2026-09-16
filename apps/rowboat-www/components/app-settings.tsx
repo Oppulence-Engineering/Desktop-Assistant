@@ -757,37 +757,6 @@ function SecuritySection({ session }: { session: SessionShape }) {
   );
 }
 
-function DesktopCapabilitySection({
-  description,
-  detail,
-  title,
-}: {
-  description: string;
-  detail: string;
-  title: string;
-}) {
-  return (
-    <>
-      <PageIntro description={description} title={title} />
-      <div className="settings-inline-notice">
-        This existing setting remains fully configurable in the Oppulence desktop app.
-      </div>
-      <SettingsRow
-        description="Desktop-only controls stay local because they can access files, audio, and agent runtimes."
-        title="Desktop configuration"
-      >
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">{title}</p>
-            <p className="settings-row-description">{detail}</p>
-          </div>
-          <span className="settings-status">Desktop app</span>
-        </div>
-      </SettingsRow>
-    </>
-  );
-}
-
 function MemorySection() {
   return (
     <>
@@ -1037,77 +1006,6 @@ function EnvironmentSection() {
   );
 }
 
-function UpdatesSection() {
-  const [automatic, setAutomatic] = useStoredBoolean("settings-update-checks", true);
-  const [download, setDownload] = useStoredBoolean("settings-update-downloads", false);
-  const [checked, setChecked] = React.useState(false);
-
-  return (
-    <>
-      <PageIntro
-        description="Keep the console current with quiet background checks and controlled installs."
-        title="Updates"
-      />
-      <SettingsRow
-        description="The web console is deployed continuously; this view records your release preferences."
-        title="Current version"
-      >
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Oppulence web</p>
-            <p className="settings-row-description">
-              {checked ? "You are on the latest available deployment." : "Production channel"}
-            </p>
-          </div>
-          <button className="settings-button" onClick={() => setChecked(true)} type="button">
-            {checked ? <Check className="size-3.5" /> : null}
-            {checked ? "Up to date" : "Check now"}
-          </button>
-        </div>
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Release channel</p>
-            <p className="settings-row-description">Stable releases only.</p>
-          </div>
-          <select className="settings-select w-32" defaultValue="stable">
-            <option value="stable">Stable</option>
-          </select>
-        </div>
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Check automatically</p>
-            <p className="settings-row-description">Look for new deployments in the background.</p>
-          </div>
-          <button
-            aria-checked={automatic}
-            aria-label="Check automatically"
-            className="settings-switch"
-            onClick={() => setAutomatic(!automatic)}
-            role="switch"
-            type="button"
-          />
-        </div>
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Download automatically</p>
-            <p className="settings-row-description">
-              Reserved for desktop releases; the preference stays in sync here.
-            </p>
-          </div>
-          <button
-            aria-checked={download}
-            aria-label="Download automatically"
-            className="settings-switch"
-            onClick={() => setDownload(!download)}
-            role="switch"
-            type="button"
-          />
-        </div>
-      </SettingsRow>
-    </>
-  );
-}
-
 function RecoverySection() {
   const [reset, setReset] = React.useState(false);
   return (
@@ -1224,20 +1122,6 @@ export function SettingsView({
             <ConnectorSettings />
           </>
         ) : null}
-        {section === "transcription" ? (
-          <DesktopCapabilitySection
-            description={current.description}
-            detail="Choose on-device or cloud speech-to-text and configure the transcription provider."
-            title={current.label}
-          />
-        ) : null}
-        {section === "note-tagging" ? (
-          <DesktopCapabilitySection
-            description={current.description}
-            detail="Edit note tags, email labels, examples, applicability, and note-creation behavior."
-            title={current.label}
-          />
-        ) : null}
         {section === "advanced" ? (
           <>
             <PageIntro description={current.description} title={current.label} />
@@ -1292,24 +1176,9 @@ export function SettingsView({
             <ModelsSection />
           </>
         ) : null}
-        {section === "code-mode" ? (
-          <DesktopCapabilitySection
-            description={current.description}
-            detail="Choose the coding agent and approval policy used for delegated code execution."
-            title={current.label}
-          />
-        ) : null}
         {section === "customization" ? <CustomizationSection /> : null}
         {section === "appearance" ? <AppearanceSection /> : null}
-        {section === "mcp" ? (
-          <DesktopCapabilitySection
-            description={current.description}
-            detail="Add, enable, disable, and inspect local or remote MCP server connections."
-            title={current.label}
-          />
-        ) : null}
         {section === "environment" ? <EnvironmentSection /> : null}
-        {section === "updates" ? <UpdatesSection /> : null}
         {section === "memory" ? <MemorySection /> : null}
         {section === "recovery" ? <RecoverySection /> : null}
         {section === "account" ? <AccountSection session={session} /> : null}
