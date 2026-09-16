@@ -31,6 +31,9 @@ export function ComposioConnections() {
   const [busy, setBusy] = React.useState("");
   const [error, setError] = React.useState("");
   const [refreshKey, setRefreshKey] = React.useState(0);
+  // Set when the user leaves for Composio's page, so their return refreshes the
+  // list. Without it a finished connection still reads "not connected".
+  const awaitingConnection = React.useRef(false);
 
   React.useEffect(() => {
     const controller = new AbortController();
@@ -50,6 +53,20 @@ export function ComposioConnections() {
     return () => controller.abort();
   }, [refreshKey]);
 
+  React.useEffect(() => {
+    const refreshOnReturn = () => {
+      if (document.visibilityState !== "visible" || !awaitingConnection.current) return;
+      awaitingConnection.current = false;
+      setRefreshKey((key) => key + 1);
+    };
+    document.addEventListener("visibilitychange", refreshOnReturn);
+    window.addEventListener("focus", refreshOnReturn);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshOnReturn);
+      window.removeEventListener("focus", refreshOnReturn);
+    };
+  }, []);
+
   const connectedBySlug = new Map(connections.map((c) => [c.toolkit, c]));
 
   const connect = async (toolkit: string) => {
@@ -59,6 +76,7 @@ export function ComposioConnections() {
       const link = await startComposioConnection(toolkit);
       // The account is not linked until the user finishes on Composio's page,
       // so the list is refreshed when they come back to this tab.
+      awaitingConnection.current = true;
       window.open(link.redirectUrl, "_blank", "noopener,noreferrer");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not start the connection.");
