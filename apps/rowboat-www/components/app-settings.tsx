@@ -757,27 +757,6 @@ function SecuritySection({ session }: { session: SessionShape }) {
   );
 }
 
-function MemorySection() {
-  return (
-    <>
-      <PageIntro
-        description="Manage the private semantic memory used to recall approved relationship evidence."
-        title="Memory"
-      />
-      <SettingsRow
-        description="This browser preference controls whether semantic memory is available to the console."
-        title="Memory Bank"
-      >
-        <PreferenceToggle
-          description="Build a private semantic memory from approved relationship evidence."
-          label="Memory Bank (preview)"
-          storageKey="settings-memory-bank"
-        />
-      </SettingsRow>
-    </>
-  );
-}
-
 function HelpSection() {
   const items = [
     {
@@ -926,40 +905,6 @@ function CustomizationSection() {
           </div>
         </div>
       </SettingsRow>
-      <SettingsRow
-        description="Preview the same relationship workspace used by the desktop app."
-        title="Layout"
-      >
-        <div className="settings-preview">
-          <img alt="Oppulence relationship workspace" src="/marketing/desktop-home.png" />
-        </div>
-        {[
-          [sidebar, setSidebar, "Display sidebar", "Keep relationship navigation visible."],
-          [statusBar, setStatusBar, "Display status bar", "Show connection and sync state."],
-          [docs, setDocs, "Display documentation link", "Keep product docs in the app rail."],
-          [
-            feedback,
-            setFeedback,
-            "Display feedback button",
-            "Make feedback available to the team.",
-          ],
-        ].map(([checked, setter, label, description]) => (
-          <div className="settings-row" key={String(label)}>
-            <div className="settings-row-copy">
-              <p className="settings-row-label">{String(label)}</p>
-              <p className="settings-row-description">{String(description)}</p>
-            </div>
-            <button
-              aria-checked={Boolean(checked)}
-              aria-label={String(label)}
-              className="settings-switch"
-              onClick={() => (setter as (next: boolean) => void)(!checked)}
-              role="switch"
-              type="button"
-            />
-          </div>
-        ))}
-      </SettingsRow>
     </>
   );
 }
@@ -1002,47 +947,6 @@ function EnvironmentSection() {
           <Monitor className="size-4 text-primary/40" />
         </div>
       </SettingsRow>
-    </>
-  );
-}
-
-function RecoverySection() {
-  const [reset, setReset] = React.useState(false);
-  return (
-    <>
-      <PageIntro
-        description="Recover a clean local experience without deleting relationship data."
-        title="Recovery"
-      />
-      <SettingsRow
-        description="Relationship records and source evidence remain safely in the workspace."
-        title="Local console"
-      >
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Reset local settings</p>
-            <p className="settings-row-description">
-              Clears theme, display, notification, and customization preferences in this browser.
-            </p>
-          </div>
-          <button
-            className="settings-button"
-            onClick={() => {
-              Object.keys(localStorage)
-                .filter((key) => key === "theme" || key.startsWith("settings-"))
-                .forEach((key) => localStorage.removeItem(key));
-              setReset(true);
-            }}
-            type="button"
-          >
-            {reset ? "Reset complete" : "Reset local settings"}
-          </button>
-        </div>
-      </SettingsRow>
-      <div className="settings-inline-notice">
-        Recovery never removes relationship timelines, observations, assertions, or source
-        connections from your organization.
-      </div>
     </>
   );
 }
@@ -1179,8 +1083,6 @@ export function SettingsView({
         {section === "customization" ? <CustomizationSection /> : null}
         {section === "appearance" ? <AppearanceSection /> : null}
         {section === "environment" ? <EnvironmentSection /> : null}
-        {section === "memory" ? <MemorySection /> : null}
-        {section === "recovery" ? <RecoverySection /> : null}
         {section === "account" ? <AccountSection session={session} /> : null}
         {section === "connect" ? (
           <>

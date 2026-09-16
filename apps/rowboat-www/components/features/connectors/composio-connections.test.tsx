@@ -112,6 +112,31 @@ describe("Composio connections", () => {
     expect(mocks.listComposioConnections).toHaveBeenCalledTimes(1);
   });
 
+  it("shows one row per product when retries left several connections", async () => {
+    mocks.listComposioConnections.mockResolvedValue([
+      { id: "ca_old", toolkit: "jira", status: "INITIATED", createdAt: "2026-09-16T09:00:00Z" },
+      { id: "ca_live", toolkit: "jira", status: "ACTIVE", createdAt: "2026-09-16T10:00:00Z" },
+      { id: "ca_new", toolkit: "jira", status: "INITIATED", createdAt: "2026-09-16T11:00:00Z" },
+    ]);
+    render(<ComposioConnections />);
+
+    // The live connection wins over the newer pending ones, and Jira shows once.
+    expect(await screen.findByRole("button", { name: "Disconnect" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Disconnect" })).toHaveLength(1);
+    expect(screen.getByText("active")).toBeInTheDocument();
+  });
+
+  it("falls back to the newest connection when none is active", async () => {
+    mocks.listComposioConnections.mockResolvedValue([
+      { id: "ca_old", toolkit: "jira", status: "INITIATED", createdAt: "2026-09-16T09:00:00Z" },
+      { id: "ca_new", toolkit: "jira", status: "EXPIRED", createdAt: "2026-09-16T11:00:00Z" },
+    ]);
+    render(<ComposioConnections />);
+
+    expect(await screen.findByText("expired")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Disconnect" })).toHaveLength(1);
+  });
+
   it("renders nothing when the server holds no project key", async () => {
     mocks.listComposioToolkits.mockRejectedValue(new mocks.UnconfiguredError());
     const { container } = render(<ComposioConnections />);
