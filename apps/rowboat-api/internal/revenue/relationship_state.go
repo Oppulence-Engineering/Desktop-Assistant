@@ -550,6 +550,14 @@ func createConfirmedCommitment(
 	if strings.TrimSpace(input.EventType) != "commitment_confirmed" {
 		return nil, nil
 	}
+	// A confirmed commitment is the strongest claim the product makes. A broker
+	// holds the grant and never watches the user, so it cannot witness the
+	// confirmation this record asserts. The person confirms it in the product.
+	if observation != nil && brokeredObservationSources[observation.Source] {
+		return nil, fmt.Errorf(
+			"%w: %s is brokered by a third party, which cannot witness a user confirmation",
+			ErrInvalidInput, observation.Source)
+	}
 	confirmed, _ := input.Facts["user_confirmed"].(bool)
 	text, _ := input.Facts["commitment_text"].(string)
 	direction, _ := input.Facts["commitment_direction"].(string)
@@ -1449,6 +1457,13 @@ func upsertRelationshipParticipant(
 	return err
 }
 
+// brokeredObservationSources hold data a third party fetched on the user's
+// behalf. Oppulence never saw the grant, so the chain of custody is weaker than
+// a direct connection and the data is not citable as proof of a commitment.
+var brokeredObservationSources = map[string]bool{
+	"composio": true,
+}
+
 func createRelationshipAssertion(
 	ctx context.Context,
 	client *ent.Client,
@@ -1466,6 +1481,16 @@ func createRelationshipAssertion(
 	if observation == nil && input.SourceType != "user_correction" &&
 		(input.SourceType != "external_research" || strings.TrimSpace(input.CitationsJSON) == "") {
 		return nil, fmt.Errorf("%w: accepted assertion requires source evidence or an explicit user action", ErrInvalidInput)
+	}
+	// A brokered source reaches the product through a third party that holds the
+	// grant, so it cannot carry the weight of a promise. It may inform context;
+	// citing it as proof would quietly weaken every commitment built on it. A
+	// person may still assert the fact themselves, which records a human actor.
+	if observation != nil && brokeredObservationSources[observation.Source] &&
+		input.SourceType != "user_correction" {
+		return nil, fmt.Errorf(
+			"%w: %s is brokered by a third party, so it informs context but cannot be cited as evidence",
+			ErrInvalidInput, observation.Source)
 	}
 	if input.ValidFrom.IsZero() {
 		input.ValidFrom = time.Now().UTC()
