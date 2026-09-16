@@ -107,8 +107,6 @@ export type SettingsSection =
   | "customization"
   | "appearance"
   | "environment"
-  | "memory"
-  | "recovery"
   | "account"
   | "connect"
   | "help";
@@ -205,20 +203,6 @@ export const SETTINGS_SECTIONS: {
     icon: Monitor,
     group: "global",
     description: "Review the browser, runtime, and API environment.",
-  },
-  {
-    key: "memory",
-    label: "Memory",
-    icon: Brain,
-    group: "global",
-    description: "Manage private semantic memory preferences.",
-  },
-  {
-    key: "recovery",
-    label: "Recovery",
-    icon: BookOpen,
-    group: "global",
-    description: "Reset local preferences or recover your workspace session.",
   },
   {
     key: "account",

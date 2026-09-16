@@ -15,6 +15,14 @@ import {
   type ComposioToolkit,
 } from "@/lib/api/composio/client";
 
+/** An active connection wins; otherwise the most recently created one does. */
+function betterConnection(candidate: ComposioConnection, held: ComposioConnection): boolean {
+  const candidateActive = candidate.status.toUpperCase() === "ACTIVE";
+  const heldActive = held.status.toUpperCase() === "ACTIVE";
+  if (candidateActive !== heldActive) return candidateActive;
+  return candidate.createdAt > held.createdAt;
+}
+
 /**
  * The long-tail connect surface.
  *
@@ -67,7 +75,15 @@ export function ComposioConnections() {
     };
   }, []);
 
-  const connectedBySlug = new Map(connections.map((c) => [c.toolkit, c]));
+  // A product can hold several connections: retrying before the list refreshed
+  // left a pending one behind each time. Show the live one, else the newest.
+  const connectedBySlug = new Map<string, ComposioConnection>();
+  for (const connection of connections) {
+    const held = connectedBySlug.get(connection.toolkit);
+    if (!held || betterConnection(connection, held)) {
+      connectedBySlug.set(connection.toolkit, connection);
+    }
+  }
 
   const connect = async (toolkit: string) => {
     setBusy(toolkit);
