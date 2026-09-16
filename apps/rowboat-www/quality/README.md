@@ -25,6 +25,7 @@ Rule ownership:
 - `WEB001`–`WEB014`, `WEB019`: `@oppulence/eslint-plugin-web`
 - `WEB015`–`WEB018`: `quality/repository-policies.test.ts` and contract drift scripts
 - `WEB020`: `quality/component-contracts.test.ts` plus colocated Testing Library tests
+- `WEB021`: `quality/repository-policies.test.ts` — flows that send the user to an external page must refresh on return
 - Cross-package imports: `config/architecture/dependency-cruiser.config.mjs`
 - Security/data-flow sinks: `config/quality/semgrep.yml`
 - Account-scoped preferences: `lib/storage/scoped-storage.ts`
