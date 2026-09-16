@@ -82,6 +82,36 @@ describe("Composio connections", () => {
 
   // A deployment with no project key has nothing to offer. An empty panel would
   // read as a broken feature rather than one that was never switched on.
+  it("shows the finished connection when the user returns to the tab", async () => {
+    vi.stubGlobal("open", vi.fn());
+    mocks.startComposioConnection.mockResolvedValue({
+      connectionId: "ca_1",
+      redirectUrl: "https://connect.composio.dev/link/lk_1",
+      expiresAt: "2026-09-16T17:58:42.979Z",
+    });
+    const user = userEvent.setup();
+    render(<ComposioConnections />);
+    await user.click((await screen.findAllByRole("button", { name: "Connect" }))[0]);
+
+    // The user authorizes on Composio's page, so the account now exists.
+    mocks.listComposioConnections.mockResolvedValue([
+      { id: "ca_1", toolkit: "jira", status: "ACTIVE" },
+    ]);
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    expect(await screen.findByRole("button", { name: "Disconnect" })).toBeInTheDocument();
+    expect(mocks.listComposioConnections).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not refetch when the tab regains focus with no connection pending", async () => {
+    render(<ComposioConnections />);
+    await screen.findByText("Jira");
+
+    document.dispatchEvent(new Event("visibilitychange"));
+
+    expect(mocks.listComposioConnections).toHaveBeenCalledTimes(1);
+  });
+
   it("renders nothing when the server holds no project key", async () => {
     mocks.listComposioToolkits.mockRejectedValue(new mocks.UnconfiguredError());
     const { container } = render(<ComposioConnections />);
