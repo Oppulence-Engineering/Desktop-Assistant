@@ -116,6 +116,11 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 		if err := startRevenueAutoScan(ctx, cfg, log, database); err != nil {
 			log.Warn("revenue auto-scan not started", zap.Error(err))
 		}
+	} else {
+		log.Warn(
+			"revenue auto-scan disabled; ongoing Gmail refresh will require manual audits",
+			zap.String("enable_with", "REVENUE_AUTO_SCAN_ENABLED=true"),
+		)
 	}
 
 	// Proactive digest emails (RFC 030). Ships dark behind
