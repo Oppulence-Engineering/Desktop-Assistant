@@ -21,15 +21,10 @@ import type {
   ConnectorScope,
   GoogleConnectionStatus,
 } from "@/lib/api/generated/client/model";
-import {
-  GetGoogleConnectionStatus200Response,
-  StartGoogleOAuth200Response,
-} from "@/lib/api/generated/zod/google-oauth/google-oauth";
+import { GetGoogleConnectionStatus200Response } from "@/lib/api/generated/zod/google-oauth/google-oauth";
+import { createGoogleCommitmentsAuthorizationURL } from "@/lib/api/connectors/google-oauth";
 import { startHostedOAuth } from "@/lib/api/connectors/hosted-oauth";
-import {
-  listRelationshipSourceStatuses,
-  reportRelationshipSourceAuthorization,
-} from "@/lib/revenue";
+import { listRelationshipSourceStatuses } from "@/lib/revenue";
 import { cn } from "@/lib/utils";
 import { ComposioConnections } from "@/components/features/connectors/composio-connections";
 import { parseConnectorsResponse } from "@/lib/api/connectors/schema";
@@ -203,21 +198,9 @@ function GoogleConnectionSettings() {
     })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Could not claim Google connection (${response.status})`);
-        const fresh = await loadStatus();
-        // The claim stores the grant; the relationship source only learns of
-        // it when told. Without this report no source row existed, so the
-        // sidebar said "No sources connected" while this card said "Active",
-        // and a dead grant had no row to flag. The grant is saved either way,
-        // so a failed report must not read as a failed authorization.
-        await Promise.all(
-          fresh.accounts.map((account) =>
-            reportRelationshipSourceAuthorization("google", {
-              sourceAccountId: account.accountId,
-              state: "completed",
-              grantedScopes: account.scopes,
-            }).catch(() => undefined),
-          ),
-        );
+        // Claim persists the grant and the API's on-connect hook owns source
+        // authorization plus durable backfill. Re-reporting completion here
+        // used to rewind that newly queued work to connected/idle.
         await loadStatus();
       })
       .catch(() => setError("Google authorization could not be saved."))
@@ -228,20 +211,7 @@ function GoogleConnectionSettings() {
     setBusy(true);
     setError(null);
     try {
-      const response = await dashboardFetch(
-        // return=web: the callback comes back here to claim the grant instead
-        // of handing off to the desktop app.
-        "/api/rowboat/v1/google-oauth/start?profile=commitments&return=web",
-        {
-          method: "POST",
-        },
-      );
-      if (!response.ok)
-        throw new Error(`Could not start Google authorization (${response.status})`);
-      const data = StartGoogleOAuth200Response.parse(await response.json());
-      const authorizeURL = safeAuthorizationURL(data.authorizeUrl);
-      if (!authorizeURL) throw new Error("Invalid Google authorization URL");
-      window.location.assign(authorizeURL.toString());
+      window.location.assign((await createGoogleCommitmentsAuthorizationURL()).toString());
     } catch {
       setError("Google authorization could not be started.");
       setBusy(false);

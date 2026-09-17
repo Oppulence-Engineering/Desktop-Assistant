@@ -13,6 +13,7 @@ import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import { Label } from "@oppulence/ui/components/label";
 import { capture, RevenueEvents } from "@/lib/analytics";
+import { createGoogleCommitmentsAuthorizationURL } from "@/lib/api/connectors/google-oauth";
 import {
   downloadMarkdown,
   friendlyRevenueError,
@@ -53,6 +54,7 @@ function ReportBody() {
     [router],
   );
   const [starting, setStarting] = React.useState(false);
+  const [connecting, setConnecting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   const sourcesQuery = useQuery({
@@ -123,6 +125,17 @@ function ReportBody() {
     }
   }, [health, setScanId]);
 
+  const connectGoogle = React.useCallback(async () => {
+    setConnecting(true);
+    setError(null);
+    try {
+      window.location.assign((await createGoogleCommitmentsAuthorizationURL()).toString());
+    } catch {
+      setError("Google authorization could not be started. Please try again.");
+      setConnecting(false);
+    }
+  }, []);
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-10">
       <header>
@@ -166,9 +179,20 @@ function ReportBody() {
           <CircleNotchIcon className="size-4 animate-spin" /> Loading your report.
         </p>
       ) : health === "not_connected" ? (
-        <ConnectStep />
+        <GoogleConnectionStep
+          busy={connecting}
+          onConnect={() => {
+            void connectGoogle();
+          }}
+        />
       ) : health === "needs_reconnect" ? (
-        <ReconnectStep />
+        <GoogleConnectionStep
+          busy={connecting}
+          onConnect={() => {
+            void connectGoogle();
+          }}
+          reconnect
+        />
       ) : !effectiveScanId ? (
         <StartStep
           onRun={() => {
@@ -213,41 +237,34 @@ function ReportBody() {
   );
 }
 
-// Step one, and the only thing asked for. No model key, no workspace setup.
-function ConnectStep() {
+function GoogleConnectionStep({
+  busy,
+  onConnect,
+  reconnect = false,
+}: {
+  busy: boolean;
+  onConnect: () => void;
+  reconnect?: boolean;
+}) {
   return (
     <WorkspaceEmptyState
       action={
-        <Button asChild className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]" size="sm">
-          <Link href="/app/settings?settings=connections">
-            <PlugsIcon /> Connect Gmail &amp; Calendar
-          </Link>
+        <Button
+          className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+          disabled={busy}
+          onClick={onConnect}
+          size="sm"
+          type="button"
+        >
+          {busy ? <CircleNotchIcon className="animate-spin" /> : <PlugsIcon />}
+          {busy ? "Connecting…" : reconnect ? "Reconnect Google" : "Connect Gmail & Calendar"}
         </Button>
       }
-      description="Oppulence reads the last 90 days to find promises. Nothing is sent, written, or replied to on your behalf."
-      image="openPromises"
-      learnMore={[
-        { label: "See exact message evidence" },
-        { label: "Nothing is sent on your behalf" },
-      ]}
-      title="Open promises"
-    />
-  );
-}
-
-// The grant died. Offering "find my open promises" here would invite a scan
-// that cannot read anything.
-function ReconnectStep() {
-  return (
-    <WorkspaceEmptyState
-      action={
-        <Button asChild className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]" size="sm">
-          <Link href="/app/settings?settings=connections">
-            <PlugsIcon /> Reconnect Google
-          </Link>
-        </Button>
+      description={
+        reconnect
+          ? "Google stopped accepting the authorization, so we cannot read your mail. Reconnect to run the audit."
+          : "Oppulence reads the last 90 days to find promises. Nothing is sent, written, or replied to on your behalf."
       }
-      description="Google stopped accepting the authorization, so we cannot read your mail. Reconnect to run the audit."
       image="openPromises"
       learnMore={[
         { label: "See exact message evidence" },
