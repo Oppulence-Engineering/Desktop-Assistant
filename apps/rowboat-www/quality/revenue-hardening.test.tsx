@@ -228,6 +228,7 @@ describe("Open Promises report hardening", () => {
     await waitFor(() => {
       expect(mocks.startScan).toHaveBeenCalledOnce();
     });
+    expect(mocks.startScan).toHaveBeenCalledWith(180);
     view.rerender(
       <QueryClientProvider client={view.client}>
         <OpenPromisesReportClient />

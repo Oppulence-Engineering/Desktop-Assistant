@@ -20,6 +20,7 @@ const state = {
   consumedTickets: new Set(),
   lastStart: null,
   lastClaimAuthorization: null,
+  lastScanLookbackDays: null,
   ticketCounter: 0,
   scanCounter: 1,
   resourceCounter: 0,
@@ -29,7 +30,7 @@ const completedScan = {
   id: "00000000-0000-4000-8000-000000000001",
   status: "completed",
   mode: "linked",
-  lookbackDays: 90,
+  lookbackDays: 180,
   threadsSeen: 12,
   candidatesSeen: 4,
   startedAt: "2026-08-28T01:00:00Z",
@@ -38,7 +39,7 @@ const completedScan = {
 
 const openPromisesReport = {
   generatedAt: "2026-08-28T01:05:30Z",
-  lookbackDays: 90,
+  lookbackDays: 180,
   threadsSeen: 12,
   scanStatus: "completed",
   outboundCount: 1,
@@ -208,6 +209,7 @@ const server = http.createServer(async (request, response) => {
     state.consumedTickets.clear();
     state.lastStart = null;
     state.lastClaimAuthorization = null;
+    state.lastScanLookbackDays = null;
     state.ticketCounter = 0;
     state.scanCounter = 1;
     state.resourceCounter = 0;
@@ -223,6 +225,7 @@ const server = http.createServer(async (request, response) => {
       consumedTickets: [...state.consumedTickets],
       lastStart: state.lastStart,
       lastClaimAuthorization: state.lastClaimAuthorization,
+      lastScanLookbackDays: state.lastScanLookbackDays,
     });
   }
   if (url.pathname === "/__test/google-disconnect") {
@@ -460,11 +463,12 @@ const server = http.createServer(async (request, response) => {
   }
   if (url.pathname === "/v1/revenue-leak-scans" && request.method === "POST") {
     const body = await readJSON(request);
+    state.lastScanLookbackDays = body.lookbackDays ?? 180;
     const scan = {
       id: `00000000-0000-4000-8000-${String(++state.scanCounter).padStart(12, "0")}`,
       status: "running",
       mode: "linked",
-      lookbackDays: body.lookbackDays ?? 90,
+      lookbackDays: state.lastScanLookbackDays,
       threadsSeen: 0,
       startedAt: new Date().toISOString(),
     };

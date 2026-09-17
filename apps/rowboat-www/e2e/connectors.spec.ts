@@ -59,6 +59,8 @@ test("Open Promises returns from Google, syncs evidence, and starts one audit", 
   await expect(page.locator("body")).toContainText("Send the revised proposal");
   await expect(page.getByText(/Syncing Google evidence|Google evidence is live/)).toBeVisible();
   await expect(page).not.toHaveURL(/settings/);
+  const state = await (await request.get(`${fakeAPIOrigin}/__test/state`)).json();
+  expect(state.lastScanLookbackDays).toBe(180);
 });
 
 test("callback replay and restart outcomes fail safely without retaining the ticket", async ({
