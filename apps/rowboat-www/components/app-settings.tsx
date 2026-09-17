@@ -24,6 +24,8 @@ import {
 } from "@/components/app-shell";
 import { DeleteAccountRow } from "@/components/features/account/delete-account-row";
 import { ConnectorSettings } from "@/components/features/connectors/connector-settings";
+import { capture, RevenueEvents } from "@/lib/analytics";
+import { startCheckout } from "@/lib/revenue";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import { CardDescription, CardTitle } from "@oppulence/ui/components/card";
@@ -472,14 +474,31 @@ function nameOf(item: unknown): string {
   return JSON.stringify(item);
 }
 
-function PlanSection({ session }: { session: SessionShape }) {
+export function PlanSection({ session }: { session: SessionShape }) {
   const billing = session.billing;
+  const [upgrading, setUpgrading] = React.useState(false);
+  const [upgradeError, setUpgradeError] = React.useState<string | null>(null);
+  const canUpgrade = billing?.plan !== "pro";
   const usage =
     billing?.usage && typeof billing.usage === "object" && !Array.isArray(billing.usage)
       ? Object.entries(billing.usage as Record<string, unknown>).filter(
           ([, value]) => typeof value === "string" || typeof value === "number",
         )
       : [];
+
+  const upgrade = async () => {
+    if (upgrading) return;
+    setUpgrading(true);
+    setUpgradeError(null);
+    capture(RevenueEvents.UpgradeClicked, { from: "settings" });
+    try {
+      const url = await startCheckout("pro");
+      window.location.assign(url);
+    } catch {
+      setUpgradeError("Checkout is temporarily unavailable. Please try again.");
+      setUpgrading(false);
+    }
+  };
 
   return (
     <>
@@ -493,12 +512,25 @@ function PlanSection({ session }: { session: SessionShape }) {
               </p>
             ) : null}
           </div>
-          {billing?.status ? (
-            <Badge className="rounded-[2px] capitalize" variant="outline">
-              {billing.status}
-            </Badge>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {billing?.status ? (
+              <Badge className="rounded-[2px] capitalize" variant="outline">
+                {billing.status}
+              </Badge>
+            ) : null}
+            {canUpgrade ? (
+              <Button disabled={upgrading} onClick={() => void upgrade()} size="sm" type="button">
+                {upgrading ? "Opening checkout…" : "Upgrade to Pro"}
+                <ArrowRight />
+              </Button>
+            ) : null}
+          </div>
         </div>
+        {upgradeError ? (
+          <p className="px-4 pb-4 text-xs text-destructive" role="alert">
+            {upgradeError}
+          </p>
+        ) : null}
       </SettingsRow>
       <SettingsRow description="Metered activity for the current billing period." title="Usage">
         {usage.length === 0 ? (
