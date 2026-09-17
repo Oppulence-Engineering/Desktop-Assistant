@@ -29,10 +29,8 @@ import {
   PromptInputActionMenuContent,
   PromptInputActionAddAttachments,
   PromptInputHeader,
-  type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import { useState, useEffect, useRef, type ReactNode, useCallback, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { SidebarSimple } from "@phosphor-icons/react";
 import {
   Select,
@@ -42,49 +40,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@oppulence/ui/components/select";
-import { dashboardFetch } from "@/lib/auth/client";
-import { readAgentEventStream, type AgentStreamEvent } from "@/lib/agent-stream";
-import {
-  conversationFromAgentEvents,
-  friendlyAgentError,
-  parseAgentSessionEventsResponse,
-  parseAgentSessionsResponse,
-  type AgentHistoryItem,
-  type ApprovalRequest,
-  type ConversationItem,
-} from "@/lib/agent-history";
-import type { DurableAgentSessionEvent } from "@/lib/api/generated/client/model/durableAgentSessionEvent";
-import { parseAgentsResponse } from "@/lib/agents/agent-schemas";
-import { useBooleanPref, usePref } from "@/lib/console-prefs";
-import { requestDashboardJson } from "@/lib/dashboard-json";
+import { useBooleanPref } from "@/lib/console-prefs";
 import type { SelectedResource } from "@/lib/dashboard-resource";
 import {
-  ApprovalTokenResponseSchema,
-  CreatedAgentSessionSchema,
-  MutationResponseSchema,
-} from "@/lib/dashboard-schemas";
-import {
-  prepareWebChatInput,
   WEB_CHAT_ACCEPT,
   WEB_CHAT_MAX_FILE_BYTES,
   WEB_CHAT_MAX_FILES,
 } from "@/lib/chat-attachments";
 import { useProductRouteState } from "@/hooks/use-product-route-state";
 import { useDashboardArtifact } from "@/hooks/use-dashboard-artifact";
-import {
-  listSessions,
-  loadSession,
-  mergeSessionLists,
-  saveSession,
-  type SessionMeta,
-  type SessionScope,
-} from "@/lib/chat-sessions";
-
-type ChatMessage = Extract<AgentHistoryItem, { type: "message" }>;
-
-function stripExtension(name: string): string {
-  return name.replace(/\.[^/.]+$/, "");
-}
+import type { SessionScope } from "@/lib/chat-sessions";
+import { useAgentCatalog } from "@/hooks/use-agent-catalog";
+import { useAgentRun } from "@/hooks/use-agent-run";
+import { useChatSessions } from "@/hooks/use-chat-sessions";
 
 function PageBody({ children }: { children: ReactNode }) {
   const session = useAuthSession();
@@ -113,100 +81,34 @@ function PageBody({ children }: { children: ReactNode }) {
     [session.user.email, session.user.workosUserId],
   );
   const workspace = useWorkspaceLabel(shellUser);
-  const [text, setText] = useState<string>("");
-  const [status, setStatus] = useState<"submitted" | "streaming" | "ready" | "error">("ready");
-  const [chatError, setChatError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Chat state
-  const [runId, setRunId] = useState<string | null>(null);
-  const streamUrl = runId
-    ? `/api/rowboat/v1/agent-sessions/${encodeURIComponent(runId)}/stream`
-    : null;
-  const [isRunProcessing, setIsRunProcessing] = useState(false);
-  const [conversation, setConversation] = useState<ConversationItem[]>([]);
-  const streamAbortRef = useRef<AbortController | null>(null);
-  const committedMessageIds = useRef<Set<string>>(new Set());
-  const isEmptyConversation = conversation.length === 0;
   const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
   const [sidebarOpen, setSidebarOpen] = useBooleanPref("app-sidebar-open", true);
-  const [remoteSessions, setRemoteSessions] = useState<SessionMeta[]>([]);
-  // The local store contains at most 30 entries, so deriving this during render
-  // is cheaper and safer than duplicating synchronized session-list state.
-  const sessions = mergeSessionLists(listSessions(sessionScope), remoteSessions);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const preferredAgent = usePref("default-agent");
-  const [selectedAgentOverride, setSelectedAgent] = useState<string | null>(null);
-  const configuredAgent = selectedAgentOverride ?? preferredAgent ?? "assistant";
-  const { data: discoveredAgents = [], refetch: refetchAgents } = useQuery({
-    queryKey: ["dashboard", "agent-options"],
-    queryFn: async () => {
-      const response = await dashboardFetch("/api/rowboat/v1/agents");
-      if (!response.ok) throw new Error(`Could not load agents (${response.status})`);
-      return parseAgentsResponse(await response.json()).map((agent) => stripExtension(agent.slug));
-    },
-  });
-  const agentOptions = useMemo(
-    () => Array.from(new Set(["assistant", ...discoveredAgents])),
-    [discoveredAgents],
-  );
-  const selectedAgent = agentOptions.includes(configuredAgent) ? configuredAgent : "assistant";
-  const loadAgentOptions = useCallback(async () => {
-    await refetchAgents();
-  }, [refetchAgents]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const response = await dashboardFetch("/api/rowboat/v1/agent-sessions");
-        if (!response.ok) return;
-        const remote = parseAgentSessionsResponse(await response.json()).map<SessionMeta>(
-          (agentSession) => ({
-            runId: agentSession.sessionId,
-            title:
-              agentSession.title ||
-              `${agentSession.agent} · ${new Date(agentSession.lastActivityAt || agentSession.createdAt).toLocaleDateString()}`,
-            agent: agentSession.agent,
-            updatedAt: new Date(agentSession.lastActivityAt || agentSession.createdAt).getTime(),
-          }),
-        );
-        if (!cancelled) setRemoteSessions(remote);
-      } catch (error) {
-        console.error("Failed to load durable chat history", error);
-      }
-    };
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionScope]);
-
-  // Retain the transcript only for this authenticated in-memory session.
-  useEffect(() => {
-    if (!runId || conversation.length === 0) return;
-    const firstMessage = conversation.find(
-      (item): item is ChatMessage => item.type === "message" && item.role === "user",
-    );
-    saveSession(sessionScope, {
-      runId,
-      title: (firstMessage?.content || "New conversation").slice(0, 60),
-      agent: selectedAgent,
-      updatedAt: Date.now(),
-      items: conversation,
-    });
-  }, [conversation, runId, selectedAgent, sessionScope]);
+  const { agentOptions, refreshAgents, selectedAgent, setSelectedAgent } = useAgentCatalog();
+  const {
+    beginOpenRun,
+    chatError,
+    conversation,
+    failOpenRun,
+    openRun,
+    processing,
+    resetRun,
+    resolveApproval,
+    runId,
+    setChatError,
+    setText,
+    status,
+    stopRun,
+    submit,
+    text,
+  } = useAgentRun(selectedAgent);
 
   const startNewChat = useCallback(() => {
-    streamAbortRef.current?.abort();
-    streamAbortRef.current = null;
-    committedMessageIds.current = new Set();
-    setRunId(null);
-    setConversation([]);
-    setStatus("ready");
+    resetRun();
     setSelectedResource(null);
     navigateTo("chat");
-  }, [navigateTo]);
+  }, [navigateTo, resetRun]);
 
   const selectAgent = useCallback(
     (agent: string) => {
@@ -214,8 +116,19 @@ function PageBody({ children }: { children: ReactNode }) {
       startNewChat();
       setSelectedAgent(agent);
     },
-    [selectedAgent, startNewChat],
+    [selectedAgent, setSelectedAgent, startNewChat],
   );
+
+  const { openSession: loadSession, sessions } = useChatSessions({
+    activeRunId: runId,
+    conversation,
+    onBeginOpen: beginOpenRun,
+    onFailedOpen: failOpenRun,
+    onOpen: openRun,
+    onSelectAgent: setSelectedAgent,
+    scope: sessionScope,
+    selectedAgent,
+  });
 
   const openSession = useCallback(
     async (nextRunId: string) => {
@@ -223,55 +136,11 @@ function PageBody({ children }: { children: ReactNode }) {
         navigateTo("chat");
         return;
       }
-      const stored = loadSession(sessionScope, nextRunId);
       navigateTo("chat");
-      streamAbortRef.current?.abort();
-      streamAbortRef.current = null;
       setSelectedResource(null);
-      setChatError(null);
-
-      try {
-        let items = stored?.items;
-        const meta = sessions.find((entry) => entry.runId === nextRunId);
-        if (!items) {
-          setStatus("submitted");
-          const events: DurableAgentSessionEvent[] = [];
-          let afterSeq: number | undefined;
-          // ponytail: cap pathological histories; add virtualized incremental loading past 50k events.
-          for (let page = 0; page < 50; page += 1) {
-            const query = new URLSearchParams({ limit: "1000" });
-            if (afterSeq !== undefined) query.set("afterSeq", String(afterSeq));
-            const response = await dashboardFetch(
-              `/api/rowboat/v1/agent-sessions/${encodeURIComponent(nextRunId)}/events?${query}`,
-            );
-            if (!response.ok) throw new Error(`Could not load conversation (${response.status})`);
-            const data = parseAgentSessionEventsResponse(await response.json());
-            events.push(...data.events);
-            if (data.nextSeq == null || data.nextSeq === afterSeq) break;
-            afterSeq = data.nextSeq;
-          }
-          items = conversationFromAgentEvents(events);
-          saveSession(sessionScope, {
-            runId: nextRunId,
-            title: meta?.title || "Conversation",
-            agent: meta?.agent,
-            updatedAt: meta?.updatedAt || Date.now(),
-            items,
-          });
-        }
-        committedMessageIds.current = new Set(items.map((item) => item.id));
-        setConversation(items);
-        setStatus("ready");
-        if (stored?.agent || meta?.agent)
-          setSelectedAgent(stored?.agent || meta?.agent || "assistant");
-        setRunId(nextRunId);
-      } catch (error) {
-        setConversation([]);
-        setStatus("error");
-        setChatError(error instanceof Error ? error.message : "Could not load conversation");
-      }
+      await loadSession(nextRunId);
     },
-    [navigateTo, runId, sessionScope, sessions],
+    [loadSession, navigateTo, runId],
   );
 
   useEffect(() => {
@@ -307,74 +176,6 @@ function PageBody({ children }: { children: ReactNode }) {
   }, [toggleSidebar]);
   const artifact = useDashboardArtifact(selectedResource);
 
-  const stopRun = async () => {
-    if (!runId) return;
-    setStatus("submitted");
-    try {
-      await requestDashboardJson(
-        `/agent-sessions/${encodeURIComponent(runId)}/cancel`,
-        MutationResponseSchema,
-        { method: "POST" },
-      );
-      streamAbortRef.current?.abort();
-      streamAbortRef.current = null;
-      setRunId(null);
-      setIsRunProcessing(false);
-      setStatus("ready");
-    } catch (error) {
-      setChatError(error instanceof Error ? error.message : "Could not stop the run");
-      setStatus("streaming");
-    }
-  };
-
-  const resolveApproval = async (approval: ApprovalRequest, decision: "granted" | "denied") => {
-    if (!runId) return;
-    setConversation((items) =>
-      items.map((item) =>
-        item.type === "approval" && item.approvalId === approval.approvalId
-          ? { ...item, status: "resolving" }
-          : item,
-      ),
-    );
-    try {
-      let approvalToken: string | undefined;
-      if (decision === "granted" && approval.trustTier === "money-moving") {
-        const token = await requestDashboardJson(
-          `/agent-sessions/${encodeURIComponent(runId)}/approvals/${encodeURIComponent(approval.approvalId)}/token`,
-          ApprovalTokenResponseSchema,
-          { method: "POST" },
-        );
-        approvalToken = token?.approvalToken;
-        if (!approvalToken) throw new Error("The approval token could not be created");
-      }
-      await requestDashboardJson(
-        `/agent-sessions/${encodeURIComponent(runId)}/approvals/${encodeURIComponent(approval.approvalId)}`,
-        MutationResponseSchema,
-        {
-          method: "POST",
-          headers: approvalToken ? { "X-Approval-Token": approvalToken } : undefined,
-          body: JSON.stringify({ decision }),
-        },
-      );
-      setConversation((items) =>
-        items.map((item) =>
-          item.type === "approval" && item.approvalId === approval.approvalId
-            ? { ...item, status: decision }
-            : item,
-        ),
-      );
-    } catch (error) {
-      setConversation((items) =>
-        items.map((item) =>
-          item.type === "approval" && item.approvalId === approval.approvalId
-            ? { ...item, status: "pending" }
-            : item,
-        ),
-      );
-      setChatError(error instanceof Error ? error.message : "Could not resolve the approval");
-    }
-  };
-
   const renderPromptInput = () => (
     <div className="space-y-2">
       {chatError ? (
@@ -389,7 +190,7 @@ function PageBody({ children }: { children: ReactNode }) {
         maxFileSize={WEB_CHAT_MAX_FILE_BYTES}
         multiple
         onError={({ message }) => setChatError(message)}
-        onSubmit={handleSubmit}
+        onSubmit={submit}
       >
         <PromptInputHeader>
           <PromptInputAttachments>
@@ -448,316 +249,12 @@ function PageBody({ children }: { children: ReactNode }) {
     </div>
   );
 
-  // Handle different event types from the copilot
-  const handleEvent = useCallback((event: AgentStreamEvent) => {
-    console.log("Event received:", event.type, event);
-    const payload = event.data;
-
-    switch (event.type) {
-      case "agent.session_started":
-      case "agent.turn_started":
-      case "agent.llm_call_started":
-        setIsRunProcessing(true);
-        setStatus("streaming");
-        break;
-
-      case "agent.message": {
-        const content = typeof payload.content === "string" ? payload.content : "";
-        const messageId = `assistant-${event.seq ?? Date.now()}`;
-        if (!content || committedMessageIds.current.has(messageId)) break;
-        committedMessageIds.current.add(messageId);
-        setConversation((items) => [
-          ...items,
-          {
-            id: messageId,
-            type: "message",
-            role: "assistant",
-            content,
-            timestamp: Date.now(),
-          },
-        ]);
-        break;
-      }
-
-      case "agent.tool_call_started": {
-        const id = `tool-${event.turnSeq ?? "unknown"}-${String(payload.callIndex ?? "unknown")}`;
-        const name = typeof payload.tool === "string" ? payload.tool : "tool";
-        setConversation((items) =>
-          items.some((item) => item.id === id)
-            ? items.map((item) =>
-                item.id === id && item.type === "tool" ? { ...item, status: "running" } : item,
-              )
-            : [
-                ...items,
-                {
-                  id,
-                  type: "tool",
-                  name,
-                  input: {},
-                  status: "running",
-                  timestamp: Date.now(),
-                },
-              ],
-        );
-        break;
-      }
-
-      case "agent.tool_call_completed": {
-        const id = `tool-${event.turnSeq ?? "unknown"}-${String(payload.callIndex ?? "unknown")}`;
-        const failed = Boolean(payload.error || payload.errorCode);
-        setConversation((items) =>
-          items.map((item) =>
-            item.id === id && item.type === "tool"
-              ? {
-                  ...item,
-                  result: failed
-                    ? payload.error || payload.errorCode
-                    : { resultBytes: payload.resultBytes ?? 0 },
-                  status: failed ? "error" : "completed",
-                }
-              : item,
-          ),
-        );
-        break;
-      }
-
-      case "agent.tool_denied": {
-        const name = typeof payload.tool === "string" ? payload.tool : "tool";
-        const id = `tool-denied-${event.seq ?? Date.now()}`;
-        setConversation((items) =>
-          items.some((item) => item.id === id)
-            ? items
-            : [
-                ...items,
-                {
-                  id,
-                  type: "tool",
-                  name,
-                  input: {},
-                  result: typeof payload.reason === "string" ? payload.reason : "Denied by policy",
-                  status: "error",
-                  timestamp: Date.now(),
-                },
-              ],
-        );
-        break;
-      }
-
-      case "agent.approval_requested": {
-        const approvalId = typeof payload.approvalId === "string" ? payload.approvalId : "";
-        if (!approvalId) break;
-        setConversation((items) =>
-          items.some((item) => item.type === "approval" && item.approvalId === approvalId)
-            ? items
-            : [
-                ...items,
-                {
-                  id: `approval-${approvalId}`,
-                  type: "approval",
-                  approvalId,
-                  name: typeof payload.tool === "string" ? payload.tool : "External action",
-                  trustTier: typeof payload.trustTier === "string" ? payload.trustTier : "act",
-                  input: payload.args ?? {},
-                  status: "pending",
-                  timestamp: Date.now(),
-                },
-              ],
-        );
-        setIsRunProcessing(false);
-        setStatus("ready");
-        break;
-      }
-
-      case "agent.approval_resolved": {
-        const approvalId = typeof payload.approvalId === "string" ? payload.approvalId : "";
-        const decision = payload.decision === "granted" ? "granted" : "denied";
-        setConversation((items) =>
-          items.map((item) =>
-            item.type === "approval" && item.approvalId === approvalId
-              ? { ...item, status: decision }
-              : item,
-          ),
-        );
-        setIsRunProcessing(true);
-        setStatus("streaming");
-        break;
-      }
-
-      case "agent.turn_completed":
-        setIsRunProcessing(false);
-        setStatus("ready");
-        break;
-
-      case "agent.turn_failed":
-      case "agent.session_failed":
-      case "agent.limit_exceeded":
-        setChatError(
-          typeof payload.error === "string"
-            ? friendlyAgentError(payload.error)
-            : event.type === "agent.limit_exceeded"
-              ? "This run reached its configured limit."
-              : "The agent run failed.",
-        );
-        setIsRunProcessing(false);
-        setStatus("error");
-        break;
-
-      case "agent.session_completed":
-      case "agent.session_canceled":
-      case "agent.session_paused":
-        setIsRunProcessing(false);
-        setStatus("ready");
-        break;
-
-      default:
-        console.log("Unhandled event type:", event.type);
-    }
-  }, []);
-
-  // Follow the durable NDJSON session stream. The sequence cursor makes a
-  // reconnect gap-free without committing duplicate messages.
-  useEffect(() => {
-    if (!streamUrl) return;
-    const controller = new AbortController();
-    streamAbortRef.current = controller;
-    let afterSeq = -1;
-    let terminal = false;
-
-    const reconnectDelay = () =>
-      new Promise<void>((resolve) => {
-        const timeout = window.setTimeout(resolve, 1_000);
-        controller.signal.addEventListener(
-          "abort",
-          () => {
-            window.clearTimeout(timeout);
-            resolve();
-          },
-          { once: true },
-        );
-      });
-
-    const follow = async () => {
-      while (!controller.signal.aborted && !terminal) {
-        try {
-          const cursor = afterSeq >= 0 ? `?afterSeq=${afterSeq}` : "";
-          const response = await dashboardFetch(`${streamUrl}${cursor}`, {
-            headers: { Accept: "application/x-ndjson" },
-            signal: controller.signal,
-          });
-          if (!response.ok || !response.body) {
-            throw new Error(`Agent stream failed (${response.status})`);
-          }
-          setChatError((current) =>
-            current === "Connection to the agent was interrupted. Reconnecting…" ? null : current,
-          );
-          await readAgentEventStream(response.body, (event) => {
-            afterSeq = Math.max(afterSeq, event.seq);
-            terminal =
-              event.type === "agent.session_completed" ||
-              event.type === "agent.session_failed" ||
-              event.type === "agent.session_canceled";
-            handleEvent(event);
-          });
-        } catch (error) {
-          if (controller.signal.aborted) return;
-          console.error("Agent stream interrupted:", error);
-          setChatError("Connection to the agent was interrupted. Reconnecting…");
-        }
-        if (!terminal) await reconnectDelay();
-      }
-    };
-
-    void follow();
-
-    return () => {
-      controller.abort();
-      if (streamAbortRef.current === controller) streamAbortRef.current = null;
-    };
-  }, [handleEvent, streamUrl]);
-
-  const handleSubmit = async (message: PromptInputMessage) => {
-    const hasText = Boolean(message.text);
-    const hasAttachments = Boolean(message.files?.length);
-
-    if (!(hasText || hasAttachments)) {
-      return;
-    }
-
-    let prepared: Awaited<ReturnType<typeof prepareWebChatInput>>;
-    try {
-      prepared = await prepareWebChatInput(message);
-    } catch (error) {
-      const nextError = error instanceof Error ? error : new Error("Could not read attachment");
-      setChatError(nextError.message);
-      setStatus("error");
-      setTimeout(() => setStatus("ready"), 2000);
-      throw nextError;
-    }
-
-    const userMessage = message.text || "";
-
-    // Add user message immediately with unique ID
-    const userMessageId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    setConversation((prev) => [
-      ...prev,
-      {
-        id: userMessageId,
-        type: "message",
-        role: "user",
-        content: prepared.display,
-        timestamp: Date.now(),
-      },
-    ]);
-
-    setStatus("submitted");
-    setChatError(null);
-    setText("");
-
-    try {
-      let nextRunId = runId;
-      if (!nextRunId) {
-        const runData = await requestDashboardJson("/agent-sessions/", CreatedAgentSessionSchema, {
-          method: "POST",
-          body: JSON.stringify({
-            agent: selectedAgent,
-            input: prepared.input,
-            title: prepared.display.slice(0, 120),
-            channel: "web",
-          }),
-        });
-        nextRunId = runData.sessionId;
-        setRunId(nextRunId);
-      } else {
-        await requestDashboardJson(
-          `/agent-sessions/${encodeURIComponent(nextRunId)}/turns`,
-          MutationResponseSchema,
-          {
-            method: "POST",
-            body: JSON.stringify({
-              input: prepared.input,
-            }),
-          },
-        );
-      }
-
-      setStatus("streaming");
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      setConversation((current) => current.filter((item) => item.id !== userMessageId));
-      setText(userMessage);
-      setChatError(error instanceof Error ? error.message : "Failed to send message");
-      setStatus("error");
-      setTimeout(() => setStatus("ready"), 2000);
-      throw error;
-    }
-  };
-
   const routeContext: DashboardRouteContextValue = {
     chat: {
       workspace,
-      processing: isRunProcessing,
+      processing,
       conversation,
-      empty: isEmptyConversation,
+      empty: conversation.length === 0,
       promptInput: renderPromptInput(),
       artifact: artifact
         ? {
@@ -770,7 +267,7 @@ function PageBody({ children }: { children: ReactNode }) {
       onResolveApproval: resolveApproval,
     },
     agents: {
-      onAgentsChanged: loadAgentOptions,
+      onAgentsChanged: refreshAgents,
       onOpenDefinition: (slug) => {
         setSelectedResource({ kind: "agent", name: slug });
         navigateTo("chat");

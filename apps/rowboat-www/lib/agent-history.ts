@@ -4,6 +4,11 @@ import {
   ListAgentSessionEvents200Response,
   ListAgentSessions200Response,
 } from "@/lib/api/generated/zod/agent-sessions/agent-sessions";
+import {
+  AgentStreamEventSchema,
+  parseKnownAgentStreamEvent,
+  type KnownAgentStreamEvent,
+} from "@/lib/agent-stream";
 
 export type AgentSessionSummary = Pick<
   DurableAgentSessionView,
@@ -86,75 +91,140 @@ export type ReasoningBlock = {
 
 export type ConversationItem = AgentHistoryItem | ReasoningBlock;
 
+function toolEventId(event: KnownAgentStreamEvent): string {
+  return `tool-${event.turnSeq ?? "unknown"}-${String(event.data.callIndex ?? "unknown")}`;
+}
+
+/** Applies one validated transcript event without mutating existing state. */
+export function applyAgentEvent(
+  items: AgentHistoryItem[],
+  event: KnownAgentStreamEvent,
+  now?: number,
+): AgentHistoryItem[];
+export function applyAgentEvent(
+  items: ConversationItem[],
+  event: KnownAgentStreamEvent,
+  now?: number,
+): ConversationItem[];
+export function applyAgentEvent(
+  items: ConversationItem[],
+  event: KnownAgentStreamEvent,
+  now = Date.now(),
+): ConversationItem[] {
+  switch (event.type) {
+    case "agent.message": {
+      const content = event.data.content;
+      const id = `assistant-${event.seq}`;
+      if (!content || items.some((item) => item.id === id)) return items;
+      return [...items, { id, type: "message", role: "assistant", content, timestamp: now }];
+    }
+    case "agent.tool_call_started": {
+      const id = toolEventId(event);
+      if (items.some((item) => item.id === id)) {
+        return items.map((item) =>
+          item.id === id && item.type === "tool" ? { ...item, status: "running" } : item,
+        );
+      }
+      return [
+        ...items,
+        {
+          id,
+          type: "tool",
+          name: event.data.tool,
+          input: {},
+          status: "running",
+          timestamp: now,
+        },
+      ];
+    }
+    case "agent.tool_call_completed": {
+      const id = toolEventId(event);
+      const failed = Boolean(event.data.error || event.data.errorCode);
+      return items.map((item) =>
+        item.id === id && item.type === "tool"
+          ? {
+              ...item,
+              result: failed
+                ? event.data.error || event.data.errorCode
+                : { resultBytes: event.data.resultBytes ?? 0 },
+              status: failed ? "error" : "completed",
+            }
+          : item,
+      );
+    }
+    case "agent.tool_denied": {
+      const id = `tool-denied-${event.seq}`;
+      if (items.some((item) => item.id === id)) return items;
+      return [
+        ...items,
+        {
+          id,
+          type: "tool",
+          name: event.data.tool,
+          input: {},
+          result: event.data.reason,
+          status: "error",
+          timestamp: now,
+        },
+      ];
+    }
+    case "agent.approval_requested": {
+      const approvalId = event.data.approvalId;
+      if (
+        !approvalId ||
+        items.some((item) => item.type === "approval" && item.approvalId === approvalId)
+      ) {
+        return items;
+      }
+      return [
+        ...items,
+        {
+          id: `approval-${approvalId}`,
+          type: "approval",
+          approvalId,
+          name: event.data.tool,
+          trustTier: event.data.trustTier,
+          input: event.data.args ?? {},
+          status: "pending",
+          timestamp: now,
+        },
+      ];
+    }
+    case "agent.approval_resolved": {
+      const approvalId = event.data.approvalId;
+      if (!approvalId) return items;
+      return items.map((item) =>
+        item.type === "approval" && item.approvalId === approvalId
+          ? { ...item, status: event.data.decision }
+          : item,
+      );
+    }
+    default:
+      return items;
+  }
+}
+
 export function conversationFromAgentEvents(
   events: DurableAgentSessionEvent[],
 ): AgentHistoryItem[] {
-  const items: AgentHistoryItem[] = [];
-  for (const event of events) {
-    const data = event.data;
-    if (event.type === "agent.turn_started" && typeof data.input === "string") {
-      items.push({
-        id: `user-event-${event.seq}`,
-        type: "message",
-        role: "user",
-        content: data.input,
-        timestamp: Date.now(),
-      });
-    } else if (event.type === "agent.message" && typeof data.content === "string") {
-      items.push({
-        id: `assistant-${event.seq}`,
-        type: "message",
-        role: "assistant",
-        content: data.content,
-        timestamp: Date.now(),
-      });
-    } else if (event.type === "agent.tool_call_started") {
-      items.push({
-        id: `tool-${event.turnSeq ?? "unknown"}-${String(data.callIndex ?? "unknown")}`,
-        type: "tool",
-        name: typeof data.tool === "string" ? data.tool : "tool",
-        input: {},
-        status: "running",
-        timestamp: Date.now(),
-      });
-    } else if (event.type === "agent.tool_call_completed") {
-      const id = `tool-${event.turnSeq ?? "unknown"}-${String(data.callIndex ?? "unknown")}`;
-      const failed = Boolean(data.error || data.errorCode);
-      const tool = items.find((item) => item.type === "tool" && item.id === id);
-      if (tool?.type === "tool") {
-        tool.result = failed
-          ? data.error || data.errorCode
-          : { resultBytes: data.resultBytes ?? 0 };
-        tool.status = failed ? "error" : "completed";
-      }
-    } else if (event.type === "agent.tool_denied") {
-      items.push({
-        id: `tool-denied-${event.seq}`,
-        type: "tool",
-        name: typeof data.tool === "string" ? data.tool : "tool",
-        input: {},
-        result: typeof data.reason === "string" ? data.reason : "Denied by policy",
-        status: "error",
-        timestamp: Date.now(),
-      });
-    } else if (event.type === "agent.approval_requested" && typeof data.approvalId === "string") {
-      items.push({
-        id: `approval-${data.approvalId}`,
-        type: "approval",
-        approvalId: data.approvalId,
-        name: typeof data.tool === "string" ? data.tool : "External action",
-        trustTier: typeof data.trustTier === "string" ? data.trustTier : "act",
-        input: data.args ?? {},
-        status: "pending",
-        timestamp: Date.now(),
-      });
-    } else if (event.type === "agent.approval_resolved" && typeof data.approvalId === "string") {
-      const approval = items.find(
-        (item) => item.type === "approval" && item.approvalId === data.approvalId,
-      );
-      if (approval?.type === "approval") {
-        approval.status = data.decision === "granted" ? "granted" : "denied";
-      }
+  let items: AgentHistoryItem[] = [];
+  for (const rawEvent of events) {
+    const event = parseKnownAgentStreamEvent(AgentStreamEventSchema.parse(rawEvent));
+    if (!event) continue;
+
+    if (event.type === "agent.turn_started" && event.data.input) {
+      items = [
+        ...items,
+        {
+          id: `user-event-${event.seq}`,
+          type: "message",
+          role: "user",
+          content: event.data.input,
+          timestamp: Date.now(),
+        },
+      ];
+    } else {
+      items = applyAgentEvent(items, event);
     }
   }
   return items;
