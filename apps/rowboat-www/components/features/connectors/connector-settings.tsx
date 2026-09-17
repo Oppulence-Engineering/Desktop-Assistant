@@ -215,7 +215,9 @@ function GoogleConnectionSettings() {
     setError(null);
     try {
       const response = await dashboardFetch(
-        "/api/rowboat/v1/google-oauth/start?profile=commitments",
+        // return=web: the callback comes back here to claim the grant instead
+        // of handing off to the desktop app.
+        "/api/rowboat/v1/google-oauth/start?profile=commitments&return=web",
         {
           method: "POST",
         },

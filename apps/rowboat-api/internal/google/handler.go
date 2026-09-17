@@ -198,8 +198,8 @@ func (h *Handler) SetOAuthFlow(authorizeURL, redirectURI, deepLinkScheme string,
 	}
 }
 
-// SetWebReturnURL configures the browser return target. Invalid or non-HTTP
-// values fail closed to the desktop deep link.
+// SetWebReturnURL configures where a flow the web app started returns to.
+// Invalid or non-HTTP values fail closed to the desktop deep link.
 func (h *Handler) SetWebReturnURL(raw string) {
 	u, err := url.Parse(raw)
 	if err == nil && u.Host != "" && (u.Scheme == "http" || u.Scheme == "https") {
@@ -271,7 +271,13 @@ type parkedPayload struct {
 	// id_token; persisted as the connection's external_account_id so provider
 	// webhooks can resolve the owning user (RFC 003).
 	AccountEmail string `json:"account_email,omitempty"`
+	// ReturnTo is "web" when the web app started the flow. The callback then
+	// returns the browser to the web app, which claims the ticket there.
+	ReturnTo string `json:"return_to,omitempty"`
 }
+
+// returnToWeb marks a flow the web app started.
+const returnToWeb = "web"
 
 // Claim handles POST /v1/google-oauth/claim. Reads and consumes the parked
 // ticket, persists the connection, and returns the token bundle.

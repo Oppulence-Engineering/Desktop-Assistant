@@ -290,6 +290,57 @@ func TestStartBindsTicketAndWrongUserCannotClaim(t *testing.T) {
 	}
 }
 
+// The reported bug: a reconnect started in the web app went through Google,
+// then the callback sent the browser to the desktop deep link. The web app
+// never saw the ticket, never claimed it, and the dead grant stayed dead. The
+// flow now returns to whichever client started it.
+func TestCallbackReturnsToTheClientThatStartedTheFlow(t *testing.T) {
+	_, ctx, _, _, h := setup(t)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"access_token":"ya29.new","refresh_token":"1//new","expires_in":3600,"token_type":"Bearer"}`))
+	}))
+	defer upstream.Close()
+	h.SetOAuthFlow("https://accounts.example/authorize", "https://api.example/oauth/google/callback", "rowboat", nil)
+	h.SetTokenURL(upstream.URL)
+	h.SetWebReturnURL("https://app.example/app/settings?settings=connections")
+
+	for _, tc := range []struct {
+		name  string
+		start string
+		want  string
+	}{
+		{"web", "/v1/google-oauth/start?profile=commitments&return=web", "https://app.example/app/settings?google_session="},
+		{"desktop", "/v1/google-oauth/start", "rowboat://oauth/google/done?session="},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			h.Start(rec, httptest.NewRequest(http.MethodPost, tc.start, nil).WithContext(ctx))
+			var start struct {
+				AuthorizeURL string `json:"authorizeUrl"`
+			}
+			if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &start) != nil {
+				t.Fatalf("start: %d: %s", rec.Code, rec.Body.String())
+			}
+			authorize, err := url.Parse(start.AuthorizeURL)
+			if err != nil {
+				t.Fatal(err)
+			}
+			state := authorize.Query().Get("state")
+
+			callback := httptest.NewRecorder()
+			h.Callback(callback, httptest.NewRequest(http.MethodGet,
+				"/oauth/google/callback?state="+url.QueryEscape(state)+"&code=auth-code", nil))
+			body := callback.Body.String()
+			if !strings.Contains(body, "Google connected") {
+				t.Fatalf("callback did not complete: %s", body)
+			}
+			if !strings.Contains(body, tc.want) {
+				t.Fatalf("callback returns to the wrong client, want %q in: %s", tc.want, body)
+			}
+		})
+	}
+}
+
 func TestStartCommitmentsProfileUsesLeastPrivilegeScopes(t *testing.T) {
 	_, ctx, _, _, h := setup(t)
 	h.SetOAuthFlow("https://accounts.example/authorize", "https://api.example/oauth/google/callback", "rowboat", nil)
