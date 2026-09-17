@@ -46,11 +46,11 @@ describe("Better Auth–style app shell", () => {
     expect(layout).toContain('data-scroll-behavior="smooth"');
     expect(providers).toContain("ThemeProvider");
     expect(providers).toContain("Toaster");
-    expect(layout).toContain("react-scan/dist/auto.global.js");
+    expect(layout).toContain("react-scan@0.5.7/dist/auto.global.js");
     expect(layout).toContain("react-grab/dist/index.global.js");
     expect(layout).toContain("@react-grab/mcp/dist/client.global.js");
     expect(layout).toContain('activationKey: " "');
-    expect(layout.indexOf("react-scan/dist/auto.global.js")).toBeLessThan(
+    expect(layout.indexOf("react-scan@0.5.7/dist/auto.global.js")).toBeLessThan(
       layout.indexOf("react-grab/dist/index.global.js"),
     );
   });
