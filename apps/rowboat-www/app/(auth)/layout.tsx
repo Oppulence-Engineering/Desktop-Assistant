@@ -1,4 +1,11 @@
 import { DM_Mono, DM_Sans, Space_Grotesk } from "next/font/google";
+import { redirect } from "next/navigation";
+
+import { isSessionUsable } from "@/lib/auth/cookies";
+import { getOptionalSession } from "@/lib/auth/session";
+
+// The authenticated redirect must resolve before any login UI is streamed.
+export const instant = false;
 
 // The auth pages share the public site's type system (DM Sans body, Space
 // Grotesk display, DM Mono accents) so sign-in doesn't visually detach from
@@ -28,7 +35,14 @@ export const viewport = {
   themeColor: "#ffffff",
 };
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  // Auth routes are public only for anonymous users. Resolving this in their
+  // shared server layout avoids rendering a login prompt while a valid sealed
+  // session is already available to the same request.
+  if (isSessionUsable(await getOptionalSession())) {
+    redirect("/app");
+  }
+
   return (
     <div className={`${dmSans.variable} ${dmMono.variable} ${spaceGrotesk.variable}`}>
       {children}
