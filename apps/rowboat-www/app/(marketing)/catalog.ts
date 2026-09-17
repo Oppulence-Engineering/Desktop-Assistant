@@ -102,7 +102,7 @@ export const featurePages: CapabilityPage[] = [
     },
     workflow: [
       "Connect Gmail. Add calendar, Slack, or HubSpot when you want those traces too.",
-      "Oppulence scans a recent window — about 90 days of mail, 180 days of calendar in the current connector set.",
+      "Oppulence scans the last 180 days of mail and calendar in the current connector set.",
       "Each finding is a commitment with a direction, a date if one was said, and a link back to the source.",
       "You review the register. Silence, a missed date, or a money-state change moves the row into the attention queue.",
     ],
@@ -147,7 +147,7 @@ export const featurePages: CapabilityPage[] = [
       {
         question: "How far back does it read?",
         answer:
-          "The current connector windows are about 90 days of Gmail, 180 days of calendar, 90 days of Slack, and 365 days of HubSpot. That is a product limit, not a marketing one.",
+          "The current connector windows are 180 days of Gmail and calendar, 90 days of Slack, and 365 days of HubSpot. That is a product limit, not a marketing one.",
       },
     ],
     related: [
@@ -689,7 +689,7 @@ export const useCasePages: CapabilityPage[] = [
     capabilities: [
       {
         title: "Watch is free",
-        body: "The published plans start with a 90-day report. Upgrade when the live register becomes a weekly habit, not before.",
+        body: "The published plans start with a 6-month report. Upgrade when the live register becomes a weekly habit, not before.",
       },
     ],
     examples: [
@@ -926,7 +926,7 @@ export const integrationPages: CapabilityPage[] = [
     ],
     examples: [
       {
-        title: "Two minutes, then a 90-day pass",
+        title: "Two minutes, then a 6-month pass",
         body: "That is the Watch plan's job: a first report over recent mail, with source links.",
       },
     ],
@@ -935,7 +935,7 @@ export const integrationPages: CapabilityPage[] = [
     faqs: [
       {
         question: "Do you read the whole history of the account?",
-        answer: "The current Gmail window is about 90 days. That is intentional.",
+        answer: "The current Gmail window is 6 months. That is intentional.",
       },
     ],
     related: [
@@ -1017,7 +1017,7 @@ export const integrationPages: CapabilityPage[] = [
     workflow: [
       "Start Slack OAuth from settings.",
       "Choose the channels that actually hold customer work.",
-      "Let the recent window (about 90 days) land on the register.",
+      "Let the 6-month window land on the register.",
       "Approve a reply if you want Oppulence to draft in Slack.",
     ],
     capabilities: [

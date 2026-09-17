@@ -148,7 +148,7 @@ export const comparePages: ComparePage[] = [
     title: "The sent folder is the real ledger, and nobody reads it.",
     description:
       "Gmail already has the promise. Oppulence is how that sentence becomes a row you can still find after the thread goes quiet.",
-    lede: "If you connect one thing, connect Gmail. Access starts read-only. The current window is about 90 days. That is a product limit.",
+    lede: "If you connect one thing, connect Gmail. Access starts read-only. The current window is 6 months. That is a product limit.",
     them: {
       title: "What the inbox is for.",
       body: "Writing and finding threads. Search works if you remember the words. It does not answer 'what did we owe Acme after Thursday'.",
@@ -161,7 +161,7 @@ export const comparePages: ComparePage[] = [
       {
         label: "Read window",
         them: "The whole mailbox, if you search it",
-        us: "About 90 days of Gmail in the current connector",
+        us: "6 months of Gmail in the current connector",
       },
       { label: "Write", them: "You send", us: "gmail_draft and gmail_send, after approval" },
       { label: "Calendar", them: "A separate Google product", us: "Same Google OAuth start path" },
@@ -173,7 +173,7 @@ export const comparePages: ComparePage[] = [
     faqs: [
       {
         question: "Do you read the whole history of the account?",
-        answer: "The current Gmail window is about 90 days. That is intentional.",
+        answer: "The current Gmail window is 6 months. That is intentional.",
       },
       {
         question: "Will it send without me?",

@@ -41,7 +41,7 @@ export const featureLinks: LinkItem[] = [
   {
     label: "Relationship State Engine",
     href: "/ai-help-center",
-    description: "Find missed commitments and warm opportunities in the last 60–90 days",
+    description: "Find missed commitments and warm opportunities in the last 6 months",
   },
   {
     label: "Account Mission Control",
@@ -191,7 +191,7 @@ export const featureDetails: Record<string, FeatureDetail> = {
     summary:
       "The Revenue Leak Scan reviews recent communication, meetings, calendar, and CRM history to find valuable commercial relationships that have gone quiet or lost their next step.",
     heroProof: [
-      "Scans the previous 60–90 days of commercial history.",
+      "Scans the previous 6 months of commercial history.",
       "Ranks missed commitments and warm opportunities by value and urgency.",
       "Explains every finding with source evidence.",
     ],
@@ -211,7 +211,7 @@ export const featureDetails: Record<string, FeatureDetail> = {
     ],
     workflow: [
       "Connect email, calendar, meetings, and CRM history.",
-      "Scan the previous 60–90 days for commercial open loops.",
+      "Scan the previous 6 months for commercial open loops.",
       "Rank findings by relationship value, urgency, and confidence.",
       "Move the best findings into the revenue action queue.",
     ],
@@ -931,7 +931,7 @@ export const primaryPages: MarketingPage[] = [
     eyebrow: "Revenue Leak Scan",
     title: "Find the warm revenue already hiding in your history.",
     description:
-      "Scan the previous 60–90 days across communication, meetings, calendar, and CRM history for missed commitments and neglected commercial relationships.",
+      "Scan the previous 6 months across communication, meetings, calendar, and CRM history for missed commitments and neglected commercial relationships.",
     category: "feature",
     bullets: [
       "Surface unanswered proposals, dormant champions, former customers, and neglected referrals.",
@@ -1328,7 +1328,7 @@ export const pricingPlans = [
     price: "Free",
     period: "",
     description: "A first pass over recent promises.",
-    features: ["90-day report", "What we owe", "Source links"],
+    features: ["6-month report", "What we owe", "Source links"],
     ctaLabel: "Start for free",
     ctaHref: "/sign-up",
   },

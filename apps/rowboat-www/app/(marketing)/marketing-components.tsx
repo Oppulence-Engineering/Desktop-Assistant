@@ -69,7 +69,7 @@ const pricingFaqs = [
   {
     question: "What is Watch, exactly?",
     answer:
-      "The free plan in the public price list: a 90-day report of what you owe, with source links. It is the first pass, not the live register.",
+      "The free plan in the public price list: a 6-month report of what you owe, with source links. It is the first pass, not the live register.",
   },
   {
     question: "When do I need Chase?",
@@ -896,7 +896,7 @@ export function HomePage() {
           <AttioSectionHead
             label="Self-building"
             lead="Live from day one."
-            rest="Connect your inbox and calendar. Oppulence reads the last 90 days and builds the ledger before you ask it anything."
+            rest="Connect your inbox and calendar. Oppulence reads the last 6 months and builds the ledger before you ask it anything."
           />
           <MarketingButtonLink href="/sign-up">Start for free</MarketingButtonLink>
           <figure className="sm-attio-setup-media">
@@ -1117,7 +1117,7 @@ const linearHomeSections = [
   {
     title: "It finds the loose ends nobody wrote down.",
     description:
-      "Oppulence scans the last 60–90 days of email, calendar, and billing to build a living ledger of promises, proposals, invoices, and open loops. It finds where a valuable relationship lost its next step, with the dollar amount and source attached.",
+      "Oppulence scans the last 6 months of email, calendar, and billing to build a living ledger of promises, proposals, invoices, and open loops. It finds where a valuable relationship lost its next step, with the dollar amount and source attached.",
     label: "Relationship State Engine",
     href: "/features/commitment-register",
     src: desktopScreenshots.knowledge,

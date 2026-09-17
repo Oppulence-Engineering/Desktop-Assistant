@@ -16,7 +16,7 @@ import { faqJsonLd, marketingMetadata } from "../metadata";
 export const metadata = marketingMetadata({
   title: "Pricing",
   description:
-    "Watch is a free 90-day report. Chase is the live register. Intelligence adds change history and export. Flat monthly. No seat tax.",
+    "Watch is a free 6-month report. Chase is the live register. Intelligence adds change history and export. Flat monthly. No seat tax.",
   path: "/pricing",
 });
 
@@ -24,7 +24,7 @@ const faqs = [
   {
     question: "What is Watch, exactly?",
     answer:
-      "The free plan in the public price list: a 90-day report of what you owe, with source links. It is the first pass, not the live register.",
+      "The free plan in the public price list: a 6-month report of what you owe, with source links. It is the first pass, not the live register.",
   },
   {
     question: "When do I need Chase?",
@@ -54,7 +54,7 @@ const faqs = [
 ];
 
 const matrix = [
-  { label: "90-day report with source links", watch: true, chase: true, intelligence: true },
+  { label: "6-month report with source links", watch: true, chase: true, intelligence: true },
   { label: "What you owe", watch: true, chase: true, intelligence: true },
   { label: "Live register", watch: false, chase: true, intelligence: true },
   { label: "At-risk promises", watch: false, chase: true, intelligence: true },
