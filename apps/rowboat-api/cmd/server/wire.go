@@ -496,7 +496,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// and lifecycle progress advances only after those observations commit.
 	go func() {
 		_ = revenue.NewSourceBackfillRunner(revenueSvc, map[string]revenue.SourceBackfillProvider{
-			"google":  revenue.NewGoogleSourceBackfiller(gmailExec),
+			"google":  revenue.NewGoogleSourceBackfiller(gmailExec, gmailExec),
 			"slack":   revenue.NewSlackSourceBackfiller(slackTokens, slackAPI),
 			"hubspot": revenue.NewHubSpotSourceBackfiller(hubspotClient),
 		}, 5*time.Second, 50, log).Run(ctx)

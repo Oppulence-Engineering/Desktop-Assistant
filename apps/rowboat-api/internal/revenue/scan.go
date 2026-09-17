@@ -1184,7 +1184,7 @@ func summarizeThread(selfEmail string, msgs []googleapi.GmailThreadMessage) *thr
 			header = m.From
 		}
 		for _, participant := range parseAddresses(header) {
-			if participant.Email == self || isNoReply(participant.Email) {
+			if !isExternalCounterparty(self, participant.Email) {
 				continue
 			}
 			if index, ok := seen[participant.Email]; ok {
@@ -1203,6 +1203,20 @@ func summarizeThread(selfEmail string, msgs []googleapi.GmailThreadMessage) *thr
 	sum.Counterparty = sum.Counterparties[0].Email
 	sum.CounterpartyName = sum.Counterparties[0].DisplayName
 	return sum
+}
+
+// isExternalCounterparty keeps relationship evidence customer/contact scoped.
+// Corporate domains identify internal teammates; public mailbox domains do not
+// imply that two unrelated people belong to the same organization.
+func isExternalCounterparty(selfEmail, candidateEmail string) bool {
+	self := normalizeEmail(selfEmail)
+	candidate := normalizeEmail(candidateEmail)
+	if candidate == "" || candidate == self || isNoReply(candidate) {
+		return false
+	}
+	selfDomain := accountDomain(self)
+	candidateDomain := accountDomain(candidate)
+	return selfDomain == "" || candidateDomain == "" || selfDomain != candidateDomain
 }
 
 func counterpartySummaries(sum *threadSummary) []*threadSummary {
