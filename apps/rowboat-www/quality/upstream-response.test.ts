@@ -16,7 +16,7 @@ describe("streamUpstreamResponse", () => {
     await expect(response.json()).resolves.toEqual({ ok: true });
   });
 
-  it("can pass through upstream cache headers on error responses", async () => {
+  it("can pass through upstream cache headers on error responses", () => {
     const upstream = new Response("upstream error", {
       status: 503,
       headers: {

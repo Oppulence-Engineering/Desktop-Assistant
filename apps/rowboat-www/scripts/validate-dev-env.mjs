@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
+import { request as httpRequest } from "node:http";
+import { request as httpsRequest } from "node:https";
 
 const apiUrl = process.env.ROWBOAT_WWW_API_PROXY_URL || "http://localhost:18080";
 const port = process.env.ROWBOAT_WWW_PORT || "18082";
@@ -9,35 +10,70 @@ const secret =
 
 let exitCode = 0;
 
+function writeLine(stream, message) {
+  stream.write(`${message}\n`);
+}
+
+/**
+ * Validate the configured boundary before selecting a transport. Restricting
+ * protocols avoids surprising behavior when this contributor tool is given a
+ * malformed or non-HTTP proxy URL.
+ */
+function healthURL(rawApiURL) {
+  const url = new URL(`${rawApiURL.replace(/\/+$/, "")}/healthz`);
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error("ROWBOAT_WWW_API_PROXY_URL must use HTTP or HTTPS");
+  }
+  return url;
+}
+
+function requestHealthStatus(url) {
+  const request = url.protocol === "https:" ? httpsRequest : httpRequest;
+
+  return new Promise((resolve, reject) => {
+    const healthRequest = request(
+      url,
+      { method: "GET", signal: AbortSignal.timeout(3_000) },
+      (response) => {
+        response.resume();
+        resolve(response.statusCode ?? 0);
+      },
+    );
+    healthRequest.on("error", reject);
+    healthRequest.end();
+  });
+}
+
 if (secret.length < 32) {
-  console.error("[dev-env] ROWBOAT_WWW_SESSION_SECRET must be at least 32 characters");
+  writeLine(process.stderr, "[dev-env] session secret must be at least 32 characters");
   exitCode = 1;
 }
 
-console.log("[dev-env] rowboat-www configuration");
-console.log(`  www:  http://localhost:${port}`);
-console.log(`  api:  ${apiUrl}`);
-console.log(`  secret: ${secret.startsWith("dev-only") ? "(dev fallback)" : "(custom)"}`);
+writeLine(process.stdout, "[dev-env] rowboat-www configuration");
+writeLine(process.stdout, `  www:  http://localhost:${port}`);
+writeLine(process.stdout, `  api:  ${apiUrl}`);
+writeLine(
+  process.stdout,
+  `  secret: ${secret.startsWith("dev-only") ? "(dev fallback)" : "(custom)"}`,
+);
 
 try {
-  const health = await fetch(`${apiUrl.replace(/\/+$/, "")}/healthz`, {
-    signal: AbortSignal.timeout(3_000),
-  });
-  if (health.ok) {
-    console.log("[dev-env] rowboat-api healthz: ok");
+  const healthStatus = await requestHealthStatus(healthURL(apiUrl));
+  if (healthStatus >= 200 && healthStatus < 300) {
+    writeLine(process.stdout, "[dev-env] rowboat-api healthz: ok");
   } else {
-    console.warn(`[dev-env] rowboat-api healthz: HTTP ${health.status}`);
+    writeLine(process.stderr, `[dev-env] rowboat-api healthz: HTTP ${healthStatus}`);
     exitCode = 1;
   }
-} catch (error) {
-  console.warn(
-    `[dev-env] rowboat-api not reachable at ${apiUrl} — start with docker-compose or make api-up`,
+} catch {
+  writeLine(
+    process.stderr,
+    "[dev-env] rowboat-api not reachable — start with docker-compose or make api-up",
   );
-  console.warn(`          ${error instanceof Error ? error.message : error}`);
 }
 
 if (exitCode !== 0) {
-  console.warn("[dev-env] fix the issues above before debugging dashboard auth/API problems");
+  writeLine(process.stderr, "[dev-env] fix the issues above before debugging dashboard problems");
 }
 
 process.exit(exitCode);

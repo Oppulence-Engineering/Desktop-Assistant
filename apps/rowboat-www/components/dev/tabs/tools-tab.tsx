@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useState } from "react";
 
@@ -7,15 +8,12 @@ import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import { Checkbox } from "@oppulence/ui/components/checkbox";
 import { Label } from "@oppulence/ui/components/label";
+import { dashboardFetch, loadBrowserSession } from "@/lib/auth/client";
 import { devButtonStyle } from "@/lib/dev/dev-panel-styles";
 import { getDevPrefs, setDevPrefs, type DevPrefs } from "@/lib/dev/dev-prefs";
 import { copyDebugBundleToClipboard } from "@/lib/dev/debug-bundle";
-import {
-  isMswRunning,
-  restartMswBrowser,
-  startMswBrowser,
-  stopMswBrowser,
-} from "@/lib/dev/msw-browser";
+import { DevHealthResponseSchema } from "@/lib/dev/dev-health";
+import { isMswRunning, restartMswBrowser, stopMswBrowser } from "@/lib/dev/msw-browser";
 import type { DevPersona } from "@/lib/dev/dev-prefs";
 import { applyReactScanDevOptions } from "@/lib/dev/react-scan-config";
 
@@ -59,7 +57,7 @@ function ToggleRow({
 export function ToolsTab() {
   const { theme, setTheme } = useTheme();
   const [prefs, setPrefs] = useState<DevPrefs>(() => getDevPrefs());
-  const [mswActive, setMswActive] = useState(false);
+  const [mswActive, setMswActive] = useState(isMswRunning);
   const [session, setSession] = useState<SessionSnapshot | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -72,11 +70,8 @@ export function ToolsTab() {
   const refreshSession = useCallback(async () => {
     setSessionError(null);
     try {
-      const response = await fetch("/api/auth/session", { credentials: "same-origin" });
-      const body = (await response.json()) as SessionSnapshot & {
-        user?: { email?: string; organizationId?: string };
-      };
-      if (!response.ok || !body.authenticated) {
+      const body = await loadBrowserSession();
+      if (!body.authenticated) {
         setSession({ authenticated: false });
         return;
       }
@@ -93,14 +88,16 @@ export function ToolsTab() {
 
   const refreshHealth = useCallback(async () => {
     try {
-      const response = await fetch("/api/dev/health");
-      const body = (await response.json()) as {
-        api?: { ok: boolean; latencyMs?: number; error?: string };
-      };
+      const response = await dashboardFetch("/api/dev/health", {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) throw new Error(`Health check failed: ${response.status}`);
+      const body = DevHealthResponseSchema.parse(await response.json());
       setHealth({
-        apiOk: body.api?.ok,
-        apiLatencyMs: body.api?.latencyMs,
-        apiError: body.api?.error,
+        apiOk: body.api.ok,
+        apiLatencyMs: body.api.latencyMs,
+        apiError: body.api.error,
       });
     } catch {
       setHealth({ apiOk: false, apiError: "health route unavailable" });
@@ -110,7 +107,6 @@ export function ToolsTab() {
   useEffect(() => {
     void refreshSession();
     void refreshHealth();
-    setMswActive(isMswRunning());
   }, [refreshSession, refreshHealth]);
 
   const patchPrefs = useCallback(async (patch: Partial<DevPrefs>) => {
@@ -175,12 +171,12 @@ export function ToolsTab() {
           >
             Recheck API
           </Button>
-          <a
+          <Link
             href="/dev/routes"
             style={{ ...devButtonStyle, padding: "4px 8px", textDecoration: "none" }}
           >
             Route catalog
-          </a>
+          </Link>
         </div>
       </section>
 
@@ -301,18 +297,19 @@ export function ToolsTab() {
           >
             Refresh
           </Button>
-          <a
+          <Link
             href="/sign-in"
             style={{ ...devButtonStyle, padding: "4px 8px", textDecoration: "none" }}
           >
             Sign in
-          </a>
-          <a
+          </Link>
+          <Link
             href="/api/auth/logout"
+            prefetch={false}
             style={{ ...devButtonStyle, padding: "4px 8px", textDecoration: "none" }}
           >
             Log out
-          </a>
+          </Link>
         </div>
       </section>
 

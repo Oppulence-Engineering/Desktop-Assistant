@@ -5,6 +5,8 @@
  * status codes, and auth refresh behavior without opening Network tab filters.
  */
 
+import { z } from "zod";
+
 import { isDevelopment } from "@/lib/environment";
 
 export type BffRequestEntry = {
@@ -24,6 +26,10 @@ export type BffRequestEntry = {
 export const BFF_FETCH_PREFIXES = ["/api/rowboat", "/api/auth", "/api/support"] as const;
 
 const MAX_ENTRIES = 50;
+const BffErrorBodySchema = z.object({
+  code: z.string().optional(),
+  error: z.string().optional(),
+});
 
 let entries: BffRequestEntry[] = [];
 const listeners = new Set<() => void>();
@@ -107,8 +113,10 @@ export function installBffFetchInstrumentation(fetchImpl: FetchLike = fetch): Fe
       if (response.status >= 400) {
         try {
           const clone = response.clone();
-          const body = (await clone.json()) as { code?: string; error?: string };
-          errorCode = body.code ?? body.error;
+          const body = BffErrorBodySchema.safeParse(await clone.json());
+          if (body.success) {
+            errorCode = body.data.code ?? body.data.error;
+          }
         } catch {
           // non-JSON error bodies are fine
         }

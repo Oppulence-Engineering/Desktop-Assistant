@@ -27,21 +27,19 @@ export type GitHubReleaseListItem = {
 
 export const GitHubReleaseAssetSchema = z.object({
   name: z.string(),
-  browser_download_url: z.string().url(),
+  browser_download_url: z.url(),
 });
 
-export const GitHubReleaseListItemSchema = z
-  .object({
-    tag_name: z.string().optional(),
-    name: z.string().nullable().optional(),
-    body: z.string().nullable().optional(),
-    draft: z.boolean().optional(),
-    prerelease: z.boolean().optional(),
-    published_at: z.string().nullable().optional(),
-    html_url: z.string().optional(),
-    assets: z.array(GitHubReleaseAssetSchema).optional(),
-  })
-  .passthrough();
+export const GitHubReleaseListItemSchema = z.looseObject({
+  tag_name: z.string().optional(),
+  name: z.string().nullable().optional(),
+  body: z.string().nullable().optional(),
+  draft: z.boolean().optional(),
+  prerelease: z.boolean().optional(),
+  published_at: z.string().nullable().optional(),
+  html_url: z.string().optional(),
+  assets: z.array(GitHubReleaseAssetSchema).optional(),
+});
 
 export const GitHubReleaseListSchema = z.array(GitHubReleaseListItemSchema);
 
@@ -85,7 +83,7 @@ export async function fetchGitHubReleases<T extends GitHubReleaseListItem = GitH
 
   try {
     const response = await fetch(
-      `https://api.github.com/repos/${repo}/releases?per_page=${perPage}`,
+      `https://api.github.com/repos/${repo}/releases?per_page=${String(perPage)}`,
       {
         headers: githubApiHeaders(),
         next: { revalidate },

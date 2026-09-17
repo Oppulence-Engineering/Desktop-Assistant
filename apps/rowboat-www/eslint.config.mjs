@@ -84,6 +84,9 @@ const config = [
     ignores: [
       "node_modules/**",
       ".next/**",
+      // Fumadocs regenerates this directory during installation; lint the
+      // source config and authored MDX instead of generated adapter code.
+      ".source/**",
       "out/**",
       "build/**",
       "coverage/**",

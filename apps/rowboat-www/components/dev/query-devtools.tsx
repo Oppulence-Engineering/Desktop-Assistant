@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+
+import { isDevelopment } from "@/lib/environment";
 
 const ReactQueryDevtools = dynamic(
   () => import("@tanstack/react-query-devtools").then((mod) => mod.ReactQueryDevtools),
@@ -10,9 +11,6 @@ const ReactQueryDevtools = dynamic(
 
 /** TanStack Query inspector — product routes only, development builds. */
 export function QueryDevtoolsPanel() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
-  if (process.env.NODE_ENV !== "development" || !mounted) return null;
+  if (!isDevelopment()) return null;
   return <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />;
 }

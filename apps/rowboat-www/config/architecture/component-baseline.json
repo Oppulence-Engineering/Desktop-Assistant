@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "standardPaths": ["components/features/", "/_components/"],
-  "managedPaths": ["components/ai-elements/", "components/providers/"],
+  "managedPaths": ["components/ai-elements/", "components/dev/", "components/providers/"],
   "legacyFiles": [
     "components/actions/actions-view.tsx",
     "components/actions/audit-sheet.tsx",

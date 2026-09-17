@@ -1,17 +1,36 @@
-/** Dev-only toggles persisted in localStorage for the floating toolkit. */
+/** Dev-only toggles persisted for the floating toolkit. */
 
-export type DevPersona = "default" | "empty-workspace" | "revenue-full" | "session-expired";
+import { z } from "zod";
 
-export type DevPrefs = {
-  mswEnabled: boolean;
-  posthogLog: boolean;
-  routeBadge: boolean;
-  loafObserver: boolean;
-  trackUnnecessaryRenders: boolean;
-  persona: DevPersona;
-};
+import { createScopedStorage } from "@/lib/storage/scoped-storage";
 
-const STORAGE_KEY = "oppulence:dev:prefs";
+const DevPersonaSchema = z.enum(["default", "empty-workspace", "revenue-full", "session-expired"]);
+
+const DevPrefsSchema = z.object({
+  mswEnabled: z.boolean(),
+  posthogLog: z.boolean(),
+  routeBadge: z.boolean(),
+  loafObserver: z.boolean(),
+  trackUnnecessaryRenders: z.boolean(),
+  persona: DevPersonaSchema,
+});
+
+export type DevPersona = z.infer<typeof DevPersonaSchema>;
+export type DevPrefs = z.infer<typeof DevPrefsSchema>;
+
+/**
+ * Dev preferences are intentionally device-scoped: they are available before
+ * authentication and contain no customer data. Fixed local identities still
+ * give the record the adapter's versioning, validation, and expiry guarantees.
+ */
+const devPrefsStorage = createScopedStorage({
+  organizationId: "local-development",
+  userId: "developer",
+  namespace: "dev-prefs",
+  version: 1,
+  ttlMs: 10 * 365 * 24 * 60 * 60 * 1_000,
+  schema: DevPrefsSchema,
+});
 
 export const defaultDevPrefs: DevPrefs = {
   mswEnabled: false,
@@ -34,9 +53,7 @@ function notify() {
 function readStorage(): DevPrefs {
   if (typeof window === "undefined") return cached;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return cached;
-    return { ...defaultDevPrefs, ...JSON.parse(raw) } as DevPrefs;
+    return devPrefsStorage.read() ?? cached;
   } catch {
     return cached;
   }
@@ -76,9 +93,13 @@ export function subscribeDevPrefs(listener: () => void): () => void {
 }
 
 export function setDevPrefs(patch: Partial<DevPrefs>): DevPrefs {
-  cached = { ...getDevPrefs(), ...patch };
+  cached = DevPrefsSchema.parse({ ...getDevPrefs(), ...patch });
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(cached));
+    try {
+      devPrefsStorage.write(cached);
+    } catch {
+      // Preferences remain usable in memory when browser storage is unavailable.
+    }
   }
   notify();
   return cached;

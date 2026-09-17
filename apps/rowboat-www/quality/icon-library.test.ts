@@ -36,7 +36,7 @@ function findForbiddenImports(files: string[]) {
   const violations: string[] = [];
 
   for (const file of files) {
-    if (ALLOWED_ICON_SURFACES.includes(file as (typeof ALLOWED_ICON_SURFACES)[number])) {
+    if (ALLOWED_ICON_SURFACES.some((allowedFile) => allowedFile === file)) {
       continue;
     }
     const source = readFileSync(file, "utf8");

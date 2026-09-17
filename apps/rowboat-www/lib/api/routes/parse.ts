@@ -12,15 +12,18 @@ export function parseSearchParams<T extends z.ZodType>(
   return result.success ? { success: true, data: result.data } : { success: false };
 }
 
-export async function readJsonBody(request: Request, maxBytes: number): Promise<unknown | null> {
+export async function readJsonBody(
+  request: Request,
+  maxBytes: number,
+): Promise<ParseResult<unknown>> {
   const raw = await request.arrayBuffer();
-  if (raw.byteLength > maxBytes) return null;
-  if (raw.byteLength === 0) return {};
+  if (raw.byteLength > maxBytes) return { success: false };
+  if (raw.byteLength === 0) return { success: true, data: {} };
 
   try {
-    return JSON.parse(new TextDecoder().decode(raw));
+    return { success: true, data: JSON.parse(new TextDecoder().decode(raw)) };
   } catch {
-    return null;
+    return { success: false };
   }
 }
 
@@ -29,10 +32,10 @@ export function parseJsonBody<T extends z.ZodType>(
   schema: T,
   maxBytes: number,
 ): Promise<ParseResult<z.infer<T>>> {
-  return readJsonBody(request, maxBytes).then((value) => {
-    if (value === null) return { success: false };
+  return readJsonBody(request, maxBytes).then((body) => {
+    if (!body.success) return { success: false };
 
-    const result = schema.safeParse(value);
+    const result = schema.safeParse(body.data);
     return result.success ? { success: true, data: result.data } : { success: false };
   });
 }

@@ -41,8 +41,14 @@ describe("plan response route", () => {
 
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const upstreamURL = fetchMock.mock.calls[0]?.[0];
-    expect(String(upstreamURL)).toContain("/v1/public/mutual-action-plan");
-    expect((fetchMock.mock.calls[0]?.[1] as RequestInit | undefined)?.method).toBe("GET");
+    const [upstreamURL, upstreamInit] = fetchMock.mock.calls[0] ?? [];
+    const upstreamURLText =
+      upstreamURL instanceof Request
+        ? upstreamURL.url
+        : upstreamURL instanceof URL
+          ? upstreamURL.href
+          : upstreamURL;
+    expect(upstreamURLText).toContain("/v1/public/mutual-action-plan");
+    expect(upstreamInit?.method).toBe("GET");
   });
 });
