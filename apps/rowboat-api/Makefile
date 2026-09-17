@@ -154,9 +154,16 @@ tidy:
 
 GOBIN := $(shell go env GOPATH)/bin
 SDK_TS_DIR := ../../packages/rowboat-api-client-ts
+WWW_DIR := ../rowboat-www
 
 .PHONY: generate
-generate: ent-generate proto-generate gql-generate sdk-generate
+generate: ent-generate proto-generate gql-generate sdk-generate www-contracts-generate
+
+# Contract generation intentionally excludes protobuf. It is suitable for the
+# pre-commit gate because it needs only the tools already used by API/web
+# contributors while still reproducing every public HTTP contract consumer.
+.PHONY: contract-generate
+contract-generate: ent-generate gql-generate sdk-generate www-contracts-generate
 
 # ent + enthistory + entoas + OpenAPI enrichment + entgql (schema, history tables, OpenAPI, GraphQL SDL).
 .PHONY: ent-generate
@@ -182,6 +189,13 @@ sdk-generate:
 	npm --prefix "$(SDK_TS_DIR)" exec -- prettier --write ../../apps/rowboat-api/api/openapi.json
 	npm --prefix "$(SDK_TS_DIR)" run generate
 	npm --prefix "$(SDK_TS_DIR)" run build
+
+# The web BFF validates API responses at runtime with Orval-generated Zod
+# schemas. Generate them from the same checked-in OpenAPI document as the
+# public SDK so one API generation command cannot leave either consumer stale.
+.PHONY: www-contracts-generate
+www-contracts-generate:
+	npm --prefix "$(WWW_DIR)" run contracts:generate
 
 # Install the protoc plugins the proto-generate target needs.
 #
@@ -220,7 +234,11 @@ install-quality-tools: install-atlas
 
 .PHONY: generate-check
 generate-check: generate
-	git diff --exit-code -- ent api/openapi.json internal/gqlapi ../../packages/rowboat-api-client-ts
+	git diff --exit-code -- ent api/openapi.json internal/gqlapi ../../packages/rowboat-api-client-ts ../rowboat-www/lib/api/generated
+
+.PHONY: contract-generate-check
+contract-generate-check: contract-generate
+	git diff --exit-code -- ent api/openapi.json internal/gqlapi ../../packages/rowboat-api-client-ts ../rowboat-www/lib/api/generated
 
 # ---- database migrations (Atlas, via ent) ----------------------------------
 
