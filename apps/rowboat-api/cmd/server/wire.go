@@ -320,7 +320,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		GoogleWebhookToken:   cfg.GoogleWebhookToken,
 		WebhookSigningSecret: cfg.WebhookSigningSecret,
 	}, log)
-	if cfg.CommunicationSyncEnabled {
+	if cfg.RevenueMailPushSyncEnabled {
 		communicationSync := communicationsync.New(client, sealer, sec, googleapi.New(googleapi.Config{
 			TokenURL:        cfg.GoogleTokenURL,
 			GmailBaseURL:    cfg.GmailAPIBaseURL,

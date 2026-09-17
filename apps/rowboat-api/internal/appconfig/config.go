@@ -491,7 +491,6 @@ type Config struct {
 	MailBodyCacheTTLHours        int
 	RevenueSemanticMemoryEnabled bool
 	RevenueMailPushSyncEnabled   bool
-	CommunicationSyncEnabled     bool
 	EmbeddingsModel              string
 
 	// Proactive digest (RFC 030). Ships dark behind RevenueDigestEnabled and
@@ -1006,19 +1005,16 @@ func Load() Config {
 		MailBodyCacheTTLHours:        getint("MAIL_BODY_CACHE_TTL_HOURS", 72),
 		RevenueSemanticMemoryEnabled: getbool("REVENUE_SEMANTIC_MEMORY_ENABLED", false),
 		RevenueMailPushSyncEnabled:   getbool("REVENUE_MAIL_PUSH_SYNC_ENABLED", false),
-		// Preserve the existing Gmail-only rollout flag as a compatibility
-		// default while giving the Gmail + Calendar projector its own switch.
-		CommunicationSyncEnabled:  getbool("COMMUNICATION_SYNC_ENABLED", getbool("REVENUE_MAIL_PUSH_SYNC_ENABLED", false)),
-		EmbeddingsModel:           getenv("EMBEDDINGS_MODEL", "text-embedding-3-small"),
-		RevenueDigestEnabled:      getbool("REVENUE_DIGEST_ENABLED", false),
-		RevenueDigestInterval:     getdur("REVENUE_DIGEST_INTERVAL", time.Hour),
-		RevenueDigestMinInterval:  getdur("REVENUE_DIGEST_MIN_INTERVAL", 7*24*time.Hour),
-		RevenueDigestMaxPerCycle:  getint("REVENUE_DIGEST_MAX_PER_CYCLE", 200),
-		ResendAPIKey:              getenv("RESEND_API_KEY", ""),
-		EmailFrom:                 getenv("EMAIL_FROM", "Oppulence <digest@oppulence.io>"),
-		RevenueFacadeBaseURL:      getenv("REVENUE_FACADE_BASE_URL", ""),
-		RevenueFacadeServiceToken: getenv("REVENUE_FACADE_SERVICE_TOKEN", ""),
-		RevenueFacadeTimeout:      getdur("REVENUE_FACADE_TIMEOUT", 15*time.Second),
+		EmbeddingsModel:              getenv("EMBEDDINGS_MODEL", "text-embedding-3-small"),
+		RevenueDigestEnabled:         getbool("REVENUE_DIGEST_ENABLED", false),
+		RevenueDigestInterval:        getdur("REVENUE_DIGEST_INTERVAL", time.Hour),
+		RevenueDigestMinInterval:     getdur("REVENUE_DIGEST_MIN_INTERVAL", 7*24*time.Hour),
+		RevenueDigestMaxPerCycle:     getint("REVENUE_DIGEST_MAX_PER_CYCLE", 200),
+		ResendAPIKey:                 getenv("RESEND_API_KEY", ""),
+		EmailFrom:                    getenv("EMAIL_FROM", "Oppulence <digest@oppulence.io>"),
+		RevenueFacadeBaseURL:         getenv("REVENUE_FACADE_BASE_URL", ""),
+		RevenueFacadeServiceToken:    getenv("REVENUE_FACADE_SERVICE_TOKEN", ""),
+		RevenueFacadeTimeout:         getdur("REVENUE_FACADE_TIMEOUT", 15*time.Second),
 
 		ActionsEnabled:                  getbool("ACTIONS_ENABLED", false),
 		ActionTokenTTL:                  getdur("ACTION_TOKEN_TTL", 5*time.Minute),

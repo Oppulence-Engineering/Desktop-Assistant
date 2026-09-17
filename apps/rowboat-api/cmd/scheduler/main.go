@@ -67,7 +67,7 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 	// TEMPORAL_WORKER_ENABLED guard so the Deployment can ship dark. The
 	// process hosts two independent loops: the task scheduler (RFC 001) and
 	// the Google watch manager (RFC 003); it runs as long as either is on.
-	if !cfg.CloudSchedulerEnabled && !cfg.GoogleWatchEnabled && !cfg.CommunicationSyncEnabled {
+	if !cfg.CloudSchedulerEnabled && !cfg.GoogleWatchEnabled && !cfg.RevenueMailPushSyncEnabled {
 		log.Info("all scheduler loops are disabled; scheduler exiting cleanly")
 		return nil
 	}
@@ -140,7 +140,7 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 		go func() { _ = watchMgr.Run(ctx) }()
 	}
 
-	if cfg.CommunicationSyncEnabled {
+	if cfg.RevenueMailPushSyncEnabled {
 		syncService, syncErr := buildCommunicationSync(ctx, cfg, log, database)
 		if syncErr != nil {
 			return syncErr
