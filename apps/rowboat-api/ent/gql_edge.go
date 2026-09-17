@@ -512,6 +512,158 @@ func (_m *CommitmentEvent) Commitment(ctx context.Context) (*Commitment, error) 
 	return result, err
 }
 
+func (_m *CommunicationAttachment) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationAttachment) Interaction(ctx context.Context) (*CommunicationInteraction, error) {
+	result, err := _m.Edges.InteractionOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryInteraction().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationInteraction) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationInteraction) Owner(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationInteraction) Relationship(ctx context.Context) (*Relationship, error) {
+	result, err := _m.Edges.RelationshipOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryRelationship().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *CommunicationInteraction) Participants(ctx context.Context) (result []*CommunicationParticipant, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedParticipants(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ParticipantsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryParticipants().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationInteraction) Attachments(ctx context.Context) (result []*CommunicationAttachment, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedAttachments(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.AttachmentsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryAttachments().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationParticipant) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationParticipant) Interaction(ctx context.Context) (*CommunicationInteraction, error) {
+	result, err := _m.Edges.InteractionOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryInteraction().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationPrivacyPolicy) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationPrivacyPolicy) Owner(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationPrivacyRule) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationPrivacyRule) Owner(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationShareGrant) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationShareGrant) Owner(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationShareGrant) Grantee(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.GranteeOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryGrantee().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (_m *CommunicationSyncCursor) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
+	result, err := _m.Edges.WorkspaceOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryWorkspace().Only(ctx)
+	}
+	return result, err
+}
+
+func (_m *CommunicationSyncCursor) Owner(ctx context.Context) (*User, error) {
+	result, err := _m.Edges.OwnerOrErr()
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwner().Only(ctx)
+	}
+	return result, err
+}
+
 func (_m *ConversationIntelligenceArtifact) Workspace(ctx context.Context) (*RevenueWorkspace, error) {
 	result, err := _m.Edges.WorkspaceOrErr()
 	if IsNotLoaded(err) {
@@ -1084,6 +1236,18 @@ func (_m *Relationship) MailThreads(ctx context.Context) (result []*MailThread, 
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryMailThreads().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *Relationship) CommunicationInteractions(ctx context.Context) (result []*CommunicationInteraction, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommunicationInteractions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommunicationInteractionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommunicationInteractions().All(ctx)
 	}
 	return result, err
 }
@@ -1952,6 +2116,90 @@ func (_m *RevenueWorkspace) Scans(ctx context.Context) (result []*RevenueLeakSca
 	return result, err
 }
 
+func (_m *RevenueWorkspace) CommunicationInteractions(ctx context.Context) (result []*CommunicationInteraction, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommunicationInteractions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommunicationInteractionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommunicationInteractions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) CommunicationParticipants(ctx context.Context) (result []*CommunicationParticipant, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommunicationParticipants(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommunicationParticipantsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommunicationParticipants().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) CommunicationAttachments(ctx context.Context) (result []*CommunicationAttachment, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommunicationAttachments(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommunicationAttachmentsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommunicationAttachments().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) CommunicationSyncCursors(ctx context.Context) (result []*CommunicationSyncCursor, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommunicationSyncCursors(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommunicationSyncCursorsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommunicationSyncCursors().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) CommunicationPrivacyPolicies(ctx context.Context) (result []*CommunicationPrivacyPolicy, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommunicationPrivacyPolicies(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommunicationPrivacyPoliciesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommunicationPrivacyPolicies().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) CommunicationPrivacyRules(ctx context.Context) (result []*CommunicationPrivacyRule, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommunicationPrivacyRules(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommunicationPrivacyRulesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommunicationPrivacyRules().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *RevenueWorkspace) CommunicationShareGrants(ctx context.Context) (result []*CommunicationShareGrant, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommunicationShareGrants(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommunicationShareGrantsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommunicationShareGrants().All(ctx)
+	}
+	return result, err
+}
+
 func (_m *RevenueWorkspace) RelationshipParticipants(ctx context.Context) (result []*RelationshipParticipant, err error) {
 	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
 		result, err = _m.NamedRelationshipParticipants(graphql.GetFieldContext(ctx).Field.Alias)
@@ -2728,6 +2976,78 @@ func (_m *User) MailSignals(ctx context.Context) (result []*MailSignal, err erro
 	}
 	if IsNotLoaded(err) {
 		result, err = _m.QueryMailSignals().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) OwnedCommunicationInteractions(ctx context.Context) (result []*CommunicationInteraction, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedOwnedCommunicationInteractions(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.OwnedCommunicationInteractionsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwnedCommunicationInteractions().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) CommunicationSyncCursors(ctx context.Context) (result []*CommunicationSyncCursor, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommunicationSyncCursors(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommunicationSyncCursorsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommunicationSyncCursors().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) CommunicationPrivacyPolicies(ctx context.Context) (result []*CommunicationPrivacyPolicy, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommunicationPrivacyPolicies(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommunicationPrivacyPoliciesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommunicationPrivacyPolicies().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) CommunicationPrivacyRules(ctx context.Context) (result []*CommunicationPrivacyRule, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedCommunicationPrivacyRules(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.CommunicationPrivacyRulesOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryCommunicationPrivacyRules().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) OwnedCommunicationShareGrants(ctx context.Context) (result []*CommunicationShareGrant, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedOwnedCommunicationShareGrants(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.OwnedCommunicationShareGrantsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryOwnedCommunicationShareGrants().All(ctx)
+	}
+	return result, err
+}
+
+func (_m *User) ReceivedCommunicationShareGrants(ctx context.Context) (result []*CommunicationShareGrant, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = _m.NamedReceivedCommunicationShareGrants(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = _m.Edges.ReceivedCommunicationShareGrantsOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = _m.QueryReceivedCommunicationShareGrants().All(ctx)
 	}
 	return result, err
 }

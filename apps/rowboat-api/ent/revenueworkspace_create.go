@@ -16,6 +16,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -433,6 +440,111 @@ func (_c *RevenueWorkspaceCreate) AddScans(v ...*RevenueLeakScan) *RevenueWorksp
 		ids[i] = v[i].ID
 	}
 	return _c.AddScanIDs(ids...)
+}
+
+// AddCommunicationInteractionIDs adds the "communication_interactions" edge to the CommunicationInteraction entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddCommunicationInteractionIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddCommunicationInteractionIDs(ids...)
+	return _c
+}
+
+// AddCommunicationInteractions adds the "communication_interactions" edges to the CommunicationInteraction entity.
+func (_c *RevenueWorkspaceCreate) AddCommunicationInteractions(v ...*CommunicationInteraction) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommunicationInteractionIDs(ids...)
+}
+
+// AddCommunicationParticipantIDs adds the "communication_participants" edge to the CommunicationParticipant entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddCommunicationParticipantIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddCommunicationParticipantIDs(ids...)
+	return _c
+}
+
+// AddCommunicationParticipants adds the "communication_participants" edges to the CommunicationParticipant entity.
+func (_c *RevenueWorkspaceCreate) AddCommunicationParticipants(v ...*CommunicationParticipant) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommunicationParticipantIDs(ids...)
+}
+
+// AddCommunicationAttachmentIDs adds the "communication_attachments" edge to the CommunicationAttachment entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddCommunicationAttachmentIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddCommunicationAttachmentIDs(ids...)
+	return _c
+}
+
+// AddCommunicationAttachments adds the "communication_attachments" edges to the CommunicationAttachment entity.
+func (_c *RevenueWorkspaceCreate) AddCommunicationAttachments(v ...*CommunicationAttachment) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommunicationAttachmentIDs(ids...)
+}
+
+// AddCommunicationSyncCursorIDs adds the "communication_sync_cursors" edge to the CommunicationSyncCursor entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddCommunicationSyncCursorIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddCommunicationSyncCursorIDs(ids...)
+	return _c
+}
+
+// AddCommunicationSyncCursors adds the "communication_sync_cursors" edges to the CommunicationSyncCursor entity.
+func (_c *RevenueWorkspaceCreate) AddCommunicationSyncCursors(v ...*CommunicationSyncCursor) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommunicationSyncCursorIDs(ids...)
+}
+
+// AddCommunicationPrivacyPolicyIDs adds the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddCommunicationPrivacyPolicyIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddCommunicationPrivacyPolicyIDs(ids...)
+	return _c
+}
+
+// AddCommunicationPrivacyPolicies adds the "communication_privacy_policies" edges to the CommunicationPrivacyPolicy entity.
+func (_c *RevenueWorkspaceCreate) AddCommunicationPrivacyPolicies(v ...*CommunicationPrivacyPolicy) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommunicationPrivacyPolicyIDs(ids...)
+}
+
+// AddCommunicationPrivacyRuleIDs adds the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddCommunicationPrivacyRuleIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddCommunicationPrivacyRuleIDs(ids...)
+	return _c
+}
+
+// AddCommunicationPrivacyRules adds the "communication_privacy_rules" edges to the CommunicationPrivacyRule entity.
+func (_c *RevenueWorkspaceCreate) AddCommunicationPrivacyRules(v ...*CommunicationPrivacyRule) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommunicationPrivacyRuleIDs(ids...)
+}
+
+// AddCommunicationShareGrantIDs adds the "communication_share_grants" edge to the CommunicationShareGrant entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddCommunicationShareGrantIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddCommunicationShareGrantIDs(ids...)
+	return _c
+}
+
+// AddCommunicationShareGrants adds the "communication_share_grants" edges to the CommunicationShareGrant entity.
+func (_c *RevenueWorkspaceCreate) AddCommunicationShareGrants(v ...*CommunicationShareGrant) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommunicationShareGrantIDs(ids...)
 }
 
 // AddRelationshipParticipantIDs adds the "relationship_participants" edge to the RelationshipParticipant entity by IDs.
@@ -1199,6 +1311,118 @@ func (_c *RevenueWorkspaceCreate) createSpec() (*RevenueWorkspace, *sqlgraph.Cre
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(revenueleakscan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommunicationInteractionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommunicationInteractionsTable,
+			Columns: []string{revenueworkspace.CommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommunicationParticipantsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommunicationParticipantsTable,
+			Columns: []string{revenueworkspace.CommunicationParticipantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationparticipant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommunicationAttachmentsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommunicationAttachmentsTable,
+			Columns: []string{revenueworkspace.CommunicationAttachmentsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationattachment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommunicationSyncCursorsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommunicationSyncCursorsTable,
+			Columns: []string{revenueworkspace.CommunicationSyncCursorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsynccursor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommunicationPrivacyPoliciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommunicationPrivacyPoliciesTable,
+			Columns: []string{revenueworkspace.CommunicationPrivacyPoliciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacypolicy.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommunicationPrivacyRulesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommunicationPrivacyRulesTable,
+			Columns: []string{revenueworkspace.CommunicationPrivacyRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacyrule.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommunicationShareGrantsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.CommunicationShareGrantsTable,
+			Columns: []string{revenueworkspace.CommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

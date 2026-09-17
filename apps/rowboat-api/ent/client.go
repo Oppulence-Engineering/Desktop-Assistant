@@ -38,6 +38,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
@@ -148,6 +155,20 @@ type Client struct {
 	CommitmentDependency *CommitmentDependencyClient
 	// CommitmentEvent is the client for interacting with the CommitmentEvent builders.
 	CommitmentEvent *CommitmentEventClient
+	// CommunicationAttachment is the client for interacting with the CommunicationAttachment builders.
+	CommunicationAttachment *CommunicationAttachmentClient
+	// CommunicationInteraction is the client for interacting with the CommunicationInteraction builders.
+	CommunicationInteraction *CommunicationInteractionClient
+	// CommunicationParticipant is the client for interacting with the CommunicationParticipant builders.
+	CommunicationParticipant *CommunicationParticipantClient
+	// CommunicationPrivacyPolicy is the client for interacting with the CommunicationPrivacyPolicy builders.
+	CommunicationPrivacyPolicy *CommunicationPrivacyPolicyClient
+	// CommunicationPrivacyRule is the client for interacting with the CommunicationPrivacyRule builders.
+	CommunicationPrivacyRule *CommunicationPrivacyRuleClient
+	// CommunicationShareGrant is the client for interacting with the CommunicationShareGrant builders.
+	CommunicationShareGrant *CommunicationShareGrantClient
+	// CommunicationSyncCursor is the client for interacting with the CommunicationSyncCursor builders.
+	CommunicationSyncCursor *CommunicationSyncCursorClient
 	// ConnectorAuditEvent is the client for interacting with the ConnectorAuditEvent builders.
 	ConnectorAuditEvent *ConnectorAuditEventClient
 	// ConnectorCredentialCleanupJob is the client for interacting with the ConnectorCredentialCleanupJob builders.
@@ -307,6 +328,13 @@ func (c *Client) init() {
 	c.Commitment = NewCommitmentClient(c.config)
 	c.CommitmentDependency = NewCommitmentDependencyClient(c.config)
 	c.CommitmentEvent = NewCommitmentEventClient(c.config)
+	c.CommunicationAttachment = NewCommunicationAttachmentClient(c.config)
+	c.CommunicationInteraction = NewCommunicationInteractionClient(c.config)
+	c.CommunicationParticipant = NewCommunicationParticipantClient(c.config)
+	c.CommunicationPrivacyPolicy = NewCommunicationPrivacyPolicyClient(c.config)
+	c.CommunicationPrivacyRule = NewCommunicationPrivacyRuleClient(c.config)
+	c.CommunicationShareGrant = NewCommunicationShareGrantClient(c.config)
+	c.CommunicationSyncCursor = NewCommunicationSyncCursorClient(c.config)
 	c.ConnectorAuditEvent = NewConnectorAuditEventClient(c.config)
 	c.ConnectorCredentialCleanupJob = NewConnectorCredentialCleanupJobClient(c.config)
 	c.ConnectorCredentialRecovery = NewConnectorCredentialRecoveryClient(c.config)
@@ -509,6 +537,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Commitment:                        NewCommitmentClient(cfg),
 		CommitmentDependency:              NewCommitmentDependencyClient(cfg),
 		CommitmentEvent:                   NewCommitmentEventClient(cfg),
+		CommunicationAttachment:           NewCommunicationAttachmentClient(cfg),
+		CommunicationInteraction:          NewCommunicationInteractionClient(cfg),
+		CommunicationParticipant:          NewCommunicationParticipantClient(cfg),
+		CommunicationPrivacyPolicy:        NewCommunicationPrivacyPolicyClient(cfg),
+		CommunicationPrivacyRule:          NewCommunicationPrivacyRuleClient(cfg),
+		CommunicationShareGrant:           NewCommunicationShareGrantClient(cfg),
+		CommunicationSyncCursor:           NewCommunicationSyncCursorClient(cfg),
 		ConnectorAuditEvent:               NewConnectorAuditEventClient(cfg),
 		ConnectorCredentialCleanupJob:     NewConnectorCredentialCleanupJobClient(cfg),
 		ConnectorCredentialRecovery:       NewConnectorCredentialRecoveryClient(cfg),
@@ -610,6 +645,13 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Commitment:                        NewCommitmentClient(cfg),
 		CommitmentDependency:              NewCommitmentDependencyClient(cfg),
 		CommitmentEvent:                   NewCommitmentEventClient(cfg),
+		CommunicationAttachment:           NewCommunicationAttachmentClient(cfg),
+		CommunicationInteraction:          NewCommunicationInteractionClient(cfg),
+		CommunicationParticipant:          NewCommunicationParticipantClient(cfg),
+		CommunicationPrivacyPolicy:        NewCommunicationPrivacyPolicyClient(cfg),
+		CommunicationPrivacyRule:          NewCommunicationPrivacyRuleClient(cfg),
+		CommunicationShareGrant:           NewCommunicationShareGrantClient(cfg),
+		CommunicationSyncCursor:           NewCommunicationSyncCursorClient(cfg),
 		ConnectorAuditEvent:               NewConnectorAuditEventClient(cfg),
 		ConnectorCredentialCleanupJob:     NewConnectorCredentialCleanupJobClient(cfg),
 		ConnectorCredentialRecovery:       NewConnectorCredentialRecoveryClient(cfg),
@@ -705,7 +747,10 @@ func (c *Client) Use(hooks ...Hook) {
 		c.AgentToolResultBlob, c.AgentTurn, c.ApprovalToken, c.BackgroundTask,
 		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
 		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
-		c.CommitmentDependency, c.CommitmentEvent, c.ConnectorAuditEvent,
+		c.CommitmentDependency, c.CommitmentEvent, c.CommunicationAttachment,
+		c.CommunicationInteraction, c.CommunicationParticipant,
+		c.CommunicationPrivacyPolicy, c.CommunicationPrivacyRule,
+		c.CommunicationShareGrant, c.CommunicationSyncCursor, c.ConnectorAuditEvent,
 		c.ConnectorCredentialCleanupJob, c.ConnectorCredentialRecovery,
 		c.ConnectorRevocationJob, c.ConsoleResource,
 		c.ConversationIntelligenceArtifact, c.CreditLedger, c.DeletedIdentity,
@@ -740,7 +785,10 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.AgentToolResultBlob, c.AgentTurn, c.ApprovalToken, c.BackgroundTask,
 		c.BackgroundTaskArtifact, c.BackgroundTaskRun, c.BackgroundTaskRunEvent,
 		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
-		c.CommitmentDependency, c.CommitmentEvent, c.ConnectorAuditEvent,
+		c.CommitmentDependency, c.CommitmentEvent, c.CommunicationAttachment,
+		c.CommunicationInteraction, c.CommunicationParticipant,
+		c.CommunicationPrivacyPolicy, c.CommunicationPrivacyRule,
+		c.CommunicationShareGrant, c.CommunicationSyncCursor, c.ConnectorAuditEvent,
 		c.ConnectorCredentialCleanupJob, c.ConnectorCredentialRecovery,
 		c.ConnectorRevocationJob, c.ConsoleResource,
 		c.ConversationIntelligenceArtifact, c.CreditLedger, c.DeletedIdentity,
@@ -811,6 +859,20 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.CommitmentDependency.mutate(ctx, m)
 	case *CommitmentEventMutation:
 		return c.CommitmentEvent.mutate(ctx, m)
+	case *CommunicationAttachmentMutation:
+		return c.CommunicationAttachment.mutate(ctx, m)
+	case *CommunicationInteractionMutation:
+		return c.CommunicationInteraction.mutate(ctx, m)
+	case *CommunicationParticipantMutation:
+		return c.CommunicationParticipant.mutate(ctx, m)
+	case *CommunicationPrivacyPolicyMutation:
+		return c.CommunicationPrivacyPolicy.mutate(ctx, m)
+	case *CommunicationPrivacyRuleMutation:
+		return c.CommunicationPrivacyRule.mutate(ctx, m)
+	case *CommunicationShareGrantMutation:
+		return c.CommunicationShareGrant.mutate(ctx, m)
+	case *CommunicationSyncCursorMutation:
+		return c.CommunicationSyncCursor.mutate(ctx, m)
 	case *ConnectorAuditEventMutation:
 		return c.ConnectorAuditEvent.mutate(ctx, m)
 	case *ConnectorCredentialCleanupJobMutation:
@@ -4661,6 +4723,1232 @@ func (c *CommitmentEventClient) mutate(ctx context.Context, m *CommitmentEventMu
 		return (&CommitmentEventDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CommitmentEvent mutation op: %q", m.Op())
+	}
+}
+
+// CommunicationAttachmentClient is a client for the CommunicationAttachment schema.
+type CommunicationAttachmentClient struct {
+	config
+}
+
+// NewCommunicationAttachmentClient returns a client for the CommunicationAttachment from the given config.
+func NewCommunicationAttachmentClient(c config) *CommunicationAttachmentClient {
+	return &CommunicationAttachmentClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `communicationattachment.Hooks(f(g(h())))`.
+func (c *CommunicationAttachmentClient) Use(hooks ...Hook) {
+	c.hooks.CommunicationAttachment = append(c.hooks.CommunicationAttachment, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `communicationattachment.Intercept(f(g(h())))`.
+func (c *CommunicationAttachmentClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CommunicationAttachment = append(c.inters.CommunicationAttachment, interceptors...)
+}
+
+// Create returns a builder for creating a CommunicationAttachment entity.
+func (c *CommunicationAttachmentClient) Create() *CommunicationAttachmentCreate {
+	mutation := newCommunicationAttachmentMutation(c.config, OpCreate)
+	return &CommunicationAttachmentCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CommunicationAttachment entities.
+func (c *CommunicationAttachmentClient) CreateBulk(builders ...*CommunicationAttachmentCreate) *CommunicationAttachmentCreateBulk {
+	return &CommunicationAttachmentCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CommunicationAttachmentClient) MapCreateBulk(slice any, setFunc func(*CommunicationAttachmentCreate, int)) *CommunicationAttachmentCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CommunicationAttachmentCreateBulk{err: fmt.Errorf("calling to CommunicationAttachmentClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CommunicationAttachmentCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CommunicationAttachmentCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CommunicationAttachment.
+func (c *CommunicationAttachmentClient) Update() *CommunicationAttachmentUpdate {
+	mutation := newCommunicationAttachmentMutation(c.config, OpUpdate)
+	return &CommunicationAttachmentUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CommunicationAttachmentClient) UpdateOne(_m *CommunicationAttachment) *CommunicationAttachmentUpdateOne {
+	mutation := newCommunicationAttachmentMutation(c.config, OpUpdateOne, withCommunicationAttachment(_m))
+	return &CommunicationAttachmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CommunicationAttachmentClient) UpdateOneID(id uuid.UUID) *CommunicationAttachmentUpdateOne {
+	mutation := newCommunicationAttachmentMutation(c.config, OpUpdateOne, withCommunicationAttachmentID(id))
+	return &CommunicationAttachmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CommunicationAttachment.
+func (c *CommunicationAttachmentClient) Delete() *CommunicationAttachmentDelete {
+	mutation := newCommunicationAttachmentMutation(c.config, OpDelete)
+	return &CommunicationAttachmentDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CommunicationAttachmentClient) DeleteOne(_m *CommunicationAttachment) *CommunicationAttachmentDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CommunicationAttachmentClient) DeleteOneID(id uuid.UUID) *CommunicationAttachmentDeleteOne {
+	builder := c.Delete().Where(communicationattachment.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CommunicationAttachmentDeleteOne{builder}
+}
+
+// Query returns a query builder for CommunicationAttachment.
+func (c *CommunicationAttachmentClient) Query() *CommunicationAttachmentQuery {
+	return &CommunicationAttachmentQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCommunicationAttachment},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CommunicationAttachment entity by its id.
+func (c *CommunicationAttachmentClient) Get(ctx context.Context, id uuid.UUID) (*CommunicationAttachment, error) {
+	return c.Query().Where(communicationattachment.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CommunicationAttachmentClient) GetX(ctx context.Context, id uuid.UUID) *CommunicationAttachment {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a CommunicationAttachment.
+func (c *CommunicationAttachmentClient) QueryWorkspace(_m *CommunicationAttachment) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationattachment.Table, communicationattachment.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationattachment.WorkspaceTable, communicationattachment.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryInteraction queries the interaction edge of a CommunicationAttachment.
+func (c *CommunicationAttachmentClient) QueryInteraction(_m *CommunicationAttachment) *CommunicationInteractionQuery {
+	query := (&CommunicationInteractionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationattachment.Table, communicationattachment.FieldID, id),
+			sqlgraph.To(communicationinteraction.Table, communicationinteraction.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationattachment.InteractionTable, communicationattachment.InteractionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CommunicationAttachmentClient) Hooks() []Hook {
+	hooks := c.hooks.CommunicationAttachment
+	return append(hooks[:len(hooks):len(hooks)], communicationattachment.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *CommunicationAttachmentClient) Interceptors() []Interceptor {
+	return c.inters.CommunicationAttachment
+}
+
+func (c *CommunicationAttachmentClient) mutate(ctx context.Context, m *CommunicationAttachmentMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CommunicationAttachmentCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CommunicationAttachmentUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CommunicationAttachmentUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CommunicationAttachmentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CommunicationAttachment mutation op: %q", m.Op())
+	}
+}
+
+// CommunicationInteractionClient is a client for the CommunicationInteraction schema.
+type CommunicationInteractionClient struct {
+	config
+}
+
+// NewCommunicationInteractionClient returns a client for the CommunicationInteraction from the given config.
+func NewCommunicationInteractionClient(c config) *CommunicationInteractionClient {
+	return &CommunicationInteractionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `communicationinteraction.Hooks(f(g(h())))`.
+func (c *CommunicationInteractionClient) Use(hooks ...Hook) {
+	c.hooks.CommunicationInteraction = append(c.hooks.CommunicationInteraction, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `communicationinteraction.Intercept(f(g(h())))`.
+func (c *CommunicationInteractionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CommunicationInteraction = append(c.inters.CommunicationInteraction, interceptors...)
+}
+
+// Create returns a builder for creating a CommunicationInteraction entity.
+func (c *CommunicationInteractionClient) Create() *CommunicationInteractionCreate {
+	mutation := newCommunicationInteractionMutation(c.config, OpCreate)
+	return &CommunicationInteractionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CommunicationInteraction entities.
+func (c *CommunicationInteractionClient) CreateBulk(builders ...*CommunicationInteractionCreate) *CommunicationInteractionCreateBulk {
+	return &CommunicationInteractionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CommunicationInteractionClient) MapCreateBulk(slice any, setFunc func(*CommunicationInteractionCreate, int)) *CommunicationInteractionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CommunicationInteractionCreateBulk{err: fmt.Errorf("calling to CommunicationInteractionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CommunicationInteractionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CommunicationInteractionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CommunicationInteraction.
+func (c *CommunicationInteractionClient) Update() *CommunicationInteractionUpdate {
+	mutation := newCommunicationInteractionMutation(c.config, OpUpdate)
+	return &CommunicationInteractionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CommunicationInteractionClient) UpdateOne(_m *CommunicationInteraction) *CommunicationInteractionUpdateOne {
+	mutation := newCommunicationInteractionMutation(c.config, OpUpdateOne, withCommunicationInteraction(_m))
+	return &CommunicationInteractionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CommunicationInteractionClient) UpdateOneID(id uuid.UUID) *CommunicationInteractionUpdateOne {
+	mutation := newCommunicationInteractionMutation(c.config, OpUpdateOne, withCommunicationInteractionID(id))
+	return &CommunicationInteractionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CommunicationInteraction.
+func (c *CommunicationInteractionClient) Delete() *CommunicationInteractionDelete {
+	mutation := newCommunicationInteractionMutation(c.config, OpDelete)
+	return &CommunicationInteractionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CommunicationInteractionClient) DeleteOne(_m *CommunicationInteraction) *CommunicationInteractionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CommunicationInteractionClient) DeleteOneID(id uuid.UUID) *CommunicationInteractionDeleteOne {
+	builder := c.Delete().Where(communicationinteraction.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CommunicationInteractionDeleteOne{builder}
+}
+
+// Query returns a query builder for CommunicationInteraction.
+func (c *CommunicationInteractionClient) Query() *CommunicationInteractionQuery {
+	return &CommunicationInteractionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCommunicationInteraction},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CommunicationInteraction entity by its id.
+func (c *CommunicationInteractionClient) Get(ctx context.Context, id uuid.UUID) (*CommunicationInteraction, error) {
+	return c.Query().Where(communicationinteraction.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CommunicationInteractionClient) GetX(ctx context.Context, id uuid.UUID) *CommunicationInteraction {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a CommunicationInteraction.
+func (c *CommunicationInteractionClient) QueryWorkspace(_m *CommunicationInteraction) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationinteraction.Table, communicationinteraction.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationinteraction.WorkspaceTable, communicationinteraction.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOwner queries the owner edge of a CommunicationInteraction.
+func (c *CommunicationInteractionClient) QueryOwner(_m *CommunicationInteraction) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationinteraction.Table, communicationinteraction.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationinteraction.OwnerTable, communicationinteraction.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRelationship queries the relationship edge of a CommunicationInteraction.
+func (c *CommunicationInteractionClient) QueryRelationship(_m *CommunicationInteraction) *RelationshipQuery {
+	query := (&RelationshipClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationinteraction.Table, communicationinteraction.FieldID, id),
+			sqlgraph.To(relationship.Table, relationship.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationinteraction.RelationshipTable, communicationinteraction.RelationshipColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryParticipants queries the participants edge of a CommunicationInteraction.
+func (c *CommunicationInteractionClient) QueryParticipants(_m *CommunicationInteraction) *CommunicationParticipantQuery {
+	query := (&CommunicationParticipantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationinteraction.Table, communicationinteraction.FieldID, id),
+			sqlgraph.To(communicationparticipant.Table, communicationparticipant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, communicationinteraction.ParticipantsTable, communicationinteraction.ParticipantsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAttachments queries the attachments edge of a CommunicationInteraction.
+func (c *CommunicationInteractionClient) QueryAttachments(_m *CommunicationInteraction) *CommunicationAttachmentQuery {
+	query := (&CommunicationAttachmentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationinteraction.Table, communicationinteraction.FieldID, id),
+			sqlgraph.To(communicationattachment.Table, communicationattachment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, communicationinteraction.AttachmentsTable, communicationinteraction.AttachmentsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CommunicationInteractionClient) Hooks() []Hook {
+	hooks := c.hooks.CommunicationInteraction
+	return append(hooks[:len(hooks):len(hooks)], communicationinteraction.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *CommunicationInteractionClient) Interceptors() []Interceptor {
+	return c.inters.CommunicationInteraction
+}
+
+func (c *CommunicationInteractionClient) mutate(ctx context.Context, m *CommunicationInteractionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CommunicationInteractionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CommunicationInteractionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CommunicationInteractionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CommunicationInteractionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CommunicationInteraction mutation op: %q", m.Op())
+	}
+}
+
+// CommunicationParticipantClient is a client for the CommunicationParticipant schema.
+type CommunicationParticipantClient struct {
+	config
+}
+
+// NewCommunicationParticipantClient returns a client for the CommunicationParticipant from the given config.
+func NewCommunicationParticipantClient(c config) *CommunicationParticipantClient {
+	return &CommunicationParticipantClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `communicationparticipant.Hooks(f(g(h())))`.
+func (c *CommunicationParticipantClient) Use(hooks ...Hook) {
+	c.hooks.CommunicationParticipant = append(c.hooks.CommunicationParticipant, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `communicationparticipant.Intercept(f(g(h())))`.
+func (c *CommunicationParticipantClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CommunicationParticipant = append(c.inters.CommunicationParticipant, interceptors...)
+}
+
+// Create returns a builder for creating a CommunicationParticipant entity.
+func (c *CommunicationParticipantClient) Create() *CommunicationParticipantCreate {
+	mutation := newCommunicationParticipantMutation(c.config, OpCreate)
+	return &CommunicationParticipantCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CommunicationParticipant entities.
+func (c *CommunicationParticipantClient) CreateBulk(builders ...*CommunicationParticipantCreate) *CommunicationParticipantCreateBulk {
+	return &CommunicationParticipantCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CommunicationParticipantClient) MapCreateBulk(slice any, setFunc func(*CommunicationParticipantCreate, int)) *CommunicationParticipantCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CommunicationParticipantCreateBulk{err: fmt.Errorf("calling to CommunicationParticipantClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CommunicationParticipantCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CommunicationParticipantCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CommunicationParticipant.
+func (c *CommunicationParticipantClient) Update() *CommunicationParticipantUpdate {
+	mutation := newCommunicationParticipantMutation(c.config, OpUpdate)
+	return &CommunicationParticipantUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CommunicationParticipantClient) UpdateOne(_m *CommunicationParticipant) *CommunicationParticipantUpdateOne {
+	mutation := newCommunicationParticipantMutation(c.config, OpUpdateOne, withCommunicationParticipant(_m))
+	return &CommunicationParticipantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CommunicationParticipantClient) UpdateOneID(id uuid.UUID) *CommunicationParticipantUpdateOne {
+	mutation := newCommunicationParticipantMutation(c.config, OpUpdateOne, withCommunicationParticipantID(id))
+	return &CommunicationParticipantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CommunicationParticipant.
+func (c *CommunicationParticipantClient) Delete() *CommunicationParticipantDelete {
+	mutation := newCommunicationParticipantMutation(c.config, OpDelete)
+	return &CommunicationParticipantDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CommunicationParticipantClient) DeleteOne(_m *CommunicationParticipant) *CommunicationParticipantDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CommunicationParticipantClient) DeleteOneID(id uuid.UUID) *CommunicationParticipantDeleteOne {
+	builder := c.Delete().Where(communicationparticipant.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CommunicationParticipantDeleteOne{builder}
+}
+
+// Query returns a query builder for CommunicationParticipant.
+func (c *CommunicationParticipantClient) Query() *CommunicationParticipantQuery {
+	return &CommunicationParticipantQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCommunicationParticipant},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CommunicationParticipant entity by its id.
+func (c *CommunicationParticipantClient) Get(ctx context.Context, id uuid.UUID) (*CommunicationParticipant, error) {
+	return c.Query().Where(communicationparticipant.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CommunicationParticipantClient) GetX(ctx context.Context, id uuid.UUID) *CommunicationParticipant {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a CommunicationParticipant.
+func (c *CommunicationParticipantClient) QueryWorkspace(_m *CommunicationParticipant) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationparticipant.Table, communicationparticipant.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationparticipant.WorkspaceTable, communicationparticipant.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryInteraction queries the interaction edge of a CommunicationParticipant.
+func (c *CommunicationParticipantClient) QueryInteraction(_m *CommunicationParticipant) *CommunicationInteractionQuery {
+	query := (&CommunicationInteractionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationparticipant.Table, communicationparticipant.FieldID, id),
+			sqlgraph.To(communicationinteraction.Table, communicationinteraction.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationparticipant.InteractionTable, communicationparticipant.InteractionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CommunicationParticipantClient) Hooks() []Hook {
+	hooks := c.hooks.CommunicationParticipant
+	return append(hooks[:len(hooks):len(hooks)], communicationparticipant.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *CommunicationParticipantClient) Interceptors() []Interceptor {
+	return c.inters.CommunicationParticipant
+}
+
+func (c *CommunicationParticipantClient) mutate(ctx context.Context, m *CommunicationParticipantMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CommunicationParticipantCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CommunicationParticipantUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CommunicationParticipantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CommunicationParticipantDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CommunicationParticipant mutation op: %q", m.Op())
+	}
+}
+
+// CommunicationPrivacyPolicyClient is a client for the CommunicationPrivacyPolicy schema.
+type CommunicationPrivacyPolicyClient struct {
+	config
+}
+
+// NewCommunicationPrivacyPolicyClient returns a client for the CommunicationPrivacyPolicy from the given config.
+func NewCommunicationPrivacyPolicyClient(c config) *CommunicationPrivacyPolicyClient {
+	return &CommunicationPrivacyPolicyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `communicationprivacypolicy.Hooks(f(g(h())))`.
+func (c *CommunicationPrivacyPolicyClient) Use(hooks ...Hook) {
+	c.hooks.CommunicationPrivacyPolicy = append(c.hooks.CommunicationPrivacyPolicy, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `communicationprivacypolicy.Intercept(f(g(h())))`.
+func (c *CommunicationPrivacyPolicyClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CommunicationPrivacyPolicy = append(c.inters.CommunicationPrivacyPolicy, interceptors...)
+}
+
+// Create returns a builder for creating a CommunicationPrivacyPolicy entity.
+func (c *CommunicationPrivacyPolicyClient) Create() *CommunicationPrivacyPolicyCreate {
+	mutation := newCommunicationPrivacyPolicyMutation(c.config, OpCreate)
+	return &CommunicationPrivacyPolicyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CommunicationPrivacyPolicy entities.
+func (c *CommunicationPrivacyPolicyClient) CreateBulk(builders ...*CommunicationPrivacyPolicyCreate) *CommunicationPrivacyPolicyCreateBulk {
+	return &CommunicationPrivacyPolicyCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CommunicationPrivacyPolicyClient) MapCreateBulk(slice any, setFunc func(*CommunicationPrivacyPolicyCreate, int)) *CommunicationPrivacyPolicyCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CommunicationPrivacyPolicyCreateBulk{err: fmt.Errorf("calling to CommunicationPrivacyPolicyClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CommunicationPrivacyPolicyCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CommunicationPrivacyPolicyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CommunicationPrivacyPolicy.
+func (c *CommunicationPrivacyPolicyClient) Update() *CommunicationPrivacyPolicyUpdate {
+	mutation := newCommunicationPrivacyPolicyMutation(c.config, OpUpdate)
+	return &CommunicationPrivacyPolicyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CommunicationPrivacyPolicyClient) UpdateOne(_m *CommunicationPrivacyPolicy) *CommunicationPrivacyPolicyUpdateOne {
+	mutation := newCommunicationPrivacyPolicyMutation(c.config, OpUpdateOne, withCommunicationPrivacyPolicy(_m))
+	return &CommunicationPrivacyPolicyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CommunicationPrivacyPolicyClient) UpdateOneID(id uuid.UUID) *CommunicationPrivacyPolicyUpdateOne {
+	mutation := newCommunicationPrivacyPolicyMutation(c.config, OpUpdateOne, withCommunicationPrivacyPolicyID(id))
+	return &CommunicationPrivacyPolicyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CommunicationPrivacyPolicy.
+func (c *CommunicationPrivacyPolicyClient) Delete() *CommunicationPrivacyPolicyDelete {
+	mutation := newCommunicationPrivacyPolicyMutation(c.config, OpDelete)
+	return &CommunicationPrivacyPolicyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CommunicationPrivacyPolicyClient) DeleteOne(_m *CommunicationPrivacyPolicy) *CommunicationPrivacyPolicyDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CommunicationPrivacyPolicyClient) DeleteOneID(id uuid.UUID) *CommunicationPrivacyPolicyDeleteOne {
+	builder := c.Delete().Where(communicationprivacypolicy.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CommunicationPrivacyPolicyDeleteOne{builder}
+}
+
+// Query returns a query builder for CommunicationPrivacyPolicy.
+func (c *CommunicationPrivacyPolicyClient) Query() *CommunicationPrivacyPolicyQuery {
+	return &CommunicationPrivacyPolicyQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCommunicationPrivacyPolicy},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CommunicationPrivacyPolicy entity by its id.
+func (c *CommunicationPrivacyPolicyClient) Get(ctx context.Context, id uuid.UUID) (*CommunicationPrivacyPolicy, error) {
+	return c.Query().Where(communicationprivacypolicy.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CommunicationPrivacyPolicyClient) GetX(ctx context.Context, id uuid.UUID) *CommunicationPrivacyPolicy {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a CommunicationPrivacyPolicy.
+func (c *CommunicationPrivacyPolicyClient) QueryWorkspace(_m *CommunicationPrivacyPolicy) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationprivacypolicy.Table, communicationprivacypolicy.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationprivacypolicy.WorkspaceTable, communicationprivacypolicy.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOwner queries the owner edge of a CommunicationPrivacyPolicy.
+func (c *CommunicationPrivacyPolicyClient) QueryOwner(_m *CommunicationPrivacyPolicy) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationprivacypolicy.Table, communicationprivacypolicy.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationprivacypolicy.OwnerTable, communicationprivacypolicy.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CommunicationPrivacyPolicyClient) Hooks() []Hook {
+	hooks := c.hooks.CommunicationPrivacyPolicy
+	return append(hooks[:len(hooks):len(hooks)], communicationprivacypolicy.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *CommunicationPrivacyPolicyClient) Interceptors() []Interceptor {
+	return c.inters.CommunicationPrivacyPolicy
+}
+
+func (c *CommunicationPrivacyPolicyClient) mutate(ctx context.Context, m *CommunicationPrivacyPolicyMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CommunicationPrivacyPolicyCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CommunicationPrivacyPolicyUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CommunicationPrivacyPolicyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CommunicationPrivacyPolicyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CommunicationPrivacyPolicy mutation op: %q", m.Op())
+	}
+}
+
+// CommunicationPrivacyRuleClient is a client for the CommunicationPrivacyRule schema.
+type CommunicationPrivacyRuleClient struct {
+	config
+}
+
+// NewCommunicationPrivacyRuleClient returns a client for the CommunicationPrivacyRule from the given config.
+func NewCommunicationPrivacyRuleClient(c config) *CommunicationPrivacyRuleClient {
+	return &CommunicationPrivacyRuleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `communicationprivacyrule.Hooks(f(g(h())))`.
+func (c *CommunicationPrivacyRuleClient) Use(hooks ...Hook) {
+	c.hooks.CommunicationPrivacyRule = append(c.hooks.CommunicationPrivacyRule, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `communicationprivacyrule.Intercept(f(g(h())))`.
+func (c *CommunicationPrivacyRuleClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CommunicationPrivacyRule = append(c.inters.CommunicationPrivacyRule, interceptors...)
+}
+
+// Create returns a builder for creating a CommunicationPrivacyRule entity.
+func (c *CommunicationPrivacyRuleClient) Create() *CommunicationPrivacyRuleCreate {
+	mutation := newCommunicationPrivacyRuleMutation(c.config, OpCreate)
+	return &CommunicationPrivacyRuleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CommunicationPrivacyRule entities.
+func (c *CommunicationPrivacyRuleClient) CreateBulk(builders ...*CommunicationPrivacyRuleCreate) *CommunicationPrivacyRuleCreateBulk {
+	return &CommunicationPrivacyRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CommunicationPrivacyRuleClient) MapCreateBulk(slice any, setFunc func(*CommunicationPrivacyRuleCreate, int)) *CommunicationPrivacyRuleCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CommunicationPrivacyRuleCreateBulk{err: fmt.Errorf("calling to CommunicationPrivacyRuleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CommunicationPrivacyRuleCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CommunicationPrivacyRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CommunicationPrivacyRule.
+func (c *CommunicationPrivacyRuleClient) Update() *CommunicationPrivacyRuleUpdate {
+	mutation := newCommunicationPrivacyRuleMutation(c.config, OpUpdate)
+	return &CommunicationPrivacyRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CommunicationPrivacyRuleClient) UpdateOne(_m *CommunicationPrivacyRule) *CommunicationPrivacyRuleUpdateOne {
+	mutation := newCommunicationPrivacyRuleMutation(c.config, OpUpdateOne, withCommunicationPrivacyRule(_m))
+	return &CommunicationPrivacyRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CommunicationPrivacyRuleClient) UpdateOneID(id uuid.UUID) *CommunicationPrivacyRuleUpdateOne {
+	mutation := newCommunicationPrivacyRuleMutation(c.config, OpUpdateOne, withCommunicationPrivacyRuleID(id))
+	return &CommunicationPrivacyRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CommunicationPrivacyRule.
+func (c *CommunicationPrivacyRuleClient) Delete() *CommunicationPrivacyRuleDelete {
+	mutation := newCommunicationPrivacyRuleMutation(c.config, OpDelete)
+	return &CommunicationPrivacyRuleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CommunicationPrivacyRuleClient) DeleteOne(_m *CommunicationPrivacyRule) *CommunicationPrivacyRuleDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CommunicationPrivacyRuleClient) DeleteOneID(id uuid.UUID) *CommunicationPrivacyRuleDeleteOne {
+	builder := c.Delete().Where(communicationprivacyrule.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CommunicationPrivacyRuleDeleteOne{builder}
+}
+
+// Query returns a query builder for CommunicationPrivacyRule.
+func (c *CommunicationPrivacyRuleClient) Query() *CommunicationPrivacyRuleQuery {
+	return &CommunicationPrivacyRuleQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCommunicationPrivacyRule},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CommunicationPrivacyRule entity by its id.
+func (c *CommunicationPrivacyRuleClient) Get(ctx context.Context, id uuid.UUID) (*CommunicationPrivacyRule, error) {
+	return c.Query().Where(communicationprivacyrule.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CommunicationPrivacyRuleClient) GetX(ctx context.Context, id uuid.UUID) *CommunicationPrivacyRule {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a CommunicationPrivacyRule.
+func (c *CommunicationPrivacyRuleClient) QueryWorkspace(_m *CommunicationPrivacyRule) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationprivacyrule.Table, communicationprivacyrule.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationprivacyrule.WorkspaceTable, communicationprivacyrule.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOwner queries the owner edge of a CommunicationPrivacyRule.
+func (c *CommunicationPrivacyRuleClient) QueryOwner(_m *CommunicationPrivacyRule) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationprivacyrule.Table, communicationprivacyrule.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationprivacyrule.OwnerTable, communicationprivacyrule.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CommunicationPrivacyRuleClient) Hooks() []Hook {
+	hooks := c.hooks.CommunicationPrivacyRule
+	return append(hooks[:len(hooks):len(hooks)], communicationprivacyrule.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *CommunicationPrivacyRuleClient) Interceptors() []Interceptor {
+	return c.inters.CommunicationPrivacyRule
+}
+
+func (c *CommunicationPrivacyRuleClient) mutate(ctx context.Context, m *CommunicationPrivacyRuleMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CommunicationPrivacyRuleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CommunicationPrivacyRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CommunicationPrivacyRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CommunicationPrivacyRuleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CommunicationPrivacyRule mutation op: %q", m.Op())
+	}
+}
+
+// CommunicationShareGrantClient is a client for the CommunicationShareGrant schema.
+type CommunicationShareGrantClient struct {
+	config
+}
+
+// NewCommunicationShareGrantClient returns a client for the CommunicationShareGrant from the given config.
+func NewCommunicationShareGrantClient(c config) *CommunicationShareGrantClient {
+	return &CommunicationShareGrantClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `communicationsharegrant.Hooks(f(g(h())))`.
+func (c *CommunicationShareGrantClient) Use(hooks ...Hook) {
+	c.hooks.CommunicationShareGrant = append(c.hooks.CommunicationShareGrant, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `communicationsharegrant.Intercept(f(g(h())))`.
+func (c *CommunicationShareGrantClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CommunicationShareGrant = append(c.inters.CommunicationShareGrant, interceptors...)
+}
+
+// Create returns a builder for creating a CommunicationShareGrant entity.
+func (c *CommunicationShareGrantClient) Create() *CommunicationShareGrantCreate {
+	mutation := newCommunicationShareGrantMutation(c.config, OpCreate)
+	return &CommunicationShareGrantCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CommunicationShareGrant entities.
+func (c *CommunicationShareGrantClient) CreateBulk(builders ...*CommunicationShareGrantCreate) *CommunicationShareGrantCreateBulk {
+	return &CommunicationShareGrantCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CommunicationShareGrantClient) MapCreateBulk(slice any, setFunc func(*CommunicationShareGrantCreate, int)) *CommunicationShareGrantCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CommunicationShareGrantCreateBulk{err: fmt.Errorf("calling to CommunicationShareGrantClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CommunicationShareGrantCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CommunicationShareGrantCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CommunicationShareGrant.
+func (c *CommunicationShareGrantClient) Update() *CommunicationShareGrantUpdate {
+	mutation := newCommunicationShareGrantMutation(c.config, OpUpdate)
+	return &CommunicationShareGrantUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CommunicationShareGrantClient) UpdateOne(_m *CommunicationShareGrant) *CommunicationShareGrantUpdateOne {
+	mutation := newCommunicationShareGrantMutation(c.config, OpUpdateOne, withCommunicationShareGrant(_m))
+	return &CommunicationShareGrantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CommunicationShareGrantClient) UpdateOneID(id uuid.UUID) *CommunicationShareGrantUpdateOne {
+	mutation := newCommunicationShareGrantMutation(c.config, OpUpdateOne, withCommunicationShareGrantID(id))
+	return &CommunicationShareGrantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CommunicationShareGrant.
+func (c *CommunicationShareGrantClient) Delete() *CommunicationShareGrantDelete {
+	mutation := newCommunicationShareGrantMutation(c.config, OpDelete)
+	return &CommunicationShareGrantDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CommunicationShareGrantClient) DeleteOne(_m *CommunicationShareGrant) *CommunicationShareGrantDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CommunicationShareGrantClient) DeleteOneID(id uuid.UUID) *CommunicationShareGrantDeleteOne {
+	builder := c.Delete().Where(communicationsharegrant.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CommunicationShareGrantDeleteOne{builder}
+}
+
+// Query returns a query builder for CommunicationShareGrant.
+func (c *CommunicationShareGrantClient) Query() *CommunicationShareGrantQuery {
+	return &CommunicationShareGrantQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCommunicationShareGrant},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CommunicationShareGrant entity by its id.
+func (c *CommunicationShareGrantClient) Get(ctx context.Context, id uuid.UUID) (*CommunicationShareGrant, error) {
+	return c.Query().Where(communicationsharegrant.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CommunicationShareGrantClient) GetX(ctx context.Context, id uuid.UUID) *CommunicationShareGrant {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a CommunicationShareGrant.
+func (c *CommunicationShareGrantClient) QueryWorkspace(_m *CommunicationShareGrant) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationsharegrant.Table, communicationsharegrant.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationsharegrant.WorkspaceTable, communicationsharegrant.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOwner queries the owner edge of a CommunicationShareGrant.
+func (c *CommunicationShareGrantClient) QueryOwner(_m *CommunicationShareGrant) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationsharegrant.Table, communicationsharegrant.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationsharegrant.OwnerTable, communicationsharegrant.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGrantee queries the grantee edge of a CommunicationShareGrant.
+func (c *CommunicationShareGrantClient) QueryGrantee(_m *CommunicationShareGrant) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationsharegrant.Table, communicationsharegrant.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationsharegrant.GranteeTable, communicationsharegrant.GranteeColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CommunicationShareGrantClient) Hooks() []Hook {
+	hooks := c.hooks.CommunicationShareGrant
+	return append(hooks[:len(hooks):len(hooks)], communicationsharegrant.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *CommunicationShareGrantClient) Interceptors() []Interceptor {
+	return c.inters.CommunicationShareGrant
+}
+
+func (c *CommunicationShareGrantClient) mutate(ctx context.Context, m *CommunicationShareGrantMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CommunicationShareGrantCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CommunicationShareGrantUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CommunicationShareGrantUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CommunicationShareGrantDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CommunicationShareGrant mutation op: %q", m.Op())
+	}
+}
+
+// CommunicationSyncCursorClient is a client for the CommunicationSyncCursor schema.
+type CommunicationSyncCursorClient struct {
+	config
+}
+
+// NewCommunicationSyncCursorClient returns a client for the CommunicationSyncCursor from the given config.
+func NewCommunicationSyncCursorClient(c config) *CommunicationSyncCursorClient {
+	return &CommunicationSyncCursorClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `communicationsynccursor.Hooks(f(g(h())))`.
+func (c *CommunicationSyncCursorClient) Use(hooks ...Hook) {
+	c.hooks.CommunicationSyncCursor = append(c.hooks.CommunicationSyncCursor, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `communicationsynccursor.Intercept(f(g(h())))`.
+func (c *CommunicationSyncCursorClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CommunicationSyncCursor = append(c.inters.CommunicationSyncCursor, interceptors...)
+}
+
+// Create returns a builder for creating a CommunicationSyncCursor entity.
+func (c *CommunicationSyncCursorClient) Create() *CommunicationSyncCursorCreate {
+	mutation := newCommunicationSyncCursorMutation(c.config, OpCreate)
+	return &CommunicationSyncCursorCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CommunicationSyncCursor entities.
+func (c *CommunicationSyncCursorClient) CreateBulk(builders ...*CommunicationSyncCursorCreate) *CommunicationSyncCursorCreateBulk {
+	return &CommunicationSyncCursorCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CommunicationSyncCursorClient) MapCreateBulk(slice any, setFunc func(*CommunicationSyncCursorCreate, int)) *CommunicationSyncCursorCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CommunicationSyncCursorCreateBulk{err: fmt.Errorf("calling to CommunicationSyncCursorClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CommunicationSyncCursorCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CommunicationSyncCursorCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CommunicationSyncCursor.
+func (c *CommunicationSyncCursorClient) Update() *CommunicationSyncCursorUpdate {
+	mutation := newCommunicationSyncCursorMutation(c.config, OpUpdate)
+	return &CommunicationSyncCursorUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CommunicationSyncCursorClient) UpdateOne(_m *CommunicationSyncCursor) *CommunicationSyncCursorUpdateOne {
+	mutation := newCommunicationSyncCursorMutation(c.config, OpUpdateOne, withCommunicationSyncCursor(_m))
+	return &CommunicationSyncCursorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CommunicationSyncCursorClient) UpdateOneID(id uuid.UUID) *CommunicationSyncCursorUpdateOne {
+	mutation := newCommunicationSyncCursorMutation(c.config, OpUpdateOne, withCommunicationSyncCursorID(id))
+	return &CommunicationSyncCursorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CommunicationSyncCursor.
+func (c *CommunicationSyncCursorClient) Delete() *CommunicationSyncCursorDelete {
+	mutation := newCommunicationSyncCursorMutation(c.config, OpDelete)
+	return &CommunicationSyncCursorDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CommunicationSyncCursorClient) DeleteOne(_m *CommunicationSyncCursor) *CommunicationSyncCursorDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CommunicationSyncCursorClient) DeleteOneID(id uuid.UUID) *CommunicationSyncCursorDeleteOne {
+	builder := c.Delete().Where(communicationsynccursor.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CommunicationSyncCursorDeleteOne{builder}
+}
+
+// Query returns a query builder for CommunicationSyncCursor.
+func (c *CommunicationSyncCursorClient) Query() *CommunicationSyncCursorQuery {
+	return &CommunicationSyncCursorQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCommunicationSyncCursor},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CommunicationSyncCursor entity by its id.
+func (c *CommunicationSyncCursorClient) Get(ctx context.Context, id uuid.UUID) (*CommunicationSyncCursor, error) {
+	return c.Query().Where(communicationsynccursor.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CommunicationSyncCursorClient) GetX(ctx context.Context, id uuid.UUID) *CommunicationSyncCursor {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a CommunicationSyncCursor.
+func (c *CommunicationSyncCursorClient) QueryWorkspace(_m *CommunicationSyncCursor) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationsynccursor.Table, communicationsynccursor.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationsynccursor.WorkspaceTable, communicationsynccursor.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOwner queries the owner edge of a CommunicationSyncCursor.
+func (c *CommunicationSyncCursorClient) QueryOwner(_m *CommunicationSyncCursor) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(communicationsynccursor.Table, communicationsynccursor.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, communicationsynccursor.OwnerTable, communicationsynccursor.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CommunicationSyncCursorClient) Hooks() []Hook {
+	hooks := c.hooks.CommunicationSyncCursor
+	return append(hooks[:len(hooks):len(hooks)], communicationsynccursor.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *CommunicationSyncCursorClient) Interceptors() []Interceptor {
+	return c.inters.CommunicationSyncCursor
+}
+
+func (c *CommunicationSyncCursorClient) mutate(ctx context.Context, m *CommunicationSyncCursorMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CommunicationSyncCursorCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CommunicationSyncCursorUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CommunicationSyncCursorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CommunicationSyncCursorDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CommunicationSyncCursor mutation op: %q", m.Op())
 	}
 }
 
@@ -9993,6 +11281,22 @@ func (c *RelationshipClient) QueryMailThreads(_m *Relationship) *MailThreadQuery
 	return query
 }
 
+// QueryCommunicationInteractions queries the communication_interactions edge of a Relationship.
+func (c *RelationshipClient) QueryCommunicationInteractions(_m *Relationship) *CommunicationInteractionQuery {
+	query := (&CommunicationInteractionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, id),
+			sqlgraph.To(communicationinteraction.Table, communicationinteraction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.CommunicationInteractionsTable, relationship.CommunicationInteractionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryParticipants queries the participants edge of a Relationship.
 func (c *RelationshipClient) QueryParticipants(_m *Relationship) *RelationshipParticipantQuery {
 	query := (&RelationshipParticipantClient{config: c.config}).Query()
@@ -13979,6 +15283,118 @@ func (c *RevenueWorkspaceClient) QueryScans(_m *RevenueWorkspace) *RevenueLeakSc
 	return query
 }
 
+// QueryCommunicationInteractions queries the communication_interactions edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryCommunicationInteractions(_m *RevenueWorkspace) *CommunicationInteractionQuery {
+	query := (&CommunicationInteractionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(communicationinteraction.Table, communicationinteraction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationInteractionsTable, revenueworkspace.CommunicationInteractionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommunicationParticipants queries the communication_participants edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryCommunicationParticipants(_m *RevenueWorkspace) *CommunicationParticipantQuery {
+	query := (&CommunicationParticipantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(communicationparticipant.Table, communicationparticipant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationParticipantsTable, revenueworkspace.CommunicationParticipantsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommunicationAttachments queries the communication_attachments edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryCommunicationAttachments(_m *RevenueWorkspace) *CommunicationAttachmentQuery {
+	query := (&CommunicationAttachmentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(communicationattachment.Table, communicationattachment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationAttachmentsTable, revenueworkspace.CommunicationAttachmentsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommunicationSyncCursors queries the communication_sync_cursors edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryCommunicationSyncCursors(_m *RevenueWorkspace) *CommunicationSyncCursorQuery {
+	query := (&CommunicationSyncCursorClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(communicationsynccursor.Table, communicationsynccursor.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationSyncCursorsTable, revenueworkspace.CommunicationSyncCursorsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommunicationPrivacyPolicies queries the communication_privacy_policies edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryCommunicationPrivacyPolicies(_m *RevenueWorkspace) *CommunicationPrivacyPolicyQuery {
+	query := (&CommunicationPrivacyPolicyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(communicationprivacypolicy.Table, communicationprivacypolicy.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationPrivacyPoliciesTable, revenueworkspace.CommunicationPrivacyPoliciesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommunicationPrivacyRules queries the communication_privacy_rules edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryCommunicationPrivacyRules(_m *RevenueWorkspace) *CommunicationPrivacyRuleQuery {
+	query := (&CommunicationPrivacyRuleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(communicationprivacyrule.Table, communicationprivacyrule.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationPrivacyRulesTable, revenueworkspace.CommunicationPrivacyRulesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommunicationShareGrants queries the communication_share_grants edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryCommunicationShareGrants(_m *RevenueWorkspace) *CommunicationShareGrantQuery {
+	query := (&CommunicationShareGrantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(communicationsharegrant.Table, communicationsharegrant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationShareGrantsTable, revenueworkspace.CommunicationShareGrantsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryRelationshipParticipants queries the relationship_participants edge of a RevenueWorkspace.
 func (c *RevenueWorkspaceClient) QueryRelationshipParticipants(_m *RevenueWorkspace) *RelationshipParticipantQuery {
 	query := (&RelationshipParticipantClient{config: c.config}).Query()
@@ -15801,6 +17217,102 @@ func (c *UserClient) QueryMailSignals(_m *User) *MailSignalQuery {
 	return query
 }
 
+// QueryOwnedCommunicationInteractions queries the owned_communication_interactions edge of a User.
+func (c *UserClient) QueryOwnedCommunicationInteractions(_m *User) *CommunicationInteractionQuery {
+	query := (&CommunicationInteractionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(communicationinteraction.Table, communicationinteraction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OwnedCommunicationInteractionsTable, user.OwnedCommunicationInteractionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommunicationSyncCursors queries the communication_sync_cursors edge of a User.
+func (c *UserClient) QueryCommunicationSyncCursors(_m *User) *CommunicationSyncCursorQuery {
+	query := (&CommunicationSyncCursorClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(communicationsynccursor.Table, communicationsynccursor.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommunicationSyncCursorsTable, user.CommunicationSyncCursorsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommunicationPrivacyPolicies queries the communication_privacy_policies edge of a User.
+func (c *UserClient) QueryCommunicationPrivacyPolicies(_m *User) *CommunicationPrivacyPolicyQuery {
+	query := (&CommunicationPrivacyPolicyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(communicationprivacypolicy.Table, communicationprivacypolicy.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommunicationPrivacyPoliciesTable, user.CommunicationPrivacyPoliciesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCommunicationPrivacyRules queries the communication_privacy_rules edge of a User.
+func (c *UserClient) QueryCommunicationPrivacyRules(_m *User) *CommunicationPrivacyRuleQuery {
+	query := (&CommunicationPrivacyRuleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(communicationprivacyrule.Table, communicationprivacyrule.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommunicationPrivacyRulesTable, user.CommunicationPrivacyRulesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOwnedCommunicationShareGrants queries the owned_communication_share_grants edge of a User.
+func (c *UserClient) QueryOwnedCommunicationShareGrants(_m *User) *CommunicationShareGrantQuery {
+	query := (&CommunicationShareGrantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(communicationsharegrant.Table, communicationsharegrant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OwnedCommunicationShareGrantsTable, user.OwnedCommunicationShareGrantsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReceivedCommunicationShareGrants queries the received_communication_share_grants edge of a User.
+func (c *UserClient) QueryReceivedCommunicationShareGrants(_m *User) *CommunicationShareGrantQuery {
+	query := (&CommunicationShareGrantClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(communicationsharegrant.Table, communicationsharegrant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ReceivedCommunicationShareGrantsTable, user.ReceivedCommunicationShareGrantsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryRelationshipParticipants queries the relationship_participants edge of a User.
 func (c *UserClient) QueryRelationshipParticipants(_m *User) *RelationshipParticipantQuery {
 	query := (&RelationshipParticipantClient{config: c.config}).Query()
@@ -17015,14 +18527,17 @@ type (
 		AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
-		CommitmentDependency, CommitmentEvent, ConnectorAuditEvent,
-		ConnectorCredentialCleanupJob, ConnectorCredentialRecovery,
-		ConnectorRevocationJob, ConsoleResource, ConversationIntelligenceArtifact,
-		CreditLedger, DeletedIdentity, Entity, EntityIdentifier, EntityResourceRef,
-		GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
-		MailBodyCache, MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage,
-		OAuthConnection, OAuthConnectionHistory, OAuthPending, Person, PersonAttribute,
-		PersonIdentity, PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
+		CommitmentDependency, CommitmentEvent, CommunicationAttachment,
+		CommunicationInteraction, CommunicationParticipant, CommunicationPrivacyPolicy,
+		CommunicationPrivacyRule, CommunicationShareGrant, CommunicationSyncCursor,
+		ConnectorAuditEvent, ConnectorCredentialCleanupJob,
+		ConnectorCredentialRecovery, ConnectorRevocationJob, ConsoleResource,
+		ConversationIntelligenceArtifact, CreditLedger, DeletedIdentity, Entity,
+		EntityIdentifier, EntityResourceRef, GoogleWatch, LLMUsage, LLMUsageHistory,
+		MCPConnection, MCPConnectionHistory, MailBodyCache, MailMessageMeta,
+		MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
+		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
+		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
 		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,
 		RelationshipAttentionItem, RelationshipIdentity, RelationshipIdentityCandidate,
 		RelationshipIdentityDecision, RelationshipLineageEvent,
@@ -17040,14 +18555,17 @@ type (
 		AgentToolResultBlob, AgentTurn, ApprovalToken, BackgroundTask,
 		BackgroundTaskArtifact, BackgroundTaskRun, BackgroundTaskRunEvent,
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
-		CommitmentDependency, CommitmentEvent, ConnectorAuditEvent,
-		ConnectorCredentialCleanupJob, ConnectorCredentialRecovery,
-		ConnectorRevocationJob, ConsoleResource, ConversationIntelligenceArtifact,
-		CreditLedger, DeletedIdentity, Entity, EntityIdentifier, EntityResourceRef,
-		GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
-		MailBodyCache, MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage,
-		OAuthConnection, OAuthConnectionHistory, OAuthPending, Person, PersonAttribute,
-		PersonIdentity, PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
+		CommitmentDependency, CommitmentEvent, CommunicationAttachment,
+		CommunicationInteraction, CommunicationParticipant, CommunicationPrivacyPolicy,
+		CommunicationPrivacyRule, CommunicationShareGrant, CommunicationSyncCursor,
+		ConnectorAuditEvent, ConnectorCredentialCleanupJob,
+		ConnectorCredentialRecovery, ConnectorRevocationJob, ConsoleResource,
+		ConversationIntelligenceArtifact, CreditLedger, DeletedIdentity, Entity,
+		EntityIdentifier, EntityResourceRef, GoogleWatch, LLMUsage, LLMUsageHistory,
+		MCPConnection, MCPConnectionHistory, MailBodyCache, MailMessageMeta,
+		MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
+		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
+		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
 		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,
 		RelationshipAttentionItem, RelationshipIdentity, RelationshipIdentityCandidate,
 		RelationshipIdentityDecision, RelationshipLineageEvent,

@@ -33,6 +33,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
@@ -175,6 +182,13 @@ func checkColumn(t, c string) error {
 			commitment.Table:                        commitment.ValidColumn,
 			commitmentdependency.Table:              commitmentdependency.ValidColumn,
 			commitmentevent.Table:                   commitmentevent.ValidColumn,
+			communicationattachment.Table:           communicationattachment.ValidColumn,
+			communicationinteraction.Table:          communicationinteraction.ValidColumn,
+			communicationparticipant.Table:          communicationparticipant.ValidColumn,
+			communicationprivacypolicy.Table:        communicationprivacypolicy.ValidColumn,
+			communicationprivacyrule.Table:          communicationprivacyrule.ValidColumn,
+			communicationsharegrant.Table:           communicationsharegrant.ValidColumn,
+			communicationsynccursor.Table:           communicationsynccursor.ValidColumn,
 			connectorauditevent.Table:               connectorauditevent.ValidColumn,
 			connectorcredentialcleanupjob.Table:     connectorcredentialcleanupjob.ValidColumn,
 			connectorcredentialrecovery.Table:       connectorcredentialrecovery.ValidColumn,

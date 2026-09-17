@@ -100,6 +100,8 @@ const (
 	EdgeEvidences = "evidences"
 	// EdgeMailThreads holds the string denoting the mail_threads edge name in mutations.
 	EdgeMailThreads = "mail_threads"
+	// EdgeCommunicationInteractions holds the string denoting the communication_interactions edge name in mutations.
+	EdgeCommunicationInteractions = "communication_interactions"
 	// EdgeParticipants holds the string denoting the participants edge name in mutations.
 	EdgeParticipants = "participants"
 	// EdgeIdentities holds the string denoting the identities edge name in mutations.
@@ -187,6 +189,13 @@ const (
 	MailThreadsInverseTable = "mail_threads"
 	// MailThreadsColumn is the table column denoting the mail_threads relation/edge.
 	MailThreadsColumn = "relationship_id"
+	// CommunicationInteractionsTable is the table that holds the communication_interactions relation/edge.
+	CommunicationInteractionsTable = "communication_interactions"
+	// CommunicationInteractionsInverseTable is the table name for the CommunicationInteraction entity.
+	// It exists in this package in order to avoid circular dependency with the "communicationinteraction" package.
+	CommunicationInteractionsInverseTable = "communication_interactions"
+	// CommunicationInteractionsColumn is the table column denoting the communication_interactions relation/edge.
+	CommunicationInteractionsColumn = "relationship_id"
 	// ParticipantsTable is the table that holds the participants relation/edge.
 	ParticipantsTable = "relationship_participants"
 	// ParticipantsInverseTable is the table name for the RelationshipParticipant entity.
@@ -656,6 +665,20 @@ func ByMailThreads(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByCommunicationInteractionsCount orders the results by communication_interactions count.
+func ByCommunicationInteractionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommunicationInteractionsStep(), opts...)
+	}
+}
+
+// ByCommunicationInteractions orders the results by communication_interactions terms.
+func ByCommunicationInteractions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommunicationInteractionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByParticipantsCount orders the results by participants count.
 func ByParticipantsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -884,6 +907,13 @@ func newMailThreadsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(MailThreadsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, MailThreadsTable, MailThreadsColumn),
+	)
+}
+func newCommunicationInteractionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommunicationInteractionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommunicationInteractionsTable, CommunicationInteractionsColumn),
 	)
 }
 func newParticipantsStep() *sqlgraph.Step {

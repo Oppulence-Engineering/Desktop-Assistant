@@ -78,6 +78,20 @@ type RevenueWorkspaceEdges struct {
 	OutboxEvents []*RevenueOutboxEvent `json:"outbox_events,omitempty"`
 	// Scans holds the value of the scans edge.
 	Scans []*RevenueLeakScan `json:"scans,omitempty"`
+	// CommunicationInteractions holds the value of the communication_interactions edge.
+	CommunicationInteractions []*CommunicationInteraction `json:"communication_interactions,omitempty"`
+	// CommunicationParticipants holds the value of the communication_participants edge.
+	CommunicationParticipants []*CommunicationParticipant `json:"communication_participants,omitempty"`
+	// CommunicationAttachments holds the value of the communication_attachments edge.
+	CommunicationAttachments []*CommunicationAttachment `json:"communication_attachments,omitempty"`
+	// CommunicationSyncCursors holds the value of the communication_sync_cursors edge.
+	CommunicationSyncCursors []*CommunicationSyncCursor `json:"communication_sync_cursors,omitempty"`
+	// CommunicationPrivacyPolicies holds the value of the communication_privacy_policies edge.
+	CommunicationPrivacyPolicies []*CommunicationPrivacyPolicy `json:"communication_privacy_policies,omitempty"`
+	// CommunicationPrivacyRules holds the value of the communication_privacy_rules edge.
+	CommunicationPrivacyRules []*CommunicationPrivacyRule `json:"communication_privacy_rules,omitempty"`
+	// CommunicationShareGrants holds the value of the communication_share_grants edge.
+	CommunicationShareGrants []*CommunicationShareGrant `json:"communication_share_grants,omitempty"`
 	// RelationshipParticipants holds the value of the relationship_participants edge.
 	RelationshipParticipants []*RelationshipParticipant `json:"relationship_participants,omitempty"`
 	// RelationshipIdentities holds the value of the relationship_identities edge.
@@ -130,9 +144,9 @@ type RevenueWorkspaceEdges struct {
 	ConsoleResources []*ConsoleResource `json:"console_resources,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [38]bool
+	loadedTypes [45]bool
 	// totalCount holds the count of the edges above.
-	totalCount [37]map[string]int
+	totalCount [44]map[string]int
 
 	namedMembers                            map[string][]*RevenueWorkspaceMember
 	namedRelationships                      map[string][]*Relationship
@@ -146,6 +160,13 @@ type RevenueWorkspaceEdges struct {
 	namedOutcomes                           map[string][]*ActionOutcome
 	namedOutboxEvents                       map[string][]*RevenueOutboxEvent
 	namedScans                              map[string][]*RevenueLeakScan
+	namedCommunicationInteractions          map[string][]*CommunicationInteraction
+	namedCommunicationParticipants          map[string][]*CommunicationParticipant
+	namedCommunicationAttachments           map[string][]*CommunicationAttachment
+	namedCommunicationSyncCursors           map[string][]*CommunicationSyncCursor
+	namedCommunicationPrivacyPolicies       map[string][]*CommunicationPrivacyPolicy
+	namedCommunicationPrivacyRules          map[string][]*CommunicationPrivacyRule
+	namedCommunicationShareGrants           map[string][]*CommunicationShareGrant
 	namedRelationshipParticipants           map[string][]*RelationshipParticipant
 	namedRelationshipIdentities             map[string][]*RelationshipIdentity
 	namedRelationshipProjectionJobs         map[string][]*RelationshipProjectionJob
@@ -292,10 +313,73 @@ func (e RevenueWorkspaceEdges) ScansOrErr() ([]*RevenueLeakScan, error) {
 	return nil, &NotLoadedError{edge: "scans"}
 }
 
+// CommunicationInteractionsOrErr returns the CommunicationInteractions value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) CommunicationInteractionsOrErr() ([]*CommunicationInteraction, error) {
+	if e.loadedTypes[13] {
+		return e.CommunicationInteractions, nil
+	}
+	return nil, &NotLoadedError{edge: "communication_interactions"}
+}
+
+// CommunicationParticipantsOrErr returns the CommunicationParticipants value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) CommunicationParticipantsOrErr() ([]*CommunicationParticipant, error) {
+	if e.loadedTypes[14] {
+		return e.CommunicationParticipants, nil
+	}
+	return nil, &NotLoadedError{edge: "communication_participants"}
+}
+
+// CommunicationAttachmentsOrErr returns the CommunicationAttachments value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) CommunicationAttachmentsOrErr() ([]*CommunicationAttachment, error) {
+	if e.loadedTypes[15] {
+		return e.CommunicationAttachments, nil
+	}
+	return nil, &NotLoadedError{edge: "communication_attachments"}
+}
+
+// CommunicationSyncCursorsOrErr returns the CommunicationSyncCursors value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) CommunicationSyncCursorsOrErr() ([]*CommunicationSyncCursor, error) {
+	if e.loadedTypes[16] {
+		return e.CommunicationSyncCursors, nil
+	}
+	return nil, &NotLoadedError{edge: "communication_sync_cursors"}
+}
+
+// CommunicationPrivacyPoliciesOrErr returns the CommunicationPrivacyPolicies value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) CommunicationPrivacyPoliciesOrErr() ([]*CommunicationPrivacyPolicy, error) {
+	if e.loadedTypes[17] {
+		return e.CommunicationPrivacyPolicies, nil
+	}
+	return nil, &NotLoadedError{edge: "communication_privacy_policies"}
+}
+
+// CommunicationPrivacyRulesOrErr returns the CommunicationPrivacyRules value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) CommunicationPrivacyRulesOrErr() ([]*CommunicationPrivacyRule, error) {
+	if e.loadedTypes[18] {
+		return e.CommunicationPrivacyRules, nil
+	}
+	return nil, &NotLoadedError{edge: "communication_privacy_rules"}
+}
+
+// CommunicationShareGrantsOrErr returns the CommunicationShareGrants value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) CommunicationShareGrantsOrErr() ([]*CommunicationShareGrant, error) {
+	if e.loadedTypes[19] {
+		return e.CommunicationShareGrants, nil
+	}
+	return nil, &NotLoadedError{edge: "communication_share_grants"}
+}
+
 // RelationshipParticipantsOrErr returns the RelationshipParticipants value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipParticipantsOrErr() ([]*RelationshipParticipant, error) {
-	if e.loadedTypes[13] {
+	if e.loadedTypes[20] {
 		return e.RelationshipParticipants, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_participants"}
@@ -304,7 +388,7 @@ func (e RevenueWorkspaceEdges) RelationshipParticipantsOrErr() ([]*RelationshipP
 // RelationshipIdentitiesOrErr returns the RelationshipIdentities value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipIdentitiesOrErr() ([]*RelationshipIdentity, error) {
-	if e.loadedTypes[14] {
+	if e.loadedTypes[21] {
 		return e.RelationshipIdentities, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_identities"}
@@ -313,7 +397,7 @@ func (e RevenueWorkspaceEdges) RelationshipIdentitiesOrErr() ([]*RelationshipIde
 // RelationshipProjectionJobsOrErr returns the RelationshipProjectionJobs value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipProjectionJobsOrErr() ([]*RelationshipProjectionJob, error) {
-	if e.loadedTypes[15] {
+	if e.loadedTypes[22] {
 		return e.RelationshipProjectionJobs, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_projection_jobs"}
@@ -322,7 +406,7 @@ func (e RevenueWorkspaceEdges) RelationshipProjectionJobsOrErr() ([]*Relationshi
 // EvidenceKeysOrErr returns the EvidenceKeys value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) EvidenceKeysOrErr() ([]*TenantEvidenceKey, error) {
-	if e.loadedTypes[16] {
+	if e.loadedTypes[23] {
 		return e.EvidenceKeys, nil
 	}
 	return nil, &NotLoadedError{edge: "evidence_keys"}
@@ -331,7 +415,7 @@ func (e RevenueWorkspaceEdges) EvidenceKeysOrErr() ([]*TenantEvidenceKey, error)
 // FeatureControlsOrErr returns the FeatureControls value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) FeatureControlsOrErr() ([]*WorkspaceFeatureControl, error) {
-	if e.loadedTypes[17] {
+	if e.loadedTypes[24] {
 		return e.FeatureControls, nil
 	}
 	return nil, &NotLoadedError{edge: "feature_controls"}
@@ -340,7 +424,7 @@ func (e RevenueWorkspaceEdges) FeatureControlsOrErr() ([]*WorkspaceFeatureContro
 // TrustEventsOrErr returns the TrustEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) TrustEventsOrErr() ([]*RevenueTrustEvent, error) {
-	if e.loadedTypes[18] {
+	if e.loadedTypes[25] {
 		return e.TrustEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "trust_events"}
@@ -349,7 +433,7 @@ func (e RevenueWorkspaceEdges) TrustEventsOrErr() ([]*RevenueTrustEvent, error) 
 // IdentityCandidatesOrErr returns the IdentityCandidates value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) IdentityCandidatesOrErr() ([]*RelationshipIdentityCandidate, error) {
-	if e.loadedTypes[19] {
+	if e.loadedTypes[26] {
 		return e.IdentityCandidates, nil
 	}
 	return nil, &NotLoadedError{edge: "identity_candidates"}
@@ -358,7 +442,7 @@ func (e RevenueWorkspaceEdges) IdentityCandidatesOrErr() ([]*RelationshipIdentit
 // RelationshipLineageEventsOrErr returns the RelationshipLineageEvents value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipLineageEventsOrErr() ([]*RelationshipLineageEvent, error) {
-	if e.loadedTypes[20] {
+	if e.loadedTypes[27] {
 		return e.RelationshipLineageEvents, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_lineage_events"}
@@ -367,7 +451,7 @@ func (e RevenueWorkspaceEdges) RelationshipLineageEventsOrErr() ([]*Relationship
 // RelationshipIdentityDecisionsOrErr returns the RelationshipIdentityDecisions value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipIdentityDecisionsOrErr() ([]*RelationshipIdentityDecision, error) {
-	if e.loadedTypes[21] {
+	if e.loadedTypes[28] {
 		return e.RelationshipIdentityDecisions, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_identity_decisions"}
@@ -376,7 +460,7 @@ func (e RevenueWorkspaceEdges) RelationshipIdentityDecisionsOrErr() ([]*Relation
 // RelationshipReviewAcknowledgementsOrErr returns the RelationshipReviewAcknowledgements value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipReviewAcknowledgementsOrErr() ([]*RelationshipReviewAcknowledgement, error) {
-	if e.loadedTypes[22] {
+	if e.loadedTypes[29] {
 		return e.RelationshipReviewAcknowledgements, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_review_acknowledgements"}
@@ -385,7 +469,7 @@ func (e RevenueWorkspaceEdges) RelationshipReviewAcknowledgementsOrErr() ([]*Rel
 // RelationshipAttentionItemsOrErr returns the RelationshipAttentionItems value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipAttentionItemsOrErr() ([]*RelationshipAttentionItem, error) {
-	if e.loadedTypes[23] {
+	if e.loadedTypes[30] {
 		return e.RelationshipAttentionItems, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_attention_items"}
@@ -394,7 +478,7 @@ func (e RevenueWorkspaceEdges) RelationshipAttentionItemsOrErr() ([]*Relationshi
 // RelationshipObservationsOrErr returns the RelationshipObservations value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipObservationsOrErr() ([]*RelationshipObservation, error) {
-	if e.loadedTypes[24] {
+	if e.loadedTypes[31] {
 		return e.RelationshipObservations, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_observations"}
@@ -403,7 +487,7 @@ func (e RevenueWorkspaceEdges) RelationshipObservationsOrErr() ([]*RelationshipO
 // RelationshipAssertionsOrErr returns the RelationshipAssertions value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipAssertionsOrErr() ([]*RelationshipAssertion, error) {
-	if e.loadedTypes[25] {
+	if e.loadedTypes[32] {
 		return e.RelationshipAssertions, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_assertions"}
@@ -412,7 +496,7 @@ func (e RevenueWorkspaceEdges) RelationshipAssertionsOrErr() ([]*RelationshipAss
 // RelationshipStateSnapshotsOrErr returns the RelationshipStateSnapshots value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipStateSnapshotsOrErr() ([]*RelationshipStateSnapshot, error) {
-	if e.loadedTypes[26] {
+	if e.loadedTypes[33] {
 		return e.RelationshipStateSnapshots, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_state_snapshots"}
@@ -421,7 +505,7 @@ func (e RevenueWorkspaceEdges) RelationshipStateSnapshotsOrErr() ([]*Relationshi
 // RelationshipSourceStatusesOrErr returns the RelationshipSourceStatuses value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipSourceStatusesOrErr() ([]*RelationshipSourceStatus, error) {
-	if e.loadedTypes[27] {
+	if e.loadedTypes[34] {
 		return e.RelationshipSourceStatuses, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_source_statuses"}
@@ -430,7 +514,7 @@ func (e RevenueWorkspaceEdges) RelationshipSourceStatusesOrErr() ([]*Relationshi
 // RelationshipPersonsOrErr returns the RelationshipPersons value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) RelationshipPersonsOrErr() ([]*Person, error) {
-	if e.loadedTypes[28] {
+	if e.loadedTypes[35] {
 		return e.RelationshipPersons, nil
 	}
 	return nil, &NotLoadedError{edge: "relationship_persons"}
@@ -439,7 +523,7 @@ func (e RevenueWorkspaceEdges) RelationshipPersonsOrErr() ([]*Person, error) {
 // EntitiesOrErr returns the Entities value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) EntitiesOrErr() ([]*Entity, error) {
-	if e.loadedTypes[29] {
+	if e.loadedTypes[36] {
 		return e.Entities, nil
 	}
 	return nil, &NotLoadedError{edge: "entities"}
@@ -448,7 +532,7 @@ func (e RevenueWorkspaceEdges) EntitiesOrErr() ([]*Entity, error) {
 // EntityResourceRefsOrErr returns the EntityResourceRefs value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) EntityResourceRefsOrErr() ([]*EntityResourceRef, error) {
-	if e.loadedTypes[30] {
+	if e.loadedTypes[37] {
 		return e.EntityResourceRefs, nil
 	}
 	return nil, &NotLoadedError{edge: "entity_resource_refs"}
@@ -457,7 +541,7 @@ func (e RevenueWorkspaceEdges) EntityResourceRefsOrErr() ([]*EntityResourceRef, 
 // EntityIdentifiersOrErr returns the EntityIdentifiers value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) EntityIdentifiersOrErr() ([]*EntityIdentifier, error) {
-	if e.loadedTypes[31] {
+	if e.loadedTypes[38] {
 		return e.EntityIdentifiers, nil
 	}
 	return nil, &NotLoadedError{edge: "entity_identifiers"}
@@ -466,7 +550,7 @@ func (e RevenueWorkspaceEdges) EntityIdentifiersOrErr() ([]*EntityIdentifier, er
 // PersonIdentitiesOrErr returns the PersonIdentities value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) PersonIdentitiesOrErr() ([]*PersonIdentity, error) {
-	if e.loadedTypes[32] {
+	if e.loadedTypes[39] {
 		return e.PersonIdentities, nil
 	}
 	return nil, &NotLoadedError{edge: "person_identities"}
@@ -475,7 +559,7 @@ func (e RevenueWorkspaceEdges) PersonIdentitiesOrErr() ([]*PersonIdentity, error
 // PersonSuppressionsOrErr returns the PersonSuppressions value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) PersonSuppressionsOrErr() ([]*PersonSuppression, error) {
-	if e.loadedTypes[33] {
+	if e.loadedTypes[40] {
 		return e.PersonSuppressions, nil
 	}
 	return nil, &NotLoadedError{edge: "person_suppressions"}
@@ -484,7 +568,7 @@ func (e RevenueWorkspaceEdges) PersonSuppressionsOrErr() ([]*PersonSuppression, 
 // PersonAttributesOrErr returns the PersonAttributes value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) PersonAttributesOrErr() ([]*PersonAttribute, error) {
-	if e.loadedTypes[34] {
+	if e.loadedTypes[41] {
 		return e.PersonAttributes, nil
 	}
 	return nil, &NotLoadedError{edge: "person_attributes"}
@@ -493,7 +577,7 @@ func (e RevenueWorkspaceEdges) PersonAttributesOrErr() ([]*PersonAttribute, erro
 // PersonInteractionStatsOrErr returns the PersonInteractionStats value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) PersonInteractionStatsOrErr() ([]*PersonInteractionStat, error) {
-	if e.loadedTypes[35] {
+	if e.loadedTypes[42] {
 		return e.PersonInteractionStats, nil
 	}
 	return nil, &NotLoadedError{edge: "person_interaction_stats"}
@@ -502,7 +586,7 @@ func (e RevenueWorkspaceEdges) PersonInteractionStatsOrErr() ([]*PersonInteracti
 // PersonMergeCandidatesOrErr returns the PersonMergeCandidates value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) PersonMergeCandidatesOrErr() ([]*PersonMergeCandidate, error) {
-	if e.loadedTypes[36] {
+	if e.loadedTypes[43] {
 		return e.PersonMergeCandidates, nil
 	}
 	return nil, &NotLoadedError{edge: "person_merge_candidates"}
@@ -511,7 +595,7 @@ func (e RevenueWorkspaceEdges) PersonMergeCandidatesOrErr() ([]*PersonMergeCandi
 // ConsoleResourcesOrErr returns the ConsoleResources value or an error if the edge
 // was not loaded in eager-loading.
 func (e RevenueWorkspaceEdges) ConsoleResourcesOrErr() ([]*ConsoleResource, error) {
-	if e.loadedTypes[37] {
+	if e.loadedTypes[44] {
 		return e.ConsoleResources, nil
 	}
 	return nil, &NotLoadedError{edge: "console_resources"}
@@ -712,6 +796,41 @@ func (_m *RevenueWorkspace) QueryOutboxEvents() *RevenueOutboxEventQuery {
 // QueryScans queries the "scans" edge of the RevenueWorkspace entity.
 func (_m *RevenueWorkspace) QueryScans() *RevenueLeakScanQuery {
 	return NewRevenueWorkspaceClient(_m.config).QueryScans(_m)
+}
+
+// QueryCommunicationInteractions queries the "communication_interactions" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryCommunicationInteractions() *CommunicationInteractionQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryCommunicationInteractions(_m)
+}
+
+// QueryCommunicationParticipants queries the "communication_participants" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryCommunicationParticipants() *CommunicationParticipantQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryCommunicationParticipants(_m)
+}
+
+// QueryCommunicationAttachments queries the "communication_attachments" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryCommunicationAttachments() *CommunicationAttachmentQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryCommunicationAttachments(_m)
+}
+
+// QueryCommunicationSyncCursors queries the "communication_sync_cursors" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryCommunicationSyncCursors() *CommunicationSyncCursorQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryCommunicationSyncCursors(_m)
+}
+
+// QueryCommunicationPrivacyPolicies queries the "communication_privacy_policies" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryCommunicationPrivacyPolicies() *CommunicationPrivacyPolicyQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryCommunicationPrivacyPolicies(_m)
+}
+
+// QueryCommunicationPrivacyRules queries the "communication_privacy_rules" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryCommunicationPrivacyRules() *CommunicationPrivacyRuleQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryCommunicationPrivacyRules(_m)
+}
+
+// QueryCommunicationShareGrants queries the "communication_share_grants" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryCommunicationShareGrants() *CommunicationShareGrantQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryCommunicationShareGrants(_m)
 }
 
 // QueryRelationshipParticipants queries the "relationship_participants" edge of the RevenueWorkspace entity.
@@ -1194,6 +1313,174 @@ func (_m *RevenueWorkspace) appendNamedScans(name string, edges ...*RevenueLeakS
 		_m.Edges.namedScans[name] = []*RevenueLeakScan{}
 	} else {
 		_m.Edges.namedScans[name] = append(_m.Edges.namedScans[name], edges...)
+	}
+}
+
+// NamedCommunicationInteractions returns the CommunicationInteractions named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedCommunicationInteractions(name string) ([]*CommunicationInteraction, error) {
+	if _m.Edges.namedCommunicationInteractions == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedCommunicationInteractions[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedCommunicationInteractions(name string, edges ...*CommunicationInteraction) {
+	if _m.Edges.namedCommunicationInteractions == nil {
+		_m.Edges.namedCommunicationInteractions = make(map[string][]*CommunicationInteraction)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedCommunicationInteractions[name] = []*CommunicationInteraction{}
+	} else {
+		_m.Edges.namedCommunicationInteractions[name] = append(_m.Edges.namedCommunicationInteractions[name], edges...)
+	}
+}
+
+// NamedCommunicationParticipants returns the CommunicationParticipants named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedCommunicationParticipants(name string) ([]*CommunicationParticipant, error) {
+	if _m.Edges.namedCommunicationParticipants == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedCommunicationParticipants[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedCommunicationParticipants(name string, edges ...*CommunicationParticipant) {
+	if _m.Edges.namedCommunicationParticipants == nil {
+		_m.Edges.namedCommunicationParticipants = make(map[string][]*CommunicationParticipant)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedCommunicationParticipants[name] = []*CommunicationParticipant{}
+	} else {
+		_m.Edges.namedCommunicationParticipants[name] = append(_m.Edges.namedCommunicationParticipants[name], edges...)
+	}
+}
+
+// NamedCommunicationAttachments returns the CommunicationAttachments named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedCommunicationAttachments(name string) ([]*CommunicationAttachment, error) {
+	if _m.Edges.namedCommunicationAttachments == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedCommunicationAttachments[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedCommunicationAttachments(name string, edges ...*CommunicationAttachment) {
+	if _m.Edges.namedCommunicationAttachments == nil {
+		_m.Edges.namedCommunicationAttachments = make(map[string][]*CommunicationAttachment)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedCommunicationAttachments[name] = []*CommunicationAttachment{}
+	} else {
+		_m.Edges.namedCommunicationAttachments[name] = append(_m.Edges.namedCommunicationAttachments[name], edges...)
+	}
+}
+
+// NamedCommunicationSyncCursors returns the CommunicationSyncCursors named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedCommunicationSyncCursors(name string) ([]*CommunicationSyncCursor, error) {
+	if _m.Edges.namedCommunicationSyncCursors == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedCommunicationSyncCursors[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedCommunicationSyncCursors(name string, edges ...*CommunicationSyncCursor) {
+	if _m.Edges.namedCommunicationSyncCursors == nil {
+		_m.Edges.namedCommunicationSyncCursors = make(map[string][]*CommunicationSyncCursor)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedCommunicationSyncCursors[name] = []*CommunicationSyncCursor{}
+	} else {
+		_m.Edges.namedCommunicationSyncCursors[name] = append(_m.Edges.namedCommunicationSyncCursors[name], edges...)
+	}
+}
+
+// NamedCommunicationPrivacyPolicies returns the CommunicationPrivacyPolicies named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedCommunicationPrivacyPolicies(name string) ([]*CommunicationPrivacyPolicy, error) {
+	if _m.Edges.namedCommunicationPrivacyPolicies == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedCommunicationPrivacyPolicies[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedCommunicationPrivacyPolicies(name string, edges ...*CommunicationPrivacyPolicy) {
+	if _m.Edges.namedCommunicationPrivacyPolicies == nil {
+		_m.Edges.namedCommunicationPrivacyPolicies = make(map[string][]*CommunicationPrivacyPolicy)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedCommunicationPrivacyPolicies[name] = []*CommunicationPrivacyPolicy{}
+	} else {
+		_m.Edges.namedCommunicationPrivacyPolicies[name] = append(_m.Edges.namedCommunicationPrivacyPolicies[name], edges...)
+	}
+}
+
+// NamedCommunicationPrivacyRules returns the CommunicationPrivacyRules named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedCommunicationPrivacyRules(name string) ([]*CommunicationPrivacyRule, error) {
+	if _m.Edges.namedCommunicationPrivacyRules == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedCommunicationPrivacyRules[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedCommunicationPrivacyRules(name string, edges ...*CommunicationPrivacyRule) {
+	if _m.Edges.namedCommunicationPrivacyRules == nil {
+		_m.Edges.namedCommunicationPrivacyRules = make(map[string][]*CommunicationPrivacyRule)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedCommunicationPrivacyRules[name] = []*CommunicationPrivacyRule{}
+	} else {
+		_m.Edges.namedCommunicationPrivacyRules[name] = append(_m.Edges.namedCommunicationPrivacyRules[name], edges...)
+	}
+}
+
+// NamedCommunicationShareGrants returns the CommunicationShareGrants named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedCommunicationShareGrants(name string) ([]*CommunicationShareGrant, error) {
+	if _m.Edges.namedCommunicationShareGrants == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedCommunicationShareGrants[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedCommunicationShareGrants(name string, edges ...*CommunicationShareGrant) {
+	if _m.Edges.namedCommunicationShareGrants == nil {
+		_m.Edges.namedCommunicationShareGrants = make(map[string][]*CommunicationShareGrant)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedCommunicationShareGrants[name] = []*CommunicationShareGrant{}
+	} else {
+		_m.Edges.namedCommunicationShareGrants[name] = append(_m.Edges.namedCommunicationShareGrants[name], edges...)
 	}
 }
 

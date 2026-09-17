@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
@@ -54,6 +55,7 @@ type RelationshipQuery struct {
 	withActions                                *RevenueActionQuery
 	withEvidences                              *RevenueEvidenceQuery
 	withMailThreads                            *MailThreadQuery
+	withCommunicationInteractions              *CommunicationInteractionQuery
 	withParticipants                           *RelationshipParticipantQuery
 	withIdentities                             *RelationshipIdentityQuery
 	withPersonInteractionStats                 *PersonInteractionStatQuery
@@ -76,6 +78,7 @@ type RelationshipQuery struct {
 	withNamedActions                           map[string]*RevenueActionQuery
 	withNamedEvidences                         map[string]*RevenueEvidenceQuery
 	withNamedMailThreads                       map[string]*MailThreadQuery
+	withNamedCommunicationInteractions         map[string]*CommunicationInteractionQuery
 	withNamedParticipants                      map[string]*RelationshipParticipantQuery
 	withNamedIdentities                        map[string]*RelationshipIdentityQuery
 	withNamedPersonInteractionStats            map[string]*PersonInteractionStatQuery
@@ -315,6 +318,28 @@ func (_q *RelationshipQuery) QueryMailThreads() *MailThreadQuery {
 			sqlgraph.From(relationship.Table, relationship.FieldID, selector),
 			sqlgraph.To(mailthread.Table, mailthread.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, relationship.MailThreadsTable, relationship.MailThreadsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommunicationInteractions chains the current query on the "communication_interactions" edge.
+func (_q *RelationshipQuery) QueryCommunicationInteractions() *CommunicationInteractionQuery {
+	query := (&CommunicationInteractionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(relationship.Table, relationship.FieldID, selector),
+			sqlgraph.To(communicationinteraction.Table, communicationinteraction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, relationship.CommunicationInteractionsTable, relationship.CommunicationInteractionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -787,6 +812,7 @@ func (_q *RelationshipQuery) Clone() *RelationshipQuery {
 		withActions:                           _q.withActions.Clone(),
 		withEvidences:                         _q.withEvidences.Clone(),
 		withMailThreads:                       _q.withMailThreads.Clone(),
+		withCommunicationInteractions:         _q.withCommunicationInteractions.Clone(),
 		withParticipants:                      _q.withParticipants.Clone(),
 		withIdentities:                        _q.withIdentities.Clone(),
 		withPersonInteractionStats:            _q.withPersonInteractionStats.Clone(),
@@ -901,6 +927,17 @@ func (_q *RelationshipQuery) WithMailThreads(opts ...func(*MailThreadQuery)) *Re
 		opt(query)
 	}
 	_q.withMailThreads = query
+	return _q
+}
+
+// WithCommunicationInteractions tells the query-builder to eager-load the nodes that are connected to
+// the "communication_interactions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithCommunicationInteractions(opts ...func(*CommunicationInteractionQuery)) *RelationshipQuery {
+	query := (&CommunicationInteractionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommunicationInteractions = query
 	return _q
 }
 
@@ -1121,7 +1158,7 @@ func (_q *RelationshipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		nodes       = []*Relationship{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [21]bool{
+		loadedTypes = [22]bool{
 			_q.withWorkspace != nil,
 			_q.withUser != nil,
 			_q.withCommitments != nil,
@@ -1131,6 +1168,7 @@ func (_q *RelationshipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 			_q.withActions != nil,
 			_q.withEvidences != nil,
 			_q.withMailThreads != nil,
+			_q.withCommunicationInteractions != nil,
 			_q.withParticipants != nil,
 			_q.withIdentities != nil,
 			_q.withPersonInteractionStats != nil,
@@ -1238,6 +1276,15 @@ func (_q *RelationshipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		if err := _q.loadMailThreads(ctx, query, nodes,
 			func(n *Relationship) { n.Edges.MailThreads = []*MailThread{} },
 			func(n *Relationship, e *MailThread) { n.Edges.MailThreads = append(n.Edges.MailThreads, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCommunicationInteractions; query != nil {
+		if err := _q.loadCommunicationInteractions(ctx, query, nodes,
+			func(n *Relationship) { n.Edges.CommunicationInteractions = []*CommunicationInteraction{} },
+			func(n *Relationship, e *CommunicationInteraction) {
+				n.Edges.CommunicationInteractions = append(n.Edges.CommunicationInteractions, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -1389,6 +1436,13 @@ func (_q *RelationshipQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		if err := _q.loadMailThreads(ctx, query, nodes,
 			func(n *Relationship) { n.appendNamedMailThreads(name) },
 			func(n *Relationship, e *MailThread) { n.appendNamedMailThreads(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCommunicationInteractions {
+		if err := _q.loadCommunicationInteractions(ctx, query, nodes,
+			func(n *Relationship) { n.appendNamedCommunicationInteractions(name) },
+			func(n *Relationship, e *CommunicationInteraction) { n.appendNamedCommunicationInteractions(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1783,6 +1837,37 @@ func (_q *RelationshipQuery) loadMailThreads(ctx context.Context, query *MailThr
 	query.withFKs = true
 	query.Where(predicate.MailThread(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(relationship.MailThreadsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.relationship_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "relationship_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "relationship_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RelationshipQuery) loadCommunicationInteractions(ctx context.Context, query *CommunicationInteractionQuery, nodes []*Relationship, init func(*Relationship), assign func(*Relationship, *CommunicationInteraction)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Relationship)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationInteraction(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(relationship.CommunicationInteractionsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -2353,6 +2438,20 @@ func (_q *RelationshipQuery) WithNamedMailThreads(name string, opts ...func(*Mai
 		_q.withNamedMailThreads = make(map[string]*MailThreadQuery)
 	}
 	_q.withNamedMailThreads[name] = query
+	return _q
+}
+
+// WithNamedCommunicationInteractions tells the query-builder to eager-load the nodes that are connected to the "communication_interactions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RelationshipQuery) WithNamedCommunicationInteractions(name string, opts ...func(*CommunicationInteractionQuery)) *RelationshipQuery {
+	query := (&CommunicationInteractionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommunicationInteractions == nil {
+		_q.withNamedCommunicationInteractions = make(map[string]*CommunicationInteractionQuery)
+	}
+	_q.withNamedCommunicationInteractions[name] = query
 	return _q
 }
 

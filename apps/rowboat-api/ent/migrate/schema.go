@@ -1126,6 +1126,362 @@ var (
 			},
 		},
 	}
+	// CommunicationAttachmentsColumns holds the columns for the "communication_attachments" table.
+	CommunicationAttachmentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "provider_attachment_id", Type: field.TypeString},
+		{Name: "filename", Type: field.TypeString, Nullable: true},
+		{Name: "mime_type", Type: field.TypeString, Nullable: true},
+		{Name: "size_bytes", Type: field.TypeInt64, Default: 0},
+		{Name: "checksum", Type: field.TypeString, Nullable: true},
+		{Name: "visibility", Type: field.TypeString, Default: "private"},
+		{Name: "scan_status", Type: field.TypeString, Default: "not_scanned"},
+		{Name: "scanned_at", Type: field.TypeTime, Nullable: true},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "sealed_content", Type: field.TypeBytes, Nullable: true},
+		{Name: "sealed_extracted_text", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "communication_interaction_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+	}
+	// CommunicationAttachmentsTable holds the schema information for the "communication_attachments" table.
+	CommunicationAttachmentsTable = &schema.Table{
+		Name:       "communication_attachments",
+		Columns:    CommunicationAttachmentsColumns,
+		PrimaryKey: []*schema.Column{CommunicationAttachmentsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "communication_attachments_communication_interactions_attachments",
+				Columns:    []*schema.Column{CommunicationAttachmentsColumns[14]},
+				RefColumns: []*schema.Column{CommunicationInteractionsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "communication_attachments_revenue_workspaces_communication_attachments",
+				Columns:    []*schema.Column{CommunicationAttachmentsColumns[15]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "communicationattachment_provider_attachment_id_communication_interaction_id",
+				Unique:  true,
+				Columns: []*schema.Column{CommunicationAttachmentsColumns[3], CommunicationAttachmentsColumns[14]},
+			},
+			{
+				Name:    "communicationattachment_scan_status_expires_at_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{CommunicationAttachmentsColumns[9], CommunicationAttachmentsColumns[11], CommunicationAttachmentsColumns[15]},
+			},
+		},
+	}
+	// CommunicationInteractionsColumns holds the columns for the "communication_interactions" table.
+	CommunicationInteractionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "source", Type: field.TypeString},
+		{Name: "source_account_id", Type: field.TypeString},
+		{Name: "provider_object_id", Type: field.TypeString},
+		{Name: "source_version", Type: field.TypeString, Default: "1"},
+		{Name: "interaction_type", Type: field.TypeString},
+		{Name: "direction", Type: field.TypeString, Nullable: true},
+		{Name: "subject", Type: field.TypeString, Nullable: true},
+		{Name: "occurred_at", Type: field.TypeTime},
+		{Name: "received_at", Type: field.TypeTime},
+		{Name: "visibility", Type: field.TypeString, Default: "metadata"},
+		{Name: "deleted", Type: field.TypeBool, Default: false},
+		{Name: "content_hash", Type: field.TypeString},
+		{Name: "metadata_json", Type: field.TypeString, Size: 2147483647, Default: "{}"},
+		{Name: "relationship_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_owned_communication_interactions", Type: field.TypeUUID},
+	}
+	// CommunicationInteractionsTable holds the schema information for the "communication_interactions" table.
+	CommunicationInteractionsTable = &schema.Table{
+		Name:       "communication_interactions",
+		Columns:    CommunicationInteractionsColumns,
+		PrimaryKey: []*schema.Column{CommunicationInteractionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "communication_interactions_relationships_communication_interactions",
+				Columns:    []*schema.Column{CommunicationInteractionsColumns[16]},
+				RefColumns: []*schema.Column{RelationshipsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "communication_interactions_revenue_workspaces_communication_interactions",
+				Columns:    []*schema.Column{CommunicationInteractionsColumns[17]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "communication_interactions_users_owned_communication_interactions",
+				Columns:    []*schema.Column{CommunicationInteractionsColumns[18]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "communicationinteraction_source_source_account_id_provider_object_id_source_version_revenue_workspace_id",
+				Unique:  true,
+				Columns: []*schema.Column{CommunicationInteractionsColumns[3], CommunicationInteractionsColumns[4], CommunicationInteractionsColumns[5], CommunicationInteractionsColumns[6], CommunicationInteractionsColumns[17]},
+			},
+			{
+				Name:    "communicationinteraction_occurred_at_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{CommunicationInteractionsColumns[10], CommunicationInteractionsColumns[17]},
+			},
+			{
+				Name:    "communicationinteraction_occurred_at_relationship_id",
+				Unique:  false,
+				Columns: []*schema.Column{CommunicationInteractionsColumns[10], CommunicationInteractionsColumns[16]},
+			},
+			{
+				Name:    "communicationinteraction_occurred_at_user_owned_communication_interactions",
+				Unique:  false,
+				Columns: []*schema.Column{CommunicationInteractionsColumns[10], CommunicationInteractionsColumns[18]},
+			},
+		},
+	}
+	// CommunicationParticipantsColumns holds the columns for the "communication_participants" table.
+	CommunicationParticipantsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "email", Type: field.TypeString},
+		{Name: "display_name", Type: field.TypeString, Nullable: true},
+		{Name: "role", Type: field.TypeString},
+		{Name: "external", Type: field.TypeBool, Default: true},
+		{Name: "owner", Type: field.TypeBool, Default: false},
+		{Name: "communication_interaction_id", Type: field.TypeUUID},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+	}
+	// CommunicationParticipantsTable holds the schema information for the "communication_participants" table.
+	CommunicationParticipantsTable = &schema.Table{
+		Name:       "communication_participants",
+		Columns:    CommunicationParticipantsColumns,
+		PrimaryKey: []*schema.Column{CommunicationParticipantsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "communication_participants_communication_interactions_participants",
+				Columns:    []*schema.Column{CommunicationParticipantsColumns[8]},
+				RefColumns: []*schema.Column{CommunicationInteractionsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "communication_participants_revenue_workspaces_communication_participants",
+				Columns:    []*schema.Column{CommunicationParticipantsColumns[9]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "communicationparticipant_email_role_communication_interaction_id",
+				Unique:  true,
+				Columns: []*schema.Column{CommunicationParticipantsColumns[3], CommunicationParticipantsColumns[5], CommunicationParticipantsColumns[8]},
+			},
+			{
+				Name:    "communicationparticipant_email_revenue_workspace_id",
+				Unique:  false,
+				Columns: []*schema.Column{CommunicationParticipantsColumns[3], CommunicationParticipantsColumns[9]},
+			},
+		},
+	}
+	// CommunicationPrivacyPoliciesColumns holds the columns for the "communication_privacy_policies" table.
+	CommunicationPrivacyPoliciesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "source_account_id", Type: field.TypeString},
+		{Name: "metadata_visibility", Type: field.TypeString, Default: "workspace"},
+		{Name: "share_subject", Type: field.TypeBool, Default: true},
+		{Name: "share_body", Type: field.TypeBool, Default: false},
+		{Name: "share_attachments", Type: field.TypeBool, Default: false},
+		{Name: "signature_enrichment", Type: field.TypeBool, Default: true},
+		{Name: "model_contact_extraction", Type: field.TypeBool, Default: true},
+		{Name: "retention_days", Type: field.TypeInt, Default: 540},
+		{Name: "version", Type: field.TypeInt, Default: 1},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_communication_privacy_policies", Type: field.TypeUUID},
+	}
+	// CommunicationPrivacyPoliciesTable holds the schema information for the "communication_privacy_policies" table.
+	CommunicationPrivacyPoliciesTable = &schema.Table{
+		Name:       "communication_privacy_policies",
+		Columns:    CommunicationPrivacyPoliciesColumns,
+		PrimaryKey: []*schema.Column{CommunicationPrivacyPoliciesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "communication_privacy_policies_revenue_workspaces_communication_privacy_policies",
+				Columns:    []*schema.Column{CommunicationPrivacyPoliciesColumns[12]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "communication_privacy_policies_users_communication_privacy_policies",
+				Columns:    []*schema.Column{CommunicationPrivacyPoliciesColumns[13]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "communicationprivacypolicy_source_account_id_revenue_workspace_id_user_communication_privacy_policies",
+				Unique:  true,
+				Columns: []*schema.Column{CommunicationPrivacyPoliciesColumns[3], CommunicationPrivacyPoliciesColumns[12], CommunicationPrivacyPoliciesColumns[13]},
+			},
+		},
+	}
+	// CommunicationPrivacyRulesColumns holds the columns for the "communication_privacy_rules" table.
+	CommunicationPrivacyRulesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "value", Type: field.TypeString},
+		{Name: "value_hash", Type: field.TypeString},
+		{Name: "active", Type: field.TypeBool, Default: true},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_communication_privacy_rules", Type: field.TypeUUID},
+	}
+	// CommunicationPrivacyRulesTable holds the schema information for the "communication_privacy_rules" table.
+	CommunicationPrivacyRulesTable = &schema.Table{
+		Name:       "communication_privacy_rules",
+		Columns:    CommunicationPrivacyRulesColumns,
+		PrimaryKey: []*schema.Column{CommunicationPrivacyRulesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "communication_privacy_rules_revenue_workspaces_communication_privacy_rules",
+				Columns:    []*schema.Column{CommunicationPrivacyRulesColumns[7]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "communication_privacy_rules_users_communication_privacy_rules",
+				Columns:    []*schema.Column{CommunicationPrivacyRulesColumns[8]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "communicationprivacyrule_kind_value_hash_revenue_workspace_id_user_communication_privacy_rules",
+				Unique:  true,
+				Columns: []*schema.Column{CommunicationPrivacyRulesColumns[3], CommunicationPrivacyRulesColumns[5], CommunicationPrivacyRulesColumns[7], CommunicationPrivacyRulesColumns[8]},
+			},
+			{
+				Name:    "communicationprivacyrule_active_revenue_workspace_id_user_communication_privacy_rules",
+				Unique:  false,
+				Columns: []*schema.Column{CommunicationPrivacyRulesColumns[6], CommunicationPrivacyRulesColumns[7], CommunicationPrivacyRulesColumns[8]},
+			},
+		},
+	}
+	// CommunicationShareGrantsColumns holds the columns for the "communication_share_grants" table.
+	CommunicationShareGrantsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "scope", Type: field.TypeString},
+		{Name: "resource_type", Type: field.TypeString},
+		{Name: "resource_id", Type: field.TypeString},
+		{Name: "expires_at", Type: field.TypeTime, Nullable: true},
+		{Name: "revoked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "reason", Type: field.TypeString, Nullable: true},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_owned_communication_share_grants", Type: field.TypeUUID},
+		{Name: "user_received_communication_share_grants", Type: field.TypeUUID, Nullable: true},
+	}
+	// CommunicationShareGrantsTable holds the schema information for the "communication_share_grants" table.
+	CommunicationShareGrantsTable = &schema.Table{
+		Name:       "communication_share_grants",
+		Columns:    CommunicationShareGrantsColumns,
+		PrimaryKey: []*schema.Column{CommunicationShareGrantsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "communication_share_grants_revenue_workspaces_communication_share_grants",
+				Columns:    []*schema.Column{CommunicationShareGrantsColumns[9]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "communication_share_grants_users_owned_communication_share_grants",
+				Columns:    []*schema.Column{CommunicationShareGrantsColumns[10]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "communication_share_grants_users_received_communication_share_grants",
+				Columns:    []*schema.Column{CommunicationShareGrantsColumns[11]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "communicationsharegrant_scope_resource_type_resource_id_revenue_workspace_id_user_owned_communication_share_grants_user_received_communication_share_grants",
+				Unique:  true,
+				Columns: []*schema.Column{CommunicationShareGrantsColumns[3], CommunicationShareGrantsColumns[4], CommunicationShareGrantsColumns[5], CommunicationShareGrantsColumns[9], CommunicationShareGrantsColumns[10], CommunicationShareGrantsColumns[11]},
+			},
+			{
+				Name:    "communicationsharegrant_revoked_at_expires_at_revenue_workspace_id_user_owned_communication_share_grants",
+				Unique:  false,
+				Columns: []*schema.Column{CommunicationShareGrantsColumns[7], CommunicationShareGrantsColumns[6], CommunicationShareGrantsColumns[9], CommunicationShareGrantsColumns[10]},
+			},
+		},
+	}
+	// CommunicationSyncCursorsColumns holds the columns for the "communication_sync_cursors" table.
+	CommunicationSyncCursorsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "source", Type: field.TypeString},
+		{Name: "source_account_id", Type: field.TypeString},
+		{Name: "cursor", Type: field.TypeString, Nullable: true},
+		{Name: "status", Type: field.TypeString, Default: "idle"},
+		{Name: "last_provider_event_at", Type: field.TypeTime, Nullable: true},
+		{Name: "last_success_at", Type: field.TypeTime, Nullable: true},
+		{Name: "lease_claimed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "retry_count", Type: field.TypeInt, Default: 0},
+		{Name: "last_error", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_communication_sync_cursors", Type: field.TypeUUID},
+	}
+	// CommunicationSyncCursorsTable holds the schema information for the "communication_sync_cursors" table.
+	CommunicationSyncCursorsTable = &schema.Table{
+		Name:       "communication_sync_cursors",
+		Columns:    CommunicationSyncCursorsColumns,
+		PrimaryKey: []*schema.Column{CommunicationSyncCursorsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "communication_sync_cursors_revenue_workspaces_communication_sync_cursors",
+				Columns:    []*schema.Column{CommunicationSyncCursorsColumns[12]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "communication_sync_cursors_users_communication_sync_cursors",
+				Columns:    []*schema.Column{CommunicationSyncCursorsColumns[13]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "communicationsynccursor_source_source_account_id_revenue_workspace_id_user_communication_sync_cursors",
+				Unique:  true,
+				Columns: []*schema.Column{CommunicationSyncCursorsColumns[3], CommunicationSyncCursorsColumns[4], CommunicationSyncCursorsColumns[12], CommunicationSyncCursorsColumns[13]},
+			},
+			{
+				Name:    "communicationsynccursor_status_lease_claimed_at",
+				Unique:  false,
+				Columns: []*schema.Column{CommunicationSyncCursorsColumns[6], CommunicationSyncCursorsColumns[9]},
+			},
+		},
+	}
 	// ConnectorAuditEventsColumns holds the columns for the "connector_audit_events" table.
 	ConnectorAuditEventsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -4226,6 +4582,13 @@ var (
 		CommitmentsTable,
 		CommitmentDependenciesTable,
 		CommitmentEventsTable,
+		CommunicationAttachmentsTable,
+		CommunicationInteractionsTable,
+		CommunicationParticipantsTable,
+		CommunicationPrivacyPoliciesTable,
+		CommunicationPrivacyRulesTable,
+		CommunicationShareGrantsTable,
+		CommunicationSyncCursorsTable,
 		ConnectorAuditEventsTable,
 		ConnectorCredentialCleanupJobsTable,
 		ConnectorCredentialRecoveriesTable,
@@ -4339,6 +4702,22 @@ func init() {
 	CommitmentEventsTable.ForeignKeys[1].RefTable = RelationshipsTable
 	CommitmentEventsTable.ForeignKeys[2].RefTable = RevenueWorkspacesTable
 	CommitmentEventsTable.ForeignKeys[3].RefTable = UsersTable
+	CommunicationAttachmentsTable.ForeignKeys[0].RefTable = CommunicationInteractionsTable
+	CommunicationAttachmentsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	CommunicationInteractionsTable.ForeignKeys[0].RefTable = RelationshipsTable
+	CommunicationInteractionsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	CommunicationInteractionsTable.ForeignKeys[2].RefTable = UsersTable
+	CommunicationParticipantsTable.ForeignKeys[0].RefTable = CommunicationInteractionsTable
+	CommunicationParticipantsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
+	CommunicationPrivacyPoliciesTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	CommunicationPrivacyPoliciesTable.ForeignKeys[1].RefTable = UsersTable
+	CommunicationPrivacyRulesTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	CommunicationPrivacyRulesTable.ForeignKeys[1].RefTable = UsersTable
+	CommunicationShareGrantsTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	CommunicationShareGrantsTable.ForeignKeys[1].RefTable = UsersTable
+	CommunicationShareGrantsTable.ForeignKeys[2].RefTable = UsersTable
+	CommunicationSyncCursorsTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	CommunicationSyncCursorsTable.ForeignKeys[1].RefTable = UsersTable
 	ConnectorAuditEventsTable.ForeignKeys[0].RefTable = UsersTable
 	ConsoleResourcesTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
 	ConsoleResourcesTable.ForeignKeys[1].RefTable = UsersTable

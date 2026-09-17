@@ -26,6 +26,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -3359,6 +3366,912 @@ func newCommitmentEventPaginateArgs(rv map[string]any) *commitmenteventPaginateA
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *CommunicationAttachmentQuery) CollectFields(ctx context.Context, satisfies ...string) (*CommunicationAttachmentQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *CommunicationAttachmentQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(communicationattachment.Columns))
+		selectedFields = []string{communicationattachment.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "interaction":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationInteractionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, communicationinteractionImplementors)...); err != nil {
+				return err
+			}
+			_q.withInteraction = query
+		case "createdAt":
+			if _, ok := fieldSeen[communicationattachment.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationattachment.FieldCreatedAt)
+				fieldSeen[communicationattachment.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[communicationattachment.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationattachment.FieldUpdatedAt)
+				fieldSeen[communicationattachment.FieldUpdatedAt] = struct{}{}
+			}
+		case "mimeType":
+			if _, ok := fieldSeen[communicationattachment.FieldMimeType]; !ok {
+				selectedFields = append(selectedFields, communicationattachment.FieldMimeType)
+				fieldSeen[communicationattachment.FieldMimeType] = struct{}{}
+			}
+		case "sizeBytes":
+			if _, ok := fieldSeen[communicationattachment.FieldSizeBytes]; !ok {
+				selectedFields = append(selectedFields, communicationattachment.FieldSizeBytes)
+				fieldSeen[communicationattachment.FieldSizeBytes] = struct{}{}
+			}
+		case "checksum":
+			if _, ok := fieldSeen[communicationattachment.FieldChecksum]; !ok {
+				selectedFields = append(selectedFields, communicationattachment.FieldChecksum)
+				fieldSeen[communicationattachment.FieldChecksum] = struct{}{}
+			}
+		case "visibility":
+			if _, ok := fieldSeen[communicationattachment.FieldVisibility]; !ok {
+				selectedFields = append(selectedFields, communicationattachment.FieldVisibility)
+				fieldSeen[communicationattachment.FieldVisibility] = struct{}{}
+			}
+		case "scanStatus":
+			if _, ok := fieldSeen[communicationattachment.FieldScanStatus]; !ok {
+				selectedFields = append(selectedFields, communicationattachment.FieldScanStatus)
+				fieldSeen[communicationattachment.FieldScanStatus] = struct{}{}
+			}
+		case "scannedAt":
+			if _, ok := fieldSeen[communicationattachment.FieldScannedAt]; !ok {
+				selectedFields = append(selectedFields, communicationattachment.FieldScannedAt)
+				fieldSeen[communicationattachment.FieldScannedAt] = struct{}{}
+			}
+		case "expiresAt":
+			if _, ok := fieldSeen[communicationattachment.FieldExpiresAt]; !ok {
+				selectedFields = append(selectedFields, communicationattachment.FieldExpiresAt)
+				fieldSeen[communicationattachment.FieldExpiresAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type communicationattachmentPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []CommunicationAttachmentPaginateOption
+}
+
+func newCommunicationAttachmentPaginateArgs(rv map[string]any) *communicationattachmentPaginateArgs {
+	args := &communicationattachmentPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*CommunicationAttachmentWhereInput); ok {
+		args.opts = append(args.opts, WithCommunicationAttachmentFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *CommunicationInteractionQuery) CollectFields(ctx context.Context, satisfies ...string) (*CommunicationInteractionQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *CommunicationInteractionQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(communicationinteraction.Columns))
+		selectedFields = []string{communicationinteraction.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "owner":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withOwner = query
+
+		case "relationship":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RelationshipClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, relationshipImplementors)...); err != nil {
+				return err
+			}
+			_q.withRelationship = query
+
+		case "participants":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationParticipantClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationparticipantImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedParticipants(alias, func(wq *CommunicationParticipantQuery) {
+				*wq = *query
+			})
+
+		case "attachments":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationAttachmentClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationattachmentImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedAttachments(alias, func(wq *CommunicationAttachmentQuery) {
+				*wq = *query
+			})
+		case "createdAt":
+			if _, ok := fieldSeen[communicationinteraction.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationinteraction.FieldCreatedAt)
+				fieldSeen[communicationinteraction.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[communicationinteraction.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationinteraction.FieldUpdatedAt)
+				fieldSeen[communicationinteraction.FieldUpdatedAt] = struct{}{}
+			}
+		case "source":
+			if _, ok := fieldSeen[communicationinteraction.FieldSource]; !ok {
+				selectedFields = append(selectedFields, communicationinteraction.FieldSource)
+				fieldSeen[communicationinteraction.FieldSource] = struct{}{}
+			}
+		case "sourceVersion":
+			if _, ok := fieldSeen[communicationinteraction.FieldSourceVersion]; !ok {
+				selectedFields = append(selectedFields, communicationinteraction.FieldSourceVersion)
+				fieldSeen[communicationinteraction.FieldSourceVersion] = struct{}{}
+			}
+		case "interactionType":
+			if _, ok := fieldSeen[communicationinteraction.FieldInteractionType]; !ok {
+				selectedFields = append(selectedFields, communicationinteraction.FieldInteractionType)
+				fieldSeen[communicationinteraction.FieldInteractionType] = struct{}{}
+			}
+		case "direction":
+			if _, ok := fieldSeen[communicationinteraction.FieldDirection]; !ok {
+				selectedFields = append(selectedFields, communicationinteraction.FieldDirection)
+				fieldSeen[communicationinteraction.FieldDirection] = struct{}{}
+			}
+		case "occurredAt":
+			if _, ok := fieldSeen[communicationinteraction.FieldOccurredAt]; !ok {
+				selectedFields = append(selectedFields, communicationinteraction.FieldOccurredAt)
+				fieldSeen[communicationinteraction.FieldOccurredAt] = struct{}{}
+			}
+		case "receivedAt":
+			if _, ok := fieldSeen[communicationinteraction.FieldReceivedAt]; !ok {
+				selectedFields = append(selectedFields, communicationinteraction.FieldReceivedAt)
+				fieldSeen[communicationinteraction.FieldReceivedAt] = struct{}{}
+			}
+		case "visibility":
+			if _, ok := fieldSeen[communicationinteraction.FieldVisibility]; !ok {
+				selectedFields = append(selectedFields, communicationinteraction.FieldVisibility)
+				fieldSeen[communicationinteraction.FieldVisibility] = struct{}{}
+			}
+		case "deleted":
+			if _, ok := fieldSeen[communicationinteraction.FieldDeleted]; !ok {
+				selectedFields = append(selectedFields, communicationinteraction.FieldDeleted)
+				fieldSeen[communicationinteraction.FieldDeleted] = struct{}{}
+			}
+		case "contentHash":
+			if _, ok := fieldSeen[communicationinteraction.FieldContentHash]; !ok {
+				selectedFields = append(selectedFields, communicationinteraction.FieldContentHash)
+				fieldSeen[communicationinteraction.FieldContentHash] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type communicationinteractionPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []CommunicationInteractionPaginateOption
+}
+
+func newCommunicationInteractionPaginateArgs(rv map[string]any) *communicationinteractionPaginateArgs {
+	args := &communicationinteractionPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*CommunicationInteractionWhereInput); ok {
+		args.opts = append(args.opts, WithCommunicationInteractionFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *CommunicationParticipantQuery) CollectFields(ctx context.Context, satisfies ...string) (*CommunicationParticipantQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *CommunicationParticipantQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(communicationparticipant.Columns))
+		selectedFields = []string{communicationparticipant.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "interaction":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationInteractionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, communicationinteractionImplementors)...); err != nil {
+				return err
+			}
+			_q.withInteraction = query
+		case "createdAt":
+			if _, ok := fieldSeen[communicationparticipant.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationparticipant.FieldCreatedAt)
+				fieldSeen[communicationparticipant.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[communicationparticipant.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationparticipant.FieldUpdatedAt)
+				fieldSeen[communicationparticipant.FieldUpdatedAt] = struct{}{}
+			}
+		case "role":
+			if _, ok := fieldSeen[communicationparticipant.FieldRole]; !ok {
+				selectedFields = append(selectedFields, communicationparticipant.FieldRole)
+				fieldSeen[communicationparticipant.FieldRole] = struct{}{}
+			}
+		case "external":
+			if _, ok := fieldSeen[communicationparticipant.FieldExternal]; !ok {
+				selectedFields = append(selectedFields, communicationparticipant.FieldExternal)
+				fieldSeen[communicationparticipant.FieldExternal] = struct{}{}
+			}
+		case "owner":
+			if _, ok := fieldSeen[communicationparticipant.FieldOwner]; !ok {
+				selectedFields = append(selectedFields, communicationparticipant.FieldOwner)
+				fieldSeen[communicationparticipant.FieldOwner] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type communicationparticipantPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []CommunicationParticipantPaginateOption
+}
+
+func newCommunicationParticipantPaginateArgs(rv map[string]any) *communicationparticipantPaginateArgs {
+	args := &communicationparticipantPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*CommunicationParticipantWhereInput); ok {
+		args.opts = append(args.opts, WithCommunicationParticipantFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *CommunicationPrivacyPolicyQuery) CollectFields(ctx context.Context, satisfies ...string) (*CommunicationPrivacyPolicyQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *CommunicationPrivacyPolicyQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(communicationprivacypolicy.Columns))
+		selectedFields = []string{communicationprivacypolicy.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "owner":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withOwner = query
+		case "createdAt":
+			if _, ok := fieldSeen[communicationprivacypolicy.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationprivacypolicy.FieldCreatedAt)
+				fieldSeen[communicationprivacypolicy.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[communicationprivacypolicy.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationprivacypolicy.FieldUpdatedAt)
+				fieldSeen[communicationprivacypolicy.FieldUpdatedAt] = struct{}{}
+			}
+		case "metadataVisibility":
+			if _, ok := fieldSeen[communicationprivacypolicy.FieldMetadataVisibility]; !ok {
+				selectedFields = append(selectedFields, communicationprivacypolicy.FieldMetadataVisibility)
+				fieldSeen[communicationprivacypolicy.FieldMetadataVisibility] = struct{}{}
+			}
+		case "shareSubject":
+			if _, ok := fieldSeen[communicationprivacypolicy.FieldShareSubject]; !ok {
+				selectedFields = append(selectedFields, communicationprivacypolicy.FieldShareSubject)
+				fieldSeen[communicationprivacypolicy.FieldShareSubject] = struct{}{}
+			}
+		case "shareBody":
+			if _, ok := fieldSeen[communicationprivacypolicy.FieldShareBody]; !ok {
+				selectedFields = append(selectedFields, communicationprivacypolicy.FieldShareBody)
+				fieldSeen[communicationprivacypolicy.FieldShareBody] = struct{}{}
+			}
+		case "shareAttachments":
+			if _, ok := fieldSeen[communicationprivacypolicy.FieldShareAttachments]; !ok {
+				selectedFields = append(selectedFields, communicationprivacypolicy.FieldShareAttachments)
+				fieldSeen[communicationprivacypolicy.FieldShareAttachments] = struct{}{}
+			}
+		case "signatureEnrichment":
+			if _, ok := fieldSeen[communicationprivacypolicy.FieldSignatureEnrichment]; !ok {
+				selectedFields = append(selectedFields, communicationprivacypolicy.FieldSignatureEnrichment)
+				fieldSeen[communicationprivacypolicy.FieldSignatureEnrichment] = struct{}{}
+			}
+		case "modelContactExtraction":
+			if _, ok := fieldSeen[communicationprivacypolicy.FieldModelContactExtraction]; !ok {
+				selectedFields = append(selectedFields, communicationprivacypolicy.FieldModelContactExtraction)
+				fieldSeen[communicationprivacypolicy.FieldModelContactExtraction] = struct{}{}
+			}
+		case "retentionDays":
+			if _, ok := fieldSeen[communicationprivacypolicy.FieldRetentionDays]; !ok {
+				selectedFields = append(selectedFields, communicationprivacypolicy.FieldRetentionDays)
+				fieldSeen[communicationprivacypolicy.FieldRetentionDays] = struct{}{}
+			}
+		case "version":
+			if _, ok := fieldSeen[communicationprivacypolicy.FieldVersion]; !ok {
+				selectedFields = append(selectedFields, communicationprivacypolicy.FieldVersion)
+				fieldSeen[communicationprivacypolicy.FieldVersion] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type communicationprivacypolicyPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []CommunicationPrivacyPolicyPaginateOption
+}
+
+func newCommunicationPrivacyPolicyPaginateArgs(rv map[string]any) *communicationprivacypolicyPaginateArgs {
+	args := &communicationprivacypolicyPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*CommunicationPrivacyPolicyWhereInput); ok {
+		args.opts = append(args.opts, WithCommunicationPrivacyPolicyFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *CommunicationPrivacyRuleQuery) CollectFields(ctx context.Context, satisfies ...string) (*CommunicationPrivacyRuleQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *CommunicationPrivacyRuleQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(communicationprivacyrule.Columns))
+		selectedFields = []string{communicationprivacyrule.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "owner":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withOwner = query
+		case "createdAt":
+			if _, ok := fieldSeen[communicationprivacyrule.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationprivacyrule.FieldCreatedAt)
+				fieldSeen[communicationprivacyrule.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[communicationprivacyrule.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationprivacyrule.FieldUpdatedAt)
+				fieldSeen[communicationprivacyrule.FieldUpdatedAt] = struct{}{}
+			}
+		case "kind":
+			if _, ok := fieldSeen[communicationprivacyrule.FieldKind]; !ok {
+				selectedFields = append(selectedFields, communicationprivacyrule.FieldKind)
+				fieldSeen[communicationprivacyrule.FieldKind] = struct{}{}
+			}
+		case "valueHash":
+			if _, ok := fieldSeen[communicationprivacyrule.FieldValueHash]; !ok {
+				selectedFields = append(selectedFields, communicationprivacyrule.FieldValueHash)
+				fieldSeen[communicationprivacyrule.FieldValueHash] = struct{}{}
+			}
+		case "active":
+			if _, ok := fieldSeen[communicationprivacyrule.FieldActive]; !ok {
+				selectedFields = append(selectedFields, communicationprivacyrule.FieldActive)
+				fieldSeen[communicationprivacyrule.FieldActive] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type communicationprivacyrulePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []CommunicationPrivacyRulePaginateOption
+}
+
+func newCommunicationPrivacyRulePaginateArgs(rv map[string]any) *communicationprivacyrulePaginateArgs {
+	args := &communicationprivacyrulePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*CommunicationPrivacyRuleWhereInput); ok {
+		args.opts = append(args.opts, WithCommunicationPrivacyRuleFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *CommunicationShareGrantQuery) CollectFields(ctx context.Context, satisfies ...string) (*CommunicationShareGrantQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *CommunicationShareGrantQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(communicationsharegrant.Columns))
+		selectedFields = []string{communicationsharegrant.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "owner":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withOwner = query
+
+		case "grantee":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withGrantee = query
+		case "createdAt":
+			if _, ok := fieldSeen[communicationsharegrant.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationsharegrant.FieldCreatedAt)
+				fieldSeen[communicationsharegrant.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[communicationsharegrant.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationsharegrant.FieldUpdatedAt)
+				fieldSeen[communicationsharegrant.FieldUpdatedAt] = struct{}{}
+			}
+		case "scope":
+			if _, ok := fieldSeen[communicationsharegrant.FieldScope]; !ok {
+				selectedFields = append(selectedFields, communicationsharegrant.FieldScope)
+				fieldSeen[communicationsharegrant.FieldScope] = struct{}{}
+			}
+		case "resourceType":
+			if _, ok := fieldSeen[communicationsharegrant.FieldResourceType]; !ok {
+				selectedFields = append(selectedFields, communicationsharegrant.FieldResourceType)
+				fieldSeen[communicationsharegrant.FieldResourceType] = struct{}{}
+			}
+		case "expiresAt":
+			if _, ok := fieldSeen[communicationsharegrant.FieldExpiresAt]; !ok {
+				selectedFields = append(selectedFields, communicationsharegrant.FieldExpiresAt)
+				fieldSeen[communicationsharegrant.FieldExpiresAt] = struct{}{}
+			}
+		case "revokedAt":
+			if _, ok := fieldSeen[communicationsharegrant.FieldRevokedAt]; !ok {
+				selectedFields = append(selectedFields, communicationsharegrant.FieldRevokedAt)
+				fieldSeen[communicationsharegrant.FieldRevokedAt] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type communicationsharegrantPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []CommunicationShareGrantPaginateOption
+}
+
+func newCommunicationShareGrantPaginateArgs(rv map[string]any) *communicationsharegrantPaginateArgs {
+	args := &communicationsharegrantPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*CommunicationShareGrantWhereInput); ok {
+		args.opts = append(args.opts, WithCommunicationShareGrantFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (_q *CommunicationSyncCursorQuery) CollectFields(ctx context.Context, satisfies ...string) (*CommunicationSyncCursorQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return _q, nil
+	}
+	if err := _q.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return _q, nil
+}
+
+func (_q *CommunicationSyncCursorQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(communicationsynccursor.Columns))
+		selectedFields = []string{communicationsynccursor.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "workspace":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&RevenueWorkspaceClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, revenueworkspaceImplementors)...); err != nil {
+				return err
+			}
+			_q.withWorkspace = query
+
+		case "owner":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&UserClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, userImplementors)...); err != nil {
+				return err
+			}
+			_q.withOwner = query
+		case "createdAt":
+			if _, ok := fieldSeen[communicationsynccursor.FieldCreatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationsynccursor.FieldCreatedAt)
+				fieldSeen[communicationsynccursor.FieldCreatedAt] = struct{}{}
+			}
+		case "updatedAt":
+			if _, ok := fieldSeen[communicationsynccursor.FieldUpdatedAt]; !ok {
+				selectedFields = append(selectedFields, communicationsynccursor.FieldUpdatedAt)
+				fieldSeen[communicationsynccursor.FieldUpdatedAt] = struct{}{}
+			}
+		case "source":
+			if _, ok := fieldSeen[communicationsynccursor.FieldSource]; !ok {
+				selectedFields = append(selectedFields, communicationsynccursor.FieldSource)
+				fieldSeen[communicationsynccursor.FieldSource] = struct{}{}
+			}
+		case "status":
+			if _, ok := fieldSeen[communicationsynccursor.FieldStatus]; !ok {
+				selectedFields = append(selectedFields, communicationsynccursor.FieldStatus)
+				fieldSeen[communicationsynccursor.FieldStatus] = struct{}{}
+			}
+		case "lastProviderEventAt":
+			if _, ok := fieldSeen[communicationsynccursor.FieldLastProviderEventAt]; !ok {
+				selectedFields = append(selectedFields, communicationsynccursor.FieldLastProviderEventAt)
+				fieldSeen[communicationsynccursor.FieldLastProviderEventAt] = struct{}{}
+			}
+		case "lastSuccessAt":
+			if _, ok := fieldSeen[communicationsynccursor.FieldLastSuccessAt]; !ok {
+				selectedFields = append(selectedFields, communicationsynccursor.FieldLastSuccessAt)
+				fieldSeen[communicationsynccursor.FieldLastSuccessAt] = struct{}{}
+			}
+		case "leaseClaimedAt":
+			if _, ok := fieldSeen[communicationsynccursor.FieldLeaseClaimedAt]; !ok {
+				selectedFields = append(selectedFields, communicationsynccursor.FieldLeaseClaimedAt)
+				fieldSeen[communicationsynccursor.FieldLeaseClaimedAt] = struct{}{}
+			}
+		case "retryCount":
+			if _, ok := fieldSeen[communicationsynccursor.FieldRetryCount]; !ok {
+				selectedFields = append(selectedFields, communicationsynccursor.FieldRetryCount)
+				fieldSeen[communicationsynccursor.FieldRetryCount] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		_q.Select(selectedFields...)
+	}
+	return nil
+}
+
+type communicationsynccursorPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []CommunicationSyncCursorPaginateOption
+}
+
+func newCommunicationSyncCursorPaginateArgs(rv map[string]any) *communicationsynccursorPaginateArgs {
+	args := &communicationsynccursorPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	if v, ok := rv[whereField].(*CommunicationSyncCursorWhereInput); ok {
+		args.opts = append(args.opts, WithCommunicationSyncCursorFilter(v.Filter))
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (_q *ConversationIntelligenceArtifactQuery) CollectFields(ctx context.Context, satisfies ...string) (*ConversationIntelligenceArtifactQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -6612,6 +7525,19 @@ func (_q *RelationshipQuery) collectField(ctx context.Context, oneNode bool, opC
 				return err
 			}
 			_q.WithNamedMailThreads(alias, func(wq *MailThreadQuery) {
+				*wq = *query
+			})
+
+		case "communicationInteractions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationInteractionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationinteractionImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedCommunicationInteractions(alias, func(wq *CommunicationInteractionQuery) {
 				*wq = *query
 			})
 
@@ -10360,6 +11286,97 @@ func (_q *RevenueWorkspaceQuery) collectField(ctx context.Context, oneNode bool,
 				*wq = *query
 			})
 
+		case "communicationInteractions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationInteractionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationinteractionImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedCommunicationInteractions(alias, func(wq *CommunicationInteractionQuery) {
+				*wq = *query
+			})
+
+		case "communicationParticipants":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationParticipantClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationparticipantImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedCommunicationParticipants(alias, func(wq *CommunicationParticipantQuery) {
+				*wq = *query
+			})
+
+		case "communicationAttachments":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationAttachmentClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationattachmentImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedCommunicationAttachments(alias, func(wq *CommunicationAttachmentQuery) {
+				*wq = *query
+			})
+
+		case "communicationSyncCursors":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationSyncCursorClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationsynccursorImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedCommunicationSyncCursors(alias, func(wq *CommunicationSyncCursorQuery) {
+				*wq = *query
+			})
+
+		case "communicationPrivacyPolicies":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationPrivacyPolicyClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationprivacypolicyImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedCommunicationPrivacyPolicies(alias, func(wq *CommunicationPrivacyPolicyQuery) {
+				*wq = *query
+			})
+
+		case "communicationPrivacyRules":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationPrivacyRuleClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationprivacyruleImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedCommunicationPrivacyRules(alias, func(wq *CommunicationPrivacyRuleQuery) {
+				*wq = *query
+			})
+
+		case "communicationShareGrants":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationShareGrantClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationsharegrantImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedCommunicationShareGrants(alias, func(wq *CommunicationShareGrantQuery) {
+				*wq = *query
+			})
+
 		case "relationshipParticipants":
 			var (
 				alias = field.Alias
@@ -11629,6 +12646,84 @@ func (_q *UserQuery) collectField(ctx context.Context, oneNode bool, opCtx *grap
 				return err
 			}
 			_q.WithNamedMailSignals(alias, func(wq *MailSignalQuery) {
+				*wq = *query
+			})
+
+		case "ownedCommunicationInteractions":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationInteractionClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationinteractionImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedOwnedCommunicationInteractions(alias, func(wq *CommunicationInteractionQuery) {
+				*wq = *query
+			})
+
+		case "communicationSyncCursors":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationSyncCursorClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationsynccursorImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedCommunicationSyncCursors(alias, func(wq *CommunicationSyncCursorQuery) {
+				*wq = *query
+			})
+
+		case "communicationPrivacyPolicies":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationPrivacyPolicyClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationprivacypolicyImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedCommunicationPrivacyPolicies(alias, func(wq *CommunicationPrivacyPolicyQuery) {
+				*wq = *query
+			})
+
+		case "communicationPrivacyRules":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationPrivacyRuleClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationprivacyruleImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedCommunicationPrivacyRules(alias, func(wq *CommunicationPrivacyRuleQuery) {
+				*wq = *query
+			})
+
+		case "ownedCommunicationShareGrants":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationShareGrantClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationsharegrantImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedOwnedCommunicationShareGrants(alias, func(wq *CommunicationShareGrantQuery) {
+				*wq = *query
+			})
+
+		case "receivedCommunicationShareGrants":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CommunicationShareGrantClient{config: _q.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, communicationsharegrantImplementors)...); err != nil {
+				return err
+			}
+			_q.WithNamedReceivedCommunicationShareGrants(alias, func(wq *CommunicationShareGrantQuery) {
 				*wq = *query
 			})
 

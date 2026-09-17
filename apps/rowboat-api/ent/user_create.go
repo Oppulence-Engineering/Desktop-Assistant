@@ -32,6 +32,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
@@ -801,6 +806,96 @@ func (_c *UserCreate) AddMailSignals(v ...*MailSignal) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddMailSignalIDs(ids...)
+}
+
+// AddOwnedCommunicationInteractionIDs adds the "owned_communication_interactions" edge to the CommunicationInteraction entity by IDs.
+func (_c *UserCreate) AddOwnedCommunicationInteractionIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddOwnedCommunicationInteractionIDs(ids...)
+	return _c
+}
+
+// AddOwnedCommunicationInteractions adds the "owned_communication_interactions" edges to the CommunicationInteraction entity.
+func (_c *UserCreate) AddOwnedCommunicationInteractions(v ...*CommunicationInteraction) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddOwnedCommunicationInteractionIDs(ids...)
+}
+
+// AddCommunicationSyncCursorIDs adds the "communication_sync_cursors" edge to the CommunicationSyncCursor entity by IDs.
+func (_c *UserCreate) AddCommunicationSyncCursorIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddCommunicationSyncCursorIDs(ids...)
+	return _c
+}
+
+// AddCommunicationSyncCursors adds the "communication_sync_cursors" edges to the CommunicationSyncCursor entity.
+func (_c *UserCreate) AddCommunicationSyncCursors(v ...*CommunicationSyncCursor) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommunicationSyncCursorIDs(ids...)
+}
+
+// AddCommunicationPrivacyPolicyIDs adds the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity by IDs.
+func (_c *UserCreate) AddCommunicationPrivacyPolicyIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddCommunicationPrivacyPolicyIDs(ids...)
+	return _c
+}
+
+// AddCommunicationPrivacyPolicies adds the "communication_privacy_policies" edges to the CommunicationPrivacyPolicy entity.
+func (_c *UserCreate) AddCommunicationPrivacyPolicies(v ...*CommunicationPrivacyPolicy) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommunicationPrivacyPolicyIDs(ids...)
+}
+
+// AddCommunicationPrivacyRuleIDs adds the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity by IDs.
+func (_c *UserCreate) AddCommunicationPrivacyRuleIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddCommunicationPrivacyRuleIDs(ids...)
+	return _c
+}
+
+// AddCommunicationPrivacyRules adds the "communication_privacy_rules" edges to the CommunicationPrivacyRule entity.
+func (_c *UserCreate) AddCommunicationPrivacyRules(v ...*CommunicationPrivacyRule) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommunicationPrivacyRuleIDs(ids...)
+}
+
+// AddOwnedCommunicationShareGrantIDs adds the "owned_communication_share_grants" edge to the CommunicationShareGrant entity by IDs.
+func (_c *UserCreate) AddOwnedCommunicationShareGrantIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddOwnedCommunicationShareGrantIDs(ids...)
+	return _c
+}
+
+// AddOwnedCommunicationShareGrants adds the "owned_communication_share_grants" edges to the CommunicationShareGrant entity.
+func (_c *UserCreate) AddOwnedCommunicationShareGrants(v ...*CommunicationShareGrant) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddOwnedCommunicationShareGrantIDs(ids...)
+}
+
+// AddReceivedCommunicationShareGrantIDs adds the "received_communication_share_grants" edge to the CommunicationShareGrant entity by IDs.
+func (_c *UserCreate) AddReceivedCommunicationShareGrantIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddReceivedCommunicationShareGrantIDs(ids...)
+	return _c
+}
+
+// AddReceivedCommunicationShareGrants adds the "received_communication_share_grants" edges to the CommunicationShareGrant entity.
+func (_c *UserCreate) AddReceivedCommunicationShareGrants(v ...*CommunicationShareGrant) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddReceivedCommunicationShareGrantIDs(ids...)
 }
 
 // AddRelationshipParticipantIDs adds the "relationship_participants" edge to the RelationshipParticipant entity by IDs.
@@ -1994,6 +2089,102 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailsignal.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.OwnedCommunicationInteractionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationInteractionsTable,
+			Columns: []string{user.OwnedCommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommunicationSyncCursorsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationSyncCursorsTable,
+			Columns: []string{user.CommunicationSyncCursorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsynccursor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommunicationPrivacyPoliciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyPoliciesTable,
+			Columns: []string{user.CommunicationPrivacyPoliciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacypolicy.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommunicationPrivacyRulesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyRulesTable,
+			Columns: []string{user.CommunicationPrivacyRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacyrule.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.OwnedCommunicationShareGrantsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationShareGrantsTable,
+			Columns: []string{user.OwnedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ReceivedCommunicationShareGrantsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ReceivedCommunicationShareGrantsTable,
+			Columns: []string{user.ReceivedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

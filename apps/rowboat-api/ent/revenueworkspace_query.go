@@ -17,6 +17,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -76,6 +83,13 @@ type RevenueWorkspaceQuery struct {
 	withOutcomes                                *ActionOutcomeQuery
 	withOutboxEvents                            *RevenueOutboxEventQuery
 	withScans                                   *RevenueLeakScanQuery
+	withCommunicationInteractions               *CommunicationInteractionQuery
+	withCommunicationParticipants               *CommunicationParticipantQuery
+	withCommunicationAttachments                *CommunicationAttachmentQuery
+	withCommunicationSyncCursors                *CommunicationSyncCursorQuery
+	withCommunicationPrivacyPolicies            *CommunicationPrivacyPolicyQuery
+	withCommunicationPrivacyRules               *CommunicationPrivacyRuleQuery
+	withCommunicationShareGrants                *CommunicationShareGrantQuery
 	withRelationshipParticipants                *RelationshipParticipantQuery
 	withRelationshipIdentities                  *RelationshipIdentityQuery
 	withRelationshipProjectionJobs              *RelationshipProjectionJobQuery
@@ -116,6 +130,13 @@ type RevenueWorkspaceQuery struct {
 	withNamedOutcomes                           map[string]*ActionOutcomeQuery
 	withNamedOutboxEvents                       map[string]*RevenueOutboxEventQuery
 	withNamedScans                              map[string]*RevenueLeakScanQuery
+	withNamedCommunicationInteractions          map[string]*CommunicationInteractionQuery
+	withNamedCommunicationParticipants          map[string]*CommunicationParticipantQuery
+	withNamedCommunicationAttachments           map[string]*CommunicationAttachmentQuery
+	withNamedCommunicationSyncCursors           map[string]*CommunicationSyncCursorQuery
+	withNamedCommunicationPrivacyPolicies       map[string]*CommunicationPrivacyPolicyQuery
+	withNamedCommunicationPrivacyRules          map[string]*CommunicationPrivacyRuleQuery
+	withNamedCommunicationShareGrants           map[string]*CommunicationShareGrantQuery
 	withNamedRelationshipParticipants           map[string]*RelationshipParticipantQuery
 	withNamedRelationshipIdentities             map[string]*RelationshipIdentityQuery
 	withNamedRelationshipProjectionJobs         map[string]*RelationshipProjectionJobQuery
@@ -456,6 +477,160 @@ func (_q *RevenueWorkspaceQuery) QueryScans() *RevenueLeakScanQuery {
 			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
 			sqlgraph.To(revenueleakscan.Table, revenueleakscan.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.ScansTable, revenueworkspace.ScansColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommunicationInteractions chains the current query on the "communication_interactions" edge.
+func (_q *RevenueWorkspaceQuery) QueryCommunicationInteractions() *CommunicationInteractionQuery {
+	query := (&CommunicationInteractionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(communicationinteraction.Table, communicationinteraction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationInteractionsTable, revenueworkspace.CommunicationInteractionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommunicationParticipants chains the current query on the "communication_participants" edge.
+func (_q *RevenueWorkspaceQuery) QueryCommunicationParticipants() *CommunicationParticipantQuery {
+	query := (&CommunicationParticipantClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(communicationparticipant.Table, communicationparticipant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationParticipantsTable, revenueworkspace.CommunicationParticipantsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommunicationAttachments chains the current query on the "communication_attachments" edge.
+func (_q *RevenueWorkspaceQuery) QueryCommunicationAttachments() *CommunicationAttachmentQuery {
+	query := (&CommunicationAttachmentClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(communicationattachment.Table, communicationattachment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationAttachmentsTable, revenueworkspace.CommunicationAttachmentsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommunicationSyncCursors chains the current query on the "communication_sync_cursors" edge.
+func (_q *RevenueWorkspaceQuery) QueryCommunicationSyncCursors() *CommunicationSyncCursorQuery {
+	query := (&CommunicationSyncCursorClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(communicationsynccursor.Table, communicationsynccursor.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationSyncCursorsTable, revenueworkspace.CommunicationSyncCursorsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommunicationPrivacyPolicies chains the current query on the "communication_privacy_policies" edge.
+func (_q *RevenueWorkspaceQuery) QueryCommunicationPrivacyPolicies() *CommunicationPrivacyPolicyQuery {
+	query := (&CommunicationPrivacyPolicyClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(communicationprivacypolicy.Table, communicationprivacypolicy.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationPrivacyPoliciesTable, revenueworkspace.CommunicationPrivacyPoliciesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommunicationPrivacyRules chains the current query on the "communication_privacy_rules" edge.
+func (_q *RevenueWorkspaceQuery) QueryCommunicationPrivacyRules() *CommunicationPrivacyRuleQuery {
+	query := (&CommunicationPrivacyRuleClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(communicationprivacyrule.Table, communicationprivacyrule.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationPrivacyRulesTable, revenueworkspace.CommunicationPrivacyRulesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommunicationShareGrants chains the current query on the "communication_share_grants" edge.
+func (_q *RevenueWorkspaceQuery) QueryCommunicationShareGrants() *CommunicationShareGrantQuery {
+	query := (&CommunicationShareGrantClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(communicationsharegrant.Table, communicationsharegrant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.CommunicationShareGrantsTable, revenueworkspace.CommunicationShareGrantsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -1218,6 +1393,13 @@ func (_q *RevenueWorkspaceQuery) Clone() *RevenueWorkspaceQuery {
 		withOutcomes:                           _q.withOutcomes.Clone(),
 		withOutboxEvents:                       _q.withOutboxEvents.Clone(),
 		withScans:                              _q.withScans.Clone(),
+		withCommunicationInteractions:          _q.withCommunicationInteractions.Clone(),
+		withCommunicationParticipants:          _q.withCommunicationParticipants.Clone(),
+		withCommunicationAttachments:           _q.withCommunicationAttachments.Clone(),
+		withCommunicationSyncCursors:           _q.withCommunicationSyncCursors.Clone(),
+		withCommunicationPrivacyPolicies:       _q.withCommunicationPrivacyPolicies.Clone(),
+		withCommunicationPrivacyRules:          _q.withCommunicationPrivacyRules.Clone(),
+		withCommunicationShareGrants:           _q.withCommunicationShareGrants.Clone(),
 		withRelationshipParticipants:           _q.withRelationshipParticipants.Clone(),
 		withRelationshipIdentities:             _q.withRelationshipIdentities.Clone(),
 		withRelationshipProjectionJobs:         _q.withRelationshipProjectionJobs.Clone(),
@@ -1389,6 +1571,83 @@ func (_q *RevenueWorkspaceQuery) WithScans(opts ...func(*RevenueLeakScanQuery)) 
 		opt(query)
 	}
 	_q.withScans = query
+	return _q
+}
+
+// WithCommunicationInteractions tells the query-builder to eager-load the nodes that are connected to
+// the "communication_interactions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithCommunicationInteractions(opts ...func(*CommunicationInteractionQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationInteractionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommunicationInteractions = query
+	return _q
+}
+
+// WithCommunicationParticipants tells the query-builder to eager-load the nodes that are connected to
+// the "communication_participants" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithCommunicationParticipants(opts ...func(*CommunicationParticipantQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationParticipantClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommunicationParticipants = query
+	return _q
+}
+
+// WithCommunicationAttachments tells the query-builder to eager-load the nodes that are connected to
+// the "communication_attachments" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithCommunicationAttachments(opts ...func(*CommunicationAttachmentQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationAttachmentClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommunicationAttachments = query
+	return _q
+}
+
+// WithCommunicationSyncCursors tells the query-builder to eager-load the nodes that are connected to
+// the "communication_sync_cursors" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithCommunicationSyncCursors(opts ...func(*CommunicationSyncCursorQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationSyncCursorClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommunicationSyncCursors = query
+	return _q
+}
+
+// WithCommunicationPrivacyPolicies tells the query-builder to eager-load the nodes that are connected to
+// the "communication_privacy_policies" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithCommunicationPrivacyPolicies(opts ...func(*CommunicationPrivacyPolicyQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationPrivacyPolicyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommunicationPrivacyPolicies = query
+	return _q
+}
+
+// WithCommunicationPrivacyRules tells the query-builder to eager-load the nodes that are connected to
+// the "communication_privacy_rules" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithCommunicationPrivacyRules(opts ...func(*CommunicationPrivacyRuleQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationPrivacyRuleClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommunicationPrivacyRules = query
+	return _q
+}
+
+// WithCommunicationShareGrants tells the query-builder to eager-load the nodes that are connected to
+// the "communication_share_grants" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithCommunicationShareGrants(opts ...func(*CommunicationShareGrantQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationShareGrantClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommunicationShareGrants = query
 	return _q
 }
 
@@ -1752,7 +2011,7 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		nodes       = []*RevenueWorkspace{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [38]bool{
+		loadedTypes = [45]bool{
 			_q.withUser != nil,
 			_q.withMembers != nil,
 			_q.withRelationships != nil,
@@ -1766,6 +2025,13 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			_q.withOutcomes != nil,
 			_q.withOutboxEvents != nil,
 			_q.withScans != nil,
+			_q.withCommunicationInteractions != nil,
+			_q.withCommunicationParticipants != nil,
+			_q.withCommunicationAttachments != nil,
+			_q.withCommunicationSyncCursors != nil,
+			_q.withCommunicationPrivacyPolicies != nil,
+			_q.withCommunicationPrivacyRules != nil,
+			_q.withCommunicationShareGrants != nil,
 			_q.withRelationshipParticipants != nil,
 			_q.withRelationshipIdentities != nil,
 			_q.withRelationshipProjectionJobs != nil,
@@ -1917,6 +2183,69 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		if err := _q.loadScans(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.Edges.Scans = []*RevenueLeakScan{} },
 			func(n *RevenueWorkspace, e *RevenueLeakScan) { n.Edges.Scans = append(n.Edges.Scans, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCommunicationInteractions; query != nil {
+		if err := _q.loadCommunicationInteractions(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.CommunicationInteractions = []*CommunicationInteraction{} },
+			func(n *RevenueWorkspace, e *CommunicationInteraction) {
+				n.Edges.CommunicationInteractions = append(n.Edges.CommunicationInteractions, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCommunicationParticipants; query != nil {
+		if err := _q.loadCommunicationParticipants(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.CommunicationParticipants = []*CommunicationParticipant{} },
+			func(n *RevenueWorkspace, e *CommunicationParticipant) {
+				n.Edges.CommunicationParticipants = append(n.Edges.CommunicationParticipants, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCommunicationAttachments; query != nil {
+		if err := _q.loadCommunicationAttachments(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.CommunicationAttachments = []*CommunicationAttachment{} },
+			func(n *RevenueWorkspace, e *CommunicationAttachment) {
+				n.Edges.CommunicationAttachments = append(n.Edges.CommunicationAttachments, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCommunicationSyncCursors; query != nil {
+		if err := _q.loadCommunicationSyncCursors(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.CommunicationSyncCursors = []*CommunicationSyncCursor{} },
+			func(n *RevenueWorkspace, e *CommunicationSyncCursor) {
+				n.Edges.CommunicationSyncCursors = append(n.Edges.CommunicationSyncCursors, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCommunicationPrivacyPolicies; query != nil {
+		if err := _q.loadCommunicationPrivacyPolicies(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.CommunicationPrivacyPolicies = []*CommunicationPrivacyPolicy{} },
+			func(n *RevenueWorkspace, e *CommunicationPrivacyPolicy) {
+				n.Edges.CommunicationPrivacyPolicies = append(n.Edges.CommunicationPrivacyPolicies, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCommunicationPrivacyRules; query != nil {
+		if err := _q.loadCommunicationPrivacyRules(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.CommunicationPrivacyRules = []*CommunicationPrivacyRule{} },
+			func(n *RevenueWorkspace, e *CommunicationPrivacyRule) {
+				n.Edges.CommunicationPrivacyRules = append(n.Edges.CommunicationPrivacyRules, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCommunicationShareGrants; query != nil {
+		if err := _q.loadCommunicationShareGrants(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.CommunicationShareGrants = []*CommunicationShareGrant{} },
+			func(n *RevenueWorkspace, e *CommunicationShareGrant) {
+				n.Edges.CommunicationShareGrants = append(n.Edges.CommunicationShareGrants, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -2226,6 +2555,63 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		if err := _q.loadScans(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.appendNamedScans(name) },
 			func(n *RevenueWorkspace, e *RevenueLeakScan) { n.appendNamedScans(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCommunicationInteractions {
+		if err := _q.loadCommunicationInteractions(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedCommunicationInteractions(name) },
+			func(n *RevenueWorkspace, e *CommunicationInteraction) {
+				n.appendNamedCommunicationInteractions(name, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCommunicationParticipants {
+		if err := _q.loadCommunicationParticipants(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedCommunicationParticipants(name) },
+			func(n *RevenueWorkspace, e *CommunicationParticipant) {
+				n.appendNamedCommunicationParticipants(name, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCommunicationAttachments {
+		if err := _q.loadCommunicationAttachments(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedCommunicationAttachments(name) },
+			func(n *RevenueWorkspace, e *CommunicationAttachment) { n.appendNamedCommunicationAttachments(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCommunicationSyncCursors {
+		if err := _q.loadCommunicationSyncCursors(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedCommunicationSyncCursors(name) },
+			func(n *RevenueWorkspace, e *CommunicationSyncCursor) { n.appendNamedCommunicationSyncCursors(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCommunicationPrivacyPolicies {
+		if err := _q.loadCommunicationPrivacyPolicies(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedCommunicationPrivacyPolicies(name) },
+			func(n *RevenueWorkspace, e *CommunicationPrivacyPolicy) {
+				n.appendNamedCommunicationPrivacyPolicies(name, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCommunicationPrivacyRules {
+		if err := _q.loadCommunicationPrivacyRules(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedCommunicationPrivacyRules(name) },
+			func(n *RevenueWorkspace, e *CommunicationPrivacyRule) {
+				n.appendNamedCommunicationPrivacyRules(name, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCommunicationShareGrants {
+		if err := _q.loadCommunicationShareGrants(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedCommunicationShareGrants(name) },
+			func(n *RevenueWorkspace, e *CommunicationShareGrant) { n.appendNamedCommunicationShareGrants(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -2812,6 +3198,223 @@ func (_q *RevenueWorkspaceQuery) loadScans(ctx context.Context, query *RevenueLe
 	query.withFKs = true
 	query.Where(predicate.RevenueLeakScan(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(revenueworkspace.ScansColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadCommunicationInteractions(ctx context.Context, query *CommunicationInteractionQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *CommunicationInteraction)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationInteraction(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.CommunicationInteractionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadCommunicationParticipants(ctx context.Context, query *CommunicationParticipantQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *CommunicationParticipant)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationParticipant(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.CommunicationParticipantsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadCommunicationAttachments(ctx context.Context, query *CommunicationAttachmentQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *CommunicationAttachment)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationAttachment(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.CommunicationAttachmentsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadCommunicationSyncCursors(ctx context.Context, query *CommunicationSyncCursorQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *CommunicationSyncCursor)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationSyncCursor(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.CommunicationSyncCursorsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadCommunicationPrivacyPolicies(ctx context.Context, query *CommunicationPrivacyPolicyQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *CommunicationPrivacyPolicy)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationPrivacyPolicy(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.CommunicationPrivacyPoliciesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadCommunicationPrivacyRules(ctx context.Context, query *CommunicationPrivacyRuleQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *CommunicationPrivacyRule)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationPrivacyRule(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.CommunicationPrivacyRulesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *RevenueWorkspaceQuery) loadCommunicationShareGrants(ctx context.Context, query *CommunicationShareGrantQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *CommunicationShareGrant)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationShareGrant(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.CommunicationShareGrantsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
@@ -3855,6 +4458,104 @@ func (_q *RevenueWorkspaceQuery) WithNamedScans(name string, opts ...func(*Reven
 		_q.withNamedScans = make(map[string]*RevenueLeakScanQuery)
 	}
 	_q.withNamedScans[name] = query
+	return _q
+}
+
+// WithNamedCommunicationInteractions tells the query-builder to eager-load the nodes that are connected to the "communication_interactions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedCommunicationInteractions(name string, opts ...func(*CommunicationInteractionQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationInteractionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommunicationInteractions == nil {
+		_q.withNamedCommunicationInteractions = make(map[string]*CommunicationInteractionQuery)
+	}
+	_q.withNamedCommunicationInteractions[name] = query
+	return _q
+}
+
+// WithNamedCommunicationParticipants tells the query-builder to eager-load the nodes that are connected to the "communication_participants"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedCommunicationParticipants(name string, opts ...func(*CommunicationParticipantQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationParticipantClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommunicationParticipants == nil {
+		_q.withNamedCommunicationParticipants = make(map[string]*CommunicationParticipantQuery)
+	}
+	_q.withNamedCommunicationParticipants[name] = query
+	return _q
+}
+
+// WithNamedCommunicationAttachments tells the query-builder to eager-load the nodes that are connected to the "communication_attachments"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedCommunicationAttachments(name string, opts ...func(*CommunicationAttachmentQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationAttachmentClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommunicationAttachments == nil {
+		_q.withNamedCommunicationAttachments = make(map[string]*CommunicationAttachmentQuery)
+	}
+	_q.withNamedCommunicationAttachments[name] = query
+	return _q
+}
+
+// WithNamedCommunicationSyncCursors tells the query-builder to eager-load the nodes that are connected to the "communication_sync_cursors"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedCommunicationSyncCursors(name string, opts ...func(*CommunicationSyncCursorQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationSyncCursorClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommunicationSyncCursors == nil {
+		_q.withNamedCommunicationSyncCursors = make(map[string]*CommunicationSyncCursorQuery)
+	}
+	_q.withNamedCommunicationSyncCursors[name] = query
+	return _q
+}
+
+// WithNamedCommunicationPrivacyPolicies tells the query-builder to eager-load the nodes that are connected to the "communication_privacy_policies"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedCommunicationPrivacyPolicies(name string, opts ...func(*CommunicationPrivacyPolicyQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationPrivacyPolicyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommunicationPrivacyPolicies == nil {
+		_q.withNamedCommunicationPrivacyPolicies = make(map[string]*CommunicationPrivacyPolicyQuery)
+	}
+	_q.withNamedCommunicationPrivacyPolicies[name] = query
+	return _q
+}
+
+// WithNamedCommunicationPrivacyRules tells the query-builder to eager-load the nodes that are connected to the "communication_privacy_rules"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedCommunicationPrivacyRules(name string, opts ...func(*CommunicationPrivacyRuleQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationPrivacyRuleClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommunicationPrivacyRules == nil {
+		_q.withNamedCommunicationPrivacyRules = make(map[string]*CommunicationPrivacyRuleQuery)
+	}
+	_q.withNamedCommunicationPrivacyRules[name] = query
+	return _q
+}
+
+// WithNamedCommunicationShareGrants tells the query-builder to eager-load the nodes that are connected to the "communication_share_grants"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedCommunicationShareGrants(name string, opts ...func(*CommunicationShareGrantQuery)) *RevenueWorkspaceQuery {
+	query := (&CommunicationShareGrantClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommunicationShareGrants == nil {
+		_q.withNamedCommunicationShareGrants = make(map[string]*CommunicationShareGrantQuery)
+	}
+	_q.withNamedCommunicationShareGrants[name] = query
 	return _q
 }
 

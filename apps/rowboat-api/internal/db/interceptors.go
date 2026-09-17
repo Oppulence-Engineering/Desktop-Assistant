@@ -27,6 +27,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
@@ -120,6 +127,11 @@ var tenantUserColumns = map[string]string{
 	ent.TypeCommitmentEvent:                   commitmentevent.UserColumn,
 	ent.TypeConsoleResource:                   consoleresource.UserColumn,
 	ent.TypeConversationIntelligenceArtifact:  conversationintelligenceartifact.UserColumn,
+	ent.TypeCommunicationInteraction:          communicationinteraction.OwnerColumn,
+	ent.TypeCommunicationPrivacyPolicy:        communicationprivacypolicy.OwnerColumn,
+	ent.TypeCommunicationPrivacyRule:          communicationprivacyrule.OwnerColumn,
+	ent.TypeCommunicationShareGrant:           communicationsharegrant.OwnerColumn,
+	ent.TypeCommunicationSyncCursor:           communicationsynccursor.OwnerColumn,
 	ent.TypeMailBodyCache:                     mailbodycache.UserColumn,
 	ent.TypeMailSignal:                        mailsignal.UserColumn,
 	ent.TypeMailMessageMeta:                   mailmessagemeta.UserColumn,
@@ -187,6 +199,13 @@ var workspaceTenantColumns = map[string]string{
 	ent.TypeCommitmentDependency:              commitmentdependency.WorkspaceColumn,
 	ent.TypeConsoleResource:                   consoleresource.WorkspaceColumn,
 	ent.TypeConversationIntelligenceArtifact:  conversationintelligenceartifact.WorkspaceColumn,
+	ent.TypeCommunicationAttachment:           communicationattachment.WorkspaceColumn,
+	ent.TypeCommunicationInteraction:          communicationinteraction.WorkspaceColumn,
+	ent.TypeCommunicationParticipant:          communicationparticipant.WorkspaceColumn,
+	ent.TypeCommunicationPrivacyPolicy:        communicationprivacypolicy.WorkspaceColumn,
+	ent.TypeCommunicationPrivacyRule:          communicationprivacyrule.WorkspaceColumn,
+	ent.TypeCommunicationShareGrant:           communicationsharegrant.WorkspaceColumn,
+	ent.TypeCommunicationSyncCursor:           communicationsynccursor.WorkspaceColumn,
 	ent.TypeRevenueAction:                     revenueaction.WorkspaceColumn,
 	ent.TypePolicyDecisionSnapshot:            policydecisionsnapshot.WorkspaceColumn,
 	ent.TypeActionOutcome:                     actionoutcome.WorkspaceColumn,
@@ -676,6 +695,55 @@ func registerInterceptors(client *ent.Client, log *zap.Logger) {
 		func(ctx context.Context, q *ent.ConversationIntelligenceArtifactQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(conversationintelligenceartifact.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.CommunicationInteraction.Intercept(intercept.TraverseCommunicationInteraction(
+		func(ctx context.Context, q *ent.CommunicationInteractionQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(communicationinteraction.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.CommunicationParticipant.Intercept(intercept.TraverseCommunicationParticipant(
+		func(ctx context.Context, q *ent.CommunicationParticipantQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(communicationparticipant.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.CommunicationAttachment.Intercept(intercept.TraverseCommunicationAttachment(
+		func(ctx context.Context, q *ent.CommunicationAttachmentQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(communicationattachment.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.CommunicationSyncCursor.Intercept(intercept.TraverseCommunicationSyncCursor(
+		func(ctx context.Context, q *ent.CommunicationSyncCursorQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(communicationsynccursor.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.CommunicationPrivacyPolicy.Intercept(intercept.TraverseCommunicationPrivacyPolicy(
+		func(ctx context.Context, q *ent.CommunicationPrivacyPolicyQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(communicationprivacypolicy.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.CommunicationPrivacyRule.Intercept(intercept.TraverseCommunicationPrivacyRule(
+		func(ctx context.Context, q *ent.CommunicationPrivacyRuleQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(communicationprivacyrule.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.CommunicationShareGrant.Intercept(intercept.TraverseCommunicationShareGrant(
+		func(ctx context.Context, q *ent.CommunicationShareGrantQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(communicationsharegrant.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
 			})
 		}))
 
