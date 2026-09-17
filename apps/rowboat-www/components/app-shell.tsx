@@ -86,6 +86,16 @@ export const REVENUE_TAB_LABELS: Record<RevenueTab, string> = {
   workspace: "Sources",
 };
 
+/** Reads a revenue tab from the address; anything unknown lands on Commitments. */
+export function revenueTabFromParam(value: string | null | undefined): RevenueTab {
+  return value && Object.hasOwn(REVENUE_TAB_LABELS, value) ? (value as RevenueTab) : "commitments";
+}
+
+/** The query string that addresses a revenue tab. Commitments is the bare path. */
+export function revenueTabSearch(tab: RevenueTab) {
+  return tab === "commitments" ? "" : `?tab=${tab}`;
+}
+
 export type SettingsSection =
   | "overview"
   | "preferences"

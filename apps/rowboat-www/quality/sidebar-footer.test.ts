@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   connectedSourceCount,
   googleNeedsReconnect,
+  revenueTabFromParam,
+  revenueTabSearch,
   sourceHealth,
   trialDaysRemaining,
 } from "@/components/app-shell";
@@ -101,5 +103,22 @@ describe("audit reconnect guard", () => {
         { source: "slack", status: "reconnect_required" } as RelationshipSourceStatus,
       ]),
     ).toBe(false);
+  });
+});
+
+describe("revenue tab address", () => {
+  it("round-trips every tab through the query string", () => {
+    for (const tab of ["people", "queue", "scans", "workspace", "commitments"] as const) {
+      const search = revenueTabSearch(tab);
+      expect(revenueTabFromParam(new URLSearchParams(search).get("tab"))).toBe(tab);
+    }
+    expect(revenueTabSearch("commitments")).toBe("");
+  });
+
+  // A hand-edited or stale link must not render an empty view.
+  it("falls back to Commitments for an unknown or inherited key", () => {
+    expect(revenueTabFromParam("bogus")).toBe("commitments");
+    expect(revenueTabFromParam("toString")).toBe("commitments");
+    expect(revenueTabFromParam(null)).toBe("commitments");
   });
 });

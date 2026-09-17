@@ -7,6 +7,8 @@ import {
   AppShellSidebar,
   AppTopBar,
   REVENUE_TAB_LABELS,
+  revenueTabFromParam,
+  revenueTabSearch,
   SETTINGS_SECTIONS,
   useWorkspaceLabel,
   ViewBoundary,
@@ -329,9 +331,13 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
 function PageBody({
   initialView,
   initialSettingsSection,
+  initialRevenueTab,
+  initialWorkflowFocus,
 }: {
   initialView: ProductView;
   initialSettingsSection: SettingsSection;
+  initialRevenueTab?: string;
+  initialWorkflowFocus?: string;
 }) {
   const session = useAuthSession();
   const sessionScope = useMemo<SessionScope>(
@@ -370,24 +376,61 @@ function PageBody({
   const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [view, setView] = useState<ProductView>(initialView);
-  const [revenueTab, setRevenueTab] = useState<RevenueTab>("commitments");
-  const [workflowFocus, setWorkflowFocus] = useState<"scheduled" | "runs">("scheduled");
+  const [revenueTab, setRevenueTab] = useState<RevenueTab>(() =>
+    revenueTabFromParam(initialRevenueTab),
+  );
+  const [workflowFocus, setWorkflowFocus] = useState<"scheduled" | "runs">(
+    initialWorkflowFocus === "runs" ? "runs" : "scheduled",
+  );
   const [settingsSection, setSettingsSection] = useState<SettingsSection>(initialSettingsSection);
   const [sessions, setSessions] = useState<SessionMeta[]>([]);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [agentOptions, setAgentOptions] = useState<string[]>(["assistant"]);
   const [selectedAgent, setSelectedAgent] = useState<string>("assistant");
 
-  const navigateTo = useCallback((nextView: ProductView) => {
+  // `search` belongs to the address only when a caller names it, so opening a
+  // view without one keeps a deep link such as ?settings=connections intact.
+  const navigateTo = useCallback((nextView: ProductView, search?: string) => {
     setView(nextView);
     const nextPath = PRODUCT_VIEW_PATHS[nextView];
-    if (window.location.pathname !== nextPath) {
-      window.history.pushState(null, "", nextPath);
+    const current =
+      search === undefined
+        ? window.location.pathname
+        : window.location.pathname + window.location.search;
+    const next = search === undefined ? nextPath : nextPath + search;
+    if (current !== next) {
+      window.history.pushState(null, "", next);
     }
   }, []);
 
+  // Every revenue tab used to share /app/revenue and both workflow lists shared
+  // /app/workflows, so Back skipped them and a refresh always reopened the
+  // default. The tab and the focus now live in the address.
+  const openRevenueTab = useCallback(
+    (tab: RevenueTab) => {
+      setRevenueTab(tab);
+      navigateTo("revenue", revenueTabSearch(tab));
+    },
+    [navigateTo],
+  );
+  const openWorkflows = useCallback(
+    (focus: "scheduled" | "runs") => {
+      setWorkflowFocus(focus);
+      navigateTo("workflows", focus === "runs" ? "?focus=runs" : "");
+    },
+    [navigateTo],
+  );
+
   useEffect(() => {
-    const onPopState = () => setView(productViewForPathname(window.location.pathname));
+    const onPopState = () => {
+      const next = productViewForPathname(window.location.pathname);
+      const parameters = new URLSearchParams(window.location.search);
+      setView(next);
+      if (next === "revenue") setRevenueTab(revenueTabFromParam(parameters.get("tab")));
+      if (next === "workflows") {
+        setWorkflowFocus(parameters.get("focus") === "runs" ? "runs" : "scheduled");
+      }
+    };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
@@ -1554,10 +1597,7 @@ function PageBody({
           navigateTo("chat");
           setSelectedResource(null);
         }}
-        onNavigateRelationship={() => {
-          setRevenueTab("relationships");
-          navigateTo("revenue");
-        }}
+        onNavigateRelationship={() => openRevenueTab("relationships")}
         onNewChat={startNewChat}
         onOpenAgent={(name) => {
           navigateTo("chat");
@@ -1576,8 +1616,7 @@ function PageBody({
       <AppTopBar
         onAsk={() => setPaletteOpen(true)}
         onOpenPeople={() => {
-          setRevenueTab("people");
-          navigateTo("revenue");
+          openRevenueTab("people");
           setSelectedResource(null);
         }}
       />
@@ -1600,8 +1639,7 @@ function PageBody({
               setSelectedResource(null);
             }}
             onNavigateRevenue={(tab) => {
-              setRevenueTab(tab);
-              navigateTo("revenue");
+              openRevenueTab(tab);
               setSelectedResource(null);
             }}
             onNavigateAgents={() => {
@@ -1609,13 +1647,11 @@ function PageBody({
               setSelectedResource(null);
             }}
             onNavigateScheduled={() => {
-              setWorkflowFocus("scheduled");
-              navigateTo("workflows");
+              openWorkflows("scheduled");
               setSelectedResource(null);
             }}
             onNavigateRuns={() => {
-              setWorkflowFocus("runs");
-              navigateTo("workflows");
+              openWorkflows("runs");
               setSelectedResource(null);
             }}
             onOpenSettings={(section) => {
@@ -1623,11 +1659,11 @@ function PageBody({
               navigateTo("settings");
             }}
             onSelectResource={(resource) => {
-              if (resource.kind === "task") setWorkflowFocus("scheduled");
-              if (resource.kind === "taskrun") setWorkflowFocus("runs");
-              navigateTo(
-                resource.kind === "task" || resource.kind === "taskrun" ? "workflows" : "chat",
-              );
+              if (resource.kind === "task" || resource.kind === "taskrun") {
+                openWorkflows(resource.kind === "taskrun" ? "runs" : "scheduled");
+              } else {
+                navigateTo("chat");
+              }
               setSelectedResource(resource);
             }}
             activeResourceGroup={
@@ -1709,7 +1745,7 @@ function PageBody({
                 <div className="flex-1 overflow-hidden">
                   <RevenuePanel
                     tab={revenueTab}
-                    onTabChange={setRevenueTab}
+                    onTabChange={openRevenueTab}
                     onOpenConnectors={() => {
                       setSettingsSection("extensions");
                       navigateTo("settings");
@@ -1902,12 +1938,7 @@ function PageBody({
                             attention.
                           </p>
                           <div className="mt-5">{renderPromptInput()}</div>
-                          <HomeOverview
-                            onOpenTab={(tab) => {
-                              setRevenueTab(tab);
-                              navigateTo("revenue");
-                            }}
-                          />
+                          <HomeOverview onOpenTab={openRevenueTab} />
                         </div>
                       </div>
                     ) : (
@@ -2017,14 +2048,23 @@ function PageBody({
 export default function ProductDashboardClient({
   initialView = "chat",
   initialSettingsSection = "overview",
+  initialRevenueTab,
+  initialWorkflowFocus,
 }: {
   initialView?: ProductView;
   initialSettingsSection?: SettingsSection;
+  initialRevenueTab?: string;
+  initialWorkflowFocus?: string;
 }) {
   return (
     <AuthGate>
       <div className="app-shell contents" data-product-shell>
-        <PageBody initialSettingsSection={initialSettingsSection} initialView={initialView} />
+        <PageBody
+          initialRevenueTab={initialRevenueTab}
+          initialSettingsSection={initialSettingsSection}
+          initialView={initialView}
+          initialWorkflowFocus={initialWorkflowFocus}
+        />
       </div>
     </AuthGate>
   );
