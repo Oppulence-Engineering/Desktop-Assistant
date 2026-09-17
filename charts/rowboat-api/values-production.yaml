@@ -136,6 +136,7 @@ config:
   # Google OAuth broker callback — the API host serving /oauth/google/callback (NOT
   # APP_URL, which the default would use). Register this exact URI in Google Cloud.
   GOOGLE_REDIRECT_URI: https://api.oppulence.io/oauth/google/callback
+  GOOGLE_WEB_RETURN_URL: https://oppulence.io/app/settings?settings=connections
   # Slack OAuth callback served by this API. Register this exact URI in the
   # Slack app alongside the production client credentials.
   SLACK_REDIRECT_URI: https://api.oppulence.io/oauth/slack/callback

@@ -207,6 +207,9 @@ describe("Google grant claimed in the web app", () => {
           `${init?.method ?? "GET"} ${url} ${typeof init?.body === "string" ? init.body : ""}`,
         );
         if (url.includes("/google-oauth/claim")) return json({});
+        if (url.includes("/google-oauth/start")) {
+          return json({ authorizeUrl: "https://accounts.google.com/o/oauth2/v2/auth?state=s1" });
+        }
         if (url.includes("/google-oauth")) {
           return json({
             connected: true,
@@ -230,6 +233,27 @@ describe("Google grant claimed in the web app", () => {
     );
     return calls;
   }
+
+  // The reported bug: a reconnect started on this page came back to the desktop
+  // app's deep link, so nothing here claimed the grant and the dead grant stayed
+  // dead. The start call names the web flow so the callback returns here.
+  it("starts Google authorization as a web flow", async () => {
+    const calls = mockDashboard();
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => true),
+    );
+    render(<ConnectorSettings />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Change Google access" }));
+
+    await vi.waitFor(() => {
+      expect(calls.some((call) => call.includes("/google-oauth/start"))).toBe(true);
+    });
+    const start = calls.find((call) => call.includes("/google-oauth/start"));
+    expect(start).toMatch(/^POST /);
+    expect(start).toContain("return=web");
+  });
 
   // The claim stores the grant, but the relationship source only learns of it
   // when told. Without this the sidebar said "No sources connected" while the

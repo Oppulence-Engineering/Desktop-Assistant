@@ -57,8 +57,15 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 		h.errorPage(w, http.StatusInternalServerError, "Could not start sign-in.")
 		return
 	}
+	// A flow the web app started must come back to the web app, which claims
+	// the ticket. The return was once one global setting, so production sent
+	// every web reconnect to the desktop deep link and nothing claimed it.
+	returnTo := ""
+	if r.URL.Query().Get("return") == returnToWeb {
+		returnTo = returnToWeb
+	}
 	// The starter identity is sealed at rest with the eventual token bundle.
-	initial, _ := json.Marshal(parkedPayload{WorkOSUserID: u.WorkosUserID, PKCEVerifier: verifier})
+	initial, _ := json.Marshal(parkedPayload{WorkOSUserID: u.WorkosUserID, PKCEVerifier: verifier, ReturnTo: returnTo})
 	sealed, err := h.sealer.Seal(initial)
 	if err != nil {
 		h.errorPage(w, http.StatusInternalServerError, "Could not start sign-in.")
@@ -128,7 +135,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if oauthErr := q.Get("error"); oauthErr != "" {
-		h.deepLink(w, state, "error")
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
 		return
 	}
 	if code == "" {
@@ -156,26 +163,26 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	upReq, err := http.NewRequestWithContext(ctx, http.MethodPost, h.tokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		h.deepLink(w, state, "error")
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
 		return
 	}
 	upReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := h.http.Do(upReq)
 	if err != nil {
 		h.log.Warn("google callback: token exchange", zap.Error(err))
-		h.deepLink(w, state, "error")
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
 		return
 	}
 	defer func() { _ = resp.Body.Close() }()
 	body, err := outbound.ReadAll(resp.Body, h.http.MaxResponseBytes())
 	if err != nil {
 		h.log.Warn("google callback: token response read", zap.Error(err))
-		h.deepLink(w, state, "error")
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
 		return
 	}
 	if resp.StatusCode != http.StatusOK {
 		h.log.Warn("google callback: token exchange non-200", zap.Int("status", resp.StatusCode))
-		h.deepLink(w, state, "error")
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
 		return
 	}
 
@@ -188,7 +195,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		IDToken      string `json:"id_token"` // present: scopes include openid email
 	}
 	if err := json.Unmarshal(body, &gtok); err != nil || gtok.AccessToken == "" {
-		h.deepLink(w, state, "error")
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
 		return
 	}
 
@@ -209,23 +216,23 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	raw, _ := json.Marshal(payload)
 	sealed, err := h.sealer.Seal(raw)
 	if err != nil {
-		h.deepLink(w, state, "error")
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
 		return
 	}
 	if err := pending.Update().SetPayloadEncrypted(sealed).Exec(ctx); err != nil {
 		h.log.Error("google callback: park tokens", zap.Error(err))
-		h.deepLink(w, state, "error")
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
 		return
 	}
-	h.deepLink(w, state, "success")
+	h.deepLink(w, state, "success", initial.ReturnTo == returnToWeb)
 }
 
-// deepLink bounces the browser back to the desktop via the configured desktop
-// scheme (solomon-ai:// by default);
-// the desktop claims the parked tokens with its bearer. An HTML page is used
-// because a bare 302 to a custom scheme is unreliable across browsers.
-func (h *Handler) deepLink(w http.ResponseWriter, state, status string) {
-	target := h.completionTarget(state, status)
+// deepLink bounces the browser back to whoever started the flow: the web app
+// for a web flow, else the desktop via its custom scheme (solomon-ai:// by
+// default). That side claims the parked tokens with its bearer. An HTML page is
+// used because a bare 302 to a custom scheme is unreliable across browsers.
+func (h *Handler) deepLink(w http.ResponseWriter, state, status string, web bool) {
+	target := h.completionTarget(state, status, web)
 	title := "Google connected"
 	message := "Oppulence is now syncing your Google data."
 	if status != "success" {
@@ -255,8 +262,8 @@ func (h *Handler) deepLink(w http.ResponseWriter, state, status string) {
 		"</script></body></html>")
 }
 
-func (h *Handler) completionTarget(state, status string) string {
-	if h.webReturnURL == "" {
+func (h *Handler) completionTarget(state, status string, web bool) string {
+	if !web || h.webReturnURL == "" {
 		return h.deepLinkScheme + "://oauth/google/done?session=" + url.QueryEscape(state) + "&status=" + status
 	}
 	target, _ := url.Parse(h.webReturnURL)
