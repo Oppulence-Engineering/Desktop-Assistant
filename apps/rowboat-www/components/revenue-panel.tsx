@@ -5,13 +5,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkle, WarningCircle } from "@/lib/icons";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
-import { googleNeedsReconnect, type RevenueTab } from "@/components/app-shell";
+import type { RevenueTab } from "@/components/app-shell";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import {
   appendCommitmentTransition,
   downloadMarkdown,
   friendlyRevenueError,
   getRelationshipGraph,
+  googleNeedsReconnect,
   getScan,
   getCommitmentRecordMarkdown,
   getWorkspace,

@@ -1,10 +1,12 @@
 "use client";
 
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { EnvelopeSimple, WarningDiamond } from "@/lib/icons";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
 import {
   Card,
   CardContent,
@@ -26,25 +28,38 @@ import {
 import { DETECTOR_LABELS, getDigest, getImpact } from "@/lib/revenue";
 import { EmptyBlock, errMessage, ListSkeleton } from "@/components/revenue/shared";
 import { cn } from "@/lib/utils";
-import type { RevenueDigest, RevenueImpact } from "@/types/revenue";
 
 export function ImpactView({ onError }: { onError: (m: string) => void }) {
-  const [data, setData] = React.useState<RevenueImpact | null>(null);
-  const [digest, setDigest] = React.useState<RevenueDigest | null>(null);
-  const [loading, setLoading] = React.useState(true);
+  const impactQuery = useQuery({
+    queryKey: ["revenue-impact"],
+    queryFn: async () => {
+      const [data, digest] = await Promise.all([getImpact(), getDigest().catch(() => null)]);
+      return { data, digest };
+    },
+  });
 
   React.useEffect(() => {
-    void Promise.all([getImpact(), getDigest().catch(() => null)])
-      .then(([imp, dg]) => {
-        setData(imp);
-        setDigest(dg);
-      })
-      .catch((e) => onError(errMessage(e, "Could not load impact.")))
-      .finally(() => setLoading(false));
-  }, [onError]);
+    if (impactQuery.error) {
+      onError(errMessage(impactQuery.error, "Could not load impact."));
+    }
+  }, [impactQuery.error, onError]);
 
-  if (loading) return <ListSkeleton rows={2} />;
-  if (!data) return null;
+  if (impactQuery.isPending) return <ListSkeleton rows={2} />;
+  if (!impactQuery.data) {
+    return (
+      <EmptyBlock
+        body="Impact data is temporarily unavailable. Your underlying relationship records were not changed."
+        image="impact"
+        learnMore={[]}
+        title="Impact could not load"
+      >
+        <Button onClick={() => void impactQuery.refetch()} type="button" variant="outline">
+          Try again
+        </Button>
+      </EmptyBlock>
+    );
+  }
+  const { data, digest } = impactQuery.data;
 
   if (data.surfaced === 0 && data.atRiskRelationships === 0 && data.overdueCommitments === 0) {
     return (

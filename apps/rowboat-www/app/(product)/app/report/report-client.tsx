@@ -5,7 +5,7 @@ import "client-only";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRightIcon, CircleNotchIcon, ExportIcon, PlugsIcon, WarningIcon } from "@/lib/icons";
 
 import { WorkspaceEmptyState } from "@/components/revenue/shared";
@@ -19,10 +19,11 @@ import {
   getOpenPromisesReport,
   getOpenPromisesReportMarkdown,
   getScan,
-  googleSourceHealth,
   latestCompletedScan,
   listScans,
-  listRelationshipSources,
+  listRelationshipSourceStatuses,
+  relationshipSourceHealth,
+  RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
   safeResearchCitationURL,
   startScan,
 } from "@/lib/revenue";
@@ -42,6 +43,7 @@ function ReportBody() {
   // The running scan is identified in the URL. That makes "leave the page and
   // come back" work with no browser storage, and the link is shareable.
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useSearchParams();
   const scanId = params.get("scan");
   const setScanId = React.useCallback(
@@ -54,15 +56,14 @@ function ReportBody() {
   const [error, setError] = React.useState<string | null>(null);
 
   const sourcesQuery = useQuery({
-    queryKey: ["report-sources"],
-    queryFn: () => listRelationshipSources(),
+    queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
+    queryFn: listRelationshipSourceStatuses,
   });
-  const health = googleSourceHealth(sourcesQuery.data ?? []);
+  const health = relationshipSourceHealth(sourcesQuery.data ?? []);
 
   const scansQuery = useQuery({
     queryKey: ["report-scans"],
     queryFn: () => listScans(),
-    enabled: !scanId,
   });
   const effectiveScanId = scanId ?? latestCompletedScan(scansQuery.data ?? [])?.id ?? null;
 
@@ -76,6 +77,14 @@ function ReportBody() {
     },
   });
   const scanDone = scanQuery.data?.status === "completed";
+  const scanTerminal =
+    scanQuery.data?.status === "completed" || scanQuery.data?.status === "failed";
+
+  React.useEffect(() => {
+    if (!scanTerminal) return;
+    void queryClient.invalidateQueries({ queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY });
+    void queryClient.invalidateQueries({ queryKey: ["report-scans"] });
+  }, [queryClient, scanTerminal]);
 
   const reportQuery = useQuery({
     queryKey: ["report", effectiveScanId],
@@ -93,6 +102,14 @@ function ReportBody() {
   }, [reportQuery.data]);
 
   const run = React.useCallback(async () => {
+    if (health !== "ready") {
+      setError(
+        health === "needs_reconnect"
+          ? "Reconnect Google before starting another audit."
+          : "Connect Gmail and Calendar before starting an audit.",
+      );
+      return;
+    }
     setStarting(true);
     setError(null);
     try {
@@ -104,7 +121,7 @@ function ReportBody() {
     } finally {
       setStarting(false);
     }
-  }, [setScanId]);
+  }, [health, setScanId]);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-10">
@@ -115,6 +132,28 @@ function ReportBody() {
           and the exact message that created each one.
         </p>
       </header>
+
+      {(scansQuery.data?.length ?? 0) > 1 ? (
+        <Label className="flex items-center gap-3 text-xs text-primary/55">
+          Audit
+          <select
+            className="h-8 min-w-56 border border-border bg-background px-2 text-xs text-primary"
+            onChange={(event) => {
+              setScanId(event.target.value || null);
+            }}
+            value={effectiveScanId ?? ""}
+          >
+            {scansQuery.data?.map((scan) => (
+              <option key={scan.id} value={scan.id}>
+                {scan.status === "completed" ? "Completed" : scan.status} ·{" "}
+                {scan.completedAt || scan.startedAt
+                  ? new Date(scan.completedAt ?? scan.startedAt ?? "").toLocaleDateString()
+                  : scan.id}
+              </option>
+            ))}
+          </select>
+        </Label>
+      ) : null}
 
       {error ? (
         <p className="flex items-start gap-2 border border-destructive/40 bg-destructive/5 p-3 text-[13px] text-destructive">
@@ -180,7 +219,7 @@ function ConnectStep() {
     <WorkspaceEmptyState
       action={
         <Button asChild className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]" size="sm">
-          <Link href="/app/settings">
+          <Link href="/app/settings?settings=connections">
             <PlugsIcon /> Connect Gmail &amp; Calendar
           </Link>
         </Button>
@@ -203,7 +242,7 @@ function ReconnectStep() {
     <WorkspaceEmptyState
       action={
         <Button asChild className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]" size="sm">
-          <Link href="/app/settings">
+          <Link href="/app/settings?settings=connections">
             <PlugsIcon /> Reconnect Google
           </Link>
         </Button>

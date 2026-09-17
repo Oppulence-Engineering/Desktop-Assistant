@@ -9,6 +9,8 @@ import {
   interactionCountLabel,
   latestCompletedScan,
   listScans,
+  relationshipSourceHealth,
+  semanticSearch,
 } from "@/lib/revenue";
 
 vi.mock("@/lib/auth/client", () => ({
@@ -45,15 +47,42 @@ describe("getRelationshipGraph", () => {
 
 describe("listScans", () => {
   it("loads server audit history instead of browser-local ids", async () => {
+    const scan = {
+      id: "00000000-0000-4000-8000-000000000001",
+      status: "completed",
+      mode: "local",
+      lookbackDays: 90,
+    };
     mockFetch.mockResolvedValueOnce(
-      new Response(JSON.stringify({ scans: [{ id: "scan-1", status: "completed" }] }), {
+      new Response(JSON.stringify({ scans: [scan] }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       }),
     );
 
-    await expect(listScans()).resolves.toEqual([{ id: "scan-1", status: "completed" }]);
+    await expect(listScans()).resolves.toEqual([scan]);
     expect(mockFetch.mock.calls[0]?.[0]).toBe("/revenue-leak-scans?limit=10");
+  });
+});
+
+describe("semanticSearch", () => {
+  it("forwards cancellation and preserves unavailable capability state", async () => {
+    const controller = new AbortController();
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ available: false, matches: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(semanticSearch("renewal risk", controller.signal)).resolves.toEqual({
+      available: false,
+      matches: [],
+    });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "/revenue-search?q=renewal+risk",
+      expect.objectContaining({ signal: controller.signal }),
+    );
   });
 });
 
@@ -74,6 +103,23 @@ it("opens the latest report for a stale but authorized Google source", () => {
       { id: "older-complete", status: "completed", threadsSeen: 8 },
     ])?.id,
   ).toBe("latest-complete");
+});
+
+// Source health is unified across the shell and report. Old account rows can
+// remain after OAuth creates a replacement connection, so readiness is true
+// when any Google account is healthy rather than false when any row is dead.
+it("lets one healthy Google account win over stale dead account rows", () => {
+  expect(
+    relationshipSourceHealth([
+      {
+        source: "google",
+        status: "reconnect_required",
+        missingScopes: ["https://www.googleapis.com/auth/gmail.readonly"],
+      },
+      { source: "google", status: "disconnected", missingScopes: [] },
+      { source: "google", status: "live", missingScopes: [] },
+    ]),
+  ).toBe("ready");
 });
 
 describe("friendlyRevenueError", () => {

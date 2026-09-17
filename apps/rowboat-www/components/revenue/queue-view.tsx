@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alarm,
   CheckCircle,
@@ -15,17 +16,10 @@ import {
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import { Card, CardContent, CardFooter } from "@oppulence/ui/components/card";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@oppulence/ui/components/empty";
+import { Empty, EmptyDescription, EmptyHeader } from "@oppulence/ui/components/empty";
 import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
-import { WorkspaceEmptyState } from "@/components/revenue/shared";
+import { EmptyBlock, WorkspaceEmptyState } from "@/components/revenue/shared";
 import {
   Dialog,
   DialogContent,
@@ -85,41 +79,47 @@ export function QueueView({
   refreshKey?: number;
 }) {
   const [filter, setFilter] = React.useState("open");
-  const [actions, setActions] = React.useState<RevenueAction[]>([]);
-  const [loading, setLoading] = React.useState(true);
   const [selected, setSelected] = React.useState<RevenueAction | null>(null);
   const [auditFor, setAuditFor] = React.useState<RevenueAction | null>(null);
   const [creating, setCreating] = React.useState(false);
-
-  const load = React.useCallback(
-    async (status: string) => {
-      setLoading(true);
-      try {
-        setActions(await listActions(status, 50));
-      } catch (e) {
-        onError(errMessage(e, "Could not load the queue."));
-      } finally {
-        setLoading(false);
-      }
-    },
-    [onError],
+  const queryClient = useQueryClient();
+  const actionsQueryKey = React.useMemo(
+    () => ["revenue-actions", filter, refreshKey] as const,
+    [filter, refreshKey],
   );
+  const actionsQuery = useQuery({
+    queryKey: actionsQueryKey,
+    queryFn: () => listActions(filter, 50),
+  });
+  const actions = actionsQuery.data ?? [];
 
   React.useEffect(() => {
-    void load(filter);
-  }, [filter, load, refreshKey]);
+    if (actionsQuery.error) {
+      onError(errMessage(actionsQuery.error, "Could not load the queue."));
+    }
+  }, [actionsQuery.error, onError]);
 
-  const removeFromQueue = React.useCallback((id: string) => {
-    setActions((prev) => prev.filter((a) => a.id !== id));
-    setSelected((cur) => (cur?.id === id ? null : cur));
-  }, []);
+  const removeFromQueue = React.useCallback(
+    (id: string) => {
+      queryClient.setQueryData<RevenueAction[]>(actionsQueryKey, (current = []) =>
+        current.filter((action) => action.id !== id),
+      );
+      setSelected((cur) => (cur?.id === id ? null : cur));
+    },
+    [actionsQueryKey, queryClient],
+  );
 
-  const patchAction = React.useCallback((updated: RevenueAction) => {
-    setActions((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
-    setSelected((cur) => (cur?.id === updated.id ? updated : cur));
-  }, []);
+  const patchAction = React.useCallback(
+    (updated: RevenueAction) => {
+      queryClient.setQueryData<RevenueAction[]>(actionsQueryKey, (current = []) =>
+        current.map((action) => (action.id === updated.id ? updated : action)),
+      );
+      setSelected((cur) => (cur?.id === updated.id ? updated : cur));
+    },
+    [actionsQueryKey, queryClient],
+  );
 
-  const empty = !loading && actions.length === 0;
+  const empty = actionsQuery.isSuccess && actions.length === 0;
 
   return (
     <div className="flex min-h-full w-full min-w-0 flex-col">
@@ -146,10 +146,21 @@ export function QueueView({
         </Button>
       </div>
 
-      {loading ? (
+      {actionsQuery.isPending ? (
         <div className="p-3">
           <ListSkeleton />
         </div>
+      ) : actionsQuery.isError ? (
+        <EmptyBlock
+          body="The recovery queue is temporarily unavailable. Existing drafts and approvals were not changed."
+          image="recovery"
+          learnMore={[]}
+          title="Recovery could not load"
+        >
+          <Button onClick={() => void actionsQuery.refetch()} type="button" variant="outline">
+            Try again
+          </Button>
+        </EmptyBlock>
       ) : empty ? (
         filter === "open" ? (
           <WorkspaceEmptyState
@@ -236,7 +247,12 @@ export function QueueView({
           onCreated={(a) => {
             setCreating(false);
             onNotice("Action created.");
-            if (filter === "open") setActions((prev) => [a, ...prev]);
+            if (filter === "open") {
+              queryClient.setQueryData<RevenueAction[]>(actionsQueryKey, (current = []) => [
+                a,
+                ...current,
+              ]);
+            }
           }}
           onError={onError}
         />

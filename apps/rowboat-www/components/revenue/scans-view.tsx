@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { CheckCircle, MagnifyingGlass, Plugs, WarningCircle } from "@/lib/icons";
 
 import { Badge } from "@oppulence/ui/components/badge";
@@ -112,6 +113,11 @@ export function ScansView({
 
 function ScanRow({ scan }: { scan: RevenueLeakScan }) {
   const running = scan.status === "running" || scan.status === "pending";
+  const title = running
+    ? "Auditing your inbox…"
+    : scan.status === "completed"
+      ? "Audit complete"
+      : "Audit failed";
   return (
     <TableRow className="min-h-11 border-border px-3 text-[13px] hover:bg-background-100/70">
       <TableCell className="min-w-[220px] px-3 py-2 align-middle whitespace-normal">
@@ -124,13 +130,16 @@ function ScanRow({ scan }: { scan: RevenueLeakScan }) {
             ) : (
               <WarningCircle weight="fill" className="size-4 text-red-500" />
             )}
-            <Label className="text-sm font-medium text-primary">
-              {running
-                ? "Auditing your inbox…"
-                : scan.status === "completed"
-                  ? "Audit complete"
-                  : "Audit failed"}
-            </Label>
+            {scan.status === "completed" ? (
+              <Link
+                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                href={`/app/report?scan=${encodeURIComponent(scan.id)}`}
+              >
+                {title}
+              </Link>
+            ) : (
+              <Label className="text-sm font-medium text-primary">{title}</Label>
+            )}
             <Badge
               variant="secondary"
               className="ml-auto hidden font-normal text-primary/40 sm:inline-flex"

@@ -12,8 +12,12 @@ import {
   ListCommitments200Response,
 } from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
 import {
+  GetRevenueLeakScan200Response,
   GetOpenPromisesReport200Response,
   GetRevenueImpact200Response,
+  ListRevenueActions200Response,
+  ListRevenueLeakScans200Response,
+  StartRevenueLeakScan202Response,
 } from "@/lib/api/generated/zod/revenue/revenue";
 import { RelationshipGraphSchema } from "@/types/revenue";
 import type {
@@ -184,10 +188,12 @@ export interface SemanticMatch {
 // Layer 2). `available` is false when semantic memory isn't configured.
 export async function semanticSearch(
   query: string,
+  signal?: AbortSignal,
 ): Promise<{ available: boolean; matches: SemanticMatch[] }> {
   const params = new URLSearchParams({ q: query });
   const body = await call<{ available: boolean; matches: SemanticMatch[] }>(
     `/revenue-search?${params.toString()}`,
+    { signal },
   );
   return { available: body.available, matches: body.matches ?? [] };
 }
@@ -215,19 +221,28 @@ export const linkWorkspace = (input: LinkWorkspaceInput) =>
 
 // --- scan --------------------------------------------------------------------
 
-export const startScan = (lookbackDays?: number) =>
-  post(
-    "/revenue-leak-scans",
-    lookbackDays ? { lookbackDays } : undefined,
-  ) as Promise<RevenueLeakScan>;
+export const startScan = async (lookbackDays?: number): Promise<RevenueLeakScan> =>
+  parsed(
+    StartRevenueLeakScan202Response,
+    await post("/revenue-leak-scans", lookbackDays ? { lookbackDays } : undefined),
+    "revenue scan",
+  ) as RevenueLeakScan;
 
-export const getScan = (scanId: string, signal?: AbortSignal) =>
-  call<RevenueLeakScan>(`/revenue-leak-scans/${scanId}`, { signal });
+export const getScan = async (scanId: string, signal?: AbortSignal): Promise<RevenueLeakScan> =>
+  parsed(
+    GetRevenueLeakScan200Response,
+    await call<unknown>(`/revenue-leak-scans/${scanId}`, { signal }),
+    "revenue scan",
+  ) as RevenueLeakScan;
 
-export const listScans = async () =>
-  call<{ scans: RevenueLeakScan[] }>("/revenue-leak-scans?limit=10").then(
-    (body) => body.scans ?? [],
+export const listScans = async (): Promise<RevenueLeakScan[]> => {
+  const body = parsed(
+    ListRevenueLeakScans200Response,
+    await call<unknown>("/revenue-leak-scans?limit=10"),
+    "revenue scans",
   );
+  return body.scans as RevenueLeakScan[];
+};
 
 export function latestCompletedScan(
   scans: Array<Pick<RevenueLeakScan, "id" | "status" | "threadsSeen">>,
@@ -238,36 +253,74 @@ export function latestCompletedScan(
   );
 }
 
+export type RelationshipSourceHealth = "not_connected" | "needs_reconnect" | "ready";
+
+type SourceHealthRecord = {
+  source: string;
+  status: string;
+  missingScopes?: string[];
+};
+
+const STOPPED_SOURCE_STATUSES = new Set(["reconnect_required", "disconnected", "not_connected"]);
+
+/**
+ * Resolves source readiness account-by-account. A stale failed account must
+ * not block an audit after another account has reconnected successfully.
+ */
+export function relationshipSourceHealth(
+  sources: SourceHealthRecord[],
+  sourceName = "google",
+): RelationshipSourceHealth {
+  const matching = sources.filter((source) => source.source === sourceName);
+  if (matching.length === 0) return "not_connected";
+
+  const hasUsableAccount = matching.some(
+    (source) =>
+      !STOPPED_SOURCE_STATUSES.has(source.status) && (source.missingScopes?.length ?? 0) === 0,
+  );
+  if (hasUsableAccount) return "ready";
+
+  return matching.every(
+    (source) =>
+      STOPPED_SOURCE_STATUSES.has(source.status) || (source.missingScopes?.length ?? 0) > 0,
+  )
+    ? "needs_reconnect"
+    : "not_connected";
+}
+
 export function googleSourceHealth(
   sources: Array<{
     source: string;
     accounts: Array<{ status: string; missingScopes: string[] }>;
   }>,
 ) {
-  const accounts = sources.find((source) => source.source === "google")?.accounts ?? [];
-  if (
-    accounts.some(
-      (account) =>
-        account.status === "reconnect_required" ||
-        account.status === "disconnected" ||
-        account.missingScopes.length > 0,
-    )
-  ) {
-    return "needs_reconnect" as const;
-  }
-  return accounts.some((account) =>
-    ["connected", "backfilling", "live", "stale"].includes(account.status),
-  )
-    ? ("ready" as const)
-    : ("not_connected" as const);
+  return relationshipSourceHealth(
+    sources.flatMap((source) =>
+      source.accounts.map((account) => ({ source: source.source, ...account })),
+    ),
+  );
 }
+
+export const googleNeedsReconnect = (sources: RelationshipSourceStatus[]) =>
+  relationshipSourceHealth(sources) === "needs_reconnect";
+
+/** Sources still delivering evidence; stopped grants do not count. */
+export const connectedSourceCount = (sources: RelationshipSourceStatus[]) =>
+  sources.filter(
+    (source) =>
+      !STOPPED_SOURCE_STATUSES.has(source.status) && (source.missingScopes?.length ?? 0) === 0,
+  ).length;
 
 // --- queue reads -------------------------------------------------------------
 
 export async function listActions(queueStatus = "open", limit = 25): Promise<RevenueAction[]> {
   const params = new URLSearchParams({ queueStatus, limit: String(limit) });
-  const body = await call<{ actions: RevenueAction[] }>(`/revenue-actions?${params.toString()}`);
-  return body.actions ?? [];
+  const body = parsed(
+    ListRevenueActions200Response,
+    await call<unknown>(`/revenue-actions?${params.toString()}`),
+    "revenue actions",
+  );
+  return body.actions as RevenueAction[];
 }
 
 export const getAction = (actionId: string) => call<RevenueAction>(`/revenue-actions/${actionId}`);
@@ -335,13 +388,16 @@ export const interactionCountLabel = (count: number | null | undefined) => {
 
 export async function listRelationships(
   filters: RelationshipFilters = {},
+  signal?: AbortSignal,
 ): Promise<RevenueRelationship[]> {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(filters)) {
     if (value) params.set(key, value);
   }
   const query = params.size ? `?${params.toString()}` : "";
-  const body = await call<{ relationships: RevenueRelationship[] }>(`/relationships${query}`);
+  const body = await call<{ relationships: RevenueRelationship[] }>(`/relationships${query}`, {
+    signal,
+  });
   return body.relationships ?? [];
 }
 
