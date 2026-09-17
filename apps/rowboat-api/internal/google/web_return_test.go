@@ -10,17 +10,29 @@ import (
 func TestCompletionTargetUsesWebReturn(t *testing.T) {
 	h := &Handler{deepLinkScheme: "rowboat"}
 	h.SetWebReturnURL("http://localhost:3000/app/settings?settings=connections")
-	target, err := url.Parse(h.completionTarget("ticket", "success"))
+	target, err := url.Parse(h.completionTarget("ticket", "success", true))
 	if err != nil || target.Query().Get("settings") != "connections" ||
 		target.Query().Get("google_session") != "ticket" || target.Query().Get("google_status") != "success" {
 		t.Fatalf("completion target = %q, err = %v", target, err)
 	}
 }
 
+// The web return URL used to apply to every flow, so production could only
+// serve one client: without it web reconnects went to the desktop deep link,
+// and with it desktop reconnects would go to the website. A flow the desktop
+// started must keep its deep link even when the web return is configured.
+func TestCompletionTargetKeepsDesktopDeepLink(t *testing.T) {
+	h := &Handler{deepLinkScheme: "rowboat"}
+	h.SetWebReturnURL("https://oppulence.io/app/settings?settings=connections")
+	if got := h.completionTarget("ticket", "success", false); got != "rowboat://oauth/google/done?session=ticket&status=success" {
+		t.Fatalf("desktop completion target = %q", got)
+	}
+}
+
 func TestDeepLinkScrubsOAuthCallbackAndShowsCompletion(t *testing.T) {
 	h := &Handler{deepLinkScheme: "rowboat"}
 	rec := httptest.NewRecorder()
-	h.deepLink(rec, "ticket", "success")
+	h.deepLink(rec, "ticket", "success", false)
 
 	body := rec.Body.String()
 	for _, want := range []string{
@@ -46,7 +58,7 @@ func TestDeepLinkScrubsOAuthCallbackAndShowsCompletion(t *testing.T) {
 func TestDeepLinkShowsRetryCopyOnError(t *testing.T) {
 	h := &Handler{deepLinkScheme: "rowboat"}
 	rec := httptest.NewRecorder()
-	h.deepLink(rec, "ticket", "error")
+	h.deepLink(rec, "ticket", "error", false)
 
 	body := rec.Body.String()
 	if !strings.Contains(body, "Google connection incomplete") || !strings.Contains(body, "try connecting Google again") {
