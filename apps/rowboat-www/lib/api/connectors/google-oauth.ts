@@ -2,8 +2,10 @@ import { StartGoogleOAuth200Response } from "@/lib/api/generated/zod/google-oaut
 import { dashboardFetch } from "@/lib/auth/client";
 import { safeAuthorizationURL } from "@/lib/connectors/hosted-oauth";
 
-const GOOGLE_COMMITMENTS_OAUTH_START =
-  "/api/rowboat/v1/google-oauth/start?profile=commitments&return=web";
+const GOOGLE_COMMITMENTS_OAUTH_START = "/api/rowboat/v1/google-oauth/start";
+const GOOGLE_CONNECTIONS_PATH = "/app/settings?settings=connections";
+
+export type GoogleOAuthReturnPath = "/app/report" | typeof GOOGLE_CONNECTIONS_PATH;
 
 /**
  * Creates a web Google authorization URL for commitment evidence.
@@ -12,8 +14,15 @@ const GOOGLE_COMMITMENTS_OAUTH_START =
  * desktop OAuth. Without it, a browser grant can return to the desktop deep
  * link and never be claimed by the web session.
  */
-export async function createGoogleCommitmentsAuthorizationURL(): Promise<URL> {
-  const response = await dashboardFetch(GOOGLE_COMMITMENTS_OAUTH_START, {
+export async function createGoogleCommitmentsAuthorizationURL(
+  returnPath: GoogleOAuthReturnPath = GOOGLE_CONNECTIONS_PATH,
+): Promise<URL> {
+  const query = new URLSearchParams({
+    profile: "commitments",
+    return: "web",
+    return_path: returnPath,
+  });
+  const response = await dashboardFetch(`${GOOGLE_COMMITMENTS_OAUTH_START}?${query.toString()}`, {
     method: "POST",
   });
   if (!response.ok) {
