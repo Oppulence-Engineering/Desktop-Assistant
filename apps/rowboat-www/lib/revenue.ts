@@ -617,6 +617,12 @@ export const requestConversationDeletion = (relationshipId: string, requestId: s
     requestId,
   }) as Promise<NonNullable<RelationshipDetail["intelligence"]>["deletionReceipts"][number]>;
 
+/**
+ * One cache entry for source health. The sidebar and the revenue panel both
+ * read it, so a finished audit refreshes both with one invalidation.
+ */
+export const RELATIONSHIP_SOURCE_STATUS_QUERY_KEY = ["relationship-source-statuses"] as const;
+
 export const listRelationshipSourceStatuses = () =>
   call<{ sources: RelationshipSourceStatus[] }>("/relationship-sources/status").then(
     (body) => body.sources ?? [],

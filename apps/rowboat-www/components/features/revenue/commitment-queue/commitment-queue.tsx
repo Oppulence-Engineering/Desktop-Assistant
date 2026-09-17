@@ -538,9 +538,9 @@ export function CommitmentQueue({
           Recovery drafts
         </Button>
         <div className="ml-auto flex items-center gap-2">
-          {!failure?.needsReconnect && !googleConnected ? (
+          {!googleNeedsReconnect && !googleConnected ? (
             <Button type="button" variant="outline" size="sm" onClick={onOpenConnectors}>
-              <Plugs /> {googleNeedsReconnect ? "Reconnect Google" : "Connect Gmail & Calendar"}
+              <Plugs /> Connect Gmail & Calendar
             </Button>
           ) : googleConnected ? (
             <button
@@ -551,19 +551,33 @@ export function CommitmentQueue({
               <span className="size-1.5 rounded-full bg-emerald-400" /> Google connected
             </button>
           ) : null}
-          <Button
-            type="button"
-            size="sm"
-            className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-            onClick={onScan}
-            disabled={scanning}
-          >
-            {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />}
-            <span className="hidden xl:inline">
-              {scanning ? "Scanning 90 days" : "Run 90-day Promise Leak Audit"}
-            </span>
-            <span className="xl:hidden">{scanning ? "Scanning" : "Run audit"}</span>
-          </Button>
+          {/* A dead grant turns the audit button into the fix. It used to stay
+              "Run audit" beside a reconnect error and start scans that failed
+              within a second. */}
+          {googleNeedsReconnect ? (
+            <Button
+              type="button"
+              size="sm"
+              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              onClick={onOpenConnectors}
+            >
+              <Plugs /> Reconnect Google
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              onClick={onScan}
+              disabled={scanning}
+            >
+              {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />}
+              <span className="hidden xl:inline">
+                {scanning ? "Scanning 90 days" : "Run 90-day Promise Leak Audit"}
+              </span>
+              <span className="xl:hidden">{scanning ? "Scanning" : "Run audit"}</span>
+            </Button>
+          )}
         </div>
         <div
           className="hidden items-center gap-4 text-[11px] text-primary/45 2xl:flex"
@@ -944,7 +958,7 @@ export function CommitmentQueue({
       )}
 
       {selected ? (
-        <div className="fixed inset-y-0 right-0 z-40 flex bg-background md:left-[274px]">
+        <div className="fixed inset-y-0 right-0 z-40 flex bg-background md:left-[285px]">
           <aside className="flex w-[320px] shrink-0 flex-col border-r border-border bg-background">
             <div className="flex h-12 items-center gap-2 border-b border-border px-3">
               <button

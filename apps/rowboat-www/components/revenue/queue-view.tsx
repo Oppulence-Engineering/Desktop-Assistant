@@ -8,6 +8,7 @@ import {
   ClockCounterClockwise,
   MagnifyingGlass,
   PencilSimple,
+  Plugs,
   Plus,
   Prohibit,
 } from "@phosphor-icons/react";
@@ -61,6 +62,7 @@ export function QueueView({
   onNotice,
   onScan,
   scanning,
+  needsReconnect = false,
   refreshKey = 0,
 }: {
   workspace: RevenueWorkspace | null;
@@ -68,6 +70,8 @@ export function QueueView({
   onNotice: (m: string) => void;
   onScan: () => void;
   scanning: boolean;
+  /** The audit can only fail until Google is reconnected; `onScan` opens the fix. */
+  needsReconnect?: boolean;
   refreshKey?: number;
 }) {
   const [filter, setFilter] = React.useState("open");
@@ -142,7 +146,16 @@ export function QueueView({
             body="Run a Promise Leak Audit or draft recovery from a confirmed commitment."
           >
             <Button size="sm" onClick={onScan} disabled={scanning}>
-              {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />} Run audit
+              {needsReconnect ? (
+                <>
+                  <Plugs /> Reconnect Google
+                </>
+              ) : (
+                <>
+                  {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />} Run
+                  audit
+                </>
+              )}
             </Button>
           </EmptyBlock>
         ) : (

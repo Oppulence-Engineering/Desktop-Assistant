@@ -1,33 +1,24 @@
 "use client";
 
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
   AddressBook,
-  FileText,
   Bell,
   Brain,
-  BookOpen,
-  Buildings,
-  CaretLeft,
   CaretRight,
   CaretUpDown,
-  ChartLineUp,
   CheckCircle,
-  CheckSquare,
   Clock,
   Cpu,
   Folder,
   GearSix,
-  House,
-  ListChecks,
-  MagnifyingGlass,
   Monitor,
   Moon,
   Palette,
-  Play,
   Plugs,
   Plus,
   Question,
@@ -37,14 +28,12 @@ import {
   SignOut,
   Stack,
   Sun,
-  Tray,
   Wallet,
   WarningCircle,
   X,
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 
-import { AppIcon } from "@/components/ui/app-icon";
 import {
   Collapsible,
   CollapsibleContent,
@@ -61,7 +50,10 @@ import {
 } from "@oppulence/ui/components/dropdown-menu";
 import { dashboardFetch } from "@/lib/auth/client";
 import { getPref, setPref, usePref } from "@/lib/console-prefs";
-import { listRelationshipSourceStatuses } from "@/lib/revenue";
+import {
+  listRelationshipSourceStatuses,
+  RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
+} from "@/lib/revenue";
 import { loadChangelog, type ChangelogEntry } from "@/lib/api/changelog/changelog";
 import type { ProductView } from "@/lib/product-navigation";
 import type { RelationshipSourceStatus } from "@/types/revenue";
@@ -93,6 +85,16 @@ export const REVENUE_TAB_LABELS: Record<RevenueTab, string> = {
   actions: "Actions",
   workspace: "Sources",
 };
+
+/** Reads a revenue tab from the address; anything unknown lands on Commitments. */
+export function revenueTabFromParam(value: string | null | undefined): RevenueTab {
+  return value && Object.hasOwn(REVENUE_TAB_LABELS, value) ? (value as RevenueTab) : "commitments";
+}
+
+/** The query string that addresses a revenue tab. Commitments is the bare path. */
+export function revenueTabSearch(tab: RevenueTab) {
+  return tab === "commitments" ? "" : `?tab=${tab}`;
+}
 
 export type SettingsSection =
   | "overview"
@@ -363,44 +365,28 @@ export class ViewBoundary extends React.Component<
   }
 }
 
-/* ------------------------------ sidebar footer ----------------------------- */
+/* --------------------------------- top bar --------------------------------- */
 
 const CHANGELOG_SEEN_PREF = "sidebar-changelog-seen";
 
-// One gradient per position, so paging through releases is visible at a glance.
-const CHANGELOG_GRADIENTS = [
-  "from-oppulence-blue to-indigo-900",
-  "from-oppulence-orange to-rose-900",
-  "from-oppulence-green to-emerald-900",
-];
-
-function releaseDate(value: string) {
-  const date = new Date(value);
-  return Number.isFinite(date.getTime())
-    ? date
-        .toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
-        .toUpperCase()
-    : "LATEST RELEASE";
-}
-
 /**
- * The newest releases, paged. The card carries a version the user can check
- * against the release notes, so it is hidden entirely when the feed is empty
- * or unreachable — an announcement we cannot source is worse than none.
+ * The newest release as one line next to the logo. It carries a version the
+ * user can check against the release notes, so it is hidden entirely when the
+ * feed is empty or unreachable — an announcement we cannot source is worse
+ * than none.
  */
-function SidebarChangelog() {
-  const [entries, setEntries] = React.useState<ChangelogEntry[]>([]);
-  const [index, setIndex] = React.useState(0);
-  // The sidebar only ever renders on the client (AuthGate holds the tree until
+function ShellReleasePill() {
+  const [entry, setEntry] = React.useState<ChangelogEntry | null>(null);
+  // The shell only ever renders on the client (AuthGate holds the tree until
   // the session resolves), so reading the pref during render cannot desync
-  // hydration and a dismissed card never flashes.
+  // hydration and a dismissed note never flashes.
   const [seen, setSeen] = React.useState(() => getPref(CHANGELOG_SEEN_PREF));
 
   React.useEffect(() => {
     let cancelled = false;
     loadChangelog()
       .then((loaded) => {
-        if (!cancelled) setEntries(loaded);
+        if (!cancelled) setEntry(loaded[0] ?? null);
       })
       .catch(() => {});
     return () => {
@@ -408,90 +394,97 @@ function SidebarChangelog() {
     };
   }, []);
 
-  if (entries.length === 0) return null;
-  // Dismissal is per release: the card returns on its own when the next one
+  // Dismissal is per release: the note returns on its own when the next one
   // ships, so nobody has to remember to re-enable it.
-  if (seen === entries[0].version) return null;
-  const card = entries[index];
-  const step = (delta: number) =>
-    setIndex((current) => (current + delta + entries.length) % entries.length);
-
+  if (!entry || seen === entry.version) return null;
   return (
-    <div className="relative mb-2 border border-border bg-background">
+    <div className="hidden min-w-0 items-center gap-1.5 md:flex">
+      <a
+        className="flex min-w-0 items-center gap-2 text-primary/75 transition-colors hover:text-primary"
+        href={entry.url}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <span className="shrink-0 bg-background-200 px-1.5 py-0.5 font-mono text-[11px] font-medium text-primary/80">
+          {entry.version}
+        </span>
+        <span className="truncate font-mono text-[13px]">{entry.title}</span>
+      </a>
       <button
-        aria-label="Dismiss"
-        className="absolute right-1.5 top-1.5 z-10 flex size-6 items-center justify-center text-white/70 transition-colors hover:bg-white/15 hover:text-white"
+        aria-label="Dismiss release note"
+        className="flex size-6 shrink-0 items-center justify-center text-primary/40 transition-colors hover:text-primary"
         onClick={() => {
-          setPref(CHANGELOG_SEEN_PREF, entries[0].version);
-          setSeen(entries[0].version);
+          setPref(CHANGELOG_SEEN_PREF, entry.version);
+          setSeen(entry.version);
         }}
         type="button"
       >
         <X className="size-3.5" />
       </button>
-      <Link
-        className="block overflow-hidden"
-        href={card.url}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        <span
-          className={cn(
-            "relative flex h-[72px] flex-col items-center justify-center gap-0.5 bg-gradient-to-br px-4 text-center",
-            CHANGELOG_GRADIENTS[index % CHANGELOG_GRADIENTS.length],
-          )}
-        >
-          <span className="text-[15px] font-semibold leading-tight text-white">{card.version}</span>
-          <span className="font-mono text-[9px] tracking-[0.12em] text-white/70">
-            {releaseDate(card.date)}
-          </span>
-        </span>
-        <span className="block px-3 pb-2 pt-2.5">
-          <span className="block text-[13px] font-medium leading-snug text-primary">
-            {card.title}
-          </span>
-          <span className="mt-1 block text-[12px] leading-snug text-primary/50">{card.body}</span>
-        </span>
-      </Link>
-      {entries.length > 1 ? (
-        <div className="flex items-center justify-between px-3 pb-2.5">
-          <div className="flex items-center gap-1.5">
-            {entries.map((entry, position) => (
-              <button
-                aria-label={entry.version}
-                className={cn(
-                  "size-1.5 rounded-full transition-colors",
-                  position === index ? "bg-oppulence-blue" : "bg-primary/20",
-                )}
-                key={entry.version}
-                onClick={() => setIndex(position)}
-                type="button"
-              />
-            ))}
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              aria-label="Previous"
-              className="flex size-6 items-center justify-center border border-border text-primary/60 transition-colors hover:bg-background-100 hover:text-primary"
-              onClick={() => step(-1)}
-              type="button"
-            >
-              <CaretLeft className="size-3" />
-            </button>
-            <button
-              aria-label="Next"
-              className="flex size-6 items-center justify-center border border-border text-primary/60 transition-colors hover:bg-background-100 hover:text-primary"
-              onClick={() => step(1)}
-              type="button"
-            >
-              <CaretRight className="size-3" />
-            </button>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
+
+/** Opens the support chat when it booted; otherwise the link still sends an email. */
+function FeedbackLink({ className }: { className?: string }) {
+  return (
+    <a
+      className={className}
+      href="mailto:hello@oppulence.io"
+      onClick={(event) => {
+        const plain = window.Plain;
+        if (plain?.isInitialized?.() && plain.open) {
+          event.preventDefault();
+          plain.open();
+        }
+      }}
+    >
+      Feedback?
+    </a>
+  );
+}
+
+const TOP_BAR_LINK =
+  "text-[14px] text-primary/75 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30";
+
+/** The full-width bar above the framed workspace: brand, latest release, shortcuts. */
+export function AppTopBar({
+  onAsk,
+  onOpenPeople,
+}: {
+  onAsk: () => void;
+  onOpenPeople: () => void;
+}) {
+  return (
+    <header className="flex h-14 shrink-0 items-center gap-4 px-4 md:px-6">
+      <span className="relative size-6 shrink-0 overflow-hidden" aria-hidden="true">
+        <Image
+          alt=""
+          className="scale-[1.85] object-contain dark:invert"
+          fill
+          sizes="24px"
+          src="/marketing/oppulence-icon.png"
+        />
+      </span>
+      <ShellReleasePill />
+      <nav aria-label="Shortcuts" className="ml-auto flex shrink-0 items-center gap-6">
+        <button className={TOP_BAR_LINK} onClick={onAsk} title="Command palette" type="button">
+          Ask Oppulence
+        </button>
+        <button
+          className={cn(TOP_BAR_LINK, "hidden sm:inline")}
+          onClick={onOpenPeople}
+          type="button"
+        >
+          People
+        </button>
+        <FeedbackLink className={cn(TOP_BAR_LINK, "hidden sm:inline")} />
+      </nav>
+    </header>
+  );
+}
+
+/* ------------------------------ sidebar footer ----------------------------- */
 
 export type SourceHealth = { tone: "ok" | "syncing" | "attention" | "idle"; label: string };
 
@@ -526,39 +519,99 @@ export function sourceHealth(sources: RelationshipSourceStatus[]): SourceHealth 
   return { tone: "ok", label: "Sources are current" };
 }
 
-const SOURCE_TONE_DOT: Record<SourceHealth["tone"], string> = {
-  ok: "bg-oppulence-green",
-  syncing: "bg-oppulence-blue",
-  attention: "bg-amber-500",
-  idle: "bg-primary/25",
+const SOURCE_TONE_CARD: Record<SourceHealth["tone"], string> = {
+  ok: "border-border text-primary",
+  syncing: "border-oppulence-blue/60 text-oppulence-blue",
+  attention: "border-oppulence-orange/60 text-oppulence-orange",
+  idle: "border-oppulence-orange/60 text-oppulence-orange",
 };
 
-function SidebarSources({ onOpen }: { onOpen?: () => void }) {
-  const [health, setHealth] = React.useState<SourceHealth | null>(null);
+const STOPPED_SOURCE_STATUSES = new Set(["reconnect_required", "disconnected", "not_connected"]);
 
-  React.useEffect(() => {
-    let cancelled = false;
-    listRelationshipSourceStatuses()
-      .then((sources) => {
-        if (!cancelled) setHealth(sourceHealth(sources));
-      })
-      .catch(() => {
-        if (!cancelled) setHealth({ tone: "idle", label: "Source status unavailable" });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+/** Sources still delivering evidence; one that needs reconnecting does not count. */
+export function connectedSourceCount(sources: RelationshipSourceStatus[]) {
+  return sources.filter((source) => !STOPPED_SOURCE_STATUSES.has(source.status)).length;
+}
 
-  if (!health) return null;
+/**
+ * Whether an audit can only fail: Google has accounts and every one of them
+ * needs the user back through OAuth. One working account means a reconnect
+ * already happened. The desktop app can record that under a different account
+ * id than the one that failed, so a stale row must not block the audit.
+ */
+export function googleNeedsReconnect(sources: RelationshipSourceStatus[]) {
+  const google = sources.filter((source) => source.source === "google");
+  return (
+    google.length > 0 &&
+    google.every(
+      (source) => source.status === "reconnect_required" || source.status === "disconnected",
+    )
+  );
+}
+
+/** A row of ticks, filled up to `ratio`. */
+function TickMeter({ ratio }: { ratio: number }) {
+  const ticks = "repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 4px)";
+  return (
+    <span aria-hidden="true" className="relative block h-2 w-full text-primary/15">
+      <span className="absolute inset-0" style={{ backgroundImage: ticks }} />
+      <span
+        className="absolute inset-y-0 left-0 text-primary/60"
+        style={{ backgroundImage: ticks, width: `${Math.round(ratio * 100)}%` }}
+      />
+    </span>
+  );
+}
+
+/**
+ * The state of the evidence sources, and the trial countdown when there is one.
+ * It stays visible when all is well: a source that stopped reporting is the
+ * difference between "no risk" and "we cannot see the risk".
+ */
+function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen?: () => void }) {
+  // A shared query, not a one-time load: this card used to keep saying "No
+  // sources connected" after an audit had just marked Google for reconnecting.
+  const sources = useQuery({
+    queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
+    queryFn: listRelationshipSourceStatuses,
+  });
+
+  const trialDaysLeft = trialDaysRemaining(billing);
+  if (sources.isPending) return null;
+  const health: SourceHealth = sources.isError
+    ? { tone: "idle", label: "Source status unavailable" }
+    : sourceHealth(sources.data);
+  const connected = sources.isError ? undefined : connectedSourceCount(sources.data);
+  const total = sources.isError ? undefined : sources.data.length;
   return (
     <button
-      className="mb-1 flex h-9 w-full items-center gap-2 border border-border bg-background px-2.5 text-left text-[13px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary"
+      className={cn(
+        "mb-2 flex w-full flex-col gap-2.5 border border-dashed bg-transparent px-4 py-3 text-left transition-colors hover:bg-background-100 dark:hover:bg-background-200",
+        SOURCE_TONE_CARD[health.tone],
+      )}
       onClick={onOpen}
       type="button"
     >
-      <span className={cn("size-2 shrink-0 rounded-full", SOURCE_TONE_DOT[health.tone])} />
-      <span className="truncate">{health.label}</span>
+      <span className="text-[15px]">{health.label}</span>
+      {typeof total === "number" && typeof connected === "number" ? (
+        <span className="flex w-full flex-col gap-1.5">
+          <span className="flex items-center justify-between text-[13px]">
+            <span className="text-primary">Sources connected</span>
+            <span className="text-primary/60">
+              {connected} / {total}
+            </span>
+          </span>
+          <TickMeter ratio={total > 0 ? connected / total : 0} />
+        </span>
+      ) : null}
+      {trialDaysLeft === null ? null : (
+        <span className="flex items-center justify-between text-[13px]">
+          <span className="text-primary">Trial</span>
+          <span className="text-primary/60">
+            {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"} left
+          </span>
+        </span>
+      )}
     </button>
   );
 }
@@ -566,7 +619,6 @@ function SidebarSources({ onOpen }: { onOpen?: () => void }) {
 /* --------------------------------- sidebar --------------------------------- */
 
 function SidebarNavItem({
-  icon: Icon,
   label,
   count,
   active,
@@ -576,7 +628,6 @@ function SidebarNavItem({
   className,
   ...props
 }: {
-  icon: PhosphorIcon;
   label: string;
   count?: number;
   active?: boolean;
@@ -585,23 +636,15 @@ function SidebarNavItem({
   href?: string;
 } & React.ComponentProps<"button">) {
   const classes = cn(
-    "group/item flex h-8 w-full items-center gap-2 rounded-none px-2 py-1 text-left text-[13px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200",
-    active && "bg-background-200 text-primary dark:bg-background-200",
+    "group/item flex h-9 w-full shrink-0 items-center gap-2 rounded-none px-3.5 text-left text-[15px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200",
+    active && "bg-background-100 text-primary dark:bg-background-200",
     className,
   );
   const content = (
     <>
-      <AppIcon
-        className={cn(
-          "text-primary/40 transition-all group-hover/item:rotate-[-4deg] group-hover/item:text-primary/80",
-          active && "text-primary/80",
-        )}
-        filled={active}
-        icon={Icon}
-      />
       <span className="truncate">{label}</span>
       {typeof count === "number" && count > 0 ? (
-        <span className="ml-auto text-xs text-primary/40">{count}</span>
+        <span className="ml-auto text-[13px] text-primary/40">{count}</span>
       ) : null}
       {chevron ? (
         <CaretRight
@@ -642,8 +685,8 @@ function SidebarSubItem({
   return (
     <button
       className={cn(
-        "flex h-8 w-full items-center gap-2.5 rounded-none py-1 pr-3 pl-5 text-left text-sm text-primary/65 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200",
-        active && "bg-background-200 text-primary dark:bg-background-200",
+        "flex h-9 w-full items-center gap-2.5 rounded-none py-1 pr-3 pl-6 text-left text-[14px] text-primary/65 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200",
+        active && "bg-background-100 text-primary dark:bg-background-200",
         muted && "text-primary/50",
       )}
       onClick={onClick}
@@ -661,7 +704,14 @@ function SidebarSubItem({
 }
 
 function SidebarEmptyHint({ children }: { children: React.ReactNode }) {
-  return <div className="px-5 py-1.5 text-xs text-muted-foreground">{children}</div>;
+  return <div className="px-6 py-1.5 text-[13px] text-muted-foreground">{children}</div>;
+}
+
+const SIDEBAR_FOOTER_LINK =
+  "flex h-9 w-full shrink-0 items-center rounded-none px-3.5 text-[15px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200";
+
+function SidebarSectionLabel({ children }: { children: React.ReactNode }) {
+  return <div className="px-3.5 pb-1 pt-3 text-[12px] text-primary/40">{children}</div>;
 }
 
 export type SidebarSessionMeta = {
@@ -682,7 +732,6 @@ export function AppShellSidebar({
   onNavigateAgents,
   onNavigateScheduled,
   onNavigateRuns,
-  onOpenSearch,
   activeRevenueTab = "commitments",
   activeResourceGroup,
   view = "chat",
@@ -706,7 +755,6 @@ export function AppShellSidebar({
   onNavigateAgents?: () => void;
   onNavigateScheduled?: () => void;
   onNavigateRuns?: () => void;
-  onOpenSearch?: () => void;
   activeRevenueTab?: RevenueTab;
   activeResourceGroup?: "agents" | "scheduled" | "runs";
   view?: ProductView;
@@ -810,13 +858,11 @@ export function AppShellSidebar({
   }, []);
 
   const workspace = useWorkspaceLabel(user);
-  const trialDaysLeft = trialDaysRemaining(billing);
   const planLabel = billing?.plan ? billing.plan[0].toUpperCase() + billing.plan.slice(1) : null;
 
   const groups: {
     key: string;
     label: string;
-    icon: PhosphorIcon;
     kind?: ResourceKind;
     items: { label: string; value: string }[];
     empty: string;
@@ -827,7 +873,6 @@ export function AppShellSidebar({
     {
       key: "agents",
       label: "Agents",
-      icon: Folder,
       kind: "agent",
       items: agents.map((name) => ({ label: name, value: name })),
       empty: "No agents found",
@@ -838,7 +883,6 @@ export function AppShellSidebar({
     {
       key: "scheduled",
       label: "Workflows",
-      icon: Clock,
       kind: "task",
       items: tasks,
       empty: "Nothing scheduled",
@@ -849,7 +893,6 @@ export function AppShellSidebar({
     {
       key: "runs",
       label: "Runs",
-      icon: Play,
       kind: "taskrun",
       items: taskRuns,
       empty: "No runs yet",
@@ -867,31 +910,230 @@ export function AppShellSidebar({
         view === "settings" && "settings-rail",
       )}
     >
-      <div className="flex h-full w-[274px] shrink-0 flex-col bg-background-50/70 dark:bg-background-50">
-        <div className="flex h-12 shrink-0 items-center gap-1 border-b px-2">
+      <div
+        className={cn(
+          "flex h-full w-[274px] shrink-0 flex-col",
+          view !== "settings" && "bg-background",
+        )}
+      >
+        {/* Phones get the sidebar as an overlay, so it needs its own way out. */}
+        <div className="flex h-10 shrink-0 items-center justify-end px-2.5 md:hidden">
+          <button
+            aria-label="Close sidebar"
+            className="flex size-8 shrink-0 items-center justify-center rounded-none text-primary/50 hover:bg-background-100 hover:text-primary"
+            onClick={onToggle}
+            type="button"
+          >
+            <SidebarSimple className="size-4" />
+          </button>
+        </div>
+        {view === "settings" ? (
+          <nav className="settings-rail-scroll flex flex-1 flex-col overflow-y-auto px-2 pb-3 pt-2">
+            <button className="settings-back" onClick={onCloseSettings} type="button">
+              <ArrowLeft className="size-3.5" />
+              <span>Back to app</span>
+            </button>
+            <button
+              className="settings-nav-item mt-1"
+              data-active={settingsSection === "overview"}
+              onClick={() => onOpenSettings?.("overview")}
+              type="button"
+            >
+              <GearSix />
+              <span>Settings</span>
+            </button>
+            {(["workspace", "global", "cloud", "support"] as SettingsGroup[]).map((group) => (
+              <div key={group}>
+                <div className="settings-rail-heading">{SETTINGS_GROUP_LABELS[group]}</div>
+                <div className="space-y-0.5">
+                  {SETTINGS_SECTIONS.filter((section) => section.group === group).map((section) => (
+                    <button
+                      className="settings-nav-item"
+                      data-active={settingsSection === section.key}
+                      key={section.key}
+                      onClick={() => onOpenSettings?.(section.key)}
+                      type="button"
+                    >
+                      <section.icon />
+                      <span className="truncate">{section.label}</span>
+                      {section.beta ? <span className="settings-beta">Beta</span> : null}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </nav>
+        ) : (
+          <nav className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-2.5 pb-2 pt-2.5">
+            <SidebarNavItem
+              active={view === "chat" && !selected}
+              label="Home"
+              onClick={onNavigateChat}
+            />
+            {/* The wedge, first in the list: the report is what a new account
+                reads before anything else. */}
+            <SidebarNavItem
+              active={view === "report"}
+              label="Open promises"
+              onClick={onNavigateReport}
+            />
+            {(
+              ["tasks", "notes", "commitments", "queue", "scans", "impact", "actions"] as const
+            ).map((tab) => (
+              <SidebarNavItem
+                active={view === "revenue" && activeRevenueTab === tab}
+                key={tab}
+                label={REVENUE_TAB_LABELS[tab]}
+                onClick={() => onNavigateRevenue?.(tab)}
+              />
+            ))}
+            <SidebarSectionLabel>Records</SidebarSectionLabel>
+            <SidebarNavItem
+              active={view === "revenue" && activeRevenueTab === "relationships"}
+              label={REVENUE_TAB_LABELS.relationships}
+              onClick={() => onNavigateRevenue?.("relationships")}
+            />
+            <SidebarNavItem
+              active={view === "revenue" && activeRevenueTab === "people"}
+              label={REVENUE_TAB_LABELS.people}
+              onClick={() => onNavigateRevenue?.("people")}
+            />
+            <SidebarNavItem
+              active={view === "revenue" && activeRevenueTab === "workspace"}
+              label={REVENUE_TAB_LABELS.workspace}
+              onClick={() => onNavigateRevenue?.("workspace")}
+            />
+            <SidebarSectionLabel>Workspace</SidebarSectionLabel>
+            {groups.map((group) => (
+              <Collapsible
+                key={group.key}
+                onOpenChange={(nextOpen) =>
+                  setOpenGroups((current) => ({ ...current, [group.key]: nextOpen }))
+                }
+                open={Boolean(openGroups[group.key])}
+              >
+                <CollapsibleTrigger asChild>
+                  <SidebarNavItem
+                    active={activeResourceGroup === group.key}
+                    chevron
+                    chevronOpen={Boolean(openGroups[group.key])}
+                    count={group.items.length}
+                    label={group.label}
+                    onClick={group.onNavigate}
+                  />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="flex flex-col gap-0.5 pb-1">
+                    {group.loading ? (
+                      <SidebarEmptyHint>Loading…</SidebarEmptyHint>
+                    ) : group.error ? (
+                      <SidebarEmptyHint>{group.error}</SidebarEmptyHint>
+                    ) : group.items.length === 0 ? (
+                      <SidebarEmptyHint>{group.empty}</SidebarEmptyHint>
+                    ) : (
+                      group.items.map((item) => (
+                        <SidebarSubItem
+                          active={selected?.kind === group.kind && selected?.name === item.value}
+                          key={item.value}
+                          label={item.label}
+                          onClick={
+                            group.kind
+                              ? () => onSelectResource?.({ kind: group.kind!, name: item.value })
+                              : undefined
+                          }
+                        />
+                      ))
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            ))}
+
+            <div className="flex items-center justify-between pl-3.5 pr-2 pb-1 pt-4">
+              <p className="text-[12px] text-primary/40">History</p>
+              <button
+                aria-label="New chat"
+                className="flex size-6 items-center justify-center rounded-none text-primary/50 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300"
+                onClick={onNewChat}
+                title="New chat"
+                type="button"
+              >
+                <Plus className="size-3.5" />
+              </button>
+            </div>
+            {sessions.length === 0 ? (
+              <SidebarEmptyHint>No conversations yet</SidebarEmptyHint>
+            ) : (
+              sessions.map((session) => (
+                <SidebarSubItem
+                  active={session.runId === activeRunId}
+                  key={session.runId}
+                  label={session.title}
+                  onClick={() => onOpenSession?.(session.runId)}
+                />
+              ))
+            )}
+          </nav>
+        )}
+
+        <div className="flex shrink-0 flex-col gap-0.5 px-2.5 pt-2">
+          <SidebarStatusCard billing={billing} onOpen={() => onNavigateRevenue?.("workspace")} />
+          {/* Help used to open the OpenAPI reference: an operator who clicked
+              it because a promise was missed landed on a route table. */}
+          <Link
+            className={SIDEBAR_FOOTER_LINK}
+            href="/blog"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Need help?
+          </Link>
+          {/* A plain anchor, not Link: the route only redirects to the API's
+              docs, and Link's RSC prefetch of it failed with a 503 on every
+              page load. This is the OpenAPI spec, not product documentation;
+              calling it "Docs" sent operators looking for help into a route
+              table. */}
+          <a
+            className={SIDEBAR_FOOTER_LINK}
+            href="/api/reference"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            API reference
+          </a>
+          <SidebarNavItem
+            active={view === "settings"}
+            label="Settings"
+            onClick={() => onOpenSettings?.("overview")}
+          />
+        </div>
+
+        <div className="mx-2.5 mt-2 flex h-14 shrink-0 items-center border-t">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-none border border-border bg-background px-2 text-left transition-colors hover:bg-background-100 data-[state=open]:bg-background-100 dark:hover:bg-background-200 dark:data-[state=open]:bg-background-200"
+                className="flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-none px-2 text-left transition-colors hover:bg-background-100 data-[state=open]:bg-background-100 dark:hover:bg-background-200 dark:data-[state=open]:bg-background-200"
                 type="button"
               >
-                <span className="relative size-4 shrink-0 overflow-hidden" aria-hidden="true">
-                  <Image
-                    alt=""
-                    className="scale-[1.85] object-contain dark:invert"
-                    fill
-                    sizes="16px"
-                    src="/marketing/oppulence-icon.png"
-                  />
+                <span
+                  aria-hidden="true"
+                  className="flex size-6 shrink-0 items-center justify-center border border-border bg-background-100 font-mono text-[11px] uppercase text-primary/60"
+                >
+                  {workspace.slice(0, 1)}
                 </span>
-                <span className="truncate text-[13px] font-medium text-primary">{workspace}</span>
+                <span className="truncate text-[15px] text-primary">{workspace}</span>
+                {planLabel ? (
+                  <span className="shrink-0 bg-background-200 px-1.5 py-0.5 text-[12px] text-primary/55">
+                    {planLabel}
+                  </span>
+                ) : null}
                 <CaretUpDown className="ml-auto size-3.5 shrink-0 text-primary/40" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="app-shell w-[264px] rounded-none"
-              side="bottom"
+              className="app-shell w-[254px] rounded-none"
+              side="top"
               sideOffset={6}
             >
               <DropdownMenuItem onSelect={() => onOpenSettings?.("overview")}>
@@ -974,232 +1216,6 @@ export function AppShellSidebar({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button
-            aria-label="Close sidebar"
-            className="flex size-8 shrink-0 items-center justify-center rounded-none text-primary/50 hover:bg-background-100 hover:text-primary md:hidden"
-            onClick={onToggle}
-            type="button"
-          >
-            <SidebarSimple className="size-4" />
-          </button>
-        </div>
-        {view === "settings" ? (
-          <nav className="settings-rail-scroll flex flex-1 flex-col overflow-y-auto px-2 pb-3 pt-2">
-            <button className="settings-back" onClick={onCloseSettings} type="button">
-              <ArrowLeft className="size-3.5" />
-              <span>Back to app</span>
-            </button>
-            <button
-              className="settings-nav-item mt-1"
-              data-active={settingsSection === "overview"}
-              onClick={() => onOpenSettings?.("overview")}
-              type="button"
-            >
-              <GearSix />
-              <span>Settings</span>
-            </button>
-            {(["workspace", "global", "cloud", "support"] as SettingsGroup[]).map((group) => (
-              <div key={group}>
-                <div className="settings-rail-heading">{SETTINGS_GROUP_LABELS[group]}</div>
-                <div className="space-y-0.5">
-                  {SETTINGS_SECTIONS.filter((section) => section.group === group).map((section) => (
-                    <button
-                      className="settings-nav-item"
-                      data-active={settingsSection === section.key}
-                      key={section.key}
-                      onClick={() => onOpenSettings?.(section.key)}
-                      type="button"
-                    >
-                      <section.icon />
-                      <span className="truncate">{section.label}</span>
-                      {section.beta ? <span className="settings-beta">Beta</span> : null}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </nav>
-        ) : (
-          <nav className="no-scrollbar flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2">
-            <button
-              className="mb-1 flex h-8 w-full items-center gap-2 rounded-none border border-border bg-background px-2 text-left text-[13px] text-primary/65 transition-colors hover:bg-background-100 hover:text-primary"
-              onClick={onOpenSearch}
-              type="button"
-            >
-              <MagnifyingGlass className="size-3.5" />
-              <span>Search</span>
-              <span className="ml-auto rounded border border-border px-1 py-0.5 font-mono text-[10px] text-primary/40">
-                ⌘ K
-              </span>
-            </button>
-            <SidebarNavItem
-              active={view === "chat" && !selected}
-              icon={House}
-              label="Home"
-              onClick={onNavigateChat}
-            />
-            {/* The wedge, first in the list: the report is what a new account
-                reads before anything else. */}
-            <SidebarNavItem
-              active={view === "report"}
-              icon={FileText}
-              label="Open promises"
-              onClick={onNavigateReport}
-            />
-            {(
-              [
-                ["tasks", CheckSquare],
-                ["notes", BookOpen],
-                ["commitments", CheckSquare],
-                ["queue", Tray],
-                ["scans", MagnifyingGlass],
-                ["impact", ChartLineUp],
-                ["actions", ListChecks],
-              ] as const
-            ).map(([tab, icon]) => (
-              <SidebarNavItem
-                active={view === "revenue" && activeRevenueTab === tab}
-                icon={icon}
-                key={tab}
-                label={REVENUE_TAB_LABELS[tab]}
-                onClick={() => onNavigateRevenue?.(tab)}
-              />
-            ))}
-            <div className="px-2 pb-1 pt-3 text-[11px] font-medium text-primary/40">Records</div>
-            <SidebarNavItem
-              active={view === "revenue" && activeRevenueTab === "relationships"}
-              icon={Buildings}
-              label={REVENUE_TAB_LABELS.relationships}
-              onClick={() => onNavigateRevenue?.("relationships")}
-            />
-            <SidebarNavItem
-              active={view === "revenue" && activeRevenueTab === "people"}
-              icon={AddressBook}
-              label={REVENUE_TAB_LABELS.people}
-              onClick={() => onNavigateRevenue?.("people")}
-            />
-            <SidebarNavItem
-              active={view === "revenue" && activeRevenueTab === "workspace"}
-              icon={Plugs}
-              label={REVENUE_TAB_LABELS.workspace}
-              onClick={() => onNavigateRevenue?.("workspace")}
-            />
-            <div className="px-2 pb-1 pt-3 text-[11px] font-medium text-primary/40">Workspace</div>
-            {groups.map((group) => (
-              <Collapsible
-                key={group.key}
-                onOpenChange={(nextOpen) =>
-                  setOpenGroups((current) => ({ ...current, [group.key]: nextOpen }))
-                }
-                open={Boolean(openGroups[group.key])}
-              >
-                <CollapsibleTrigger asChild>
-                  <SidebarNavItem
-                    active={activeResourceGroup === group.key}
-                    chevron
-                    chevronOpen={Boolean(openGroups[group.key])}
-                    count={group.items.length}
-                    icon={group.icon}
-                    label={group.label}
-                    onClick={group.onNavigate}
-                  />
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="flex flex-col gap-0.5 pb-1">
-                    {group.loading ? (
-                      <SidebarEmptyHint>Loading…</SidebarEmptyHint>
-                    ) : group.error ? (
-                      <SidebarEmptyHint>{group.error}</SidebarEmptyHint>
-                    ) : group.items.length === 0 ? (
-                      <SidebarEmptyHint>{group.empty}</SidebarEmptyHint>
-                    ) : (
-                      group.items.map((item) => (
-                        <SidebarSubItem
-                          active={selected?.kind === group.kind && selected?.name === item.value}
-                          key={item.value}
-                          label={item.label}
-                          onClick={
-                            group.kind
-                              ? () => onSelectResource?.({ kind: group.kind!, name: item.value })
-                              : undefined
-                          }
-                        />
-                      ))
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            ))}
-
-            <div className="flex items-center justify-between px-3 pt-4 pb-1">
-              <p className="text-[11px] font-medium text-primary/45">History</p>
-              <button
-                aria-label="New chat"
-                className="flex size-5 items-center justify-center rounded text-primary/50 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300"
-                onClick={onNewChat}
-                title="New chat"
-                type="button"
-              >
-                <Plus className="size-3.5" />
-              </button>
-            </div>
-            {sessions.length === 0 ? (
-              <SidebarEmptyHint>No conversations yet</SidebarEmptyHint>
-            ) : (
-              <>
-                {sessions.map((session) => (
-                  <SidebarSubItem
-                    active={session.runId === activeRunId}
-                    key={session.runId}
-                    label={session.title}
-                    onClick={() => onOpenSession?.(session.runId)}
-                  />
-                ))}
-              </>
-            )}
-          </nav>
-        )}
-
-        <div className="flex shrink-0 flex-col gap-1 px-2 py-2">
-          <SidebarChangelog />
-          <SidebarSources onOpen={() => onNavigateRevenue?.("workspace")} />
-          {/* A plain anchor, not Link: the route only redirects to the API's
-              docs, and Link's RSC prefetch of it failed with a 503 on every
-              page load. */}
-          <a
-            className="group/item flex h-9 w-full items-center gap-2.5 rounded-none px-2.5 py-1 text-sm text-primary/70 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200"
-            href="/api/reference"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <AppIcon
-              className="text-primary/40 transition-all group-hover/item:rotate-[-4deg] group-hover/item:text-primary/80"
-              icon={BookOpen}
-            />
-            {/* This is the OpenAPI spec, not product documentation. Calling it
-                "Docs" sent operators looking for help into a route table. */}
-            API reference
-          </a>
-          <SidebarNavItem
-            active={view === "settings"}
-            icon={GearSix}
-            label="Settings"
-            onClick={() => onOpenSettings?.("overview")}
-          />
-          {trialDaysLeft === null ? null : (
-            <div className="mt-1 border border-amber-500/30 bg-amber-500/[0.07] px-2.5 py-2">
-              <div className="flex items-center gap-1.5 text-[12px] font-medium text-primary">
-                <Clock className="size-3.5 shrink-0 text-amber-500" />
-                You are on a trial plan
-              </div>
-              <p className="mt-0.5 text-[12px] text-primary/55">
-                <span className="font-medium text-primary">
-                  {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"}
-                </span>{" "}
-                left on your trial.
-              </p>
-            </div>
-          )}
         </div>
       </div>
 

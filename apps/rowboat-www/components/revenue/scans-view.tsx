@@ -1,7 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { CheckCircle, CircleNotch, MagnifyingGlass, WarningCircle } from "@phosphor-icons/react";
+import {
+  CheckCircle,
+  CircleNotch,
+  MagnifyingGlass,
+  Plugs,
+  WarningCircle,
+} from "@phosphor-icons/react";
 
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
@@ -13,11 +19,14 @@ export function ScansView({
   scans,
   activeScan,
   scanning,
+  needsReconnect = false,
   onScan,
 }: {
   scans: RevenueLeakScan[];
   activeScan: RevenueLeakScan | null;
   scanning: boolean;
+  /** The audit can only fail until Google is reconnected; `onScan` opens the fix. */
+  needsReconnect?: boolean;
   onScan: () => void;
 }) {
   const rows = React.useMemo(() => {
@@ -35,8 +44,14 @@ export function ScansView({
           follow-ups. Nothing is sent without your approval.
         </p>
         <Button size="sm" onClick={onScan} disabled={scanning}>
-          {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />}
-          {scanning ? "Auditing…" : "Run Promise Leak Audit"}
+          {needsReconnect ? (
+            <Plugs />
+          ) : scanning ? (
+            <CircleNotch className="animate-spin" />
+          ) : (
+            <MagnifyingGlass />
+          )}
+          {needsReconnect ? "Reconnect Google" : scanning ? "Auditing…" : "Run Promise Leak Audit"}
         </Button>
       </div>
 
@@ -47,7 +62,16 @@ export function ScansView({
           body="Run your first audit to build a reviewable Commitment Queue from Gmail evidence."
         >
           <Button size="sm" onClick={onScan} disabled={scanning}>
-            {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />} Run audit
+            {needsReconnect ? (
+              <>
+                <Plugs /> Reconnect Google
+              </>
+            ) : (
+              <>
+                {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />} Run
+                audit
+              </>
+            )}
           </Button>
         </EmptyBlock>
       ) : (

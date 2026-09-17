@@ -27,7 +27,6 @@
     "components/revenue/shared.tsx",
     "components/revenue/workspace-view.tsx",
     "components/tiptap-markdown-editor.tsx",
-    "components/ui/app-icon.tsx",
     "components/workflows/cloud-workflows-view.tsx"
   ]
 }
