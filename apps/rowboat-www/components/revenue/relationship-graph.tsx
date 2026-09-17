@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import {
-  createRelationshipGraphSavedView,
   queryRelationshipGraph,
   relationshipGraphNeighborhood,
 } from "@oppulence/relationship-contract";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowCounterClockwise,
   Buildings,
@@ -81,9 +81,15 @@ import {
   getRelationshipGraph,
   rejectAction,
 } from "@/lib/revenue";
+import { createConsoleResource, deleteConsoleResource, listConsoleResources } from "@/lib/console";
+import {
+  LEGACY_GRAPH_VIEWS_KEY,
+  graphSavedViews,
+  migrateLegacyGraphViews,
+  readLegacyGraphViews,
+} from "@/lib/console-resources";
 import {
   RelationshipGraphSavedViewSchema,
-  RelationshipGraphSavedViewsSchema,
   type RelationshipGraph,
   type RelationshipGraphEdge,
   type RelationshipGraphNode,
@@ -92,7 +98,6 @@ import {
   type RevenueRelationship,
 } from "@/types/revenue";
 
-const SAVED_VIEWS_KEY = "oppulence.relationship-graph.saved-views.v1";
 const GRAPH_CAPABILITIES =
   "relationship-graph graph-query graph-saved-views graph-governed-actions";
 
@@ -384,17 +389,6 @@ function writeURLState(state: RelationshipGraphSavedViewState) {
   if (state.changedSinceReview) url.searchParams.set("graphChanged", "1");
   else url.searchParams.delete("graphChanged");
   window.history.replaceState(null, "", url);
-}
-
-function loadSavedViews(): RelationshipGraphSavedView[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return RelationshipGraphSavedViewsSchema.parse(
-      JSON.parse(localStorage.getItem(SAVED_VIEWS_KEY) || "[]"),
-    );
-  } catch {
-    return [];
-  }
 }
 
 function GraphCanvas({
@@ -849,6 +843,7 @@ export function RelationshipGraphWorkspace({
   onError: (message: string) => void;
   onNotice: (message: string) => void;
 }) {
+  const queryClient = useQueryClient();
   const [viewState, setViewState] = React.useState<RelationshipGraphSavedViewState>(readURLState);
   const [graph, setGraph] = React.useState<RelationshipGraph | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -856,10 +851,98 @@ export function RelationshipGraphWorkspace({
   const [busy, setBusy] = React.useState(false);
   const [mode, setMode] = React.useState<"canvas" | "table">("canvas");
   const [queryDraft, setQueryDraft] = React.useState(() => readURLState().query);
-  const [savedViews, setSavedViews] = React.useState<RelationshipGraphSavedView[]>(loadSavedViews);
   const [activeSavedViewId, setActiveSavedViewId] = React.useState<string>();
   const [resetSignal, setResetSignal] = React.useState(0);
   const loadRequestRef = React.useRef(0);
+  const migrationStartedRef = React.useRef(false);
+  const savedViewsQuery = useQuery({
+    queryKey: ["console", "resources", "graph_saved_view"],
+    queryFn: ({ signal }) => listConsoleResources("graph_saved_view", signal),
+    select: graphSavedViews,
+  });
+  const legacyViews = React.useMemo(
+    () => (typeof window === "undefined" ? [] : readLegacyGraphViews(window.localStorage)),
+    [],
+  );
+  const savedViews: RelationshipGraphSavedView[] = savedViewsQuery.isError
+    ? legacyViews
+    : (savedViewsQuery.data ?? []).map((resource) => ({
+        id: resource.id,
+        label: resource.name,
+        createdAt: resource.createdAt,
+        updatedAt: resource.updatedAt,
+        state: resource.payload.state,
+      }));
+  const saveViewMutation = useMutation({
+    mutationFn: ({ label, state }: { label: string; state: RelationshipGraphSavedViewState }) =>
+      createConsoleResource({
+        kind: "graph_saved_view",
+        name: label,
+        payload: { state },
+      }),
+    onSuccess: (resource) => {
+      setActiveSavedViewId(resource.id);
+      void queryClient.invalidateQueries({
+        queryKey: ["console", "resources", "graph_saved_view"],
+      });
+      onNotice(`Saved “${resource.name}”.`);
+    },
+    onError: (error) => onError(errMessage(error, "Could not save this graph view.")),
+  });
+  const deleteViewMutation = useMutation({
+    mutationFn: (resourceId: string) => deleteConsoleResource(resourceId),
+    onSuccess: () => {
+      setActiveSavedViewId(undefined);
+      void queryClient.invalidateQueries({
+        queryKey: ["console", "resources", "graph_saved_view"],
+      });
+      onNotice("Saved graph view deleted.");
+    },
+    onError: (error) => onError(errMessage(error, "Could not delete this graph view.")),
+  });
+  const { mutate: migrateLegacyViews, isPending: migrationPending } = useMutation({
+    mutationFn: (remote: ReturnType<typeof graphSavedViews>) =>
+      migrateLegacyGraphViews({
+        storage: window.localStorage,
+        remote,
+        create: (view) =>
+          createConsoleResource({
+            kind: "graph_saved_view",
+            name: view.label,
+            payload: { state: view.state },
+          }),
+      }),
+    onSuccess: (changed) => {
+      if (changed) {
+        void queryClient.invalidateQueries({
+          queryKey: ["console", "resources", "graph_saved_view"],
+        });
+      }
+    },
+    onError: (error) => onError(errMessage(error, "Could not import local saved graph views.")),
+  });
+
+  React.useEffect(() => {
+    if (!savedViewsQuery.data || migrationStartedRef.current) return;
+    migrationStartedRef.current = true;
+    migrateLegacyViews(savedViewsQuery.data);
+  }, [migrateLegacyViews, savedViewsQuery.data]);
+
+  React.useEffect(() => {
+    if (!savedViewsQuery.data || migrationPending) return;
+    const snapshot = savedViewsQuery.data.map((resource) => ({
+      id: resource.id,
+      label: resource.name,
+      createdAt: resource.createdAt,
+      updatedAt: resource.updatedAt,
+      state: resource.payload.state,
+    }));
+    try {
+      window.localStorage.setItem(LEGACY_GRAPH_VIEWS_KEY, JSON.stringify(snapshot));
+    } catch {
+      // The durable API remains authoritative when browser storage is unavailable.
+    }
+  }, [migrationPending, savedViewsQuery.data]);
 
   const load = React.useCallback(async () => {
     const requestId = ++loadRequestRef.current;
@@ -1004,14 +1087,7 @@ export function RelationshipGraphWorkspace({
       .prompt("Name this graph view", `Graph view ${savedViews.length + 1}`)
       ?.trim();
     if (!label) return;
-    const saved = RelationshipGraphSavedViewSchema.parse(
-      createRelationshipGraphSavedView({ label, state: viewState }),
-    );
-    const next = [...savedViews, saved];
-    localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(next));
-    setSavedViews(next);
-    setActiveSavedViewId(saved.id);
-    onNotice(`Saved “${saved.label}”.`);
+    saveViewMutation.mutate({ label, state: viewState });
   };
 
   const applySavedView = (id: string) => {
@@ -1024,11 +1100,7 @@ export function RelationshipGraphWorkspace({
 
   const deleteSavedView = () => {
     if (!activeSavedViewId) return;
-    const next = savedViews.filter((view) => view.id !== activeSavedViewId);
-    localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(next));
-    setSavedViews(next);
-    setActiveSavedViewId(undefined);
-    onNotice("Saved graph view deleted.");
+    deleteViewMutation.mutate(activeSavedViewId);
   };
 
   const shareView = async () => {
@@ -1286,6 +1358,21 @@ export function RelationshipGraphWorkspace({
           className="w-64"
         />
         <div className="ml-auto flex items-center gap-1">
+          {savedViewsQuery.isLoading ? (
+            <Badge variant="outline">
+              <CircleNotch className="animate-spin" /> Loading views
+            </Badge>
+          ) : null}
+          {savedViewsQuery.isError ? (
+            <Button
+              onClick={() => void savedViewsQuery.refetch()}
+              size="sm"
+              title="Local saved views are available read-only until the API reconnects."
+              variant="outline"
+            >
+              <WarningDiamond /> Views offline · Retry
+            </Button>
+          ) : null}
           {savedViews.length ? (
             <Select value={activeSavedViewId} onValueChange={applySavedView}>
               <SelectTrigger size="sm" className="w-36">
@@ -1305,12 +1392,22 @@ export function RelationshipGraphWorkspace({
             size="sm"
             variant="ghost"
             onClick={saveView}
-            disabled={!graph?.permissions.canSaveViews}
+            disabled={
+              !graph?.permissions.canSaveViews ||
+              savedViewsQuery.isError ||
+              saveViewMutation.isPending
+            }
           >
             <FloppyDisk /> Save
           </Button>
           {activeSavedViewId ? (
-            <Button type="button" size="sm" variant="ghost" onClick={deleteSavedView}>
+            <Button
+              disabled={deleteViewMutation.isPending || savedViewsQuery.isError}
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={deleteSavedView}
+            >
               <X /> Delete
             </Button>
           ) : null}

@@ -8,6 +8,7 @@ import { Plate, PlateContent, createPlatePlugin, usePlateEditor } from "platejs/
 import {
   ArrowsOut,
   ArrowClockwise,
+  BookmarkSimple,
   CalendarBlank,
   CaretDown,
   CheckSquare,
@@ -23,14 +24,15 @@ import {
   Plus,
   Quotes,
   SlidersHorizontal,
-  SquaresFour,
   TextB,
   TextHOne,
   TextItalic,
   TextUnderline,
+  Trash,
   User,
   X,
 } from "@/lib/icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   EmptyBlock,
@@ -87,6 +89,13 @@ import {
   SheetTitle,
 } from "@oppulence/ui/components/sheet";
 import { collapseWorkspaceNotes, plateText, type WorkspaceNote } from "@/lib/revenue-records";
+import {
+  createConsoleResource,
+  deleteConsoleResource,
+  listConsoleResources,
+  patchConsoleResource,
+} from "@/lib/console";
+import { noteFavorites, noteTemplates, type NoteTemplateResource } from "@/lib/console-resources";
 import {
   createAction,
   createRelationship,
@@ -575,14 +584,40 @@ const todayValue = () => {
 };
 
 export function NotesView({ onError, onNotice }: ViewProps) {
+  const queryClient = useQueryClient();
   const [notes, setNotes] = React.useState<WorkspaceNote[]>([]);
   const [relationships, setRelationships] = React.useState<RevenueRelationship[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [editing, setEditing] = React.useState<WorkspaceNote | "new" | null>(null);
+  const [editing, setEditing] = React.useState<
+    WorkspaceNote | { template?: NoteTemplateResource } | null
+  >(null);
+  const [editingTemplate, setEditingTemplate] = React.useState<NoteTemplateResource | "new" | null>(
+    null,
+  );
   const [tab, setTab] = React.useState<"notes" | "templates">("notes");
   const [layout, setLayout] = React.useState<"grid" | "list">("grid");
   const [newestFirst, setNewestFirst] = React.useState(true);
   const [showFavorites, setShowFavorites] = React.useState(true);
+  const templatesQuery = useQuery({
+    queryKey: ["console", "resources", "note_template"],
+    queryFn: ({ signal }) => listConsoleResources("note_template", signal),
+    select: noteTemplates,
+  });
+  const favoritesQuery = useQuery({
+    queryKey: ["console", "resources", "note_favorite"],
+    queryFn: ({ signal }) => listConsoleResources("note_favorite", signal),
+    select: noteFavorites,
+  });
+  const favoriteMutation = useMutation({
+    mutationFn: async (noteId: string) => {
+      const existing = favoritesQuery.data?.find((favorite) => favorite.payload.noteId === noteId);
+      if (existing) return deleteConsoleResource(existing.id);
+      return createConsoleResource({ kind: "note_favorite", payload: { noteId } });
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["console", "resources", "note_favorite"] }),
+    onError: (error) => onError(errMessage(error, "Could not update the favorite.")),
+  });
   const load = React.useCallback(async () => {
     setLoading(true);
     try {
@@ -604,6 +639,8 @@ export function NotesView({ onError, onNotice }: ViewProps) {
       ? right.occurredAt.localeCompare(left.occurredAt)
       : left.occurredAt.localeCompare(right.occurredAt),
   );
+  const favoriteIds = new Set(favoritesQuery.data?.map((item) => item.payload.noteId) ?? []);
+  const favoriteNotes = visible.filter((note) => favoriteIds.has(note.externalId));
   return (
     <div className="flex min-h-full flex-col bg-background" data-slot="notes-view">
       <Tabs
@@ -627,7 +664,7 @@ export function NotesView({ onError, onNotice }: ViewProps) {
           >
             <NotePencil className="size-4" /> Templates{" "}
             <Badge className="font-normal text-primary/40" variant="secondary">
-              0
+              {templatesQuery.data?.length ?? 0}
             </Badge>
           </TabsTrigger>
         </TabsList>
@@ -694,35 +731,84 @@ export function NotesView({ onError, onNotice }: ViewProps) {
           <Button
             className="h-8 bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
             size="sm"
-            onClick={() => setEditing("new")}
+            onClick={() => setEditing({})}
           >
             <Plus /> New note
           </Button>
         </div>
       </div>
-      {loading ? (
+      {tab === "templates" && templatesQuery.isError ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+          <p className="text-sm text-destructive">Could not load note templates.</p>
+          <Button size="sm" variant="outline" onClick={() => void templatesQuery.refetch()}>
+            <ArrowClockwise /> Retry
+          </Button>
+        </div>
+      ) : tab === "templates" && templatesQuery.isLoading ? (
         <div className="p-4">
           <ListSkeleton />
         </div>
       ) : tab === "templates" ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-          <NotePencil className="size-9 text-primary/25" />
-          <div>
-            <p className="text-[17px] font-semibold text-primary">Templates</p>
-            <p className="mt-1 text-[13px] text-primary/45">
-              Create reusable structures for your team&apos;s notes.
-            </p>
+        <div className="min-h-0 flex-1 overflow-auto p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <Label className="text-sm font-medium">Reusable note templates</Label>
+            <Button size="sm" onClick={() => setEditingTemplate("new")}>
+              <Plus /> New template
+            </Button>
           </div>
-          <Button size="sm" onClick={() => setEditing("new")}>
-            <Plus /> Create new template
-          </Button>
+          {templatesQuery.data?.length ? (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
+              {templatesQuery.data.map((template) => (
+                <Card className="gap-3 p-4" key={template.id}>
+                  <CardTitle>{template.payload.title}</CardTitle>
+                  <CardDescription className="line-clamp-3">
+                    {template.payload.body || "Empty template"}
+                  </CardDescription>
+                  <div className="mt-auto flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setEditing({ template });
+                        setTab("notes");
+                      }}
+                    >
+                      Apply
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingTemplate(template)}
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <WorkspaceEmptyState
+              action={
+                <Button size="sm" onClick={() => setEditingTemplate("new")}>
+                  <Plus /> Create template
+                </Button>
+              }
+              description="Create a reusable starting point for notes."
+              image="notes"
+              learnMore={[]}
+              title="No templates yet"
+            />
+          )}
+        </div>
+      ) : loading ? (
+        <div className="p-4">
+          <ListSkeleton />
         </div>
       ) : visible.length === 0 ? (
         <WorkspaceEmptyState
           action={
             <Button
               className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-              onClick={() => setEditing("new")}
+              onClick={() => setEditing({})}
               size="sm"
             >
               <Plus /> New note
@@ -746,17 +832,40 @@ export function NotesView({ onError, onNotice }: ViewProps) {
         <div className="min-h-0 flex-1 overflow-auto">
           {showFavorites ? (
             <section className="px-4 pt-3">
-              <Label className="mb-3 block text-[12px] font-normal text-primary/45">
+              <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/45">
                 Favorites
+                <Badge className="text-[10px] font-normal" variant="outline">
+                  {favoriteNotes.length}
+                </Badge>
               </Label>
-              <Card className="flex h-44 items-center justify-center border-dashed py-0 text-center">
-                <CardContent>
-                  <CardTitle className="text-[16px] text-primary/70">Favorites</CardTitle>
-                  <CardDescription className="mt-2 text-[13px]">
-                    Notes that you favorite will appear here
-                  </CardDescription>
-                </CardContent>
-              </Card>
+              {favoritesQuery.isError ? (
+                <div className="flex items-center gap-3 border border-destructive/30 p-3">
+                  <p className="text-xs text-destructive">Could not load favorites.</p>
+                  <Button size="sm" variant="outline" onClick={() => void favoritesQuery.refetch()}>
+                    Retry
+                  </Button>
+                </div>
+              ) : favoriteNotes.length ? (
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2">
+                  {favoriteNotes.map((note) => (
+                    <Button
+                      className="h-auto justify-start border p-3 text-left"
+                      key={note.externalId}
+                      onClick={() => setEditing(note)}
+                      variant="outline"
+                    >
+                      <BookmarkSimple weight="fill" />
+                      <span className="truncate">{note.title || "Untitled note"}</span>
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <Card className="flex h-28 items-center justify-center border-dashed py-0 text-center">
+                  <CardContent>
+                    <CardDescription>Favorite a note to keep it here.</CardDescription>
+                  </CardContent>
+                </Card>
+              )}
             </section>
           ) : null}
           <div className="mt-3 border-t border-border px-4 py-3">
@@ -814,6 +923,25 @@ export function NotesView({ onError, onNotice }: ViewProps) {
                     <Badge className="font-normal" variant="secondary">
                       {relativeTime(note.occurredAt)}
                     </Badge>
+                    <Button
+                      aria-label={
+                        favoriteIds.has(note.externalId)
+                          ? `Remove ${note.title} from favorites`
+                          : `Add ${note.title} to favorites`
+                      }
+                      disabled={favoriteMutation.isPending}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        favoriteMutation.mutate(note.externalId);
+                      }}
+                      size="icon-xs"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <BookmarkSimple
+                        weight={favoriteIds.has(note.externalId) ? "fill" : "regular"}
+                      />
+                    </Button>
                   </CardFooter>
                 </Card>
               ))}
@@ -823,8 +951,9 @@ export function NotesView({ onError, onNotice }: ViewProps) {
       )}
       {editing ? (
         <NoteDialog
-          key={editing === "new" ? "new" : editing.externalId}
-          note={editing === "new" ? undefined : editing}
+          key={"externalId" in editing ? editing.externalId : editing.template?.id || "new"}
+          note={"externalId" in editing ? editing : undefined}
+          template={"template" in editing ? editing.template : undefined}
           relationships={relationships}
           onClose={() => setEditing(null)}
           onError={onError}
@@ -832,12 +961,117 @@ export function NotesView({ onError, onNotice }: ViewProps) {
           onNotice={onNotice}
         />
       ) : null}
+      {editingTemplate ? (
+        <TemplateDialog
+          key={editingTemplate === "new" ? "new" : editingTemplate.id}
+          onClose={() => setEditingTemplate(null)}
+          onError={onError}
+          onNotice={onNotice}
+          template={editingTemplate === "new" ? undefined : editingTemplate}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function TemplateDialog({
+  template,
+  onClose,
+  onError,
+  onNotice,
+}: {
+  template?: NoteTemplateResource;
+  onClose: () => void;
+  onError: (message: string) => void;
+  onNotice: (message: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [title, setTitle] = React.useState(template?.payload.title ?? "");
+  const [body, setBody] = React.useState(template?.payload.body ?? "");
+  const mutation = useMutation({
+    mutationFn: async (action: "save" | "delete") => {
+      if (action === "delete" && template) return deleteConsoleResource(template.id);
+      const payload = { title: title.trim(), body };
+      if (template) return patchConsoleResource(template.id, { name: title.trim(), payload });
+      return createConsoleResource({
+        kind: "note_template",
+        name: title.trim(),
+        payload,
+      });
+    },
+    onSuccess: (_, action) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["console", "resources", "note_template"],
+      });
+      onNotice(action === "delete" ? "Template deleted." : "Template saved.");
+      onClose();
+    },
+    onError: (error, action) =>
+      onError(errMessage(error, `Could not ${action} the note template.`)),
+  });
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{template ? "Edit note template" : "New note template"}</DialogTitle>
+          <DialogDescription>
+            Templates provide a reusable title and starting body for a new note.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Input
+            aria-label="Template title"
+            maxLength={200}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="Quarterly account review"
+            value={title}
+          />
+          <Textarea
+            aria-label="Template body"
+            className="min-h-48"
+            maxLength={65_536}
+            onChange={(event) => setBody(event.target.value)}
+            placeholder="Add prompts or a reusable note structure…"
+            value={body}
+          />
+          {mutation.isError ? (
+            <p className="text-xs text-destructive" role="alert">
+              The template change failed. You can retry without losing this draft.
+            </p>
+          ) : null}
+        </div>
+        <DialogFooter>
+          {template ? (
+            <Button
+              disabled={mutation.isPending}
+              onClick={() => mutation.mutate("delete")}
+              type="button"
+              variant="destructive"
+            >
+              <Trash /> Delete
+            </Button>
+          ) : null}
+          <Button disabled={mutation.isPending} onClick={onClose} type="button" variant="ghost">
+            Cancel
+          </Button>
+          <Button
+            disabled={mutation.isPending || !title.trim()}
+            onClick={() => mutation.mutate("save")}
+            type="button"
+          >
+            {mutation.isPending ? <Spinner className="size-4" /> : null}
+            Save template
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function NoteDialog({
   note,
+  template,
   relationships,
   onClose,
   onSaved,
@@ -845,6 +1079,7 @@ function NoteDialog({
   onNotice,
 }: {
   note?: WorkspaceNote;
+  template?: NoteTemplateResource;
   relationships: RevenueRelationship[];
   onClose: () => void;
   onSaved: () => void;
@@ -853,12 +1088,18 @@ function NoteDialog({
 }) {
   const noteId = React.useRef(note?.externalId || crypto.randomUUID()).current;
   const [title, setTitle] = React.useState(
-    note?.title === "Untitled note" ? "" : note?.title || "",
+    note?.title === "Untitled note" ? "" : note?.title || template?.payload.title || "",
   );
   const [relationshipId, setRelationshipId] = React.useState(
     note?.relationshipId || relationships[0]?.id || "",
   );
-  const [content, setContent] = React.useState<Value>(() => plateValue(note));
+  const [content, setContent] = React.useState<Value>(() => {
+    if (template?.payload.content) return template.payload.content as Value;
+    if (template?.payload.body) {
+      return [{ type: "p", children: [{ text: template.payload.body }] }];
+    }
+    return plateValue(note);
+  });
   const [meetingLinked, setMeetingLinked] = React.useState(Boolean(note?.meetingLinked));
   const [maximized, setMaximized] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);

@@ -7,7 +7,6 @@ import {
   BookOpen,
   Check,
   Clipboard,
-  MagnifyingGlass,
   Monitor,
   Moon,
   Plugs,
@@ -15,6 +14,7 @@ import {
   Sun,
   type Icon as PhosphorIcon,
 } from "@/lib/icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   SETTINGS_SECTIONS,
@@ -24,7 +24,13 @@ import {
 } from "@/components/app-shell";
 import { DeleteAccountRow } from "@/components/features/account/delete-account-row";
 import { ConnectorSettings } from "@/components/features/connectors/connector-settings";
-import { capture, RevenueEvents } from "@/lib/analytics";
+import { capture, RevenueEvents, setAnalyticsConsent } from "@/lib/analytics";
+import {
+  getConsolePreferences,
+  patchConsolePreferences,
+  type ConsolePreferences,
+  type ConsolePreferencesPatch,
+} from "@/lib/console";
 import { startCheckout } from "@/lib/revenue";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
@@ -43,16 +49,36 @@ import {
 import { Switch } from "@oppulence/ui/components/switch";
 import { ToggleGroup, ToggleGroupItem } from "@oppulence/ui/components/toggle-group";
 import { dashboardFetch } from "@/lib/auth/client";
-import { ListConnectors200Response } from "@/lib/api/generated/zod/connectors/connectors";
-import { GetGoogleConnectionStatus200Response } from "@/lib/api/generated/zod/google-oauth/google-oauth";
-import { GetRelationshipSourceInventory200Response } from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
-import { ListSlackWorkspaces200Response } from "@/lib/api/generated/zod/slack-oauth/slack-oauth";
-import type { Connector } from "@/lib/api/generated/client/model/connector";
-import type { GoogleConnectionAccount } from "@/lib/api/generated/client/model/googleConnectionAccount";
-import type { RelationshipSourceInventoryItem } from "@/lib/api/generated/client/model/relationshipSourceInventoryItem";
-import type { SlackWorkspace } from "@/lib/api/generated/client/model/slackWorkspace";
-import { getPref, setPref } from "@/lib/console-prefs";
 import { cn } from "@/lib/utils";
+
+const CONSOLE_PREFERENCES_QUERY_KEY = ["console", "preferences"] as const;
+
+function useConsolePreferences() {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: CONSOLE_PREFERENCES_QUERY_KEY,
+    queryFn: ({ signal }) => getConsolePreferences(signal),
+  });
+  const mutation = useMutation({
+    mutationFn: (patch: ConsolePreferencesPatch) => patchConsolePreferences(patch),
+    onSuccess: (preferences) => {
+      queryClient.setQueryData<ConsolePreferences>(CONSOLE_PREFERENCES_QUERY_KEY, preferences);
+      void queryClient.invalidateQueries({ queryKey: CONSOLE_PREFERENCES_QUERY_KEY });
+    },
+  });
+  return { query, mutation };
+}
+
+function PreferenceLoadState({ message, retry }: { message: string; retry: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3 p-4" role="alert">
+      <p className="text-xs text-destructive">{message}</p>
+      <Button onClick={retry} size="sm" type="button" variant="outline">
+        Retry
+      </Button>
+    </div>
+  );
+}
 
 type SessionShape = {
   user: {
@@ -260,46 +286,74 @@ function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: stri
 /* -------------------------------- sections --------------------------------- */
 
 function ProfileCard() {
+  const { query, mutation } = useConsolePreferences();
   const [name, setName] = React.useState("");
   const [initial, setInitial] = React.useState("");
   const [saved, flash] = useSavedFlash();
 
   React.useEffect(() => {
-    const current = getPref("display-name") || "";
-    setName(current);
-    setInitial(current);
-  }, []);
+    if (!query.data) return;
+    setName(query.data.displayName);
+    setInitial(query.data.displayName);
+  }, [query.data]);
 
   const dirty = name !== initial;
 
-  const save = () => {
-    setPref("display-name", name.trim());
-    setInitial(name.trim());
-    setName(name.trim());
-    flash();
+  const save = async () => {
+    const next = name.trim();
+    try {
+      await mutation.mutateAsync({ displayName: next });
+      setInitial(next);
+      setName(next);
+      flash();
+    } catch {
+      // The mutation state renders an inline retryable error.
+    }
   };
 
   return (
     <SettingsRow
-      description="How you appear in this console on this device."
-      footer={<SaveFooter dirty={dirty} label="Save profile" onSave={save} saved={saved} />}
+      description="How you appear in this console across signed-in devices."
+      footer={
+        <SaveFooter
+          dirty={dirty}
+          label="Save profile"
+          onSave={() => void save()}
+          saved={saved}
+          saving={mutation.isPending}
+        />
+      }
       title="Profile"
     >
-      <div className="space-y-6 py-2">
-        <div>
-          <FieldLabel hint="Shown in the sidebar instead of your email.">Display name</FieldLabel>
-          <Input
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Ada Lovelace"
-            value={name}
-          />
+      {query.isError ? (
+        <PreferenceLoadState
+          message="Could not load your profile preference."
+          retry={() => void query.refetch()}
+        />
+      ) : (
+        <div className="space-y-6 py-2">
+          <div>
+            <FieldLabel hint="Shown in the sidebar instead of your email.">Display name</FieldLabel>
+            <Input
+              disabled={query.isLoading}
+              onChange={(event) => setName(event.target.value)}
+              placeholder={query.isLoading ? "Loading…" : "Ada Lovelace"}
+              value={name}
+            />
+            {mutation.isError ? (
+              <p className="mt-2 text-xs text-destructive" role="alert">
+                Could not save your display name. Please retry.
+              </p>
+            ) : null}
+          </div>
         </div>
-      </div>
+      )}
     </SettingsRow>
   );
 }
 
 function DefaultsCard() {
+  const { query, mutation } = useConsolePreferences();
   const { items, state } = useJsonList("/api/rowboat/v1/agents", (data) => {
     const record = (data ?? {}) as Record<string, unknown>;
     return Array.isArray(record.agents) ? record.agents : [];
@@ -318,44 +372,74 @@ function DefaultsCard() {
   const [saved, flash] = useSavedFlash();
 
   React.useEffect(() => {
-    const current = getPref("default-agent") || "";
-    setAgent(current);
-    setInitial(current);
-  }, []);
+    if (!query.data) return;
+    setAgent(query.data.defaultAgentSlug);
+    setInitial(query.data.defaultAgentSlug);
+  }, [query.data]);
 
   const dirty = agent !== initial;
 
-  const save = () => {
-    setPref("default-agent", agent);
-    setInitial(agent);
-    flash();
+  const save = async () => {
+    try {
+      await mutation.mutateAsync({ defaultAgentSlug: agent });
+      setInitial(agent);
+      flash();
+    } catch {
+      // The mutation state renders an inline retryable error.
+    }
   };
 
   return (
     <SettingsRow
       description="What new chats start with. Applies the next time you open the console."
-      footer={<SaveFooter dirty={dirty} label="Save defaults" onSave={save} saved={saved} />}
+      footer={
+        <SaveFooter
+          dirty={dirty}
+          label="Save defaults"
+          onSave={() => void save()}
+          saved={saved}
+          saving={mutation.isPending}
+        />
+      }
       title="Chat Defaults"
     >
-      <div className="space-y-6 px-4 py-6">
-        <div>
-          <FieldLabel hint="The agent preselected for new conversations.">Default agent</FieldLabel>
-          <Select onValueChange={setAgent} value={agent || undefined}>
-            <SelectTrigger className="w-full max-w-xs">
-              <SelectValue
-                placeholder={state === "loading" ? "Loading agents…" : "Choose an agent"}
-              />
-            </SelectTrigger>
-            <SelectContent className="app-shell rounded-[2px]">
-              {agentNames.map((name) => (
-                <SelectItem key={name} value={name}>
-                  {name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {query.isError ? (
+        <PreferenceLoadState
+          message="Could not load your default agent."
+          retry={() => void query.refetch()}
+        />
+      ) : (
+        <div className="space-y-6 px-4 py-6">
+          <div>
+            <FieldLabel hint="The agent preselected for new conversations.">
+              Default agent
+            </FieldLabel>
+            <Select
+              disabled={query.isLoading || state === "loading"}
+              onValueChange={setAgent}
+              value={agent || undefined}
+            >
+              <SelectTrigger className="w-full max-w-xs">
+                <SelectValue
+                  placeholder={state === "loading" ? "Loading agents…" : "Choose an agent"}
+                />
+              </SelectTrigger>
+              <SelectContent className="app-shell rounded-[2px]">
+                {agentNames.map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {mutation.isError ? (
+              <p className="mt-2 text-xs text-destructive" role="alert">
+                Could not save your default agent. Please retry.
+              </p>
+            ) : null}
+          </div>
         </div>
-      </div>
+      )}
     </SettingsRow>
   );
 }
@@ -547,81 +631,50 @@ export function PlanSection({ session }: { session: SessionShape }) {
   );
 }
 
-function useStoredBoolean(key: string, initial: boolean) {
-  const [value, setValue] = React.useState(() => {
-    if (typeof window === "undefined") return initial;
-    const stored = localStorage.getItem(key);
-    return stored === null ? initial : stored === "true";
-  });
-
-  const update = React.useCallback(
-    (next: boolean) => {
-      setValue(next);
-      localStorage.setItem(key, String(next));
-    },
-    [key],
-  );
-
-  return [value, update] as const;
-}
-
-function PreferenceToggle({
-  storageKey,
-  label,
-  description,
-  initial = false,
-}: {
-  storageKey: string;
-  label: string;
-  description: string;
-  initial?: boolean;
-}) {
-  const [checked, setChecked] = useStoredBoolean(storageKey, initial);
+function UsageDataCard() {
+  const { query, mutation } = useConsolePreferences();
+  const update = (shareUsageData: boolean) => {
+    mutation.mutate(
+      { shareUsageData },
+      {
+        onSuccess: () => setAnalyticsConsent(shareUsageData),
+      },
+    );
+  };
 
   return (
-    <div className="settings-row">
-      <div className="settings-row-copy">
-        <p className="settings-row-label">{label}</p>
-        <p className="settings-row-description">{description}</p>
-      </div>
-      <Switch
-        aria-label={label}
-        checked={checked}
-        className="settings-switch shrink-0"
-        onCheckedChange={setChecked}
-      />
-    </div>
-  );
-}
-
-const NOTIFICATION_LEVELS = [
-  { value: "off", label: "Off" },
-  { value: "attention", label: "Needs attention" },
-  { value: "all", label: "All relationship changes" },
-] as const;
-
-function NotificationLevelSelect() {
-  const [level, setLevel] = React.useState(() => getPref("notification-level") || "off");
-
-  return (
-    <Select
-      onValueChange={(value) => {
-        setLevel(value);
-        setPref("notification-level", value);
-      }}
-      value={level}
+    <SettingsRow
+      description="This choice follows your account across signed-in devices."
+      title="Privacy"
     >
-      <SelectTrigger aria-label="Notification level" className="settings-select w-40">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {NOTIFICATION_LEVELS.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      {query.isError ? (
+        <PreferenceLoadState
+          message="Could not load your analytics preference."
+          retry={() => void query.refetch()}
+        />
+      ) : (
+        <div className="settings-row">
+          <div className="settings-row-copy">
+            <p className="settings-row-label">Share anonymous usage data</p>
+            <p className="settings-row-description">
+              Allow product events without note, relationship, prompt, or identity data.
+            </p>
+            {mutation.isError ? (
+              <p className="mt-1 text-xs text-destructive" role="alert">
+                Could not save this preference. Please retry.
+              </p>
+            ) : null}
+          </div>
+          <Switch
+            aria-label="Share anonymous usage data"
+            checked={query.data?.shareUsageData ?? false}
+            className="settings-switch shrink-0"
+            disabled={query.isLoading || mutation.isPending}
+            onCheckedChange={update}
+          />
+        </div>
+      )}
+    </SettingsRow>
   );
 }
 
@@ -683,84 +736,17 @@ function PreferencesSection() {
   return (
     <>
       <PageIntro
-        description="Choose the defaults Oppulence uses while reviewing and maintaining relationships."
+        description="Choose account-wide defaults and whether anonymous product events may be captured."
         title="Preferences"
       />
       <DefaultsCard />
-      <SettingsRow
-        description="Control how much of the model's work is visible and when context is compacted."
-        title="Model"
-      >
-        <PreferenceToggle
-          description="Show the reasoning trace when a recommendation is generated."
-          initial
-          label="Show model reasoning"
-          storageKey="settings-show-model-reasoning"
-        />
-        <PreferenceToggle
-          description="Compress older evidence automatically as the working context grows."
-          initial
-          label="Auto context compaction"
-          storageKey="settings-auto-context-compaction"
-        />
-      </SettingsRow>
-      <SettingsRow
-        description="Choose when the console may call your attention back to a relationship."
-        title="Desktop notifications"
-      >
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Notify me</p>
-            <p className="settings-row-description">
-              Browser notifications stay off until you choose a level.
-            </p>
-          </div>
-          <NotificationLevelSelect />
-        </div>
-      </SettingsRow>
-      <SettingsRow
-        description="These controls stay local to this browser."
-        title="Privacy & memory"
-      >
-        <PreferenceToggle
-          description="Share anonymous product telemetry. Relationship content is never included."
-          initial
-          label="Share anonymous usage data"
-          storageKey="settings-share-usage"
-        />
-        <PreferenceToggle
-          description="Build a private semantic memory from approved relationship evidence."
-          label="Memory Bank (preview)"
-          storageKey="settings-memory-bank"
-        />
-      </SettingsRow>
+      <UsageDataCard />
     </>
   );
 }
 
 function NotificationsSection() {
-  return (
-    <>
-      <PageIntro
-        description="Choose when the console may call your attention back to a relationship."
-        title="Notifications"
-      />
-      <SettingsRow
-        description="Browser notifications stay off until you choose a delivery level."
-        title="Delivery"
-      >
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Notify me</p>
-            <p className="settings-row-description">
-              Choose which relationship changes are important enough to surface.
-            </p>
-          </div>
-          <NotificationLevelSelect />
-        </div>
-      </SettingsRow>
-    </>
-  );
+  return <PreferencesSection />;
 }
 
 function SecuritySection({ session }: { session: SessionShape }) {
@@ -899,61 +885,6 @@ function PermissionsSection({ session }: { session: SessionShape }) {
   );
 }
 
-function CustomizationSection() {
-  const [appName, setAppName] = React.useState("Oppulence");
-  const [savedName, setSavedName] = React.useState("Oppulence");
-  const [sidebar, setSidebar] = useStoredBoolean("settings-display-sidebar", true);
-  const [statusBar, setStatusBar] = useStoredBoolean("settings-display-status-bar", true);
-  const [docs, setDocs] = useStoredBoolean("settings-display-docs", true);
-  const [feedback, setFeedback] = useStoredBoolean("settings-display-feedback", true);
-
-  React.useEffect(() => {
-    const stored = localStorage.getItem("settings-app-name") || "Oppulence";
-    setAppName(stored);
-    setSavedName(stored);
-  }, []);
-
-  return (
-    <>
-      <PageIntro
-        description="Tune the console's identity and the navigation elements your team sees."
-        title="Customization"
-      />
-      <SettingsRow
-        description="Set the local workspace label shown in this browser."
-        title="Branding"
-      >
-        <div className="space-y-3 p-4">
-          <label className="block text-xs font-medium text-primary" htmlFor="settings-app-name">
-            App name
-          </label>
-          <div className="flex gap-2">
-            <Input
-              className="settings-control min-w-0 flex-1"
-              id="settings-app-name"
-              onChange={(event) => setAppName(event.target.value)}
-              value={appName}
-            />
-            <Button
-              className="settings-button settings-button--primary"
-              disabled={appName.trim() === savedName}
-              onClick={() => {
-                const next = appName.trim() || "Oppulence";
-                localStorage.setItem("settings-app-name", next);
-                setAppName(next);
-                setSavedName(next);
-              }}
-              type="button"
-            >
-              Save
-            </Button>
-          </div>
-        </div>
-      </SettingsRow>
-    </>
-  );
-}
-
 function AccountSection({ session }: { session: SessionShape }) {
   return (
     <>
@@ -1072,7 +1003,7 @@ export function SettingsView({
             </SettingsRow>
           </>
         ) : null}
-        {section === "customization" ? <CustomizationSection /> : null}
+        {section === "customization" ? <AppearanceSection /> : null}
         {section === "appearance" ? <AppearanceSection /> : null}
         {section === "account" ? <AccountSection session={session} /> : null}
         {section === "connect" ? (

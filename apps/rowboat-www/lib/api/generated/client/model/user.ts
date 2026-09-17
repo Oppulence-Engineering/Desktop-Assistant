@@ -26,6 +26,7 @@ import type { Commitment } from "./commitment";
 import type { CommitmentDependency } from "./commitmentDependency";
 import type { CommitmentEvent } from "./commitmentEvent";
 import type { ConnectorAuditEvent } from "./connectorAuditEvent";
+import type { ConsoleResource } from "./consoleResource";
 import type { ConversationIntelligenceArtifact } from "./conversationIntelligenceArtifact";
 import type { CreditLedger } from "./creditLedger";
 import type { Entity } from "./entity";
@@ -69,6 +70,7 @@ import type { RevenueWorkspace } from "./revenueWorkspace";
 import type { RevenueWorkspaceMember } from "./revenueWorkspaceMember";
 import type { Subscription } from "./subscription";
 import type { TenantEvidenceKey } from "./tenantEvidenceKey";
+import type { UserPreference } from "./userPreference";
 import type { VoiceAPIKey } from "./voiceAPIKey";
 import type { VoiceSyncItem } from "./voiceSyncItem";
 import type { WorkspaceFeatureControl } from "./workspaceFeatureControl";
@@ -102,6 +104,7 @@ export interface User {
   commitment_events?: CommitmentEvent[];
   commitments?: Commitment[];
   connector_audit_events?: ConnectorAuditEvent[];
+  console_resources?: ConsoleResource[];
   conversation_intelligence_artifacts?: ConversationIntelligenceArtifact[];
   /** Row creation timestamp. */
   created_at: string;
@@ -158,6 +161,7 @@ export interface User {
   tenant_evidence_keys?: TenantEvidenceKey[];
   /** Last row update timestamp. */
   updated_at: string;
+  user_preferences?: UserPreference[];
   voice_api_keys?: VoiceAPIKey[];
   voice_sync_items?: VoiceSyncItem[];
   /** Optional WorkOS organization id for B2B/workspace contexts. */
