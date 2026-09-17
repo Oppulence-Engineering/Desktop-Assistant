@@ -43,6 +43,62 @@ describe("getRelationshipGraph", () => {
     expect(graph).toMatchObject({ scope: "portfolio", depth: 1, nodes: [], edges: [] });
     expect(mockFetch.mock.calls[1]?.[0]).toBe("/relationships");
   });
+
+  it("reports an incomplete legacy fan-out instead of silently dropping relationships", async () => {
+    const relationshipGraph = {
+      contractVersion: "2026-08-01",
+      generatedAt: "2026-09-17T20:00:00Z",
+      asOf: "2026-09-17T20:00:00Z",
+      historical: false,
+      scope: "relationship",
+      relationshipId: "relationship-1",
+      depth: 1,
+      nodes: [],
+      edges: [],
+      permissions: {
+        canView: true,
+        canContribute: false,
+        canApprove: false,
+        canExecute: false,
+        canSaveViews: false,
+      },
+    };
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ detail: "invalid relationshipId" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            relationships: Array.from({ length: 5 }, (_, index) => ({
+              id: `relationship-${String(index + 1)}`,
+            })),
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response("temporarily unavailable", {
+          status: 503,
+          headers: { "Content-Type": "text/plain" },
+        }),
+      );
+    for (let index = 0; index < 4; index += 1) {
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify(relationshipGraph), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    }
+
+    await expect(getRelationshipGraph({ scope: "portfolio", depth: 1 })).rejects.toThrow(
+      "1 of 5 relationship requests failed",
+    );
+  });
 });
 
 describe("listScans", () => {

@@ -408,13 +408,16 @@ export interface RelationshipGraphRequest {
   asOf?: string;
 }
 
-async function loadRelationshipGraph(input: RelationshipGraphRequest): Promise<RelationshipGraph> {
+async function loadRelationshipGraph(
+  input: RelationshipGraphRequest,
+  signal?: AbortSignal,
+): Promise<RelationshipGraph> {
   const params = new URLSearchParams({ scope: input.scope });
   if (input.relationshipId) params.set("relationshipId", input.relationshipId);
   if (input.depth) params.set("depth", String(input.depth));
   if (input.asOf) params.set("asOf", input.asOf);
 
-  const payload = await call<unknown>(`/relationships/graph?${params.toString()}`);
+  const payload = await call<unknown>(`/relationships/graph?${params.toString()}`, { signal });
   const parsed = RelationshipGraphSchema.safeParse(payload);
   if (!parsed.success) {
     throw new RevenueAPIError(
@@ -428,9 +431,10 @@ async function loadRelationshipGraph(input: RelationshipGraphRequest): Promise<R
 
 export async function getRelationshipGraph(
   input: RelationshipGraphRequest,
+  signal?: AbortSignal,
 ): Promise<RelationshipGraph> {
   try {
-    return await loadRelationshipGraph(input);
+    return await loadRelationshipGraph(input, signal);
   } catch (error) {
     const legacyPortfolioEndpoint =
       input.scope === "portfolio" &&
@@ -439,15 +443,29 @@ export async function getRelationshipGraph(
       /relationshipId/i.test(error.message);
     if (!legacyPortfolioEndpoint) throw error;
 
-    const relationships = await listRelationships();
-    const graphs = await Promise.all(
-      relationships.map((relationship) =>
-        loadRelationshipGraph({
+    const relationships = await listRelationships({}, signal);
+    const graphResults = await mapSettledWithConcurrency(relationships, 4, (relationship) =>
+      loadRelationshipGraph(
+        {
           ...input,
           scope: "relationship",
           relationshipId: relationship.id,
-        }),
+        },
+        signal,
       ),
+    );
+    const failures = graphResults.filter(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    if (failures.length > 0) {
+      throw new RevenueAPIError(
+        `Could not build a complete portfolio graph: ${failures.length} of ${relationships.length} relationship requests failed.`,
+        502,
+        "partial_relationship_graph",
+      );
+    }
+    const graphs = graphResults.map(
+      (result) => (result as PromiseFulfilledResult<RelationshipGraph>).value,
     );
     const generatedAt = graphs.reduce(
       (latest, graph) => (graph.generatedAt > latest ? graph.generatedAt : latest),
@@ -491,6 +509,27 @@ export async function getRelationshipGraph(
       "relationship graph",
     );
   }
+}
+
+async function mapSettledWithConcurrency<Input, Output>(
+  inputs: readonly Input[],
+  concurrency: number,
+  worker: (input: Input) => Promise<Output>,
+): Promise<PromiseSettledResult<Output>[]> {
+  const results: PromiseSettledResult<Output>[] = new Array(inputs.length);
+  let nextIndex = 0;
+  const run = async () => {
+    while (nextIndex < inputs.length) {
+      const index = nextIndex++;
+      try {
+        results[index] = { status: "fulfilled", value: await worker(inputs[index]) };
+      } catch (reason) {
+        results[index] = { status: "rejected", reason };
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, inputs.length) }, run));
+  return results;
 }
 
 export const getRelationship = (id: string) => call<RelationshipDetail>(`/relationships/${id}`);
