@@ -15,6 +15,7 @@ import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import { cn } from "@oppulence/ui/lib/utils";
 import { AgentConfigurationForm } from "@/components/agents/agent-configuration-form";
+import { useAuthSession } from "@/components/auth-gate";
 import {
   Artifact,
   ArtifactAction,
@@ -28,6 +29,10 @@ import {
 import { Conversation, ConversationContent } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning";
+import {
+  useChatRouteState,
+  useDashboardChatController,
+} from "@/components/features/dashboard/chat-route-provider/chat-route-provider";
 import { HomeAgentSurface } from "@/components/features/dashboard/home-agent-surface/home-agent-surface";
 import {
   Tool,
@@ -39,12 +44,11 @@ import {
 import { JsonEditor } from "@/components/json-editor";
 import { MarkdownViewer } from "@/components/markdown-viewer";
 import { TiptapMarkdownEditor } from "@/components/tiptap-markdown-editor";
+import { useProductRouteState } from "@/hooks/use-product-route-state";
 import type { AgentHistoryItem } from "@/lib/agent-history";
-import type { RevenueTab } from "@/lib/product-navigation";
+import type { RevenueTab, SettingsSection, WorkflowFocus } from "@/lib/product-navigation";
 import { getImpact } from "@/lib/revenue";
 import type { RevenueImpact } from "@/types/revenue";
-
-import { useDashboardRouteContext } from "./dashboard-route-context";
 
 const AgentsView = dynamic(() =>
   import("@/components/agents/agents-view").then((module) => module.AgentsView),
@@ -161,17 +165,26 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
 }
 
 export function RevenueDashboardRoute() {
-  const { revenue } = useDashboardRouteContext();
+  const { openRevenueTab, openSettings, revenueTab } = useProductRouteState();
   return (
     <div className="flex-1 overflow-hidden" data-slot="dashboard-route-content">
-      <RevenuePanel {...revenue} />
+      <RevenuePanel
+        onOpenConnectors={() => openSettings("connections")}
+        onTabChange={openRevenueTab}
+        tab={revenueTab}
+      />
     </div>
   );
 }
 
-export function SettingsDashboardRoute() {
-  const { settings } = useDashboardRouteContext();
-  return <SettingsView {...settings} />;
+export type SettingsDashboardRouteProps = {
+  section: SettingsSection;
+};
+
+export function SettingsDashboardRoute({ section }: SettingsDashboardRouteProps) {
+  const session = useAuthSession();
+  const { openSettings } = useProductRouteState();
+  return <SettingsView onNavigate={openSettings} section={section} session={session} />;
 }
 
 export function ReportDashboardRoute() {
@@ -183,18 +196,27 @@ export function ReportDashboardRoute() {
 }
 
 export function AgentsDashboardRoute() {
-  const { agents } = useDashboardRouteContext();
-  return <AgentsView {...agents} />;
+  const chat = useDashboardChatController();
+  return (
+    <AgentsView
+      onAgentsChanged={chat.onAgentsChanged}
+      onOpenDefinition={chat.onOpenAgent}
+      onUseAgent={chat.onUseAgent}
+    />
+  );
 }
 
-export function WorkflowsDashboardRoute() {
-  const { workflows } = useDashboardRouteContext();
-  const resource = workflows.selectedResource;
+export type WorkflowsDashboardRouteProps = {
+  focus: WorkflowFocus;
+};
+
+export function WorkflowsDashboardRoute({ focus }: WorkflowsDashboardRouteProps) {
+  const { selectedResource: resource } = useDashboardChatController();
   const isTaskResource = resource?.kind === "task" || resource?.kind === "taskrun";
   return (
     <CloudWorkflowsView
-      key={isTaskResource ? `${workflows.focus}:${resource.name}` : workflows.focus}
-      focus={workflows.focus}
+      key={isTaskResource ? `${focus}:${resource.name}` : focus}
+      focus={focus}
       initialRunId={
         resource?.kind === "taskrun" ? resource.name.split("/").slice(1).join("/") : undefined
       }
@@ -210,7 +232,7 @@ export function WorkflowsDashboardRoute() {
 }
 
 export function ChatDashboardRoute() {
-  const { chat } = useDashboardRouteContext();
+  const chat = useChatRouteState();
   return (
     <div
       className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pb-0 md:flex-row"

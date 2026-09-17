@@ -15,7 +15,6 @@ const typedFiles = [
 ];
 
 const legacyTypedFiles = [
-  "app/(product)/app/product-dashboard-client.tsx",
   "scripts/capture-marketing-screenshots.ts",
   "scripts/seed-demo-workspace.ts",
 ];
@@ -28,7 +27,6 @@ const legacy = {
   unvalidatedJson: [
     "app/api/download/route.ts",
     "app/api/openapi/route.ts",
-    "app/(product)/app/product-dashboard-client.tsx",
     "app/plan-response/page.tsx",
     "components/agents/agent-configuration-form.tsx",
     "components/agents/agents-view.tsx",
@@ -51,7 +49,6 @@ const legacy = {
   ],
   asyncIntervals: ["components/workflows/cloud-workflows-view.tsx"],
   browserStorage: [
-    "app/(product)/app/product-dashboard-client.tsx",
     "components/app-settings.tsx",
     "components/app-shell.tsx",
     "components/revenue-panel.tsx",
@@ -65,7 +62,6 @@ const legacy = {
     "scripts/capture-marketing-screenshots.ts",
   ],
   sensitiveConsole: [
-    "app/(product)/app/product-dashboard-client.tsx",
     "components/app-shell.tsx",
     "components/ai-elements/prompt-input.tsx",
     "scripts/capture-marketing-screenshots.ts",

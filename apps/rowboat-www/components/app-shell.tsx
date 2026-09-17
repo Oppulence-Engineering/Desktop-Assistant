@@ -55,6 +55,8 @@ import { dashboardFetch } from "@/lib/auth/client";
 import { isOptionalDashboardFailure } from "@/lib/dashboard-json";
 import { getPref, setPref, usePref } from "@/lib/console-prefs";
 import {
+  connectedSourceCount,
+  googleNeedsReconnect,
   listRelationshipSourceStatuses,
   RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
 } from "@/lib/revenue";
@@ -484,28 +486,9 @@ const SOURCE_TONE_CARD: Record<SourceHealth["tone"], string> = {
   idle: "border-oppulence-orange/60 text-oppulence-orange",
 };
 
-const STOPPED_SOURCE_STATUSES = new Set(["reconnect_required", "disconnected", "not_connected"]);
-
-/** Sources still delivering evidence; one that needs reconnecting does not count. */
-export function connectedSourceCount(sources: RelationshipSourceStatus[]) {
-  return sources.filter((source) => !STOPPED_SOURCE_STATUSES.has(source.status)).length;
-}
-
-/**
- * Whether an audit can only fail: Google has accounts and every one of them
- * needs the user back through OAuth. One working account means a reconnect
- * already happened. The desktop app can record that under a different account
- * id than the one that failed, so a stale row must not block the audit.
- */
-export function googleNeedsReconnect(sources: RelationshipSourceStatus[]) {
-  const google = sources.filter((source) => source.source === "google");
-  return (
-    google.length > 0 &&
-    google.every(
-      (source) => source.status === "reconnect_required" || source.status === "disconnected",
-    )
-  );
-}
+// Preserve the public helper seam while source-health policy lives with the
+// revenue data contract and is shared by report, sidebar, and audit surfaces.
+export { connectedSourceCount, googleNeedsReconnect };
 
 /** A row of ticks, filled up to `ratio`. */
 function TickMeter({ ratio }: { ratio: number }) {
