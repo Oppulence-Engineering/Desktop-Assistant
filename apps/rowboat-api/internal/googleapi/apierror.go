@@ -30,7 +30,15 @@ func (e *APIError) Error() string {
 // IsAuthError reports whether err came back as 401 or 403 — the grant is gone,
 // was revoked, or never carried the scope. No amount of retrying fixes any of
 // those; only the user reconnecting does.
+//
+// A refresh that Google answers with invalid_grant never reaches an API path,
+// so it carries no status code. It is the same dead grant, and it was the one
+// this check missed: the scan failed every day with a generic message while
+// the connection card went on saying "Active".
 func IsAuthError(err error) bool {
+	if errors.Is(err, ErrReconnectRequired) {
+		return true
+	}
 	var apiErr *APIError
 	if !errors.As(err, &apiErr) {
 		return false

@@ -192,6 +192,8 @@ func TestListToolkitsHidesProductsOppulenceIngestsItself(t *testing.T) {
 			{"slug":"gmail","name":"Gmail"},
 			{"slug":"googlecalendar","name":"Google Calendar"},
 			{"slug":"slack","name":"Slack"},
+			{"slug":"slackbot","name":"Slackbot"},
+			{"slug":"hubspot","name":"HubSpot"},
 			{"slug":"jira","name":"Jira"},
 			{"slug":"notion","name":"Notion"}
 		]}`))
@@ -211,6 +213,6 @@ func TestListToolkitsHidesProductsOppulenceIngestsItself(t *testing.T) {
 	}
 	want := []string{"jira", "notion"}
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("toolkits = %v, want %v (gmail, googlecalendar and slack are ingested natively)", got, want)
+		t.Fatalf("toolkits = %v, want %v (gmail, googlecalendar, slack, slackbot and hubspot are ingested natively)", got, want)
 	}
 }

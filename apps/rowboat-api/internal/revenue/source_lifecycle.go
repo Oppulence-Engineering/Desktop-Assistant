@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/oauthconnection"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/relationshipsourcestatus"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 )
 
 // SourceDescriptor is the user-visible evidence, action, scope, and repair
@@ -382,9 +384,29 @@ func (s *Service) MarkSourceGrantFailure(
 	if err != nil {
 		return 0, err
 	}
-	marked := 0
+	accounts := make([]string, 0, len(rows))
 	for _, row := range rows {
-		if _, err := s.MarkSourceSyncFailure(ctx, u, source, row.SourceAccountID, errorCode); err != nil {
+		accounts = append(accounts, row.SourceAccountID)
+	}
+	// A Google grant claimed by the web app never reported its authorization,
+	// so the source has no row to mark and the dead grant stays invisible. The
+	// grant table knows the real accounts; seed a row for each so the failure
+	// lands where every surface reads it.
+	if len(accounts) == 0 && source == "google" {
+		accounts, err = s.client.OAuthConnection.Query().
+			Where(
+				oauthconnection.ProviderEQ("google"),
+				oauthconnection.HasUserWith(user.IDEQ(u.ID)),
+			).
+			Select(oauthconnection.FieldExternalAccountID).
+			Strings(ctx)
+		if err != nil {
+			return 0, err
+		}
+	}
+	marked := 0
+	for _, account := range accounts {
+		if _, err := s.MarkSourceSyncFailure(ctx, u, source, account, errorCode); err != nil {
 			return marked, err
 		}
 		marked++
