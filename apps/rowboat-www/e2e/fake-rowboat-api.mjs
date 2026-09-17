@@ -2,23 +2,33 @@ import http from "node:http";
 
 const host = "127.0.0.1";
 const port = 4318;
+const defaultConsolePreferences = {
+  defaultAgentSlug: "",
+  displayName: "",
+  notificationLevel: "attention",
+  shareUsageData: false,
+  showModelReasoning: false,
+  theme: "system",
+};
 const state = {
   connected: false,
+  consolePreferences: { ...defaultConsolePreferences },
+  consoleResources: [],
   consumedTickets: new Set(),
   lastStart: null,
   lastClaimAuthorization: null,
   ticketCounter: 0,
   scanCounter: 1,
+  resourceCounter: 0,
 };
 
 const completedScan = {
-  id: "scan-e2e-1",
+  id: "00000000-0000-4000-8000-000000000001",
   status: "completed",
-  mode: "live",
+  mode: "linked",
   lookbackDays: 90,
   threadsSeen: 12,
   candidatesSeen: 4,
-  commitmentsCreated: 2,
   startedAt: "2026-08-28T01:00:00Z",
   completedAt: "2026-08-28T01:05:00Z",
 };
@@ -191,11 +201,16 @@ const server = http.createServer(async (request, response) => {
     state.lastClaimAuthorization = null;
     state.ticketCounter = 0;
     state.scanCounter = 1;
+    state.resourceCounter = 0;
+    state.consolePreferences = { ...defaultConsolePreferences };
+    state.consoleResources = [];
     return json(response, 200, { ok: true });
   }
   if (url.pathname === "/__test/state") {
     return json(response, 200, {
       connected: state.connected,
+      consolePreferences: state.consolePreferences,
+      consoleResources: state.consoleResources,
       consumedTickets: [...state.consumedTickets],
       lastStart: state.lastStart,
       lastClaimAuthorization: state.lastClaimAuthorization,
@@ -308,6 +323,70 @@ const server = http.createServer(async (request, response) => {
     return response.end();
   }
 
+  if (url.pathname === "/v1/console/preferences" && request.method === "GET") {
+    return json(response, 200, state.consolePreferences);
+  }
+  if (url.pathname === "/v1/console/preferences" && request.method === "PATCH") {
+    state.consolePreferences = {
+      ...state.consolePreferences,
+      ...(await readJSON(request)),
+    };
+    return json(response, 200, state.consolePreferences);
+  }
+  if (url.pathname === "/v1/console/resources" && request.method === "GET") {
+    const kind = url.searchParams.get("kind");
+    const resources = state.consoleResources.filter((resource) => !kind || resource.kind === kind);
+    return json(response, 200, {
+      limit: Number(url.searchParams.get("limit") || 100),
+      offset: Number(url.searchParams.get("offset") || 0),
+      resources,
+    });
+  }
+  if (url.pathname === "/v1/console/resources" && request.method === "POST") {
+    const body = await readJSON(request);
+    const now = new Date().toISOString();
+    const resource = {
+      ...body,
+      id: `00000000-0000-4000-9000-${String(++state.resourceCounter).padStart(12, "0")}`,
+      sortOrder: body.sortOrder ?? 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+    state.consoleResources.push(resource);
+    return json(response, 201, resource);
+  }
+  const consoleResourceMatch = url.pathname.match(/^\/v1\/console\/resources\/([^/]+)$/);
+  if (consoleResourceMatch) {
+    const resourceId = decodeURIComponent(consoleResourceMatch[1]);
+    const resourceIndex = state.consoleResources.findIndex(
+      (resource) => resource.id === resourceId,
+    );
+    if (resourceIndex < 0) {
+      return json(response, 404, {
+        code: "not_found",
+        status: 404,
+        title: "Not found",
+        type: "about:blank",
+      });
+    }
+    if (request.method === "GET") {
+      return json(response, 200, state.consoleResources[resourceIndex]);
+    }
+    if (request.method === "PATCH") {
+      state.consoleResources[resourceIndex] = {
+        ...state.consoleResources[resourceIndex],
+        ...(await readJSON(request)),
+        updatedAt: new Date().toISOString(),
+      };
+      return json(response, 200, state.consoleResources[resourceIndex]);
+    }
+    if (request.method === "DELETE") {
+      state.consoleResources.splice(resourceIndex, 1);
+      response.writeHead(204);
+      return response.end();
+    }
+  }
+
   if (url.pathname === "/v1/relationship-sources" && request.method === "GET") {
     return json(response, 200, relationshipSourcesResponse());
   }
@@ -323,9 +402,9 @@ const server = http.createServer(async (request, response) => {
   if (url.pathname === "/v1/revenue-leak-scans" && request.method === "POST") {
     const body = await readJSON(request);
     const scan = {
-      id: `scan-e2e-${++state.scanCounter}`,
+      id: `00000000-0000-4000-8000-${String(++state.scanCounter).padStart(12, "0")}`,
       status: "running",
-      mode: "live",
+      mode: "linked",
       lookbackDays: body.lookbackDays ?? 90,
       threadsSeen: 0,
       startedAt: new Date().toISOString(),
@@ -357,7 +436,7 @@ const server = http.createServer(async (request, response) => {
     return json(response, 200, {
       id: scanId,
       status: "running",
-      mode: "live",
+      mode: "linked",
       lookbackDays: 90,
       threadsSeen: 3,
       startedAt: new Date().toISOString(),
@@ -366,6 +445,24 @@ const server = http.createServer(async (request, response) => {
 
   if (url.pathname === "/v1/revenue-actions" && request.method === "GET") {
     return json(response, 200, { actions: [] });
+  }
+  if (url.pathname === "/v1/revenue-search" && request.method === "GET") {
+    return json(response, 200, {
+      available: true,
+      matches: [
+        {
+          threadId: "thread-e2e-1",
+          subject: "Revised launch plan",
+          counterparty: "Ada",
+          classification: "commitment",
+          summary: "Ada promised to send the revised launch plan.",
+          score: 0.91,
+        },
+      ],
+    });
+  }
+  if (url.pathname === "/v1/action-proposals" && request.method === "GET") {
+    return json(response, 200, { proposals: [] });
   }
 
   return json(response, 200, {});
