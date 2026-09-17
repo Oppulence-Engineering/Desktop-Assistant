@@ -96,7 +96,7 @@ func TestGoogleBackfillKeepsOnlyExternalGmailAndCalendarEvidence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if calendar.userID != userID || calendar.lookbackDays != 90 || calendar.maxEvents != 100 {
+	if calendar.userID != userID || calendar.lookbackDays != 180 || calendar.maxEvents != 100 {
 		t.Fatalf("calendar read escaped its actor/window bounds: %#v", calendar)
 	}
 	if final.Completed != 3 || final.Total != 3 ||

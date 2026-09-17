@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	googleBackfillDays     = 90
 	googleBackfillThreads  = 100
 	googleBackfillEvents   = 100
 	hubSpotBackfillRecords = 500
@@ -41,7 +40,7 @@ type CalendarEvidenceReader interface {
 	) ([]googleapi.CalendarEvent, string, error)
 }
 
-// NewGoogleSourceBackfiller creates a 90-day Google evidence backfill over the
+// NewGoogleSourceBackfiller creates a six-month Google evidence backfill over the
 // consenting founder's Gmail and primary Calendar.
 func NewGoogleSourceBackfiller(
 	sweeper ThreadSweeper,
@@ -60,7 +59,7 @@ func (b *googleSourceBackfiller) Backfill(
 		return fmt.Errorf("google backfill provider is not configured")
 	}
 	threads, selfEmail, err := b.sweeper.SweepThreads(
-		ctx, u.ID, googleBackfillDays, googleBackfillThreads, nil,
+		ctx, u.ID, defaultLookback, googleBackfillThreads, nil,
 	)
 	if err != nil {
 		return err
@@ -78,7 +77,7 @@ func (b *googleSourceBackfiller) Backfill(
 	events, calendarSelfEmail, err := b.calendar.ReadCalendarEvents(
 		ctx,
 		u.ID,
-		googleBackfillDays,
+		defaultLookback,
 		googleBackfillEvents,
 	)
 	if err != nil {

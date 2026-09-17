@@ -40,7 +40,7 @@ const (
 	scanDeadline     = 2 * time.Minute
 	scanMaxActions   = 25
 	excerptMaxRunes  = 200
-	defaultLookback  = 90
+	defaultLookback  = 180
 	scanQueryMaxDays = 365
 )
 
