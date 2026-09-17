@@ -1,7 +1,7 @@
 import { ReportDashboardRoute } from "@/components/features/dashboard/dashboard-route-content/dashboard-route-content";
 
 // The Open Promises report is the wedge (one-pager §11). Signup lands here:
-// connect Gmail, scan 90 days, read the document. The sale and the activation
+// connect Gmail, scan six months, read the document. The sale and the activation
 // are one motion, so this route asks for nothing else first — no model key, no
 // workspace setup, no configuration.
 export const metadata = {

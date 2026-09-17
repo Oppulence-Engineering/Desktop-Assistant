@@ -20,6 +20,7 @@ import {
   listCommitments,
   listRelationshipSources,
   listRelationshipSourceStatuses,
+  REVENUE_EVIDENCE_LOOKBACK_DAYS,
   RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
   RevenueAPIError,
   runCommitmentRecovery,
@@ -204,7 +205,7 @@ export function RevenuePanel({
     setScanning(true);
     capture(RevenueEvents.ScanStarted);
     try {
-      const s = await startScan(90);
+      const s = await startScan(REVENUE_EVIDENCE_LOOKBACK_DAYS);
       setActiveScan(s);
       setScans((prev) => [s, ...prev.filter((p) => p.id !== s.id)]);
     } catch (e) {

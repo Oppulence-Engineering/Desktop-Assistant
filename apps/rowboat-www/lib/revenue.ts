@@ -54,6 +54,11 @@ import type {
   RegisterEntry,
 } from "@/types/revenue";
 
+// Initial evidence reads use a bounded six-month window. Later scans advance
+// from the latest freshness cursor and therefore remain incremental.
+export const REVENUE_EVIDENCE_LOOKBACK_DAYS = 180;
+export const REVENUE_EVIDENCE_LOOKBACK_LABEL = "6 months";
+
 export class RevenueAPIError extends Error {
   status: number;
   code?: string;

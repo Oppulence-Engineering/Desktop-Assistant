@@ -29,6 +29,8 @@ import {
   listScans,
   listRelationshipSourceStatuses,
   relationshipSourceHealth,
+  REVENUE_EVIDENCE_LOOKBACK_DAYS,
+  REVENUE_EVIDENCE_LOOKBACK_LABEL,
   RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
   safeResearchCitationURL,
   startScan,
@@ -147,9 +149,12 @@ function ReportBody() {
     setStarting(true);
     setError(null);
     try {
-      const scan = await startScan(90);
+      const scan = await startScan(REVENUE_EVIDENCE_LOOKBACK_DAYS);
       setScanId(scan.id);
-      capture(RevenueEvents.ScanStarted, { lookbackDays: 90, surface: "report" });
+      capture(RevenueEvents.ScanStarted, {
+        lookbackDays: REVENUE_EVIDENCE_LOOKBACK_DAYS,
+        surface: "report",
+      });
     } catch (e) {
       setError(friendlyRevenueError(e instanceof Error ? e.message : "Could not start the scan."));
     } finally {
@@ -205,8 +210,8 @@ function ReportBody() {
       <header>
         <h1 className="text-[28px] font-medium leading-tight text-primary">Open promises</h1>
         <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-primary/60">
-          The commitments your team made in the last 90 days that have no evidence of fulfilment,
-          and the exact message that created each one.
+          The commitments your team made in the last {REVENUE_EVIDENCE_LOOKBACK_LABEL} that have no
+          evidence of fulfilment, and the exact message that created each one.
         </p>
       </header>
 
@@ -368,7 +373,7 @@ function GoogleEvidenceSyncState({
           : active && total > 0
             ? `${String(completed)} of ${String(total)} evidence records processed.`
             : active
-              ? "Reading relevant external customer and contact activity from the last 90 days."
+              ? `Reading relevant external customer and contact activity from the last ${REVENUE_EVIDENCE_LOOKBACK_LABEL}.`
               : source.status === "live"
                 ? "Gmail and primary Calendar evidence finished its initial backfill."
                 : "The authorization is valid, but the initial evidence backfill is not active yet."}
@@ -415,7 +420,7 @@ function GoogleConnectionStep({
       description={
         reconnect
           ? "Google stopped accepting the authorization, so we cannot read your mail. Reconnect to run the audit."
-          : "Oppulence reads the last 90 days to find promises. Nothing is sent, written, or replied to on your behalf."
+          : `Oppulence reads the last ${REVENUE_EVIDENCE_LOOKBACK_LABEL} to find promises. Nothing is sent, written, or replied to on your behalf.`
       }
       image="openPromises"
       learnMore={[
@@ -444,7 +449,7 @@ function StartStep({ onRun, busy }: { onRun: () => void; busy: boolean }) {
           {busy ? "Starting" : "Find my open promises"}
         </Button>
       }
-      description="Read the last 90 days to surface commitments with no evidence of fulfilment. This takes a few minutes — you can leave and come back."
+      description={`Read the last ${REVENUE_EVIDENCE_LOOKBACK_LABEL} to surface commitments with no evidence of fulfilment. This takes a few minutes — you can leave and come back.`}
       image="openPromises"
       learnMore={[
         { label: "See exact message evidence" },
@@ -480,7 +485,8 @@ function ScanningStep({
   return (
     <section className="border border-border bg-background-50 p-5">
       <h2 className="flex items-center gap-2 text-[15px] font-medium text-primary">
-        <CircleNotchIcon className="size-4 animate-spin" /> Reading your last 90 days
+        <CircleNotchIcon className="size-4 animate-spin" /> Reading your last{" "}
+        {REVENUE_EVIDENCE_LOOKBACK_LABEL}
       </h2>
       <p className="mt-1.5 text-[13px] text-primary/60">
         {threads > 0 ? `${String(threads)} conversations read so far.` : "Starting up."}

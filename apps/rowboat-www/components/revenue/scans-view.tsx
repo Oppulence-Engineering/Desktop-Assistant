@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@oppulence/ui/components/table";
-import { relativeTime } from "@/lib/revenue";
+import { relativeTime, REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue";
 import type { RevenueLeakScan } from "@/types/revenue";
 
 export function ScansView({
@@ -45,8 +45,8 @@ export function ScansView({
     <div className="flex min-h-full w-full min-w-0 flex-col">
       <div className="flex min-h-12 items-center justify-between gap-4 border-b border-border px-3 py-2">
         <p className="min-w-0 flex-1 truncate text-[13px] text-primary/55">
-          A Promise Leak Audit reviews 90 days of Gmail for explicit promises and stalled client
-          follow-ups. Nothing is sent without your approval.
+          A Promise Leak Audit reviews {REVENUE_EVIDENCE_LOOKBACK_LABEL} of Gmail for explicit
+          promises and stalled client follow-ups. Nothing is sent without your approval.
         </p>
         <Button size="sm" onClick={onScan} disabled={scanning}>
           {needsReconnect ? <Plugs /> : scanning ? <Spinner /> : <MagnifyingGlass />}

@@ -28,6 +28,7 @@ import {
 
 import { EmptyBlock, errMessage, ListSkeleton, ModeChip } from "@/components/revenue/shared";
 import { RelationshipGraphWorkspace } from "@/components/revenue/relationship-graph";
+import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue";
 import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
@@ -665,7 +666,7 @@ export function RelationshipsView({
             <EmptyBlock
               body={
                 hasConnectedSource
-                  ? "Gmail is connected. Run the 90-day audit from Commitments to discover companies and the people behind each conversation."
+                  ? `Gmail is connected. Run the ${REVENUE_EVIDENCE_LOOKBACK_LABEL} audit from Commitments to discover companies and the people behind each conversation.`
                   : "Connect Gmail to discover companies from real conversations, or add one by hand."
               }
               image="companies"

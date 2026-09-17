@@ -36,6 +36,7 @@ import {
   TableRow,
 } from "@oppulence/ui/components/table";
 import { Tabs, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
+import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue";
 import {
   Dialog,
   DialogContent,
@@ -596,7 +597,9 @@ export function CommitmentQueue({
             >
               {scanning ? <Spinner className="size-4" /> : <MagnifyingGlass />}
               <Label className="hidden font-normal xl:inline">
-                {scanning ? "Scanning 90 days" : "Run 90-day Promise Leak Audit"}
+                {scanning
+                  ? `Scanning ${REVENUE_EVIDENCE_LOOKBACK_LABEL}`
+                  : "Run 6-month Promise Leak Audit"}
               </Label>
               <Label className="font-normal xl:hidden">{scanning ? "Scanning" : "Run audit"}</Label>
             </Button>
@@ -738,7 +741,7 @@ export function CommitmentQueue({
         <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
           <Spinner className="mb-3 size-7 text-primary/40" />
           <h2 className="text-[20px] font-semibold leading-6 text-primary">
-            Reading your last 90 days
+            Reading your last {REVENUE_EVIDENCE_LOOKBACK_LABEL}
           </h2>
           <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
             This takes a few minutes. You can keep working and come back.
@@ -808,7 +811,7 @@ export function CommitmentQueue({
                   onClick={onScan}
                   disabled={scanning}
                 >
-                  <MagnifyingGlass /> Run 90-day audit
+                  <MagnifyingGlass /> Run 6-month audit
                 </Button>
               )}
               <Button type="button" size="sm" variant="outline" onClick={onOpenAccounts}>
