@@ -12173,6 +12173,11 @@
             "example": 7,
             "type": "integer"
           },
+          "commitmentsCreated": {
+            "description": "New commitments recorded.",
+            "example": 4,
+            "type": "integer"
+          },
           "completedAt": {
             "description": "Completion time.",
             "example": "2026-07-23T12:00:40Z",
@@ -12232,9 +12237,24 @@
             "example": "active",
             "type": "string"
           },
+          "threadsDeepRead": {
+            "description": "Threads examined from complete message bodies.",
+            "example": 30,
+            "type": "integer"
+          },
           "threadsSeen": {
             "description": "Threads examined.",
             "example": 42,
+            "type": "integer"
+          },
+          "threadsSkipped": {
+            "description": "Threads skipped because readable evidence was unavailable.",
+            "example": 4,
+            "type": "integer"
+          },
+          "threadsSnippetOnly": {
+            "description": "Threads examined from snippets only.",
+            "example": 8,
             "type": "integer"
           }
         },

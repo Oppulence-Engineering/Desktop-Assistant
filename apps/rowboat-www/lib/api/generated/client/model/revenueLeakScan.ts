@@ -16,6 +16,8 @@ export interface RevenueLeakScan {
   actionsCreated?: number;
   /** Detector candidates found. */
   candidatesSeen?: number;
+  /** New commitments recorded. */
+  commitmentsCreated?: number;
   /**
    * Completion time.
    * @nullable
@@ -45,6 +47,12 @@ export interface RevenueLeakScan {
   startedAt?: string | null;
   /** Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped. */
   status: RevenueLeakScanStatus;
+  /** Threads examined from complete message bodies. */
+  threadsDeepRead?: number;
   /** Threads examined. */
   threadsSeen?: number;
+  /** Threads skipped because readable evidence was unavailable. */
+  threadsSkipped?: number;
+  /** Threads examined from snippets only. */
+  threadsSnippetOnly?: number;
 }

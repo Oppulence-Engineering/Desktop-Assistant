@@ -1927,6 +1927,7 @@ export const getListRevenueLeakScansResponseMock = (
   scans: Array.from({ length: faker.number.int({ min: 1, max: 10 }) }, (_, i) => i + 1).map(() => ({
     actionsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
     candidatesSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    commitmentsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
     completedAt: faker.helpers.arrayElement([
       faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
       undefined,
@@ -1949,7 +1950,10 @@ export const getListRevenueLeakScansResponseMock = (
       undefined,
     ]),
     status: faker.helpers.arrayElement(["pending", "running", "completed", "failed"] as const),
+    threadsDeepRead: faker.helpers.arrayElement([faker.number.int(), undefined]),
     threadsSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    threadsSkipped: faker.helpers.arrayElement([faker.number.int(), undefined]),
+    threadsSnippetOnly: faker.helpers.arrayElement([faker.number.int(), undefined]),
   })),
   ...overrideResponse,
 });
@@ -1959,6 +1963,7 @@ export const getStartRevenueLeakScanResponseMock = (
 ): RevenueLeakScan => ({
   actionsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
   candidatesSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  commitmentsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
@@ -1981,7 +1986,10 @@ export const getStartRevenueLeakScanResponseMock = (
     undefined,
   ]),
   status: faker.helpers.arrayElement(["pending", "running", "completed", "failed"] as const),
+  threadsDeepRead: faker.helpers.arrayElement([faker.number.int(), undefined]),
   threadsSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  threadsSkipped: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  threadsSnippetOnly: faker.helpers.arrayElement([faker.number.int(), undefined]),
   ...overrideResponse,
 });
 
@@ -1990,6 +1998,7 @@ export const getGetRevenueLeakScanResponseMock = (
 ): RevenueLeakScan => ({
   actionsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
   candidatesSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  commitmentsCreated: faker.helpers.arrayElement([faker.number.int(), undefined]),
   completedAt: faker.helpers.arrayElement([
     faker.helpers.arrayElement([faker.date.past().toISOString().slice(0, 19) + "Z", null]),
     undefined,
@@ -2012,7 +2021,10 @@ export const getGetRevenueLeakScanResponseMock = (
     undefined,
   ]),
   status: faker.helpers.arrayElement(["pending", "running", "completed", "failed"] as const),
+  threadsDeepRead: faker.helpers.arrayElement([faker.number.int(), undefined]),
   threadsSeen: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  threadsSkipped: faker.helpers.arrayElement([faker.number.int(), undefined]),
+  threadsSnippetOnly: faker.helpers.arrayElement([faker.number.int(), undefined]),
   ...overrideResponse,
 });
 

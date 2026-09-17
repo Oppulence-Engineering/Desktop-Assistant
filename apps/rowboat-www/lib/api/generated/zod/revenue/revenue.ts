@@ -2350,6 +2350,7 @@ export const ListRevenueLeakScans200Response = zod
           .strictObject({
             actionsCreated: zod.int().optional().describe("New queue actions created."),
             candidatesSeen: zod.int().optional().describe("Detector candidates found."),
+            commitmentsCreated: zod.int().optional().describe("New commitments recorded."),
             completedAt: zod.iso.datetime({ offset: true }).nullish().describe("Completion time."),
             error: zod.string().optional().describe("Bounded failure reason."),
             evidencesCreated: zod.int().optional().describe("New evidence rows recorded."),
@@ -2367,7 +2368,19 @@ export const ListRevenueLeakScans200Response = zod
               .describe(
                 "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
               ),
+            threadsDeepRead: zod
+              .int()
+              .optional()
+              .describe("Threads examined from complete message bodies."),
             threadsSeen: zod.int().optional().describe("Threads examined."),
+            threadsSkipped: zod
+              .int()
+              .optional()
+              .describe("Threads skipped because readable evidence was unavailable."),
+            threadsSnippetOnly: zod
+              .int()
+              .optional()
+              .describe("Threads examined from snippets only."),
           })
           .describe(
             "One bounded historical scan over connected sources (Gmail first). Detectors are deterministic; counts, errors, and freshness make runs incremental and auditable.",
@@ -2424,6 +2437,7 @@ export const StartRevenueLeakScan202Response = zod
   .strictObject({
     actionsCreated: zod.int().optional().describe("New queue actions created."),
     candidatesSeen: zod.int().optional().describe("Detector candidates found."),
+    commitmentsCreated: zod.int().optional().describe("New commitments recorded."),
     completedAt: zod.iso.datetime({ offset: true }).nullish().describe("Completion time."),
     error: zod.string().optional().describe("Bounded failure reason."),
     evidencesCreated: zod.int().optional().describe("New evidence rows recorded."),
@@ -2441,7 +2455,16 @@ export const StartRevenueLeakScan202Response = zod
       .describe(
         "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
+    threadsDeepRead: zod
+      .int()
+      .optional()
+      .describe("Threads examined from complete message bodies."),
     threadsSeen: zod.int().optional().describe("Threads examined."),
+    threadsSkipped: zod
+      .int()
+      .optional()
+      .describe("Threads skipped because readable evidence was unavailable."),
+    threadsSnippetOnly: zod.int().optional().describe("Threads examined from snippets only."),
   })
   .describe(
     "One bounded historical scan over connected sources (Gmail first). Detectors are deterministic; counts, errors, and freshness make runs incremental and auditable.",
@@ -2489,6 +2512,7 @@ export const GetRevenueLeakScan200Response = zod
   .strictObject({
     actionsCreated: zod.int().optional().describe("New queue actions created."),
     candidatesSeen: zod.int().optional().describe("Detector candidates found."),
+    commitmentsCreated: zod.int().optional().describe("New commitments recorded."),
     completedAt: zod.iso.datetime({ offset: true }).nullish().describe("Completion time."),
     error: zod.string().optional().describe("Bounded failure reason."),
     evidencesCreated: zod.int().optional().describe("New evidence rows recorded."),
@@ -2506,7 +2530,16 @@ export const GetRevenueLeakScan200Response = zod
       .describe(
         "Lifecycle\/status slug. Subscription rows use billing states; background task runs use queued\/running\/succeeded\/failed\/stopped.",
       ),
+    threadsDeepRead: zod
+      .int()
+      .optional()
+      .describe("Threads examined from complete message bodies."),
     threadsSeen: zod.int().optional().describe("Threads examined."),
+    threadsSkipped: zod
+      .int()
+      .optional()
+      .describe("Threads skipped because readable evidence was unavailable."),
+    threadsSnippetOnly: zod.int().optional().describe("Threads examined from snippets only."),
   })
   .describe(
     "One bounded historical scan over connected sources (Gmail first). Detectors are deterministic; counts, errors, and freshness make runs incremental and auditable.",

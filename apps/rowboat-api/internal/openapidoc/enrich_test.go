@@ -139,6 +139,24 @@ func TestEnrichDocumentsStrictConsoleContracts(t *testing.T) {
 	}
 }
 
+func TestEnrichDocumentsRevenueScanCoverage(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	properties := asObj(asObj(schemas["RevenueLeakScan"])["properties"])
+	for _, field := range []string{
+		"commitmentsCreated",
+		"threadsDeepRead",
+		"threadsSnippetOnly",
+		"threadsSkipped",
+	} {
+		if properties[field] == nil {
+			t.Fatalf("RevenueLeakScan must document %s returned by the API", field)
+		}
+	}
+}
+
 func TestEnrichRejectsInternalCredentialCustodyFromPublicSchemas(t *testing.T) {
 	spec := obj{"components": obj{"schemas": obj{
 		"ConnectorRevocationJob":        obj{"type": "object"},
