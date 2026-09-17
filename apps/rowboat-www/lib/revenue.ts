@@ -11,14 +11,16 @@ import {
   ExportCommitment200Response,
   ListCommitments200Response,
 } from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
-import { GetOpenPromisesReport200Response } from "@/lib/api/generated/zod/revenue/revenue";
+import {
+  GetOpenPromisesReport200Response,
+  GetRevenueImpact200Response,
+} from "@/lib/api/generated/zod/revenue/revenue";
 import { RelationshipGraphSchema } from "@/types/revenue";
 import type {
   ActionAudit,
   RelationshipDetail,
   RevenueAction,
   RevenueDigest,
-  RevenueImpact,
   RevenueLeakScan,
   RevenueOutcome,
   RevenuePolicyDecision,
@@ -129,7 +131,11 @@ export function safeResearchCitationURL(value: string) {
 export const getWorkspace = () => call<RevenueWorkspace>("/revenue-workspaces/current");
 
 export const getImpact = async () => {
-  const impact = await call<RevenueImpact>("/revenue-impact");
+  const impact = parsed(
+    GetRevenueImpact200Response,
+    await call<unknown>("/revenue-impact"),
+    "revenue impact",
+  );
   return {
     ...impact,
     relationships: impact.relationships ?? 0,

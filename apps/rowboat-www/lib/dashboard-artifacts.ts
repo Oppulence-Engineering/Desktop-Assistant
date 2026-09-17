@@ -3,6 +3,10 @@
 import "client-only";
 
 import { AgentViewSchema, parseAgentDocument } from "@/lib/agents/agent-schemas";
+import {
+  GetBackgroundTask200Response,
+  GetBackgroundTaskRun200Response,
+} from "@/lib/api/generated/zod/background-tasks/background-tasks";
 import { dashboardFetch } from "@/lib/auth/client";
 import { requestDashboardJson } from "@/lib/dashboard-json";
 import type { SelectedResource } from "@/lib/dashboard-resource";
@@ -123,7 +127,7 @@ export async function loadDashboardArtifact(
   if (resource.kind === "task") {
     const data = await requestDashboardJson(
       `/background-tasks/${encodeURIComponent(resource.name)}`,
-      JsonObjectSchema,
+      GetBackgroundTask200Response,
     );
     return {
       title: resource.name,
@@ -140,7 +144,7 @@ export async function loadDashboardArtifact(
       `/background-tasks/${encodeURIComponent(slug)}/runs/${encodeURIComponent(
         runParts.join("/"),
       )}`,
-      JsonObjectSchema,
+      GetBackgroundTaskRun200Response,
     );
     return {
       title: resource.name,
