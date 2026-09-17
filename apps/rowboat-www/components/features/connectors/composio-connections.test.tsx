@@ -153,3 +153,29 @@ describe("Composio connections", () => {
     expect(await screen.findByText("Could not load products.")).toBeInTheDocument();
   });
 });
+
+describe("Composio connections for products no longer offered", () => {
+  // Gmail moved to the native connector and left the product list, but an
+  // account linked before that still exists on Composio. Hidden, nothing could
+  // disconnect it.
+  it("still shows a linked product that left the list, with a disconnect action", async () => {
+    mocks.listComposioConnections.mockResolvedValue([
+      { id: "ca_1", toolkit: "gmail", status: "ACTIVE", createdAt: "2026-09-16T01:01:39.923Z" },
+    ]);
+    mocks.disconnectComposio.mockResolvedValue(undefined);
+    render(<ComposioConnections />);
+
+    expect(await screen.findByText("gmail")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Disconnect" }));
+
+    expect(mocks.disconnectComposio).toHaveBeenCalledWith("ca_1");
+  });
+
+  it("reports the offered product slugs so the caller can drop duplicate cards", async () => {
+    const onToolkits = vi.fn();
+    render(<ComposioConnections onToolkits={onToolkits} />);
+    await screen.findByText("Jira");
+
+    expect(onToolkits).toHaveBeenCalledWith(["jira", "asana"]);
+  });
+});

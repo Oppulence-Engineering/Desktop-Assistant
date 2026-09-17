@@ -30,7 +30,12 @@ function betterConnection(candidate: ComposioConnection, held: ComposioConnectio
  * user authorizes a product on Composio's hosted page, and the account lands
  * back inside our project scoped to them.
  */
-export function ComposioConnections() {
+export function ComposioConnections({
+  onToolkits,
+}: {
+  /** Receives the offered product slugs, so a caller can drop its own duplicate cards. */
+  onToolkits?: (slugs: string[]) => void;
+} = {}) {
   const [toolkits, setToolkits] = React.useState<ComposioToolkit[]>([]);
   const [connections, setConnections] = React.useState<ComposioConnection[]>([]);
   const [state, setState] = React.useState<"loading" | "ready" | "unconfigured" | "error">(
@@ -53,13 +58,14 @@ export function ComposioConnections() {
         setToolkits(kits);
         setConnections(linked);
         setState("ready");
+        onToolkits?.(kits.map((kit) => kit.slug));
       })
       .catch((cause: unknown) => {
         if (controller.signal.aborted) return;
         setState(cause instanceof ComposioUnconfiguredError ? "unconfigured" : "error");
       });
     return () => controller.abort();
-  }, [refreshKey]);
+  }, [refreshKey, onToolkits]);
 
   React.useEffect(() => {
     const refreshOnReturn = () => {
@@ -84,6 +90,13 @@ export function ComposioConnections() {
       connectedBySlug.set(connection.toolkit, connection);
     }
   }
+  // A product can leave the list after an account was linked to it (Gmail did,
+  // when it moved to the native connector). The account still exists on
+  // Composio; hidden, nothing could disconnect it.
+  const offered = new Set(toolkits.map((kit) => kit.slug));
+  const orphans = [...connectedBySlug.values()].filter(
+    (connection) => !offered.has(connection.toolkit),
+  );
 
   const connect = async (toolkit: string) => {
     setBusy(toolkit);
@@ -124,16 +137,16 @@ export function ComposioConnections() {
         <h3 className="text-sm font-medium text-primary">More products</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           Connect the tools Oppulence does not track as relationship sources, such as Jira or Asana.
-          Agents can act in them; nothing they return counts as evidence for a commitment. Mail,
-          calendar and Slack are not listed here: connect those above, where they become
-          relationship evidence.
+          Agents can act in them; nothing they return counts as evidence for a commitment. Gmail,
+          Google Calendar, Slack and HubSpot are not listed here: connect those above, where they
+          become relationship evidence.
         </p>
       </div>
       {state === "loading" ? (
         <p className="p-4 text-sm text-muted-foreground">Loading products…</p>
       ) : state === "error" ? (
         <p className="p-4 text-sm text-muted-foreground">Could not load products.</p>
-      ) : toolkits.length === 0 ? (
+      ) : toolkits.length === 0 && orphans.length === 0 ? (
         <p className="p-4 text-sm text-muted-foreground">No products are available to connect.</p>
       ) : (
         <div className="flex flex-col divide-y divide-primary/10">
@@ -168,6 +181,24 @@ export function ComposioConnections() {
               </div>
             );
           })}
+          {orphans.map((connection) => (
+            <div className="flex items-center justify-between gap-3 p-4" key={connection.id}>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-primary">{connection.toolkit}</p>
+                <p className="text-xs text-muted-foreground">
+                  {connection.status.toLowerCase()} · no longer offered here
+                </p>
+              </div>
+              <Button
+                disabled={busy === connection.toolkit}
+                onClick={() => void disconnect(connection)}
+                size="sm"
+                variant="outline"
+              >
+                {busy === connection.toolkit ? "Working…" : "Disconnect"}
+              </Button>
+            </div>
+          ))}
         </div>
       )}
       {error ? <p className="p-4 pt-0 font-mono text-xs text-destructive">{error}</p> : null}

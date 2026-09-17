@@ -1163,7 +1163,10 @@ export function AppShellSidebar({
         <div className="flex shrink-0 flex-col gap-1 px-2 py-2">
           <SidebarChangelog />
           <SidebarSources onOpen={() => onNavigateRevenue?.("workspace")} />
-          <Link
+          {/* A plain anchor, not Link: the route only redirects to the API's
+              docs, and Link's RSC prefetch of it failed with a 503 on every
+              page load. */}
+          <a
             className="group/item flex h-9 w-full items-center gap-2.5 rounded-none px-2.5 py-1 text-sm text-primary/70 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200"
             href="/api/reference"
             rel="noopener noreferrer"
@@ -1176,7 +1179,7 @@ export function AppShellSidebar({
             {/* This is the OpenAPI spec, not product documentation. Calling it
                 "Docs" sent operators looking for help into a route table. */}
             API reference
-          </Link>
+          </a>
           <SidebarNavItem
             active={view === "settings"}
             icon={GearSix}
