@@ -15,10 +15,14 @@ vi.mock("@/lib/auth/cookies", () => ({
   setSessionCookie: mocks.setSessionCookie,
 }));
 
-vi.mock("@/lib/auth/rowboat-api", () => ({
-  refreshWorkOSSession: mocks.refreshWorkOSSession,
-  shouldRefreshSession: mocks.shouldRefreshSession,
-}));
+vi.mock("@/lib/auth/rowboat-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/rowboat-api")>();
+  return {
+    ...actual,
+    refreshWorkOSSession: mocks.refreshWorkOSSession,
+    shouldRefreshSession: mocks.shouldRefreshSession,
+  };
+});
 
 import { applyAuthorizedSessionCookies, getAuthorizedSession } from "@/lib/auth/proxy";
 import type { DashboardSessionCookie } from "@/lib/auth/schemas";
@@ -32,6 +36,10 @@ describe("dashboard proxy session", () => {
 
   it("keeps the cookie when refresh is temporarily unavailable", async () => {
     mocks.refreshWorkOSSession.mockRejectedValue(new Error("rate limited"));
+    mocks.readSessionCookie.mockReturnValue({
+      refreshToken: "refresh",
+      expiresAt: Math.floor(Date.now() / 1_000) - 1,
+    });
 
     const result = await getAuthorizedSession(
       new NextRequest("https://oppulence.io/api/rowboat/v1/relationships"),
@@ -41,6 +49,37 @@ describe("dashboard proxy session", () => {
     if (result.ok) return;
     expect(result.response.status).toBe(503);
     expect(mocks.clearAuthCookies).not.toHaveBeenCalled();
+  });
+
+  it("continues with the current access token when refresh is down but still valid", async () => {
+    mocks.refreshWorkOSSession.mockRejectedValue(new Error("upstream unavailable"));
+    mocks.readSessionCookie.mockReturnValue({
+      refreshToken: "refresh",
+      accessToken: "still-valid",
+      expiresAt: Math.floor(Date.now() / 1_000) + 900,
+    });
+
+    const result = await getAuthorizedSession(
+      new NextRequest("https://oppulence.io/api/rowboat/v1/agents"),
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.session.accessToken).toBe("still-valid");
+    expect(mocks.clearAuthCookies).not.toHaveBeenCalled();
+  });
+
+  it("clears auth when refresh requires reconnect", async () => {
+    mocks.refreshWorkOSSession.mockResolvedValue(null);
+
+    const result = await getAuthorizedSession(
+      new NextRequest("https://oppulence.io/api/rowboat/v1/agents"),
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.response.status).toBe(401);
+    expect(mocks.clearAuthCookies).toHaveBeenCalledTimes(1);
   });
 });
 

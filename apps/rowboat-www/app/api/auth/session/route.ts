@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { clearAuthCookies, readSessionCookie, setSessionCookie } from "@/lib/auth/cookies";
-import {
-  fetchViewer,
-  fetchViewerIdentity,
-  refreshWorkOSSession,
-  shouldRefreshSession,
-} from "@/lib/auth/rowboat-api";
+import { readSessionCookie, setSessionCookie } from "@/lib/auth/cookies";
+import { fetchViewer, fetchViewerIdentity } from "@/lib/auth/rowboat-api";
+import { resolveSessionRefresh } from "@/lib/auth/session-refresh";
 import { BrowserSessionResponseSchema } from "@/lib/auth/schemas";
 
 export async function GET(request: NextRequest) {
@@ -17,28 +13,23 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  let refreshed = false;
-  if (shouldRefreshSession(session)) {
-    let next: Awaited<ReturnType<typeof refreshWorkOSSession>>;
-    try {
-      next = await refreshWorkOSSession(session);
-    } catch {
-      return NextResponse.json(
+  const refreshedSession = await resolveSessionRefresh({
+    session,
+    sessionExpiredResponse: () =>
+      NextResponse.json(BrowserSessionResponseSchema.parse({ authenticated: false }), {
+        status: 401,
+      }),
+    refreshUnavailableResponse: () =>
+      NextResponse.json(
         { error: "session refresh is temporarily unavailable", code: "session_unavailable" },
         { status: 503 },
-      );
-    }
-    if (!next) {
-      const response = NextResponse.json(
-        BrowserSessionResponseSchema.parse({ authenticated: false }),
-        { status: 401 },
-      );
-      clearAuthCookies(response);
-      return response;
-    }
-    session = next;
-    refreshed = true;
+      ),
+  });
+  if (!refreshedSession.ok) {
+    return refreshedSession.response;
   }
+  session = refreshedSession.session;
+  const refreshed = refreshedSession.refreshed;
 
   let viewer: Awaited<ReturnType<typeof fetchViewer>> | undefined;
   let identity: Awaited<ReturnType<typeof fetchViewerIdentity>> | undefined;

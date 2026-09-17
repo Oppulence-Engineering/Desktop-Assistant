@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
 import { RowboatProxyPathSchema } from "@/lib/api/routes/schemas/proxy";
 import { rowboatApiURL } from "@/lib/auth/config";
 import { clearAuthCookies, readSessionCookie, setSessionCookie } from "@/lib/auth/cookies";
-import { refreshWorkOSSession, shouldRefreshSession } from "@/lib/auth/rowboat-api";
+import { resolveSessionRefresh } from "@/lib/auth/session-refresh";
 import type { DashboardSessionCookie } from "@/lib/auth/schemas";
 
 const FORWARDED_REQUEST_HEADERS = [
@@ -53,7 +53,7 @@ export type AuthorizedSessionResult =
  * talks to rowboat-api. Missing or expired sessions fail closed with 401.
  */
 export async function getAuthorizedSession(request: NextRequest): Promise<AuthorizedSessionResult> {
-  let session = readSessionCookie(request);
+  const session = readSessionCookie(request);
   if (!session) {
     return {
       ok: false,
@@ -64,32 +64,27 @@ export async function getAuthorizedSession(request: NextRequest): Promise<Author
     };
   }
 
-  if (shouldRefreshSession(session)) {
-    let refreshed: Awaited<ReturnType<typeof refreshWorkOSSession>>;
-    try {
-      refreshed = await refreshWorkOSSession(session);
-    } catch {
-      return {
-        ok: false,
-        response: NextResponse.json(
-          { error: "session refresh is temporarily unavailable", code: "session_unavailable" },
-          { status: 503 },
-        ),
-      };
-    }
-    if (!refreshed) {
-      const response = NextResponse.json(
-        { error: "session expired", code: "unauthorized" },
-        { status: 401 },
-      );
-      clearAuthCookies(response);
-      return { ok: false, response };
-    }
-    session = refreshed;
-    return { ok: true, session, refreshed };
+  const refreshedSession = await resolveSessionRefresh({
+    session,
+    sessionExpiredResponse: () =>
+      NextResponse.json({ error: "session expired", code: "unauthorized" }, { status: 401 }),
+    refreshUnavailableResponse: () =>
+      NextResponse.json(
+        { error: "session refresh is temporarily unavailable", code: "session_unavailable" },
+        { status: 503 },
+      ),
+  });
+  if (!refreshedSession.ok) {
+    return refreshedSession;
   }
-
-  return { ok: true, session };
+  if (refreshedSession.refreshed) {
+    return {
+      ok: true,
+      session: refreshedSession.session,
+      refreshed: refreshedSession.refreshed,
+    };
+  }
+  return { ok: true, session: refreshedSession.session };
 }
 
 type AuthorizedSession = Extract<AuthorizedSessionResult, { ok: true }>;

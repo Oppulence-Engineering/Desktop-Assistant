@@ -36,6 +36,33 @@ describe("refreshWorkOSSession", () => {
     fetchMock.mockRestore();
   });
 
+  it("returns null when WorkOS asks for reconnect instead of surfacing 503", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          code: "reconnect_required",
+          detail: "Your session expired. Please sign in again.",
+          reconnectRequired: true,
+        }),
+        { status: 409, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    const session: DashboardSessionCookie = {
+      version: 1,
+      accessToken: "expired",
+      refreshToken: "reconnect-refresh",
+      tokenType: "Bearer",
+      expiresAt: 1,
+      createdAt: 1,
+      updatedAt: 1,
+      user: { permissions: [] },
+    };
+
+    await expect(refreshWorkOSSession(session)).resolves.toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    fetchMock.mockRestore();
+  });
+
   it("coalesces concurrent refreshes of the same session", async () => {
     const expiresAt = Math.floor(Date.now() / 1_000) + 3_600;
     const accessToken = `e30.${Buffer.from(JSON.stringify({ exp: expiresAt })).toString("base64url")}.sig`;

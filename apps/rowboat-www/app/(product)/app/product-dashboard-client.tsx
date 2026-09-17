@@ -55,6 +55,7 @@ import type { SessionScope } from "@/lib/chat-sessions";
 import { useAgentCatalog } from "@/hooks/use-agent-catalog";
 import { useAgentRun } from "@/hooks/use-agent-run";
 import { useChatSessions } from "@/hooks/use-chat-sessions";
+import type { BrowserSessionResponse } from "@/lib/auth/schemas";
 
 function PageBody({ children }: { children: ReactNode }) {
   const session = useAuthSession();
@@ -105,6 +106,14 @@ function PageBody({ children }: { children: ReactNode }) {
     submit,
     text,
   } = useAgentRun(selectedAgent);
+
+  const selectPrompt = useCallback(
+    (prompt: string) => {
+      setText(prompt);
+      window.requestAnimationFrame(() => textareaRef.current?.focus());
+    },
+    [setText],
+  );
 
   const startNewChat = useCallback(() => {
     resetRun();
@@ -178,6 +187,8 @@ function PageBody({ children }: { children: ReactNode }) {
   }, [toggleSidebar]);
   const artifact = useDashboardArtifact(selectedResource);
 
+  const isHomeEmpty = conversation.length === 0;
+
   const renderPromptInput = () => (
     <div className="space-y-2">
       {chatError ? (
@@ -204,8 +215,10 @@ function PageBody({ children }: { children: ReactNode }) {
             ref={textareaRef}
             onChange={(event) => setText(event.target.value)}
             value={text}
-            placeholder="Ask about a client, commitment, or next step"
-            className="min-h-[46px] max-h-[200px]"
+            placeholder={
+              isHomeEmpty ? "Name the loose end…" : "Ask about a client, commitment, or next step"
+            }
+            className={isHomeEmpty ? "min-h-12 max-h-[200px]" : "min-h-[46px] max-h-[200px]"}
           />
         </PromptInputBody>
         <PromptInputFooter>
@@ -253,6 +266,7 @@ function PageBody({ children }: { children: ReactNode }) {
 
   const routeContext: DashboardRouteContextValue = {
     chat: {
+      activeAgent: selectedAgent,
       workspace,
       processing,
       conversation,
@@ -266,6 +280,7 @@ function PageBody({ children }: { children: ReactNode }) {
           }
         : null,
       onOpenRevenueTab: openRevenueTab,
+      onSelectPrompt: selectPrompt,
       onResolveApproval: resolveApproval,
     },
     agents: {
@@ -282,7 +297,7 @@ function PageBody({ children }: { children: ReactNode }) {
     revenue: {
       tab: revenueTab,
       onTabChange: openRevenueTab,
-      onOpenConnectors: () => openSettings("extensions"),
+      onOpenConnectors: () => openSettings("connections"),
     },
     settings: {
       section: settingsSection,
@@ -327,8 +342,8 @@ function PageBody({ children }: { children: ReactNode }) {
           full width, where an inset only costs space. */}
       <div className="min-h-0 w-full flex-1 md:px-2.5 md:pb-2.5">
         <section
-          className={`relative flex h-full overflow-clip border-t bg-background md:border ${
-            view === "settings" ? "settings-workspace" : ""
+          className={`relative flex h-full overflow-clip border-t bg-background ${
+            view === "settings" ? "settings-workspace border-0 md:border-0" : "md:border"
           }`}
         >
           <AppShellSidebar
@@ -414,27 +429,31 @@ function PageBody({ children }: { children: ReactNode }) {
                 >
                   <SidebarSimple className="size-4" />
                 </Button>
-                <Label
-                  className={
-                    view === "settings"
-                      ? "settings-stage-header-title font-normal"
-                      : "text-[15px] font-normal text-primary"
-                  }
-                >
-                  {view === "settings"
-                    ? SETTINGS_SECTIONS.find((s) => s.key === settingsSection)?.label || "Settings"
-                    : view === "revenue"
-                      ? REVENUE_TAB_LABELS[revenueTab]
-                      : view === "report"
-                        ? "Open promises"
-                        : view === "agents"
-                          ? "Agents"
-                          : view === "workflows"
-                            ? workflowFocus === "runs"
-                              ? "Runs"
-                              : "Workflows"
-                            : "Home"}
-                </Label>
+                {view === "chat" && conversation.length === 0 ? null : view === "settings" &&
+                  sidebarOpen ? null : (
+                  <Label
+                    className={
+                      view === "settings"
+                        ? "settings-stage-header-title font-normal"
+                        : "text-[15px] font-normal text-primary"
+                    }
+                  >
+                    {view === "settings"
+                      ? SETTINGS_SECTIONS.find((s) => s.key === settingsSection)?.label ||
+                        "Settings"
+                      : view === "revenue"
+                        ? REVENUE_TAB_LABELS[revenueTab]
+                        : view === "report"
+                          ? "Open promises"
+                          : view === "agents"
+                            ? "Agents"
+                            : view === "workflows"
+                              ? workflowFocus === "runs"
+                                ? "Runs"
+                                : "Workflows"
+                              : "Home"}
+                  </Label>
+                )}
               </div>
             </header>
 
@@ -450,9 +469,15 @@ function PageBody({ children }: { children: ReactNode }) {
   );
 }
 
-export default function ProductDashboardClient({ children }: { children: ReactNode }) {
+export default function ProductDashboardClient({
+  children,
+  initialSession,
+}: {
+  children: ReactNode;
+  initialSession: Extract<BrowserSessionResponse, { authenticated: true }>;
+}) {
   return (
-    <AuthGate>
+    <AuthGate initialSession={initialSession}>
       <div className="app-shell contents" data-product-shell>
         <PageBody>{children}</PageBody>
       </div>

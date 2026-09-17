@@ -11,12 +11,18 @@ import ProductDashboardClient from "./product-dashboard-client";
 export const instant = false;
 
 export default async function ProductLayout({ children }: { children: ReactNode }) {
-  await requireSession("/app");
+  const session = await requireSession("/app");
+  const initialSession = {
+    authenticated: true as const,
+    user: session.user,
+    expiresAt: session.expiresAt,
+  };
+
   return (
     <QueryProvider>
       {/* The dashboard is shared route UI, so it belongs in the layout. Next
           preserves this instance while replacing the leaf page slot below. */}
-      <ProductDashboardClient>{children}</ProductDashboardClient>
+      <ProductDashboardClient initialSession={initialSession}>{children}</ProductDashboardClient>
       {/* Signed-in users reach support without leaving the dashboard; the
           widget identifies them from the sealed session. */}
       <SupportChat />

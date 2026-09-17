@@ -12,7 +12,7 @@ import {
   EmptyTitle,
 } from "@oppulence/ui/components/empty";
 import { Spinner } from "@oppulence/ui/components/spinner";
-import { loadBrowserSession, loginURL } from "@/lib/auth/client";
+import { loadBrowserSession, loginURL, SessionUnavailableError } from "@/lib/auth/client";
 import type { BrowserSessionResponse } from "@/lib/auth/schemas";
 
 type AuthState =
@@ -33,8 +33,17 @@ export function useAuthSession() {
   return value.session;
 }
 
-export function AuthGate({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ status: "loading" });
+export function AuthGate({
+  children,
+  initialSession,
+}: {
+  children: ReactNode;
+  initialSession: Extract<BrowserSessionResponse, { authenticated: true }>;
+}) {
+  const [state, setState] = useState<AuthState>({
+    status: "authenticated",
+    session: initialSession,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -48,14 +57,19 @@ export function AuthGate({ children }: { children: ReactNode }) {
         }
         setState({ status: "authenticated", session });
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (cancelled) return;
+        if (error instanceof SessionUnavailableError) {
+          // Keep the server-verified session when refresh is temporarily down.
+          setState({ status: "authenticated", session: initialSession });
+          return;
+        }
         setState({ status: "error" });
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialSession]);
 
   const contextValue = useMemo(() => (state.status === "authenticated" ? state : null), [state]);
 
