@@ -55,63 +55,26 @@ import {
   RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
 } from "@/lib/revenue";
 import { loadChangelog, type ChangelogEntry } from "@/lib/api/changelog/changelog";
-import type { ProductView } from "@/lib/product-navigation";
+import type { ResourceKind } from "@/lib/dashboard-resource";
+import {
+  REVENUE_TAB_LABELS,
+  revenueTabFromParam,
+  revenueTabSearch,
+  type ProductView,
+  type RevenueTab,
+  type SettingsSection,
+} from "@/lib/product-navigation";
 import type { RelationshipSourceStatus } from "@/types/revenue";
 import { cn } from "@/lib/utils";
 
-export type ResourceKind = "agent" | "config" | "run" | "task" | "taskrun";
-
-export type RevenueTab =
-  | "tasks"
-  | "notes"
-  | "commitments"
-  | "relationships"
-  | "people"
-  | "queue"
-  | "scans"
-  | "impact"
-  | "actions"
-  | "workspace";
-
-export const REVENUE_TAB_LABELS: Record<RevenueTab, string> = {
-  tasks: "Tasks",
-  notes: "Notes",
-  commitments: "Commitments",
-  relationships: "Companies",
-  people: "People",
-  queue: "Recovery",
-  scans: "Audits",
-  impact: "Impact",
-  actions: "Actions",
-  workspace: "Sources",
+export {
+  REVENUE_TAB_LABELS,
+  revenueTabFromParam,
+  revenueTabSearch,
+  type RevenueTab,
+  type SettingsSection,
 };
-
-/** Reads a revenue tab from the address; anything unknown lands on Commitments. */
-export function revenueTabFromParam(value: string | null | undefined): RevenueTab {
-  return value && Object.hasOwn(REVENUE_TAB_LABELS, value) ? (value as RevenueTab) : "commitments";
-}
-
-/** The query string that addresses a revenue tab. Commitments is the bare path. */
-export function revenueTabSearch(tab: RevenueTab) {
-  return tab === "commitments" ? "" : `?tab=${tab}`;
-}
-
-export type SettingsSection =
-  | "overview"
-  | "preferences"
-  | "notifications"
-  | "permissions"
-  | "security"
-  | "extensions"
-  | "connections"
-  | "advanced"
-  | "models"
-  | "customization"
-  | "appearance"
-  | "environment"
-  | "account"
-  | "connect"
-  | "help";
+export type { ResourceKind } from "@/lib/dashboard-resource";
 
 export type SettingsGroup = "workspace" | "global" | "cloud" | "support";
 

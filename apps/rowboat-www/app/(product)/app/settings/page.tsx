@@ -1,17 +1,5 @@
-import ProductDashboardClient from "../product-dashboard-client";
+import { SettingsDashboardRoute } from "@/components/features/dashboard/dashboard-route-content/dashboard-route-content";
 
-export const instant = false;
-
-export default async function SettingsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ settings?: string }>;
-}) {
-  const parameters = await searchParams;
-  return (
-    <ProductDashboardClient
-      initialSettingsSection={parameters.settings === "connections" ? "connections" : "overview"}
-      initialView="settings"
-    />
-  );
+export default function SettingsPage() {
+  return <SettingsDashboardRoute />;
 }

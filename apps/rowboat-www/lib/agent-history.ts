@@ -1,14 +1,14 @@
 import type { DurableAgentSessionEvent } from "@/lib/api/generated/client/model/durableAgentSessionEvent";
 import type { DurableAgentSessionView } from "@/lib/api/generated/client/model/durableAgentSessionView";
+import {
+  ListAgentSessionEvents200Response,
+  ListAgentSessions200Response,
+} from "@/lib/api/generated/zod/agent-sessions/agent-sessions";
 
 export type AgentSessionSummary = Pick<
   DurableAgentSessionView,
   "sessionId" | "agent" | "title" | "createdAt" | "lastActivityAt"
 >;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
 
 export function friendlyAgentError(message: string): string {
   if (/openrouter_credits|upstream_credits_exhausted|upstream provider account/i.test(message)) {
@@ -28,62 +28,22 @@ export function friendlyAgentError(message: string): string {
 }
 
 export function parseAgentSessionsResponse(value: unknown): AgentSessionSummary[] {
-  if (!isRecord(value) || !Array.isArray(value.sessions)) {
-    throw new Error("Invalid agent sessions response");
-  }
-  return value.sessions.map((session) => {
-    if (
-      !isRecord(session) ||
-      typeof session.sessionId !== "string" ||
-      typeof session.agent !== "string" ||
-      (session.title != null && typeof session.title !== "string") ||
-      typeof session.createdAt !== "string" ||
-      !Number.isFinite(Date.parse(session.createdAt)) ||
-      (session.lastActivityAt != null &&
-        (typeof session.lastActivityAt !== "string" ||
-          !Number.isFinite(Date.parse(session.lastActivityAt))))
-    ) {
-      throw new Error("Invalid agent sessions response");
-    }
-    return {
-      sessionId: session.sessionId,
-      agent: session.agent,
-      title: session.title,
-      createdAt: session.createdAt,
-      lastActivityAt: session.lastActivityAt,
-    };
-  });
+  return ListAgentSessions200Response.parse(value).sessions.map(
+    ({ sessionId, agent, title, createdAt, lastActivityAt }) => ({
+      sessionId,
+      agent,
+      title,
+      createdAt,
+      lastActivityAt,
+    }),
+  );
 }
 
 export function parseAgentSessionEventsResponse(value: unknown): {
   events: DurableAgentSessionEvent[];
   nextSeq?: number | null;
 } {
-  if (!isRecord(value) || !Array.isArray(value.events)) {
-    throw new Error("Invalid agent session events response");
-  }
-  const events = value.events.map((event) => {
-    if (
-      !isRecord(event) ||
-      !Number.isInteger(event.seq) ||
-      (event.seq as number) < 0 ||
-      typeof event.type !== "string" ||
-      !isRecord(event.data) ||
-      (event.turnSeq != null && !Number.isInteger(event.turnSeq))
-    ) {
-      throw new Error("Invalid agent session events response");
-    }
-    return {
-      seq: event.seq as number,
-      type: event.type,
-      data: event.data,
-      turnSeq: event.turnSeq as number | null | undefined,
-    };
-  });
-  if (value.nextSeq != null && !Number.isInteger(value.nextSeq)) {
-    throw new Error("Invalid agent session events response");
-  }
-  return { events, nextSeq: value.nextSeq as number | null | undefined };
+  return ListAgentSessionEvents200Response.parse(value);
 }
 
 export type AgentHistoryItem =
@@ -113,6 +73,18 @@ export type AgentHistoryItem =
       status: "pending" | "resolving" | "granted" | "denied";
       timestamp: number;
     };
+
+export type ApprovalRequest = Extract<AgentHistoryItem, { type: "approval" }>;
+
+export type ReasoningBlock = {
+  id: string;
+  type: "reasoning";
+  content: string;
+  isStreaming: boolean;
+  timestamp: number;
+};
+
+export type ConversationItem = AgentHistoryItem | ReasoningBlock;
 
 export function conversationFromAgentEvents(
   events: DurableAgentSessionEvent[],

@@ -1,23 +1,19 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import Link from "next/link";
-
 import {
   AppShellSidebar,
   AppTopBar,
   REVENUE_TAB_LABELS,
-  revenueTabFromParam,
-  revenueTabSearch,
   SETTINGS_SECTIONS,
   useWorkspaceLabel,
   ViewBoundary,
-  type RevenueTab,
-  type SettingsSection,
 } from "@/components/app-shell";
-import { AgentConfigurationForm } from "@/components/agents/agent-configuration-form";
 import { AuthGate, useAuthSession } from "@/components/auth-gate";
 import { CommandPalette } from "@/components/command-palette";
+import {
+  DashboardRouteProvider,
+  type DashboardRouteContextValue,
+} from "@/components/features/dashboard/dashboard-route-content/dashboard-route-context";
 import {
   PromptInput,
   PromptInputBody,
@@ -35,40 +31,9 @@ import {
   PromptInputHeader,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
-import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
-import { Conversation, ConversationContent } from "@/components/ai-elements/conversation";
-import {
-  Tool,
-  ToolContent,
-  ToolHeader,
-  ToolInput,
-  ToolOutput,
-} from "@/components/ai-elements/tool";
-import { Reasoning, ReasoningTrigger, ReasoningContent } from "@/components/ai-elements/reasoning";
-import {
-  Artifact,
-  ArtifactAction,
-  ArtifactActions,
-  ArtifactClose,
-  ArtifactContent,
-  ArtifactDescription,
-  ArtifactHeader,
-  ArtifactTitle,
-} from "@/components/ai-elements/artifact";
 import { useState, useEffect, useRef, type ReactNode, useCallback, useMemo } from "react";
-import {
-  AddressBook,
-  ArrowSquareOut,
-  BookOpen,
-  CheckSquare,
-  CircleNotch,
-  FileText,
-  FloppyDisk,
-  LockSimple,
-  Question,
-  SidebarSimple,
-  Tray,
-} from "@phosphor-icons/react";
+import { useQuery } from "@tanstack/react-query";
+import { SidebarSimple } from "@phosphor-icons/react";
 import {
   Select,
   SelectContent,
@@ -77,269 +42,62 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@oppulence/ui/components/select";
-import { JsonEditor } from "@/components/json-editor";
-import { TiptapMarkdownEditor } from "@/components/tiptap-markdown-editor";
-import { MarkdownViewer } from "@/components/markdown-viewer";
-import { Button } from "@oppulence/ui/components/button";
-import { dashboardFetch, toDashboardAPIPath } from "@/lib/auth/client";
-import { readAgentEventStream } from "@/lib/agent-stream";
+import { dashboardFetch } from "@/lib/auth/client";
+import { readAgentEventStream, type AgentStreamEvent } from "@/lib/agent-stream";
 import {
   conversationFromAgentEvents,
   friendlyAgentError,
   parseAgentSessionEventsResponse,
   parseAgentSessionsResponse,
   type AgentHistoryItem,
+  type ApprovalRequest,
+  type ConversationItem,
 } from "@/lib/agent-history";
 import type { DurableAgentSessionEvent } from "@/lib/api/generated/client/model/durableAgentSessionEvent";
-import { getPref } from "@/lib/console-prefs";
-import { getImpact } from "@/lib/revenue";
-import type { RevenueImpact } from "@/types/revenue";
+import { parseAgentsResponse } from "@/lib/agents/agent-schemas";
+import { useBooleanPref, usePref } from "@/lib/console-prefs";
+import { requestDashboardJson } from "@/lib/dashboard-json";
+import type { SelectedResource } from "@/lib/dashboard-resource";
+import {
+  ApprovalTokenResponseSchema,
+  CreatedAgentSessionSchema,
+  MutationResponseSchema,
+} from "@/lib/dashboard-schemas";
 import {
   prepareWebChatInput,
   WEB_CHAT_ACCEPT,
   WEB_CHAT_MAX_FILE_BYTES,
   WEB_CHAT_MAX_FILES,
 } from "@/lib/chat-attachments";
-import {
-  PRODUCT_VIEW_PATHS,
-  productViewForPathname,
-  type ProductView,
-} from "@/lib/product-navigation";
+import { useProductRouteState } from "@/hooks/use-product-route-state";
+import { useDashboardArtifact } from "@/hooks/use-dashboard-artifact";
 import {
   listSessions,
   loadSession,
+  mergeSessionLists,
   saveSession,
   type SessionMeta,
   type SessionScope,
 } from "@/lib/chat-sessions";
 
-const AgentsView = dynamic(() =>
-  import("@/components/agents/agents-view").then((module) => module.AgentsView),
-);
-const CloudWorkflowsView = dynamic(() =>
-  import("@/components/workflows/cloud-workflows-view").then((module) => module.CloudWorkflowsView),
-);
-const RevenuePanel = dynamic(() =>
-  import("@/components/revenue-panel").then((module) => module.RevenuePanel),
-);
-const SettingsView = dynamic(() =>
-  import("@/components/app-settings").then((module) => module.SettingsView),
-);
-const OpenPromisesReportClient = dynamic(() =>
-  import("./report/report-client").then((module) => module.OpenPromisesReportClient),
-);
-
 type ChatMessage = Extract<AgentHistoryItem, { type: "message" }>;
-type ToolCall = Extract<AgentHistoryItem, { type: "tool" }>;
 
-interface ReasoningBlock {
-  id: string;
-  type: "reasoning";
-  content: string;
-  isStreaming: boolean;
-  timestamp: number;
+function stripExtension(name: string): string {
+  return name.replace(/\.[^/.]+$/, "");
 }
 
-type ApprovalRequest = Extract<AgentHistoryItem, { type: "approval" }>;
-
-type ConversationItem = AgentHistoryItem | ReasoningBlock;
-
-type ResourceKind = "agent" | "config" | "run" | "task" | "taskrun";
-
-type SelectedResource = {
-  kind: ResourceKind;
-  name: string;
-};
-
-type ToolCallContentPart = {
-  type: "tool-call";
-  toolCallId: string;
-  toolName: string;
-  arguments: unknown;
-};
-
-type RunEvent = {
-  type: string;
-  seq?: number;
-  turnSeq?: number;
-  data?: Record<string, unknown>;
-  [key: string]: unknown;
-};
-
-function mergeSessionLists(...lists: SessionMeta[][]): SessionMeta[] {
-  return [
-    ...new Map(
-      lists
-        .flat()
-        .sort((left, right) => left.updatedAt - right.updatedAt)
-        .map((session) => [session.runId, session] as const),
-    ).values(),
-  ].sort((left, right) => right.updatedAt - left.updatedAt);
-}
-
-function agentViewToDocument(value: unknown, fallbackSlug: string): Record<string, unknown> {
-  const record = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-  const slug = typeof record.slug === "string" && record.slug ? record.slug : fallbackSlug;
-  const name = typeof record.name === "string" && record.name ? record.name : slug;
-  const tools = Array.isArray(record.enabledTools)
-    ? record.enabledTools.filter((tool): tool is string => typeof tool === "string")
-    : [];
-  const subagents = Array.isArray(record.subagentRefs)
-    ? record.subagentRefs.filter((agent): agent is string => typeof agent === "string")
-    : [];
-  const connections = Array.isArray(record.connectorReqs)
-    ? record.connectorReqs
-        .filter((scope): scope is string => typeof scope === "string")
-        .map((scope) => ({ scope }))
-    : [];
-  const spec: Record<string, unknown> = {
-    instructions: typeof record.instructions === "string" ? record.instructions : "",
-    tools,
-  };
-  if (typeof record.model === "string" && record.model) spec.model = record.model;
-  if (typeof record.provider === "string" && record.provider) spec.provider = record.provider;
-  if (subagents.length) spec.subagents = subagents;
-  if (connections.length) spec.connections = connections;
-  if (record.limits && typeof record.limits === "object") spec.limits = record.limits;
-  return {
-    apiVersion: "agent.rowboat.dev/v1",
-    kind: "Agent",
-    metadata: { slug, name },
-    spec,
-  };
-}
-
-// The home cards read the same aggregate the Impact tab does, so a number here
-// and a number there can never disagree.
-const HOME_STATS: {
-  tab: RevenueTab;
-  icon: typeof CheckSquare;
-  caption: string;
-  read: (impact: RevenueImpact) => number;
-}[] = [
-  {
-    tab: "commitments",
-    icon: CheckSquare,
-    caption: "Overdue commitments",
-    read: (impact) => impact.overdueCommitments,
-  },
-  { tab: "queue", icon: Tray, caption: "Open actions", read: (impact) => impact.open },
-  {
-    tab: "relationships",
-    icon: AddressBook,
-    caption: "Accounts at risk",
-    read: (impact) => impact.atRiskRelationships,
-  },
-];
-
-const HOME_LINKS = [
-  {
-    href: "/app/report",
-    icon: FileText,
-    label: "Open promises",
-    detail: "The commitments with no evidence of fulfilment",
-    external: false,
-  },
-  {
-    href: "/api/reference",
-    icon: BookOpen,
-    label: "API",
-    detail: "Drive the workspace programmatically",
-    external: true,
-  },
-  {
-    href: "/blog",
-    icon: Question,
-    label: "Help",
-    detail: "Guides, changes, and how the scoring works",
-    external: true,
-  },
-];
-
-function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
-  const [impact, setImpact] = useState<RevenueImpact | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    getImpact()
-      .then((data) => {
-        if (!cancelled) setImpact(data);
-      })
-      .catch(() => {
-        if (!cancelled) setFailed(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return (
-    <>
-      <section className="mt-10 grid gap-3 sm:grid-cols-3">
-        {HOME_STATS.map((stat) => (
-          <button
-            className="border border-border text-left transition-colors hover:bg-background-100/70"
-            key={stat.tab}
-            onClick={() => onOpenTab(stat.tab)}
-            type="button"
-          >
-            <span className="flex items-center gap-2 border-b border-border px-3 py-2.5 text-[13px] font-medium text-primary">
-              <stat.icon className="size-4 text-primary/45" />
-              {REVENUE_TAB_LABELS[stat.tab]}
-            </span>
-            <span className="block px-3 pb-3 pt-4">
-              <span className="block text-3xl font-semibold tabular-nums text-primary">
-                {impact ? (
-                  stat.read(impact)
-                ) : failed ? (
-                  "\u2014"
-                ) : (
-                  <span className="inline-block h-7 w-10 animate-pulse bg-background-200 align-middle" />
-                )}
-              </span>
-              <span className="mt-1 block text-[12px] text-primary/45">{stat.caption}</span>
-            </span>
-          </button>
-        ))}
-      </section>
-
-      <section className="mt-10">
-        <h2 className="mb-3 text-[13px] font-medium text-primary">Explore</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {HOME_LINKS.map((link) => (
-            <Link
-              className="block"
-              href={link.href}
-              key={link.href}
-              {...(link.external ? { rel: "noopener noreferrer", target: "_blank" } : {})}
-            >
-              <span className="flex items-center gap-1.5 text-[13px] font-medium text-primary">
-                <link.icon className="size-4 text-primary/45" />
-                {link.label}
-                {link.external ? <ArrowSquareOut className="size-3 text-primary/35" /> : null}
-              </span>
-              <span className="mt-1 block text-[12px] text-primary/45">{link.detail}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-    </>
-  );
-}
-
-function PageBody({
-  initialView,
-  initialSettingsSection,
-  initialRevenueTab,
-  initialWorkflowFocus,
-}: {
-  initialView: ProductView;
-  initialSettingsSection: SettingsSection;
-  initialRevenueTab?: string;
-  initialWorkflowFocus?: string;
-}) {
+function PageBody({ children }: { children: ReactNode }) {
   const session = useAuthSession();
+  const {
+    view,
+    revenueTab,
+    settingsSection,
+    workflowFocus,
+    navigateTo,
+    openRevenueTab,
+    openSettings,
+    openWorkflows,
+  } = useProductRouteState();
   const sessionScope = useMemo<SessionScope>(
     () => ({
       organizationId: session.user.organizationId,
@@ -367,77 +125,38 @@ function PageBody({
     : null;
   const [isRunProcessing, setIsRunProcessing] = useState(false);
   const [conversation, setConversation] = useState<ConversationItem[]>([]);
-  const [currentAssistantMessage, setCurrentAssistantMessage] = useState<string>("");
-  const [currentReasoning, setCurrentReasoning] = useState<string>("");
   const streamAbortRef = useRef<AbortController | null>(null);
   const committedMessageIds = useRef<Set<string>>(new Set());
-  const isEmptyConversation =
-    conversation.length === 0 && !currentAssistantMessage && !currentReasoning;
+  const isEmptyConversation = conversation.length === 0;
   const [selectedResource, setSelectedResource] = useState<SelectedResource | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [view, setView] = useState<ProductView>(initialView);
-  const [revenueTab, setRevenueTab] = useState<RevenueTab>(() =>
-    revenueTabFromParam(initialRevenueTab),
-  );
-  const [workflowFocus, setWorkflowFocus] = useState<"scheduled" | "runs">(
-    initialWorkflowFocus === "runs" ? "runs" : "scheduled",
-  );
-  const [settingsSection, setSettingsSection] = useState<SettingsSection>(initialSettingsSection);
-  const [sessions, setSessions] = useState<SessionMeta[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useBooleanPref("app-sidebar-open", true);
+  const [remoteSessions, setRemoteSessions] = useState<SessionMeta[]>([]);
+  // The local store contains at most 30 entries, so deriving this during render
+  // is cheaper and safer than duplicating synchronized session-list state.
+  const sessions = mergeSessionLists(listSessions(sessionScope), remoteSessions);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [agentOptions, setAgentOptions] = useState<string[]>(["assistant"]);
-  const [selectedAgent, setSelectedAgent] = useState<string>("assistant");
-
-  // `search` belongs to the address only when a caller names it, so opening a
-  // view without one keeps a deep link such as ?settings=connections intact.
-  const navigateTo = useCallback((nextView: ProductView, search?: string) => {
-    setView(nextView);
-    const nextPath = PRODUCT_VIEW_PATHS[nextView];
-    const current =
-      search === undefined
-        ? window.location.pathname
-        : window.location.pathname + window.location.search;
-    const next = search === undefined ? nextPath : nextPath + search;
-    if (current !== next) {
-      window.history.pushState(null, "", next);
-    }
-  }, []);
-
-  // Every revenue tab used to share /app/revenue and both workflow lists shared
-  // /app/workflows, so Back skipped them and a refresh always reopened the
-  // default. The tab and the focus now live in the address.
-  const openRevenueTab = useCallback(
-    (tab: RevenueTab) => {
-      setRevenueTab(tab);
-      navigateTo("revenue", revenueTabSearch(tab));
+  const preferredAgent = usePref("default-agent");
+  const [selectedAgentOverride, setSelectedAgent] = useState<string | null>(null);
+  const configuredAgent = selectedAgentOverride ?? preferredAgent ?? "assistant";
+  const { data: discoveredAgents = [], refetch: refetchAgents } = useQuery({
+    queryKey: ["dashboard", "agent-options"],
+    queryFn: async () => {
+      const response = await dashboardFetch("/api/rowboat/v1/agents");
+      if (!response.ok) throw new Error(`Could not load agents (${response.status})`);
+      return parseAgentsResponse(await response.json()).map((agent) => stripExtension(agent.slug));
     },
-    [navigateTo],
+  });
+  const agentOptions = useMemo(
+    () => Array.from(new Set(["assistant", ...discoveredAgents])),
+    [discoveredAgents],
   );
-  const openWorkflows = useCallback(
-    (focus: "scheduled" | "runs") => {
-      setWorkflowFocus(focus);
-      navigateTo("workflows", focus === "runs" ? "?focus=runs" : "");
-    },
-    [navigateTo],
-  );
-
-  useEffect(() => {
-    const onPopState = () => {
-      const next = productViewForPathname(window.location.pathname);
-      const parameters = new URLSearchParams(window.location.search);
-      setView(next);
-      if (next === "revenue") setRevenueTab(revenueTabFromParam(parameters.get("tab")));
-      if (next === "workflows") {
-        setWorkflowFocus(parameters.get("focus") === "runs" ? "runs" : "scheduled");
-      }
-    };
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+  const selectedAgent = agentOptions.includes(configuredAgent) ? configuredAgent : "assistant";
+  const loadAgentOptions = useCallback(async () => {
+    await refetchAgents();
+  }, [refetchAgents]);
 
   useEffect(() => {
     let cancelled = false;
-    setSessions(listSessions(sessionScope));
     const load = async () => {
       try {
         const response = await dashboardFetch("/api/rowboat/v1/agent-sessions");
@@ -452,7 +171,7 @@ function PageBody({
             updatedAt: new Date(agentSession.lastActivityAt || agentSession.createdAt).getTime(),
           }),
         );
-        if (!cancelled) setSessions((current) => mergeSessionLists(current, remote));
+        if (!cancelled) setRemoteSessions(remote);
       } catch (error) {
         console.error("Failed to load durable chat history", error);
       }
@@ -476,9 +195,7 @@ function PageBody({
       updatedAt: Date.now(),
       items: conversation,
     });
-    setSessions((current) => mergeSessionLists(listSessions(sessionScope), current));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runId, conversation]);
+  }, [conversation, runId, selectedAgent, sessionScope]);
 
   const startNewChat = useCallback(() => {
     streamAbortRef.current?.abort();
@@ -486,8 +203,6 @@ function PageBody({
     committedMessageIds.current = new Set();
     setRunId(null);
     setConversation([]);
-    setCurrentAssistantMessage("");
-    setCurrentReasoning("");
     setStatus("ready");
     setSelectedResource(null);
     navigateTo("chat");
@@ -513,12 +228,10 @@ function PageBody({
       streamAbortRef.current?.abort();
       streamAbortRef.current = null;
       setSelectedResource(null);
-      setCurrentAssistantMessage("");
-      setCurrentReasoning("");
       setChatError(null);
 
       try {
-        let items = stored?.items as ConversationItem[] | undefined;
+        let items = stored?.items;
         const meta = sessions.find((entry) => entry.runId === nextRunId);
         if (!items) {
           setStatus("submitted");
@@ -572,17 +285,9 @@ function PageBody({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("app-sidebar-open");
-    if (saved !== null) setSidebarOpen(saved === "1");
-  }, []);
-
   const toggleSidebar = useCallback(() => {
-    setSidebarOpen((open) => {
-      localStorage.setItem("app-sidebar-open", open ? "0" : "1");
-      return !open;
-    });
-  }, []);
+    setSidebarOpen(!sidebarOpen);
+  }, [setSidebarOpen, sidebarOpen]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -600,84 +305,20 @@ function PageBody({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [toggleSidebar]);
-  const [artifactTitle, setArtifactTitle] = useState("");
-  const [artifactSubtitle, setArtifactSubtitle] = useState("");
-  const [artifactText, setArtifactText] = useState("");
-  const [artifactOriginal, setArtifactOriginal] = useState("");
-  const [artifactLoading, setArtifactLoading] = useState(false);
-  const [artifactError, setArtifactError] = useState<string | null>(null);
-  const [artifactReadOnly, setArtifactReadOnly] = useState(false);
-  const [artifactFileType, setArtifactFileType] = useState<"json" | "markdown">("json");
-  useEffect(() => {
-    const preferred = getPref("default-agent");
-    if (preferred) setSelectedAgent(preferred);
-  }, []);
-
-  const artifactDirty = !artifactReadOnly && artifactText !== artifactOriginal;
-  const stripExtension = (name: string) => name.replace(/\.[^/.]+$/, "");
-  const detectFileType = (name: string): "json" | "markdown" =>
-    name.toLowerCase().match(/\.(md|markdown)$/) ? "markdown" : "json";
-
-  const requestJson = useCallback(
-    async (url: string, options?: (RequestInit & { allow404?: boolean }) | undefined) => {
-      const fullUrl = toDashboardAPIPath(url);
-      const { allow404, ...rest } = options || {};
-      const res = await dashboardFetch(fullUrl, {
-        ...rest,
-        headers: {
-          "Content-Type": "application/json",
-          ...(rest.headers || {}),
-        },
-      });
-
-      const contentType = res.headers.get("content-type")?.toLowerCase() ?? "";
-      const isJson = contentType.includes("application/json");
-      const text = await res.text();
-
-      if (!res.ok) {
-        if (res.status === 404 && allow404) return null;
-        if (isJson) {
-          let errMsg = "";
-          try {
-            const errObj = JSON.parse(text);
-            errMsg =
-              typeof errObj === "string"
-                ? errObj
-                : errObj?.message || errObj?.error || JSON.stringify(errObj);
-          } catch {
-            // Fall through when the response body is not valid JSON.
-          }
-          if (errMsg) throw new Error(String(errMsg));
-        }
-        if (res.status === 404) {
-          throw new Error("Resource not found on the CLI backend (404)");
-        }
-        throw new Error(`Request failed: ${res.status} ${res.statusText}`);
-      }
-
-      if (!text) return null;
-      if (!isJson) return null;
-      try {
-        return JSON.parse(text);
-      } catch {
-        return null;
-      }
-    },
-    [],
-  );
+  const artifact = useDashboardArtifact(selectedResource);
 
   const stopRun = async () => {
     if (!runId) return;
     setStatus("submitted");
     try {
-      await requestJson(`/agent-sessions/${encodeURIComponent(runId)}/cancel`, {
-        method: "POST",
-      });
+      await requestDashboardJson(
+        `/agent-sessions/${encodeURIComponent(runId)}/cancel`,
+        MutationResponseSchema,
+        { method: "POST" },
+      );
       streamAbortRef.current?.abort();
       streamAbortRef.current = null;
       setRunId(null);
-      setCurrentAssistantMessage("");
-      setCurrentReasoning("");
       setIsRunProcessing(false);
       setStatus("ready");
     } catch (error) {
@@ -698,15 +339,17 @@ function PageBody({
     try {
       let approvalToken: string | undefined;
       if (decision === "granted" && approval.trustTier === "money-moving") {
-        const token = await requestJson(
+        const token = await requestDashboardJson(
           `/agent-sessions/${encodeURIComponent(runId)}/approvals/${encodeURIComponent(approval.approvalId)}/token`,
+          ApprovalTokenResponseSchema,
           { method: "POST" },
         );
         approvalToken = token?.approvalToken;
         if (!approvalToken) throw new Error("The approval token could not be created");
       }
-      await requestJson(
+      await requestDashboardJson(
         `/agent-sessions/${encodeURIComponent(runId)}/approvals/${encodeURIComponent(approval.approvalId)}`,
+        MutationResponseSchema,
         {
           method: "POST",
           headers: approvalToken ? { "X-Approval-Token": approvalToken } : undefined,
@@ -806,9 +449,9 @@ function PageBody({
   );
 
   // Handle different event types from the copilot
-  const handleEvent = useCallback((event: RunEvent) => {
+  const handleEvent = useCallback((event: AgentStreamEvent) => {
     console.log("Event received:", event.type, event);
-    const payload = event.data ?? event;
+    const payload = event.data;
 
     switch (event.type) {
       case "agent.session_started":
@@ -833,7 +476,6 @@ function PageBody({
             timestamp: Date.now(),
           },
         ]);
-        setCurrentAssistantMessage("");
         break;
       }
 
@@ -967,200 +609,6 @@ function PageBody({
         setStatus("ready");
         break;
 
-      case "run-processing-start":
-        setIsRunProcessing(true);
-        setStatus((prev) => (prev === "error" ? prev : "streaming"));
-        break;
-
-      case "run-processing-end":
-        setIsRunProcessing(false);
-        setStatus("ready");
-        break;
-
-      case "start":
-        setStatus("streaming");
-        setCurrentAssistantMessage("");
-        setCurrentReasoning("");
-        break;
-
-      case "llm-stream-event":
-        {
-          const llmEvent =
-            (event.event as {
-              type?: string;
-              delta?: string;
-              toolCallId?: string;
-              toolName?: string;
-              input?: unknown;
-            }) || {};
-          console.log("LLM stream event type:", llmEvent.type);
-
-          if (llmEvent.type === "reasoning-delta" && llmEvent.delta) {
-            setCurrentReasoning((prev) => prev + llmEvent.delta);
-          } else if (llmEvent.type === "reasoning-end") {
-            // Commit reasoning block if we have content
-            setCurrentReasoning((reasoning) => {
-              if (reasoning) {
-                setConversation((prev) => [
-                  ...prev,
-                  {
-                    id: `reasoning-${Date.now()}`,
-                    type: "reasoning",
-                    content: reasoning,
-                    isStreaming: false,
-                    timestamp: Date.now(),
-                  },
-                ]);
-              }
-              return "";
-            });
-          } else if (llmEvent.type === "text-delta" && llmEvent.delta) {
-            setCurrentAssistantMessage((prev) => prev + llmEvent.delta);
-            setStatus("streaming");
-          } else if (llmEvent.type === "text-end") {
-            console.log("TEXT END received - waiting for message event");
-          } else if (llmEvent.type === "tool-call") {
-            // Add tool call to conversation immediately
-            setConversation((prev) => [
-              ...prev,
-              {
-                id: llmEvent.toolCallId || `tool-${Date.now()}`,
-                type: "tool",
-                name: llmEvent.toolName || "tool",
-                input: llmEvent.input,
-                status: "running",
-                timestamp: Date.now(),
-              },
-            ]);
-          } else if (llmEvent.type === "finish-step") {
-            console.log("FINISH STEP received - waiting for message event");
-          }
-        }
-        break;
-
-      case "message": {
-        console.log("MESSAGE event received:", event);
-        const message = (event.message as { role?: string; content?: unknown }) || {};
-        if (message.role !== "assistant") {
-          break;
-        }
-
-        if (Array.isArray(message.content)) {
-          const toolCalls = message.content.filter(
-            (part): part is ToolCallContentPart =>
-              (part as ToolCallContentPart)?.type === "tool-call",
-          );
-          if (toolCalls.length) {
-            setConversation((prev) => {
-              let updated: ConversationItem[] = prev.map((item) => {
-                if (item.type !== "tool") return item;
-                const match = toolCalls.find((part) => part.toolCallId === item.id);
-                return match
-                  ? {
-                      ...item,
-                      name: match.toolName,
-                      input: match.arguments,
-                      status: "pending",
-                    }
-                  : item;
-              });
-
-              for (const part of toolCalls) {
-                const exists = updated.some(
-                  (item) => item.type === "tool" && item.id === part.toolCallId,
-                );
-                if (!exists) {
-                  updated = [
-                    ...updated,
-                    {
-                      id: part.toolCallId,
-                      type: "tool",
-                      name: part.toolName,
-                      input: part.arguments,
-                      status: "pending",
-                      timestamp: Date.now(),
-                    },
-                  ];
-                }
-              }
-              return updated;
-            });
-          }
-        }
-
-        const messageId =
-          typeof event.messageId === "string" ? event.messageId : `assistant-${Date.now()}`;
-
-        if (committedMessageIds.current.has(messageId)) {
-          console.log("⚠️ Message already committed, skipping:", messageId);
-          break;
-        }
-
-        committedMessageIds.current.add(messageId);
-
-        setCurrentAssistantMessage((currentMsg) => {
-          console.log("✅ Committing message:", messageId, currentMsg);
-          if (currentMsg) {
-            setConversation((prev) => {
-              const exists = prev.some((m) => m.id === messageId);
-              if (exists) {
-                console.log("⚠️ Message ID already in array, skipping:", messageId);
-                return prev;
-              }
-              return [
-                ...prev,
-                {
-                  id: messageId,
-                  type: "message",
-                  role: "assistant",
-                  content: currentMsg,
-                  timestamp: Date.now(),
-                },
-              ];
-            });
-          }
-          return "";
-        });
-        setStatus("ready");
-        console.log("Status set to ready");
-        break;
-      }
-
-      case "tool-invocation":
-        setConversation((prev) =>
-          prev.map((item) =>
-            item.type === "tool" && (item.id === event.toolCallId || item.name === event.toolName)
-              ? { ...item, status: "running" as const }
-              : item,
-          ),
-        );
-        break;
-
-      case "tool-result":
-        setConversation((prev) =>
-          prev.map((item) =>
-            item.type === "tool" && (item.id === event.toolCallId || item.name === event.toolName)
-              ? { ...item, result: event.result, status: "completed" as const }
-              : item,
-          ),
-        );
-        break;
-
-      case "error":
-        // Only set error status for actual errors, not connection issues
-        {
-          const errorMsg = typeof event.error === "string" ? event.error : "";
-          if (errorMsg && !errorMsg.includes("terminated")) {
-            setStatus("error");
-            console.error("Agent error:", errorMsg);
-          } else {
-            console.log("Connection error (will auto-reconnect):", errorMsg);
-            setStatus("ready");
-          }
-          setIsRunProcessing(false);
-        }
-        break;
-
       default:
         console.log("Unhandled event type:", event.type);
     }
@@ -1268,7 +716,7 @@ function PageBody({
     try {
       let nextRunId = runId;
       if (!nextRunId) {
-        const runData = await requestJson("/agent-sessions/", {
+        const runData = await requestDashboardJson("/agent-sessions/", CreatedAgentSessionSchema, {
           method: "POST",
           body: JSON.stringify({
             agent: selectedAgent,
@@ -1277,15 +725,19 @@ function PageBody({
             channel: "web",
           }),
         });
-        nextRunId = runData?.sessionId || runData?.id;
+        nextRunId = runData.sessionId;
         setRunId(nextRunId);
       } else {
-        await requestJson(`/agent-sessions/${encodeURIComponent(nextRunId)}/turns`, {
-          method: "POST",
-          body: JSON.stringify({
-            input: prepared.input,
-          }),
-        });
+        await requestDashboardJson(
+          `/agent-sessions/${encodeURIComponent(nextRunId)}/turns`,
+          MutationResponseSchema,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              input: prepared.input,
+            }),
+          },
+        );
       }
 
       setStatus("streaming");
@@ -1300,293 +752,48 @@ function PageBody({
     }
   };
 
-  useEffect(() => {
-    if (!selectedResource) return;
-    let cancelled = false;
-    const load = async () => {
-      setArtifactLoading(true);
-      setArtifactError(null);
-      try {
-        const title = selectedResource.name;
-        let subtitle = "";
-        let text = "";
-        let readOnly = false;
-        const detectedType = detectFileType(selectedResource.name);
-        setArtifactFileType(detectedType);
-
-        if (selectedResource.kind === "agent") {
-          const raw = selectedResource.name;
-          const isMarkdown = /\.(md|markdown)$/i.test(raw);
-
-          if (isMarkdown) {
-            subtitle = "Agent (Markdown)";
-            const response = await dashboardFetch(
-              `/api/rowboat/v1/agents/${encodeURIComponent(stripExtension(raw) || raw)}?format=yaml`,
-            );
-            if (!response.ok) {
-              if (response.status === 404) {
-                text = "";
-              } else {
-                throw new Error(`Failed to load agent file: ${response.status}`);
-              }
-            } else {
-              const data = await response.json();
-              text = data?.content || data?.raw || "";
-            }
-            setArtifactFileType("markdown");
-          } else {
-            const id = stripExtension(raw) || raw;
-            const data = await requestJson(`/agents/${encodeURIComponent(id)}`);
-
-            const source =
-              data && typeof data === "object" && typeof data.source === "string"
-                ? data.source
-                : "";
-            readOnly = source === "builtin" || source === "gitops";
-            subtitle = readOnly ? `${source || "Managed"} agent` : "Agent definition";
-            text = JSON.stringify(agentViewToDocument(data, id), null, 2);
-            setArtifactFileType("json");
+  const routeContext: DashboardRouteContextValue = {
+    chat: {
+      workspace,
+      processing: isRunProcessing,
+      conversation,
+      empty: isEmptyConversation,
+      promptInput: renderPromptInput(),
+      artifact: artifact
+        ? {
+            ...artifact,
+            agentOptions,
+            onClose: () => setSelectedResource(null),
           }
-        } else if (selectedResource.kind === "config") {
-          const lower = selectedResource.name.toLowerCase();
-          if (lower.endsWith(".md") || lower.endsWith(".markdown")) {
-            // Load markdown file as plain text from local API
-            try {
-              const response = await dashboardFetch(
-                `/api/rowboat/config?file=${encodeURIComponent(selectedResource.name)}`,
-              );
-              if (!response.ok) {
-                if (response.status === 404) {
-                  // File doesn't exist, start with empty content
-                  text = "";
-                } else {
-                  throw new Error(`Failed to load markdown file: ${response.status}`);
-                }
-              } else {
-                const data = await response.json();
-                text = data.content || data.raw || "";
-              }
-              subtitle = "Markdown";
-              setArtifactFileType("markdown");
-            } catch (error: unknown) {
-              const err = error as Error;
-              console.error("Error loading markdown file:", error);
-              // Show error but still allow editing
-              setArtifactError(err?.message || "Failed to load markdown file");
-              text = "";
-              subtitle = "Markdown";
-              setArtifactFileType("markdown");
-            }
-          } else if (lower.includes("mcp")) {
-            const data = await requestJson("/mcp");
-            subtitle = "MCP config";
-            text = JSON.stringify(data ?? {}, null, 2);
-            setArtifactFileType("json");
-          } else if (lower.includes("model")) {
-            const data = await requestJson("/models");
-            subtitle = "Models config";
-            text = JSON.stringify(data ?? {}, null, 2);
-            setArtifactFileType("json");
-          } else {
-            // Try to load as JSON by default
-            try {
-              const data = await requestJson(
-                `/config/${encodeURIComponent(selectedResource.name)}`,
-              );
-              subtitle = "Config";
-              text = JSON.stringify(data ?? {}, null, 2);
-              setArtifactFileType("json");
-            } catch {
-              throw new Error("Unsupported config file");
-            }
-          }
-        } else if (selectedResource.kind === "task") {
-          subtitle = "Background task";
-          readOnly = true;
-          const data = await requestJson(
-            `/background-tasks/${encodeURIComponent(selectedResource.name)}`,
-          );
-          text = JSON.stringify(data ?? {}, null, 2);
-          setArtifactFileType("json");
-        } else if (selectedResource.kind === "taskrun") {
-          subtitle = "Task run (read-only)";
-          readOnly = true;
-          const [slug, ...rest] = selectedResource.name.split("/");
-          const taskRunId = rest.join("/");
-          const data = await requestJson(
-            `/background-tasks/${encodeURIComponent(slug)}/runs/${encodeURIComponent(taskRunId)}`,
-          );
-          text = JSON.stringify(data ?? {}, null, 2);
-          setArtifactFileType("json");
-        } else if (selectedResource.kind === "run") {
-          subtitle = "Run (read-only)";
-          readOnly = true;
-          setArtifactFileType(detectedType);
-
-          const local = await requestJson(
-            `/api/rowboat/run?file=${encodeURIComponent(selectedResource.name)}`,
-          );
-          if (local?.parsed) {
-            text = JSON.stringify(local.parsed, null, 2);
-          } else if (local?.raw) {
-            text = local.raw;
-          } else {
-            text = "";
-          }
-        }
-
-        if (cancelled) return;
-        setArtifactTitle(title);
-        setArtifactSubtitle(subtitle);
-        setArtifactText(text);
-        setArtifactOriginal(text);
-        setArtifactReadOnly(readOnly);
-      } catch (error: unknown) {
-        if (!cancelled) {
-          const err = error as Error;
-          setArtifactError(err?.message || "Failed to load resource");
-          setArtifactText("");
-        }
-      } finally {
-        if (!cancelled) {
-          setArtifactLoading(false);
-        }
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedResource, requestJson]);
-
-  const loadAgentOptions = useCallback(async () => {
-    try {
-      const res = await dashboardFetch("/api/rowboat/v1/agents");
-      if (!res.ok) return;
-      const data = await res.json();
-      const agents = Array.isArray(data.agents)
-        ? data.agents
-            .map((a: { slug?: string } | string) =>
-              typeof a === "string" ? stripExtension(a) : a.slug,
-            )
-            .filter((agent: string | undefined): agent is string => Boolean(agent))
-        : [];
-      const options = Array.from(new Set(["assistant", ...agents]));
-      setAgentOptions(options);
-      setSelectedAgent((current) => (options.includes(current) ? current : "assistant"));
-    } catch (error) {
-      console.error("Failed to load agent list", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadAgentOptions();
-  }, [loadAgentOptions]);
-
-  const handleSave = async () => {
-    if (!selectedResource || artifactReadOnly || !artifactDirty) return;
-    setArtifactLoading(true);
-    setArtifactError(null);
-    try {
-      if (selectedResource.kind === "agent") {
-        if (artifactFileType === "markdown") {
-          const response = await dashboardFetch(
-            `/api/rowboat/agent?file=${encodeURIComponent(selectedResource.name)}`,
-            {
-              method: "PUT",
-              headers: { "Content-Type": "text/plain" },
-              body: artifactText,
-            },
-          );
-          if (!response.ok) {
-            throw new Error("Failed to save agent file");
-          }
-          setArtifactOriginal(artifactText);
-        } else {
-          const parsed = JSON.parse(artifactText);
-          const raw = selectedResource.name;
-          const targetId = stripExtension(raw) || raw;
-
-          await requestJson(`/agents/${encodeURIComponent(targetId)}`, {
-            method: "PUT",
-            body: JSON.stringify(parsed),
-          });
-          setArtifactOriginal(JSON.stringify(parsed, null, 2));
-        }
-      } else if (selectedResource.kind === "config") {
-        const lower = selectedResource.name.toLowerCase();
-
-        if (lower.endsWith(".md") || lower.endsWith(".markdown")) {
-          // Save markdown file as plain text via local API
-          const response = await dashboardFetch(
-            `/api/rowboat/config?file=${encodeURIComponent(selectedResource.name)}`,
-            {
-              method: "PUT",
-              headers: { "Content-Type": "text/plain" },
-              body: artifactText,
-            },
-          );
-          if (!response.ok) {
-            throw new Error("Failed to save markdown file");
-          }
-          setArtifactOriginal(artifactText);
-        } else {
-          // Handle JSON config files
-          const parsed = JSON.parse(artifactText);
-          const previous = artifactOriginal ? JSON.parse(artifactOriginal) : {};
-
-          if (lower.includes("model")) {
-            const newProviders = parsed.providers || {};
-            const oldProviders = previous.providers || {};
-            const toDelete = Object.keys(oldProviders).filter(
-              (name) => !Object.prototype.hasOwnProperty.call(newProviders, name),
-            );
-            for (const name of toDelete) {
-              await requestJson(`/models/providers/${encodeURIComponent(name)}`, {
-                method: "DELETE",
-              });
-            }
-            for (const name of Object.keys(newProviders)) {
-              await requestJson(`/models/providers/${encodeURIComponent(name)}`, {
-                method: "PUT",
-                body: JSON.stringify(newProviders[name]),
-              });
-            }
-            if (parsed.defaults) {
-              await requestJson("/models/default", {
-                method: "PUT",
-                body: JSON.stringify(parsed.defaults),
-              });
-            }
-          } else if (lower.includes("mcp")) {
-            const newServers = parsed.mcpServers || parsed || {};
-            const oldServers = previous.mcpServers || {};
-            const toDelete = Object.keys(oldServers).filter(
-              (name) => !Object.prototype.hasOwnProperty.call(newServers, name),
-            );
-            for (const name of toDelete) {
-              await requestJson(`/mcp/${encodeURIComponent(name)}`, {
-                method: "DELETE",
-              });
-            }
-            for (const name of Object.keys(newServers)) {
-              await requestJson(`/mcp/${encodeURIComponent(name)}`, {
-                method: "PUT",
-                body: JSON.stringify(newServers[name]),
-              });
-            }
-          } else {
-            throw new Error("Unsupported config file");
-          }
-          setArtifactOriginal(JSON.stringify(parsed, null, 2));
-        }
-      }
-    } catch (error: unknown) {
-      const err = error as Error;
-      setArtifactError(err?.message || "Failed to save changes");
-    } finally {
-      setArtifactLoading(false);
-    }
+        : null,
+      onOpenRevenueTab: openRevenueTab,
+      onResolveApproval: resolveApproval,
+    },
+    agents: {
+      onAgentsChanged: loadAgentOptions,
+      onOpenDefinition: (slug) => {
+        setSelectedResource({ kind: "agent", name: slug });
+        navigateTo("chat");
+      },
+      onUseAgent: (slug) => {
+        startNewChat();
+        setSelectedAgent(slug);
+      },
+    },
+    revenue: {
+      tab: revenueTab,
+      onTabChange: openRevenueTab,
+      onOpenConnectors: () => openSettings("extensions"),
+    },
+    settings: {
+      section: settingsSection,
+      session,
+      onNavigate: openSettings,
+    },
+    workflows: {
+      focus: workflowFocus,
+      selectedResource,
+    },
   };
 
   return (
@@ -1604,10 +811,7 @@ function PageBody({
           setSelectedResource({ kind: "agent", name });
         }}
         onOpenSession={openSession}
-        onOpenSettings={(section) => {
-          setSettingsSection(section);
-          navigateTo("settings");
-        }}
+        onOpenSettings={openSettings}
         onOpenChange={setPaletteOpen}
         onToggleSidebar={toggleSidebar}
         open={paletteOpen}
@@ -1654,10 +858,7 @@ function PageBody({
               openWorkflows("runs");
               setSelectedResource(null);
             }}
-            onOpenSettings={(section) => {
-              setSettingsSection(section);
-              navigateTo("settings");
-            }}
+            onOpenSettings={openSettings}
             onSelectResource={(resource) => {
               if (resource.kind === "task" || resource.kind === "taskrun") {
                 openWorkflows(resource.kind === "taskrun" ? "runs" : "scheduled");
@@ -1734,310 +935,11 @@ function PageBody({
               </div>
             </header>
 
-            <ViewBoundary viewKey={`${view}:${revenueTab}:${settingsSection}`}>
-              {view === "settings" ? (
-                <SettingsView
-                  onNavigate={setSettingsSection}
-                  section={settingsSection}
-                  session={session}
-                />
-              ) : view === "revenue" ? (
-                <div className="flex-1 overflow-hidden">
-                  <RevenuePanel
-                    tab={revenueTab}
-                    onTabChange={openRevenueTab}
-                    onOpenConnectors={() => {
-                      setSettingsSection("extensions");
-                      navigateTo("settings");
-                    }}
-                  />
-                </div>
-              ) : view === "report" ? (
-                <div className="flex-1 overflow-y-auto">
-                  <OpenPromisesReportClient />
-                </div>
-              ) : view === "agents" ? (
-                <AgentsView
-                  onAgentsChanged={loadAgentOptions}
-                  onOpenDefinition={(slug) => {
-                    setSelectedResource({ kind: "agent", name: slug });
-                    navigateTo("chat");
-                  }}
-                  onUseAgent={(slug) => {
-                    startNewChat();
-                    setSelectedAgent(slug);
-                  }}
-                />
-              ) : view === "workflows" ? (
-                <CloudWorkflowsView
-                  key={
-                    selectedResource?.kind === "task" || selectedResource?.kind === "taskrun"
-                      ? `${workflowFocus}:${selectedResource.name}`
-                      : workflowFocus
-                  }
-                  focus={workflowFocus}
-                  initialRunId={
-                    selectedResource?.kind === "taskrun"
-                      ? selectedResource.name.split("/").slice(1).join("/")
-                      : undefined
-                  }
-                  initialSlug={
-                    selectedResource?.kind === "task"
-                      ? selectedResource.name
-                      : selectedResource?.kind === "taskrun"
-                        ? selectedResource.name.split("/")[0]
-                        : undefined
-                  }
-                />
-              ) : (
-                <div className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pb-0 md:flex-row">
-                  <div className="relative flex flex-1 min-w-0 flex-col overflow-hidden">
-                    {isRunProcessing && (
-                      <div className="pointer-events-none absolute left-1/2 top-4 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-primary/70 shadow-sm">
-                        <CircleNotch className="h-3.5 w-3.5 animate-spin" />
-                        <span>Working…</span>
-                      </div>
-                    )}
-                    {/* Messages area */}
-                    <Conversation className="flex-1 min-h-0 overflow-y-auto">
-                      {!isEmptyConversation && (
-                        <div className="pointer-events-none sticky bottom-0 z-10 h-16 bg-gradient-to-t from-background via-background/80 to-transparent" />
-                      )}
-                      <ConversationContent className="!flex !flex-col !items-center !gap-8 !p-4 pt-4 pb-32">
-                        <div className="w-full max-w-3xl mx-auto space-y-4">
-                          {/* Render conversation items in order */}
-                          {conversation.map((item) => {
-                            if (item.type === "message") {
-                              return (
-                                <Message key={item.id} from={item.role}>
-                                  <MessageContent>
-                                    <MessageResponse>{item.content}</MessageResponse>
-                                  </MessageContent>
-                                </Message>
-                              );
-                            } else if (item.type === "tool") {
-                              const stateMap: Record<
-                                ToolCall["status"],
-                                | "input-streaming"
-                                | "input-available"
-                                | "output-available"
-                                | "output-error"
-                              > = {
-                                pending: "input-streaming",
-                                running: "input-available",
-                                completed: "output-available",
-                                error: "output-error",
-                              };
-
-                              return (
-                                <div key={item.id} className="mb-2">
-                                  <Tool>
-                                    <ToolHeader
-                                      title={item.name}
-                                      type="tool-call"
-                                      state={stateMap[item.status] || "input-streaming"}
-                                    />
-                                    <ToolContent>
-                                      <ToolInput input={item.input} />
-                                      {item.result != null && (
-                                        <ToolOutput
-                                          output={item.result as ReactNode}
-                                          errorText={undefined}
-                                        />
-                                      )}
-                                    </ToolContent>
-                                  </Tool>
-                                </div>
-                              );
-                            } else if (item.type === "reasoning") {
-                              return (
-                                <div key={item.id} className="mb-2">
-                                  <Reasoning isStreaming={item.isStreaming}>
-                                    <ReasoningTrigger />
-                                    <ReasoningContent>{item.content}</ReasoningContent>
-                                  </Reasoning>
-                                </div>
-                              );
-                            } else if (item.type === "approval") {
-                              return (
-                                <div
-                                  className="rounded-none border border-amber-500/30 bg-amber-500/5 p-4"
-                                  key={item.id}
-                                >
-                                  <p className="text-sm font-medium text-primary">
-                                    Approval required: {item.name}
-                                  </p>
-                                  <p className="mt-1 text-xs text-primary/55">
-                                    Trust tier: {item.trustTier.replaceAll("_", " ")}
-                                  </p>
-                                  <div className="mt-3">
-                                    <ToolInput input={item.input} />
-                                  </div>
-                                  {item.status === "pending" ? (
-                                    <div className="mt-3 flex gap-2">
-                                      <Button
-                                        onClick={() => void resolveApproval(item, "granted")}
-                                        size="sm"
-                                      >
-                                        Approve
-                                      </Button>
-                                      <Button
-                                        onClick={() => void resolveApproval(item, "denied")}
-                                        size="sm"
-                                        variant="outline"
-                                      >
-                                        Deny
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <p className="mt-3 text-xs capitalize text-primary/60">
-                                      {item.status === "resolving"
-                                        ? "Submitting decision…"
-                                        : item.status}
-                                    </p>
-                                  )}
-                                </div>
-                              );
-                            }
-                            return null;
-                          })}
-
-                          {/* Streaming reasoning */}
-                          {currentReasoning && (
-                            <div className="mb-2">
-                              <Reasoning isStreaming={true}>
-                                <ReasoningTrigger />
-                                <ReasoningContent>{currentReasoning}</ReasoningContent>
-                              </Reasoning>
-                            </div>
-                          )}
-
-                          {/* Streaming message */}
-                          {currentAssistantMessage && (
-                            <Message from="assistant">
-                              <MessageContent>
-                                <MessageResponse>{currentAssistantMessage}</MessageResponse>
-                                <span className="inline-block w-2 h-4 ml-1 bg-oppulence-orange animate-pulse" />
-                              </MessageContent>
-                            </Message>
-                          )}
-                        </div>
-                      </ConversationContent>
-                    </Conversation>
-
-                    {/* Input area */}
-                    {isEmptyConversation ? (
-                      <div className="absolute inset-0 overflow-y-auto px-4">
-                        <div className="mx-auto w-full max-w-3xl pb-12 pt-20">
-                          <p className="text-[13px] text-primary/50">👋 Welcome back</p>
-                          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-                            {workspace}
-                          </h1>
-                          <p className="mt-1 text-[13px] text-primary/50">
-                            Find the promises, relationship risks, and next steps that need
-                            attention.
-                          </p>
-                          <div className="mt-5">{renderPromptInput()}</div>
-                          <HomeOverview onOpenTab={openRevenueTab} />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="w-full px-4 pb-5 pt-2">
-                        <div className="w-full max-w-3xl mx-auto">{renderPromptInput()}</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {selectedResource && (
-                    <div className="flex w-full flex-col md:w-[70%] md:max-w-4xl md:shrink-0 min-h-[260px] md:min-h-0 py-5">
-                      <Artifact className="flex-1 min-h-0 h-full">
-                        <ArtifactHeader>
-                          <div className="flex flex-col">
-                            <ArtifactTitle className="truncate">{artifactTitle}</ArtifactTitle>
-                            <ArtifactDescription className="text-xs">
-                              {artifactSubtitle || selectedResource.kind}
-                              {artifactReadOnly && (
-                                <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground">
-                                  <LockSimple className="h-3 w-3" /> Read-only
-                                </span>
-                              )}
-                            </ArtifactDescription>
-                          </div>
-                          <ArtifactActions>
-                            {!artifactReadOnly && (
-                              <ArtifactAction
-                                className="w-auto gap-1.5 px-3"
-                                tooltip={artifactDirty ? "Save changes" : "Saved"}
-                                disabled={!artifactDirty || artifactLoading}
-                                onClick={handleSave}
-                              >
-                                {artifactLoading ? (
-                                  <CircleNotch className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <FloppyDisk className="h-4 w-4" />
-                                )}
-                                <span>{artifactDirty ? "Save changes" : "Saved"}</span>
-                              </ArtifactAction>
-                            )}
-                            <ArtifactClose onClick={() => setSelectedResource(null)} />
-                          </ArtifactActions>
-                        </ArtifactHeader>
-                        <ArtifactContent className="bg-muted/30">
-                          {artifactLoading ? (
-                            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                              <CircleNotch className="mr-2 h-4 w-4 animate-spin" /> Loading
-                            </div>
-                          ) : artifactError ? (
-                            <div className="text-sm text-red-500 whitespace-pre-wrap break-words">
-                              {artifactError}
-                            </div>
-                          ) : (
-                            <div className="flex h-full flex-col gap-2">
-                              {selectedResource.kind === "agent" && artifactFileType === "json" ? (
-                                <AgentConfigurationForm
-                                  agentSlugs={agentOptions}
-                                  content={artifactText}
-                                  onChange={setArtifactText}
-                                  readOnly={artifactReadOnly}
-                                />
-                              ) : artifactReadOnly ? (
-                                artifactFileType === "markdown" ? (
-                                  <MarkdownViewer content={artifactText} />
-                                ) : (
-                                  <pre className="h-full min-h-[240px] max-h-[70vh] w-full overflow-auto whitespace-pre-wrap rounded-none border bg-background p-4 font-mono text-sm leading-relaxed text-foreground">
-                                    {artifactText}
-                                  </pre>
-                                )
-                              ) : artifactFileType === "markdown" ? (
-                                <TiptapMarkdownEditor
-                                  content={artifactText}
-                                  onChange={(newContent) => setArtifactText(newContent)}
-                                  readOnly={false}
-                                  placeholder="Start writing your markdown..."
-                                />
-                              ) : (
-                                <JsonEditor
-                                  content={artifactText}
-                                  onChange={(newContent) => setArtifactText(newContent)}
-                                  readOnly={false}
-                                />
-                              )}
-                              {artifactReadOnly && (
-                                <p className="text-xs text-muted-foreground">
-                                  {selectedResource.kind === "agent"
-                                    ? "This managed agent can be viewed here but cannot be changed from the workspace."
-                                    : "Runs are read-only; use the API to replay or inspect in detail."}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </ArtifactContent>
-                      </Artifact>
-                    </div>
-                  )}
-                </div>
-              )}
-            </ViewBoundary>
+            <DashboardRouteProvider value={routeContext}>
+              <ViewBoundary viewKey={`${view}:${revenueTab}:${settingsSection}`}>
+                {children}
+              </ViewBoundary>
+            </DashboardRouteProvider>
           </main>
         </section>
       </div>
@@ -2045,26 +947,11 @@ function PageBody({
   );
 }
 
-export default function ProductDashboardClient({
-  initialView = "chat",
-  initialSettingsSection = "overview",
-  initialRevenueTab,
-  initialWorkflowFocus,
-}: {
-  initialView?: ProductView;
-  initialSettingsSection?: SettingsSection;
-  initialRevenueTab?: string;
-  initialWorkflowFocus?: string;
-}) {
+export default function ProductDashboardClient({ children }: { children: ReactNode }) {
   return (
     <AuthGate>
       <div className="app-shell contents" data-product-shell>
-        <PageBody
-          initialRevenueTab={initialRevenueTab}
-          initialSettingsSection={initialSettingsSection}
-          initialView={initialView}
-          initialWorkflowFocus={initialWorkflowFocus}
-        />
+        <PageBody>{children}</PageBody>
       </div>
     </AuthGate>
   );

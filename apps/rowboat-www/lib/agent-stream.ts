@@ -1,30 +1,19 @@
-export type AgentStreamEvent = {
-  seq: number;
-  type: string;
-  turnSeq?: number;
-  data: Record<string, unknown>;
-};
+import { z } from "zod";
+
+export const AgentStreamEventSchema = z
+  .object({
+    seq: z.number().int().nonnegative(),
+    type: z.string().min(1),
+    turnSeq: z.number().int().nonnegative().optional(),
+    data: z.record(z.string(), z.unknown()),
+  })
+  .passthrough();
+
+export type AgentStreamEvent = z.infer<typeof AgentStreamEventSchema>;
 
 function parseAgentStreamEvent(line: string): AgentStreamEvent {
   const value: unknown = JSON.parse(line);
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("Invalid agent stream event");
-  }
-  const event = value as Record<string, unknown>;
-  if (
-    !Number.isInteger(event.seq) ||
-    (event.seq as number) < 0 ||
-    typeof event.type !== "string" ||
-    !event.data ||
-    typeof event.data !== "object" ||
-    Array.isArray(event.data)
-  ) {
-    throw new Error("Invalid agent stream event");
-  }
-  if (event.turnSeq !== undefined && !Number.isInteger(event.turnSeq)) {
-    throw new Error("Invalid agent stream event");
-  }
-  return event as AgentStreamEvent;
+  return AgentStreamEventSchema.parse(value);
 }
 
 export async function readAgentEventStream(

@@ -1,5 +1,5 @@
-import ProductDashboardClient from "./product-dashboard-client";
+import { ChatDashboardRoute } from "@/components/features/dashboard/dashboard-route-content/dashboard-route-content";
 
 export default function ProductPage() {
-  return <ProductDashboardClient />;
+  return <ChatDashboardRoute />;
 }

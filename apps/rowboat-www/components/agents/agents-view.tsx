@@ -31,57 +31,8 @@ import { ScrollArea } from "@oppulence/ui/components/scroll-area";
 import { Textarea } from "@oppulence/ui/components/textarea";
 
 import { dashboardFetch } from "@/lib/auth/client";
+import { parseAgentsResponse, type AgentSummary } from "@/lib/agents/agent-schemas";
 import { cn } from "@/lib/utils";
-
-type AgentSummary = {
-  slug: string;
-  name: string;
-  source: string;
-  instructions?: string;
-  model?: string;
-  provider?: string;
-  enabledTools?: string[];
-  subagentRefs?: string[];
-  connectorReqs?: string[];
-  limits?: Record<string, unknown>;
-};
-
-function parseAgents(value: unknown): AgentSummary[] {
-  if (!value || typeof value !== "object") return [];
-  const rows = (value as { agents?: unknown }).agents;
-  if (!Array.isArray(rows)) return [];
-  return rows.flatMap<AgentSummary>((row): AgentSummary[] => {
-    if (typeof row === "string") {
-      return [{ slug: row, name: row, source: "unknown", enabledTools: [] }];
-    }
-    if (!row || typeof row !== "object") return [];
-    const record = row as Record<string, unknown>;
-    if (typeof record.slug !== "string" || !record.slug) return [];
-    return [
-      {
-        slug: record.slug,
-        name: typeof record.name === "string" && record.name ? record.name : record.slug,
-        source: typeof record.source === "string" ? record.source : "unknown",
-        instructions: typeof record.instructions === "string" ? record.instructions : undefined,
-        model: typeof record.model === "string" ? record.model : undefined,
-        provider: typeof record.provider === "string" ? record.provider : undefined,
-        enabledTools: Array.isArray(record.enabledTools)
-          ? record.enabledTools.filter((tool): tool is string => typeof tool === "string")
-          : [],
-        subagentRefs: Array.isArray(record.subagentRefs)
-          ? record.subagentRefs.filter((slug): slug is string => typeof slug === "string")
-          : [],
-        connectorReqs: Array.isArray(record.connectorReqs)
-          ? record.connectorReqs.filter((scope): scope is string => typeof scope === "string")
-          : [],
-        limits:
-          record.limits && typeof record.limits === "object"
-            ? (record.limits as Record<string, unknown>)
-            : undefined,
-      },
-    ];
-  });
-}
 
 function slugify(value: string): string {
   return value
@@ -265,7 +216,7 @@ export function AgentsView({
             : `Could not load agents (${response.status})`;
         throw new Error(message);
       }
-      const nextAgents = parseAgents(body);
+      const nextAgents = parseAgentsResponse(body);
       setAgents(nextAgents);
       setSelectedSlug((current) =>
         nextAgents.some((agent) => agent.slug === current) ? current : nextAgents[0]?.slug || "",

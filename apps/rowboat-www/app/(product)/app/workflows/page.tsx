@@ -1,12 +1,5 @@
-import ProductDashboardClient from "../product-dashboard-client";
+import { WorkflowsDashboardRoute } from "@/components/features/dashboard/dashboard-route-content/dashboard-route-content";
 
-export const instant = false;
-
-export default async function WorkflowsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ focus?: string }>;
-}) {
-  const parameters = await searchParams;
-  return <ProductDashboardClient initialWorkflowFocus={parameters.focus} initialView="workflows" />;
+export default function WorkflowsPage() {
+  return <WorkflowsDashboardRoute />;
 }
