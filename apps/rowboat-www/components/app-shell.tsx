@@ -12,7 +12,6 @@ import {
   CaretUpDown,
   CheckCircle,
   Clock,
-  Cpu,
   Folder,
   GearSix,
   Monitor,
@@ -53,6 +52,7 @@ import {
   DropdownMenuTrigger,
 } from "@oppulence/ui/components/dropdown-menu";
 import { dashboardFetch } from "@/lib/auth/client";
+import { isOptionalDashboardFailure } from "@/lib/dashboard-json";
 import { getPref, setPref, usePref } from "@/lib/console-prefs";
 import {
   listRelationshipSourceStatuses,
@@ -125,13 +125,6 @@ export const SETTINGS_SECTIONS: {
     description: "Review session security and authorized evidence access.",
   },
   {
-    key: "extensions",
-    label: "Extensions",
-    icon: Plugs,
-    group: "workspace",
-    description: "Connect the services and tools your relationships live in.",
-  },
-  {
     key: "connections",
     label: "Connections",
     icon: Plugs,
@@ -146,13 +139,6 @@ export const SETTINGS_SECTIONS: {
     description: "Inspect endpoints, diagnostics, and advanced workspace controls.",
   },
   {
-    key: "models",
-    label: "AI Providers",
-    icon: Cpu,
-    group: "global",
-    description: "Choose the models that reason over relationship evidence.",
-  },
-  {
     key: "customization",
     label: "Customization",
     icon: Folder,
@@ -165,13 +151,6 @@ export const SETTINGS_SECTIONS: {
     icon: Palette,
     group: "global",
     description: "Set theme, language, and window preferences.",
-  },
-  {
-    key: "environment",
-    label: "Environment",
-    icon: Monitor,
-    group: "global",
-    description: "Review the browser, runtime, and API environment.",
   },
   {
     key: "account",
@@ -695,7 +674,7 @@ function SidebarEmptyHint({ children }: { children: React.ReactNode }) {
 }
 
 const SIDEBAR_FOOTER_LINK =
-  "flex h-9 w-full shrink-0 items-center rounded-none px-3.5 text-[15px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200";
+  "flex h-9 w-full shrink-0 items-center justify-start rounded-none px-3.5 text-[15px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200";
 
 function SidebarSectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -773,7 +752,7 @@ export function AppShellSidebar({
     const load = async () => {
       try {
         const res = await dashboardFetch("/api/rowboat/v1/agents");
-        if (res.status === 404) return; // Agent runtime is optional when Temporal is not configured.
+        if (isOptionalDashboardFailure(res.status)) return;
         if (!res.ok) throw new Error(`Could not load agents (${res.status})`);
         const data = await res.json();
         const names = Array.isArray(data.agents)
@@ -784,8 +763,7 @@ export function AppShellSidebar({
               .filter((agent: string | undefined): agent is string => Boolean(agent))
           : [];
         setAgents(names);
-      } catch (error) {
-        console.error("Failed to load Oppulence summary", error);
+      } catch {
         setGroupErrors((current) => ({ ...current, agents: "Could not load agents" }));
       } finally {
         setLoadingGroups((current) => ({ ...current, agents: false }));
@@ -798,6 +776,7 @@ export function AppShellSidebar({
     const load = async () => {
       try {
         const res = await dashboardFetch("/api/rowboat/v1/background-tasks");
+        if (isOptionalDashboardFailure(res.status)) return;
         if (!res.ok) throw new Error(`Could not load schedules (${res.status})`);
         const data = await res.json();
         if (Array.isArray(data?.tasks)) {
@@ -823,6 +802,7 @@ export function AppShellSidebar({
     const load = async () => {
       try {
         const res = await dashboardFetch("/api/rowboat/v1/background-task-runs");
+        if (isOptionalDashboardFailure(res.status)) return;
         if (!res.ok) throw new Error(`Could not load runs (${res.status})`);
         const data = await res.json();
         if (Array.isArray(data?.runs)) {
@@ -921,9 +901,9 @@ export function AppShellSidebar({
           </Button>
         </div>
         {view === "settings" ? (
-          <nav className="settings-rail-scroll flex flex-1 flex-col overflow-y-auto px-2 pb-3 pt-2">
+          <nav className="settings-rail-scroll flex flex-1 flex-col items-stretch overflow-y-auto px-2 pb-3 pt-2">
             <Button
-              className="settings-back"
+              className="settings-back justify-start"
               onClick={onCloseSettings}
               type="button"
               variant="ghost"
@@ -932,7 +912,7 @@ export function AppShellSidebar({
               Back to app
             </Button>
             <Button
-              className="settings-nav-item mt-1"
+              className="settings-nav-item mt-1 justify-start"
               data-active={settingsSection === "overview"}
               onClick={() => onOpenSettings?.("overview")}
               type="button"
@@ -947,7 +927,7 @@ export function AppShellSidebar({
                 <div className="space-y-0.5">
                   {SETTINGS_SECTIONS.filter((section) => section.group === group).map((section) => (
                     <Button
-                      className="settings-nav-item"
+                      className="settings-nav-item justify-start"
                       data-active={settingsSection === section.key}
                       key={section.key}
                       onClick={() => onOpenSettings?.(section.key)}
@@ -1082,7 +1062,12 @@ export function AppShellSidebar({
           </nav>
         )}
 
-        <div className="flex shrink-0 flex-col gap-0.5 px-2.5 pt-2">
+        <div
+          className={cn(
+            "flex shrink-0 flex-col gap-0.5 px-2.5 pt-2",
+            view === "settings" && "settings-rail-footer",
+          )}
+        >
           <SidebarStatusCard billing={billing} onOpen={() => onNavigateRevenue?.("workspace")} />
           {/* Help used to open the OpenAPI reference: an operator who clicked
               it because a promise was missed landed on a route table. */}

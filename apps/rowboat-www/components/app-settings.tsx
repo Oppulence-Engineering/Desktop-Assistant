@@ -7,7 +7,6 @@ import {
   BookOpen,
   Check,
   Clipboard,
-  Cloud,
   MagnifyingGlass,
   Monitor,
   Moon,
@@ -103,7 +102,7 @@ function SettingsRow({
       >
         {children}
         {footer ? (
-          <div className="flex items-center justify-end border-t border-[var(--settings-line)] px-4 py-3">
+          <div className="flex items-center justify-end border-t border-[var(--settings-line)] py-3">
             {footer}
           </div>
         ) : null}
@@ -183,7 +182,7 @@ function SaveFooter({
   onSave: () => void;
 }) {
   return (
-    <div className="flex items-center justify-end gap-3 border-t bg-background-100 p-4 dark:bg-background-200">
+    <div className="flex items-center justify-end gap-3 border-t border-[var(--settings-line)] py-3">
       {saved ? (
         <Badge className="font-mono text-xs text-oppulence-orange" variant="outline">
           saved
@@ -284,7 +283,7 @@ function ProfileCard() {
       footer={<SaveFooter dirty={dirty} label="Save profile" onSave={save} saved={saved} />}
       title="Profile"
     >
-      <div className="space-y-6 px-4 py-6">
+      <div className="space-y-6 py-2">
         <div>
           <FieldLabel hint="Shown in the sidebar instead of your email.">Display name</FieldLabel>
           <Input
@@ -473,49 +472,6 @@ function nameOf(item: unknown): string {
   return JSON.stringify(item);
 }
 
-function ModelsSection() {
-  const { items, state } = useJsonList("/api/rowboat/v1/llm/models", (data) => {
-    const record = (data ?? {}) as Record<string, unknown>;
-    if (Array.isArray(record.data)) return record.data;
-    if (Array.isArray(record.models)) return record.models;
-    return Array.isArray(data) ? (data as unknown[]) : [];
-  });
-
-  return (
-    <SettingsRow
-      description="The catalog served by the Oppulence LLM gateway. It is managed server-side; pick what new chats use under General → Chat Defaults."
-      title="Models"
-    >
-      {state === "loading" ? (
-        <EmptyCardState>Loading models…</EmptyCardState>
-      ) : state === "error" ? (
-        <EmptyCardState>Could not reach the model gateway.</EmptyCardState>
-      ) : items.length === 0 ? (
-        <EmptyCardState>No models are configured for this workspace.</EmptyCardState>
-      ) : (
-        <div className="flex flex-col divide-y divide-primary/10">
-          {items.map((item) => {
-            const name = nameOf(item);
-            const provider = name.includes("/") ? name.split("/")[0] : null;
-            return (
-              <div className="flex items-center justify-between gap-4 px-4 py-2.5" key={name}>
-                <Label className="truncate font-mono text-sm font-normal text-primary">
-                  {name}
-                </Label>
-                {provider ? (
-                  <Badge className="shrink-0 rounded-[2px] capitalize" variant="outline">
-                    {provider}
-                  </Badge>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </SettingsRow>
-  );
-}
-
 function PlanSection({ session }: { session: SessionShape }) {
   const billing = session.billing;
   const usage =
@@ -639,18 +595,16 @@ function NotificationLevelSelect() {
 
 function PageIntro({ title, description }: { title: string; description: string }) {
   return (
-    <>
+    <header className="settings-page-intro">
       <h1 className="settings-page-title">{title}</h1>
-      <p className="settings-page-description">{description}</p>
-      <hr className="settings-divider" />
-    </>
+      {description ? <p className="settings-page-description">{description}</p> : null}
+    </header>
   );
 }
 
 const OVERVIEW_KEYS: SettingsSection[] = [
   "preferences",
   "connections",
-  "models",
   "appearance",
   "account",
   "help",
@@ -660,37 +614,35 @@ function OverviewSection({ onNavigate }: { onNavigate: (section: SettingsSection
   return (
     <>
       <PageIntro
-        description="Configure how Oppulence reasons, connects, and acts across every customer relationship."
+        description="Workspace, connections, and how Oppulence behaves."
         title="Settings"
       />
-      <section className="settings-overview-group">
-        <div className="settings-card-grid">
-          {OVERVIEW_KEYS.map((key) => {
-            const section = SETTINGS_SECTIONS.find((item) => item.key === key);
-            if (!section) return null;
-            return (
-              <Button
-                className="settings-card h-auto"
-                key={section.key}
-                onClick={() => onNavigate(section.key)}
-                type="button"
-                variant="ghost"
-              >
-                <ItemMedia className="settings-card-icon" variant="icon">
-                  <section.icon />
-                </ItemMedia>
-                <div className="settings-card-copy">
-                  <CardTitle className="settings-card-title text-sm">{section.label}</CardTitle>
-                  <CardDescription className="settings-card-description">
-                    {section.description}
-                  </CardDescription>
-                </div>
-                <ArrowRight className="ml-auto size-3.5 shrink-0 text-primary/30" />
-              </Button>
-            );
-          })}
-        </div>
-      </section>
+      <nav aria-label="Settings sections" className="settings-link-list">
+        {OVERVIEW_KEYS.map((key) => {
+          const section = SETTINGS_SECTIONS.find((item) => item.key === key);
+          if (!section) return null;
+          return (
+            <Button
+              className="settings-link-row h-auto justify-start"
+              key={section.key}
+              onClick={() => onNavigate(section.key)}
+              type="button"
+              variant="ghost"
+            >
+              <ItemMedia className="settings-link-row-icon" variant="icon">
+                <section.icon />
+              </ItemMedia>
+              <div className="settings-link-row-copy min-w-0 flex-1">
+                <CardTitle className="settings-link-row-title text-sm">{section.label}</CardTitle>
+                <CardDescription className="settings-link-row-description">
+                  {section.description}
+                </CardDescription>
+              </div>
+              <ArrowRight className="ml-2 size-3.5 shrink-0 text-primary/25" />
+            </Button>
+          );
+        })}
+      </nav>
     </>
   );
 }
@@ -970,48 +922,6 @@ function CustomizationSection() {
   );
 }
 
-function EnvironmentSection() {
-  const origin = typeof window === "undefined" ? "" : window.location.origin;
-  return (
-    <>
-      <PageIntro
-        description="Inspect the endpoints and browser runtime used by this console."
-        title="Environment"
-      />
-      <SettingsRow
-        description="These values are detected from the running application."
-        title="Runtime"
-      >
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Console origin</p>
-            <p className="settings-row-description font-mono">{origin}</p>
-          </div>
-          <SettingsStatus>Connected</SettingsStatus>
-        </div>
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Relationship API</p>
-            <p className="settings-row-description font-mono">
-              {origin}/api/rowboat/v1/relationships
-            </p>
-          </div>
-          <Cloud className="size-4 text-primary/40" />
-        </div>
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Client runtime</p>
-            <p className="settings-row-description">
-              {typeof navigator === "undefined" ? "Browser" : navigator.userAgent}
-            </p>
-          </div>
-          <Monitor className="size-4 text-primary/40" />
-        </div>
-      </SettingsRow>
-    </>
-  );
-}
-
 function AccountSection({ session }: { session: SessionShape }) {
   return (
     <>
@@ -1075,12 +985,6 @@ export function SettingsView({
         {section === "notifications" ? <NotificationsSection /> : null}
         {section === "permissions" ? <PermissionsSection session={session} /> : null}
         {section === "security" ? <SecuritySection session={session} /> : null}
-        {section === "extensions" ? (
-          <>
-            <PageIntro description={current.description} title={current.label} />
-            <ConnectorSettings />
-          </>
-        ) : null}
         {section === "connections" ? (
           <>
             <PageIntro description={current.description} title={current.label} />
@@ -1136,15 +1040,8 @@ export function SettingsView({
             </SettingsRow>
           </>
         ) : null}
-        {section === "models" ? (
-          <>
-            <PageIntro description={current.description} title={current.label} />
-            <ModelsSection />
-          </>
-        ) : null}
         {section === "customization" ? <CustomizationSection /> : null}
         {section === "appearance" ? <AppearanceSection /> : null}
-        {section === "environment" ? <EnvironmentSection /> : null}
         {section === "account" ? <AccountSection session={session} /> : null}
         {section === "connect" ? (
           <>

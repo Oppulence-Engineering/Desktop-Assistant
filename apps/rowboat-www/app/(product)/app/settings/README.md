@@ -1,8 +1,9 @@
 # Settings (`/app/settings`)
 
-**Goal:** Connections, models, appearance, account, and environment preferences.
+**Goal:** Connections, appearance, account, and supported product preferences.
 
-**URL state:** `?section=` deep-links settings panels.
+**URL state:** `?settings=` deep-links settings panels. Legacy `extensions`,
+`models`, and `environment` values are normalized by `lib/product-navigation.ts`.
 
 **Client:** `components/app-settings.tsx`.
 

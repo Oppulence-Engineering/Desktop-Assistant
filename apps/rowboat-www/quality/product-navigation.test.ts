@@ -20,6 +20,9 @@ describe("product navigation", () => {
     expect(revenueTabFromParam("people")).toBe("people");
     expect(revenueTabFromParam("not-a-tab")).toBe("commitments");
     expect(settingsSectionFromParam("security")).toBe("security");
+    expect(settingsSectionFromParam("extensions")).toBe("connections");
+    expect(settingsSectionFromParam("models")).toBe("overview");
+    expect(settingsSectionFromParam("environment")).toBe("overview");
     expect(settingsSectionFromParam("not-a-section")).toBe("overview");
     expect(workflowFocusFromParam("runs")).toBe("runs");
     expect(workflowFocusFromParam("not-a-focus")).toBe("scheduled");

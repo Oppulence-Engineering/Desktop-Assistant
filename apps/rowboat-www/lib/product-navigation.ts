@@ -91,6 +91,11 @@ export function revenueTabSearch(tab: RevenueTab): string {
 
 /** Validates a settings section from an untrusted URL parameter. */
 export function settingsSectionFromParam(value: string | null | undefined): SettingsSection {
+  // Extensions and connections previously pointed to the same screen. Keep
+  // old bookmarks working while exposing one canonical navigation concept.
+  if (value === "extensions") return "connections";
+  // These legacy settings pages are no longer user-facing.
+  if (value === "models" || value === "environment") return "overview";
   return SettingsSectionSchema.catch("overview").parse(value);
 }
 
