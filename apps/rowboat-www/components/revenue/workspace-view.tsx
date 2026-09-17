@@ -1,10 +1,31 @@
 "use client";
 
 import * as React from "react";
-import { ArrowClockwise, CircleNotch, LinkSimple, Plugs, ShieldCheck } from "@phosphor-icons/react";
+import { ArrowClockwise, LinkSimple, Plugs, ShieldCheck } from "@/lib/icons";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
+import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@oppulence/ui/components/card";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemSeparator,
+  ItemTitle,
+} from "@oppulence/ui/components/item";
+import { Label } from "@oppulence/ui/components/label";
+import { Skeleton } from "@oppulence/ui/components/skeleton";
+import { Spinner } from "@oppulence/ui/components/spinner";
 import { Input } from "@oppulence/ui/components/input";
 import {
   linkWorkspace,
@@ -68,7 +89,14 @@ export function WorkspaceView({
   const [wsId, setWsId] = React.useState("");
   const [busy, setBusy] = React.useState(false);
 
-  if (!workspace) return <p className="text-sm text-primary/50">Loading workspace…</p>;
+  if (!workspace) {
+    return (
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-24 w-full rounded-[2px]" />
+      </div>
+    );
+  }
 
   const linked = workspace.mode === "linked" && workspace.status === "active";
 
@@ -97,81 +125,104 @@ export function WorkspaceView({
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
-      <section className="rounded-[2px] border border-border">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <span className="text-sm font-medium text-primary">Connected sources</span>
+      <Card className="gap-0 rounded-[2px] border-border py-0 shadow-none">
+        <CardHeader className="flex-row items-center justify-between border-b border-border px-4 py-3">
+          <CardTitle className="text-sm font-medium text-primary">Connected sources</CardTitle>
           {onOpenConnectors ? (
-            <Button onClick={onOpenConnectors} size="sm" variant="outline">
-              Manage connectors
-            </Button>
+            <CardAction>
+              <Button onClick={onOpenConnectors} size="sm" variant="outline">
+                Manage connectors
+              </Button>
+            </CardAction>
           ) : null}
-        </div>
-        {sources === null ? (
-          <p className="px-4 py-3 text-sm text-primary/50">Loading sources…</p>
-        ) : sources.length === 0 ? (
-          <p className="px-4 py-3 text-sm text-primary/50">
-            No sources are connected yet, so there is nothing to read promises from.
-          </p>
-        ) : (
-          <dl className="divide-y divide-border text-sm">
-            {sources.map((source) => (
-              <SourceRow
-                key={`${source.source}:${source.sourceAccountId}`}
-                source={source}
-                autoRefreshBlocker={autoRefreshBlocker}
-                onError={onError}
-                onNotice={onNotice}
-                onUpdated={(updated) =>
-                  setSources((current) =>
-                    (current ?? []).map((item) =>
-                      item.connectionId === updated.connectionId ? updated : item,
-                    ),
-                  )
-                }
-              />
-            ))}
-          </dl>
-        )}
-      </section>
+        </CardHeader>
+        <CardContent className="p-0">
+          {sources === null ? (
+            <div className="flex flex-col gap-2 px-4 py-3">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-full" />
+            </div>
+          ) : sources.length === 0 ? (
+            <p className="px-4 py-3 text-sm text-primary/50">
+              No sources are connected yet, so there is nothing to read promises from.
+            </p>
+          ) : (
+            <ItemGroup className="text-sm">
+              {sources.map((source, index) => (
+                <React.Fragment key={`${source.source}:${source.sourceAccountId}`}>
+                  {index > 0 ? <ItemSeparator /> : null}
+                  <SourceRow
+                    source={source}
+                    autoRefreshBlocker={autoRefreshBlocker}
+                    onError={onError}
+                    onNotice={onNotice}
+                    onUpdated={(updated) =>
+                      setSources((current) =>
+                        (current ?? []).map((item) =>
+                          item.connectionId === updated.connectionId ? updated : item,
+                        ),
+                      )
+                    }
+                  />
+                </React.Fragment>
+              ))}
+            </ItemGroup>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* status card */}
-      <section className="rounded-[2px] border border-border">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <span className="text-sm font-medium text-primary">Workspace</span>
-          <span
+      <Card className="gap-0 rounded-[2px] border-border py-0 shadow-none">
+        <CardHeader className="flex-row items-center justify-between border-b border-border px-4 py-3">
+          <CardTitle className="text-sm font-medium text-primary">Workspace</CardTitle>
+          <Badge
+            variant="outline"
             className={
-              "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs " +
-              (linked
-                ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
-                : "border-border text-primary/55")
+              linked
+                ? "gap-1.5 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                : "gap-1.5 border-border text-primary/55"
             }
           >
-            <span
-              className={"size-1.5 rounded-full " + (linked ? "bg-emerald-500" : "bg-primary/30")}
+            <Badge
+              className={
+                "size-1.5 rounded-full p-0 " + (linked ? "bg-emerald-500" : "bg-primary/30")
+              }
+              variant="default"
             />
             {linked ? "Linked" : "Local mode"}
-          </span>
-        </div>
-        <dl className="divide-y divide-primary/10 text-sm">
-          <Row label="Mode" value={workspace.mode} />
-          <Row label="Status" value={workspace.status} />
-          <Row
-            label="Preflight"
-            value={workspace.preflightAvailable ? "Available" : "Unavailable (drafts only)"}
-          />
-          {workspace.outboundOrganizationId ? (
-            <Row label="Organization" value={workspace.outboundOrganizationId} mono />
-          ) : null}
-          {workspace.outboundWorkspaceId ? (
-            <Row label="OutboundConsole workspace" value={workspace.outboundWorkspaceId} mono />
-          ) : null}
-          {workspace.lastVerifiedAt ? (
-            <Row label="Last verified" value={relativeTime(workspace.lastVerifiedAt)} />
-          ) : null}
-        </dl>
-      </section>
+          </Badge>
+        </CardHeader>
+        <CardContent className="p-0">
+          <ItemGroup className="text-sm">
+            <Row label="Mode" value={workspace.mode} />
+            <ItemSeparator />
+            <Row label="Status" value={workspace.status} />
+            <ItemSeparator />
+            <Row
+              label="Preflight"
+              value={workspace.preflightAvailable ? "Available" : "Unavailable (drafts only)"}
+            />
+            {workspace.outboundOrganizationId ? (
+              <>
+                <ItemSeparator />
+                <Row label="Organization" value={workspace.outboundOrganizationId} mono />
+              </>
+            ) : null}
+            {workspace.outboundWorkspaceId ? (
+              <>
+                <ItemSeparator />
+                <Row label="OutboundConsole workspace" value={workspace.outboundWorkspaceId} mono />
+              </>
+            ) : null}
+            {workspace.lastVerifiedAt ? (
+              <>
+                <ItemSeparator />
+                <Row label="Last verified" value={relativeTime(workspace.lastVerifiedAt)} />
+              </>
+            ) : null}
+          </ItemGroup>
+        </CardContent>
+      </Card>
 
-      {/* what local vs linked means */}
       {linked ? (
         <Alert>
           <ShieldCheck weight="fill" />
@@ -193,34 +244,44 @@ export function WorkspaceView({
             </AlertDescription>
           </Alert>
 
-          <section className="rounded-[2px] border border-border p-4">
-            <h3 className="text-sm font-medium text-primary">Link a governed workspace</h3>
-            <p className="mt-1 text-sm text-primary/60">
-              Connect an OutboundConsole workspace to turn on policy-checked sending.
-            </p>
-            <div className="mt-4 flex flex-col gap-3">
-              <Field label="OutboundConsole workspace ID">
-                <Input value={wsId} onChange={(e) => setWsId(e.target.value)} placeholder="ws_…" />
-              </Field>
-              <Field label="Organization ID (optional)">
-                <Input
-                  value={orgId}
-                  onChange={(e) => setOrgId(e.target.value)}
-                  placeholder="org_…"
-                />
-              </Field>
-              <div className="flex items-center gap-2">
-                <Button size="sm" onClick={submit} disabled={busy || !wsId.trim()}>
-                  {busy ? <CircleNotch className="animate-spin" /> : <LinkSimple />} Link workspace
-                </Button>
-                {onOpenConnectors ? (
-                  <Button variant="ghost" size="sm" onClick={onOpenConnectors}>
-                    Manage connectors
+          <Card className="gap-0 rounded-[2px] border-border py-0 shadow-none">
+            <CardHeader className="border-b border-border px-4 py-3">
+              <CardTitle className="text-sm font-medium text-primary">
+                Link a governed workspace
+              </CardTitle>
+              <CardDescription className="text-sm text-primary/60">
+                Connect an OutboundConsole workspace to turn on policy-checked sending.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-4 py-4">
+              <div className="flex flex-col gap-3">
+                <Field label="OutboundConsole workspace ID">
+                  <Input
+                    value={wsId}
+                    onChange={(e) => setWsId(e.target.value)}
+                    placeholder="ws_…"
+                  />
+                </Field>
+                <Field label="Organization ID (optional)">
+                  <Input
+                    value={orgId}
+                    onChange={(e) => setOrgId(e.target.value)}
+                    placeholder="org_…"
+                  />
+                </Field>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={submit} disabled={busy || !wsId.trim()}>
+                    {busy ? <Spinner /> : <LinkSimple />} Link workspace
                   </Button>
-                ) : null}
+                  {onOpenConnectors ? (
+                    <Button variant="ghost" size="sm" onClick={onOpenConnectors}>
+                      Manage connectors
+                    </Button>
+                  ) : null}
+                </div>
               </div>
-            </div>
-          </section>
+            </CardContent>
+          </Card>
         </>
       )}
     </div>
@@ -278,14 +339,18 @@ function SourceRow({
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5">
-      <div className="min-w-0">
-        <span className="capitalize text-primary/80">{source.source}</span>
-        {source.sourceAccountId && source.sourceAccountId !== "default" ? (
-          <span className="ml-2 font-mono text-xs text-primary/45">{source.sourceAccountId}</span>
-        ) : null}
+    <Item size="sm" className="flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5">
+      <ItemContent className="min-w-0">
+        <ItemTitle className="font-normal capitalize text-primary/80">
+          {source.source}
+          {source.sourceAccountId && source.sourceAccountId !== "default" ? (
+            <Badge variant="outline" className="ml-2 font-mono text-xs font-normal text-primary/45">
+              {source.sourceAccountId}
+            </Badge>
+          ) : null}
+        </ItemTitle>
         {stopped || stale || incomplete ? (
-          <p className={`mt-0.5 text-xs ${stopped ? "text-destructive" : "text-amber-600"}`}>
+          <ItemDescription className={stopped ? "text-destructive" : "text-amber-600"}>
             {stopped
               ? "This source has stopped reporting, so promises from it are not being read."
               : stale
@@ -295,39 +360,48 @@ function SourceRow({
                     ? "Automatic refresh is paused because Oppulence's AI provider is temporarily unavailable. The source is still connected; reconnecting will not fix it."
                     : "No successful update arrived within the expected cadence. Refresh to catch up."
                 : "The connection works, but its history is not fully synced."}
-          </p>
+          </ItemDescription>
         ) : null}
-      </div>
-      <div className="flex items-center gap-2">
+      </ItemContent>
+      <ItemActions>
         {canResync ? (
           <Button type="button" size="sm" variant="outline" disabled={busy} onClick={retry}>
-            {busy ? <CircleNotch className="animate-spin" /> : <ArrowClockwise />}{" "}
-            {stale ? "Refresh now" : "Retry sync"}
+            {busy ? <Spinner /> : <ArrowClockwise />} {stale ? "Refresh now" : "Retry sync"}
           </Button>
         ) : null}
-        <span
+        <Badge
+          variant="outline"
           className={
             stopped
-              ? "shrink-0 border border-destructive/40 px-1.5 py-0.5 text-xs capitalize text-destructive"
+              ? "shrink-0 border-destructive/40 capitalize text-destructive"
               : stale || incomplete
-                ? "shrink-0 border border-amber-500/40 px-1.5 py-0.5 text-xs capitalize text-amber-600"
-                : "shrink-0 text-xs capitalize text-primary/60"
+                ? "shrink-0 border-amber-500/40 capitalize text-amber-600"
+                : "shrink-0 border-transparent capitalize text-primary/60"
           }
         >
           {label}
-        </span>
-      </div>
-    </div>
+        </Badge>
+      </ItemActions>
+    </Item>
   );
 }
 
 function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="flex items-center justify-between px-4 py-2.5">
-      <dt className="text-primary/55">{label}</dt>
-      <dd className={mono ? "font-mono text-xs text-primary/70" : "capitalize text-primary/80"}>
-        {value}
-      </dd>
-    </div>
+    <Item size="sm" className="justify-between px-4 py-2.5">
+      <ItemContent className="flex-row items-center justify-between gap-4">
+        <Label className="font-normal text-primary/55">{label}</Label>
+        <Badge
+          className={
+            mono
+              ? "font-mono text-xs font-normal text-primary/70"
+              : "capitalize font-normal text-primary/80"
+          }
+          variant="secondary"
+        >
+          {value}
+        </Badge>
+      </ItemContent>
+    </Item>
   );
 }

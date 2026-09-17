@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkle, WarningCircle } from "@phosphor-icons/react";
+import { Sparkle, WarningCircle } from "@/lib/icons";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { googleNeedsReconnect, type RevenueTab } from "@/components/app-shell";

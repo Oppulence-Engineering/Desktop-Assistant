@@ -2,6 +2,8 @@ import "server-only";
 
 import { createHmac } from "node:crypto";
 
+import { isDevelopment } from "@/lib/environment";
+
 /**
  * Plain chat widget configuration.
  *
@@ -34,6 +36,27 @@ export function getSupportChatConfig(): SupportChatConfig {
       .map((id) => id.trim())
       .filter(Boolean),
   };
+}
+
+/** Plain is off in local dev unless explicitly enabled — avoids invalid hash noise. */
+export function isPlainChatEnabled(): boolean {
+  const { appId } = getSupportChatConfig();
+  if (!appId) return false;
+  if (isDevelopment()) {
+    return process.env.ROWBOAT_WWW_PLAIN_CHAT_ENABLED === "1";
+  }
+  return true;
+}
+
+/** Signed-in identity is production-only unless both dev opt-ins are set. */
+export function shouldIdentifySupportChatCustomer(): boolean {
+  if (isDevelopment()) {
+    return (
+      process.env.ROWBOAT_WWW_PLAIN_CHAT_ENABLED === "1" &&
+      process.env.ROWBOAT_WWW_PLAIN_CHAT_IDENTIFY === "1"
+    );
+  }
+  return true;
 }
 
 /**

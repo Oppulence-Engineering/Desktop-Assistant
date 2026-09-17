@@ -12,10 +12,19 @@ import {
   Robot,
   Trash,
   Warning,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 
+import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { CardDescription } from "@oppulence/ui/components/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@oppulence/ui/components/empty";
 import {
   Dialog,
   DialogContent,
@@ -286,35 +295,39 @@ export function AgentsView({
       </div>
 
       {error ? (
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-destructive/30 bg-destructive/5 px-5 py-2 text-xs text-destructive">
-          <span className="flex items-center gap-2">
-            <Warning className="size-4" /> {error}
-          </span>
-          <Button onClick={() => void load()} size="sm" variant="outline">
-            Try again
-          </Button>
-        </div>
+        <Alert className="shrink-0 rounded-none border-x-0 border-t-0" variant="destructive">
+          <Warning className="size-4" />
+          <AlertTitle className="text-xs">Could not load agents</AlertTitle>
+          <AlertDescription className="flex items-center justify-between gap-3 text-xs">
+            {error}
+            <Button onClick={() => void load()} size="sm" variant="outline">
+              Try again
+            </Button>
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       {agents.length === 0 && !error ? (
-        <div className="flex flex-1 items-center justify-center p-8 text-center">
-          <div className="max-w-sm">
-            <Folder className="mx-auto size-8 text-muted-foreground" />
-            <h2 className="mt-3 text-sm font-medium">No agents are available</h2>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+        <Empty className="flex-1 border-0">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <Folder className="size-8 text-muted-foreground" />
+            </EmptyMedia>
+            <EmptyTitle className="text-sm">No agents are available</EmptyTitle>
+            <EmptyDescription className="text-xs leading-5">
               Agent definitions will appear here after they are provisioned for this workspace.
-            </p>
-          </div>
-        </div>
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       ) : (
         <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[220px_minmax(0,1fr)] md:grid-rows-1">
           <aside className="max-h-52 min-h-0 border-b bg-muted/5 md:max-h-none md:border-r md:border-b-0">
             <ScrollArea className="h-full p-2">
               <div className="space-y-1">
                 {agents.map((agent) => (
-                  <button
+                  <Button
                     className={cn(
-                      "flex w-full items-start gap-2 rounded-none px-3 py-2.5 text-left transition-colors hover:bg-muted/70",
+                      "h-auto w-full items-start justify-start gap-2 rounded-none px-3 py-2.5 text-left transition-colors hover:bg-muted/70",
                       selected?.slug === agent.slug && "bg-muted/70",
                     )}
                     key={agent.slug}
@@ -323,15 +336,16 @@ export function AgentsView({
                       setConfirmingDelete(false);
                     }}
                     type="button"
+                    variant="ghost"
                   >
                     <Robot className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-medium">{agent.name}</span>
-                      <span className="mt-0.5 block truncate font-mono text-[11px] text-muted-foreground">
+                    <div className="min-w-0">
+                      <Label className="block truncate text-sm font-medium">{agent.name}</Label>
+                      <CardDescription className="mt-0.5 block truncate font-mono text-[11px]">
                         {agent.slug}
-                      </span>
-                    </span>
-                  </button>
+                      </CardDescription>
+                    </div>
+                  </Button>
                 ))}
               </div>
             </ScrollArea>
@@ -431,7 +445,7 @@ export function AgentsView({
                         </Badge>
                       ))
                     ) : (
-                      <span className="text-sm text-muted-foreground">No tools enabled.</span>
+                      <CardDescription className="text-sm">No tools enabled.</CardDescription>
                     )}
                   </div>
                 </section>

@@ -8,7 +8,93 @@ const state = {
   lastStart: null,
   lastClaimAuthorization: null,
   ticketCounter: 0,
+  scanCounter: 1,
 };
+
+const completedScan = {
+  id: "scan-e2e-1",
+  status: "completed",
+  mode: "live",
+  lookbackDays: 90,
+  threadsSeen: 12,
+  candidatesSeen: 4,
+  commitmentsCreated: 2,
+  startedAt: "2026-08-28T01:00:00Z",
+  completedAt: "2026-08-28T01:05:00Z",
+};
+
+const openPromisesReport = {
+  generatedAt: "2026-08-28T01:05:30Z",
+  lookbackDays: 90,
+  threadsSeen: 12,
+  scanStatus: "completed",
+  outboundCount: 1,
+  inboundCount: 1,
+  byAccount: { "ACME Corp": 1, "Beta LLC": 1 },
+  truncated: false,
+  items: [
+    {
+      commitmentId: "commit-e2e-1",
+      account: "ACME Corp",
+      direction: "promised_by_us",
+      text: "Send the revised proposal",
+      state: "open",
+      dueAt: "2026-09-01T17:00:00Z",
+      sourceQuote: "I'll send the revised proposal by Friday.",
+      occurredAt: "2026-08-20T14:22:00Z",
+    },
+    {
+      commitmentId: "commit-e2e-2",
+      account: "Beta LLC",
+      direction: "promised_by_them",
+      text: "Share the signed SOW",
+      state: "at_risk",
+      duePhrase: "end of month",
+      sourceQuote: "We will share the signed SOW before month end.",
+      occurredAt: "2026-08-18T09:10:00Z",
+    },
+  ],
+};
+
+function relationshipSourcesResponse() {
+  return {
+    sources: [
+      {
+        source: "google",
+        displayName: "Google",
+        evidence: ["email"],
+        actions: ["read"],
+        readScopes: ["google:email.read"],
+        writeScopes: [],
+        scopeExplanation: "Read email evidence for commitment detection.",
+        connectPath: "/v1/connections/google/start",
+        disconnectPath: "/v1/connections/google",
+        supportsReconnect: true,
+        supportsResync: true,
+        expectedCadenceSeconds: 3600,
+        accounts: [
+          {
+            connectionId: "connection-web-e2e",
+            source: "google",
+            sourceAccountId: "google-acct-e2e",
+            status: "live",
+            backfillPhase: "complete",
+            backfillCompleted: 100,
+            backfillTotal: 100,
+            completeness: "full",
+            expectedCadenceSeconds: 3600,
+            lagSeconds: 0,
+            requiredScopes: ["google:email.read"],
+            grantedScopes: ["google:email.read"],
+            missingScopes: [],
+            retryCount: 0,
+            lastSuccessAt: "2026-08-28T01:26:00Z",
+          },
+        ],
+      },
+    ],
+  };
+}
 
 function json(response, status, body) {
   response.writeHead(status, {
@@ -104,6 +190,7 @@ const server = http.createServer(async (request, response) => {
     state.lastStart = null;
     state.lastClaimAuthorization = null;
     state.ticketCounter = 0;
+    state.scanCounter = 1;
     return json(response, 200, { ok: true });
   }
   if (url.pathname === "/__test/state") {
@@ -219,6 +306,66 @@ const server = http.createServer(async (request, response) => {
     state.connected = false;
     response.writeHead(204);
     return response.end();
+  }
+
+  if (url.pathname === "/v1/relationship-sources" && request.method === "GET") {
+    return json(response, 200, relationshipSourcesResponse());
+  }
+  if (url.pathname === "/v1/relationship-sources/status" && request.method === "GET") {
+    return json(response, 200, {
+      sources: relationshipSourcesResponse().sources.flatMap((source) => source.accounts),
+    });
+  }
+
+  if (url.pathname === "/v1/revenue-leak-scans" && request.method === "GET") {
+    return json(response, 200, { scans: [completedScan] });
+  }
+  if (url.pathname === "/v1/revenue-leak-scans" && request.method === "POST") {
+    const body = await readJSON(request);
+    const scan = {
+      id: `scan-e2e-${++state.scanCounter}`,
+      status: "running",
+      mode: "live",
+      lookbackDays: body.lookbackDays ?? 90,
+      threadsSeen: 0,
+      startedAt: new Date().toISOString(),
+    };
+    return json(response, 201, scan);
+  }
+  const scanMatch = url.pathname.match(/^\/v1\/revenue-leak-scans\/([^/]+)(?:\/report)?$/);
+  if (scanMatch) {
+    const scanId = decodeURIComponent(scanMatch[1]);
+    const isReport = url.pathname.endsWith("/report");
+    if (isReport) {
+      if (url.searchParams.get("format") === "md") {
+        response.writeHead(200, { "content-type": "text/markdown; charset=utf-8" });
+        return response.end("# Open promises\n\nE2E fixture report.\n");
+      }
+      if (scanId === completedScan.id) {
+        return json(response, 200, openPromisesReport);
+      }
+      return json(response, 404, {
+        code: "not_found",
+        status: 404,
+        title: "Not found",
+        type: "about:blank",
+      });
+    }
+    if (scanId === completedScan.id) {
+      return json(response, 200, completedScan);
+    }
+    return json(response, 200, {
+      id: scanId,
+      status: "running",
+      mode: "live",
+      lookbackDays: 90,
+      threadsSeen: 3,
+      startedAt: new Date().toISOString(),
+    });
+  }
+
+  if (url.pathname === "/v1/revenue-actions" && request.method === "GET") {
+    return json(response, 200, { actions: [] });
   }
 
   return json(response, 200, {});

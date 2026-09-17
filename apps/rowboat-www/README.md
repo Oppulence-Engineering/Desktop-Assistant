@@ -30,7 +30,8 @@ verification baseline.
 
 ## Getting Started
 
-First, run rowboat-api with WorkOS configured, then start the web app:
+Copy `.env.example` to `.env.local`, then start rowboat-api with WorkOS
+configured and run the web app:
 
 ```bash
 npm run dev
@@ -39,12 +40,42 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000). The marketing site is
 public; `/app` redirects through WorkOS when there is no dashboard session.
 
-To develop against the local `rowboat-api` stack on the port the packaged
-container uses, run `npm run dev:local` instead. It serves the same app with
-hot reload on [http://localhost:18082](http://localhost:18082) and points at
-the API on `18080`. If a prebuilt `rowboat-www-local` container is running on
-that port, the script stops it first — a container serves a baked production
-image and will not reflect your edits.
+### Local full stack
+
+```bash
+npm run dev:stack   # validates env + API healthz, hot reload on :18082
+npm run dev:local   # same ports without the preflight (see scripts/dev-local.sh)
+```
+
+Both point at rowboat-api on `18080`. Start the API with `docker compose -f
+docker-compose.rowboat-api.yml up -d` or `make api-up` from the repo root.
+
+### Developer tooling (dev only)
+
+Floating **Dev** panel (bottom-right): Web Vitals, BFF request log (with
+`requestId` / `errorCode`), live axe, MSW personas, session helpers, stack
+health. Route catalog: [http://localhost:18082/dev/routes](http://localhost:18082/dev/routes).
+
+| Tool                    | How                                                    |
+| ----------------------- | ------------------------------------------------------ |
+| TanStack Query Devtools | Product routes — corner toggle                         |
+| React Scan              | Toolbar overlay — unnecessary re-renders               |
+| React Grab              | Hold **Space** — pick elements; MCP on `:5567`–`:5570` |
+| MSW                     | Dev toolkit → Tools → enable mocks + persona           |
+| Storybook               | `npm run storybook` — `@oppulence/ui` primitives       |
+| React Doctor            | `npm run dev:doctor`                                   |
+| Contracts drift         | `npm run dev:contracts`                                |
+
+See `docs/product-flow.md` (auth/BFF sequence) and `docs/dev-debt.md` (eslint
+legacy burn-down). Per-route READMEs live under `app/(product)/app/*/README.md`.
+
+### Cursor + MCP
+
+React Grab loads from `unpkg.com` in development and exposes an MCP server on
+localhost. In Cursor, add an MCP server pointing at the port shown in the
+browser console when Grab is active — then ask the agent to inspect the
+selected DOM node. CSP in `next.config.ts` already allows `unpkg.com` and
+localhost MCP ports in dev.
 
 This app installs with **npm** (`package-lock.json`); the Docker image builds
 with `npm ci`. Running `pnpm install` here writes a `pnpm-lock.yaml` that fails
@@ -121,7 +152,11 @@ and Plain's own email verification identifies them.
 ```bash
 npm run verify:fast
 npm run verify
+npm run test:e2e:smoke   # authenticated report smoke (@smoke)
+npm run test:e2e:ui      # Playwright UI mode
 ```
 
 `verify:fast` is the development feedback loop. Run the complete `verify`
-gauntlet before opening or updating a pull request.
+gauntlet before opening or updating a pull request. E2E uses
+`e2e/fake-rowboat-api.mjs` (connectors + revenue/report fixtures) and
+`e2e/auth.setup.ts` for seeded sessions.

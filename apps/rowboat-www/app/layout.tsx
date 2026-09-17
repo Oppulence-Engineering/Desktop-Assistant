@@ -1,68 +1,101 @@
-import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
-import localFont from "next/font/local";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import type { ReactNode } from "react";
+
+import { AppProviders } from "@/components/providers/app-providers";
+import { isDevelopment } from "@/lib/environment";
+import { fontVariables } from "@/lib/fonts";
+import { createMetadata } from "@/lib/metadata";
+import { cn } from "@/lib/utils";
+
 import "./globals.css";
 import "./product-theme.css";
+import { Geist } from "next/font/google";
 
-export const metadata: Metadata = {
-  title: "Oppulence — The Commitment Ledger",
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
+
+export const metadata: Metadata = createMetadata({
+  title: {
+    template: "%s | Oppulence",
+    default: "Oppulence — The Commitment Ledger",
+  },
   description:
     "Oppulence is the independent record of business promises: what you owe, what they owe, what changed, and the proof behind it.",
-};
-
-const geist = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  display: "swap",
-});
-
-const f37Stout = localFont({
-  src: [
-    {
-      path: "../public/fonts/F37Stout-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-  ],
-  variable: "--font-f37-stout",
-  display: "swap",
-});
-
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#111111" },
+  ],
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+/**
+ * Dev tooling from the react-grab / react-scan ecosystem (Aiden Bai):
+ * - React Scan highlights slow or unnecessary re-renders in the component tree.
+ * - React Grab copies selected component source context into coding agents.
+ *
+ * Both load from unpkg in development only. React Scan must run before React
+ * hydrates, so its script tag comes first among third-party bundles.
+ */
+const reactGrabOptions = {
+  activationKey: " ",
+  activationMode: "toggle",
+  allowActivationInsideInput: false,
+  maxContextLines: 3,
+} as const;
+
+/** Keep theme-color in sync with next-themes before hydration paints the shell. */
+const themeColorScript = `
+try {
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta) return;
+  var prefersDark =
+    localStorage.theme === "dark" ||
+    ((!('theme' in localStorage) || localStorage.theme === "system") &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
+  meta.setAttribute("content", prefersDark ? "#111111" : "#ffffff");
+} catch (_) {}
+`;
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  const devToolsEnabled = isDevelopment();
+
   return (
-    <html data-scroll-behavior="smooth" lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      className={cn(fontVariables, "antialiased", "font-sans", geist.variable)}
+      suppressHydrationWarning
+      data-scroll-behavior="smooth"
+    >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeColorScript }} />
+        {devToolsEnabled ? (
+          <Script
+            src="//unpkg.com/react-scan/dist/auto.global.js"
+            crossOrigin="anonymous"
+            strategy="beforeInteractive"
+          />
+        ) : null}
         <Script src="/config.js" strategy="beforeInteractive" />
+        {devToolsEnabled ? (
+          <>
+            <Script
+              src="//unpkg.com/react-grab/dist/index.global.js"
+              crossOrigin="anonymous"
+              strategy="beforeInteractive"
+              data-options={JSON.stringify(reactGrabOptions)}
+            />
+            <Script src="//unpkg.com/@react-grab/mcp/dist/client.global.js" strategy="lazyOnload" />
+          </>
+        ) : null}
       </head>
-      <body
-        className={`${geist.variable} ${geistMono.variable} ${f37Stout.variable} ${inter.variable} antialiased`}
-        suppressHydrationWarning
-      >
-        <AppRouterCacheProvider options={{ key: "css" }}>{children}</AppRouterCacheProvider>
+      <body suppressHydrationWarning>
+        <AppProviders devToolsEnabled={devToolsEnabled}>
+          <div className="relative min-h-dvh">{children}</div>
+        </AppProviders>
       </body>
     </html>
   );

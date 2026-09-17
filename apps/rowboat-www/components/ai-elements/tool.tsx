@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@oppulence/ui/components/badge";
+import { Label } from "@oppulence/ui/components/label";
 import {
   Collapsible,
   CollapsibleContent,
@@ -8,7 +9,7 @@ import {
 } from "@oppulence/ui/components/collapsible";
 import { cn } from "@/lib/utils";
 import type { ToolUIPart } from "ai";
-import { CheckCircle, CaretDown, Circle, Clock, Wrench, XCircle } from "@phosphor-icons/react";
+import { CheckCircle, CaretDown, Circle, Clock, Wrench, XCircle } from "@/lib/icons";
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
 import { CodeBlock } from "./code-block";
@@ -62,7 +63,7 @@ export const ToolHeader = ({ className, title, type, state, ...props }: ToolHead
   >
     <div className="flex items-center gap-2">
       <Wrench className="size-4 text-muted-foreground" />
-      <span className="font-medium text-sm">{title ?? type.split("-").slice(1).join("-")}</span>
+      <Label className="text-sm font-medium">{title ?? type.split("-").slice(1).join("-")}</Label>
       {getStatusBadge(state)}
     </div>
     <CaretDown className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />

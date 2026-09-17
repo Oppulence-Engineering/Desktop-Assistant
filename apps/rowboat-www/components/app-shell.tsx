@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -32,8 +31,13 @@ import {
   WarningCircle,
   X,
   type Icon as PhosphorIcon,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 
+import { Avatar, AvatarFallback, AvatarImage } from "@oppulence/ui/components/avatar";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
+import { Label } from "@oppulence/ui/components/label";
+import { Progress } from "@oppulence/ui/components/progress";
 import {
   Collapsible,
   CollapsibleContent,
@@ -315,13 +319,14 @@ export class ViewBoundary extends React.Component<
           <p className="mt-1 text-[13px] text-primary/55">
             The rest of the workspace still works. Open another view, or try this one again.
           </p>
-          <button
-            className="mt-4 h-8 border border-border bg-background px-3 text-[13px] text-primary transition-colors hover:bg-background-100"
+          <Button
+            className="mt-4 h-8 px-3 text-[13px]"
             onClick={() => this.setState({ failed: false })}
             type="button"
+            variant="outline"
           >
             Try again
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -368,22 +373,27 @@ function ShellReleasePill() {
         rel="noopener noreferrer"
         target="_blank"
       >
-        <span className="shrink-0 bg-background-200 px-1.5 py-0.5 font-mono text-[11px] font-medium text-primary/80">
+        <Badge
+          className="shrink-0 bg-background-200 font-mono text-[11px] font-medium text-primary/80"
+          variant="secondary"
+        >
           {entry.version}
-        </span>
-        <span className="truncate font-mono text-[13px]">{entry.title}</span>
+        </Badge>
+        <Label className="truncate font-mono text-[13px] font-normal">{entry.title}</Label>
       </a>
-      <button
+      <Button
         aria-label="Dismiss release note"
-        className="flex size-6 shrink-0 items-center justify-center text-primary/40 transition-colors hover:text-primary"
+        className="size-6 shrink-0 text-primary/40 hover:text-primary"
         onClick={() => {
           setPref(CHANGELOG_SEEN_PREF, entry.version);
           setSeen(entry.version);
         }}
+        size="icon-xs"
         type="button"
+        variant="ghost"
       >
         <X className="size-3.5" />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -420,27 +430,33 @@ export function AppTopBar({
 }) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-4 px-4 md:px-6">
-      <span className="relative size-6 shrink-0 overflow-hidden" aria-hidden="true">
-        <Image
+      <Avatar aria-hidden="true" className="size-6 rounded-none" size="sm">
+        <AvatarImage
           alt=""
           className="scale-[1.85] object-contain dark:invert"
-          fill
-          sizes="24px"
           src="/marketing/oppulence-icon.png"
         />
-      </span>
+        <AvatarFallback className="rounded-none" />
+      </Avatar>
       <ShellReleasePill />
       <nav aria-label="Shortcuts" className="ml-auto flex shrink-0 items-center gap-6">
-        <button className={TOP_BAR_LINK} onClick={onAsk} title="Command palette" type="button">
+        <Button
+          className={TOP_BAR_LINK}
+          onClick={onAsk}
+          title="Command palette"
+          type="button"
+          variant="ghost"
+        >
           Ask Oppulence
-        </button>
-        <button
-          className={cn(TOP_BAR_LINK, "hidden sm:inline")}
+        </Button>
+        <Button
+          className={cn(TOP_BAR_LINK, "hidden h-auto px-0 py-0 sm:inline")}
           onClick={onOpenPeople}
           type="button"
+          variant="ghost"
         >
           People
-        </button>
+        </Button>
         <FeedbackLink className={cn(TOP_BAR_LINK, "hidden sm:inline")} />
       </nav>
     </header>
@@ -514,15 +530,12 @@ export function googleNeedsReconnect(sources: RelationshipSourceStatus[]) {
 
 /** A row of ticks, filled up to `ratio`. */
 function TickMeter({ ratio }: { ratio: number }) {
-  const ticks = "repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 4px)";
   return (
-    <span aria-hidden="true" className="relative block h-2 w-full text-primary/15">
-      <span className="absolute inset-0" style={{ backgroundImage: ticks }} />
-      <span
-        className="absolute inset-y-0 left-0 text-primary/60"
-        style={{ backgroundImage: ticks, width: `${Math.round(ratio * 100)}%` }}
-      />
-    </span>
+    <Progress
+      aria-hidden
+      className="h-2 rounded-none bg-primary/15 [&>div]:rounded-none [&>div]:bg-primary/60"
+      value={Math.round(ratio * 100)}
+    />
   );
 }
 
@@ -547,35 +560,36 @@ function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen
   const connected = sources.isError ? undefined : connectedSourceCount(sources.data);
   const total = sources.isError ? undefined : sources.data.length;
   return (
-    <button
+    <Button
       className={cn(
-        "mb-2 flex w-full flex-col gap-2.5 border border-dashed bg-transparent px-4 py-3 text-left transition-colors hover:bg-background-100 dark:hover:bg-background-200",
+        "mb-2 h-auto w-full flex-col items-start gap-2.5 border border-dashed bg-transparent px-4 py-3 text-left hover:bg-background-100 dark:hover:bg-background-200",
         SOURCE_TONE_CARD[health.tone],
       )}
       onClick={onOpen}
       type="button"
+      variant="ghost"
     >
-      <span className="text-[15px]">{health.label}</span>
+      <Label className="text-[15px] font-normal">{health.label}</Label>
       {typeof total === "number" && typeof connected === "number" ? (
-        <span className="flex w-full flex-col gap-1.5">
-          <span className="flex items-center justify-between text-[13px]">
-            <span className="text-primary">Sources connected</span>
-            <span className="text-primary/60">
+        <div className="flex w-full flex-col gap-1.5">
+          <div className="flex items-center justify-between text-[13px]">
+            <Label className="font-normal text-primary">Sources connected</Label>
+            <Badge className="font-normal text-primary/60" variant="secondary">
               {connected} / {total}
-            </span>
-          </span>
+            </Badge>
+          </div>
           <TickMeter ratio={total > 0 ? connected / total : 0} />
-        </span>
+        </div>
       ) : null}
       {trialDaysLeft === null ? null : (
-        <span className="flex items-center justify-between text-[13px]">
-          <span className="text-primary">Trial</span>
-          <span className="text-primary/60">
+        <div className="flex items-center justify-between text-[13px]">
+          <Label className="font-normal text-primary">Trial</Label>
+          <Badge className="font-normal text-primary/60" variant="secondary">
             {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"} left
-          </span>
-        </span>
+          </Badge>
+        </div>
       )}
-    </button>
+    </Button>
   );
 }
 
@@ -589,7 +603,8 @@ function SidebarNavItem({
   chevronOpen,
   href,
   className,
-  ...props
+  onClick,
+  disabled,
 }: {
   label: string;
   count?: number;
@@ -597,17 +612,22 @@ function SidebarNavItem({
   chevron?: boolean;
   chevronOpen?: boolean;
   href?: string;
-} & React.ComponentProps<"button">) {
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  disabled?: boolean;
+  className?: string;
+}) {
   const classes = cn(
-    "group/item flex h-9 w-full shrink-0 items-center gap-2 rounded-none px-3.5 text-left text-[15px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200",
+    "group/item flex h-9 w-full shrink-0 items-center justify-start gap-2 rounded-none px-3.5 text-left text-[15px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200",
     active && "bg-background-100 text-primary dark:bg-background-200",
     className,
   );
   const content = (
     <>
-      <span className="truncate">{label}</span>
+      <Label className="truncate font-normal">{label}</Label>
       {typeof count === "number" && count > 0 ? (
-        <span className="ml-auto text-[13px] text-primary/40">{count}</span>
+        <Badge className="ml-auto font-normal text-primary/40" variant="secondary">
+          {count}
+        </Badge>
       ) : null}
       {chevron ? (
         <CaretRight
@@ -622,15 +642,17 @@ function SidebarNavItem({
   );
   if (href) {
     return (
-      <Link aria-current={active ? "page" : undefined} className={classes} href={href}>
-        {content}
-      </Link>
+      <Button asChild className={classes} variant="ghost">
+        <Link aria-current={active ? "page" : undefined} href={href}>
+          {content}
+        </Link>
+      </Button>
     );
   }
   return (
-    <button className={classes} type="button" {...props}>
+    <Button className={classes} disabled={disabled} onClick={onClick} type="button" variant="ghost">
       {content}
-    </button>
+    </Button>
   );
 }
 
@@ -646,23 +668,25 @@ function SidebarSubItem({
   onClick?: () => void;
 }) {
   return (
-    <button
+    <Button
       className={cn(
-        "flex h-9 w-full items-center gap-2.5 rounded-none py-1 pr-3 pl-6 text-left text-[14px] text-primary/65 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-200",
+        "h-9 w-full justify-start gap-2.5 rounded-none py-1 pr-3 pl-6 text-left text-[14px] font-normal text-primary/65 hover:bg-background-100 hover:text-primary dark:hover:bg-background-200",
         active && "bg-background-100 text-primary dark:bg-background-200",
         muted && "text-primary/50",
       )}
       onClick={onClick}
       type="button"
+      variant="ghost"
     >
-      <span
+      <Badge
         className={cn(
-          "size-1 shrink-0 rounded-full bg-primary/30",
+          "size-1 shrink-0 rounded-none border-0 p-0 bg-primary/30",
           active && "bg-oppulence-orange",
         )}
+        variant="outline"
       />
-      <span className="truncate">{label}</span>
-    </button>
+      <Label className="truncate font-normal">{label}</Label>
+    </Button>
   );
 }
 
@@ -674,7 +698,11 @@ const SIDEBAR_FOOTER_LINK =
   "flex h-9 w-full shrink-0 items-center rounded-none px-3.5 text-[15px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200";
 
 function SidebarSectionLabel({ children }: { children: React.ReactNode }) {
-  return <div className="px-3.5 pb-1 pt-3 text-[12px] text-primary/40">{children}</div>;
+  return (
+    <Label className="block px-3.5 pb-1 pt-3 text-[12px] font-normal text-primary/40">
+      {children}
+    </Label>
+  );
 }
 
 export type SidebarSessionMeta = {
@@ -881,46 +909,59 @@ export function AppShellSidebar({
       >
         {/* Phones get the sidebar as an overlay, so it needs its own way out. */}
         <div className="flex h-10 shrink-0 items-center justify-end px-2.5 md:hidden">
-          <button
+          <Button
             aria-label="Close sidebar"
-            className="flex size-8 shrink-0 items-center justify-center rounded-none text-primary/50 hover:bg-background-100 hover:text-primary"
+            className="size-8 shrink-0 rounded-none text-primary/50 hover:bg-background-100 hover:text-primary"
             onClick={onToggle}
+            size="icon-sm"
             type="button"
+            variant="ghost"
           >
             <SidebarSimple className="size-4" />
-          </button>
+          </Button>
         </div>
         {view === "settings" ? (
           <nav className="settings-rail-scroll flex flex-1 flex-col overflow-y-auto px-2 pb-3 pt-2">
-            <button className="settings-back" onClick={onCloseSettings} type="button">
+            <Button
+              className="settings-back"
+              onClick={onCloseSettings}
+              type="button"
+              variant="ghost"
+            >
               <ArrowLeft className="size-3.5" />
-              <span>Back to app</span>
-            </button>
-            <button
+              Back to app
+            </Button>
+            <Button
               className="settings-nav-item mt-1"
               data-active={settingsSection === "overview"}
               onClick={() => onOpenSettings?.("overview")}
               type="button"
+              variant="ghost"
             >
               <GearSix />
-              <span>Settings</span>
-            </button>
+              Settings
+            </Button>
             {(["workspace", "global", "cloud", "support"] as SettingsGroup[]).map((group) => (
               <div key={group}>
                 <div className="settings-rail-heading">{SETTINGS_GROUP_LABELS[group]}</div>
                 <div className="space-y-0.5">
                   {SETTINGS_SECTIONS.filter((section) => section.group === group).map((section) => (
-                    <button
+                    <Button
                       className="settings-nav-item"
                       data-active={settingsSection === section.key}
                       key={section.key}
                       onClick={() => onOpenSettings?.(section.key)}
                       type="button"
+                      variant="ghost"
                     >
                       <section.icon />
-                      <span className="truncate">{section.label}</span>
-                      {section.beta ? <span className="settings-beta">Beta</span> : null}
-                    </button>
+                      <Label className="truncate font-normal">{section.label}</Label>
+                      {section.beta ? (
+                        <Badge className="settings-beta font-normal" variant="secondary">
+                          Beta
+                        </Badge>
+                      ) : null}
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -1013,16 +1054,18 @@ export function AppShellSidebar({
             ))}
 
             <div className="flex items-center justify-between pl-3.5 pr-2 pb-1 pt-4">
-              <p className="text-[12px] text-primary/40">History</p>
-              <button
+              <Label className="text-[12px] font-normal text-primary/40">History</Label>
+              <Button
                 aria-label="New chat"
-                className="flex size-6 items-center justify-center rounded-none text-primary/50 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300"
+                className="size-6 rounded-none text-primary/50 hover:bg-background-100 hover:text-primary dark:hover:bg-background-300"
                 onClick={onNewChat}
+                size="icon-xs"
                 title="New chat"
                 type="button"
+                variant="ghost"
               >
                 <Plus className="size-3.5" />
-              </button>
+              </Button>
             </div>
             {sessions.length === 0 ? (
               <SidebarEmptyHint>No conversations yet</SidebarEmptyHint>
@@ -1074,24 +1117,27 @@ export function AppShellSidebar({
         <div className="mx-2.5 mt-2 flex h-14 shrink-0 items-center border-t">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
-                className="flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-none px-2 text-left transition-colors hover:bg-background-100 data-[state=open]:bg-background-100 dark:hover:bg-background-200 dark:data-[state=open]:bg-background-200"
+              <Button
+                className="h-10 min-w-0 flex-1 justify-start gap-2.5 rounded-none px-2 text-left hover:bg-background-100 data-[state=open]:bg-background-100 dark:hover:bg-background-200 dark:data-[state=open]:bg-background-200"
                 type="button"
+                variant="ghost"
               >
-                <span
-                  aria-hidden="true"
-                  className="flex size-6 shrink-0 items-center justify-center border border-border bg-background-100 font-mono text-[11px] uppercase text-primary/60"
-                >
-                  {workspace.slice(0, 1)}
-                </span>
-                <span className="truncate text-[15px] text-primary">{workspace}</span>
+                <Avatar aria-hidden="true" className="size-6 rounded-none" size="sm">
+                  <AvatarFallback className="rounded-none border border-border bg-background-100 font-mono text-[11px] uppercase text-primary/60">
+                    {workspace.slice(0, 1)}
+                  </AvatarFallback>
+                </Avatar>
+                <Label className="truncate text-[15px] font-normal text-primary">{workspace}</Label>
                 {planLabel ? (
-                  <span className="shrink-0 bg-background-200 px-1.5 py-0.5 text-[12px] text-primary/55">
+                  <Badge
+                    className="shrink-0 bg-background-200 text-[12px] font-normal text-primary/55"
+                    variant="secondary"
+                  >
                     {planLabel}
-                  </span>
+                  </Badge>
                 ) : null}
                 <CaretUpDown className="ml-auto size-3.5 shrink-0 text-primary/40" />
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
@@ -1157,24 +1203,26 @@ export function AppShellSidebar({
                 Workspaces
               </DropdownMenuLabel>
               <DropdownMenuItem className="gap-2" onSelect={(event) => event.preventDefault()}>
-                <span className="relative size-4 shrink-0 overflow-hidden" aria-hidden="true">
-                  <Image
+                <Avatar aria-hidden="true" className="size-4 rounded-none" size="sm">
+                  <AvatarImage
                     alt=""
                     className="scale-[1.85] object-contain dark:invert"
-                    fill
-                    sizes="16px"
                     src="/marketing/oppulence-icon.png"
                   />
-                </span>
-                <span className="truncate">{workspace}</span>
+                  <AvatarFallback className="rounded-none" />
+                </Avatar>
+                <Label className="truncate font-normal">{workspace}</Label>
                 <CheckCircle
                   className="ml-auto size-4 shrink-0 text-oppulence-orange"
                   weight="fill"
                 />
                 {planLabel ? (
-                  <span className="shrink-0 border border-border px-1.5 py-0.5 text-[10px] text-primary/60">
+                  <Badge
+                    className="shrink-0 text-[10px] font-normal text-primary/60"
+                    variant="outline"
+                  >
                     {planLabel}
-                  </span>
+                  </Badge>
                 ) : null}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -1183,12 +1231,13 @@ export function AppShellSidebar({
       </div>
 
       {open ? (
-        <button
+        <Button
           aria-label="Collapse sidebar"
-          className="absolute top-0 right-0 z-10 h-full w-[2px] cursor-w-resize transition-colors hover:bg-border"
+          className="absolute top-0 right-0 z-10 h-full w-[2px] min-w-0 cursor-w-resize rounded-none p-0 hover:bg-border"
           onClick={onToggle}
           title="Collapse sidebar  [ ]"
           type="button"
+          variant="ghost"
         />
       ) : null}
     </div>

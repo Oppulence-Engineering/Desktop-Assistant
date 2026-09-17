@@ -1,10 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { CircleNotch, Plus } from "@phosphor-icons/react";
+import { Plus } from "@/lib/icons";
 
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { Card, CardContent } from "@oppulence/ui/components/card";
+import { Label } from "@oppulence/ui/components/label";
+import { Separator } from "@oppulence/ui/components/separator";
+import { Spinner } from "@oppulence/ui/components/spinner";
 import {
   Select,
   SelectContent,
@@ -109,21 +113,23 @@ export function AuditSheet({
               </Section>
 
               <Section title={`Revisions (${audit.revisions.length})`}>
-                <ol className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1.5">
                   {audit.revisions.map((r) => (
-                    <li
-                      key={r.revision}
-                      className="flex items-center justify-between rounded-[2px] border border-border px-3 py-2 text-xs"
-                    >
-                      <span className="text-primary/70">
-                        Rev {r.revision} · {r.actionType} · {r.channel}
-                      </span>
-                      <span className="font-mono text-primary/40">
-                        {r.revisionHash.slice(0, 14)}…
-                      </span>
-                    </li>
+                    <Card className="gap-0 py-2" key={r.revision}>
+                      <CardContent className="flex items-center justify-between px-3 text-xs">
+                        <Label className="font-normal text-primary/70">
+                          Rev {r.revision} · {r.actionType} · {r.channel}
+                        </Label>
+                        <Badge
+                          className="font-mono font-normal text-primary/40"
+                          variant="secondary"
+                        >
+                          {r.revisionHash.slice(0, 14)}…
+                        </Badge>
+                      </CardContent>
+                    </Card>
                   ))}
-                </ol>
+                </div>
               </Section>
 
               <Section title={`Policy decisions (${audit.decisions.length})`}>
@@ -132,48 +138,52 @@ export function AuditSheet({
                     No preflight has run for this action yet.
                   </p>
                 ) : (
-                  <ul className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2">
                     {audit.decisions.map((d) => (
-                      <li key={d.id} className="rounded-[2px] border border-border p-3">
-                        <div className="flex items-center justify-between">
-                          <PolicyBadge status={d.status} />
-                          <span className="text-xs text-primary/45">
-                            rev {d.revision} · {relativeTime(d.evaluatedAt)}
-                          </span>
-                        </div>
-                        {d.reasonCodes && d.reasonCodes.length > 0 ? (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {d.reasonCodes.map((c) => (
-                              <Badge key={c} variant="outline" className="font-mono text-[10px]">
-                                {c}
-                              </Badge>
-                            ))}
+                      <Card className="gap-3 py-3" key={d.id}>
+                        <CardContent className="px-3">
+                          <div className="flex items-center justify-between">
+                            <PolicyBadge status={d.status} />
+                            <Badge
+                              className="text-xs font-normal text-primary/45"
+                              variant="secondary"
+                            >
+                              rev {d.revision} · {relativeTime(d.evaluatedAt)}
+                            </Badge>
                           </div>
-                        ) : null}
-                        <SubObjects decision={d} />
-                      </li>
+                          {d.reasonCodes && d.reasonCodes.length > 0 ? (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {d.reasonCodes.map((c) => (
+                                <Badge key={c} variant="outline" className="font-mono text-[10px]">
+                                  {c}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : null}
+                          <SubObjects decision={d} />
+                        </CardContent>
+                      </Card>
                     ))}
-                  </ul>
+                  </div>
                 )}
               </Section>
 
               <Section title={`Outcomes (${audit.outcomes.length})`}>
                 {audit.outcomes.length > 0 ? (
-                  <ul className="mb-3 flex flex-col gap-1.5">
+                  <div className="mb-3 flex flex-col gap-1.5">
                     {audit.outcomes.map((o) => (
-                      <li
-                        key={o.id}
-                        className="flex items-center justify-between rounded-[2px] border border-border px-3 py-2 text-xs"
-                      >
-                        <span className="font-medium text-primary/80">
-                          {OUTCOME_LABELS[o.kind] ?? o.kind}
-                        </span>
-                        <span className="text-primary/45">
-                          {o.source} · {relativeTime(o.occurredAt)}
-                        </span>
-                      </li>
+                      <Card className="gap-0 py-2" key={o.id}>
+                        <CardContent className="flex items-center justify-between px-3 text-xs">
+                          <Badge className="font-medium text-primary/80" variant="outline">
+                            {OUTCOME_LABELS[o.kind] ?? o.kind}
+                          </Badge>
+                          <Label className="font-normal text-primary/45">
+                            {o.source} · {relativeTime(o.occurredAt)}
+                          </Label>
+                        </CardContent>
+                      </Card>
                     ))}
-                  </ul>
+                  </div>
                 ) : (
                   <p className="mb-3 text-xs text-primary/45">No outcomes recorded yet.</p>
                 )}
@@ -191,7 +201,7 @@ export function AuditSheet({
                     </SelectContent>
                   </Select>
                   <Button variant="outline" size="sm" onClick={logOutcome} disabled={logging}>
-                    {logging ? <CircleNotch className="animate-spin" /> : <Plus />} Log outcome
+                    {logging ? <Spinner className="size-4" /> : <Plus />} Log outcome
                   </Button>
                 </div>
               </Section>
@@ -206,7 +216,9 @@ export function AuditSheet({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-primary/45">{title}</h3>
+      <Label className="mb-2 block text-xs font-medium uppercase tracking-wide text-primary/45">
+        {title}
+      </Label>
       {children}
     </div>
   );
@@ -233,13 +245,19 @@ function Timeline({ audit }: { audit: ActionAudit }) {
       {steps.map((s, i) => (
         <li key={s.label} className="flex gap-3">
           <div className="flex flex-col items-center">
-            <span
+            <Badge
               className={
-                "mt-0.5 size-2.5 rounded-full " +
-                (s.done ? "bg-emerald-500" : "border border-primary/30 bg-background")
+                "mt-0.5 size-2.5 rounded-full p-0 " +
+                (s.done ? "border-0 bg-emerald-500" : "border border-primary/30 bg-background")
               }
+              variant="outline"
             />
-            {i < steps.length - 1 ? <span className="w-px flex-1 bg-border" /> : null}
+            {i < steps.length - 1 ? (
+              <Separator
+                className="flex-1 data-[orientation=vertical]:h-auto"
+                orientation="vertical"
+              />
+            ) : null}
           </div>
           <div className="pb-4">
             <div className={"text-sm " + (s.done ? "text-primary" : "text-primary/40")}>

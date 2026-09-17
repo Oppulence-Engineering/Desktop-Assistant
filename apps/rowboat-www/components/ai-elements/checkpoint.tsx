@@ -4,7 +4,7 @@ import { Button } from "@oppulence/ui/components/button";
 import { Separator } from "@oppulence/ui/components/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
-import { BookmarkSimple, type IconProps } from "@phosphor-icons/react";
+import { BookmarkSimple, type IconProps } from "@/lib/icons";
 import type { ComponentProps, HTMLAttributes } from "react";
 
 export type CheckpointProps = HTMLAttributes<HTMLDivElement>;

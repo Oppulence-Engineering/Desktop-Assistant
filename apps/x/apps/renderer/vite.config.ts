@@ -1,16 +1,38 @@
-import path from "path";
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+
+type ViteAlias = { find: string | RegExp; replacement: string };
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(__dirname, "../../../..");
+const uiSrc = path.join(repoRoot, "packages/ui/src");
+
+/**
+ * @oppulence/ui uses package.json "imports" (#lib, #components, #hooks). Vite does not
+ * apply that map when bundling from the pnpm store symlink, so pin internal paths here.
+ * Runtime deps (sonner, radix-ui, …) stay on pnpm's nested node_modules for the package.
+ */
+function uiInternalImportAliases(): ViteAlias[] {
+  return [
+    { find: /^#lib\/icons$/, replacement: path.join(uiSrc, "lib/icons.tsx") },
+    { find: /^#lib\/(.*)$/, replacement: path.join(uiSrc, "lib/$1") },
+    { find: /^#components\/(.*)$/, replacement: path.join(uiSrc, "components/$1.tsx") },
+    { find: /^#hooks\/(.*)$/, replacement: path.join(uiSrc, "hooks/$1.ts") },
+  ];
+}
 
 // https://vite.dev/config/
 export default defineConfig({
   base: "./", // Use relative paths for assets (required for Electron custom protocol)
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
+    alias: [
+      { find: "@", replacement: path.resolve(__dirname, "./src") },
+      ...uiInternalImportAliases(),
+    ],
   },
   server: {
     fs: {

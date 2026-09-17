@@ -4,17 +4,27 @@ import * as React from "react";
 import {
   Alarm,
   CheckCircle,
-  CircleNotch,
   ClockCounterClockwise,
   MagnifyingGlass,
   PencilSimple,
   Plugs,
   Plus,
   Prohibit,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { Card, CardContent, CardFooter } from "@oppulence/ui/components/card";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@oppulence/ui/components/empty";
+import { Label } from "@oppulence/ui/components/label";
+import { Spinner } from "@oppulence/ui/components/spinner";
 import {
   Dialog,
   DialogContent,
@@ -43,7 +53,6 @@ import {
   snoozeAction,
 } from "@/lib/revenue";
 import {
-  EmptyBlock,
   errMessage,
   ExecutionBadge,
   ListSkeleton,
@@ -127,7 +136,9 @@ export function QueueView({
               ))}
             </SelectContent>
           </Select>
-          <span className="text-xs text-primary/45">{actions.length} shown</span>
+          <Badge variant="secondary" className="font-normal text-primary/45">
+            {actions.length} shown
+          </Badge>
         </div>
         <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
           <Plus /> New action
@@ -140,7 +151,7 @@ export function QueueView({
         </div>
       ) : empty ? (
         filter === "open" ? (
-          <EmptyBlock
+          <QueueEmpty
             icon={<MagnifyingGlass className="size-6" />}
             title="No recovery drafts"
             body="Run a Promise Leak Audit or draft recovery from a confirmed commitment."
@@ -151,15 +162,12 @@ export function QueueView({
                   <Plugs /> Reconnect Google
                 </>
               ) : (
-                <>
-                  {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />} Run
-                  audit
-                </>
+                <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run audit</>
               )}
             </Button>
-          </EmptyBlock>
+          </QueueEmpty>
         ) : (
-          <EmptyBlock
+          <QueueEmpty
             icon={<ClockCounterClockwise className="size-6" />}
             title={`Nothing ${filter}`}
           />
@@ -249,31 +257,47 @@ function ActionCard({
   };
 
   return (
-    <div className="group flex flex-col gap-3 rounded-[2px] border border-border bg-background p-4 transition-colors hover:border-primary/20">
-      <div className="flex items-start gap-4">
-        <div className="flex w-12 shrink-0 flex-col items-center">
-          <span className={cn("text-2xl font-semibold tabular-nums", tone.className)}>
-            {action.priorityScore}
-          </span>
-          <span className="text-[10px] uppercase tracking-wide text-primary/40">{tone.label}</span>
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="font-normal">
-              {DETECTOR_LABELS[action.detector] ?? action.detector}
+    <Card className="group gap-3 rounded-[2px] border-border bg-background py-4 shadow-none transition-colors hover:border-primary/20">
+      <CardContent className="flex flex-col gap-3 px-4 pt-0 pb-0">
+        <div className="flex items-start gap-4">
+          <div className="flex w-12 shrink-0 flex-col items-center">
+            <Badge
+              className={cn(
+                "border-0 bg-transparent px-0 text-2xl font-semibold tabular-nums",
+                tone.className,
+              )}
+              variant="outline"
+            >
+              {action.priorityScore}
             </Badge>
-            <span className="truncate text-sm font-medium text-primary">{recipient}</span>
-            <ModeChip mode={action.executionMode} />
+            <Badge
+              variant="outline"
+              className="mt-0.5 px-1 py-0 text-[10px] uppercase tracking-wide text-primary/40"
+            >
+              {tone.label}
+            </Badge>
           </div>
-          <p className="mt-1.5 line-clamp-2 text-sm text-primary/70">{action.reason}</p>
-          {action.proposedSubject ? (
-            <p className="mt-1 truncate text-xs text-primary/45">
-              Draft subject: <span className="text-primary/60">{action.proposedSubject}</span>
-            </p>
-          ) : null}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="font-normal">
+                {DETECTOR_LABELS[action.detector] ?? action.detector}
+              </Badge>
+              <Label className="truncate text-sm font-medium text-primary">{recipient}</Label>
+              <ModeChip mode={action.executionMode} />
+            </div>
+            <p className="mt-1.5 line-clamp-2 text-sm text-primary/70">{action.reason}</p>
+            {action.proposedSubject ? (
+              <p className="mt-1 truncate text-xs text-primary/45">
+                Draft subject:{" "}
+                <Badge variant="secondary" className="font-normal text-primary/60">
+                  {action.proposedSubject}
+                </Badge>
+              </p>
+            ) : null}
+          </div>
         </div>
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 pl-16">
+      </CardContent>
+      <CardFooter className="flex flex-wrap items-center justify-between gap-2 border-0 px-4 pt-0 pb-0 pl-16">
         <div className="flex flex-wrap items-center gap-1.5">
           {action.executionMode === "send" ? <PolicyBadge status={action.policyStatus} /> : null}
           {action.approvalStatus === "approved" ? (
@@ -298,7 +322,7 @@ function ActionCard({
                 onClick={() => triage("snooze")}
                 disabled={busy !== null}
               >
-                {busy === "snooze" ? <CircleNotch className="animate-spin" /> : <Alarm />} Snooze
+                {busy === "snooze" ? <Spinner /> : <Alarm />} Snooze
               </Button>
               <Button
                 variant="ghost"
@@ -306,8 +330,7 @@ function ActionCard({
                 onClick={() => triage("dismiss")}
                 disabled={busy !== null}
               >
-                {busy === "dismiss" ? <CircleNotch className="animate-spin" /> : <Prohibit />}{" "}
-                Dismiss
+                {busy === "dismiss" ? <Spinner /> : <Prohibit />} Dismiss
               </Button>
               <Button size="sm" onClick={onReview} disabled={busy !== null}>
                 <PencilSimple /> Review
@@ -319,8 +342,37 @@ function ActionCard({
             </Button>
           )}
         </div>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
+  );
+}
+
+function QueueEmpty({
+  icon,
+  title,
+  body,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  body?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <Empty className="flex min-h-[70vh] flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
+      <EmptyMedia className="flex size-12 items-center justify-center text-primary/35">
+        {icon}
+      </EmptyMedia>
+      <EmptyHeader>
+        <EmptyTitle className="text-base font-medium text-primary">{title}</EmptyTitle>
+        {body ? (
+          <EmptyDescription className="mx-auto mt-1 max-w-sm text-sm text-primary/60">
+            {body}
+          </EmptyDescription>
+        ) : null}
+      </EmptyHeader>
+      {children ? <EmptyContent>{children}</EmptyContent> : null}
+    </Empty>
   );
 }
 
@@ -384,9 +436,13 @@ function CreateActionDialog({
           </DialogDescription>
         </DialogHeader>
         {relationships.length === 0 ? (
-          <p className="py-4 text-sm text-primary/55">
-            No relationships yet — run a scan or add one in the Relationships tab first.
-          </p>
+          <Empty className="gap-3 py-4">
+            <EmptyHeader>
+              <EmptyDescription className="text-sm text-primary/55">
+                No relationships yet — run a scan or add one in the Relationships tab first.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
           <div className="flex flex-col gap-3">
             <Select value={relationshipId} onValueChange={setRelationshipId}>
@@ -443,7 +499,7 @@ function CreateActionDialog({
             Cancel
           </Button>
           <Button size="sm" onClick={submit} disabled={busy || !relationshipId || !reason.trim()}>
-            {busy ? <CircleNotch className="animate-spin" /> : <Plus />} Create
+            {busy ? <Spinner /> : <Plus />} Create
           </Button>
         </DialogFooter>
       </DialogContent>

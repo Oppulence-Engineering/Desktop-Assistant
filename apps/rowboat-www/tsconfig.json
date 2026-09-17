@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
+    "resolvePackageJsonImports": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
@@ -19,7 +20,17 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@/.source": ["./.source/server.ts"],
+      "@oppulence/ui/components": ["../../packages/ui/src/components"],
+      "@oppulence/ui/components/*": ["../../packages/ui/src/components/*"],
+      "@oppulence/ui/hooks/*": ["../../packages/ui/src/hooks/*"],
+      "@oppulence/ui/lib/utils": ["../../packages/ui/src/lib/utils.ts"],
+      "@oppulence/ui/lib/*": ["../../packages/ui/src/lib/*"],
+      "#lib/*": ["../../packages/ui/src/lib/*"],
+      "#lib/utils": ["../../packages/ui/src/lib/utils.ts"],
+      "#lib/icons": ["../../packages/ui/src/lib/icons.tsx"],
+      "#components/*": ["../../packages/ui/src/components/*"]
     }
   },
   "include": [
@@ -27,7 +38,15 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    ".source/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "../../packages/ui/node_modules",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.stories.tsx",
+    "stories"
+  ]
 }

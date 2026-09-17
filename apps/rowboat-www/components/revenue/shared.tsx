@@ -1,15 +1,19 @@
 "use client";
 
 import * as React from "react";
-import {
-  CheckCircle,
-  EnvelopeSimple,
-  PaperPlaneTilt,
-  Prohibit,
-  WarningCircle,
-} from "@phosphor-icons/react";
+import { CheckCircle, EnvelopeSimple, PaperPlaneTilt, Prohibit, WarningCircle } from "@/lib/icons";
 
 import { Badge } from "@oppulence/ui/components/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@oppulence/ui/components/card";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@oppulence/ui/components/empty";
+import { Label } from "@oppulence/ui/components/label";
 import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { cn } from "@/lib/utils";
 import { PRIORITY_COMPONENT_LABELS } from "@/lib/revenue";
@@ -71,17 +75,17 @@ export function ExecutionBadge({ action }: { action: RevenueAction }) {
 
 export function ModeChip({ mode }: { mode: string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 text-xs text-primary/60">
+    <Badge className="gap-1 text-primary/60" variant="outline">
       {mode === "send" ? <PaperPlaneTilt weight="fill" /> : <EnvelopeSimple weight="fill" />}
       {mode === "send" ? "Send" : "Draft"}
-    </span>
+    </Badge>
   );
 }
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium uppercase tracking-wide text-primary/45">{label}</label>
+      <Label className="text-xs font-medium uppercase tracking-wide text-primary/45">{label}</Label>
       {children}
     </div>
   );
@@ -92,22 +96,34 @@ export function PriorityBreakdown({ action }: { action: RevenueAction }) {
   if (!components || Object.keys(components).length === 0) return null;
   const entries = Object.entries(components).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
   return (
-    <div className="rounded-[2px] border border-border p-3">
-      <div className="mb-2 text-sm font-medium text-primary">
-        Why this ranks {action.priorityScore}
-      </div>
-      <ul className="flex flex-col gap-1">
-        {entries.map(([key, value]) => (
-          <li key={key} className="flex items-center justify-between text-xs">
-            <span className="text-primary/60">{PRIORITY_COMPONENT_LABELS[key] ?? key}</span>
-            <span className={cn("tabular-nums", value < 0 ? "text-red-500" : "text-primary/70")}>
-              {value > 0 ? "+" : ""}
-              {value}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <Card className="gap-3 py-3">
+      <CardHeader className="px-3 pb-0">
+        <CardTitle className="text-sm font-medium text-primary">
+          Why this ranks {action.priorityScore}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-3">
+        <ul className="flex flex-col gap-1">
+          {entries.map(([key, value]) => (
+            <li key={key} className="flex items-center justify-between text-xs">
+              <Label className="font-normal text-primary/60">
+                {PRIORITY_COMPONENT_LABELS[key] ?? key}
+              </Label>
+              <Badge
+                className={cn(
+                  "tabular-nums font-normal",
+                  value < 0 ? "text-red-500" : "text-primary/70",
+                )}
+                variant="secondary"
+              >
+                {value > 0 ? "+" : ""}
+                {value}
+              </Badge>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -115,14 +131,14 @@ export function ListSkeleton({ rows = 3 }: { rows?: number }) {
   return (
     <div className="flex flex-col gap-3">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex gap-4 rounded-[2px] border border-border p-4">
-          <Skeleton className="size-10 rounded" />
+        <Card className="flex-row gap-4 py-4" key={i}>
+          <Skeleton className="size-10" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-40" />
             <Skeleton className="h-3 w-full" />
             <Skeleton className="h-3 w-2/3" />
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   );
@@ -140,14 +156,18 @@ export function EmptyBlock({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[70vh] flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
-      <div className="flex size-12 items-center justify-center text-primary/35">{icon}</div>
-      <div>
-        <h2 className="text-base font-medium text-primary">{title}</h2>
-        {body ? <p className="mx-auto mt-1 max-w-sm text-sm text-primary/60">{body}</p> : null}
-      </div>
-      {children}
-    </div>
+    <Empty className="min-h-[70vh] flex-1 border-0 py-16">
+      <EmptyHeader>
+        <EmptyMedia className="text-primary/35" variant="icon">
+          {icon}
+        </EmptyMedia>
+        <EmptyTitle className="text-base text-primary">{title}</EmptyTitle>
+        {body ? (
+          <EmptyDescription className="mx-auto max-w-sm text-primary/60">{body}</EmptyDescription>
+        ) : null}
+      </EmptyHeader>
+      {children ? <EmptyContent>{children}</EmptyContent> : null}
+    </Empty>
   );
 }
 

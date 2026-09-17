@@ -11,7 +11,6 @@ import {
   CalendarBlank,
   CaretDown,
   CheckSquare,
-  CircleNotch,
   DotsThree,
   Funnel,
   GridFour,
@@ -32,10 +31,32 @@ import {
   TextUnderline,
   User,
   X,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 
 import { EmptyBlock, errMessage, ListSkeleton } from "@/components/revenue/shared";
+import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
+import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@oppulence/ui/components/card";
+import { Checkbox } from "@oppulence/ui/components/checkbox";
+import { Label } from "@oppulence/ui/components/label";
+import { Spinner } from "@oppulence/ui/components/spinner";
+import { Switch } from "@oppulence/ui/components/switch";
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@oppulence/ui/components/table";
+import { Tabs, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +66,15 @@ import {
   DialogTitle,
 } from "@oppulence/ui/components/dialog";
 import { Input } from "@oppulence/ui/components/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@oppulence/ui/components/select";
+import { Textarea } from "@oppulence/ui/components/textarea";
+import { cn } from "@oppulence/ui/lib/utils";
 import {
   Sheet,
   SheetContent,
@@ -136,9 +166,15 @@ function RecordHeader({
 }) {
   return (
     <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
-      <div className="flex h-8 items-center gap-2 border border-border bg-background px-3 text-[13px] font-medium text-primary">
-        {icon} {label} <span className="text-primary/40">{count}</span>
-      </div>
+      <Badge
+        className="h-8 gap-2 border border-border bg-background px-3 text-[13px] font-medium text-primary"
+        variant="outline"
+      >
+        {icon} {label}{" "}
+        <Badge className="font-normal text-primary/40" variant="secondary">
+          {count}
+        </Badge>
+      </Badge>
       {action}
     </div>
   );
@@ -196,7 +232,9 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
       />
       <div className="flex min-h-12 shrink-0 items-center gap-2 border-b border-border px-3 py-2">
         <SearchBar label="Search people" value={query} onChange={setQuery} />
-        <span className="text-[12px] text-primary/45">Sorted by last interaction</span>
+        <Label className="text-[12px] font-normal text-primary/45">
+          Sorted by last interaction
+        </Label>
         <Button
           variant="ghost"
           size="sm"
@@ -227,78 +265,70 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
             className="w-full min-w-[1180px] table-fixed border-collapse text-left"
             aria-label="People"
           >
-            <thead className="sticky top-0 z-10 bg-background">
-              <tr className="h-10 border-b border-border text-[12px] font-medium text-primary/55">
-                <th className="w-10 border-r border-border px-3">
-                  <input
-                    aria-label="Select all people"
-                    className="size-4 accent-[#3478f6]"
-                    type="checkbox"
-                  />
-                </th>
-                <th className="w-[250px] border-r border-border px-3">Person</th>
-                <th className="w-[210px] border-r border-border px-3">Company</th>
-                <th className="w-36 border-r border-border px-3">Role</th>
-                <th className="w-36 border-r border-border px-3">Department</th>
-                <th className="w-40 border-r border-border px-3">Location</th>
-                <th className="w-36 border-r border-border px-3">Last interaction</th>
-                <th className="w-28 border-r border-border px-3 text-center">Relationships</th>
-                <th className="w-28 border-r border-border px-3">LinkedIn</th>
-                <th className="px-3">Enrichment</th>
-              </tr>
-            </thead>
-            <tbody>
+            <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-border">
+              <TableRow className="h-10 border-b text-[12px] font-medium text-primary/55 hover:bg-transparent">
+                <TableHead className="h-10 w-10 border-r px-3">
+                  <Checkbox aria-label="Select all people" className="size-4" />
+                </TableHead>
+                <TableHead className="h-10 w-[250px] border-r px-3">Person</TableHead>
+                <TableHead className="h-10 w-[210px] border-r px-3">Company</TableHead>
+                <TableHead className="h-10 w-36 border-r px-3">Role</TableHead>
+                <TableHead className="h-10 w-36 border-r px-3">Department</TableHead>
+                <TableHead className="h-10 w-40 border-r px-3">Location</TableHead>
+                <TableHead className="h-10 w-36 border-r px-3">Last interaction</TableHead>
+                <TableHead className="h-10 w-28 border-r px-3 text-center">Relationships</TableHead>
+                <TableHead className="h-10 w-28 border-r px-3">LinkedIn</TableHead>
+                <TableHead className="h-10 px-3">Enrichment</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {people.map((person) => (
-                <tr
-                  key={person.id}
-                  className="h-11 border-b border-border hover:bg-background-100/70"
-                >
-                  <td className="border-r border-border px-3">
-                    <input
-                      aria-label={`Select ${person.displayName}`}
-                      className="size-4 accent-[#3478f6]"
-                      type="checkbox"
-                    />
-                  </td>
-                  <td className="border-r border-border px-3">
-                    <button
+                <TableRow key={person.id} className="h-11 border-border hover:bg-background-100/70">
+                  <TableCell className="border-r px-3">
+                    <Checkbox aria-label={`Select ${person.displayName}`} className="size-4" />
+                  </TableCell>
+                  <TableCell className="border-r px-3">
+                    <Button
                       aria-label={`Open ${person.displayName}`}
-                      className="flex w-full items-center gap-2 text-left"
+                      className="flex h-auto w-full items-center justify-start gap-2 px-0 py-0 text-left font-normal hover:bg-transparent"
                       type="button"
+                      variant="ghost"
                       onClick={() => void openPerson(person)}
                     >
-                      <span className="flex size-6 shrink-0 items-center justify-center border border-border bg-background-100 text-[10px] font-semibold text-primary/60">
-                        {initials(person.displayName)}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-[13px] font-medium text-primary">
+                      <Avatar className="size-6 rounded-none" size="sm">
+                        <AvatarFallback className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/60">
+                          {initials(person.displayName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <Label className="block truncate text-[13px] font-medium text-primary">
                           {person.displayName}
-                        </span>
-                        <span className="block truncate text-[11px] text-primary/40">
+                        </Label>
+                        <CardDescription className="block truncate text-[11px]">
                           {person.primaryEmail || "No email"}
-                        </span>
-                      </span>
-                    </button>
-                  </td>
-                  <td className="truncate border-r border-border px-3 text-[12px] text-primary/60">
+                        </CardDescription>
+                      </div>
+                    </Button>
+                  </TableCell>
+                  <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
                     {person.orgName || person.orgDomain || "—"}
-                  </td>
-                  <td className="truncate border-r border-border px-3 text-[12px] text-primary/60">
+                  </TableCell>
+                  <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
                     {person.title || person.seniority || "—"}
-                  </td>
-                  <td className="truncate border-r border-border px-3 text-[12px] text-primary/60">
+                  </TableCell>
+                  <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
                     {person.department || "—"}
-                  </td>
-                  <td className="truncate border-r border-border px-3 text-[12px] text-primary/60">
+                  </TableCell>
+                  <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
                     {person.location || "—"}
-                  </td>
-                  <td className="border-r border-border px-3 text-[12px] text-primary/50">
+                  </TableCell>
+                  <TableCell className="border-r px-3 text-[12px] text-primary/50">
                     {person.lastInteractionAt ? relativeTime(person.lastInteractionAt) : "—"}
-                  </td>
-                  <td className="border-r border-border px-3 text-center text-[12px] text-primary/60">
+                  </TableCell>
+                  <TableCell className="border-r px-3 text-center text-[12px] text-primary/60">
                     {person.relationshipCount}
-                  </td>
-                  <td className="truncate border-r border-border px-3 text-[12px]">
+                  </TableCell>
+                  <TableCell className="truncate border-r px-3 text-[12px]">
                     {person.linkedinUrl ? (
                       <a
                         className="text-primary/60 underline-offset-2 hover:text-primary hover:underline"
@@ -309,18 +339,20 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                         View profile
                       </a>
                     ) : (
-                      <span className="text-primary/35">—</span>
+                      <Badge className="font-normal text-primary/35" variant="ghost">
+                        —
+                      </Badge>
                     )}
-                  </td>
-                  <td className="truncate px-3 text-[12px] text-primary/50">
+                  </TableCell>
+                  <TableCell className="truncate px-3 text-[12px] text-primary/50">
                     {person.location ||
                       (person.attributesVersion
                         ? `${person.attributesVersion} verified fields`
                         : "Not enriched")}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
+            </TableBody>
           </table>
         </div>
       )}
@@ -413,7 +445,7 @@ function CreatePersonDialog({
             Cancel
           </Button>
           <Button size="sm" disabled={busy || !name.trim()} onClick={() => void submit()}>
-            {busy ? <CircleNotch className="animate-spin" /> : <Plus />} Create
+            {busy ? <Spinner className="size-4" /> : <Plus />} Create
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -468,12 +500,12 @@ function PersonSheet({
               {attributes.map((attribute) => (
                 <li className="py-3" key={attribute.id}>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-medium capitalize text-primary">
+                    <Label className="text-sm font-medium capitalize text-primary">
                       {attribute.dimension.replaceAll("_", " ")}
-                    </span>
-                    <span className="text-xs text-primary/40">
+                    </Label>
+                    <Badge className="rounded-none font-normal text-primary/40" variant="outline">
                       {Math.round(attribute.confidence * 100)}%
-                    </span>
+                    </Badge>
                   </div>
                   <p className="mt-1 text-sm text-primary/65">{attribute.value}</p>
                   <p className="mt-1 text-[11px] text-primary/40">
@@ -564,49 +596,71 @@ export function NotesView({ onError, onNotice }: ViewProps) {
   );
   return (
     <div className="flex min-h-full flex-col bg-background" data-slot="notes-view">
-      <div className="flex h-11 shrink-0 items-end gap-1 border-b border-border px-3">
-        <button
-          type="button"
-          className={`flex h-9 items-center gap-2 border px-3 text-[13px] ${tab === "notes" ? "border-border bg-background-100 text-primary" : "border-transparent text-primary/55"}`}
-          onClick={() => setTab("notes")}
-        >
-          <Note className="size-4" /> Notes <span className="text-primary/40">{notes.length}</span>
-        </button>
-        <button
-          type="button"
-          className={`flex h-9 items-center gap-2 border px-3 text-[13px] ${tab === "templates" ? "border-border bg-background-100 text-primary" : "border-transparent text-primary/55"}`}
-          onClick={() => setTab("templates")}
-        >
-          <NotePencil className="size-4" /> Templates <span className="text-primary/40">0</span>
-        </button>
-      </div>
+      <Tabs
+        className="shrink-0 gap-0"
+        onValueChange={(value) => setTab(value as "notes" | "templates")}
+        value={tab}
+      >
+        <TabsList className="h-11 w-full justify-start rounded-none border-b border-border bg-transparent px-3">
+          <TabsTrigger
+            className="h-9 rounded-none border px-3 text-[13px] data-[state=active]:border-border data-[state=active]:bg-background-100"
+            value="notes"
+          >
+            <Note className="size-4" /> Notes{" "}
+            <Badge className="font-normal text-primary/40" variant="secondary">
+              {notes.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger
+            className="h-9 rounded-none border px-3 text-[13px] data-[state=active]:border-border data-[state=active]:bg-background-100"
+            value="templates"
+          >
+            <NotePencil className="size-4" /> Templates{" "}
+            <Badge className="font-normal text-primary/40" variant="secondary">
+              0
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
       <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
-        <button
+        <Button
           type="button"
-          className="flex h-8 items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary/60 hover:bg-background-100"
+          className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary/60 hover:bg-background-100"
+          variant="ghost"
           onClick={() => setNewestFirst((value) => !value)}
         >
-          <List className="size-4" /> Sorted by <span className="text-primary">Creation date</span>
-          <CaretDown className={`size-3 transition-transform ${newestFirst ? "" : "rotate-180"}`} />
-        </button>
+          <List className="size-4" /> Sorted by{" "}
+          <Label className="font-normal text-primary">Creation date</Label>
+          <CaretDown className={cn("size-3 transition-transform", !newestFirst && "rotate-180")} />
+        </Button>
         <div className="flex items-center gap-2">
           <div className="flex h-8 border border-border bg-background p-0.5">
-            <button
+            <Button
               aria-label="List view"
               type="button"
-              className={`flex w-7 items-center justify-center ${layout === "list" ? "bg-background-200 text-primary" : "text-primary/45"}`}
+              className={cn(
+                "size-7 rounded-none p-0",
+                layout === "list" ? "bg-background-200 text-primary" : "text-primary/45",
+              )}
+              size="icon-xs"
+              variant="ghost"
               onClick={() => setLayout("list")}
             >
               <List className="size-4" />
-            </button>
-            <button
+            </Button>
+            <Button
               aria-label="Grid view"
               type="button"
-              className={`flex w-7 items-center justify-center ${layout === "grid" ? "bg-background-200 text-primary" : "text-primary/45"}`}
+              className={cn(
+                "size-7 rounded-none p-0",
+                layout === "grid" ? "bg-background-200 text-primary" : "text-primary/45",
+              )}
+              size="icon-xs"
+              variant="ghost"
               onClick={() => setLayout("grid")}
             >
               <GridFour className="size-4" />
-            </button>
+            </Button>
           </div>
           <details className="relative">
             <summary className="flex h-8 cursor-pointer list-none items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100">
@@ -618,12 +672,11 @@ export function NotesView({ onError, onNotice }: ViewProps) {
                 className="flex cursor-pointer items-center justify-between gap-4 text-[13px] text-primary/70"
               >
                 Show favorites
-                <input
+                <Checkbox
                   id="notes-show-favorites"
                   aria-label="Show favorites"
-                  type="checkbox"
                   checked={showFavorites}
-                  onChange={(event) => setShowFavorites(event.target.checked)}
+                  onCheckedChange={(checked) => setShowFavorites(checked === true)}
                 />
               </label>
             </div>
@@ -658,22 +711,26 @@ export function NotesView({ onError, onNotice }: ViewProps) {
         <div className="min-h-0 flex-1 overflow-auto">
           {showFavorites ? (
             <section className="px-4 pt-3">
-              <p className="mb-3 text-[12px] text-primary/45">Favorites</p>
-              <div className="flex h-44 items-center justify-center border border-dashed border-border text-center">
-                <div>
-                  <p className="text-[16px] font-semibold text-primary/70">Favorites</p>
-                  <p className="mt-2 text-[13px] text-primary/45">
+              <Label className="mb-3 block text-[12px] font-normal text-primary/45">
+                Favorites
+              </Label>
+              <Card className="flex h-44 items-center justify-center border-dashed py-0 text-center">
+                <CardContent>
+                  <CardTitle className="text-[16px] text-primary/70">Favorites</CardTitle>
+                  <CardDescription className="mt-2 text-[13px]">
                     Notes that you favorite will appear here
-                  </p>
-                </div>
-              </div>
+                  </CardDescription>
+                </CardContent>
+              </Card>
             </section>
           ) : null}
           <div className="mt-3 border-t border-border px-4 py-3">
-            <p className="mb-3 text-[12px] text-primary/55">
+            <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/55">
               Created today{" "}
-              <span className="ml-1 border border-border px-1 text-[10px]">{visible.length}</span>
-            </p>
+              <Badge className="text-[10px] font-normal" variant="outline">
+                {visible.length}
+              </Badge>
+            </Label>
             {visible.length ? (
               <div
                 className={
@@ -683,45 +740,59 @@ export function NotesView({ onError, onNotice }: ViewProps) {
                 }
               >
                 {visible.map((note) => (
-                  <button
+                  <Card
+                    className={cn(
+                      "cursor-pointer gap-0 py-0 transition-colors hover:bg-background-100",
+                      layout === "grid" ? "h-52 max-w-[368px]" : "h-24 w-full",
+                    )}
                     key={note.externalId}
-                    aria-label={`Open ${note.title || "Untitled note"}`}
-                    type="button"
-                    className={`${layout === "grid" ? "h-52 max-w-[368px]" : "h-24 w-full"} flex flex-col border border-border bg-background text-left hover:bg-background-100`}
                     onClick={() => setEditing(note)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setEditing(note);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
                   >
-                    <span className="flex flex-1 flex-col p-4">
-                      <span className="flex items-center gap-2 text-[12px] text-primary/65">
+                    <CardHeader className="flex-1 gap-1 px-4 pb-0 pt-4">
+                      <div className="flex items-center gap-2 text-[12px] text-primary/65">
                         <Note className="size-3.5" />
-                        <span className="underline">{note.relationshipName}</span>
-                      </span>
-                      <span className="mt-3 text-[15px] font-semibold text-primary">
+                        <Label className="font-normal underline">{note.relationshipName}</Label>
+                      </div>
+                      <CardTitle className="mt-3 text-[15px] text-primary">
                         {note.title || "Untitled note"}
-                      </span>
-                      <span className="mt-1 line-clamp-2 text-[13px] text-primary/45">
+                      </CardTitle>
+                      <CardDescription className="line-clamp-2 text-[13px]">
                         {note.body || "This note has no content."}
-                      </span>
-                    </span>
-                    <span className="flex h-10 shrink-0 items-center justify-between border-t border-border px-4 text-[12px] text-primary/50">
-                      <span className="flex items-center gap-2">
-                        <span className="flex size-4 items-center justify-center bg-cyan-600 text-[9px] text-white">
-                          Y
-                        </span>
-                        You
-                      </span>
-                      <span>{relativeTime(note.occurredAt)}</span>
-                    </span>
-                  </button>
+                      </CardDescription>
+                    </CardHeader>
+                    <CardFooter className="flex h-10 items-center justify-between border-t px-4 text-[12px] text-primary/50">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="size-4 rounded-none" size="sm">
+                          <AvatarFallback className="rounded-none bg-cyan-600 text-[9px] text-white">
+                            Y
+                          </AvatarFallback>
+                        </Avatar>
+                        <Label className="font-normal">You</Label>
+                      </div>
+                      <Badge className="font-normal" variant="secondary">
+                        {relativeTime(note.occurredAt)}
+                      </Badge>
+                    </CardFooter>
+                  </Card>
                 ))}
               </div>
             ) : (
-              <button
+              <Button
                 type="button"
-                className="flex h-36 w-full items-center justify-center border border-dashed border-border text-[13px] text-primary/45 hover:bg-background-100"
+                className="flex h-36 w-full items-center justify-center rounded-none border border-dashed border-border text-[13px] text-primary/45 hover:bg-background-100"
+                variant="ghost"
                 onClick={() => setEditing("new")}
               >
                 <Plus className="mr-2 size-4" /> Create your first note
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -870,61 +941,69 @@ function NoteDialog({
       >
         <DialogTitle className="sr-only">{title || "Untitled note"}</DialogTitle>
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-white/8 px-5">
-          <label
-            htmlFor="note-relationship"
-            className="flex min-w-0 items-center gap-2 text-[12px] text-white/80"
-          >
+          <div className="flex min-w-0 items-center gap-2 text-[12px] text-white/80">
             <Note className="size-3.5 text-white/50" />
-            <select
-              id="note-relationship"
-              aria-label="Linked company"
-              className="max-w-56 appearance-none bg-transparent text-[12px] text-white/85 underline outline-none"
-              value={relationshipId}
-              onChange={(event) => setRelationshipId(event.target.value)}
-            >
-              <option value="">Link a company</option>
-              {relationships.map((relationship) => (
-                <option value={relationship.id} key={relationship.id}>
-                  {relationship.displayName}
-                </option>
-              ))}
-            </select>
-          </label>
+            <Select value={relationshipId || undefined} onValueChange={setRelationshipId}>
+              <SelectTrigger
+                id="note-relationship"
+                aria-label="Linked company"
+                className="h-auto max-w-56 border-0 bg-transparent p-0 text-[12px] text-white/85 underline shadow-none focus:ring-0"
+              >
+                <SelectValue placeholder="Link a company" />
+              </SelectTrigger>
+              <SelectContent className="app-shell rounded-none">
+                {relationships.map((relationship) => (
+                  <SelectItem key={relationship.id} value={relationship.id}>
+                    {relationship.displayName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="flex items-center gap-2 text-white/50">
-            <button
+            <Button
               aria-label="Minimize note"
               type="button"
-              className="flex size-7 items-center justify-center hover:bg-white/5 hover:text-white"
+              className="size-7 rounded-none text-white/50 hover:bg-white/5 hover:text-white"
+              size="icon-xs"
+              variant="ghost"
               onClick={() => void closeEditor()}
             >
               <Minus className="size-3.5" />
-            </button>
-            <button
+            </Button>
+            <Button
               aria-label={maximized ? "Restore note" : "Maximize note"}
               type="button"
-              className="flex size-7 items-center justify-center hover:bg-white/5 hover:text-white"
+              className="size-7 rounded-none text-white/50 hover:bg-white/5 hover:text-white"
+              size="icon-xs"
+              variant="ghost"
               onClick={() => setMaximized((value) => !value)}
             >
               <ArrowsOut className="size-3.5" />
-            </button>
-            <button
+            </Button>
+            <Button
               aria-label="Close note"
               type="button"
-              className="flex size-7 items-center justify-center hover:bg-white/5 hover:text-white"
+              className="size-7 rounded-none text-white/50 hover:bg-white/5 hover:text-white"
+              size="icon-xs"
+              variant="ghost"
               onClick={() => void closeEditor()}
             >
               <X className="size-3.5" />
-            </button>
+            </Button>
           </div>
         </div>
         <div className="relative min-h-0 flex-1 overflow-auto px-[52px] pb-14 pt-[57px] text-white/80">
           <div className="absolute right-[18px] top-1 flex items-center gap-3 text-[13px] text-white/55">
-            <span className="flex size-5 items-center justify-center bg-cyan-600 text-[10px] font-semibold text-white">
-              Y
-            </span>
-            <button
+            <Avatar className="size-5 rounded-none">
+              <AvatarFallback className="rounded-none bg-cyan-600 text-[10px] font-semibold text-white">
+                Y
+              </AvatarFallback>
+            </Avatar>
+            <Button
               type="button"
-              className="flex items-center gap-2 hover:text-white"
+              className="h-auto rounded-none px-0 py-0 text-[13px] text-white/55 hover:bg-transparent hover:text-white"
+              variant="ghost"
               onClick={async () => {
                 await navigator.clipboard.writeText(
                   `${window.location.origin}${window.location.pathname}#note=${noteId}`,
@@ -933,61 +1012,69 @@ function NoteDialog({
               }}
             >
               <Link className="size-3.5" /> Copy link
-            </button>
+            </Button>
             <div className="relative">
-              <button
+              <Button
                 aria-label="Note actions"
                 type="button"
-                className="flex size-7 items-center justify-center hover:bg-white/5 hover:text-white"
+                className="size-7 rounded-none text-white/55 hover:bg-white/5 hover:text-white"
+                size="icon-xs"
+                variant="ghost"
                 onClick={() => setMenuOpen((value) => !value)}
               >
                 <DotsThree className="size-4" />
-              </button>
+              </Button>
               {menuOpen ? (
                 <div className="absolute right-0 top-8 z-10 w-36 border border-white/10 bg-[#202124] p-1 shadow-xl">
-                  <button
+                  <Button
                     type="button"
-                    className="w-full px-3 py-2 text-left text-[12px] text-red-400 hover:bg-white/5"
+                    className="h-auto w-full justify-start rounded-none px-3 py-2 text-[12px] text-red-400 hover:bg-white/5"
+                    variant="ghost"
                     onClick={async () => {
                       if (await publish("note_deleted")) onClose();
                     }}
                   >
                     Delete note
-                  </button>
+                  </Button>
                 </div>
               ) : null}
             </div>
           </div>
-          <input
+          <Input
             aria-label="Note title"
-            className="mt-8 w-full bg-transparent text-[32px] font-semibold leading-tight tracking-[-0.03em] text-white/85 outline-none placeholder:text-white/55"
+            className="mt-8 h-auto rounded-none border-0 bg-transparent px-0 text-[32px] font-semibold leading-tight tracking-[-0.03em] text-white/85 shadow-none placeholder:text-white/55 focus-visible:ring-0"
             placeholder="Untitled note"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
           />
           <div className="mt-3 flex items-center gap-4 text-[13px] text-white/55">
-            <span className="flex items-center gap-2">
+            <Label
+              className={cn(
+                "flex items-center gap-2 font-normal text-white/55",
+                selectedRelationship && "text-white/80 underline",
+              )}
+            >
               <Note className="size-3.5" />
-              <span className="text-white/80 underline">
-                {selectedRelationship?.displayName || "Link a company"}
-              </span>
-            </span>
-            <button
+              {selectedRelationship?.displayName || "Link a company"}
+            </Label>
+            <Button
               type="button"
-              className="flex items-center gap-2 hover:text-white"
+              className="h-auto rounded-none px-0 py-0 text-[13px] text-white/55 hover:bg-transparent hover:text-white"
+              variant="ghost"
               onClick={() => setMeetingLinked((value) => !value)}
             >
               <CalendarBlank className="size-4" />
               {meetingLinked ? "Meeting linked" : "Link a meeting"}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="flex items-center gap-2 hover:text-white"
+              className="h-auto rounded-none px-0 py-0 text-[13px] text-white/55 hover:bg-transparent hover:text-white"
+              variant="ghost"
               onClick={() => setLiveLinked((value) => !value)}
             >
-              <ArrowClockwise className={`size-4 ${liveLinked ? "text-cyan-400" : ""}`} />
+              <ArrowClockwise className={cn("size-4", liveLinked && "text-cyan-400")} />
               {liveLinked ? "Live account context" : "Make this note live"}
-            </button>
+            </Button>
           </div>
           {liveLinked ? (
             <section
@@ -1004,14 +1091,16 @@ function NoteDialog({
                     Auto-refreshes every 30 seconds without changing your writing
                   </p>
                 </div>
-                <button
+                <Button
                   aria-label="Refresh live account context"
-                  className="flex size-7 items-center justify-center border border-white/10 hover:bg-white/5 hover:text-white"
+                  className="size-7 rounded-none border border-white/10 text-white/55 hover:bg-white/5 hover:text-white"
                   onClick={() => void refreshLiveRecord().catch(() => setLiveRecord(null))}
+                  size="icon-xs"
                   type="button"
+                  variant="ghost"
                 >
                   <ArrowClockwise className="size-3.5" />
-                </button>
+                </Button>
               </div>
               {liveRecord ? (
                 <div className="grid grid-cols-2 gap-px bg-white/10 text-[12px] md:grid-cols-4">
@@ -1066,18 +1155,20 @@ function NoteDialog({
               { label: "Heading", icon: TextHOne, run: () => editor.tf.toggleBlock("h2") },
               { label: "Quote", icon: Quotes, run: () => editor.tf.toggleBlock("blockquote") },
             ].map(({ label, icon: Icon, run }) => (
-              <button
+              <Button
                 aria-label={label}
-                className="flex size-8 items-center justify-center text-white/50 hover:bg-white/5 hover:text-white"
+                className="size-8 rounded-none text-white/50 hover:bg-white/5 hover:text-white"
                 key={label}
                 onMouseDown={(event) => {
                   event.preventDefault();
                   run();
                 }}
+                size="icon-xs"
                 type="button"
+                variant="ghost"
               >
                 <Icon className="size-4" />
-              </button>
+              </Button>
             ))}
           </div>
           <Plate editor={editor} onChange={({ value }) => setContent(value)}>
@@ -1099,30 +1190,40 @@ function NoteDialog({
                 <p className="text-[10px] font-medium uppercase tracking-wide text-white/50">
                   Actions
                 </p>
-                <button type="button" className="flex items-center gap-2 hover:text-white">
+                <Button
+                  type="button"
+                  className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-white/55 hover:bg-transparent hover:text-white"
+                  variant="ghost"
+                >
                   <Note className="size-4" /> View all templates
-                </button>
-                <button type="button" className="flex items-center gap-2 hover:text-white">
+                </Button>
+                <Button
+                  type="button"
+                  className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-white/55 hover:bg-transparent hover:text-white"
+                  variant="ghost"
+                >
                   <Note className="size-4" /> Create new template
-                </button>
+                </Button>
               </div>
             </div>
           ) : null}
           {saveState !== "saved" ? (
-            <span
-              className={`absolute right-5 bottom-3 text-[11px] ${saveState === "error" ? "text-red-400" : "text-white/55"}`}
+            <Label
+              className={`absolute right-5 bottom-3 text-[11px] font-normal ${saveState === "error" ? "text-red-400" : "text-white/55"}`}
             >
               {saveState === "saving" ? "Saving…" : "Save failed"}
-            </span>
+            </Label>
           ) : null}
         </div>
-        <button
+        <Button
           aria-label="Insert content"
           type="button"
-          className="absolute bottom-3 left-4 flex size-5 items-center justify-center border border-white/10 text-white/55 hover:bg-white/5 hover:text-white"
+          className="absolute bottom-3 left-4 size-5 rounded-none border border-white/10 p-0 text-white/55 hover:bg-white/5 hover:text-white"
+          size="icon-xs"
+          variant="ghost"
         >
           <Plus className="size-3" />
-        </button>
+        </Button>
       </DialogContent>
     </Dialog>
   );
@@ -1181,35 +1282,38 @@ export function TasksView({ onError, onNotice }: ViewProps) {
     <div className="flex min-h-full flex-col bg-background" data-slot="tasks-view">
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary/60">
-            <List className="size-4" /> Sorted by <span className="text-primary">Due date</span>
-          </span>
-          <label
-            htmlFor="task-filter"
-            className="relative flex h-8 items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary/55 hover:bg-background-100"
+          <Badge
+            className="h-8 gap-2 border border-border bg-background px-3 text-[13px] font-normal text-primary/60"
+            variant="outline"
           >
-            <Funnel className="size-4" />
-            <select
+            <List className="size-4" /> Sorted by{" "}
+            <Label className="font-normal text-primary">Due date</Label>
+          </Badge>
+          <Select value={filter} onValueChange={(value) => setFilter(value as typeof filter)}>
+            <SelectTrigger
               id="task-filter"
               aria-label="Filter tasks"
-              className="appearance-none bg-transparent pr-4 outline-none"
-              value={filter}
-              onChange={(event) => setFilter(event.target.value as typeof filter)}
+              className="h-8 w-auto gap-2 rounded-none border border-border bg-background px-3 text-[13px] text-primary/55 shadow-none hover:bg-background-100"
+              size="sm"
             >
-              <option value="all">Filter</option>
-              <option value="today">Due today</option>
-              <option value="overdue">Overdue</option>
-            </select>
-            <CaretDown className="pointer-events-none absolute right-2 size-3" />
-          </label>
+              <Funnel className="size-4" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="app-shell rounded-none">
+              <SelectItem value="all">Filter</SelectItem>
+              <SelectItem value="today">Due today</SelectItem>
+              <SelectItem value="overdue">Overdue</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
-            className="flex h-8 items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100"
+            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100"
+            variant="ghost"
           >
             <SlidersHorizontal className="size-4" /> View settings
-          </button>
+          </Button>
           <Button
             className="h-8 bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
             size="sm"
@@ -1251,9 +1355,11 @@ export function TasksView({ onError, onNotice }: ViewProps) {
                   key={label}
                   className="flex h-20 items-center gap-4 border border-border px-4 text-[13px] text-primary"
                 >
-                  <span className="flex size-12 items-center justify-center border border-border">
-                    <SquaresFour className="size-6 text-primary/45" />
-                  </span>
+                  <Avatar className="size-12 rounded-none">
+                    <AvatarFallback className="rounded-none border border-border">
+                      <SquaresFour className="size-6 text-primary/45" />
+                    </AvatarFallback>
+                  </Avatar>
                   {label}
                 </div>
               ))}
@@ -1269,21 +1375,29 @@ export function TasksView({ onError, onNotice }: ViewProps) {
                 key={task.id}
                 className="grid min-h-12 grid-cols-[36px_minmax(0,1fr)_220px_150px] items-center gap-3 px-3 hover:bg-background-100/70"
               >
-                <button
+                <Button
                   aria-label={`Complete ${task.reason}`}
-                  className="flex size-5 items-center justify-center border border-border text-primary/40 hover:border-[#3478f6] hover:text-[#3478f6]"
+                  className="size-5 rounded-none border border-border p-0 text-primary/40 hover:border-[#3478f6] hover:bg-transparent hover:text-[#3478f6]"
                   disabled={busy === task.id}
                   onClick={() => void complete(task)}
+                  size="icon-xs"
                   type="button"
+                  variant="ghost"
                 >
-                  {busy === task.id ? <CircleNotch className="animate-spin" /> : null}
-                </button>
-                <span className="truncate text-[13px] font-medium text-primary">{task.reason}</span>
-                <span className="truncate text-[12px] text-primary/55">
+                  {busy === task.id ? <Spinner className="size-3" /> : null}
+                </Button>
+                <Label className="truncate text-[13px] font-medium text-primary">
+                  {task.reason}
+                </Label>
+                <CardDescription className="truncate text-[12px]">
                   {names.get(task.relationshipId || "") || "Unlinked"}
-                </span>
-                <span
-                  className={`text-right text-[12px] ${overdue ? "text-red-500" : "text-primary/45"}`}
+                </CardDescription>
+                <Badge
+                  className={cn(
+                    "ml-auto justify-end text-[12px] font-normal",
+                    overdue ? "text-red-500" : "text-primary/45",
+                  )}
+                  variant="secondary"
                 >
                   {task.dueAt
                     ? new Date(task.dueAt).toLocaleDateString(undefined, {
@@ -1292,7 +1406,7 @@ export function TasksView({ onError, onNotice }: ViewProps) {
                         year: "numeric",
                       })
                     : "No due date"}
-                </span>
+                </Badge>
               </li>
             );
           })}
@@ -1365,21 +1479,23 @@ function TaskDialog({
       >
         <DialogTitle className="sr-only">Create task</DialogTitle>
         <div className="flex h-12 items-center justify-between border-b border-white/8 px-4">
-          <span className="flex items-center gap-2 text-[14px] font-medium text-white/85">
+          <Label className="flex items-center gap-2 text-[14px] font-medium text-white/85">
             <CheckSquare className="size-4" /> Create task
-          </span>
-          <button
+          </Label>
+          <Button
             aria-label="Close task"
             type="button"
-            className="flex size-7 items-center justify-center text-white/50 hover:bg-white/5 hover:text-white"
+            className="size-7 rounded-none text-white/50 hover:bg-white/5 hover:text-white"
+            size="icon-xs"
+            variant="ghost"
             onClick={onClose}
           >
             <X className="size-4" />
-          </button>
+          </Button>
         </div>
-        <textarea
+        <Textarea
           aria-label="Task title"
-          className="min-h-[50px] w-full resize-none bg-transparent px-5 py-4 text-[14px] text-white/85 outline-none placeholder:text-white/55"
+          className="min-h-[50px] resize-none rounded-none border-0 bg-transparent px-5 py-4 text-[14px] text-white/85 shadow-none placeholder:text-white/55 focus-visible:ring-0"
           placeholder="Schedule a demo with @Contact"
           rows={1}
           value={title}
@@ -1398,14 +1514,14 @@ function TaskDialog({
               className="relative flex cursor-pointer items-center gap-2 hover:text-white"
             >
               <CalendarBlank className="size-4" />
-              <span>
+              <Label className="font-normal">
                 {dueDate === todayValue()
                   ? "Today"
                   : new Date(`${dueDate}T12:00:00`).toLocaleDateString(undefined, {
                       month: "short",
                       day: "numeric",
                     })}
-              </span>
+              </Label>
               <input
                 id="task-due-date"
                 aria-label="Due date"
@@ -1415,68 +1531,69 @@ function TaskDialog({
                 onChange={(event) => setDueDate(event.target.value)}
               />
             </label>
-            <span className="flex items-center gap-2">
+            <Label className="flex items-center gap-2 font-normal">
               <User className="size-4" /> Assigned to You
-            </span>
-            <label
-              htmlFor="task-relationship"
-              className={`relative flex items-center gap-2 ${recordError ? "text-red-400" : "hover:text-white"}`}
+            </Label>
+            <div
+              className={cn(
+                "relative flex items-center gap-2",
+                recordError ? "text-red-400" : "hover:text-white",
+              )}
             >
               <Link className="size-4" />
-              <select
-                id="task-relationship"
-                aria-label="Linked company"
-                className="max-w-44 appearance-none bg-transparent pr-4 outline-none"
-                value={relationshipId}
-                onChange={(event) => {
-                  setRelationshipId(event.target.value);
+              <Select
+                value={relationshipId || undefined}
+                onValueChange={(value) => {
+                  setRelationshipId(value);
                   setRecordError(false);
                 }}
               >
-                <option value="">{recordError ? "Add a record to save" : "Add record"}</option>
-                {relationships.map((relationship) => (
-                  <option value={relationship.id} key={relationship.id}>
-                    {relationship.displayName}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  id="task-relationship"
+                  aria-label="Linked company"
+                  className="h-auto max-w-44 border-0 bg-transparent p-0 pr-4 text-[13px] shadow-none focus:ring-0"
+                >
+                  <SelectValue placeholder={recordError ? "Add a record to save" : "Add record"} />
+                </SelectTrigger>
+                <SelectContent className="app-shell rounded-none">
+                  {relationships.map((relationship) => (
+                    <SelectItem key={relationship.id} value={relationship.id}>
+                      {relationship.displayName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <CaretDown className="pointer-events-none absolute right-0 size-3" />
-            </label>
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-3 text-[13px]">
-            <button
+            <div className="flex items-center gap-2 text-white/55">
+              <Switch
+                aria-label="Create more tasks after saving"
+                checked={createMore}
+                className="rounded-none data-[state=checked]:bg-[#3478f6]"
+                onCheckedChange={setCreateMore}
+              />
+              <Label className="font-normal text-white/55">Create more</Label>
+            </div>
+            <Button
               type="button"
-              role="switch"
-              aria-checked={createMore}
-              className="flex items-center gap-2 text-white/55 hover:text-white"
-              onClick={() => setCreateMore((value) => !value)}
-            >
-              <span
-                className={`relative h-4 w-7 border border-white/15 ${createMore ? "bg-[#3478f6]" : "bg-white/10"}`}
-              >
-                <span
-                  className={`absolute top-[2px] size-2.5 bg-white transition-transform ${createMore ? "translate-x-3" : "translate-x-0.5"}`}
-                />
-              </span>
-              Create more
-            </button>
-            <button
-              type="button"
-              className="flex h-8 items-center gap-1 px-2 text-white/80 hover:bg-white/5"
+              className="h-8 rounded-none px-2 text-white/80 hover:bg-white/5"
+              variant="ghost"
               onClick={onClose}
             >
               Cancel{" "}
               <kbd className="border border-white/10 px-1 text-[10px] text-white/55">ESC</kbd>
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="flex h-8 items-center gap-1 bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
+              className="h-8 rounded-none bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
               disabled={busy || !title.trim() || !dueDate}
               onClick={() => void submit()}
             >
-              {busy ? <CircleNotch className="animate-spin" /> : null}Save{" "}
+              {busy ? <Spinner className="size-4" /> : null}Save{" "}
               <kbd className="border border-white/15 px-1 text-[10px]">↵</kbd>
-            </button>
+            </Button>
           </div>
         </div>
       </DialogContent>

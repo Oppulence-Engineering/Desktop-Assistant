@@ -11,15 +11,34 @@ import {
   ArrowSquareOut,
   BookOpen,
   CheckSquare,
-  CircleNotch,
   FileText,
   FloppyDisk,
   LockSimple,
   Question,
   Tray,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 
+import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
+import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@oppulence/ui/components/card";
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@oppulence/ui/components/item";
+import { Label } from "@oppulence/ui/components/label";
+import { Skeleton } from "@oppulence/ui/components/skeleton";
+import { Spinner } from "@oppulence/ui/components/spinner";
 import { cn } from "@oppulence/ui/lib/utils";
 import { AgentConfigurationForm } from "@/components/agents/agent-configuration-form";
 import {
@@ -163,50 +182,67 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
     <>
       <section className="mt-10 grid gap-3 sm:grid-cols-3">
         {HOME_STATS.map((stat) => (
-          <button
-            className="border border-border text-left transition-colors hover:bg-background-100/70"
+          <Card
+            className="cursor-pointer gap-0 py-0 transition-colors hover:bg-background-100/70"
             key={stat.tab}
             onClick={() => onOpenTab(stat.tab)}
-            type="button"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onOpenTab(stat.tab);
+              }
+            }}
           >
-            <span className="flex items-center gap-2 border-b border-border px-3 py-2.5 text-[13px] font-medium text-primary">
-              <stat.icon className="size-4 text-primary/45" />
-              {REVENUE_TAB_LABELS[stat.tab]}
-            </span>
-            <span className="block px-3 pb-3 pt-4">
-              <span className="block text-3xl font-semibold tabular-nums text-primary">
+            <CardHeader className="border-b px-3 py-2.5">
+              <CardTitle className="flex items-center gap-2 text-[13px] font-medium text-primary">
+                <stat.icon className="size-4 text-primary/45" />
+                {REVENUE_TAB_LABELS[stat.tab]}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-3 pb-3 pt-4">
+              <div className="text-3xl font-semibold tabular-nums text-primary">
                 {impact ? (
                   stat.read(impact)
                 ) : failed ? (
                   "—"
                 ) : (
-                  <span className="inline-block h-7 w-10 animate-pulse bg-background-200 align-middle" />
+                  <Skeleton className="inline-block h-7 w-10 align-middle" />
                 )}
-              </span>
-              <span className="mt-1 block text-[12px] text-primary/45">{stat.caption}</span>
-            </span>
-          </button>
+              </div>
+              <CardDescription className="mt-1 text-[12px] text-primary/45">
+                {stat.caption}
+              </CardDescription>
+            </CardContent>
+          </Card>
         ))}
       </section>
       <section className="mt-10">
-        <h2 className="mb-3 text-[13px] font-medium text-primary">Explore</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <Label className="mb-3 block text-[13px] text-primary">Explore</Label>
+        <ItemGroup className="grid gap-3 sm:grid-cols-3">
           {HOME_LINKS.map((link) => (
-            <Link
-              className="block"
-              href={link.href}
-              key={link.href}
-              {...(link.external ? { rel: "noopener noreferrer", target: "_blank" } : {})}
-            >
-              <span className="flex items-center gap-1.5 text-[13px] font-medium text-primary">
-                <link.icon className="size-4 text-primary/45" />
-                {link.label}
-                {link.external ? <ArrowSquareOut className="size-3 text-primary/35" /> : null}
-              </span>
-              <span className="mt-1 block text-[12px] text-primary/45">{link.detail}</span>
-            </Link>
+            <Item asChild key={link.href} size="sm" variant="outline">
+              <Link
+                href={link.href}
+                {...(link.external ? { rel: "noopener noreferrer", target: "_blank" } : {})}
+              >
+                <ItemMedia variant="icon">
+                  <link.icon className="size-4 text-primary/45" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle className="gap-1.5 text-[13px] text-primary">
+                    {link.label}
+                    {link.external ? <ArrowSquareOut className="size-3 text-primary/35" /> : null}
+                  </ItemTitle>
+                  <ItemDescription className="text-[12px] text-primary/45">
+                    {link.detail}
+                  </ItemDescription>
+                </ItemContent>
+              </Link>
+            </Item>
           ))}
-        </div>
+        </ItemGroup>
       </section>
     </>
   );
@@ -270,10 +306,13 @@ export function ChatDashboardRoute() {
     >
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
         {chat.processing ? (
-          <div className="pointer-events-none absolute left-1/2 top-4 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-primary/70 shadow-sm">
-            <CircleNotch className="h-3.5 w-3.5 animate-spin" />
-            <span>Working…</span>
-          </div>
+          <Badge
+            className="pointer-events-none absolute left-1/2 top-4 z-20 -translate-x-1/2 gap-2 px-3 py-1.5 text-xs font-medium text-primary/70 shadow-sm"
+            variant="secondary"
+          >
+            <Spinner className="size-3.5" />
+            Working…
+          </Badge>
         ) : null}
         <Conversation className="min-h-0 flex-1 overflow-y-auto">
           {!chat.empty ? (
@@ -334,21 +373,18 @@ export function ChatDashboardRoute() {
                 }
                 if (item.type === "approval") {
                   return (
-                    <div
-                      className="rounded-none border border-amber-500/30 bg-amber-500/5 p-4"
-                      key={item.id}
-                    >
-                      <p className="text-sm font-medium text-primary">
+                    <Alert className="border-amber-500/30 bg-amber-500/5" key={item.id}>
+                      <AlertTitle className="text-sm text-primary">
                         Approval required: {item.name}
-                      </p>
-                      <p className="mt-1 text-xs text-primary/55">
+                      </AlertTitle>
+                      <AlertDescription className="text-xs text-primary/55">
                         Trust tier: {item.trustTier.replaceAll("_", " ")}
-                      </p>
-                      <div className="mt-3">
+                      </AlertDescription>
+                      <div className="col-start-2 mt-3">
                         <ToolInput input={item.input} />
                       </div>
                       {item.status === "pending" ? (
-                        <div className="mt-3 flex gap-2">
+                        <div className="col-start-2 mt-3 flex gap-2">
                           <Button
                             onClick={() => void chat.onResolveApproval(item, "granted")}
                             size="sm"
@@ -364,11 +400,11 @@ export function ChatDashboardRoute() {
                           </Button>
                         </div>
                       ) : (
-                        <p className="mt-3 text-xs capitalize text-primary/60">
+                        <AlertDescription className="col-start-2 mt-3 text-xs capitalize text-primary/60">
                           {item.status === "resolving" ? "Submitting decision…" : item.status}
-                        </p>
+                        </AlertDescription>
                       )}
-                    </div>
+                    </Alert>
                   );
                 }
                 return null;
@@ -380,13 +416,13 @@ export function ChatDashboardRoute() {
         {chat.empty ? (
           <div className="absolute inset-0 overflow-y-auto px-4">
             <div className="mx-auto w-full max-w-3xl pb-12 pt-20">
-              <p className="text-[13px] text-primary/50">👋 Welcome back</p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+              <Label className="text-[13px] font-normal text-primary/50">👋 Welcome back</Label>
+              <CardTitle className="mt-1 text-2xl tracking-tight text-foreground">
                 {chat.workspace}
-              </h1>
-              <p className="mt-1 text-[13px] text-primary/50">
+              </CardTitle>
+              <CardDescription className="mt-1 text-[13px] text-primary/50">
                 Find the promises, relationship risks, and next steps that need attention.
-              </p>
+              </CardDescription>
               <div className="mt-5">{chat.promptInput}</div>
               <HomeOverview onOpenTab={chat.onOpenRevenueTab} />
             </div>
@@ -407,9 +443,9 @@ export function ChatDashboardRoute() {
                 <ArtifactDescription className="text-xs">
                   {chat.artifact.subtitle || chat.artifact.resource.kind}
                   {chat.artifact.readOnly ? (
-                    <span className="ml-2 inline-flex items-center gap-1 text-muted-foreground">
+                    <Badge className="ml-2 gap-1 font-normal" variant="outline">
                       <LockSimple className="h-3 w-3" /> Read-only
-                    </span>
+                    </Badge>
                   ) : null}
                 </ArtifactDescription>
               </div>
@@ -426,13 +462,11 @@ export function ChatDashboardRoute() {
                     }
                   >
                     {chat.artifact.loading ? (
-                      <CircleNotch className="h-4 w-4 animate-spin" />
+                      <Spinner className="size-4" />
                     ) : (
                       <FloppyDisk className="h-4 w-4" />
                     )}
-                    <span>
-                      {chat.artifact.text !== chat.artifact.original ? "Save changes" : "Saved"}
-                    </span>
+                    {chat.artifact.text !== chat.artifact.original ? "Save changes" : "Saved"}
                   </ArtifactAction>
                 ) : null}
                 <ArtifactClose onClick={chat.artifact.onClose} />
@@ -440,13 +474,15 @@ export function ChatDashboardRoute() {
             </ArtifactHeader>
             <ArtifactContent className="bg-muted/30">
               {chat.artifact.loading ? (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                  <CircleNotch className="mr-2 h-4 w-4 animate-spin" /> Loading
+                <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Spinner className="size-4" /> Loading
                 </div>
               ) : chat.artifact.error ? (
-                <div className="whitespace-pre-wrap break-words text-sm text-red-500">
-                  {chat.artifact.error}
-                </div>
+                <Alert variant="destructive">
+                  <AlertDescription className="whitespace-pre-wrap break-words">
+                    {chat.artifact.error}
+                  </AlertDescription>
+                </Alert>
               ) : (
                 <div className="flex h-full flex-col gap-2">
                   {chat.artifact.resource.kind === "agent" && chat.artifact.fileType === "json" ? (
@@ -479,11 +515,11 @@ export function ChatDashboardRoute() {
                     />
                   )}
                   {chat.artifact.readOnly ? (
-                    <p className="text-xs text-muted-foreground">
+                    <CardDescription className="text-xs text-muted-foreground">
                       {chat.artifact.resource.kind === "agent"
                         ? "This managed agent can be viewed here but cannot be changed from the workspace."
                         : "Runs are read-only; use the API to replay or inspect in detail."}
-                    </p>
+                    </CardDescription>
                   ) : null}
                 </div>
               )}

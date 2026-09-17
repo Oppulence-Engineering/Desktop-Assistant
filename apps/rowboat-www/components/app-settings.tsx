@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   Sun,
   type Icon as PhosphorIcon,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 
 import {
   SETTINGS_SECTIONS,
@@ -27,6 +27,10 @@ import { DeleteAccountRow } from "@/components/features/account/delete-account-r
 import { ConnectorSettings } from "@/components/features/connectors/connector-settings";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { CardDescription, CardTitle } from "@oppulence/ui/components/card";
+import { ItemMedia } from "@oppulence/ui/components/item";
+import { Label } from "@oppulence/ui/components/label";
+import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { Input } from "@oppulence/ui/components/input";
 import {
   Select,
@@ -35,6 +39,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@oppulence/ui/components/select";
+import { Switch } from "@oppulence/ui/components/switch";
+import { ToggleGroup, ToggleGroupItem } from "@oppulence/ui/components/toggle-group";
 import { dashboardFetch } from "@/lib/auth/client";
 import { ListConnectors200Response } from "@/lib/api/generated/zod/connectors/connectors";
 import { GetGoogleConnectionStatus200Response } from "@/lib/api/generated/zod/google-oauth/google-oauth";
@@ -127,27 +133,30 @@ function ValueRow({
 
   return (
     <div className="group/row flex min-h-[34px] items-center justify-between gap-4 rounded-none px-4 py-1 transition-colors hover:bg-background-100 dark:hover:bg-background-200">
-      <span className="text-xs capitalize text-primary/60">{label}</span>
-      <span className="flex min-w-0 items-center gap-1.5">
-        <span
+      <Label className="text-xs font-normal capitalize text-primary/60">{label}</Label>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <Badge
           className={cn(
-            "truncate text-right font-mono text-xs",
+            "truncate font-mono font-normal",
             value ? "text-primary" : "text-primary/40",
           )}
+          variant="secondary"
         >
           {value || "—"}
-        </span>
+        </Badge>
         {copy && value ? (
-          <button
+          <Button
             aria-label={`Copy ${label}`}
-            className="text-primary/50 opacity-0 transition-opacity hover:text-primary group-hover/row:opacity-100"
+            className="size-7 text-primary/50 opacity-0 transition-opacity hover:text-primary group-hover/row:opacity-100"
             onClick={handleCopy}
+            size="icon"
             type="button"
+            variant="ghost"
           >
             {copied ? <Check className="size-3.5" /> : <Clipboard className="size-3.5" />}
-          </button>
+          </Button>
         ) : null}
-      </span>
+      </div>
     </div>
   );
 }
@@ -175,7 +184,11 @@ function SaveFooter({
 }) {
   return (
     <div className="flex items-center justify-end gap-3 border-t bg-background-100 p-4 dark:bg-background-200">
-      {saved ? <span className="font-mono text-xs text-oppulence-orange">saved</span> : null}
+      {saved ? (
+        <Badge className="font-mono text-xs text-oppulence-orange" variant="outline">
+          saved
+        </Badge>
+      ) : null}
       <Button disabled={!dirty || saving} onClick={onSave} size="sm">
         {saving ? "Saving…" : label}
       </Button>
@@ -192,11 +205,53 @@ function useSavedFlash(): [boolean, () => void] {
   return [saved, flash];
 }
 
+function SettingsStatus({ children }: { children: React.ReactNode }) {
+  return (
+    <Badge
+      className="settings-status settings-status--ok rounded-none border-0 bg-transparent px-0 font-normal shadow-none hover:bg-transparent"
+      variant="outline"
+    >
+      {children}
+    </Badge>
+  );
+}
+
+function ThemePreviewSkeleton({ dark }: { dark: boolean }) {
+  const line = dark ? "bg-zinc-400/35" : "bg-zinc-400/35";
+  const accent = dark ? "bg-zinc-400/60" : "bg-zinc-400/60";
+  return (
+    <div
+      className={cn(
+        "flex h-20 overflow-hidden rounded-none border",
+        dark ? "border-zinc-700 bg-zinc-900" : "bg-white",
+      )}
+    >
+      <div
+        className={cn(
+          "w-1/3 border-r p-2",
+          dark ? "border-zinc-700 bg-zinc-800" : "border-zinc-200 bg-zinc-100",
+        )}
+      >
+        <Skeleton className={cn("mb-2 h-1.5 w-2/3 rounded-none", accent)} />
+        <Skeleton className={cn("mb-1.5 h-1 w-full rounded-none", line)} />
+        <Skeleton className={cn("h-1 w-4/5 rounded-none", line)} />
+      </div>
+      <div className="flex-1 p-2">
+        <Skeleton className={cn("mb-2 h-1.5 w-1/2 rounded-none", accent)} />
+        <Skeleton className={cn("mb-1.5 h-1 w-full rounded-none", line)} />
+        <Skeleton className={cn("h-1 w-4/5 rounded-none", line)} />
+      </div>
+    </div>
+  );
+}
+
 function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: string }) {
   return (
     <div className="mb-1.5">
-      <span className="block text-sm font-medium text-primary">{children}</span>
-      {hint ? <span className="block text-xs text-muted-foreground">{hint}</span> : null}
+      <Label className="block text-sm text-primary">{children}</Label>
+      {hint ? (
+        <CardDescription className="block text-xs text-muted-foreground">{hint}</CardDescription>
+      ) : null}
     </div>
   );
 }
@@ -333,48 +388,30 @@ function AppearanceSection() {
         description="How the console looks on this device. Applies immediately."
         title="Theme"
       >
-        <div className="settings-choice-grid p-3">
+        <ToggleGroup
+          className="settings-choice-grid p-3"
+          onValueChange={(value) => value && setTheme(value as ThemePreference)}
+          type="single"
+          value={theme}
+        >
           {options.map((option) => (
-            <button
-              className="settings-choice"
+            <ToggleGroupItem
+              aria-label={option.label}
+              className="settings-choice h-auto flex-col data-[state=on]:shadow-none"
               data-selected={theme === option.value}
               key={option.value}
-              onClick={() => setTheme(option.value)}
-              type="button"
+              value={option.value}
             >
-              <span
-                className={cn(
-                  "flex h-20 overflow-hidden rounded-none border",
-                  option.value === "dark" ? "border-zinc-700 bg-zinc-900" : "bg-white",
-                )}
-              >
-                <span
-                  className={cn(
-                    "w-1/3 border-r p-2",
-                    option.value === "dark"
-                      ? "border-zinc-700 bg-zinc-800"
-                      : "border-zinc-200 bg-zinc-100",
-                  )}
-                >
-                  <span className="mb-2 block h-1.5 w-2/3 rounded-full bg-zinc-400/60" />
-                  <span className="mb-1.5 block h-1 w-full rounded-full bg-zinc-400/35" />
-                  <span className="block h-1 w-4/5 rounded-full bg-zinc-400/35" />
-                </span>
-                <span className="flex-1 p-2">
-                  <span className="mb-2 block h-1.5 w-1/2 rounded-full bg-zinc-400/60" />
-                  <span className="mb-1.5 block h-1 w-full rounded-full bg-zinc-400/35" />
-                  <span className="block h-1 w-4/5 rounded-full bg-zinc-400/35" />
-                </span>
-              </span>
-              <span className="flex items-center justify-between">
-                <span className="settings-choice-label">{option.label}</span>
+              <ThemePreviewSkeleton dark={option.value === "dark"} />
+              <div className="flex w-full items-center justify-between">
+                <Label className="settings-choice-label font-normal">{option.label}</Label>
                 {theme === option.value ? (
                   <Check className="size-3.5 text-[var(--settings-accent)]" />
                 ) : null}
-              </span>
-            </button>
+              </div>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       </SettingsRow>
       <SettingsRow description="Language used throughout the product." title="Language">
         <div className="settings-row">
@@ -382,9 +419,14 @@ function AppearanceSection() {
             <p className="settings-row-label">Interface language</p>
             <p className="settings-row-description">English is currently available.</p>
           </div>
-          <select className="settings-select w-40" defaultValue="en">
-            <option value="en">English</option>
-          </select>
+          <Select defaultValue="en" disabled>
+            <SelectTrigger aria-label="Interface language" className="settings-select w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">English</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </SettingsRow>
     </>
@@ -457,7 +499,9 @@ function ModelsSection() {
             const provider = name.includes("/") ? name.split("/")[0] : null;
             return (
               <div className="flex items-center justify-between gap-4 px-4 py-2.5" key={name}>
-                <span className="truncate font-mono text-sm text-primary">{name}</span>
+                <Label className="truncate font-mono text-sm font-normal text-primary">
+                  {name}
+                </Label>
                 {provider ? (
                   <Badge className="shrink-0 rounded-[2px] capitalize" variant="outline">
                     {provider}
@@ -552,15 +596,44 @@ function PreferenceToggle({
         <p className="settings-row-label">{label}</p>
         <p className="settings-row-description">{description}</p>
       </div>
-      <button
-        aria-checked={checked}
+      <Switch
         aria-label={label}
+        checked={checked}
         className="settings-switch shrink-0"
-        onClick={() => setChecked(!checked)}
-        role="switch"
-        type="button"
+        onCheckedChange={setChecked}
       />
     </div>
+  );
+}
+
+const NOTIFICATION_LEVELS = [
+  { value: "off", label: "Off" },
+  { value: "attention", label: "Needs attention" },
+  { value: "all", label: "All relationship changes" },
+] as const;
+
+function NotificationLevelSelect() {
+  const [level, setLevel] = React.useState(() => getPref("notification-level") || "off");
+
+  return (
+    <Select
+      onValueChange={(value) => {
+        setLevel(value);
+        setPref("notification-level", value);
+      }}
+      value={level}
+    >
+      <SelectTrigger aria-label="Notification level" className="settings-select w-40">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {NOTIFICATION_LEVELS.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -596,21 +669,24 @@ function OverviewSection({ onNavigate }: { onNavigate: (section: SettingsSection
             const section = SETTINGS_SECTIONS.find((item) => item.key === key);
             if (!section) return null;
             return (
-              <button
-                className="settings-card"
+              <Button
+                className="settings-card h-auto"
                 key={section.key}
                 onClick={() => onNavigate(section.key)}
                 type="button"
+                variant="ghost"
               >
-                <span className="settings-card-icon">
+                <ItemMedia className="settings-card-icon" variant="icon">
                   <section.icon />
-                </span>
-                <span className="settings-card-copy">
-                  <span className="settings-card-title">{section.label}</span>
-                  <span className="settings-card-description">{section.description}</span>
-                </span>
+                </ItemMedia>
+                <div className="settings-card-copy">
+                  <CardTitle className="settings-card-title text-sm">{section.label}</CardTitle>
+                  <CardDescription className="settings-card-description">
+                    {section.description}
+                  </CardDescription>
+                </div>
                 <ArrowRight className="ml-auto size-3.5 shrink-0 text-primary/30" />
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -655,16 +731,7 @@ function PreferencesSection() {
               Browser notifications stay off until you choose a level.
             </p>
           </div>
-          <select
-            aria-label="Notification level"
-            className="settings-select w-40"
-            defaultValue={getPref("notification-level") || "off"}
-            onChange={(event) => setPref("notification-level", event.target.value)}
-          >
-            <option value="off">Off</option>
-            <option value="attention">Needs attention</option>
-            <option value="all">All relationship changes</option>
-          </select>
+          <NotificationLevelSelect />
         </div>
       </SettingsRow>
       <SettingsRow
@@ -705,16 +772,7 @@ function NotificationsSection() {
               Choose which relationship changes are important enough to surface.
             </p>
           </div>
-          <select
-            aria-label="Notification level"
-            className="settings-select w-40"
-            defaultValue={getPref("notification-level") || "off"}
-            onChange={(event) => setPref("notification-level", event.target.value)}
-          >
-            <option value="off">Off</option>
-            <option value="attention">Needs attention</option>
-            <option value="all">All relationship changes</option>
-          </select>
+          <NotificationLevelSelect />
         </div>
       </SettingsRow>
     </>
@@ -739,7 +797,7 @@ function SecuritySection({ session }: { session: SessionShape }) {
               {session.user.organizationId || "No organization is attached to this session."}
             </p>
           </div>
-          <span className="settings-status settings-status--ok">Authorized</span>
+          <SettingsStatus>Authorized</SettingsStatus>
         </div>
         <div className="settings-row">
           <div className="settings-row-copy">
@@ -781,21 +839,24 @@ function HelpSection() {
       />
       <div className="settings-card-grid">
         {items.map((item) => (
-          <button
-            className="settings-card"
+          <Button
+            className="settings-card h-auto"
             key={item.title}
             onClick={() => window.open(item.href, "_blank")}
             type="button"
+            variant="ghost"
           >
-            <span className="settings-card-icon">
+            <ItemMedia className="settings-card-icon" variant="icon">
               <item.icon />
-            </span>
-            <span className="settings-card-copy">
-              <span className="settings-card-title">{item.title}</span>
-              <span className="settings-card-description">{item.description}</span>
-            </span>
+            </ItemMedia>
+            <div className="settings-card-copy">
+              <CardTitle className="settings-card-title text-sm">{item.title}</CardTitle>
+              <CardDescription className="settings-card-description">
+                {item.description}
+              </CardDescription>
+            </div>
             <ArrowRight className="ml-auto size-3.5 shrink-0 text-primary/30" />
-          </button>
+          </Button>
         ))}
       </div>
     </>
@@ -820,7 +881,7 @@ function PermissionsSection({ session }: { session: SessionShape }) {
               {session.user.organizationId || "No organization is attached to this session."}
             </p>
           </div>
-          <span className="settings-status settings-status--ok">Authorized</span>
+          <SettingsStatus>Authorized</SettingsStatus>
         </div>
         <div className="settings-row">
           <div className="settings-row-copy">
@@ -883,13 +944,13 @@ function CustomizationSection() {
             App name
           </label>
           <div className="flex gap-2">
-            <input
+            <Input
               className="settings-control min-w-0 flex-1"
               id="settings-app-name"
               onChange={(event) => setAppName(event.target.value)}
               value={appName}
             />
-            <button
+            <Button
               className="settings-button settings-button--primary"
               disabled={appName.trim() === savedName}
               onClick={() => {
@@ -901,7 +962,7 @@ function CustomizationSection() {
               type="button"
             >
               Save
-            </button>
+            </Button>
           </div>
         </div>
       </SettingsRow>
@@ -926,7 +987,7 @@ function EnvironmentSection() {
             <p className="settings-row-label">Console origin</p>
             <p className="settings-row-description font-mono">{origin}</p>
           </div>
-          <span className="settings-status settings-status--ok">Connected</span>
+          <SettingsStatus>Connected</SettingsStatus>
         </div>
         <div className="settings-row">
           <div className="settings-row-copy">
@@ -1040,7 +1101,7 @@ export function SettingsView({
                     {typeof window === "undefined" ? "" : window.location.origin}
                   </p>
                 </div>
-                <span className="settings-status settings-status--ok">Default</span>
+                <SettingsStatus>Default</SettingsStatus>
               </div>
               <div className="settings-row">
                 <div className="settings-row-copy">
@@ -1049,7 +1110,7 @@ export function SettingsView({
                     /api/rowboat/v1/relationships
                   </p>
                 </div>
-                <span className="settings-status settings-status--ok">Available</span>
+                <SettingsStatus>Available</SettingsStatus>
               </div>
             </SettingsRow>
             <SettingsRow
@@ -1063,13 +1124,14 @@ export function SettingsView({
                     Evidence queries and governed actions use the signed-in organization.
                   </p>
                 </div>
-                <button
+                <Button
                   className="settings-button"
                   onClick={() => window.location.reload()}
                   type="button"
+                  variant="outline"
                 >
                   Refresh
-                </button>
+                </Button>
               </div>
             </SettingsRow>
           </>

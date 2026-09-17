@@ -22,8 +22,12 @@ import {
   TextHTwo,
   TextItalic,
   TextStrikethrough,
-} from "@phosphor-icons/react";
-import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
+} from "@/lib/icons";
+import type { Icon as PhosphorIcon } from "@/lib/icons";
+import { Button } from "@oppulence/ui/components/button";
+import { CardDescription } from "@oppulence/ui/components/card";
+import { Label } from "@oppulence/ui/components/label";
+import { cn } from "@/lib/utils";
 import "./tiptap-markdown-editor.css";
 
 interface TiptapMarkdownEditorProps {
@@ -55,16 +59,18 @@ type ToolbarButtonProps = {
 
 function ToolbarButton({ icon: Icon, label, active, disabled, onClick }: ToolbarButtonProps) {
   return (
-    <button
-      type="button"
-      className={`tiptap-toolbar-button ${active ? "is-active" : ""}`}
+    <Button
       aria-label={label}
-      title={label}
+      className={cn("tiptap-toolbar-button", active && "is-active")}
       disabled={disabled}
       onClick={onClick}
+      size="icon"
+      title={label}
+      type="button"
+      variant="ghost"
     >
       <Icon size={15} />
-    </button>
+    </Button>
   );
 }
 
@@ -250,8 +256,8 @@ export function TiptapMarkdownEditor({
       )}
       <div className="tiptap-editor-pane">
         <div className="tiptap-pane-header">
-          <span className="tiptap-pane-title">Editor</span>
-          <span className="tiptap-pane-hint">Markdown + shortcuts</span>
+          <Label className="tiptap-pane-title font-normal">Editor</Label>
+          <CardDescription className="tiptap-pane-hint">Markdown + shortcuts</CardDescription>
         </div>
         <div className="tiptap-editor-surface">
           <EditorContent editor={editor} />

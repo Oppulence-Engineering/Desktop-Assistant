@@ -28,7 +28,7 @@ import {
   UserCircle,
   WarningDiamond,
   X,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 import {
   BaseEdge,
   Controls,
@@ -52,6 +52,8 @@ import "@xyflow/react/dist/style.css";
 import { errMessage } from "@/components/revenue/shared";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { ItemMedia } from "@oppulence/ui/components/item";
+import { Label } from "@oppulence/ui/components/label";
 import { Checkbox } from "@oppulence/ui/components/checkbox";
 import { DateTimePicker } from "@oppulence/ui/components/date-time-picker";
 import { Input } from "@oppulence/ui/components/input";
@@ -200,33 +202,38 @@ function GraphNodeCard({ data, selected }: NodeProps<FlowNode>) {
       aria-label={`${KIND_LABEL[node.kind]}: ${node.label}. ${badges.join(", ")}`}
     >
       <div className="flex items-start gap-2">
-        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/7 text-primary/70">
+        <ItemMedia
+          className="mt-0.5 size-7 shrink-0 rounded-none bg-primary/7 text-primary/70"
+          variant="icon"
+        >
           <NodeIcon kind={node.kind} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-mono text-[9px] uppercase tracking-wider text-primary/40">
+        </ItemMedia>
+        <div className="min-w-0 flex-1">
+          <Label className="block font-mono text-[9px] uppercase tracking-wider text-primary/40">
             {KIND_LABEL[node.kind]}
-          </span>
-          <span className="mt-0.5 block line-clamp-2 text-xs font-medium leading-4 text-primary">
+          </Label>
+          <Label className="mt-0.5 block line-clamp-2 text-xs font-medium leading-4 text-primary">
             {node.label}
-          </span>
-        </span>
+          </Label>
+        </div>
         {node.changedSinceReview ? (
-          <span
-            className="size-2 shrink-0 rounded-full bg-oppulence-orange"
+          <Badge
+            className="size-2 shrink-0 rounded-full border-0 bg-oppulence-orange p-0"
             title="Changed since review"
+            variant="outline"
           />
         ) : null}
       </div>
       {badges.length ? (
         <div className="mt-2 flex flex-wrap gap-1">
           {badges.slice(0, 2).map((badge) => (
-            <span
+            <Badge
               key={badge}
-              className="rounded-full bg-primary/6 px-1.5 py-0.5 text-[9px] capitalize text-primary/55"
+              className="rounded-none bg-primary/6 px-1.5 py-0.5 text-[9px] capitalize font-normal text-primary/55"
+              variant="outline"
             >
               {String(badge).replaceAll("_", " ")}
-            </span>
+            </Badge>
           ))}
         </div>
       ) : null}
@@ -557,11 +564,12 @@ function Inspector({
       aria-label="Graph inspector"
     >
       <div className="flex items-start gap-3">
-        <span
-          className={`flex size-9 shrink-0 items-center justify-center border bg-background ${nodeShape(node.kind)} ${nodeTone(node)}`}
+        <ItemMedia
+          className={`size-9 shrink-0 border bg-background ${nodeShape(node.kind)} ${nodeTone(node)}`}
+          variant="icon"
         >
           <NodeIcon kind={node.kind} className="size-5" />
-        </span>
+        </ItemMedia>
         <div className="min-w-0 flex-1">
           <p className="font-mono text-[10px] uppercase tracking-wider text-primary/40">
             {KIND_LABEL[node.kind]}
@@ -656,13 +664,13 @@ function Inspector({
                   className="h-auto w-full justify-start rounded-none px-2 py-1.5 text-left"
                 >
                   <NodeIcon kind={other.kind} />
-                  <span className="min-w-0 flex-1 truncate">{other.label}</span>
-                  <span
-                    className="font-mono text-[9px] text-primary/35"
+                  <Label className="min-w-0 flex-1 truncate font-normal">{other.label}</Label>
+                  <Label
+                    className="font-mono text-[9px] font-normal text-primary/35"
                     aria-label={`${edge.source === node.id ? "Outgoing" : "Incoming"}: ${edge.label}`}
                   >
                     {edge.source === node.id ? "→" : "←"} {edge.label}
-                  </span>
+                  </Label>
                 </Button>
               </li>
             ) : null;
@@ -691,9 +699,9 @@ function Inspector({
               </Button>
             ))}
             {!evidenceNodes.length ? (
-              <span className="text-[10px] text-primary/40">
+              <Label className="text-[10px] font-normal text-primary/40">
                 Evidence references retained in the record.
-              </span>
+              </Label>
             ) : null}
           </div>
         </div>
@@ -802,7 +810,8 @@ function GraphTable({
                   onClick={() => onSelectNode(node.id)}
                   className="max-w-80 justify-start px-0 text-left text-primary hover:bg-transparent hover:underline"
                 >
-                  <NodeIcon kind={node.kind} /> <span className="truncate">{node.label}</span>
+                  <NodeIcon kind={node.kind} />{" "}
+                  <Label className="truncate font-normal">{node.label}</Label>
                 </Button>
               </TableCell>
               <TableCell className="px-3 py-2 text-primary/55">{KIND_LABEL[node.kind]}</TableCell>
@@ -1085,9 +1094,12 @@ export function RelationshipGraphWorkspace({
       <div className="border-b border-border p-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="mr-auto flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-full bg-oppulence-orange/10 text-oppulence-orange">
+            <ItemMedia
+              className="size-8 rounded-none bg-oppulence-orange/10 text-oppulence-orange"
+              variant="icon"
+            >
               <ShareNetwork className="size-4" weight="duotone" />
-            </span>
+            </ItemMedia>
             <div>
               <h2 className="text-sm font-semibold text-primary">Relationship graph</h2>
               <p className="text-[10px] text-primary/40">
@@ -1187,15 +1199,18 @@ export function RelationshipGraphWorkspace({
             aria-live="polite"
           >
             <Sparkle className="size-4 shrink-0 text-oppulence-orange" />
-            <span className="mr-auto">{queryResult.answer}</span>
+            <Label className="mr-auto font-normal">{queryResult.answer}</Label>
             {queryResult.parsed.applied.map((filter) => (
               <Badge key={filter} variant="outline" className="rounded-full font-normal">
                 {filter}
               </Badge>
             ))}
-            <span className="font-mono text-[10px] text-primary/45">
+            <Badge
+              className="rounded-none font-mono text-[10px] font-normal text-primary/45"
+              variant="outline"
+            >
               {queryResult.evidenceRefs.length} evidence refs
-            </span>
+            </Badge>
           </div>
         ) : null}
       </div>

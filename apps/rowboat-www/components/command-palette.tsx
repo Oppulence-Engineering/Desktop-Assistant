@@ -12,7 +12,7 @@ import {
   SidebarSimple,
   SignOut,
   Sun,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 
 import {
   SETTINGS_SECTIONS,
@@ -29,6 +29,8 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@oppulence/ui/components/command";
+import { Label } from "@oppulence/ui/components/label";
+import { Spinner } from "@oppulence/ui/components/spinner";
 import type { SessionMeta } from "@/lib/chat-sessions";
 import { listRelationships } from "@/lib/revenue";
 import type { RevenueRelationship } from "@/types/revenue";
@@ -119,7 +121,16 @@ export function CommandPalette({
         value={query}
       />
       <CommandList>
-        <CommandEmpty>{searching ? "Searching…" : "No results found."}</CommandEmpty>
+        <CommandEmpty className="flex items-center justify-center gap-2">
+          {searching ? (
+            <>
+              <Spinner className="size-4" />
+              Searching…
+            </>
+          ) : (
+            "No results found."
+          )}
+        </CommandEmpty>
         {accounts.length > 0 ? (
           <>
             <CommandGroup heading="Accounts">
@@ -204,7 +215,7 @@ export function CommandPalette({
                   value={`${session.title} ${session.runId}`}
                 >
                   <ChatCircle />
-                  <span className="truncate">{session.title}</span>
+                  <Label className="truncate font-normal">{session.title}</Label>
                 </CommandItem>
               ))}
             </CommandGroup>

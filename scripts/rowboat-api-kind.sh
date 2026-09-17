@@ -441,6 +441,38 @@ port_in_use() {
   fi
 }
 
+# True when kind's extraPortMappings publish this host port (e.g. 18080->30080).
+# Before rowboat-api is deployed nothing listens on the NodePort yet, so /healthz
+# fails even though the mapping is expected — falling back to 18081 then breaks
+# real Google OAuth, which only accepts http://localhost:18080/... redirect URIs.
+kind_publishes_host_port() {
+  local port="$1"
+  docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null \
+    | grep -E "${CLUSTER_NAME}-control-plane.*:${port}->" >/dev/null 2>&1
+}
+
+real_google_requires_port() {
+  [[ -z "$MOCK_GOOGLE" && "$1" == "$GOOGLE_REDIRECT_PORT" ]]
+}
+
+explain_canonical_port_failure() {
+  cat >&2 <<EOF
+localhost:${GOOGLE_REDIRECT_PORT} must stay reachable for real Google OAuth
+(redirect URI: http://localhost:${GOOGLE_REDIRECT_PORT}/oauth/google/callback).
+
+What happened: the port looks occupied but /healthz does not answer — common when
+kind publishes ${GOOGLE_REDIRECT_PORT}->30080 before rowboat-api is deployed, or when
+Docker Desktop left a stale host forward (TCP connect then reset).
+
+Try, in order:
+  1. make delete-cluster && make stack     # clean kind + fresh port mapping
+  2. Restart Docker Desktop, then make stack
+  3. ROWBOAT_KIND_MOCK_GOOGLE=1 make stack  # devstack Google mock (no real Gmail)
+
+Do not fall back to ${FALLBACK_API_PORT} — Google rejects redirect_uri_mismatch on other ports.
+EOF
+}
+
 listener_pids_for_port() {
   local port="$1"
   if command -v lsof >/dev/null 2>&1; then
@@ -801,6 +833,14 @@ select_host_port() {
       echo "localhost:${port} is in use but ${name} is not healthy; choose a different ${port_var}" >&2
       exit 1
     fi
+    if real_google_requires_port "$port" && kind_publishes_host_port "$port"; then
+      echo "localhost:${port} is kind's NodePort mapping (${name} not healthy yet); keeping canonical port for Google OAuth"
+      return
+    fi
+    if real_google_requires_port "$port"; then
+      explain_canonical_port_failure
+      exit 1
+    fi
     echo "localhost:${port} is occupied but ${name} is not healthy; falling back to localhost:${fallback_port}"
     printf -v "$port_var" "%s" "$fallback_port"
   fi
@@ -836,9 +876,23 @@ ensure_local_http() {
       echo "localhost:${port} is in use but ${name} is not healthy; choose a different ${port_var}" >&2
       exit 1
     fi
+    if real_google_requires_port "$port" && kind_publishes_host_port "$port"; then
+      echo "localhost:${port} is kind's NodePort mapping; waiting for ${name} through kind publish"
+      wait_for_http "$name" "http://localhost:${port}${path}"
+      return
+    fi
+    if real_google_requires_port "$port"; then
+      explain_canonical_port_failure
+      exit 1
+    fi
     echo "localhost:${port} is occupied but ${name} is not healthy; falling back to localhost:${fallback_port}"
     printf -v "$port_var" "%s" "$fallback_port"
     port="$fallback_port"
+  fi
+
+  if port_in_use "$port"; then
+    wait_for_http "$name" "http://localhost:${port}${path}"
+    return
   fi
 
   start_port_forward "$name" "$resource" "$port" "$remote_port"

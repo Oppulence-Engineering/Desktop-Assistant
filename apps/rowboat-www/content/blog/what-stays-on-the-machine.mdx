@@ -1,0 +1,23 @@
+---
+title: What stays on the machine, and what does not
+description: We will not say nothing leaves your computer. That is only true for some setups. Here is the actual split.
+author: Oppulence
+date: "2026-09-17"
+category: security
+---
+
+There are three pipes, on purpose.
+
+**Local.** The Markdown vault, meeting audio, on-device Whisper transcripts, local embeddings, and `~/.rowboat/` config. Delete the folder and those copies are gone.
+
+**Cloud ledger.** When you sign in, relationship state syncs so web and desktop share the same register. Account identity goes through WorkOS.
+
+**Models.** Bring-your-own keys go to the provider you configured. Signed-in hosted calls go through the credit-gated gateway. Prompts can contain relationship context you asked the assistant to use.
+
+Analytics is PostHog, fail-closed until you enable it. Native crash dumps stay on the machine.
+
+## The honest local-only setup
+
+Bring your own model keys. Keep the vault on disk. Do not sign in. That is a real configuration, and it is not the same as the signed-in ledger.
+
+The longer map is on [security](/security) and [what stays on device](/guides/what-stays-on-device).

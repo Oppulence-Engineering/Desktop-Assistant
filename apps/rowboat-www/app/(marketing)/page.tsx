@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 
+import { homepageFaqs } from "./catalog";
 import { HomePage } from "./marketing-components";
+import { JsonLd } from "./marketing-primitives";
+import { faqJsonLd } from "./metadata";
 
 const TITLE = "Oppulence — The Commitment Ledger";
 const DESCRIPTION =
@@ -65,6 +68,7 @@ export default function Page() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         type="application/ld+json"
       />
+      <JsonLd data={faqJsonLd(homepageFaqs)} />
       <HomePage />
     </>
   );

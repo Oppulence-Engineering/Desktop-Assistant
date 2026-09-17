@@ -6,15 +6,11 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowRightIcon,
-  CircleNotchIcon,
-  ExportIcon,
-  PlugsIcon,
-  WarningIcon,
-} from "@phosphor-icons/react";
+import { ArrowRightIcon, CircleNotchIcon, ExportIcon, PlugsIcon, WarningIcon } from "@/lib/icons";
 
+import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { Label } from "@oppulence/ui/components/label";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import {
   downloadMarkdown,
@@ -340,18 +336,21 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
         {report.items.map((item) => (
           <li key={item.commitmentId} className="border border-border bg-background p-4">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <span className="text-[13px] font-medium text-primary">{item.account}</span>
-              <span className="text-[12px] text-primary/45">
+              <Label className="text-[13px] font-medium text-primary">{item.account}</Label>
+              <Label className="text-[12px] font-normal text-primary/45">
                 {item.direction === "promised_by_them" ? "they owe us" : "we owe them"}
-              </span>
+              </Label>
               {item.state === "at_risk" ? (
-                <span className="border border-amber-500/40 px-1.5 py-0.5 text-[11px] text-amber-500">
+                <Badge
+                  className="rounded-none border-amber-500/40 px-1.5 py-0.5 text-[11px] font-normal text-amber-500"
+                  variant="outline"
+                >
                   at risk
-                </span>
+                </Badge>
               ) : null}
-              <span className="ml-auto text-[12px] text-primary/45">
+              <Label className="ml-auto text-[12px] font-normal text-primary/45">
                 {item.dueAt ? `due ${item.dueAt.slice(0, 10)}` : "due unspecified"}
-              </span>
+              </Label>
             </div>
             <p className="mt-1.5 text-[14px] leading-snug text-primary">{item.text}</p>
             {/* Every claim carries its citation, or it is not made. */}

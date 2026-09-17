@@ -31,7 +31,9 @@ import {
   PromptInputHeader,
 } from "@/components/ai-elements/prompt-input";
 import { useState, useEffect, useRef, type ReactNode, useCallback, useMemo } from "react";
-import { SidebarSimple } from "@phosphor-icons/react";
+import { SidebarSimple } from "@/lib/icons";
+import { Button } from "@oppulence/ui/components/button";
+import { Label } from "@oppulence/ui/components/label";
 import {
   Select,
   SelectContent,
@@ -399,20 +401,24 @@ function PageBody({ children }: { children: ReactNode }) {
               <div className="flex items-center gap-2">
                 {/* With the sidebar open on a wide screen, its edge and the [ key
                     close it; the button is only needed to bring it back. */}
-                <button
+                <Button
                   aria-label="Toggle sidebar"
-                  className={`flex size-7 items-center justify-center rounded-none text-primary/60 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300 ${
+                  className={`size-7 rounded-none text-primary/60 hover:bg-background-100 hover:text-primary dark:hover:bg-background-300 ${
                     sidebarOpen ? "md:hidden" : ""
                   }`}
                   onClick={toggleSidebar}
+                  size="icon"
                   title="Toggle sidebar  ["
                   type="button"
+                  variant="ghost"
                 >
                   <SidebarSimple className="size-4" />
-                </button>
-                <span
+                </Button>
+                <Label
                   className={
-                    view === "settings" ? "settings-stage-header-title" : "text-[15px] text-primary"
+                    view === "settings"
+                      ? "settings-stage-header-title font-normal"
+                      : "text-[15px] font-normal text-primary"
                   }
                 >
                   {view === "settings"
@@ -428,7 +434,7 @@ function PageBody({ children }: { children: ReactNode }) {
                               ? "Runs"
                               : "Workflows"
                             : "Home"}
-                </span>
+                </Label>
               </div>
             </header>
 

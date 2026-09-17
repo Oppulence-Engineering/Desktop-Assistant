@@ -7,6 +7,7 @@ import {
   CollapsibleTrigger,
 } from "@oppulence/ui/components/collapsible";
 import { Input } from "@oppulence/ui/components/input";
+import { Label } from "@oppulence/ui/components/label";
 import {
   Tooltip,
   TooltipContent,
@@ -14,7 +15,7 @@ import {
   TooltipTrigger,
 } from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
-import { CaretDown } from "@phosphor-icons/react";
+import { CaretDown } from "@/lib/icons";
 import type { ComponentProps, ReactNode } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -241,7 +242,9 @@ export const WebPreviewConsole = ({
                 )}
                 key={`${log.timestamp.getTime()}-${index}`}
               >
-                <span className="text-muted-foreground">{log.timestamp.toLocaleTimeString()}</span>{" "}
+                <Label className="font-normal text-muted-foreground">
+                  {log.timestamp.toLocaleTimeString()}
+                </Label>{" "}
                 {log.message}
               </div>
             ))

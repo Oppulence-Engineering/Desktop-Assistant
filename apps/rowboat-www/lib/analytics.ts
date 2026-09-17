@@ -29,9 +29,25 @@ function client(): typeof posthog | null {
   return posthog;
 }
 
+function shouldLogCaptureInDev(): boolean {
+  if (process.env.NODE_ENV !== "development") return false;
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = window.localStorage.getItem("oppulence:dev:prefs");
+    if (!raw) return true;
+    const parsed = JSON.parse(raw) as { posthogLog?: boolean };
+    return parsed.posthogLog !== false;
+  } catch {
+    return true;
+  }
+}
+
 /** capture emits one product event; a no-op when analytics is not configured. */
 export function capture(event: string, props?: Record<string, unknown>): void {
   try {
+    if (shouldLogCaptureInDev()) {
+      console.debug("[posthog]", event, props ?? {});
+    }
     client()?.capture(event, props);
   } catch {
     // analytics must never break the app

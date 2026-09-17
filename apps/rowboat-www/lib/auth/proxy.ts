@@ -3,6 +3,7 @@ import "server-only";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { RowboatProxyPathSchema } from "@/lib/api/routes/schemas/proxy";
 import { rowboatApiURL } from "@/lib/auth/config";
 import { clearAuthCookies, readSessionCookie, setSessionCookie } from "@/lib/auth/cookies";
 import { refreshWorkOSSession, shouldRefreshSession } from "@/lib/auth/rowboat-api";
@@ -91,23 +92,55 @@ export async function getAuthorizedSession(request: NextRequest): Promise<Author
   return { ok: true, session };
 }
 
+type AuthorizedSession = Extract<AuthorizedSessionResult, { ok: true }>;
+
+/**
+ * Keeps sealed session cookies in sync after a protected route talks to
+ * rowboat-api. A 401 from upstream clears auth; a refresh re-seals the cookie.
+ */
+export function applyAuthorizedSessionCookies(
+  response: NextResponse,
+  auth: AuthorizedSession,
+  upstreamStatus?: number,
+): void {
+  if (upstreamStatus === 401) {
+    clearAuthCookies(response);
+    return;
+  }
+  if (auth.refreshed) {
+    setSessionCookie(response, auth.refreshed);
+  }
+}
+
+function staysUnderV1Prefix(pathname: string): boolean {
+  const normalized = new URL(pathname, "http://rowboat.invalid").pathname;
+  return normalized === "/v1" || normalized.startsWith("/v1/");
+}
+
 /**
  * Converts /api/rowboat/... proxy paths to rowboat-api paths. Dashboard code is
  * expected to call /api/rowboat/v1/...; a missing v1 is still forced under /v1
  * so the proxy cannot reach unrelated upstream paths.
  */
-export function dashboardProxyPath(path: string[]): string {
-  const cleaned = path.map((part) => encodeURIComponent(part)).join("/");
-  if (!cleaned) return "/v1/me";
-  if (path[0] === "v1") return `/${cleaned}`;
-  return `/v1/${cleaned}`;
+export function dashboardProxyPath(path: string[]): string | null {
+  const parsed = RowboatProxyPathSchema.safeParse(path);
+  if (!parsed.success) return null;
+
+  const cleaned = parsed.data.map((part) => encodeURIComponent(part)).join("/");
+  const pathname = !cleaned ? "/v1/me" : path[0] === "v1" ? `/${cleaned}` : `/v1/${cleaned}`;
+  return staysUnderV1Prefix(pathname) ? pathname : null;
 }
 
 export async function proxyRowboatAPI(request: NextRequest, path: string[]): Promise<NextResponse> {
   const auth = await getAuthorizedSession(request);
   if (!auth.ok) return auth.response;
 
-  const upstreamURL = rowboatApiURL(dashboardProxyPath(path), request.nextUrl.searchParams);
+  const upstreamPath = dashboardProxyPath(path);
+  if (!upstreamPath) {
+    return NextResponse.json({ error: "invalid proxy path", code: "bad_request" }, { status: 400 });
+  }
+
+  const upstreamURL = rowboatApiURL(upstreamPath, request.nextUrl.searchParams);
   const headers = dashboardProxyHeaders(request.headers);
   headers.set("Authorization", `${auth.session.tokenType} ${auth.session.accessToken}`);
 
@@ -133,12 +166,7 @@ export async function proxyRowboatAPI(request: NextRequest, path: string[]): Pro
     headers: responseHeaders,
   });
 
-  if (auth.refreshed) {
-    setSessionCookie(response, auth.refreshed);
-  }
-  if (upstream.status === 401) {
-    clearAuthCookies(response);
-  }
+  applyAuthorizedSessionCookies(response, auth, upstream.status);
 
   return response;
 }

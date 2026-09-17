@@ -15,7 +15,7 @@ import {
   Plus,
   Trash,
   UserFocus,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 import {
   Background,
   Controls,
@@ -29,6 +29,8 @@ import {
 
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { CardDescription } from "@oppulence/ui/components/card";
+import { ItemMedia } from "@oppulence/ui/components/item";
 import { Input } from "@oppulence/ui/components/input";
 import { Label } from "@oppulence/ui/components/label";
 import {
@@ -246,18 +248,21 @@ function NodeLabel({
 }) {
   return (
     <div className="flex items-start gap-3 px-3 py-3 text-left">
-      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-none border border-border bg-muted/40 text-foreground [&>svg]:size-4">
+      <ItemMedia
+        className="mt-0.5 size-8 shrink-0 rounded-none border border-border bg-muted/40 text-foreground [&>svg]:size-4"
+        variant="icon"
+      >
         {icon}
-      </span>
-      <span className="min-w-0">
-        <span className="block text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+      </ItemMedia>
+      <div className="min-w-0">
+        <Label className="block text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
           {eyebrow}
-        </span>
-        <span className="mt-0.5 block truncate text-[13px] font-medium text-foreground">
+        </Label>
+        <Label className="mt-0.5 block truncate text-[13px] font-medium text-foreground">
           {title}
-        </span>
-        <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{detail}</span>
-      </span>
+        </Label>
+        <CardDescription className="mt-0.5 block truncate text-[11px]">{detail}</CardDescription>
+      </div>
     </div>
   );
 }

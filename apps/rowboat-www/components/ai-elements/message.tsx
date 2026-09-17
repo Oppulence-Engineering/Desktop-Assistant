@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { Button } from "@oppulence/ui/components/button";
+import { Label } from "@oppulence/ui/components/label";
 import { ButtonGroup, ButtonGroupText } from "@oppulence/ui/components/button-group";
 import {
   Tooltip,
@@ -11,7 +12,7 @@ import {
 } from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
 import type { FileUIPart, UIMessage } from "ai";
-import { CaretLeft, CaretRight, Paperclip, X } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, Paperclip, X } from "@/lib/icons";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
 import { createContext, memo, useContext, useEffect, useMemo, useState } from "react";
 import { Streamdown } from "streamdown";
@@ -71,7 +72,7 @@ export const MessageAction = ({
   const button = (
     <Button size={size} type="button" variant={variant} {...props}>
       {children}
-      <span className="sr-only">{label || tooltip}</span>
+      <Label className="sr-only">{label || tooltip}</Label>
     </Button>
   );
 
@@ -317,7 +318,7 @@ export function MessageAttachment({ data, className, onRemove, ...props }: Messa
               variant="ghost"
             >
               <X />
-              <span className="sr-only">Remove</span>
+              <Label className="sr-only">Remove</Label>
             </Button>
           )}
         </>
@@ -345,7 +346,7 @@ export function MessageAttachment({ data, className, onRemove, ...props }: Messa
               variant="ghost"
             >
               <X />
-              <span className="sr-only">Remove</span>
+              <Label className="sr-only">Remove</Label>
             </Button>
           )}
         </>

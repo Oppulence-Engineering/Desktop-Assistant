@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@oppulence/ui/components/button";
+import { Label } from "@oppulence/ui/components/label";
 import {
   Card,
   CardAction,
@@ -16,7 +17,7 @@ import {
   CollapsibleTrigger,
 } from "@oppulence/ui/components/collapsible";
 import { cn } from "@/lib/utils";
-import { CaretUpDown } from "@phosphor-icons/react";
+import { CaretUpDown } from "@/lib/icons";
 import type { ComponentProps } from "react";
 import { createContext, useContext } from "react";
 import { Shimmer } from "./shimmer";
@@ -121,7 +122,7 @@ export const PlanTrigger = ({ className, ...props }: PlanTriggerProps) => (
       {...props}
     >
       <CaretUpDown className="size-4" />
-      <span className="sr-only">Toggle plan</span>
+      <Label className="sr-only">Toggle plan</Label>
     </Button>
   </CollapsibleTrigger>
 );

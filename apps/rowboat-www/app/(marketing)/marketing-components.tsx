@@ -1,36 +1,51 @@
-// Material icons keep the route-driven marketing data compact and consistent.
-import type { SvgIconComponent } from "@mui/icons-material";
-import ArrowRightIcon from "@mui/icons-material/ArrowForwardOutlined";
-import BrainIcon from "@mui/icons-material/PsychologyOutlined";
-import BriefcaseIcon from "@mui/icons-material/BusinessCenterOutlined";
-import CalendarDotsIcon from "@mui/icons-material/CalendarMonthOutlined";
-import ChartLineIcon from "@mui/icons-material/ShowChartOutlined";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CircleIcon from "@mui/icons-material/CircleOutlined";
-import CodeIcon from "@mui/icons-material/CodeOutlined";
-import EnvelopeIcon from "@mui/icons-material/MailOutlineOutlined";
-import FileTextIcon from "@mui/icons-material/DescriptionOutlined";
-import FlowArrowIcon from "@mui/icons-material/SchemaOutlined";
-import GlobeIcon from "@mui/icons-material/LanguageOutlined";
-import HardDrivesIcon from "@mui/icons-material/StorageOutlined";
-import HeadsetIcon from "@mui/icons-material/SupportAgentOutlined";
-import MagnifyingGlassIcon from "@mui/icons-material/SearchOutlined";
-import MonitorIcon from "@mui/icons-material/DesktopWindowsOutlined";
-import NetworkIcon from "@mui/icons-material/HubOutlined";
-import PathIcon from "@mui/icons-material/RouteOutlined";
-import PlugsConnectedIcon from "@mui/icons-material/CableOutlined";
-import SealCheckIcon from "@mui/icons-material/VerifiedOutlined";
-import SparkleIcon from "@mui/icons-material/AutoAwesomeOutlined";
-import StackIcon from "@mui/icons-material/LayersOutlined";
-import TrayIcon from "@mui/icons-material/InboxOutlined";
+import {
+  ArrowRight as ArrowRightIcon,
+  Brain as BrainIcon,
+  Briefcase as BriefcaseIcon,
+  CalendarDots as CalendarDotsIcon,
+  ChartLineUp as ChartLineIcon,
+  CheckCircle as CheckCircleIcon,
+  Circle as CircleIcon,
+  Code as CodeIcon,
+  EnvelopeSimple as EnvelopeIcon,
+  FileText as FileTextIcon,
+  FlowArrow as FlowArrowIcon,
+  Globe as GlobeIcon,
+  HardDrives as HardDrivesIcon,
+  Headset as HeadsetIcon,
+  MagnifyingGlass as MagnifyingGlassIcon,
+  Monitor as MonitorIcon,
+  Path as PathIcon,
+  PlugsConnected as PlugsConnectedIcon,
+  SealCheck as SealCheckIcon,
+  ShareNetwork as NetworkIcon,
+  Sparkle as SparkleIcon,
+  Stack as StackIcon,
+  Tray as TrayIcon,
+  type Icon as PhosphorIcon,
+} from "@/lib/icons";
 import Image from "next/image";
 import { PlatformRail, type PlatformRailItem } from "./platform-rail";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { CardDescription, CardTitle } from "@oppulence/ui/components/card";
+import { ItemMedia } from "@oppulence/ui/components/item";
+import { MarketingButtonLink, MarketingSpan, marketingSpanClass } from "./marketing-primitives";
 import { cn } from "@/lib/utils";
+
 import { DesktopDownloadChooser } from "./desktop-download-chooser";
+import {
+  HomepageCapabilities,
+  HomepageDownload,
+  HomepageFaq,
+  HomepageIntegrations,
+  HomepageProblem,
+  HomepageTrust,
+  HomepageUseCases,
+} from "./homepage-story";
 import {
   alternativeLinks,
   blogPages,
@@ -39,8 +54,6 @@ import {
   featureLinks,
   pricingPlans,
   productLinks,
-  resourceLinks,
-  socialLinks,
   toolLinks,
   type FeatureDetail,
   type LinkItem,
@@ -49,31 +62,42 @@ import {
   type PlatformPage,
 } from "./marketing-data";
 import { MarketingEffects } from "./marketing-effects";
+import { MarketingFaq } from "./marketing-faq";
+import { footerGroups, headerNav, headerUtilityLinks } from "./site";
+
+const pricingFaqs = [
+  {
+    question: "What is Watch, exactly?",
+    answer:
+      "The free plan in the public price list: a 90-day report of what you owe, with source links. It is the first pass, not the live register.",
+  },
+  {
+    question: "When do I need Chase?",
+    answer:
+      "When the register is part of the week: at-risk promises and approved follow-ups, not just a one-time report.",
+  },
+  {
+    question: "What does Intelligence add?",
+    answer:
+      "Change summaries and exportable records on top of Chase. Useful for renewals, escalations, and handovers.",
+  },
+  {
+    question: "Is there a seat tax?",
+    answer:
+      "The published plans are flat monthly. We are not adding a per-seat line to look more like enterprise software.",
+  },
+];
 
 const mobileNavLinks = [
   { label: "Products", href: "/products" },
+  { label: "Features", href: "/features" },
+  { label: "Use cases", href: "/use-cases" },
   { label: "How it works", href: "/product" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Blog", href: "/blog" },
+  { label: "Download", href: "/download" },
+  { label: "Resources", href: "/resources" },
+  { label: "Security", href: "/security" },
 ];
-
-const suiteDropdownLinks = [
-  {
-    label: "Products overview",
-    href: "/products",
-    description: "Web, Desktop, Voice, and the ledger underneath.",
-  },
-  {
-    label: "Commitment Ledger",
-    href: "/product",
-    description: "What was promised, what is owed, and what changed.",
-  },
-  ...platformPages.map((platform) => ({
-    label: platform.name,
-    href: `/${platform.slug}`,
-    description: platform.summary,
-  })),
-] as const;
 
 const productSuiteCards = [
   {
@@ -109,6 +133,7 @@ const productRailLinks: MemoryRailLink[] = [
     label: platform.name.replace("Oppulence ", ""),
     href: `/${platform.slug}`,
   })),
+  { label: "Download", href: "/download" },
   { label: "Pricing", href: "/pricing" },
 ];
 
@@ -132,11 +157,12 @@ function MarketingIcon({
 }: {
   className?: string;
   compact?: boolean;
-  icon: SvgIconComponent;
+  icon: PhosphorIcon;
   tone?: IconTone;
 }) {
   return (
-    <span
+    <ItemMedia
+      variant="icon"
       className={cn(
         "marketing-icon-frame",
         compact ? "size-7 rounded-none" : "size-9 rounded-[8px]",
@@ -144,12 +170,16 @@ function MarketingIcon({
         className,
       )}
     >
-      <Icon style={{ fontSize: compact ? "0.875rem" : "1.25rem" }} />
-    </span>
+      <Icon
+        aria-hidden
+        className={cn("app-icon", compact ? "size-3.5" : "size-5")}
+        weight="regular"
+      />
+    </ItemMedia>
   );
 }
 
-function iconForLink(item: LinkItem): { icon: SvgIconComponent; tone?: IconTone } {
+function iconForLink(item: LinkItem): { icon: PhosphorIcon; tone?: IconTone } {
   const key = `${item.href} ${item.label} ${item.description ?? ""}`.toLowerCase();
 
   if (key.includes("gmail") || key.includes("email") || key.includes("inbox")) {
@@ -202,7 +232,7 @@ function iconForLink(item: LinkItem): { icon: SvgIconComponent; tone?: IconTone 
   return { icon: SparkleIcon, tone: "neutral" };
 }
 
-function iconForTitle(title: string): { icon: SvgIconComponent; tone?: IconTone } {
+function iconForTitle(title: string): { icon: PhosphorIcon; tone?: IconTone } {
   const key = title.toLowerCase();
 
   if (key.includes("help") || key.includes("answer") || key.includes("docs")) {
@@ -240,7 +270,7 @@ function iconForTitle(title: string): { icon: SvgIconComponent; tone?: IconTone 
   return { icon: StackIcon, tone: "neutral" };
 }
 
-function iconForPage(page: MarketingPage): { icon: SvgIconComponent; tone?: IconTone } {
+function iconForPage(page: MarketingPage): { icon: PhosphorIcon; tone?: IconTone } {
   const fromLink = iconForLink({
     href: page.path,
     label: page.title,
@@ -282,7 +312,7 @@ function EyebrowPill({
 }: {
   children: ReactNode;
   className?: string;
-  icon: SvgIconComponent;
+  icon: PhosphorIcon;
   tone?: IconTone;
 }) {
   return (
@@ -293,7 +323,7 @@ function EyebrowPill({
       )}
     >
       <MarketingIcon className="size-5 rounded-[3px]" compact icon={icon} tone={tone} />
-      <span className="min-w-0 truncate">{children}</span>
+      <MarketingSpan className="min-w-0 truncate font-normal">{children}</MarketingSpan>
     </p>
   );
 }
@@ -408,9 +438,19 @@ function InlineLogo({
   const iconSize = header ? 20 : compact ? 20 : prominent ? 40 : 28;
 
   return (
-    <span className={header ? "oppulence-compact-lockup" : "flex items-center gap-2"}>
+    <Badge
+      className={cn(
+        header ? "oppulence-compact-lockup" : "flex items-center gap-2",
+        marketingSpanClass,
+      )}
+      variant="ghost"
+    >
       {header ? (
-        <span aria-hidden="true" className="oppulence-compact-lockup__mark">
+        <Badge
+          aria-hidden="true"
+          className={cn("oppulence-compact-lockup__mark", marketingSpanClass)}
+          variant="ghost"
+        >
           <Image
             alt=""
             className="oppulence-compact-lockup__mark-image"
@@ -418,7 +458,7 @@ function InlineLogo({
             src="/marketing/oppulence-icon.png"
             width={iconSize}
           />
-        </span>
+        </Badge>
       ) : (
         <Image
           alt=""
@@ -429,7 +469,7 @@ function InlineLogo({
         />
       )}
       {!compact ? (
-        <span
+        <MarketingSpan
           className={cn(
             header
               ? "oppulence-compact-lockup__wordmark"
@@ -437,9 +477,9 @@ function InlineLogo({
           )}
         >
           {header ? "Oppulence" : "oppulence"}
-        </span>
+        </MarketingSpan>
       ) : null}
-    </span>
+    </Badge>
   );
 }
 
@@ -447,8 +487,8 @@ function MobileMenu() {
   return (
     <details className="relative lg:hidden" data-marketing-mobile-menu>
       <summary aria-label="Toggle navigation" className="linear-mobile-summary">
-        <span />
-        <span />
+        <Badge className={marketingSpanClass} variant="ghost" />
+        <Badge className={marketingSpanClass} variant="ghost" />
       </summary>
       <nav className="linear-mobile-panel sm-mobile-panel">
         {mobileNavLinks.map((item) => (
@@ -456,11 +496,15 @@ function MobileMenu() {
             {item.label}
           </Link>
         ))}
-        <p className="sm-mobile-kicker">Products</p>
-        {suiteDropdownLinks.slice(0, 5).map((item) => (
-          <Link className="sm-mobile-product" href={item.href} key={item.href}>
-            {item.label}
-          </Link>
+        {headerNav.map((group) => (
+          <div key={group.label}>
+            <p className="sm-mobile-kicker">{group.label}</p>
+            {group.items.slice(0, 6).map((item) => (
+              <Link className="sm-mobile-product" href={item.href} key={item.href}>
+                {item.label}
+              </Link>
+            ))}
+          </div>
         ))}
         <div className="mt-auto grid gap-2 pt-8">
           <Link className="sm-button sm-button-light" href="/sign-in">
@@ -486,21 +530,52 @@ export function TopBar() {
         </div>
 
         <nav aria-label="Primary navigation" className="sm-desktop-nav hidden lg:flex">
-          <details className="sm-nav-products" data-marketing-dropdown>
-            <summary>Products</summary>
-            <div className="linear-dropdown-panel sm-product-menu">
-              <p className="sm-product-menu-kicker">Oppulence suite</p>
-              {suiteDropdownLinks.map((item) => (
-                <Link href={item.href} key={item.href}>
-                  <span>{item.label}</span>
-                  <small>{item.description}</small>
-                </Link>
-              ))}
-            </div>
-          </details>
-          <Link href="/product">How it works</Link>
-          <Link href="/pricing">Pricing</Link>
-          <Link href="/blog">Blog</Link>
+          {headerNav.map((group) => (
+            <details
+              className="sm-nav-products sm-nav-menu"
+              data-marketing-dropdown
+              key={group.label}
+            >
+              <summary>
+                {group.label}
+                <Badge
+                  aria-hidden="true"
+                  className={cn("sm-nav-caret", marketingSpanClass)}
+                  variant="ghost"
+                >
+                  ▾
+                </Badge>
+              </summary>
+              <div
+                className={
+                  group.items.length > 5
+                    ? "linear-dropdown-panel sm-product-menu sm-nav-menu-wide"
+                    : "linear-dropdown-panel sm-product-menu"
+                }
+              >
+                <p className="sm-product-menu-kicker">{group.description ?? group.label}</p>
+                {group.href ? (
+                  <Link className="sm-nav-menu-overview" href={group.href}>
+                    <MarketingSpan className="font-normal">
+                      View all {group.label.toLowerCase()}
+                    </MarketingSpan>
+                    <small>Open the full index</small>
+                  </Link>
+                ) : null}
+                {group.items.map((item) => (
+                  <Link href={item.href} key={item.href}>
+                    <MarketingSpan className="font-normal">{item.label}</MarketingSpan>
+                    {item.description ? <small>{item.description}</small> : null}
+                  </Link>
+                ))}
+              </div>
+            </details>
+          ))}
+          {headerUtilityLinks.map((item) => (
+            <Link href={item.href} key={item.href}>
+              {item.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="flex flex-1 items-center justify-end">
@@ -546,18 +621,9 @@ export function Footer() {
           <p>What you owe. What they owe. Every claim cited.</p>
         </div>
         <div className="sm-footer-links">
-          <LinearFooterGroup items={productLinks.slice(0, 6)} title="Product" />
-          <LinearFooterGroup items={[...resourceLinks, ...toolLinks]} title="Resources" />
-          <LinearFooterGroup
-            items={[
-              { label: "Customers", href: "/customers" },
-              { label: "Privacy", href: "/privacy" },
-              { label: "Terms", href: "/terms" },
-              { label: "Responsible disclosure", href: "/responsible-disclosure" },
-            ]}
-            title="Company"
-          />
-          <LinearFooterGroup items={socialLinks} title="Connect" />
+          {footerGroups.map((group) => (
+            <LinearFooterGroup items={group.items} key={group.title} title={group.title} />
+          ))}
         </div>
         <div className="sm-footer-bottom">
           <p>© 2026 Playbook Media · Oppulence</p>
@@ -607,7 +673,7 @@ const homeSteps = [
 ];
 
 const bulletIconCycle: {
-  icon: SvgIconComponent;
+  icon: PhosphorIcon;
   tone: IconTone;
 }[] = [
   { icon: SparkleIcon, tone: "yellow" },
@@ -617,7 +683,7 @@ const bulletIconCycle: {
 ];
 
 const customerStoryIcons: {
-  icon: SvgIconComponent;
+  icon: PhosphorIcon;
   tone: IconTone;
 }[] = [
   { icon: ChartLineIcon, tone: "yellow" },
@@ -671,7 +737,9 @@ export function ProductsPage() {
           {productSuiteCards.map((product) => (
             <Link className="sm-products-card" href={product.href} key={product.href}>
               <div>
-                <span>{product.eyebrow}</span>
+                <Badge className="rounded-none font-normal uppercase" variant="outline">
+                  {product.eyebrow}
+                </Badge>
                 <ArrowRightIcon aria-hidden="true" />
               </div>
               <h2>{product.title}</h2>
@@ -731,8 +799,8 @@ const homepageSources = [
 function AttioHeading({ lead, rest }: { lead: string; rest?: string }) {
   return (
     <h2>
-      <span>{lead}</span>
-      {rest ? <span>{` ${rest}`}</span> : null}
+      <MarketingSpan>{lead}</MarketingSpan>
+      {rest ? <MarketingSpan>{` ${rest}`}</MarketingSpan> : null}
     </h2>
   );
 }
@@ -762,40 +830,27 @@ function AttioSectionHead({
   );
 }
 
-const homepageStack = [
-  "Gmail",
-  "Google Calendar",
-  "Outlook",
-  "HubSpot",
-  "Salesforce",
-  "Stripe",
-  "Slack",
-  "Zoom",
-] as const;
-
 export function HomePage() {
   return (
     <div className="sm-attio-home">
       <section className="sm-attio-hero" id="mission">
         <div className="sm-attio-shell sm-attio-hero-copy">
-          <Link className="sm-attio-announcement" href="/products">
-            The Commitment Ledger is live
+          <Link className="sm-attio-announcement" href="/product">
+            The commitment ledger for business promises
             <ArrowRightIcon aria-hidden="true" />
           </Link>
 
           <h1>Every promise, on the record.</h1>
           <p>
-            Oppulence is the ledger that tracks what you owe, what they owe, and what changed across
-            every account.
+            Oppulence is the independent record of what you owe, what they owe, and what changed —
+            cited back to the email, meeting, or CRM row that created it.
           </p>
 
-          <div className="sm-attio-actions">
-            <Link className="sm-attio-btn" href="/product">
-              See how it works
-            </Link>
-            <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
-              Start for free
-            </Link>
+          <div className="sm-attio-actions flex flex-wrap gap-3">
+            <MarketingButtonLink href="/sign-up">Start for free</MarketingButtonLink>
+            <MarketingButtonLink href="/download" variant="outline">
+              Download desktop
+            </MarketingButtonLink>
           </div>
         </div>
 
@@ -822,6 +877,8 @@ export function HomePage() {
         </div>
       </section>
 
+      <HomepageProblem />
+
       <section className="sm-attio-platform" id="what-we-do">
         <div className="sm-attio-shell">
           <AttioSectionHead
@@ -841,9 +898,7 @@ export function HomePage() {
             lead="Live from day one."
             rest="Connect your inbox and calendar. Oppulence reads the last 90 days and builds the ledger before you ask it anything."
           />
-          <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
-            Start for free
-          </Link>
+          <MarketingButtonLink href="/sign-up">Start for free</MarketingButtonLink>
           <figure className="sm-attio-setup-media">
             <Image
               alt="Oppulence connecting Gmail, calendar, CRM, and billing in settings"
@@ -866,37 +921,22 @@ export function HomePage() {
           </div>
 
           <div className="sm-attio-dark-strip">
-            {relationshipCatalog.map((item) => {
-              const Icon = item.icon;
-              return (
-                <article key={item.label}>
-                  <Icon aria-hidden="true" />
-                  <div>
-                    <p>{item.title}</p>
-                    <p>{item.body}</p>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="sm-attio-dark sm-attio-dark-connect">
-        <div className="sm-attio-shell">
-          <p className="sm-attio-dark-eyebrow">Connectivity</p>
-          <h2>Your whole stack, connected.</h2>
-          <p className="sm-attio-connect-body">
-            Oppulence reads the systems the relationship already lives in, and writes back only
-            where you approve it.
-          </p>
-          <div className="sm-attio-connect-grid">
-            {homepageStack.map((tool) => (
-              <span key={tool}>{tool}</span>
+            {relationshipCatalog.map((item) => (
+              <article key={item.label}>
+                <Badge aria-hidden="true" className={marketingSpanClass} variant="ghost">
+                  {item.kicker}
+                </Badge>
+                <div>
+                  <p>{item.title}</p>
+                  <p>{item.body}</p>
+                </div>
+              </article>
             ))}
           </div>
         </div>
       </section>
+
+      <HomepageIntegrations />
 
       <section className="sm-attio-guarantees">
         <div className="sm-attio-shell">
@@ -909,7 +949,9 @@ export function HomePage() {
             {homepageGuarantees.map((item) => (
               <article key={item.label}>
                 <strong>{item.value}</strong>
-                <span>{item.label}</span>
+                <Badge className={marketingSpanClass} variant="ghost">
+                  {item.label}
+                </Badge>
               </article>
             ))}
           </div>
@@ -927,7 +969,9 @@ export function HomePage() {
           <div className="sm-attio-suite-grid">
             {productSuiteCards.map((product) => (
               <Link href={product.href} key={product.href}>
-                <span>{product.eyebrow}</span>
+                <Badge className={marketingSpanClass} variant="ghost">
+                  {product.eyebrow}
+                </Badge>
                 <strong>{product.title}</strong>
                 <p>{product.body}</p>
                 <ArrowRightIcon aria-hidden="true" />
@@ -936,6 +980,10 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      <HomepageCapabilities />
+      <HomepageUseCases />
+      <HomepageTrust />
 
       <section className="sm-attio-steps">
         <div className="sm-attio-shell">
@@ -949,7 +997,7 @@ export function HomePage() {
             {homeSteps.map((step, index) => (
               <article key={step.title}>
                 <div className="sm-attio-step-copy">
-                  <span>{`Step 0${index + 1}`}</span>
+                  <MarketingSpan className="font-normal">{`Step 0${index + 1}`}</MarketingSpan>
                   <h3>{step.title}</h3>
                   <p>{step.body}</p>
                 </div>
@@ -960,16 +1008,17 @@ export function HomePage() {
         </div>
       </section>
 
+      <HomepageFaq />
+      <HomepageDownload />
+
       <section className="sm-attio-final">
         <div className="sm-attio-shell">
           <h2>Know what is owed.</h2>
-          <div className="sm-attio-actions">
-            <Link className="sm-attio-btn" href="/products">
+          <div className="sm-attio-actions flex flex-wrap gap-3">
+            <MarketingButtonLink href="/products" variant="outline">
               See the suite
-            </Link>
-            <Link className="sm-attio-btn sm-attio-btn-primary" href="/sign-up">
-              Start for free
-            </Link>
+            </MarketingButtonLink>
+            <MarketingButtonLink href="/sign-up">Start for free</MarketingButtonLink>
           </div>
         </div>
       </section>
@@ -982,9 +1031,9 @@ function AttioProductWindow() {
     <figure className="sm-attio-product-window">
       <div className="sm-attio-product-inner">
         <div className="sm-attio-product-chrome">
-          <span aria-hidden="true" />
-          <span aria-hidden="true" />
-          <span aria-hidden="true" />
+          <Badge aria-hidden="true" className={marketingSpanClass} variant="ghost" />
+          <Badge aria-hidden="true" className={marketingSpanClass} variant="ghost" />
+          <Badge aria-hidden="true" className={marketingSpanClass} variant="ghost" />
         </div>
         <Image
           alt="Oppulence account mission control ranking accounts by what changed and what is owed"
@@ -1020,7 +1069,9 @@ function MemoryRail({ ariaLabel, links }: { ariaLabel: string; links: readonly M
         {links.map((link) => {
           const content = (
             <>
-              {link.active ? <span aria-hidden="true" /> : null}
+              {link.active ? (
+                <Badge aria-hidden="true" className={marketingSpanClass} variant="ghost" />
+              ) : null}
               {link.label}
             </>
           );
@@ -1048,7 +1099,10 @@ function RelationshipFinalCta() {
   return (
     <section className="sm-final-cta">
       <h2>
-        Go find what you&rsquo;ve been missing<span>.</span>
+        Go find what you&rsquo;ve been missing
+        <Badge className={marketingSpanClass} variant="ghost">
+          .
+        </Badge>
       </h2>
       <div>
         <Link className="sm-button sm-button-blue" href="/sign-up">
@@ -1065,7 +1119,7 @@ const linearHomeSections = [
     description:
       "Oppulence scans the last 60–90 days of email, calendar, and billing to build a living ledger of promises, proposals, invoices, and open loops. It finds where a valuable relationship lost its next step, with the dollar amount and source attached.",
     label: "Relationship State Engine",
-    href: "/ai-help-center",
+    href: "/features/commitment-register",
     src: desktopScreenshots.knowledge,
     alt: "Oppulence relationship memory showing warm opportunities and source evidence",
     bullets: [
@@ -1079,7 +1133,7 @@ const linearHomeSections = [
     description:
       "Each week, Oppulence ranks the three to five relationships where silence, a missed commitment, or a money-state change makes the next move worth attention. Each item explains why now, what is at stake, and what to do next.",
     label: "Account Mission Control",
-    href: "/ai-documentation-agent",
+    href: "/features/account-mission-control",
     src: desktopScreenshots.chat,
     alt: "Oppulence relationship action queue ranked by value and urgency",
     bullets: [
@@ -1093,7 +1147,7 @@ const linearHomeSections = [
     description:
       "Oppulence verifies the contact, checks the relationship and policy context, and waits for your approval. It never emails a contact who bounced, opted out, or changed roles. Actions that touch money need a second confirmation.",
     label: "Governed Execution",
-    href: "/api-documentation-software",
+    href: "/features/governed-actions",
     src: desktopScreenshots.connections,
     alt: "Oppulence policy checks and sender protection before execution",
     bullets: [
@@ -1150,11 +1204,17 @@ function LinearProductSection({
 }) {
   const sectionNumber = `${index + 1}.0`;
   const action = (
-    <span className="linear-product-link">
-      <span className="linear-index">{sectionNumber}</span>
-      <span className="linear-body !text-[var(--linear-text-tertiary)]">{section.label}</span>
-      <span className="text-foreground/35">→</span>
-    </span>
+    <Badge className={cn("linear-product-link", marketingSpanClass)} variant="ghost">
+      <Badge className={cn("linear-index", marketingSpanClass)} variant="ghost">
+        {sectionNumber}
+      </Badge>
+      <MarketingSpan className="linear-body !text-[var(--linear-text-tertiary)] font-normal">
+        {section.label}
+      </MarketingSpan>
+      <Badge className={cn("text-foreground/35", marketingSpanClass)} variant="ghost">
+        →
+      </Badge>
+    </Badge>
   );
 
   return (
@@ -1186,11 +1246,13 @@ function LinearProductSection({
         <div className="linear-product-tabs">
           {section.bullets.map((bullet, bulletIndex) => (
             <div className="linear-product-tab" key={bullet}>
-              <span className="linear-index mr-3">
+              <Badge className={cn("linear-index mr-3", marketingSpanClass)} variant="ghost">
                 {index + 1}.{bulletIndex + 1}
-              </span>
+              </Badge>
               {bullet}
-              <span className="ml-2 text-foreground/30">+</span>
+              <Badge className={cn("ml-2 text-foreground/30", marketingSpanClass)} variant="ghost">
+                +
+              </Badge>
             </div>
           ))}
         </div>
@@ -1213,7 +1275,9 @@ function HomeUpdates() {
       <div className="linear-updates-grid linear-inset">
         {homeSteps.map((step, index) => (
           <article className="linear-update" key={step.title}>
-            <span className="linear-index">0{index + 1}</span>
+            <Badge className={cn("linear-index", marketingSpanClass)} variant="ghost">
+              0{index + 1}
+            </Badge>
             <HomeStepVisual index={index} />
             <div className="linear-update-copy">
               <h3>{step.title}</h3>
@@ -1230,11 +1294,11 @@ function HomeStepVisual({ index }: { index: number }) {
   if (index === 0) {
     return (
       <div aria-hidden="true" className="linear-step-art linear-step-capture">
-        <span className="linear-step-capture-ring" />
-        <span className="linear-step-capture-core" />
-        <span className="linear-step-ray linear-step-ray-a" />
-        <span className="linear-step-ray linear-step-ray-b" />
-        <span className="linear-step-ray linear-step-ray-c" />
+        <MarketingSpan className="linear-step-capture-ring" />
+        <MarketingSpan className="linear-step-capture-core" />
+        <MarketingSpan className="linear-step-ray linear-step-ray-a" />
+        <MarketingSpan className="linear-step-ray linear-step-ray-b" />
+        <MarketingSpan className="linear-step-ray linear-step-ray-c" />
       </div>
     );
   }
@@ -1242,21 +1306,21 @@ function HomeStepVisual({ index }: { index: number }) {
   if (index === 1) {
     return (
       <div aria-hidden="true" className="linear-step-art linear-step-priority">
-        <span className="linear-step-slab linear-step-slab-a" />
-        <span className="linear-step-slab linear-step-slab-b" />
-        <span className="linear-step-slab linear-step-slab-c" />
-        <span className="linear-step-focus" />
+        <MarketingSpan className="linear-step-slab linear-step-slab-a" />
+        <MarketingSpan className="linear-step-slab linear-step-slab-b" />
+        <MarketingSpan className="linear-step-slab linear-step-slab-c" />
+        <MarketingSpan className="linear-step-focus" />
       </div>
     );
   }
 
   return (
     <div aria-hidden="true" className="linear-step-art linear-step-loop">
-      <span className="linear-step-loop-ring" />
-      <span className="linear-step-loop-node linear-step-loop-node-a" />
-      <span className="linear-step-loop-node linear-step-loop-node-b" />
-      <span className="linear-step-loop-node linear-step-loop-node-c" />
-      <span className="linear-step-loop-core" />
+      <MarketingSpan className="linear-step-loop-ring" />
+      <MarketingSpan className="linear-step-loop-node linear-step-loop-node-a" />
+      <MarketingSpan className="linear-step-loop-node linear-step-loop-node-b" />
+      <MarketingSpan className="linear-step-loop-node linear-step-loop-node-c" />
+      <MarketingSpan className="linear-step-loop-core" />
     </div>
   );
 }
@@ -1271,12 +1335,12 @@ function FinalCta() {
         action, and the evidence behind the recommended next move.
       </p>
       <div className="flex flex-col items-center gap-3 sm:flex-row">
-        <Link className="linear-button-primary !h-10 !px-5" href="/sign-up">
+        <MarketingButtonLink className="h-10 px-5" href="/sign-up">
           Start building
-        </Link>
-        <Link className="linear-button-secondary !h-10 !px-5" href="/product">
+        </MarketingButtonLink>
+        <MarketingButtonLink className="h-10 px-5" href="/product" variant="outline">
           Explore relationship intelligence
-        </Link>
+        </MarketingButtonLink>
       </div>
       <p className="linear-cta-note">[watch is free · chase is $99/mo]</p>
     </section>
@@ -1302,16 +1366,16 @@ function DesktopScreenshotPreview({
       <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--background-50),var(--background)_58%,var(--background-100))]" />
       <div className="relative z-10 flex items-center justify-between border-primary/10 border-b px-3 py-2">
         <div className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-oppulence-orange/70" />
-          <span className="size-2 rounded-full bg-oppulence-yellow/70" />
-          <span className="size-2 rounded-full bg-oppulence-green/70" />
+          <MarketingSpan className="size-2 rounded-full bg-oppulence-orange/70" />
+          <MarketingSpan className="size-2 rounded-full bg-oppulence-yellow/70" />
+          <MarketingSpan className="size-2 rounded-full bg-oppulence-green/70" />
         </div>
-        <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
+        <MarketingSpan className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
           Oppulence Desktop
-        </span>
-        <span className="hidden font-mono text-xs text-muted-foreground uppercase tracking-wider sm:inline">
+        </MarketingSpan>
+        <MarketingSpan className="hidden font-mono text-xs text-muted-foreground uppercase tracking-wider sm:inline">
           Local graph
-        </span>
+        </MarketingSpan>
       </div>
       <div className="relative z-10 flex min-w-0 flex-1 items-center justify-center p-2 sm:p-6">
         <Image
@@ -1416,7 +1480,9 @@ export function PlatformProductPage({ page }: { page: PlatformPage }) {
               .map((other) => (
                 <Link href={`/${other.slug}`} key={other.slug}>
                   <strong>{other.name}</strong>
-                  <span>{other.summary}</span>
+                  <Badge className={marketingSpanClass} variant="ghost">
+                    {other.summary}
+                  </Badge>
                   <small>
                     Take a look <ArrowRightIcon aria-hidden="true" />
                   </small>
@@ -1450,9 +1516,9 @@ export function GenericPage({ page }: { page: MarketingPage }) {
             <article className="marketing-surface border p-5" key={bullet}>
               <div className="flex items-center justify-between gap-3">
                 <MarketingIcon icon={icon} tone={tone} />
-                <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+                <MarketingSpan className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                   0{index + 1}
-                </span>
+                </MarketingSpan>
               </div>
               <p className="mt-4 text-[13px] leading-relaxed text-foreground/78">{bullet}</p>
             </article>
@@ -1528,10 +1594,15 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
             <ol className="mt-4 space-y-3">
               {details.workflow.map((step, index) => (
                 <li className="flex gap-3 text-[13px] leading-relaxed" key={step}>
-                  <span className="marketing-icon-frame size-7 rounded font-mono text-xs text-muted-foreground">
+                  <ItemMedia
+                    variant="icon"
+                    className="marketing-icon-frame size-7 rounded font-mono text-xs text-muted-foreground"
+                  >
                     {index + 1}
-                  </span>
-                  <span className="text-foreground/75">{step}</span>
+                  </ItemMedia>
+                  <CardDescription className="text-[13px] leading-relaxed text-foreground/75">
+                    {step}
+                  </CardDescription>
                 </li>
               ))}
             </ol>
@@ -1557,7 +1628,9 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
                 {details.outcomes.map((outcome) => (
                   <div className="flex gap-3 text-[13px] leading-relaxed" key={outcome}>
                     <MarketingIcon compact icon={CheckCircleIcon} tone="green" />
-                    <span className="text-foreground/75">{outcome}</span>
+                    <CardDescription className="text-[13px] leading-relaxed text-foreground/75">
+                      {outcome}
+                    </CardDescription>
                   </div>
                 ))}
               </div>
@@ -1629,14 +1702,14 @@ function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: Fe
                   key={`${item.label}-${item.href}`}
                 >
                   <MarketingIcon compact icon={icon} tone={tone} />
-                  <span className="min-w-0">
-                    <span className="block font-medium text-sm">{item.label}</span>
+                  <div className="min-w-0">
+                    <CardTitle className="block font-medium text-sm">{item.label}</CardTitle>
                     {item.description ? (
-                      <span className="mt-1 block text-muted-foreground text-xs leading-relaxed">
+                      <CardDescription className="mt-1 block text-xs leading-relaxed">
                         {item.description}
-                      </span>
+                      </CardDescription>
                     ) : null}
-                  </span>
+                  </div>
                 </Link>
               );
             })}
@@ -1762,7 +1835,7 @@ function ToolPanel({ page }: { page: MarketingPage }) {
           {page.bullets.map((bullet) => (
             <div className="marketing-chip flex gap-3 border px-4 py-3 text-[13px]" key={bullet}>
               <MarketingIcon compact icon={SealCheckIcon} tone="green" />
-              <span>{bullet}</span>
+              <MarketingSpan className="font-normal">{bullet}</MarketingSpan>
             </div>
           ))}
         </div>
@@ -1818,7 +1891,9 @@ export function PricingPage({ page }: { page: MarketingPage }) {
           <p>{page.description}</p>
           <div aria-label="Pricing principles">
             {pricingPrinciples.map((item) => (
-              <span key={item}>{item}</span>
+              <Badge className={marketingSpanClass} key={item} variant="ghost">
+                {item}
+              </Badge>
             ))}
           </div>
         </header>
@@ -1831,7 +1906,11 @@ export function PricingPage({ page }: { page: MarketingPage }) {
             >
               <div>
                 <p>{plan.name}</p>
-                {plan.recommended ? <span>Recommended</span> : null}
+                {plan.recommended ? (
+                  <Badge className={marketingSpanClass} variant="ghost">
+                    Recommended
+                  </Badge>
+                ) : null}
               </div>
               <strong>
                 {plan.price}
@@ -1863,6 +1942,11 @@ export function PricingPage({ page }: { page: MarketingPage }) {
             See the suite <ArrowRightIcon aria-hidden="true" />
           </Link>
         </section>
+        <MarketingFaq
+          heading="How the published plans work"
+          items={pricingFaqs}
+          lede="These names are the public plans. We are not inventing a fourth tier to look more enterprise."
+        />
       </div>
     </SuiteSidebarLayout>
   );
@@ -1881,21 +1965,27 @@ export function BlogIndexPage({ page }: { page: MarketingPage }) {
       {featured ? (
         <Link className="linear-blog-featured" href={`/${featured.path}`}>
           <div className="flex flex-wrap gap-2">
-            <span className="linear-chip">guide</span>
-            <span className="linear-chip">featured</span>
+            <Badge className="linear-chip rounded-none font-normal" variant="outline">
+              guide
+            </Badge>
+            <Badge className="linear-chip rounded-none font-normal" variant="outline">
+              featured
+            </Badge>
           </div>
           <h2>{featured.title}</h2>
           <p className="linear-body max-w-[640px]">{featured.description}</p>
-          <span className="linear-blog-read">read the guide →</span>
+          <MarketingSpan className="linear-blog-read font-normal">read the guide →</MarketingSpan>
         </Link>
       ) : null}
       <section className="linear-blog-grid">
         {rest.slice(0, 11).map((post) => (
           <Link className="linear-blog-card" href={`/${post.path}`} key={post.path}>
-            <span className="linear-chip">guide</span>
+            <Badge className="linear-chip rounded-none font-normal" variant="outline">
+              guide
+            </Badge>
             <h3 className="line-clamp-2">{post.title}</h3>
             <p className="line-clamp-3">{post.description}</p>
-            <span className="linear-blog-read">read →</span>
+            <MarketingSpan className="linear-blog-read font-normal">read →</MarketingSpan>
           </Link>
         ))}
       </section>
@@ -1962,16 +2052,16 @@ export function CustomerIndexPage({ page }: { page: MarketingPage }) {
           >
             <div className="flex items-start justify-between gap-3">
               <MarketingIcon icon={BriefcaseIcon} tone="blue" />
-              <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
+              <MarketingSpan className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
                 Story
-              </span>
+              </MarketingSpan>
             </div>
             <h2 className="mt-4 text-sm font-medium">{story.title}</h2>
             <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
               {story.description}
             </p>
             <div className="mt-auto flex items-center justify-between border-primary/10 border-t pt-4 font-mono text-xs text-foreground/60 uppercase tracking-wider">
-              <span>Open story</span>
+              <MarketingSpan className="font-normal">Open story</MarketingSpan>
               <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
             </div>
           </Link>
@@ -1992,9 +2082,9 @@ export function CustomerStoryPage({ page }: { page: MarketingPage }) {
                 icon={customerStoryIcons[index]?.icon ?? BriefcaseIcon}
                 tone={customerStoryIcons[index]?.tone ?? "neutral"}
               />
-              <span className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
+              <MarketingSpan className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
                 0{index + 1}
-              </span>
+              </MarketingSpan>
             </div>
             <p className="mt-5 font-mono text-xs uppercase tracking-wider text-muted-foreground">
               {title}
@@ -2028,14 +2118,18 @@ export function LegalPage({ page }: { page: MarketingPage }) {
 
 export function NotFoundMarketingPage() {
   return (
-    <div className="px-6 pt-40 pb-20 md:px-8">
-      <h1 className="font-display text-[24px] font-medium">Page not found</h1>
-      <p className="mt-4 max-w-xl text-muted-foreground">
-        This route is not in the Oppulence marketing surface.
+    <div className="linear-inset px-6 pt-32 pb-20">
+      <p className="linear-eyebrow">[404]</p>
+      <h1 className="linear-subpage-title mt-4">This page is not on the public site.</h1>
+      <p className="linear-body mt-5 max-w-xl">
+        It may have moved. The header and footer list every public route we actually ship.
       </p>
-      <Button asChild className="mt-8">
-        <Link href="/">Return home</Link>
-      </Button>
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <MarketingButtonLink href="/">Return home</MarketingButtonLink>
+        <MarketingButtonLink href="/resources" variant="outline">
+          Browse resources
+        </MarketingButtonLink>
+      </div>
     </div>
   );
 }

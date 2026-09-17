@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "@oppulence/ui/components/button";
+import { ItemMedia } from "@oppulence/ui/components/item";
+import { Label } from "@oppulence/ui/components/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@oppulence/ui/components/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { CaretDown, ArrowSquareOut, ChatCircle } from "@phosphor-icons/react";
+import { CaretDown, ArrowSquareOut, ChatCircle } from "@/lib/icons";
 import { type ComponentProps, createContext, useContext } from "react";
 
 const providers = {
@@ -226,8 +228,10 @@ export const OpenInChatGPT = (props: OpenInChatGPTProps) => {
         rel="noopener"
         target="_blank"
       >
-        <span className="shrink-0">{providers.chatgpt.icon}</span>
-        <span className="flex-1">{providers.chatgpt.title}</span>
+        <ItemMedia className="shrink-0" variant="default">
+          {providers.chatgpt.icon}
+        </ItemMedia>
+        <Label className="flex-1 font-normal">{providers.chatgpt.title}</Label>
         <ArrowSquareOut className="size-4 shrink-0" />
       </a>
     </DropdownMenuItem>
@@ -246,8 +250,10 @@ export const OpenInClaude = (props: OpenInClaudeProps) => {
         rel="noopener"
         target="_blank"
       >
-        <span className="shrink-0">{providers.claude.icon}</span>
-        <span className="flex-1">{providers.claude.title}</span>
+        <ItemMedia className="shrink-0" variant="default">
+          {providers.claude.icon}
+        </ItemMedia>
+        <Label className="flex-1 font-normal">{providers.claude.title}</Label>
         <ArrowSquareOut className="size-4 shrink-0" />
       </a>
     </DropdownMenuItem>
@@ -266,8 +272,10 @@ export const OpenInT3 = (props: OpenInT3Props) => {
         rel="noopener"
         target="_blank"
       >
-        <span className="shrink-0">{providers.t3.icon}</span>
-        <span className="flex-1">{providers.t3.title}</span>
+        <ItemMedia className="shrink-0" variant="default">
+          {providers.t3.icon}
+        </ItemMedia>
+        <Label className="flex-1 font-normal">{providers.t3.title}</Label>
         <ArrowSquareOut className="size-4 shrink-0" />
       </a>
     </DropdownMenuItem>
@@ -286,8 +294,10 @@ export const OpenInScira = (props: OpenInSciraProps) => {
         rel="noopener"
         target="_blank"
       >
-        <span className="shrink-0">{providers.scira.icon}</span>
-        <span className="flex-1">{providers.scira.title}</span>
+        <ItemMedia className="shrink-0" variant="default">
+          {providers.scira.icon}
+        </ItemMedia>
+        <Label className="flex-1 font-normal">{providers.scira.title}</Label>
         <ArrowSquareOut className="size-4 shrink-0" />
       </a>
     </DropdownMenuItem>
@@ -306,8 +316,10 @@ export const OpenInv0 = (props: OpenInv0Props) => {
         rel="noopener"
         target="_blank"
       >
-        <span className="shrink-0">{providers.v0.icon}</span>
-        <span className="flex-1">{providers.v0.title}</span>
+        <ItemMedia className="shrink-0" variant="default">
+          {providers.v0.icon}
+        </ItemMedia>
+        <Label className="flex-1 font-normal">{providers.v0.title}</Label>
         <ArrowSquareOut className="size-4 shrink-0" />
       </a>
     </DropdownMenuItem>
@@ -326,8 +338,10 @@ export const OpenInCursor = (props: OpenInCursorProps) => {
         rel="noopener"
         target="_blank"
       >
-        <span className="shrink-0">{providers.cursor.icon}</span>
-        <span className="flex-1">{providers.cursor.title}</span>
+        <ItemMedia className="shrink-0" variant="default">
+          {providers.cursor.icon}
+        </ItemMedia>
+        <Label className="flex-1 font-normal">{providers.cursor.title}</Label>
         <ArrowSquareOut className="size-4 shrink-0" />
       </a>
     </DropdownMenuItem>

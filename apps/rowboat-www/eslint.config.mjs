@@ -141,6 +141,10 @@ const config = [
       "oppulence-web/no-upstream-html-proxy": "error",
       "oppulence-web/require-safe-proxy-headers": "error",
       "oppulence-web/require-abort-signal": ["error", { allowFiles: legacy.fetchWithoutSignal }],
+      "oppulence-web/require-api-route-zod": [
+        "error",
+        { allowFiles: ["app/api/reference/route.ts"] },
+      ],
       "oppulence-web/no-raw-upstream-errors": "error",
       "oppulence-web/no-sensitive-console": ["error", { allowFiles: legacy.sensitiveConsole }],
       "oppulence-web/no-client-server-imports": "error",

@@ -21,6 +21,7 @@ import type {
   RelationshipDetail,
   RevenueAction,
   RevenueDigest,
+  RevenueImpact,
   RevenueLeakScan,
   RevenueOutcome,
   RevenuePolicyDecision,
@@ -130,14 +131,32 @@ export function safeResearchCitationURL(value: string) {
 
 export const getWorkspace = () => call<RevenueWorkspace>("/revenue-workspaces/current");
 
-export const getImpact = async () => {
+export const getImpact = async (): Promise<RevenueImpact> => {
   const impact = parsed(
     GetRevenueImpact200Response,
     await call<unknown>("/revenue-impact"),
     "revenue impact",
   );
   return {
-    ...impact,
+    surfaced: impact.surfaced,
+    open: impact.open,
+    handled: impact.handled,
+    snoozed: impact.snoozed ?? 0,
+    dismissed: impact.dismissed ?? 0,
+    approved: impact.approved,
+    executed: impact.executed,
+    replied: impact.replied ?? 0,
+    meetingsBooked: impact.meetingsBooked ?? 0,
+    won: impact.won ?? 0,
+    lost: impact.lost ?? 0,
+    replyRate: impact.replyRate ?? null,
+    meetingRate: impact.meetingRate ?? null,
+    outcomes: (impact.outcomes ?? {}) as Record<string, number>,
+    byDetector: (impact.byDetector ?? []).map((row) => ({
+      detector: row.detector ?? "",
+      surfaced: row.surfaced ?? 0,
+      handled: row.handled ?? 0,
+    })),
     relationships: impact.relationships ?? 0,
     atRiskRelationships: impact.atRiskRelationships ?? 0,
     criticalRelationships: impact.criticalRelationships ?? 0,

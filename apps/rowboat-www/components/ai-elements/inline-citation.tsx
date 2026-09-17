@@ -1,6 +1,8 @@
 "use client";
 
 import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
+import { Label } from "@oppulence/ui/components/label";
 import {
   Carousel,
   type CarouselApi,
@@ -9,7 +11,7 @@ import {
 } from "@oppulence/ui/components/carousel";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@oppulence/ui/components/hover-card";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, ArrowRight } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowRight } from "@/lib/icons";
 import {
   type ComponentProps,
   createContext,
@@ -19,16 +21,23 @@ import {
   useState,
 } from "react";
 
-export type InlineCitationProps = ComponentProps<"span">;
+export type InlineCitationProps = ComponentProps<typeof Badge>;
 
 export const InlineCitation = ({ className, ...props }: InlineCitationProps) => (
-  <span className={cn("group inline items-center gap-1", className)} {...props} />
+  <Badge
+    className={cn("group inline items-center gap-1 rounded-none font-normal", className)}
+    variant="outline"
+    {...props}
+  />
 );
 
-export type InlineCitationTextProps = ComponentProps<"span">;
+export type InlineCitationTextProps = ComponentProps<typeof Label>;
 
 export const InlineCitationText = ({ className, ...props }: InlineCitationTextProps) => (
-  <span className={cn("transition-colors group-hover:bg-accent", className)} {...props} />
+  <Label
+    className={cn("transition-colors group-hover:bg-accent font-normal", className)}
+    {...props}
+  />
 );
 
 export type InlineCitationCardProps = ComponentProps<typeof HoverCard>;
@@ -157,7 +166,7 @@ export const InlineCitationCarouselIndex = ({
   );
 };
 
-export type InlineCitationCarouselPrevProps = ComponentProps<"button">;
+export type InlineCitationCarouselPrevProps = ComponentProps<typeof Button>;
 
 export const InlineCitationCarouselPrev = ({
   className,
@@ -172,19 +181,21 @@ export const InlineCitationCarouselPrev = ({
   }, [api]);
 
   return (
-    <button
+    <Button
       aria-label="Previous"
       className={cn("shrink-0", className)}
       onClick={handleClick}
+      size="icon"
       type="button"
+      variant="ghost"
       {...props}
     >
       <ArrowLeft className="size-4 text-muted-foreground" />
-    </button>
+    </Button>
   );
 };
 
-export type InlineCitationCarouselNextProps = ComponentProps<"button">;
+export type InlineCitationCarouselNextProps = ComponentProps<typeof Button>;
 
 export const InlineCitationCarouselNext = ({
   className,
@@ -199,15 +210,17 @@ export const InlineCitationCarouselNext = ({
   }, [api]);
 
   return (
-    <button
+    <Button
       aria-label="Next"
       className={cn("shrink-0", className)}
       onClick={handleClick}
+      size="icon"
       type="button"
+      variant="ghost"
       {...props}
     >
       <ArrowRight className="size-4 text-muted-foreground" />
-    </button>
+    </Button>
   );
 };
 
