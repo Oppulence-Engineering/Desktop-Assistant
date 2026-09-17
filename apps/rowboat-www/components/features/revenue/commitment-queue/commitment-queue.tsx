@@ -944,7 +944,7 @@ export function CommitmentQueue({
       )}
 
       {selected ? (
-        <div className="fixed inset-y-0 right-0 z-40 flex bg-background md:left-[274px]">
+        <div className="fixed inset-y-0 right-0 z-40 flex bg-background md:left-[285px]">
           <aside className="flex w-[320px] shrink-0 flex-col border-r border-border bg-background">
             <div className="flex h-12 items-center gap-2 border-b border-border px-3">
               <button

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { sourceHealth, trialDaysRemaining } from "@/components/app-shell";
+import { connectedSourceCount, sourceHealth, trialDaysRemaining } from "@/components/app-shell";
 import type { RelationshipSourceStatus } from "@/types/revenue";
 
 const inDays = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
@@ -52,5 +52,19 @@ describe("sidebar source status", () => {
     expect(
       sourceHealth([source({ status: "stale" }), source({ completeness: "partial" })]),
     ).toEqual({ tone: "attention", label: "2 sources are behind" });
+  });
+
+  // The status card's meter reads "connected / total". A source that needs
+  // reconnecting delivers nothing, so counting it would show a full meter over
+  // a dead grant.
+  it("does not count a source that stopped reporting as connected", () => {
+    expect(
+      connectedSourceCount([
+        source(),
+        source({ status: "reconnect_required" }),
+        source({ status: "disconnected" }),
+        source({ status: "backfilling", completeness: "partial" }),
+      ]),
+    ).toBe(2);
   });
 });

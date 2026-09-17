@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import {
   AppShellSidebar,
+  AppTopBar,
   REVENUE_TAB_LABELS,
   SETTINGS_SECTIONS,
   useWorkspaceLabel,
@@ -1546,7 +1547,7 @@ function PageBody({
   };
 
   return (
-    <div className="flex h-svh w-full flex-col overflow-hidden bg-background">
+    <div className="flex h-svh w-full flex-col overflow-hidden bg-background-50">
       <CommandPalette
         agents={agentOptions}
         onNavigateChat={() => {
@@ -1572,9 +1573,19 @@ function PageBody({
         open={paletteOpen}
         sessions={sessions}
       />
-      <div className="min-h-0 w-full flex-1">
+      <AppTopBar
+        onAsk={() => setPaletteOpen(true)}
+        onOpenPeople={() => {
+          setRevenueTab("people");
+          navigateTo("revenue");
+          setSelectedResource(null);
+        }}
+      />
+      {/* The workspace sits in an inset frame under the top bar; phones use the
+          full width, where an inset only costs space. */}
+      <div className="min-h-0 w-full flex-1 md:px-2.5 md:pb-2.5">
         <section
-          className={`relative flex h-full overflow-clip bg-background ${
+          className={`relative flex h-full overflow-clip border-t bg-background md:border ${
             view === "settings" ? "settings-workspace" : ""
           }`}
         >
@@ -1607,7 +1618,6 @@ function PageBody({
               navigateTo("workflows");
               setSelectedResource(null);
             }}
-            onOpenSearch={() => setPaletteOpen(true)}
             onOpenSettings={(section) => {
               setSettingsSection(section);
               navigateTo("settings");
@@ -1649,13 +1659,17 @@ function PageBody({
               className={
                 view === "settings"
                   ? "settings-stage-header"
-                  : "flex h-12 shrink-0 items-center justify-between border-b px-4"
+                  : "flex h-12 shrink-0 items-center px-5"
               }
             >
               <div className="flex items-center gap-2">
+                {/* With the sidebar open on a wide screen, its edge and the [ key
+                    close it; the button is only needed to bring it back. */}
                 <button
                   aria-label="Toggle sidebar"
-                  className="flex size-7 items-center justify-center rounded-none text-primary/60 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300"
+                  className={`flex size-7 items-center justify-center rounded-none text-primary/60 transition-colors hover:bg-background-100 hover:text-primary dark:hover:bg-background-300 ${
+                    sidebarOpen ? "md:hidden" : ""
+                  }`}
                   onClick={toggleSidebar}
                   title="Toggle sidebar  ["
                   type="button"
@@ -1664,9 +1678,7 @@ function PageBody({
                 </button>
                 <span
                   className={
-                    view === "settings"
-                      ? "settings-stage-header-title"
-                      : "text-sm font-medium text-primary"
+                    view === "settings" ? "settings-stage-header-title" : "text-[15px] text-primary"
                   }
                 >
                   {view === "settings"
@@ -1684,29 +1696,6 @@ function PageBody({
                             : "Home"}
                 </span>
               </div>
-              {view !== "settings" ? (
-                <div className="flex items-center gap-2">
-                  {/* Help used to open the OpenAPI reference: an operator who
-                      clicked it because a promise was missed landed on a route
-                      table titled with a different product's name. */}
-                  <Link
-                    className="hidden text-[13px] text-primary/55 transition-colors hover:text-primary md:inline-flex"
-                    href="/blog"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    Help
-                  </Link>
-                  <button
-                    className="hidden h-8 items-center rounded-none border border-border bg-background px-3 text-[13px] text-primary transition-colors hover:bg-background-100 md:inline-flex"
-                    onClick={() => setPaletteOpen(true)}
-                    title="Command palette"
-                    type="button"
-                  >
-                    Ask Oppulence
-                  </button>
-                </div>
-              ) : null}
             </header>
 
             <ViewBoundary viewKey={`${view}:${revenueTab}:${settingsSection}`}>
