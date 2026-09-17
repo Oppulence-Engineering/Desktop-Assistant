@@ -126,9 +126,11 @@ type RevenueWorkspaceEdges struct {
 	PersonInteractionStats []*PersonInteractionStat `json:"person_interaction_stats,omitempty"`
 	// PersonMergeCandidates holds the value of the person_merge_candidates edge.
 	PersonMergeCandidates []*PersonMergeCandidate `json:"person_merge_candidates,omitempty"`
+	// ConsoleResources holds the value of the console_resources edge.
+	ConsoleResources []*ConsoleResource `json:"console_resources,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [37]bool
+	loadedTypes [38]bool
 	// totalCount holds the count of the edges above.
 	totalCount [37]map[string]int
 
@@ -168,6 +170,7 @@ type RevenueWorkspaceEdges struct {
 	namedPersonAttributes                   map[string][]*PersonAttribute
 	namedPersonInteractionStats             map[string][]*PersonInteractionStat
 	namedPersonMergeCandidates              map[string][]*PersonMergeCandidate
+	namedConsoleResources                   map[string][]*ConsoleResource
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -505,6 +508,15 @@ func (e RevenueWorkspaceEdges) PersonMergeCandidatesOrErr() ([]*PersonMergeCandi
 	return nil, &NotLoadedError{edge: "person_merge_candidates"}
 }
 
+// ConsoleResourcesOrErr returns the ConsoleResources value or an error if the edge
+// was not loaded in eager-loading.
+func (e RevenueWorkspaceEdges) ConsoleResourcesOrErr() ([]*ConsoleResource, error) {
+	if e.loadedTypes[37] {
+		return e.ConsoleResources, nil
+	}
+	return nil, &NotLoadedError{edge: "console_resources"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*RevenueWorkspace) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -820,6 +832,11 @@ func (_m *RevenueWorkspace) QueryPersonInteractionStats() *PersonInteractionStat
 // QueryPersonMergeCandidates queries the "person_merge_candidates" edge of the RevenueWorkspace entity.
 func (_m *RevenueWorkspace) QueryPersonMergeCandidates() *PersonMergeCandidateQuery {
 	return NewRevenueWorkspaceClient(_m.config).QueryPersonMergeCandidates(_m)
+}
+
+// QueryConsoleResources queries the "console_resources" edge of the RevenueWorkspace entity.
+func (_m *RevenueWorkspace) QueryConsoleResources() *ConsoleResourceQuery {
+	return NewRevenueWorkspaceClient(_m.config).QueryConsoleResources(_m)
 }
 
 // Update returns a builder for updating this RevenueWorkspace.
@@ -1753,6 +1770,30 @@ func (_m *RevenueWorkspace) appendNamedPersonMergeCandidates(name string, edges 
 		_m.Edges.namedPersonMergeCandidates[name] = []*PersonMergeCandidate{}
 	} else {
 		_m.Edges.namedPersonMergeCandidates[name] = append(_m.Edges.namedPersonMergeCandidates[name], edges...)
+	}
+}
+
+// NamedConsoleResources returns the ConsoleResources named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *RevenueWorkspace) NamedConsoleResources(name string) ([]*ConsoleResource, error) {
+	if _m.Edges.namedConsoleResources == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedConsoleResources[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *RevenueWorkspace) appendNamedConsoleResources(name string, edges ...*ConsoleResource) {
+	if _m.Edges.namedConsoleResources == nil {
+		_m.Edges.namedConsoleResources = make(map[string][]*ConsoleResource)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedConsoleResources[name] = []*ConsoleResource{}
+	} else {
+		_m.Edges.namedConsoleResources[name] = append(_m.Edges.namedConsoleResources[name], edges...)
 	}
 }
 

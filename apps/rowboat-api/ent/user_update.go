@@ -32,6 +32,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -77,6 +78,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -1163,6 +1165,36 @@ func (_u *UserUpdate) AddApprovalTokens(v ...*ApprovalToken) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddApprovalTokenIDs(ids...)
+}
+
+// AddUserPreferenceIDs adds the "user_preferences" edge to the UserPreference entity by IDs.
+func (_u *UserUpdate) AddUserPreferenceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddUserPreferenceIDs(ids...)
+	return _u
+}
+
+// AddUserPreferences adds the "user_preferences" edges to the UserPreference entity.
+func (_u *UserUpdate) AddUserPreferences(v ...*UserPreference) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddUserPreferenceIDs(ids...)
+}
+
+// AddConsoleResourceIDs adds the "console_resources" edge to the ConsoleResource entity by IDs.
+func (_u *UserUpdate) AddConsoleResourceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddConsoleResourceIDs(ids...)
+	return _u
+}
+
+// AddConsoleResources adds the "console_resources" edges to the ConsoleResource entity.
+func (_u *UserUpdate) AddConsoleResources(v ...*ConsoleResource) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConsoleResourceIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -2560,6 +2592,48 @@ func (_u *UserUpdate) RemoveApprovalTokens(v ...*ApprovalToken) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveApprovalTokenIDs(ids...)
+}
+
+// ClearUserPreferences clears all "user_preferences" edges to the UserPreference entity.
+func (_u *UserUpdate) ClearUserPreferences() *UserUpdate {
+	_u.mutation.ClearUserPreferences()
+	return _u
+}
+
+// RemoveUserPreferenceIDs removes the "user_preferences" edge to UserPreference entities by IDs.
+func (_u *UserUpdate) RemoveUserPreferenceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveUserPreferenceIDs(ids...)
+	return _u
+}
+
+// RemoveUserPreferences removes "user_preferences" edges to UserPreference entities.
+func (_u *UserUpdate) RemoveUserPreferences(v ...*UserPreference) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveUserPreferenceIDs(ids...)
+}
+
+// ClearConsoleResources clears all "console_resources" edges to the ConsoleResource entity.
+func (_u *UserUpdate) ClearConsoleResources() *UserUpdate {
+	_u.mutation.ClearConsoleResources()
+	return _u
+}
+
+// RemoveConsoleResourceIDs removes the "console_resources" edge to ConsoleResource entities by IDs.
+func (_u *UserUpdate) RemoveConsoleResourceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveConsoleResourceIDs(ids...)
+	return _u
+}
+
+// RemoveConsoleResources removes "console_resources" edges to ConsoleResource entities.
+func (_u *UserUpdate) RemoveConsoleResources(v ...*ConsoleResource) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConsoleResourceIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -5637,6 +5711,96 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.UserPreferencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserPreferencesTable,
+			Columns: []string{user.UserPreferencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userpreference.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedUserPreferencesIDs(); len(nodes) > 0 && !_u.mutation.UserPreferencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserPreferencesTable,
+			Columns: []string{user.UserPreferencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userpreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserPreferencesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserPreferencesTable,
+			Columns: []string{user.UserPreferencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userpreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsoleResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsoleResourcesTable,
+			Columns: []string{user.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConsoleResourcesIDs(); len(nodes) > 0 && !_u.mutation.ConsoleResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsoleResourcesTable,
+			Columns: []string{user.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsoleResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsoleResourcesTable,
+			Columns: []string{user.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -6724,6 +6888,36 @@ func (_u *UserUpdateOne) AddApprovalTokens(v ...*ApprovalToken) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.AddApprovalTokenIDs(ids...)
+}
+
+// AddUserPreferenceIDs adds the "user_preferences" edge to the UserPreference entity by IDs.
+func (_u *UserUpdateOne) AddUserPreferenceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddUserPreferenceIDs(ids...)
+	return _u
+}
+
+// AddUserPreferences adds the "user_preferences" edges to the UserPreference entity.
+func (_u *UserUpdateOne) AddUserPreferences(v ...*UserPreference) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddUserPreferenceIDs(ids...)
+}
+
+// AddConsoleResourceIDs adds the "console_resources" edge to the ConsoleResource entity by IDs.
+func (_u *UserUpdateOne) AddConsoleResourceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddConsoleResourceIDs(ids...)
+	return _u
+}
+
+// AddConsoleResources adds the "console_resources" edges to the ConsoleResource entity.
+func (_u *UserUpdateOne) AddConsoleResources(v ...*ConsoleResource) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConsoleResourceIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -8121,6 +8315,48 @@ func (_u *UserUpdateOne) RemoveApprovalTokens(v ...*ApprovalToken) *UserUpdateOn
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveApprovalTokenIDs(ids...)
+}
+
+// ClearUserPreferences clears all "user_preferences" edges to the UserPreference entity.
+func (_u *UserUpdateOne) ClearUserPreferences() *UserUpdateOne {
+	_u.mutation.ClearUserPreferences()
+	return _u
+}
+
+// RemoveUserPreferenceIDs removes the "user_preferences" edge to UserPreference entities by IDs.
+func (_u *UserUpdateOne) RemoveUserPreferenceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveUserPreferenceIDs(ids...)
+	return _u
+}
+
+// RemoveUserPreferences removes "user_preferences" edges to UserPreference entities.
+func (_u *UserUpdateOne) RemoveUserPreferences(v ...*UserPreference) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveUserPreferenceIDs(ids...)
+}
+
+// ClearConsoleResources clears all "console_resources" edges to the ConsoleResource entity.
+func (_u *UserUpdateOne) ClearConsoleResources() *UserUpdateOne {
+	_u.mutation.ClearConsoleResources()
+	return _u
+}
+
+// RemoveConsoleResourceIDs removes the "console_resources" edge to ConsoleResource entities by IDs.
+func (_u *UserUpdateOne) RemoveConsoleResourceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveConsoleResourceIDs(ids...)
+	return _u
+}
+
+// RemoveConsoleResources removes "console_resources" edges to ConsoleResource entities.
+func (_u *UserUpdateOne) RemoveConsoleResources(v ...*ConsoleResource) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConsoleResourceIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -11221,6 +11457,96 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(approvaltoken.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.UserPreferencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserPreferencesTable,
+			Columns: []string{user.UserPreferencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userpreference.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedUserPreferencesIDs(); len(nodes) > 0 && !_u.mutation.UserPreferencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserPreferencesTable,
+			Columns: []string{user.UserPreferencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userpreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserPreferencesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserPreferencesTable,
+			Columns: []string{user.UserPreferencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userpreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsoleResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsoleResourcesTable,
+			Columns: []string{user.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConsoleResourcesIDs(); len(nodes) > 0 && !_u.mutation.ConsoleResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsoleResourcesTable,
+			Columns: []string{user.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsoleResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsoleResourcesTable,
+			Columns: []string{user.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

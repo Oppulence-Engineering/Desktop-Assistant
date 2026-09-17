@@ -81,6 +81,9 @@ type ConnectorCredentialRecovery func(*sql.Selector)
 // ConnectorRevocationJob is the predicate function for connectorrevocationjob builders.
 type ConnectorRevocationJob func(*sql.Selector)
 
+// ConsoleResource is the predicate function for consoleresource builders.
+type ConsoleResource func(*sql.Selector)
+
 // ConversationIntelligenceArtifact is the predicate function for conversationintelligenceartifact builders.
 type ConversationIntelligenceArtifact func(*sql.Selector)
 
@@ -236,6 +239,9 @@ type User func(*sql.Selector)
 
 // UserHistory is the predicate function for userhistory builders.
 type UserHistory func(*sql.Selector)
+
+// UserPreference is the predicate function for userpreference builders.
+type UserPreference func(*sql.Selector)
 
 // VoiceAPIKey is the predicate function for voiceapikey builders.
 type VoiceAPIKey func(*sql.Selector)

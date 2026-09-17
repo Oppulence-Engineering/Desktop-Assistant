@@ -37,6 +37,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
@@ -89,6 +90,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -177,6 +179,7 @@ func checkColumn(t, c string) error {
 			connectorcredentialcleanupjob.Table:     connectorcredentialcleanupjob.ValidColumn,
 			connectorcredentialrecovery.Table:       connectorcredentialrecovery.ValidColumn,
 			connectorrevocationjob.Table:            connectorrevocationjob.ValidColumn,
+			consoleresource.Table:                   consoleresource.ValidColumn,
 			conversationintelligenceartifact.Table:  conversationintelligenceartifact.ValidColumn,
 			creditledger.Table:                      creditledger.ValidColumn,
 			deletedidentity.Table:                   deletedidentity.ValidColumn,
@@ -229,6 +232,7 @@ func checkColumn(t, c string) error {
 			tenantevidencekey.Table:                 tenantevidencekey.ValidColumn,
 			user.Table:                              user.ValidColumn,
 			userhistory.Table:                       userhistory.ValidColumn,
+			userpreference.Table:                    userpreference.ValidColumn,
 			voiceapikey.Table:                       voiceapikey.ValidColumn,
 			voicesyncitem.Table:                     voicesyncitem.ValidColumn,
 			workspacefeaturecontrol.Table:           workspacefeaturecontrol.ValidColumn,

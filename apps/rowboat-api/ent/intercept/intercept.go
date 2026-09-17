@@ -33,6 +33,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
@@ -86,6 +87,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -820,6 +822,33 @@ func (f TraverseConnectorRevocationJob) Traverse(ctx context.Context, q ent.Quer
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.ConnectorRevocationJobQuery", q)
+}
+
+// The ConsoleResourceFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ConsoleResourceFunc func(context.Context, *ent.ConsoleResourceQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ConsoleResourceFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ConsoleResourceQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ConsoleResourceQuery", q)
+}
+
+// The TraverseConsoleResource type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseConsoleResource func(context.Context, *ent.ConsoleResourceQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseConsoleResource) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseConsoleResource) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConsoleResourceQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ConsoleResourceQuery", q)
 }
 
 // The ConversationIntelligenceArtifactFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -2226,6 +2255,33 @@ func (f TraverseUserHistory) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.UserHistoryQuery", q)
 }
 
+// The UserPreferenceFunc type is an adapter to allow the use of ordinary function as a Querier.
+type UserPreferenceFunc func(context.Context, *ent.UserPreferenceQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f UserPreferenceFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.UserPreferenceQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.UserPreferenceQuery", q)
+}
+
+// The TraverseUserPreference type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseUserPreference func(context.Context, *ent.UserPreferenceQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseUserPreference) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseUserPreference) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.UserPreferenceQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.UserPreferenceQuery", q)
+}
+
 // The VoiceAPIKeyFunc type is an adapter to allow the use of ordinary function as a Querier.
 type VoiceAPIKeyFunc func(context.Context, *ent.VoiceAPIKeyQuery) (ent.Value, error)
 
@@ -2360,6 +2416,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.ConnectorCredentialRecoveryQuery, predicate.ConnectorCredentialRecovery, connectorcredentialrecovery.OrderOption]{typ: ent.TypeConnectorCredentialRecovery, tq: q}, nil
 	case *ent.ConnectorRevocationJobQuery:
 		return &query[*ent.ConnectorRevocationJobQuery, predicate.ConnectorRevocationJob, connectorrevocationjob.OrderOption]{typ: ent.TypeConnectorRevocationJob, tq: q}, nil
+	case *ent.ConsoleResourceQuery:
+		return &query[*ent.ConsoleResourceQuery, predicate.ConsoleResource, consoleresource.OrderOption]{typ: ent.TypeConsoleResource, tq: q}, nil
 	case *ent.ConversationIntelligenceArtifactQuery:
 		return &query[*ent.ConversationIntelligenceArtifactQuery, predicate.ConversationIntelligenceArtifact, conversationintelligenceartifact.OrderOption]{typ: ent.TypeConversationIntelligenceArtifact, tq: q}, nil
 	case *ent.CreditLedgerQuery:
@@ -2464,6 +2522,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.UserQuery, predicate.User, user.OrderOption]{typ: ent.TypeUser, tq: q}, nil
 	case *ent.UserHistoryQuery:
 		return &query[*ent.UserHistoryQuery, predicate.UserHistory, userhistory.OrderOption]{typ: ent.TypeUserHistory, tq: q}, nil
+	case *ent.UserPreferenceQuery:
+		return &query[*ent.UserPreferenceQuery, predicate.UserPreference, userpreference.OrderOption]{typ: ent.TypeUserPreference, tq: q}, nil
 	case *ent.VoiceAPIKeyQuery:
 		return &query[*ent.VoiceAPIKeyQuery, predicate.VoiceAPIKey, voiceapikey.OrderOption]{typ: ent.TypeVoiceAPIKey, tq: q}, nil
 	case *ent.VoiceSyncItemQuery:

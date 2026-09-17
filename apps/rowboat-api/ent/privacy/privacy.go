@@ -711,6 +711,30 @@ func (f ConnectorRevocationJobMutationRuleFunc) EvalMutation(ctx context.Context
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ConnectorRevocationJobMutation", m)
 }
 
+// The ConsoleResourceQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ConsoleResourceQueryRuleFunc func(context.Context, *ent.ConsoleResourceQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ConsoleResourceQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConsoleResourceQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ConsoleResourceQuery", q)
+}
+
+// The ConsoleResourceMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ConsoleResourceMutationRuleFunc func(context.Context, *ent.ConsoleResourceMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ConsoleResourceMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ConsoleResourceMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ConsoleResourceMutation", m)
+}
+
 // The ConversationIntelligenceArtifactQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type ConversationIntelligenceArtifactQueryRuleFunc func(context.Context, *ent.ConversationIntelligenceArtifactQuery) error
@@ -1959,6 +1983,30 @@ func (f UserHistoryMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mut
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.UserHistoryMutation", m)
 }
 
+// The UserPreferenceQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type UserPreferenceQueryRuleFunc func(context.Context, *ent.UserPreferenceQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f UserPreferenceQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.UserPreferenceQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.UserPreferenceQuery", q)
+}
+
+// The UserPreferenceMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type UserPreferenceMutationRuleFunc func(context.Context, *ent.UserPreferenceMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f UserPreferenceMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.UserPreferenceMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.UserPreferenceMutation", m)
+}
+
 // The VoiceAPIKeyQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type VoiceAPIKeyQueryRuleFunc func(context.Context, *ent.VoiceAPIKeyQuery) error
@@ -2116,6 +2164,8 @@ func queryFilter(q ent.Query) (Filter, error) {
 		return q.Filter(), nil
 	case *ent.ConnectorRevocationJobQuery:
 		return q.Filter(), nil
+	case *ent.ConsoleResourceQuery:
+		return q.Filter(), nil
 	case *ent.ConversationIntelligenceArtifactQuery:
 		return q.Filter(), nil
 	case *ent.CreditLedgerQuery:
@@ -2220,6 +2270,8 @@ func queryFilter(q ent.Query) (Filter, error) {
 		return q.Filter(), nil
 	case *ent.UserHistoryQuery:
 		return q.Filter(), nil
+	case *ent.UserPreferenceQuery:
+		return q.Filter(), nil
 	case *ent.VoiceAPIKeyQuery:
 		return q.Filter(), nil
 	case *ent.VoiceSyncItemQuery:
@@ -2282,6 +2334,8 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 	case *ent.ConnectorCredentialRecoveryMutation:
 		return m.Filter(), nil
 	case *ent.ConnectorRevocationJobMutation:
+		return m.Filter(), nil
+	case *ent.ConsoleResourceMutation:
 		return m.Filter(), nil
 	case *ent.ConversationIntelligenceArtifactMutation:
 		return m.Filter(), nil
@@ -2386,6 +2440,8 @@ func mutationFilter(m ent.Mutation) (Filter, error) {
 	case *ent.UserMutation:
 		return m.Filter(), nil
 	case *ent.UserHistoryMutation:
+		return m.Filter(), nil
+	case *ent.UserPreferenceMutation:
 		return m.Filter(), nil
 	case *ent.VoiceAPIKeyMutation:
 		return m.Filter(), nil

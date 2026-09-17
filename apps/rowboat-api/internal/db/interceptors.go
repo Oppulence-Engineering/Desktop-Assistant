@@ -28,6 +28,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -75,6 +76,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -116,6 +118,7 @@ var tenantUserColumns = map[string]string{
 	ent.TypeCommitment:                        commitment.UserColumn,
 	ent.TypeCommitmentDependency:              commitmentdependency.UserColumn,
 	ent.TypeCommitmentEvent:                   commitmentevent.UserColumn,
+	ent.TypeConsoleResource:                   consoleresource.UserColumn,
 	ent.TypeConversationIntelligenceArtifact:  conversationintelligenceartifact.UserColumn,
 	ent.TypeMailBodyCache:                     mailbodycache.UserColumn,
 	ent.TypeMailSignal:                        mailsignal.UserColumn,
@@ -143,6 +146,7 @@ var tenantUserColumns = map[string]string{
 	ent.TypeRevenueWorkspace:                  revenueworkspace.UserColumn,
 	ent.TypeRevenueWorkspaceMember:            revenueworkspacemember.UserColumn,
 	ent.TypeTenantEvidenceKey:                 tenantevidencekey.UserColumn,
+	ent.TypeUserPreference:                    userpreference.UserColumn,
 	ent.TypeWorkspaceFeatureControl:           workspacefeaturecontrol.UserColumn,
 	ent.TypeVoiceAPIKey:                       voiceapikey.UserColumn,
 	ent.TypeVoiceSyncItem:                     voicesyncitem.UserColumn,
@@ -181,6 +185,7 @@ var workspaceTenantColumns = map[string]string{
 	ent.TypeCommitment:                        commitment.WorkspaceColumn,
 	ent.TypeCommitmentEvent:                   commitmentevent.WorkspaceColumn,
 	ent.TypeCommitmentDependency:              commitmentdependency.WorkspaceColumn,
+	ent.TypeConsoleResource:                   consoleresource.WorkspaceColumn,
 	ent.TypeConversationIntelligenceArtifact:  conversationintelligenceartifact.WorkspaceColumn,
 	ent.TypeRevenueAction:                     revenueaction.WorkspaceColumn,
 	ent.TypePolicyDecisionSnapshot:            policydecisionsnapshot.WorkspaceColumn,
@@ -294,6 +299,13 @@ func registerInterceptors(client *ent.Client, log *zap.Logger) {
 		func(ctx context.Context, q *ent.CloudEventQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(cloudevent.HasUserWith(user.IDEQ(uid)))
+			})
+		}))
+
+	client.UserPreference.Intercept(intercept.TraverseUserPreference(
+		func(ctx context.Context, q *ent.UserPreferenceQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(userpreference.HasUserWith(user.IDEQ(uid)))
 			})
 		}))
 
@@ -433,6 +445,16 @@ func registerInterceptors(client *ent.Client, log *zap.Logger) {
 		func(ctx context.Context, q *ent.RevenueLeakScanQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
 				q.Where(revenueleakscan.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+			})
+		}))
+
+	client.ConsoleResource.Intercept(intercept.TraverseConsoleResource(
+		func(ctx context.Context, q *ent.ConsoleResourceQuery) error {
+			return scopeToUser(ctx, func(uid uuid.UUID) {
+				q.Where(
+					consoleresource.HasUserWith(user.IDEQ(uid)),
+					consoleresource.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)),
+				)
 			})
 		}))
 

@@ -1637,6 +1637,29 @@ func HasPersonMergeCandidatesWith(preds ...predicate.PersonMergeCandidate) predi
 	})
 }
 
+// HasConsoleResources applies the HasEdge predicate on the "console_resources" edge.
+func HasConsoleResources() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ConsoleResourcesTable, ConsoleResourcesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConsoleResourcesWith applies the HasEdge predicate on the "console_resources" edge with a given conditions (other predicates).
+func HasConsoleResourcesWith(preds ...predicate.ConsoleResource) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newConsoleResourcesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.RevenueWorkspace) predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(sql.AndPredicates(predicates...))

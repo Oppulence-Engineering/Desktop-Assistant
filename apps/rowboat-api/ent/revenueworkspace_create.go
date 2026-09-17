@@ -16,6 +16,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
@@ -794,6 +795,21 @@ func (_c *RevenueWorkspaceCreate) AddPersonMergeCandidates(v ...*PersonMergeCand
 	return _c.AddPersonMergeCandidateIDs(ids...)
 }
 
+// AddConsoleResourceIDs adds the "console_resources" edge to the ConsoleResource entity by IDs.
+func (_c *RevenueWorkspaceCreate) AddConsoleResourceIDs(ids ...uuid.UUID) *RevenueWorkspaceCreate {
+	_c.mutation.AddConsoleResourceIDs(ids...)
+	return _c
+}
+
+// AddConsoleResources adds the "console_resources" edges to the ConsoleResource entity.
+func (_c *RevenueWorkspaceCreate) AddConsoleResources(v ...*ConsoleResource) *RevenueWorkspaceCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddConsoleResourceIDs(ids...)
+}
+
 // Mutation returns the RevenueWorkspaceMutation object of the builder.
 func (_c *RevenueWorkspaceCreate) Mutation() *RevenueWorkspaceMutation {
 	return _c.mutation
@@ -1567,6 +1583,22 @@ func (_c *RevenueWorkspaceCreate) createSpec() (*RevenueWorkspace, *sqlgraph.Cre
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ConsoleResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.ConsoleResourcesTable,
+			Columns: []string{revenueworkspace.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

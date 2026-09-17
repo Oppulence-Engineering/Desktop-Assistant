@@ -42,6 +42,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
@@ -94,6 +95,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -154,6 +156,8 @@ type Client struct {
 	ConnectorCredentialRecovery *ConnectorCredentialRecoveryClient
 	// ConnectorRevocationJob is the client for interacting with the ConnectorRevocationJob builders.
 	ConnectorRevocationJob *ConnectorRevocationJobClient
+	// ConsoleResource is the client for interacting with the ConsoleResource builders.
+	ConsoleResource *ConsoleResourceClient
 	// ConversationIntelligenceArtifact is the client for interacting with the ConversationIntelligenceArtifact builders.
 	ConversationIntelligenceArtifact *ConversationIntelligenceArtifactClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
@@ -258,6 +262,8 @@ type Client struct {
 	User *UserClient
 	// UserHistory is the client for interacting with the UserHistory builders.
 	UserHistory *UserHistoryClient
+	// UserPreference is the client for interacting with the UserPreference builders.
+	UserPreference *UserPreferenceClient
 	// VoiceAPIKey is the client for interacting with the VoiceAPIKey builders.
 	VoiceAPIKey *VoiceAPIKeyClient
 	// VoiceSyncItem is the client for interacting with the VoiceSyncItem builders.
@@ -305,6 +311,7 @@ func (c *Client) init() {
 	c.ConnectorCredentialCleanupJob = NewConnectorCredentialCleanupJobClient(c.config)
 	c.ConnectorCredentialRecovery = NewConnectorCredentialRecoveryClient(c.config)
 	c.ConnectorRevocationJob = NewConnectorRevocationJobClient(c.config)
+	c.ConsoleResource = NewConsoleResourceClient(c.config)
 	c.ConversationIntelligenceArtifact = NewConversationIntelligenceArtifactClient(c.config)
 	c.CreditLedger = NewCreditLedgerClient(c.config)
 	c.DeletedIdentity = NewDeletedIdentityClient(c.config)
@@ -357,6 +364,7 @@ func (c *Client) init() {
 	c.TenantEvidenceKey = NewTenantEvidenceKeyClient(c.config)
 	c.User = NewUserClient(c.config)
 	c.UserHistory = NewUserHistoryClient(c.config)
+	c.UserPreference = NewUserPreferenceClient(c.config)
 	c.VoiceAPIKey = NewVoiceAPIKeyClient(c.config)
 	c.VoiceSyncItem = NewVoiceSyncItemClient(c.config)
 	c.WorkspaceFeatureControl = NewWorkspaceFeatureControlClient(c.config)
@@ -505,6 +513,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ConnectorCredentialCleanupJob:     NewConnectorCredentialCleanupJobClient(cfg),
 		ConnectorCredentialRecovery:       NewConnectorCredentialRecoveryClient(cfg),
 		ConnectorRevocationJob:            NewConnectorRevocationJobClient(cfg),
+		ConsoleResource:                   NewConsoleResourceClient(cfg),
 		ConversationIntelligenceArtifact:  NewConversationIntelligenceArtifactClient(cfg),
 		CreditLedger:                      NewCreditLedgerClient(cfg),
 		DeletedIdentity:                   NewDeletedIdentityClient(cfg),
@@ -557,6 +566,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		TenantEvidenceKey:                 NewTenantEvidenceKeyClient(cfg),
 		User:                              NewUserClient(cfg),
 		UserHistory:                       NewUserHistoryClient(cfg),
+		UserPreference:                    NewUserPreferenceClient(cfg),
 		VoiceAPIKey:                       NewVoiceAPIKeyClient(cfg),
 		VoiceSyncItem:                     NewVoiceSyncItemClient(cfg),
 		WorkspaceFeatureControl:           NewWorkspaceFeatureControlClient(cfg),
@@ -604,6 +614,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ConnectorCredentialCleanupJob:     NewConnectorCredentialCleanupJobClient(cfg),
 		ConnectorCredentialRecovery:       NewConnectorCredentialRecoveryClient(cfg),
 		ConnectorRevocationJob:            NewConnectorRevocationJobClient(cfg),
+		ConsoleResource:                   NewConsoleResourceClient(cfg),
 		ConversationIntelligenceArtifact:  NewConversationIntelligenceArtifactClient(cfg),
 		CreditLedger:                      NewCreditLedgerClient(cfg),
 		DeletedIdentity:                   NewDeletedIdentityClient(cfg),
@@ -656,6 +667,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		TenantEvidenceKey:                 NewTenantEvidenceKeyClient(cfg),
 		User:                              NewUserClient(cfg),
 		UserHistory:                       NewUserHistoryClient(cfg),
+		UserPreference:                    NewUserPreferenceClient(cfg),
 		VoiceAPIKey:                       NewVoiceAPIKeyClient(cfg),
 		VoiceSyncItem:                     NewVoiceSyncItemClient(cfg),
 		WorkspaceFeatureControl:           NewWorkspaceFeatureControlClient(cfg),
@@ -695,24 +707,25 @@ func (c *Client) Use(hooks ...Hook) {
 		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
 		c.CommitmentDependency, c.CommitmentEvent, c.ConnectorAuditEvent,
 		c.ConnectorCredentialCleanupJob, c.ConnectorCredentialRecovery,
-		c.ConnectorRevocationJob, c.ConversationIntelligenceArtifact, c.CreditLedger,
-		c.DeletedIdentity, c.Entity, c.EntityIdentifier, c.EntityResourceRef,
-		c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
-		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
-		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
-		c.OAuthConnectionHistory, c.OAuthPending, c.Person, c.PersonAttribute,
-		c.PersonIdentity, c.PersonInteractionStat, c.PersonMergeCandidate,
-		c.PersonSuppression, c.PolicyDecisionSnapshot, c.Relationship,
-		c.RelationshipAssertion, c.RelationshipAttentionItem, c.RelationshipIdentity,
-		c.RelationshipIdentityCandidate, c.RelationshipIdentityDecision,
-		c.RelationshipLineageEvent, c.RelationshipObservation,
-		c.RelationshipParticipant, c.RelationshipProjectionJob,
-		c.RelationshipReviewAcknowledgement, c.RelationshipSourceStatus,
-		c.RelationshipStateSnapshot, c.RevenueAction, c.RevenueActionRevision,
-		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent,
-		c.RevenueTrustEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
-		c.Subscription, c.SubscriptionHistory, c.TenantEvidenceKey, c.User,
-		c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem, c.WorkspaceFeatureControl,
+		c.ConnectorRevocationJob, c.ConsoleResource,
+		c.ConversationIntelligenceArtifact, c.CreditLedger, c.DeletedIdentity,
+		c.Entity, c.EntityIdentifier, c.EntityResourceRef, c.GoogleWatch, c.LLMUsage,
+		c.LLMUsageHistory, c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache,
+		c.MailMessageMeta, c.MailSignal, c.MailThread, c.MeetingMinuteUsage,
+		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending, c.Person,
+		c.PersonAttribute, c.PersonIdentity, c.PersonInteractionStat,
+		c.PersonMergeCandidate, c.PersonSuppression, c.PolicyDecisionSnapshot,
+		c.Relationship, c.RelationshipAssertion, c.RelationshipAttentionItem,
+		c.RelationshipIdentity, c.RelationshipIdentityCandidate,
+		c.RelationshipIdentityDecision, c.RelationshipLineageEvent,
+		c.RelationshipObservation, c.RelationshipParticipant,
+		c.RelationshipProjectionJob, c.RelationshipReviewAcknowledgement,
+		c.RelationshipSourceStatus, c.RelationshipStateSnapshot, c.RevenueAction,
+		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
+		c.RevenueOutboxEvent, c.RevenueTrustEvent, c.RevenueWorkspace,
+		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory,
+		c.TenantEvidenceKey, c.User, c.UserHistory, c.UserPreference, c.VoiceAPIKey,
+		c.VoiceSyncItem, c.WorkspaceFeatureControl,
 	} {
 		n.Use(hooks...)
 	}
@@ -729,24 +742,25 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.BackgroundTaskScheduleState, c.CaptureArtifact, c.CloudEvent, c.Commitment,
 		c.CommitmentDependency, c.CommitmentEvent, c.ConnectorAuditEvent,
 		c.ConnectorCredentialCleanupJob, c.ConnectorCredentialRecovery,
-		c.ConnectorRevocationJob, c.ConversationIntelligenceArtifact, c.CreditLedger,
-		c.DeletedIdentity, c.Entity, c.EntityIdentifier, c.EntityResourceRef,
-		c.GoogleWatch, c.LLMUsage, c.LLMUsageHistory, c.MCPConnection,
-		c.MCPConnectionHistory, c.MailBodyCache, c.MailMessageMeta, c.MailSignal,
-		c.MailThread, c.MeetingMinuteUsage, c.OAuthConnection,
-		c.OAuthConnectionHistory, c.OAuthPending, c.Person, c.PersonAttribute,
-		c.PersonIdentity, c.PersonInteractionStat, c.PersonMergeCandidate,
-		c.PersonSuppression, c.PolicyDecisionSnapshot, c.Relationship,
-		c.RelationshipAssertion, c.RelationshipAttentionItem, c.RelationshipIdentity,
-		c.RelationshipIdentityCandidate, c.RelationshipIdentityDecision,
-		c.RelationshipLineageEvent, c.RelationshipObservation,
-		c.RelationshipParticipant, c.RelationshipProjectionJob,
-		c.RelationshipReviewAcknowledgement, c.RelationshipSourceStatus,
-		c.RelationshipStateSnapshot, c.RevenueAction, c.RevenueActionRevision,
-		c.RevenueEvidence, c.RevenueLeakScan, c.RevenueOutboxEvent,
-		c.RevenueTrustEvent, c.RevenueWorkspace, c.RevenueWorkspaceMember,
-		c.Subscription, c.SubscriptionHistory, c.TenantEvidenceKey, c.User,
-		c.UserHistory, c.VoiceAPIKey, c.VoiceSyncItem, c.WorkspaceFeatureControl,
+		c.ConnectorRevocationJob, c.ConsoleResource,
+		c.ConversationIntelligenceArtifact, c.CreditLedger, c.DeletedIdentity,
+		c.Entity, c.EntityIdentifier, c.EntityResourceRef, c.GoogleWatch, c.LLMUsage,
+		c.LLMUsageHistory, c.MCPConnection, c.MCPConnectionHistory, c.MailBodyCache,
+		c.MailMessageMeta, c.MailSignal, c.MailThread, c.MeetingMinuteUsage,
+		c.OAuthConnection, c.OAuthConnectionHistory, c.OAuthPending, c.Person,
+		c.PersonAttribute, c.PersonIdentity, c.PersonInteractionStat,
+		c.PersonMergeCandidate, c.PersonSuppression, c.PolicyDecisionSnapshot,
+		c.Relationship, c.RelationshipAssertion, c.RelationshipAttentionItem,
+		c.RelationshipIdentity, c.RelationshipIdentityCandidate,
+		c.RelationshipIdentityDecision, c.RelationshipLineageEvent,
+		c.RelationshipObservation, c.RelationshipParticipant,
+		c.RelationshipProjectionJob, c.RelationshipReviewAcknowledgement,
+		c.RelationshipSourceStatus, c.RelationshipStateSnapshot, c.RevenueAction,
+		c.RevenueActionRevision, c.RevenueEvidence, c.RevenueLeakScan,
+		c.RevenueOutboxEvent, c.RevenueTrustEvent, c.RevenueWorkspace,
+		c.RevenueWorkspaceMember, c.Subscription, c.SubscriptionHistory,
+		c.TenantEvidenceKey, c.User, c.UserHistory, c.UserPreference, c.VoiceAPIKey,
+		c.VoiceSyncItem, c.WorkspaceFeatureControl,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -805,6 +819,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ConnectorCredentialRecovery.mutate(ctx, m)
 	case *ConnectorRevocationJobMutation:
 		return c.ConnectorRevocationJob.mutate(ctx, m)
+	case *ConsoleResourceMutation:
+		return c.ConsoleResource.mutate(ctx, m)
 	case *ConversationIntelligenceArtifactMutation:
 		return c.ConversationIntelligenceArtifact.mutate(ctx, m)
 	case *CreditLedgerMutation:
@@ -909,6 +925,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.User.mutate(ctx, m)
 	case *UserHistoryMutation:
 		return c.UserHistory.mutate(ctx, m)
+	case *UserPreferenceMutation:
+		return c.UserPreference.mutate(ctx, m)
 	case *VoiceAPIKeyMutation:
 		return c.VoiceAPIKey.mutate(ctx, m)
 	case *VoiceSyncItemMutation:
@@ -5192,6 +5210,172 @@ func (c *ConnectorRevocationJobClient) mutate(ctx context.Context, m *ConnectorR
 		return (&ConnectorRevocationJobDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown ConnectorRevocationJob mutation op: %q", m.Op())
+	}
+}
+
+// ConsoleResourceClient is a client for the ConsoleResource schema.
+type ConsoleResourceClient struct {
+	config
+}
+
+// NewConsoleResourceClient returns a client for the ConsoleResource from the given config.
+func NewConsoleResourceClient(c config) *ConsoleResourceClient {
+	return &ConsoleResourceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `consoleresource.Hooks(f(g(h())))`.
+func (c *ConsoleResourceClient) Use(hooks ...Hook) {
+	c.hooks.ConsoleResource = append(c.hooks.ConsoleResource, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `consoleresource.Intercept(f(g(h())))`.
+func (c *ConsoleResourceClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ConsoleResource = append(c.inters.ConsoleResource, interceptors...)
+}
+
+// Create returns a builder for creating a ConsoleResource entity.
+func (c *ConsoleResourceClient) Create() *ConsoleResourceCreate {
+	mutation := newConsoleResourceMutation(c.config, OpCreate)
+	return &ConsoleResourceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ConsoleResource entities.
+func (c *ConsoleResourceClient) CreateBulk(builders ...*ConsoleResourceCreate) *ConsoleResourceCreateBulk {
+	return &ConsoleResourceCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ConsoleResourceClient) MapCreateBulk(slice any, setFunc func(*ConsoleResourceCreate, int)) *ConsoleResourceCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ConsoleResourceCreateBulk{err: fmt.Errorf("calling to ConsoleResourceClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ConsoleResourceCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ConsoleResourceCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ConsoleResource.
+func (c *ConsoleResourceClient) Update() *ConsoleResourceUpdate {
+	mutation := newConsoleResourceMutation(c.config, OpUpdate)
+	return &ConsoleResourceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ConsoleResourceClient) UpdateOne(_m *ConsoleResource) *ConsoleResourceUpdateOne {
+	mutation := newConsoleResourceMutation(c.config, OpUpdateOne, withConsoleResource(_m))
+	return &ConsoleResourceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ConsoleResourceClient) UpdateOneID(id uuid.UUID) *ConsoleResourceUpdateOne {
+	mutation := newConsoleResourceMutation(c.config, OpUpdateOne, withConsoleResourceID(id))
+	return &ConsoleResourceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ConsoleResource.
+func (c *ConsoleResourceClient) Delete() *ConsoleResourceDelete {
+	mutation := newConsoleResourceMutation(c.config, OpDelete)
+	return &ConsoleResourceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ConsoleResourceClient) DeleteOne(_m *ConsoleResource) *ConsoleResourceDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ConsoleResourceClient) DeleteOneID(id uuid.UUID) *ConsoleResourceDeleteOne {
+	builder := c.Delete().Where(consoleresource.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ConsoleResourceDeleteOne{builder}
+}
+
+// Query returns a query builder for ConsoleResource.
+func (c *ConsoleResourceClient) Query() *ConsoleResourceQuery {
+	return &ConsoleResourceQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeConsoleResource},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ConsoleResource entity by its id.
+func (c *ConsoleResourceClient) Get(ctx context.Context, id uuid.UUID) (*ConsoleResource, error) {
+	return c.Query().Where(consoleresource.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ConsoleResourceClient) GetX(ctx context.Context, id uuid.UUID) *ConsoleResource {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryWorkspace queries the workspace edge of a ConsoleResource.
+func (c *ConsoleResourceClient) QueryWorkspace(_m *ConsoleResource) *RevenueWorkspaceQuery {
+	query := (&RevenueWorkspaceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(consoleresource.Table, consoleresource.FieldID, id),
+			sqlgraph.To(revenueworkspace.Table, revenueworkspace.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, consoleresource.WorkspaceTable, consoleresource.WorkspaceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a ConsoleResource.
+func (c *ConsoleResourceClient) QueryUser(_m *ConsoleResource) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(consoleresource.Table, consoleresource.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, consoleresource.UserTable, consoleresource.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ConsoleResourceClient) Hooks() []Hook {
+	hooks := c.hooks.ConsoleResource
+	return append(hooks[:len(hooks):len(hooks)], consoleresource.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *ConsoleResourceClient) Interceptors() []Interceptor {
+	return c.inters.ConsoleResource
+}
+
+func (c *ConsoleResourceClient) mutate(ctx context.Context, m *ConsoleResourceMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ConsoleResourceCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ConsoleResourceUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ConsoleResourceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ConsoleResourceDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ConsoleResource mutation op: %q", m.Op())
 	}
 }
 
@@ -14179,6 +14363,22 @@ func (c *RevenueWorkspaceClient) QueryPersonMergeCandidates(_m *RevenueWorkspace
 	return query
 }
 
+// QueryConsoleResources queries the console_resources edge of a RevenueWorkspace.
+func (c *RevenueWorkspaceClient) QueryConsoleResources(_m *RevenueWorkspace) *ConsoleResourceQuery {
+	query := (&ConsoleResourceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, id),
+			sqlgraph.To(consoleresource.Table, consoleresource.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.ConsoleResourcesTable, revenueworkspace.ConsoleResourcesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RevenueWorkspaceClient) Hooks() []Hook {
 	hooks := c.hooks.RevenueWorkspace
@@ -16001,6 +16201,38 @@ func (c *UserClient) QueryApprovalTokens(_m *User) *ApprovalTokenQuery {
 	return query
 }
 
+// QueryUserPreferences queries the user_preferences edge of a User.
+func (c *UserClient) QueryUserPreferences(_m *User) *UserPreferenceQuery {
+	query := (&UserPreferenceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(userpreference.Table, userpreference.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.UserPreferencesTable, user.UserPreferencesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryConsoleResources queries the console_resources edge of a User.
+func (c *UserClient) QueryConsoleResources(_m *User) *ConsoleResourceQuery {
+	query := (&ConsoleResourceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(consoleresource.Table, consoleresource.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ConsoleResourcesTable, user.ConsoleResourcesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -16156,6 +16388,156 @@ func (c *UserHistoryClient) mutate(ctx context.Context, m *UserHistoryMutation) 
 		return (&UserHistoryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown UserHistory mutation op: %q", m.Op())
+	}
+}
+
+// UserPreferenceClient is a client for the UserPreference schema.
+type UserPreferenceClient struct {
+	config
+}
+
+// NewUserPreferenceClient returns a client for the UserPreference from the given config.
+func NewUserPreferenceClient(c config) *UserPreferenceClient {
+	return &UserPreferenceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `userpreference.Hooks(f(g(h())))`.
+func (c *UserPreferenceClient) Use(hooks ...Hook) {
+	c.hooks.UserPreference = append(c.hooks.UserPreference, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `userpreference.Intercept(f(g(h())))`.
+func (c *UserPreferenceClient) Intercept(interceptors ...Interceptor) {
+	c.inters.UserPreference = append(c.inters.UserPreference, interceptors...)
+}
+
+// Create returns a builder for creating a UserPreference entity.
+func (c *UserPreferenceClient) Create() *UserPreferenceCreate {
+	mutation := newUserPreferenceMutation(c.config, OpCreate)
+	return &UserPreferenceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of UserPreference entities.
+func (c *UserPreferenceClient) CreateBulk(builders ...*UserPreferenceCreate) *UserPreferenceCreateBulk {
+	return &UserPreferenceCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *UserPreferenceClient) MapCreateBulk(slice any, setFunc func(*UserPreferenceCreate, int)) *UserPreferenceCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &UserPreferenceCreateBulk{err: fmt.Errorf("calling to UserPreferenceClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*UserPreferenceCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &UserPreferenceCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for UserPreference.
+func (c *UserPreferenceClient) Update() *UserPreferenceUpdate {
+	mutation := newUserPreferenceMutation(c.config, OpUpdate)
+	return &UserPreferenceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *UserPreferenceClient) UpdateOne(_m *UserPreference) *UserPreferenceUpdateOne {
+	mutation := newUserPreferenceMutation(c.config, OpUpdateOne, withUserPreference(_m))
+	return &UserPreferenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *UserPreferenceClient) UpdateOneID(id uuid.UUID) *UserPreferenceUpdateOne {
+	mutation := newUserPreferenceMutation(c.config, OpUpdateOne, withUserPreferenceID(id))
+	return &UserPreferenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for UserPreference.
+func (c *UserPreferenceClient) Delete() *UserPreferenceDelete {
+	mutation := newUserPreferenceMutation(c.config, OpDelete)
+	return &UserPreferenceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *UserPreferenceClient) DeleteOne(_m *UserPreference) *UserPreferenceDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *UserPreferenceClient) DeleteOneID(id uuid.UUID) *UserPreferenceDeleteOne {
+	builder := c.Delete().Where(userpreference.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &UserPreferenceDeleteOne{builder}
+}
+
+// Query returns a query builder for UserPreference.
+func (c *UserPreferenceClient) Query() *UserPreferenceQuery {
+	return &UserPreferenceQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeUserPreference},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a UserPreference entity by its id.
+func (c *UserPreferenceClient) Get(ctx context.Context, id uuid.UUID) (*UserPreference, error) {
+	return c.Query().Where(userpreference.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *UserPreferenceClient) GetX(ctx context.Context, id uuid.UUID) *UserPreference {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a UserPreference.
+func (c *UserPreferenceClient) QueryUser(_m *UserPreference) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(userpreference.Table, userpreference.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, userpreference.UserTable, userpreference.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *UserPreferenceClient) Hooks() []Hook {
+	hooks := c.hooks.UserPreference
+	return append(hooks[:len(hooks):len(hooks)], userpreference.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *UserPreferenceClient) Interceptors() []Interceptor {
+	return c.inters.UserPreference
+}
+
+func (c *UserPreferenceClient) mutate(ctx context.Context, m *UserPreferenceMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&UserPreferenceCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&UserPreferenceUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&UserPreferenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&UserPreferenceDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown UserPreference mutation op: %q", m.Op())
 	}
 }
 
@@ -16635,12 +17017,12 @@ type (
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
 		CommitmentDependency, CommitmentEvent, ConnectorAuditEvent,
 		ConnectorCredentialCleanupJob, ConnectorCredentialRecovery,
-		ConnectorRevocationJob, ConversationIntelligenceArtifact, CreditLedger,
-		DeletedIdentity, Entity, EntityIdentifier, EntityResourceRef, GoogleWatch,
-		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
-		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
-		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
+		ConnectorRevocationJob, ConsoleResource, ConversationIntelligenceArtifact,
+		CreditLedger, DeletedIdentity, Entity, EntityIdentifier, EntityResourceRef,
+		GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
+		MailBodyCache, MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage,
+		OAuthConnection, OAuthConnectionHistory, OAuthPending, Person, PersonAttribute,
+		PersonIdentity, PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
 		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,
 		RelationshipAttentionItem, RelationshipIdentity, RelationshipIdentityCandidate,
 		RelationshipIdentityDecision, RelationshipLineageEvent,
@@ -16649,8 +17031,8 @@ type (
 		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
 		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
 		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		TenantEvidenceKey, User, UserHistory, VoiceAPIKey, VoiceSyncItem,
-		WorkspaceFeatureControl []ent.Hook
+		TenantEvidenceKey, User, UserHistory, UserPreference, VoiceAPIKey,
+		VoiceSyncItem, WorkspaceFeatureControl []ent.Hook
 	}
 	inters struct {
 		ActionOutcome, ActionProposal, AgentApproval, AgentDefinition,
@@ -16660,12 +17042,12 @@ type (
 		BackgroundTaskScheduleState, CaptureArtifact, CloudEvent, Commitment,
 		CommitmentDependency, CommitmentEvent, ConnectorAuditEvent,
 		ConnectorCredentialCleanupJob, ConnectorCredentialRecovery,
-		ConnectorRevocationJob, ConversationIntelligenceArtifact, CreditLedger,
-		DeletedIdentity, Entity, EntityIdentifier, EntityResourceRef, GoogleWatch,
-		LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory, MailBodyCache,
-		MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage, OAuthConnection,
-		OAuthConnectionHistory, OAuthPending, Person, PersonAttribute, PersonIdentity,
-		PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
+		ConnectorRevocationJob, ConsoleResource, ConversationIntelligenceArtifact,
+		CreditLedger, DeletedIdentity, Entity, EntityIdentifier, EntityResourceRef,
+		GoogleWatch, LLMUsage, LLMUsageHistory, MCPConnection, MCPConnectionHistory,
+		MailBodyCache, MailMessageMeta, MailSignal, MailThread, MeetingMinuteUsage,
+		OAuthConnection, OAuthConnectionHistory, OAuthPending, Person, PersonAttribute,
+		PersonIdentity, PersonInteractionStat, PersonMergeCandidate, PersonSuppression,
 		PolicyDecisionSnapshot, Relationship, RelationshipAssertion,
 		RelationshipAttentionItem, RelationshipIdentity, RelationshipIdentityCandidate,
 		RelationshipIdentityDecision, RelationshipLineageEvent,
@@ -16674,7 +17056,7 @@ type (
 		RelationshipStateSnapshot, RevenueAction, RevenueActionRevision,
 		RevenueEvidence, RevenueLeakScan, RevenueOutboxEvent, RevenueTrustEvent,
 		RevenueWorkspace, RevenueWorkspaceMember, Subscription, SubscriptionHistory,
-		TenantEvidenceKey, User, UserHistory, VoiceAPIKey, VoiceSyncItem,
-		WorkspaceFeatureControl []ent.Interceptor
+		TenantEvidenceKey, User, UserHistory, UserPreference, VoiceAPIKey,
+		VoiceSyncItem, WorkspaceFeatureControl []ent.Interceptor
 	}
 )

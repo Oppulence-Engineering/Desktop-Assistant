@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
@@ -793,6 +794,21 @@ func (_u *RevenueWorkspaceUpdate) AddPersonMergeCandidates(v ...*PersonMergeCand
 	return _u.AddPersonMergeCandidateIDs(ids...)
 }
 
+// AddConsoleResourceIDs adds the "console_resources" edge to the ConsoleResource entity by IDs.
+func (_u *RevenueWorkspaceUpdate) AddConsoleResourceIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.AddConsoleResourceIDs(ids...)
+	return _u
+}
+
+// AddConsoleResources adds the "console_resources" edges to the ConsoleResource entity.
+func (_u *RevenueWorkspaceUpdate) AddConsoleResources(v ...*ConsoleResource) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConsoleResourceIDs(ids...)
+}
+
 // Mutation returns the RevenueWorkspaceMutation object of the builder.
 func (_u *RevenueWorkspaceUpdate) Mutation() *RevenueWorkspaceMutation {
 	return _u.mutation
@@ -1552,6 +1568,27 @@ func (_u *RevenueWorkspaceUpdate) RemovePersonMergeCandidates(v ...*PersonMergeC
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePersonMergeCandidateIDs(ids...)
+}
+
+// ClearConsoleResources clears all "console_resources" edges to the ConsoleResource entity.
+func (_u *RevenueWorkspaceUpdate) ClearConsoleResources() *RevenueWorkspaceUpdate {
+	_u.mutation.ClearConsoleResources()
+	return _u
+}
+
+// RemoveConsoleResourceIDs removes the "console_resources" edge to ConsoleResource entities by IDs.
+func (_u *RevenueWorkspaceUpdate) RemoveConsoleResourceIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdate {
+	_u.mutation.RemoveConsoleResourceIDs(ids...)
+	return _u
+}
+
+// RemoveConsoleResources removes "console_resources" edges to ConsoleResource entities.
+func (_u *RevenueWorkspaceUpdate) RemoveConsoleResources(v ...*ConsoleResource) *RevenueWorkspaceUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConsoleResourceIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -3300,6 +3337,51 @@ func (_u *RevenueWorkspaceUpdate) sqlSave(ctx context.Context) (_node int, err e
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.ConsoleResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.ConsoleResourcesTable,
+			Columns: []string{revenueworkspace.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConsoleResourcesIDs(); len(nodes) > 0 && !_u.mutation.ConsoleResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.ConsoleResourcesTable,
+			Columns: []string{revenueworkspace.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsoleResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.ConsoleResourcesTable,
+			Columns: []string{revenueworkspace.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{revenueworkspace.Label}
@@ -4046,6 +4128,21 @@ func (_u *RevenueWorkspaceUpdateOne) AddPersonMergeCandidates(v ...*PersonMergeC
 		ids[i] = v[i].ID
 	}
 	return _u.AddPersonMergeCandidateIDs(ids...)
+}
+
+// AddConsoleResourceIDs adds the "console_resources" edge to the ConsoleResource entity by IDs.
+func (_u *RevenueWorkspaceUpdateOne) AddConsoleResourceIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.AddConsoleResourceIDs(ids...)
+	return _u
+}
+
+// AddConsoleResources adds the "console_resources" edges to the ConsoleResource entity.
+func (_u *RevenueWorkspaceUpdateOne) AddConsoleResources(v ...*ConsoleResource) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConsoleResourceIDs(ids...)
 }
 
 // Mutation returns the RevenueWorkspaceMutation object of the builder.
@@ -4807,6 +4904,27 @@ func (_u *RevenueWorkspaceUpdateOne) RemovePersonMergeCandidates(v ...*PersonMer
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePersonMergeCandidateIDs(ids...)
+}
+
+// ClearConsoleResources clears all "console_resources" edges to the ConsoleResource entity.
+func (_u *RevenueWorkspaceUpdateOne) ClearConsoleResources() *RevenueWorkspaceUpdateOne {
+	_u.mutation.ClearConsoleResources()
+	return _u
+}
+
+// RemoveConsoleResourceIDs removes the "console_resources" edge to ConsoleResource entities by IDs.
+func (_u *RevenueWorkspaceUpdateOne) RemoveConsoleResourceIDs(ids ...uuid.UUID) *RevenueWorkspaceUpdateOne {
+	_u.mutation.RemoveConsoleResourceIDs(ids...)
+	return _u
+}
+
+// RemoveConsoleResources removes "console_resources" edges to ConsoleResource entities.
+func (_u *RevenueWorkspaceUpdateOne) RemoveConsoleResources(v ...*ConsoleResource) *RevenueWorkspaceUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConsoleResourceIDs(ids...)
 }
 
 // Where appends a list predicates to the RevenueWorkspaceUpdate builder.
@@ -6578,6 +6696,51 @@ func (_u *RevenueWorkspaceUpdateOne) sqlSave(ctx context.Context) (_node *Revenu
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(personmergecandidate.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsoleResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.ConsoleResourcesTable,
+			Columns: []string{revenueworkspace.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConsoleResourcesIDs(); len(nodes) > 0 && !_u.mutation.ConsoleResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.ConsoleResourcesTable,
+			Columns: []string{revenueworkspace.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsoleResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   revenueworkspace.ConsoleResourcesTable,
+			Columns: []string{revenueworkspace.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

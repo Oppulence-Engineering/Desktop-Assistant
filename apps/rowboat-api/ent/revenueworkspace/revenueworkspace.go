@@ -114,6 +114,8 @@ const (
 	EdgePersonInteractionStats = "person_interaction_stats"
 	// EdgePersonMergeCandidates holds the string denoting the person_merge_candidates edge name in mutations.
 	EdgePersonMergeCandidates = "person_merge_candidates"
+	// EdgeConsoleResources holds the string denoting the console_resources edge name in mutations.
+	EdgeConsoleResources = "console_resources"
 	// Table holds the table name of the revenueworkspace in the database.
 	Table = "revenue_workspaces"
 	// UserTable is the table that holds the user relation/edge.
@@ -375,6 +377,13 @@ const (
 	PersonMergeCandidatesInverseTable = "person_merge_candidates"
 	// PersonMergeCandidatesColumn is the table column denoting the person_merge_candidates relation/edge.
 	PersonMergeCandidatesColumn = "revenue_workspace_id"
+	// ConsoleResourcesTable is the table that holds the console_resources relation/edge.
+	ConsoleResourcesTable = "console_resources"
+	// ConsoleResourcesInverseTable is the table name for the ConsoleResource entity.
+	// It exists in this package in order to avoid circular dependency with the "consoleresource" package.
+	ConsoleResourcesInverseTable = "console_resources"
+	// ConsoleResourcesColumn is the table column denoting the console_resources relation/edge.
+	ConsoleResourcesColumn = "revenue_workspace_id"
 )
 
 // Columns holds all SQL columns for revenueworkspace fields.
@@ -1021,6 +1030,20 @@ func ByPersonMergeCandidates(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOp
 		sqlgraph.OrderByNeighborTerms(s, newPersonMergeCandidatesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByConsoleResourcesCount orders the results by console_resources count.
+func ByConsoleResourcesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newConsoleResourcesStep(), opts...)
+	}
+}
+
+// ByConsoleResources orders the results by console_resources terms.
+func ByConsoleResources(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newConsoleResourcesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -1278,5 +1301,12 @@ func newPersonMergeCandidatesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PersonMergeCandidatesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, PersonMergeCandidatesTable, PersonMergeCandidatesColumn),
+	)
+}
+func newConsoleResourcesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ConsoleResourcesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ConsoleResourcesTable, ConsoleResourcesColumn),
 	)
 }

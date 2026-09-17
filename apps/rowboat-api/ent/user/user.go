@@ -159,6 +159,10 @@ const (
 	EdgeActionProposals = "action_proposals"
 	// EdgeApprovalTokens holds the string denoting the approval_tokens edge name in mutations.
 	EdgeApprovalTokens = "approval_tokens"
+	// EdgeUserPreferences holds the string denoting the user_preferences edge name in mutations.
+	EdgeUserPreferences = "user_preferences"
+	// EdgeConsoleResources holds the string denoting the console_resources edge name in mutations.
+	EdgeConsoleResources = "console_resources"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -630,6 +634,20 @@ const (
 	ApprovalTokensInverseTable = "approval_tokens"
 	// ApprovalTokensColumn is the table column denoting the approval_tokens relation/edge.
 	ApprovalTokensColumn = "user_approval_tokens"
+	// UserPreferencesTable is the table that holds the user_preferences relation/edge.
+	UserPreferencesTable = "user_preferences"
+	// UserPreferencesInverseTable is the table name for the UserPreference entity.
+	// It exists in this package in order to avoid circular dependency with the "userpreference" package.
+	UserPreferencesInverseTable = "user_preferences"
+	// UserPreferencesColumn is the table column denoting the user_preferences relation/edge.
+	UserPreferencesColumn = "user_user_preferences"
+	// ConsoleResourcesTable is the table that holds the console_resources relation/edge.
+	ConsoleResourcesTable = "console_resources"
+	// ConsoleResourcesInverseTable is the table name for the ConsoleResource entity.
+	// It exists in this package in order to avoid circular dependency with the "consoleresource" package.
+	ConsoleResourcesInverseTable = "console_resources"
+	// ConsoleResourcesColumn is the table column denoting the console_resources relation/edge.
+	ConsoleResourcesColumn = "user_console_resources"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -1628,6 +1646,34 @@ func ByApprovalTokens(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newApprovalTokensStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByUserPreferencesCount orders the results by user_preferences count.
+func ByUserPreferencesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newUserPreferencesStep(), opts...)
+	}
+}
+
+// ByUserPreferences orders the results by user_preferences terms.
+func ByUserPreferences(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newUserPreferencesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByConsoleResourcesCount orders the results by console_resources count.
+func ByConsoleResourcesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newConsoleResourcesStep(), opts...)
+	}
+}
+
+// ByConsoleResources orders the results by console_resources terms.
+func ByConsoleResources(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newConsoleResourcesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -2095,5 +2141,19 @@ func newApprovalTokensStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ApprovalTokensInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ApprovalTokensTable, ApprovalTokensColumn),
+	)
+}
+func newUserPreferencesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(UserPreferencesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, UserPreferencesTable, UserPreferencesColumn),
+	)
+}
+func newConsoleResourcesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ConsoleResourcesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ConsoleResourcesTable, ConsoleResourcesColumn),
 	)
 }

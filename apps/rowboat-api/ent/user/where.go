@@ -1917,6 +1917,52 @@ func HasApprovalTokensWith(preds ...predicate.ApprovalToken) predicate.User {
 	})
 }
 
+// HasUserPreferences applies the HasEdge predicate on the "user_preferences" edge.
+func HasUserPreferences() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, UserPreferencesTable, UserPreferencesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasUserPreferencesWith applies the HasEdge predicate on the "user_preferences" edge with a given conditions (other predicates).
+func HasUserPreferencesWith(preds ...predicate.UserPreference) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newUserPreferencesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasConsoleResources applies the HasEdge predicate on the "console_resources" edge.
+func HasConsoleResources() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ConsoleResourcesTable, ConsoleResourcesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConsoleResourcesWith applies the HasEdge predicate on the "console_resources" edge with a given conditions (other predicates).
+func HasConsoleResourcesWith(preds ...predicate.ConsoleResource) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newConsoleResourcesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(sql.AndPredicates(predicates...))

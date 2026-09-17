@@ -130,5 +130,8 @@ func (User) Edges() []ent.Edge {
 		// RFC 023 closed-loop actions.
 		edge.To("action_proposals", ActionProposal.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
 		edge.To("approval_tokens", ApprovalToken.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
+		// Authenticated console state.
+		edge.To("user_preferences", UserPreference.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip(), entgql.Skip()),
+		edge.To("console_resources", ConsoleResource.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip(), entgql.Skip()),
 	}
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entityidentifier"
@@ -99,6 +100,7 @@ type RevenueWorkspaceQuery struct {
 	withPersonAttributes                        *PersonAttributeQuery
 	withPersonInteractionStats                  *PersonInteractionStatQuery
 	withPersonMergeCandidates                   *PersonMergeCandidateQuery
+	withConsoleResources                        *ConsoleResourceQuery
 	withFKs                                     bool
 	modifiers                                   []func(*sql.Selector)
 	loadTotal                                   []func(context.Context, []*RevenueWorkspace) error
@@ -138,6 +140,7 @@ type RevenueWorkspaceQuery struct {
 	withNamedPersonAttributes                   map[string]*PersonAttributeQuery
 	withNamedPersonInteractionStats             map[string]*PersonInteractionStatQuery
 	withNamedPersonMergeCandidates              map[string]*PersonMergeCandidateQuery
+	withNamedConsoleResources                   map[string]*ConsoleResourceQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -988,6 +991,28 @@ func (_q *RevenueWorkspaceQuery) QueryPersonMergeCandidates() *PersonMergeCandid
 	return query
 }
 
+// QueryConsoleResources chains the current query on the "console_resources" edge.
+func (_q *RevenueWorkspaceQuery) QueryConsoleResources() *ConsoleResourceQuery {
+	query := (&ConsoleResourceClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(revenueworkspace.Table, revenueworkspace.FieldID, selector),
+			sqlgraph.To(consoleresource.Table, consoleresource.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, revenueworkspace.ConsoleResourcesTable, revenueworkspace.ConsoleResourcesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first RevenueWorkspace entity from the query.
 // Returns a *NotFoundError when no RevenueWorkspace was found.
 func (_q *RevenueWorkspaceQuery) First(ctx context.Context) (*RevenueWorkspace, error) {
@@ -1217,6 +1242,7 @@ func (_q *RevenueWorkspaceQuery) Clone() *RevenueWorkspaceQuery {
 		withPersonAttributes:                   _q.withPersonAttributes.Clone(),
 		withPersonInteractionStats:             _q.withPersonInteractionStats.Clone(),
 		withPersonMergeCandidates:              _q.withPersonMergeCandidates.Clone(),
+		withConsoleResources:                   _q.withConsoleResources.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -1630,6 +1656,17 @@ func (_q *RevenueWorkspaceQuery) WithPersonMergeCandidates(opts ...func(*PersonM
 	return _q
 }
 
+// WithConsoleResources tells the query-builder to eager-load the nodes that are connected to
+// the "console_resources" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithConsoleResources(opts ...func(*ConsoleResourceQuery)) *RevenueWorkspaceQuery {
+	query := (&ConsoleResourceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withConsoleResources = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -1715,7 +1752,7 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		nodes       = []*RevenueWorkspace{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [37]bool{
+		loadedTypes = [38]bool{
 			_q.withUser != nil,
 			_q.withMembers != nil,
 			_q.withRelationships != nil,
@@ -1753,6 +1790,7 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			_q.withPersonAttributes != nil,
 			_q.withPersonInteractionStats != nil,
 			_q.withPersonMergeCandidates != nil,
+			_q.withConsoleResources != nil,
 		}
 	)
 	if _q.withUser != nil {
@@ -2096,6 +2134,15 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 			return nil, err
 		}
 	}
+	if query := _q.withConsoleResources; query != nil {
+		if err := _q.loadConsoleResources(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.Edges.ConsoleResources = []*ConsoleResource{} },
+			func(n *RevenueWorkspace, e *ConsoleResource) {
+				n.Edges.ConsoleResources = append(n.Edges.ConsoleResources, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedMembers {
 		if err := _q.loadMembers(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.appendNamedMembers(name) },
@@ -2361,6 +2408,13 @@ func (_q *RevenueWorkspaceQuery) sqlAll(ctx context.Context, hooks ...queryHook)
 		if err := _q.loadPersonMergeCandidates(ctx, query, nodes,
 			func(n *RevenueWorkspace) { n.appendNamedPersonMergeCandidates(name) },
 			func(n *RevenueWorkspace, e *PersonMergeCandidate) { n.appendNamedPersonMergeCandidates(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedConsoleResources {
+		if err := _q.loadConsoleResources(ctx, query, nodes,
+			func(n *RevenueWorkspace) { n.appendNamedConsoleResources(name) },
+			func(n *RevenueWorkspace, e *ConsoleResource) { n.appendNamedConsoleResources(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -3520,6 +3574,37 @@ func (_q *RevenueWorkspaceQuery) loadPersonMergeCandidates(ctx context.Context, 
 	}
 	return nil
 }
+func (_q *RevenueWorkspaceQuery) loadConsoleResources(ctx context.Context, query *ConsoleResourceQuery, nodes []*RevenueWorkspace, init func(*RevenueWorkspace), assign func(*RevenueWorkspace, *ConsoleResource)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*RevenueWorkspace)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.ConsoleResource(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(revenueworkspace.ConsoleResourcesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.revenue_workspace_id
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "revenue_workspace_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "revenue_workspace_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *RevenueWorkspaceQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -4106,6 +4191,20 @@ func (_q *RevenueWorkspaceQuery) WithNamedPersonMergeCandidates(name string, opt
 		_q.withNamedPersonMergeCandidates = make(map[string]*PersonMergeCandidateQuery)
 	}
 	_q.withNamedPersonMergeCandidates[name] = query
+	return _q
+}
+
+// WithNamedConsoleResources tells the query-builder to eager-load the nodes that are connected to the "console_resources"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *RevenueWorkspaceQuery) WithNamedConsoleResources(name string, opts ...func(*ConsoleResourceQuery)) *RevenueWorkspaceQuery {
+	query := (&ConsoleResourceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedConsoleResources == nil {
+		_q.withNamedConsoleResources = make(map[string]*ConsoleResourceQuery)
+	}
+	_q.withNamedConsoleResources[name] = query
 	return _q
 }
 

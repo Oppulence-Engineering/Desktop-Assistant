@@ -36,6 +36,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
@@ -89,6 +90,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -130,6 +132,7 @@ const (
 	TypeConnectorCredentialCleanupJob     = "ConnectorCredentialCleanupJob"
 	TypeConnectorCredentialRecovery       = "ConnectorCredentialRecovery"
 	TypeConnectorRevocationJob            = "ConnectorRevocationJob"
+	TypeConsoleResource                   = "ConsoleResource"
 	TypeConversationIntelligenceArtifact  = "ConversationIntelligenceArtifact"
 	TypeCreditLedger                      = "CreditLedger"
 	TypeDeletedIdentity                   = "DeletedIdentity"
@@ -182,6 +185,7 @@ const (
 	TypeTenantEvidenceKey                 = "TenantEvidenceKey"
 	TypeUser                              = "User"
 	TypeUserHistory                       = "UserHistory"
+	TypeUserPreference                    = "UserPreference"
 	TypeVoiceAPIKey                       = "VoiceAPIKey"
 	TypeVoiceSyncItem                     = "VoiceSyncItem"
 	TypeWorkspaceFeatureControl           = "WorkspaceFeatureControl"
@@ -35111,6 +35115,938 @@ func (m *ConnectorRevocationJobMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ConnectorRevocationJobMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown ConnectorRevocationJob edge %s", name)
+}
+
+// ConsoleResourceMutation represents an operation that mutates the ConsoleResource nodes in the graph.
+type ConsoleResourceMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	kind             *string
+	name             *string
+	name_key         *string
+	note_id          *string
+	payload_json     *string
+	sort_order       *int
+	addsort_order    *int
+	clearedFields    map[string]struct{}
+	workspace        *uuid.UUID
+	clearedworkspace bool
+	user             *uuid.UUID
+	cleareduser      bool
+	done             bool
+	oldValue         func(context.Context) (*ConsoleResource, error)
+	predicates       []predicate.ConsoleResource
+}
+
+var _ ent.Mutation = (*ConsoleResourceMutation)(nil)
+
+// consoleresourceOption allows management of the mutation configuration using functional options.
+type consoleresourceOption func(*ConsoleResourceMutation)
+
+// newConsoleResourceMutation creates new mutation for the ConsoleResource entity.
+func newConsoleResourceMutation(c config, op Op, opts ...consoleresourceOption) *ConsoleResourceMutation {
+	m := &ConsoleResourceMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeConsoleResource,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withConsoleResourceID sets the ID field of the mutation.
+func withConsoleResourceID(id uuid.UUID) consoleresourceOption {
+	return func(m *ConsoleResourceMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ConsoleResource
+		)
+		m.oldValue = func(ctx context.Context) (*ConsoleResource, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ConsoleResource.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withConsoleResource sets the old ConsoleResource of the mutation.
+func withConsoleResource(node *ConsoleResource) consoleresourceOption {
+	return func(m *ConsoleResourceMutation) {
+		m.oldValue = func(context.Context) (*ConsoleResource, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ConsoleResourceMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ConsoleResourceMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ConsoleResource entities.
+func (m *ConsoleResourceMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ConsoleResourceMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ConsoleResourceMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ConsoleResource.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ConsoleResourceMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ConsoleResourceMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ConsoleResourceMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ConsoleResourceMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ConsoleResourceMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ConsoleResourceMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *ConsoleResourceMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *ConsoleResourceMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *ConsoleResourceMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetName sets the "name" field.
+func (m *ConsoleResourceMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *ConsoleResourceMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ClearName clears the value of the "name" field.
+func (m *ConsoleResourceMutation) ClearName() {
+	m.name = nil
+	m.clearedFields[consoleresource.FieldName] = struct{}{}
+}
+
+// NameCleared returns if the "name" field was cleared in this mutation.
+func (m *ConsoleResourceMutation) NameCleared() bool {
+	_, ok := m.clearedFields[consoleresource.FieldName]
+	return ok
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *ConsoleResourceMutation) ResetName() {
+	m.name = nil
+	delete(m.clearedFields, consoleresource.FieldName)
+}
+
+// SetNameKey sets the "name_key" field.
+func (m *ConsoleResourceMutation) SetNameKey(s string) {
+	m.name_key = &s
+}
+
+// NameKey returns the value of the "name_key" field in the mutation.
+func (m *ConsoleResourceMutation) NameKey() (r string, exists bool) {
+	v := m.name_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNameKey returns the old "name_key" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldNameKey(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNameKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNameKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNameKey: %w", err)
+	}
+	return oldValue.NameKey, nil
+}
+
+// ClearNameKey clears the value of the "name_key" field.
+func (m *ConsoleResourceMutation) ClearNameKey() {
+	m.name_key = nil
+	m.clearedFields[consoleresource.FieldNameKey] = struct{}{}
+}
+
+// NameKeyCleared returns if the "name_key" field was cleared in this mutation.
+func (m *ConsoleResourceMutation) NameKeyCleared() bool {
+	_, ok := m.clearedFields[consoleresource.FieldNameKey]
+	return ok
+}
+
+// ResetNameKey resets all changes to the "name_key" field.
+func (m *ConsoleResourceMutation) ResetNameKey() {
+	m.name_key = nil
+	delete(m.clearedFields, consoleresource.FieldNameKey)
+}
+
+// SetNoteID sets the "note_id" field.
+func (m *ConsoleResourceMutation) SetNoteID(s string) {
+	m.note_id = &s
+}
+
+// NoteID returns the value of the "note_id" field in the mutation.
+func (m *ConsoleResourceMutation) NoteID() (r string, exists bool) {
+	v := m.note_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNoteID returns the old "note_id" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldNoteID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNoteID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNoteID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNoteID: %w", err)
+	}
+	return oldValue.NoteID, nil
+}
+
+// ClearNoteID clears the value of the "note_id" field.
+func (m *ConsoleResourceMutation) ClearNoteID() {
+	m.note_id = nil
+	m.clearedFields[consoleresource.FieldNoteID] = struct{}{}
+}
+
+// NoteIDCleared returns if the "note_id" field was cleared in this mutation.
+func (m *ConsoleResourceMutation) NoteIDCleared() bool {
+	_, ok := m.clearedFields[consoleresource.FieldNoteID]
+	return ok
+}
+
+// ResetNoteID resets all changes to the "note_id" field.
+func (m *ConsoleResourceMutation) ResetNoteID() {
+	m.note_id = nil
+	delete(m.clearedFields, consoleresource.FieldNoteID)
+}
+
+// SetPayloadJSON sets the "payload_json" field.
+func (m *ConsoleResourceMutation) SetPayloadJSON(s string) {
+	m.payload_json = &s
+}
+
+// PayloadJSON returns the value of the "payload_json" field in the mutation.
+func (m *ConsoleResourceMutation) PayloadJSON() (r string, exists bool) {
+	v := m.payload_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPayloadJSON returns the old "payload_json" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldPayloadJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPayloadJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPayloadJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayloadJSON: %w", err)
+	}
+	return oldValue.PayloadJSON, nil
+}
+
+// ResetPayloadJSON resets all changes to the "payload_json" field.
+func (m *ConsoleResourceMutation) ResetPayloadJSON() {
+	m.payload_json = nil
+}
+
+// SetSortOrder sets the "sort_order" field.
+func (m *ConsoleResourceMutation) SetSortOrder(i int) {
+	m.sort_order = &i
+	m.addsort_order = nil
+}
+
+// SortOrder returns the value of the "sort_order" field in the mutation.
+func (m *ConsoleResourceMutation) SortOrder() (r int, exists bool) {
+	v := m.sort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSortOrder returns the old "sort_order" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldSortOrder(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSortOrder is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSortOrder requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSortOrder: %w", err)
+	}
+	return oldValue.SortOrder, nil
+}
+
+// AddSortOrder adds i to the "sort_order" field.
+func (m *ConsoleResourceMutation) AddSortOrder(i int) {
+	if m.addsort_order != nil {
+		*m.addsort_order += i
+	} else {
+		m.addsort_order = &i
+	}
+}
+
+// AddedSortOrder returns the value that was added to the "sort_order" field in this mutation.
+func (m *ConsoleResourceMutation) AddedSortOrder() (r int, exists bool) {
+	v := m.addsort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSortOrder resets all changes to the "sort_order" field.
+func (m *ConsoleResourceMutation) ResetSortOrder() {
+	m.sort_order = nil
+	m.addsort_order = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *ConsoleResourceMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *ConsoleResourceMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *ConsoleResourceMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *ConsoleResourceMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *ConsoleResourceMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *ConsoleResourceMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *ConsoleResourceMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *ConsoleResourceMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *ConsoleResourceMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *ConsoleResourceMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *ConsoleResourceMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *ConsoleResourceMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the ConsoleResourceMutation builder.
+func (m *ConsoleResourceMutation) Where(ps ...predicate.ConsoleResource) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ConsoleResourceMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ConsoleResourceMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ConsoleResource, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ConsoleResourceMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ConsoleResourceMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ConsoleResource).
+func (m *ConsoleResourceMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ConsoleResourceMutation) Fields() []string {
+	fields := make([]string, 0, 8)
+	if m.created_at != nil {
+		fields = append(fields, consoleresource.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, consoleresource.FieldUpdatedAt)
+	}
+	if m.kind != nil {
+		fields = append(fields, consoleresource.FieldKind)
+	}
+	if m.name != nil {
+		fields = append(fields, consoleresource.FieldName)
+	}
+	if m.name_key != nil {
+		fields = append(fields, consoleresource.FieldNameKey)
+	}
+	if m.note_id != nil {
+		fields = append(fields, consoleresource.FieldNoteID)
+	}
+	if m.payload_json != nil {
+		fields = append(fields, consoleresource.FieldPayloadJSON)
+	}
+	if m.sort_order != nil {
+		fields = append(fields, consoleresource.FieldSortOrder)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ConsoleResourceMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case consoleresource.FieldCreatedAt:
+		return m.CreatedAt()
+	case consoleresource.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case consoleresource.FieldKind:
+		return m.Kind()
+	case consoleresource.FieldName:
+		return m.Name()
+	case consoleresource.FieldNameKey:
+		return m.NameKey()
+	case consoleresource.FieldNoteID:
+		return m.NoteID()
+	case consoleresource.FieldPayloadJSON:
+		return m.PayloadJSON()
+	case consoleresource.FieldSortOrder:
+		return m.SortOrder()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ConsoleResourceMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case consoleresource.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case consoleresource.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case consoleresource.FieldKind:
+		return m.OldKind(ctx)
+	case consoleresource.FieldName:
+		return m.OldName(ctx)
+	case consoleresource.FieldNameKey:
+		return m.OldNameKey(ctx)
+	case consoleresource.FieldNoteID:
+		return m.OldNoteID(ctx)
+	case consoleresource.FieldPayloadJSON:
+		return m.OldPayloadJSON(ctx)
+	case consoleresource.FieldSortOrder:
+		return m.OldSortOrder(ctx)
+	}
+	return nil, fmt.Errorf("unknown ConsoleResource field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConsoleResourceMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case consoleresource.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case consoleresource.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case consoleresource.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case consoleresource.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case consoleresource.FieldNameKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNameKey(v)
+		return nil
+	case consoleresource.FieldNoteID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNoteID(v)
+		return nil
+	case consoleresource.FieldPayloadJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPayloadJSON(v)
+		return nil
+	case consoleresource.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSortOrder(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ConsoleResource field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ConsoleResourceMutation) AddedFields() []string {
+	var fields []string
+	if m.addsort_order != nil {
+		fields = append(fields, consoleresource.FieldSortOrder)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ConsoleResourceMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case consoleresource.FieldSortOrder:
+		return m.AddedSortOrder()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConsoleResourceMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case consoleresource.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSortOrder(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ConsoleResource numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ConsoleResourceMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(consoleresource.FieldName) {
+		fields = append(fields, consoleresource.FieldName)
+	}
+	if m.FieldCleared(consoleresource.FieldNameKey) {
+		fields = append(fields, consoleresource.FieldNameKey)
+	}
+	if m.FieldCleared(consoleresource.FieldNoteID) {
+		fields = append(fields, consoleresource.FieldNoteID)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ConsoleResourceMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ConsoleResourceMutation) ClearField(name string) error {
+	switch name {
+	case consoleresource.FieldName:
+		m.ClearName()
+		return nil
+	case consoleresource.FieldNameKey:
+		m.ClearNameKey()
+		return nil
+	case consoleresource.FieldNoteID:
+		m.ClearNoteID()
+		return nil
+	}
+	return fmt.Errorf("unknown ConsoleResource nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ConsoleResourceMutation) ResetField(name string) error {
+	switch name {
+	case consoleresource.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case consoleresource.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case consoleresource.FieldKind:
+		m.ResetKind()
+		return nil
+	case consoleresource.FieldName:
+		m.ResetName()
+		return nil
+	case consoleresource.FieldNameKey:
+		m.ResetNameKey()
+		return nil
+	case consoleresource.FieldNoteID:
+		m.ResetNoteID()
+		return nil
+	case consoleresource.FieldPayloadJSON:
+		m.ResetPayloadJSON()
+		return nil
+	case consoleresource.FieldSortOrder:
+		m.ResetSortOrder()
+		return nil
+	}
+	return fmt.Errorf("unknown ConsoleResource field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ConsoleResourceMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.workspace != nil {
+		edges = append(edges, consoleresource.EdgeWorkspace)
+	}
+	if m.user != nil {
+		edges = append(edges, consoleresource.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ConsoleResourceMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case consoleresource.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case consoleresource.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ConsoleResourceMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ConsoleResourceMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ConsoleResourceMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedworkspace {
+		edges = append(edges, consoleresource.EdgeWorkspace)
+	}
+	if m.cleareduser {
+		edges = append(edges, consoleresource.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ConsoleResourceMutation) EdgeCleared(name string) bool {
+	switch name {
+	case consoleresource.EdgeWorkspace:
+		return m.clearedworkspace
+	case consoleresource.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ConsoleResourceMutation) ClearEdge(name string) error {
+	switch name {
+	case consoleresource.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case consoleresource.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown ConsoleResource unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ConsoleResourceMutation) ResetEdge(name string) error {
+	switch name {
+	case consoleresource.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case consoleresource.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown ConsoleResource edge %s", name)
 }
 
 // ConversationIntelligenceArtifactMutation represents an operation that mutates the ConversationIntelligenceArtifact nodes in the graph.
@@ -99457,6 +100393,9 @@ type RevenueWorkspaceMutation struct {
 	person_merge_candidates                     map[uuid.UUID]struct{}
 	removedperson_merge_candidates              map[uuid.UUID]struct{}
 	clearedperson_merge_candidates              bool
+	console_resources                           map[uuid.UUID]struct{}
+	removedconsole_resources                    map[uuid.UUID]struct{}
+	clearedconsole_resources                    bool
 	done                                        bool
 	oldValue                                    func(context.Context) (*RevenueWorkspace, error)
 	predicates                                  []predicate.RevenueWorkspace
@@ -102072,6 +103011,60 @@ func (m *RevenueWorkspaceMutation) ResetPersonMergeCandidates() {
 	m.removedperson_merge_candidates = nil
 }
 
+// AddConsoleResourceIDs adds the "console_resources" edge to the ConsoleResource entity by ids.
+func (m *RevenueWorkspaceMutation) AddConsoleResourceIDs(ids ...uuid.UUID) {
+	if m.console_resources == nil {
+		m.console_resources = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.console_resources[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConsoleResources clears the "console_resources" edge to the ConsoleResource entity.
+func (m *RevenueWorkspaceMutation) ClearConsoleResources() {
+	m.clearedconsole_resources = true
+}
+
+// ConsoleResourcesCleared reports if the "console_resources" edge to the ConsoleResource entity was cleared.
+func (m *RevenueWorkspaceMutation) ConsoleResourcesCleared() bool {
+	return m.clearedconsole_resources
+}
+
+// RemoveConsoleResourceIDs removes the "console_resources" edge to the ConsoleResource entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveConsoleResourceIDs(ids ...uuid.UUID) {
+	if m.removedconsole_resources == nil {
+		m.removedconsole_resources = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.console_resources, ids[i])
+		m.removedconsole_resources[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConsoleResources returns the removed IDs of the "console_resources" edge to the ConsoleResource entity.
+func (m *RevenueWorkspaceMutation) RemovedConsoleResourcesIDs() (ids []uuid.UUID) {
+	for id := range m.removedconsole_resources {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConsoleResourcesIDs returns the "console_resources" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) ConsoleResourcesIDs() (ids []uuid.UUID) {
+	for id := range m.console_resources {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConsoleResources resets all changes to the "console_resources" edge.
+func (m *RevenueWorkspaceMutation) ResetConsoleResources() {
+	m.console_resources = nil
+	m.clearedconsole_resources = false
+	m.removedconsole_resources = nil
+}
+
 // Where appends a list predicates to the RevenueWorkspaceMutation builder.
 func (m *RevenueWorkspaceMutation) Where(ps ...predicate.RevenueWorkspace) {
 	m.predicates = append(m.predicates, ps...)
@@ -102437,7 +103430,7 @@ func (m *RevenueWorkspaceMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RevenueWorkspaceMutation) AddedEdges() []string {
-	edges := make([]string, 0, 37)
+	edges := make([]string, 0, 38)
 	if m.user != nil {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -102548,6 +103541,9 @@ func (m *RevenueWorkspaceMutation) AddedEdges() []string {
 	}
 	if m.person_merge_candidates != nil {
 		edges = append(edges, revenueworkspace.EdgePersonMergeCandidates)
+	}
+	if m.console_resources != nil {
+		edges = append(edges, revenueworkspace.EdgeConsoleResources)
 	}
 	return edges
 }
@@ -102776,13 +103772,19 @@ func (m *RevenueWorkspaceMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeConsoleResources:
+		ids := make([]ent.Value, 0, len(m.console_resources))
+		for id := range m.console_resources {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 37)
+	edges := make([]string, 0, 38)
 	if m.removedmembers != nil {
 		edges = append(edges, revenueworkspace.EdgeMembers)
 	}
@@ -102890,6 +103892,9 @@ func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
 	}
 	if m.removedperson_merge_candidates != nil {
 		edges = append(edges, revenueworkspace.EdgePersonMergeCandidates)
+	}
+	if m.removedconsole_resources != nil {
+		edges = append(edges, revenueworkspace.EdgeConsoleResources)
 	}
 	return edges
 }
@@ -103114,13 +104119,19 @@ func (m *RevenueWorkspaceMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeConsoleResources:
+		ids := make([]ent.Value, 0, len(m.removedconsole_resources))
+		for id := range m.removedconsole_resources {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 37)
+	edges := make([]string, 0, 38)
 	if m.cleareduser {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -103232,6 +104243,9 @@ func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
 	if m.clearedperson_merge_candidates {
 		edges = append(edges, revenueworkspace.EdgePersonMergeCandidates)
 	}
+	if m.clearedconsole_resources {
+		edges = append(edges, revenueworkspace.EdgeConsoleResources)
+	}
 	return edges
 }
 
@@ -103313,6 +104327,8 @@ func (m *RevenueWorkspaceMutation) EdgeCleared(name string) bool {
 		return m.clearedperson_interaction_stats
 	case revenueworkspace.EdgePersonMergeCandidates:
 		return m.clearedperson_merge_candidates
+	case revenueworkspace.EdgeConsoleResources:
+		return m.clearedconsole_resources
 	}
 	return false
 }
@@ -103442,6 +104458,9 @@ func (m *RevenueWorkspaceMutation) ResetEdge(name string) error {
 		return nil
 	case revenueworkspace.EdgePersonMergeCandidates:
 		m.ResetPersonMergeCandidates()
+		return nil
+	case revenueworkspace.EdgeConsoleResources:
+		m.ResetConsoleResources()
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueWorkspace edge %s", name)
@@ -107220,6 +108239,12 @@ type UserMutation struct {
 	approval_tokens                             map[uuid.UUID]struct{}
 	removedapproval_tokens                      map[uuid.UUID]struct{}
 	clearedapproval_tokens                      bool
+	user_preferences                            map[uuid.UUID]struct{}
+	removeduser_preferences                     map[uuid.UUID]struct{}
+	cleareduser_preferences                     bool
+	console_resources                           map[uuid.UUID]struct{}
+	removedconsole_resources                    map[uuid.UUID]struct{}
+	clearedconsole_resources                    bool
 	done                                        bool
 	oldValue                                    func(context.Context) (*User, error)
 	predicates                                  []predicate.User
@@ -111138,6 +112163,114 @@ func (m *UserMutation) ResetApprovalTokens() {
 	m.removedapproval_tokens = nil
 }
 
+// AddUserPreferenceIDs adds the "user_preferences" edge to the UserPreference entity by ids.
+func (m *UserMutation) AddUserPreferenceIDs(ids ...uuid.UUID) {
+	if m.user_preferences == nil {
+		m.user_preferences = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.user_preferences[ids[i]] = struct{}{}
+	}
+}
+
+// ClearUserPreferences clears the "user_preferences" edge to the UserPreference entity.
+func (m *UserMutation) ClearUserPreferences() {
+	m.cleareduser_preferences = true
+}
+
+// UserPreferencesCleared reports if the "user_preferences" edge to the UserPreference entity was cleared.
+func (m *UserMutation) UserPreferencesCleared() bool {
+	return m.cleareduser_preferences
+}
+
+// RemoveUserPreferenceIDs removes the "user_preferences" edge to the UserPreference entity by IDs.
+func (m *UserMutation) RemoveUserPreferenceIDs(ids ...uuid.UUID) {
+	if m.removeduser_preferences == nil {
+		m.removeduser_preferences = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.user_preferences, ids[i])
+		m.removeduser_preferences[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedUserPreferences returns the removed IDs of the "user_preferences" edge to the UserPreference entity.
+func (m *UserMutation) RemovedUserPreferencesIDs() (ids []uuid.UUID) {
+	for id := range m.removeduser_preferences {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// UserPreferencesIDs returns the "user_preferences" edge IDs in the mutation.
+func (m *UserMutation) UserPreferencesIDs() (ids []uuid.UUID) {
+	for id := range m.user_preferences {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetUserPreferences resets all changes to the "user_preferences" edge.
+func (m *UserMutation) ResetUserPreferences() {
+	m.user_preferences = nil
+	m.cleareduser_preferences = false
+	m.removeduser_preferences = nil
+}
+
+// AddConsoleResourceIDs adds the "console_resources" edge to the ConsoleResource entity by ids.
+func (m *UserMutation) AddConsoleResourceIDs(ids ...uuid.UUID) {
+	if m.console_resources == nil {
+		m.console_resources = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.console_resources[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConsoleResources clears the "console_resources" edge to the ConsoleResource entity.
+func (m *UserMutation) ClearConsoleResources() {
+	m.clearedconsole_resources = true
+}
+
+// ConsoleResourcesCleared reports if the "console_resources" edge to the ConsoleResource entity was cleared.
+func (m *UserMutation) ConsoleResourcesCleared() bool {
+	return m.clearedconsole_resources
+}
+
+// RemoveConsoleResourceIDs removes the "console_resources" edge to the ConsoleResource entity by IDs.
+func (m *UserMutation) RemoveConsoleResourceIDs(ids ...uuid.UUID) {
+	if m.removedconsole_resources == nil {
+		m.removedconsole_resources = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.console_resources, ids[i])
+		m.removedconsole_resources[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConsoleResources returns the removed IDs of the "console_resources" edge to the ConsoleResource entity.
+func (m *UserMutation) RemovedConsoleResourcesIDs() (ids []uuid.UUID) {
+	for id := range m.removedconsole_resources {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConsoleResourcesIDs returns the "console_resources" edge IDs in the mutation.
+func (m *UserMutation) ConsoleResourcesIDs() (ids []uuid.UUID) {
+	for id := range m.console_resources {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConsoleResources resets all changes to the "console_resources" edge.
+func (m *UserMutation) ResetConsoleResources() {
+	m.console_resources = nil
+	m.clearedconsole_resources = false
+	m.removedconsole_resources = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -111354,7 +112487,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 67)
+	edges := make([]string, 0, 69)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -111555,6 +112688,12 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.approval_tokens != nil {
 		edges = append(edges, user.EdgeApprovalTokens)
+	}
+	if m.user_preferences != nil {
+		edges = append(edges, user.EdgeUserPreferences)
+	}
+	if m.console_resources != nil {
+		edges = append(edges, user.EdgeConsoleResources)
 	}
 	return edges
 }
@@ -111963,13 +113102,25 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeUserPreferences:
+		ids := make([]ent.Value, 0, len(m.user_preferences))
+		for id := range m.user_preferences {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeConsoleResources:
+		ids := make([]ent.Value, 0, len(m.console_resources))
+		for id := range m.console_resources {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 67)
+	edges := make([]string, 0, 69)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -112167,6 +113318,12 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedapproval_tokens != nil {
 		edges = append(edges, user.EdgeApprovalTokens)
+	}
+	if m.removeduser_preferences != nil {
+		edges = append(edges, user.EdgeUserPreferences)
+	}
+	if m.removedconsole_resources != nil {
+		edges = append(edges, user.EdgeConsoleResources)
 	}
 	return edges
 }
@@ -112571,13 +113728,25 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeUserPreferences:
+		ids := make([]ent.Value, 0, len(m.removeduser_preferences))
+		for id := range m.removeduser_preferences {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeConsoleResources:
+		ids := make([]ent.Value, 0, len(m.removedconsole_resources))
+		for id := range m.removedconsole_resources {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 67)
+	edges := make([]string, 0, 69)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -112779,6 +113948,12 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedapproval_tokens {
 		edges = append(edges, user.EdgeApprovalTokens)
 	}
+	if m.cleareduser_preferences {
+		edges = append(edges, user.EdgeUserPreferences)
+	}
+	if m.clearedconsole_resources {
+		edges = append(edges, user.EdgeConsoleResources)
+	}
 	return edges
 }
 
@@ -112920,6 +114095,10 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedaction_proposals
 	case user.EdgeApprovalTokens:
 		return m.clearedapproval_tokens
+	case user.EdgeUserPreferences:
+		return m.cleareduser_preferences
+	case user.EdgeConsoleResources:
+		return m.clearedconsole_resources
 	}
 	return false
 }
@@ -113139,6 +114318,12 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeApprovalTokens:
 		m.ResetApprovalTokens()
+		return nil
+	case user.EdgeUserPreferences:
+		m.ResetUserPreferences()
+		return nil
+	case user.EdgeConsoleResources:
+		m.ResetConsoleResources()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)
@@ -113912,6 +115097,513 @@ func (m *UserHistoryMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *UserHistoryMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown UserHistory edge %s", name)
+}
+
+// UserPreferenceMutation represents an operation that mutates the UserPreference nodes in the graph.
+type UserPreferenceMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	preferences_json *string
+	clearedFields    map[string]struct{}
+	user             *uuid.UUID
+	cleareduser      bool
+	done             bool
+	oldValue         func(context.Context) (*UserPreference, error)
+	predicates       []predicate.UserPreference
+}
+
+var _ ent.Mutation = (*UserPreferenceMutation)(nil)
+
+// userpreferenceOption allows management of the mutation configuration using functional options.
+type userpreferenceOption func(*UserPreferenceMutation)
+
+// newUserPreferenceMutation creates new mutation for the UserPreference entity.
+func newUserPreferenceMutation(c config, op Op, opts ...userpreferenceOption) *UserPreferenceMutation {
+	m := &UserPreferenceMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeUserPreference,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withUserPreferenceID sets the ID field of the mutation.
+func withUserPreferenceID(id uuid.UUID) userpreferenceOption {
+	return func(m *UserPreferenceMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *UserPreference
+		)
+		m.oldValue = func(ctx context.Context) (*UserPreference, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().UserPreference.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withUserPreference sets the old UserPreference of the mutation.
+func withUserPreference(node *UserPreference) userpreferenceOption {
+	return func(m *UserPreferenceMutation) {
+		m.oldValue = func(context.Context) (*UserPreference, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m UserPreferenceMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m UserPreferenceMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of UserPreference entities.
+func (m *UserPreferenceMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *UserPreferenceMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *UserPreferenceMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().UserPreference.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *UserPreferenceMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *UserPreferenceMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the UserPreference entity.
+// If the UserPreference object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPreferenceMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *UserPreferenceMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *UserPreferenceMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *UserPreferenceMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the UserPreference entity.
+// If the UserPreference object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPreferenceMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *UserPreferenceMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetPreferencesJSON sets the "preferences_json" field.
+func (m *UserPreferenceMutation) SetPreferencesJSON(s string) {
+	m.preferences_json = &s
+}
+
+// PreferencesJSON returns the value of the "preferences_json" field in the mutation.
+func (m *UserPreferenceMutation) PreferencesJSON() (r string, exists bool) {
+	v := m.preferences_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPreferencesJSON returns the old "preferences_json" field's value of the UserPreference entity.
+// If the UserPreference object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPreferenceMutation) OldPreferencesJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPreferencesJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPreferencesJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPreferencesJSON: %w", err)
+	}
+	return oldValue.PreferencesJSON, nil
+}
+
+// ResetPreferencesJSON resets all changes to the "preferences_json" field.
+func (m *UserPreferenceMutation) ResetPreferencesJSON() {
+	m.preferences_json = nil
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *UserPreferenceMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *UserPreferenceMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *UserPreferenceMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *UserPreferenceMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *UserPreferenceMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *UserPreferenceMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the UserPreferenceMutation builder.
+func (m *UserPreferenceMutation) Where(ps ...predicate.UserPreference) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the UserPreferenceMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *UserPreferenceMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.UserPreference, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *UserPreferenceMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *UserPreferenceMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (UserPreference).
+func (m *UserPreferenceMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *UserPreferenceMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.created_at != nil {
+		fields = append(fields, userpreference.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, userpreference.FieldUpdatedAt)
+	}
+	if m.preferences_json != nil {
+		fields = append(fields, userpreference.FieldPreferencesJSON)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *UserPreferenceMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case userpreference.FieldCreatedAt:
+		return m.CreatedAt()
+	case userpreference.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case userpreference.FieldPreferencesJSON:
+		return m.PreferencesJSON()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *UserPreferenceMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case userpreference.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case userpreference.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case userpreference.FieldPreferencesJSON:
+		return m.OldPreferencesJSON(ctx)
+	}
+	return nil, fmt.Errorf("unknown UserPreference field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserPreferenceMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case userpreference.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case userpreference.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case userpreference.FieldPreferencesJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPreferencesJSON(v)
+		return nil
+	}
+	return fmt.Errorf("unknown UserPreference field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *UserPreferenceMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *UserPreferenceMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserPreferenceMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown UserPreference numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *UserPreferenceMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *UserPreferenceMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *UserPreferenceMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown UserPreference nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *UserPreferenceMutation) ResetField(name string) error {
+	switch name {
+	case userpreference.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case userpreference.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case userpreference.FieldPreferencesJSON:
+		m.ResetPreferencesJSON()
+		return nil
+	}
+	return fmt.Errorf("unknown UserPreference field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *UserPreferenceMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, userpreference.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *UserPreferenceMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case userpreference.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *UserPreferenceMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *UserPreferenceMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *UserPreferenceMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, userpreference.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *UserPreferenceMutation) EdgeCleared(name string) bool {
+	switch name {
+	case userpreference.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *UserPreferenceMutation) ClearEdge(name string) error {
+	switch name {
+	case userpreference.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown UserPreference unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *UserPreferenceMutation) ResetEdge(name string) error {
+	switch name {
+	case userpreference.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown UserPreference edge %s", name)
 }
 
 // VoiceAPIKeyMutation represents an operation that mutates the VoiceAPIKey nodes in the graph.

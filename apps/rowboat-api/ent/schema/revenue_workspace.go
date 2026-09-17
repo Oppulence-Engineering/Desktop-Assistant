@@ -204,6 +204,9 @@ func (RevenueWorkspace) Edges() []ent.Edge {
 		edge.To("person_merge_candidates", PersonMergeCandidate.Type).
 			StorageKey(edge.Column("revenue_workspace_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("console_resources", ConsoleResource.Type).
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
 

@@ -1310,6 +1310,57 @@ var (
 			},
 		},
 	}
+	// ConsoleResourcesColumns holds the columns for the "console_resources" table.
+	ConsoleResourcesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "kind", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString, Nullable: true},
+		{Name: "name_key", Type: field.TypeString, Nullable: true},
+		{Name: "note_id", Type: field.TypeString, Nullable: true},
+		{Name: "payload_json", Type: field.TypeString, Size: 2147483647},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+		{Name: "revenue_workspace_id", Type: field.TypeUUID},
+		{Name: "user_console_resources", Type: field.TypeUUID},
+	}
+	// ConsoleResourcesTable holds the schema information for the "console_resources" table.
+	ConsoleResourcesTable = &schema.Table{
+		Name:       "console_resources",
+		Columns:    ConsoleResourcesColumns,
+		PrimaryKey: []*schema.Column{ConsoleResourcesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "console_resources_revenue_workspaces_console_resources",
+				Columns:    []*schema.Column{ConsoleResourcesColumns[9]},
+				RefColumns: []*schema.Column{RevenueWorkspacesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "console_resources_users_console_resources",
+				Columns:    []*schema.Column{ConsoleResourcesColumns[10]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "consoleresource_kind_name_key_revenue_workspace_id_user_console_resources",
+				Unique:  true,
+				Columns: []*schema.Column{ConsoleResourcesColumns[3], ConsoleResourcesColumns[5], ConsoleResourcesColumns[9], ConsoleResourcesColumns[10]},
+			},
+			{
+				Name:    "consoleresource_kind_note_id_revenue_workspace_id_user_console_resources",
+				Unique:  true,
+				Columns: []*schema.Column{ConsoleResourcesColumns[3], ConsoleResourcesColumns[6], ConsoleResourcesColumns[9], ConsoleResourcesColumns[10]},
+			},
+			{
+				Name:    "consoleresource_kind_sort_order_created_at_revenue_workspace_id_user_console_resources",
+				Unique:  false,
+				Columns: []*schema.Column{ConsoleResourcesColumns[3], ConsoleResourcesColumns[8], ConsoleResourcesColumns[1], ConsoleResourcesColumns[9], ConsoleResourcesColumns[10]},
+			},
+		},
+	}
 	// ConversationIntelligenceArtifactsColumns holds the columns for the "conversation_intelligence_artifacts" table.
 	ConversationIntelligenceArtifactsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -3924,6 +3975,35 @@ var (
 			},
 		},
 	}
+	// UserPreferencesColumns holds the columns for the "user_preferences" table.
+	UserPreferencesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "preferences_json", Type: field.TypeString, Size: 2147483647, Default: "{}"},
+		{Name: "user_user_preferences", Type: field.TypeUUID},
+	}
+	// UserPreferencesTable holds the schema information for the "user_preferences" table.
+	UserPreferencesTable = &schema.Table{
+		Name:       "user_preferences",
+		Columns:    UserPreferencesColumns,
+		PrimaryKey: []*schema.Column{UserPreferencesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "user_preferences_users_user_preferences",
+				Columns:    []*schema.Column{UserPreferencesColumns[4]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "userpreference_user_user_preferences",
+				Unique:  true,
+				Columns: []*schema.Column{UserPreferencesColumns[4]},
+			},
+		},
+	}
 	// VoiceAPIKeysColumns holds the columns for the "voice_api_keys" table.
 	VoiceAPIKeysColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -4150,6 +4230,7 @@ var (
 		ConnectorCredentialCleanupJobsTable,
 		ConnectorCredentialRecoveriesTable,
 		ConnectorRevocationJobsTable,
+		ConsoleResourcesTable,
 		ConversationIntelligenceArtifactsTable,
 		CreditLedgersTable,
 		DeletedIdentitiesTable,
@@ -4202,6 +4283,7 @@ var (
 		TenantEvidenceKeysTable,
 		UsersTable,
 		UserHistoriesTable,
+		UserPreferencesTable,
 		VoiceAPIKeysTable,
 		VoiceSyncItemsTable,
 		WorkspaceFeatureControlsTable,
@@ -4258,6 +4340,8 @@ func init() {
 	CommitmentEventsTable.ForeignKeys[2].RefTable = RevenueWorkspacesTable
 	CommitmentEventsTable.ForeignKeys[3].RefTable = UsersTable
 	ConnectorAuditEventsTable.ForeignKeys[0].RefTable = UsersTable
+	ConsoleResourcesTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
+	ConsoleResourcesTable.ForeignKeys[1].RefTable = UsersTable
 	ConversationIntelligenceArtifactsTable.ForeignKeys[0].RefTable = RelationshipsTable
 	ConversationIntelligenceArtifactsTable.ForeignKeys[1].RefTable = RevenueWorkspacesTable
 	ConversationIntelligenceArtifactsTable.ForeignKeys[2].RefTable = UsersTable
@@ -4367,6 +4451,7 @@ func init() {
 	SubscriptionsTable.ForeignKeys[0].RefTable = UsersTable
 	TenantEvidenceKeysTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable
 	TenantEvidenceKeysTable.ForeignKeys[1].RefTable = UsersTable
+	UserPreferencesTable.ForeignKeys[0].RefTable = UsersTable
 	VoiceAPIKeysTable.ForeignKeys[0].RefTable = UsersTable
 	VoiceSyncItemsTable.ForeignKeys[0].RefTable = UsersTable
 	WorkspaceFeatureControlsTable.ForeignKeys[0].RefTable = RevenueWorkspacesTable

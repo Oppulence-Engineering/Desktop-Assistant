@@ -31,6 +31,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composioapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/config"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/console"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/docs"
@@ -541,6 +542,28 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		_ = revenue.NewResearchTriggerRunner(revenueSvc, 24*time.Hour, 200, log).Run(ctx)
 	}()
 	revenueH := revenue.NewHandler(revenueSvc, log)
+	consoleH := console.NewHandler(console.NewService(client, console.WorkspaceResolverFunc(
+		func(ctx context.Context, user *ent.User, workosOrgID string, access console.WorkspaceAccess) (*ent.RevenueWorkspace, error) {
+			workspace, err := revenueSvc.CurrentWorkspaceForOrg(ctx, user, workosOrgID)
+			if err != nil {
+				if ent.IsNotFound(err) || errors.Is(err, revenue.ErrForbidden) {
+					return nil, console.ErrForbidden
+				}
+				return nil, err
+			}
+			capability := revenue.WorkspaceView
+			if access == console.WorkspaceWrite {
+				capability = revenue.WorkspaceContribute
+			}
+			if _, err := revenueSvc.RequireWorkspaceCapability(ctx, user, workspace, capability); err != nil {
+				if errors.Is(err, revenue.ErrForbidden) {
+					return nil, console.ErrForbidden
+				}
+				return nil, err
+			}
+			return workspace, nil
+		},
+	)), log)
 	entitySvc := entities.New(client, func(ctx context.Context) (entities.Scope, error) {
 		u, ok := auth.UserFromCtx(ctx)
 		if !ok {
@@ -774,6 +797,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		r.Use(authMW.RequireJWT)
 		r.Use(rl.PerUser(ratelimit.GroupDefault, 600)) // sanity bucket
 		entitiesH.Mount(r)
+		consoleH.Mount(r)
 
 		r.Get("/v1/me", billingH.Me)
 		// Account deletion is irreversible and calls Stripe and WorkOS: a tight

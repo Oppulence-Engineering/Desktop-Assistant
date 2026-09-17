@@ -171,9 +171,13 @@ type UserEdges struct {
 	ActionProposals []*ActionProposal `json:"action_proposals,omitempty"`
 	// ApprovalTokens holds the value of the approval_tokens edge.
 	ApprovalTokens []*ApprovalToken `json:"approval_tokens,omitempty"`
+	// UserPreferences holds the value of the user_preferences edge.
+	UserPreferences []*UserPreference `json:"user_preferences,omitempty"`
+	// ConsoleResources holds the value of the console_resources edge.
+	ConsoleResources []*ConsoleResource `json:"console_resources,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [67]bool
+	loadedTypes [69]bool
 	// totalCount holds the count of the edges above.
 	totalCount [60]map[string]int
 
@@ -243,6 +247,8 @@ type UserEdges struct {
 	namedEntityIdentifiers                  map[string][]*EntityIdentifier
 	namedActionProposals                    map[string][]*ActionProposal
 	namedApprovalTokens                     map[string][]*ApprovalToken
+	namedUserPreferences                    map[string][]*UserPreference
+	namedConsoleResources                   map[string][]*ConsoleResource
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -850,6 +856,24 @@ func (e UserEdges) ApprovalTokensOrErr() ([]*ApprovalToken, error) {
 	return nil, &NotLoadedError{edge: "approval_tokens"}
 }
 
+// UserPreferencesOrErr returns the UserPreferences value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) UserPreferencesOrErr() ([]*UserPreference, error) {
+	if e.loadedTypes[67] {
+		return e.UserPreferences, nil
+	}
+	return nil, &NotLoadedError{edge: "user_preferences"}
+}
+
+// ConsoleResourcesOrErr returns the ConsoleResources value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) ConsoleResourcesOrErr() ([]*ConsoleResource, error) {
+	if e.loadedTypes[68] {
+		return e.ConsoleResources, nil
+	}
+	return nil, &NotLoadedError{edge: "console_resources"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -1258,6 +1282,16 @@ func (_m *User) QueryActionProposals() *ActionProposalQuery {
 // QueryApprovalTokens queries the "approval_tokens" edge of the User entity.
 func (_m *User) QueryApprovalTokens() *ApprovalTokenQuery {
 	return NewUserClient(_m.config).QueryApprovalTokens(_m)
+}
+
+// QueryUserPreferences queries the "user_preferences" edge of the User entity.
+func (_m *User) QueryUserPreferences() *UserPreferenceQuery {
+	return NewUserClient(_m.config).QueryUserPreferences(_m)
+}
+
+// QueryConsoleResources queries the "console_resources" edge of the User entity.
+func (_m *User) QueryConsoleResources() *ConsoleResourceQuery {
+	return NewUserClient(_m.config).QueryConsoleResources(_m)
 }
 
 // Update returns a builder for updating this User.
@@ -2882,6 +2916,54 @@ func (_m *User) appendNamedApprovalTokens(name string, edges ...*ApprovalToken) 
 		_m.Edges.namedApprovalTokens[name] = []*ApprovalToken{}
 	} else {
 		_m.Edges.namedApprovalTokens[name] = append(_m.Edges.namedApprovalTokens[name], edges...)
+	}
+}
+
+// NamedUserPreferences returns the UserPreferences named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedUserPreferences(name string) ([]*UserPreference, error) {
+	if _m.Edges.namedUserPreferences == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedUserPreferences[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedUserPreferences(name string, edges ...*UserPreference) {
+	if _m.Edges.namedUserPreferences == nil {
+		_m.Edges.namedUserPreferences = make(map[string][]*UserPreference)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedUserPreferences[name] = []*UserPreference{}
+	} else {
+		_m.Edges.namedUserPreferences[name] = append(_m.Edges.namedUserPreferences[name], edges...)
+	}
+}
+
+// NamedConsoleResources returns the ConsoleResources named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (_m *User) NamedConsoleResources(name string) ([]*ConsoleResource, error) {
+	if _m.Edges.namedConsoleResources == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := _m.Edges.namedConsoleResources[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (_m *User) appendNamedConsoleResources(name string, edges ...*ConsoleResource) {
+	if _m.Edges.namedConsoleResources == nil {
+		_m.Edges.namedConsoleResources = make(map[string][]*ConsoleResource)
+	}
+	if len(edges) == 0 {
+		_m.Edges.namedConsoleResources[name] = []*ConsoleResource{}
+	} else {
+		_m.Edges.namedConsoleResources[name] = append(_m.Edges.namedConsoleResources[name], edges...)
 	}
 }
 

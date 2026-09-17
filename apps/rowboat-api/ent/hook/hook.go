@@ -309,6 +309,18 @@ func (f ConnectorRevocationJobFunc) Mutate(ctx context.Context, m ent.Mutation) 
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConnectorRevocationJobMutation", m)
 }
 
+// The ConsoleResourceFunc type is an adapter to allow the use of ordinary
+// function as ConsoleResource mutator.
+type ConsoleResourceFunc func(context.Context, *ent.ConsoleResourceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConsoleResourceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConsoleResourceMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConsoleResourceMutation", m)
+}
+
 // The ConversationIntelligenceArtifactFunc type is an adapter to allow the use of ordinary
 // function as ConversationIntelligenceArtifact mutator.
 type ConversationIntelligenceArtifactFunc func(context.Context, *ent.ConversationIntelligenceArtifactMutation) (ent.Value, error)
@@ -931,6 +943,18 @@ func (f UserHistoryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserHistoryMutation", m)
+}
+
+// The UserPreferenceFunc type is an adapter to allow the use of ordinary
+// function as UserPreference mutator.
+type UserPreferenceFunc func(context.Context, *ent.UserPreferenceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f UserPreferenceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.UserPreferenceMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserPreferenceMutation", m)
 }
 
 // The VoiceAPIKeyFunc type is an adapter to allow the use of ordinary

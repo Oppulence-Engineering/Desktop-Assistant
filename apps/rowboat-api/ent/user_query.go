@@ -33,6 +33,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -78,6 +79,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -158,6 +160,8 @@ type UserQuery struct {
 	withEntityIdentifiers                       *EntityIdentifierQuery
 	withActionProposals                         *ActionProposalQuery
 	withApprovalTokens                          *ApprovalTokenQuery
+	withUserPreferences                         *UserPreferenceQuery
+	withConsoleResources                        *ConsoleResourceQuery
 	modifiers                                   []func(*sql.Selector)
 	loadTotal                                   []func(context.Context, []*User) error
 	withNamedLedgerEntries                      map[string]*CreditLedgerQuery
@@ -226,6 +230,8 @@ type UserQuery struct {
 	withNamedEntityIdentifiers                  map[string]*EntityIdentifierQuery
 	withNamedActionProposals                    map[string]*ActionProposalQuery
 	withNamedApprovalTokens                     map[string]*ApprovalTokenQuery
+	withNamedUserPreferences                    map[string]*UserPreferenceQuery
+	withNamedConsoleResources                   map[string]*ConsoleResourceQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -1736,6 +1742,50 @@ func (_q *UserQuery) QueryApprovalTokens() *ApprovalTokenQuery {
 	return query
 }
 
+// QueryUserPreferences chains the current query on the "user_preferences" edge.
+func (_q *UserQuery) QueryUserPreferences() *UserPreferenceQuery {
+	query := (&UserPreferenceClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(userpreference.Table, userpreference.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.UserPreferencesTable, user.UserPreferencesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryConsoleResources chains the current query on the "console_resources" edge.
+func (_q *UserQuery) QueryConsoleResources() *ConsoleResourceQuery {
+	query := (&ConsoleResourceClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(consoleresource.Table, consoleresource.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ConsoleResourcesTable, user.ConsoleResourcesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (_q *UserQuery) First(ctx context.Context) (*User, error) {
@@ -1995,6 +2045,8 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withEntityIdentifiers:                  _q.withEntityIdentifiers.Clone(),
 		withActionProposals:                    _q.withActionProposals.Clone(),
 		withApprovalTokens:                     _q.withApprovalTokens.Clone(),
+		withUserPreferences:                    _q.withUserPreferences.Clone(),
+		withConsoleResources:                   _q.withConsoleResources.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -2738,6 +2790,28 @@ func (_q *UserQuery) WithApprovalTokens(opts ...func(*ApprovalTokenQuery)) *User
 	return _q
 }
 
+// WithUserPreferences tells the query-builder to eager-load the nodes that are connected to
+// the "user_preferences" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithUserPreferences(opts ...func(*UserPreferenceQuery)) *UserQuery {
+	query := (&UserPreferenceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withUserPreferences = query
+	return _q
+}
+
+// WithConsoleResources tells the query-builder to eager-load the nodes that are connected to
+// the "console_resources" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithConsoleResources(opts ...func(*ConsoleResourceQuery)) *UserQuery {
+	query := (&ConsoleResourceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withConsoleResources = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -2816,7 +2890,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [67]bool{
+		loadedTypes = [69]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -2884,6 +2958,8 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withEntityIdentifiers != nil,
 			_q.withActionProposals != nil,
 			_q.withApprovalTokens != nil,
+			_q.withUserPreferences != nil,
+			_q.withConsoleResources != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -3439,6 +3515,20 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withUserPreferences; query != nil {
+		if err := _q.loadUserPreferences(ctx, query, nodes,
+			func(n *User) { n.Edges.UserPreferences = []*UserPreference{} },
+			func(n *User, e *UserPreference) { n.Edges.UserPreferences = append(n.Edges.UserPreferences, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withConsoleResources; query != nil {
+		if err := _q.loadConsoleResources(ctx, query, nodes,
+			func(n *User) { n.Edges.ConsoleResources = []*ConsoleResource{} },
+			func(n *User, e *ConsoleResource) { n.Edges.ConsoleResources = append(n.Edges.ConsoleResources, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedLedgerEntries {
 		if err := _q.loadLedgerEntries(ctx, query, nodes,
 			func(n *User) { n.appendNamedLedgerEntries(name) },
@@ -3902,6 +3992,20 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadApprovalTokens(ctx, query, nodes,
 			func(n *User) { n.appendNamedApprovalTokens(name) },
 			func(n *User, e *ApprovalToken) { n.appendNamedApprovalTokens(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedUserPreferences {
+		if err := _q.loadUserPreferences(ctx, query, nodes,
+			func(n *User) { n.appendNamedUserPreferences(name) },
+			func(n *User, e *UserPreference) { n.appendNamedUserPreferences(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedConsoleResources {
+		if err := _q.loadConsoleResources(ctx, query, nodes,
+			func(n *User) { n.appendNamedConsoleResources(name) },
+			func(n *User, e *ConsoleResource) { n.appendNamedConsoleResources(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -5987,6 +6091,68 @@ func (_q *UserQuery) loadApprovalTokens(ctx context.Context, query *ApprovalToke
 	}
 	return nil
 }
+func (_q *UserQuery) loadUserPreferences(ctx context.Context, query *UserPreferenceQuery, nodes []*User, init func(*User), assign func(*User, *UserPreference)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.UserPreference(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.UserPreferencesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_user_preferences
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_user_preferences" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_user_preferences" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadConsoleResources(ctx context.Context, query *ConsoleResourceQuery, nodes []*User, init func(*User), assign func(*User, *ConsoleResource)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.ConsoleResource(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ConsoleResourcesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_console_resources
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_console_resources" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_console_resources" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -6993,6 +7159,34 @@ func (_q *UserQuery) WithNamedApprovalTokens(name string, opts ...func(*Approval
 		_q.withNamedApprovalTokens = make(map[string]*ApprovalTokenQuery)
 	}
 	_q.withNamedApprovalTokens[name] = query
+	return _q
+}
+
+// WithNamedUserPreferences tells the query-builder to eager-load the nodes that are connected to the "user_preferences"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedUserPreferences(name string, opts ...func(*UserPreferenceQuery)) *UserQuery {
+	query := (&UserPreferenceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedUserPreferences == nil {
+		_q.withNamedUserPreferences = make(map[string]*UserPreferenceQuery)
+	}
+	_q.withNamedUserPreferences[name] = query
+	return _q
+}
+
+// WithNamedConsoleResources tells the query-builder to eager-load the nodes that are connected to the "console_resources"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedConsoleResources(name string, opts ...func(*ConsoleResourceQuery)) *UserQuery {
+	query := (&ConsoleResourceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedConsoleResources == nil {
+		_q.withNamedConsoleResources = make(map[string]*ConsoleResourceQuery)
+	}
+	_q.withNamedConsoleResources[name] = query
 	return _q
 }
 

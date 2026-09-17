@@ -33,6 +33,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -77,6 +78,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -1174,6 +1176,36 @@ func (_c *UserCreate) AddApprovalTokens(v ...*ApprovalToken) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddApprovalTokenIDs(ids...)
+}
+
+// AddUserPreferenceIDs adds the "user_preferences" edge to the UserPreference entity by IDs.
+func (_c *UserCreate) AddUserPreferenceIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddUserPreferenceIDs(ids...)
+	return _c
+}
+
+// AddUserPreferences adds the "user_preferences" edges to the UserPreference entity.
+func (_c *UserCreate) AddUserPreferences(v ...*UserPreference) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddUserPreferenceIDs(ids...)
+}
+
+// AddConsoleResourceIDs adds the "console_resources" edge to the ConsoleResource entity by IDs.
+func (_c *UserCreate) AddConsoleResourceIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddConsoleResourceIDs(ids...)
+	return _c
+}
+
+// AddConsoleResources adds the "console_resources" edges to the ConsoleResource entity.
+func (_c *UserCreate) AddConsoleResources(v ...*ConsoleResource) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddConsoleResourceIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -2362,6 +2394,38 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(approvaltoken.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.UserPreferencesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserPreferencesTable,
+			Columns: []string{user.UserPreferencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userpreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ConsoleResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsoleResourcesTable,
+			Columns: []string{user.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

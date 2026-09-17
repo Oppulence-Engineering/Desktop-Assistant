@@ -62,6 +62,8 @@ type Tx struct {
 	ConnectorCredentialRecovery *ConnectorCredentialRecoveryClient
 	// ConnectorRevocationJob is the client for interacting with the ConnectorRevocationJob builders.
 	ConnectorRevocationJob *ConnectorRevocationJobClient
+	// ConsoleResource is the client for interacting with the ConsoleResource builders.
+	ConsoleResource *ConsoleResourceClient
 	// ConversationIntelligenceArtifact is the client for interacting with the ConversationIntelligenceArtifact builders.
 	ConversationIntelligenceArtifact *ConversationIntelligenceArtifactClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
@@ -166,6 +168,8 @@ type Tx struct {
 	User *UserClient
 	// UserHistory is the client for interacting with the UserHistory builders.
 	UserHistory *UserHistoryClient
+	// UserPreference is the client for interacting with the UserPreference builders.
+	UserPreference *UserPreferenceClient
 	// VoiceAPIKey is the client for interacting with the VoiceAPIKey builders.
 	VoiceAPIKey *VoiceAPIKeyClient
 	// VoiceSyncItem is the client for interacting with the VoiceSyncItem builders.
@@ -328,6 +332,7 @@ func (tx *Tx) init() {
 	tx.ConnectorCredentialCleanupJob = NewConnectorCredentialCleanupJobClient(tx.config)
 	tx.ConnectorCredentialRecovery = NewConnectorCredentialRecoveryClient(tx.config)
 	tx.ConnectorRevocationJob = NewConnectorRevocationJobClient(tx.config)
+	tx.ConsoleResource = NewConsoleResourceClient(tx.config)
 	tx.ConversationIntelligenceArtifact = NewConversationIntelligenceArtifactClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)
 	tx.DeletedIdentity = NewDeletedIdentityClient(tx.config)
@@ -380,6 +385,7 @@ func (tx *Tx) init() {
 	tx.TenantEvidenceKey = NewTenantEvidenceKeyClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.UserHistory = NewUserHistoryClient(tx.config)
+	tx.UserPreference = NewUserPreferenceClient(tx.config)
 	tx.VoiceAPIKey = NewVoiceAPIKeyClient(tx.config)
 	tx.VoiceSyncItem = NewVoiceSyncItemClient(tx.config)
 	tx.WorkspaceFeatureControl = NewWorkspaceFeatureControlClient(tx.config)

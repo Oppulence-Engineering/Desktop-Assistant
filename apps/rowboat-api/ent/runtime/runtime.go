@@ -31,6 +31,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
@@ -84,6 +85,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -1458,6 +1460,60 @@ func init() {
 	connectorrevocationjobDescID := connectorrevocationjobMixinFields0[0].Descriptor()
 	// connectorrevocationjob.DefaultID holds the default value on creation for the id field.
 	connectorrevocationjob.DefaultID = connectorrevocationjobDescID.Default.(func() uuid.UUID)
+	consoleresourceMixin := schema.ConsoleResource{}.Mixin()
+	consoleresource.Policy = privacy.NewPolicies(consoleresourceMixin[0], schema.ConsoleResource{})
+	consoleresource.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := consoleresource.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	consoleresourceMixinFields0 := consoleresourceMixin[0].Fields()
+	_ = consoleresourceMixinFields0
+	consoleresourceFields := schema.ConsoleResource{}.Fields()
+	_ = consoleresourceFields
+	// consoleresourceDescCreatedAt is the schema descriptor for created_at field.
+	consoleresourceDescCreatedAt := consoleresourceMixinFields0[1].Descriptor()
+	// consoleresource.DefaultCreatedAt holds the default value on creation for the created_at field.
+	consoleresource.DefaultCreatedAt = consoleresourceDescCreatedAt.Default.(func() time.Time)
+	// consoleresourceDescUpdatedAt is the schema descriptor for updated_at field.
+	consoleresourceDescUpdatedAt := consoleresourceMixinFields0[2].Descriptor()
+	// consoleresource.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	consoleresource.DefaultUpdatedAt = consoleresourceDescUpdatedAt.Default.(func() time.Time)
+	// consoleresource.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	consoleresource.UpdateDefaultUpdatedAt = consoleresourceDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// consoleresourceDescKind is the schema descriptor for kind field.
+	consoleresourceDescKind := consoleresourceFields[0].Descriptor()
+	// consoleresource.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	consoleresource.KindValidator = consoleresourceDescKind.Validators[0].(func(string) error)
+	// consoleresourceDescPayloadJSON is the schema descriptor for payload_json field.
+	consoleresourceDescPayloadJSON := consoleresourceFields[4].Descriptor()
+	// consoleresource.PayloadJSONValidator is a validator for the "payload_json" field. It is called by the builders before save.
+	consoleresource.PayloadJSONValidator = func() func(string) error {
+		validators := consoleresourceDescPayloadJSON.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(payload_json string) error {
+			for _, fn := range fns {
+				if err := fn(payload_json); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// consoleresourceDescSortOrder is the schema descriptor for sort_order field.
+	consoleresourceDescSortOrder := consoleresourceFields[5].Descriptor()
+	// consoleresource.DefaultSortOrder holds the default value on creation for the sort_order field.
+	consoleresource.DefaultSortOrder = consoleresourceDescSortOrder.Default.(int)
+	// consoleresourceDescID is the schema descriptor for id field.
+	consoleresourceDescID := consoleresourceMixinFields0[0].Descriptor()
+	// consoleresource.DefaultID holds the default value on creation for the id field.
+	consoleresource.DefaultID = consoleresourceDescID.Default.(func() uuid.UUID)
 	conversationintelligenceartifactMixin := schema.ConversationIntelligenceArtifact{}.Mixin()
 	conversationintelligenceartifact.Policy = privacy.NewPolicies(conversationintelligenceartifactMixin[0], schema.ConversationIntelligenceArtifact{})
 	conversationintelligenceartifact.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -4428,6 +4484,40 @@ func init() {
 	userhistoryDescID := userhistoryFields[0].Descriptor()
 	// userhistory.DefaultID holds the default value on creation for the id field.
 	userhistory.DefaultID = userhistoryDescID.Default.(func() uuid.UUID)
+	userpreferenceMixin := schema.UserPreference{}.Mixin()
+	userpreference.Policy = privacy.NewPolicies(userpreferenceMixin[0], schema.UserPreference{})
+	userpreference.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := userpreference.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	userpreferenceMixinFields0 := userpreferenceMixin[0].Fields()
+	_ = userpreferenceMixinFields0
+	userpreferenceFields := schema.UserPreference{}.Fields()
+	_ = userpreferenceFields
+	// userpreferenceDescCreatedAt is the schema descriptor for created_at field.
+	userpreferenceDescCreatedAt := userpreferenceMixinFields0[1].Descriptor()
+	// userpreference.DefaultCreatedAt holds the default value on creation for the created_at field.
+	userpreference.DefaultCreatedAt = userpreferenceDescCreatedAt.Default.(func() time.Time)
+	// userpreferenceDescUpdatedAt is the schema descriptor for updated_at field.
+	userpreferenceDescUpdatedAt := userpreferenceMixinFields0[2].Descriptor()
+	// userpreference.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	userpreference.DefaultUpdatedAt = userpreferenceDescUpdatedAt.Default.(func() time.Time)
+	// userpreference.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	userpreference.UpdateDefaultUpdatedAt = userpreferenceDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// userpreferenceDescPreferencesJSON is the schema descriptor for preferences_json field.
+	userpreferenceDescPreferencesJSON := userpreferenceFields[0].Descriptor()
+	// userpreference.DefaultPreferencesJSON holds the default value on creation for the preferences_json field.
+	userpreference.DefaultPreferencesJSON = userpreferenceDescPreferencesJSON.Default.(string)
+	// userpreference.PreferencesJSONValidator is a validator for the "preferences_json" field. It is called by the builders before save.
+	userpreference.PreferencesJSONValidator = userpreferenceDescPreferencesJSON.Validators[0].(func(string) error)
+	// userpreferenceDescID is the schema descriptor for id field.
+	userpreferenceDescID := userpreferenceMixinFields0[0].Descriptor()
+	// userpreference.DefaultID holds the default value on creation for the id field.
+	userpreference.DefaultID = userpreferenceDescID.Default.(func() uuid.UUID)
 	voiceapikeyMixin := schema.VoiceAPIKey{}.Mixin()
 	voiceapikey.Policy = privacy.NewPolicies(voiceapikeyMixin[0], schema.VoiceAPIKey{})
 	voiceapikey.Hooks[0] = func(next ent.Mutator) ent.Mutator {
