@@ -12,6 +12,9 @@ const defaultConsolePreferences = {
 };
 const state = {
   connected: false,
+  googleBackfillPollsRemaining: 0,
+  nativeGoogleConnected: false,
+  relationshipConnected: true,
   consolePreferences: { ...defaultConsolePreferences },
   consoleResources: [],
   consumedTickets: new Set(),
@@ -67,6 +70,27 @@ const openPromisesReport = {
 };
 
 function relationshipSourcesResponse() {
+  const accounts = state.relationshipConnected
+    ? [
+        {
+          connectionId: "connection-web-e2e",
+          source: "google",
+          sourceAccountId: "connector-e2e@example.com",
+          status: state.googleBackfillPollsRemaining > 0 ? "backfilling" : "live",
+          backfillPhase: state.googleBackfillPollsRemaining > 0 ? "running" : "live",
+          backfillCompleted: state.googleBackfillPollsRemaining > 0 ? 25 : 100,
+          backfillTotal: 100,
+          completeness: state.googleBackfillPollsRemaining > 0 ? "partial" : "complete",
+          expectedCadenceSeconds: 3600,
+          lagSeconds: 0,
+          requiredScopes: ["google:email.read", "google:calendar.read"],
+          grantedScopes: ["google:email.read", "google:calendar.read"],
+          missingScopes: [],
+          retryCount: 0,
+          lastSuccessAt: state.googleBackfillPollsRemaining > 0 ? null : "2026-08-28T01:26:00Z",
+        },
+      ]
+    : [];
   return {
     sources: [
       {
@@ -82,25 +106,7 @@ function relationshipSourcesResponse() {
         supportsReconnect: true,
         supportsResync: true,
         expectedCadenceSeconds: 3600,
-        accounts: [
-          {
-            connectionId: "connection-web-e2e",
-            source: "google",
-            sourceAccountId: "google-acct-e2e",
-            status: "live",
-            backfillPhase: "complete",
-            backfillCompleted: 100,
-            backfillTotal: 100,
-            completeness: "full",
-            expectedCadenceSeconds: 3600,
-            lagSeconds: 0,
-            requiredScopes: ["google:email.read"],
-            grantedScopes: ["google:email.read"],
-            missingScopes: [],
-            retryCount: 0,
-            lastSuccessAt: "2026-08-28T01:26:00Z",
-          },
-        ],
+        accounts,
       },
     ],
   };
@@ -196,6 +202,9 @@ const server = http.createServer(async (request, response) => {
 
   if (url.pathname === "/__test/reset") {
     state.connected = false;
+    state.googleBackfillPollsRemaining = 0;
+    state.nativeGoogleConnected = false;
+    state.relationshipConnected = true;
     state.consumedTickets.clear();
     state.lastStart = null;
     state.lastClaimAuthorization = null;
@@ -215,6 +224,11 @@ const server = http.createServer(async (request, response) => {
       lastStart: state.lastStart,
       lastClaimAuthorization: state.lastClaimAuthorization,
     });
+  }
+  if (url.pathname === "/__test/google-disconnect") {
+    state.nativeGoogleConnected = false;
+    state.relationshipConnected = false;
+    return json(response, 200, { ok: true });
   }
 
   if (url.pathname === "/v1/auth/workos/login-url") {
@@ -253,6 +267,49 @@ const server = http.createServer(async (request, response) => {
     return json(response, 200, {
       user: { id: "viewer-web-e2e", email: "connector-e2e@example.com" },
       billing: { plan: "pro", status: "active", usage: {} },
+    });
+  }
+
+  if (url.pathname === "/v1/google-oauth" && request.method === "GET") {
+    return json(response, 200, {
+      connected: state.nativeGoogleConnected,
+      accounts: state.nativeGoogleConnected
+        ? [
+            {
+              accountId: "connector-e2e@example.com",
+              connectedAt: "2026-09-17T12:00:00Z",
+              scopes: ["google:email.read", "google:calendar.read"],
+            },
+          ]
+        : [],
+    });
+  }
+  if (url.pathname === "/v1/google-oauth/start" && request.method === "POST") {
+    const authorization = new URL(`http://${host}:${port}/google/authorize`);
+    authorization.searchParams.set("return_path", url.searchParams.get("return_path") || "");
+    return json(response, 200, { authorizeUrl: authorization.toString() });
+  }
+  if (url.pathname === "/google/authorize") {
+    const returnPath =
+      url.searchParams.get("return_path") === "/app/report"
+        ? "/app/report"
+        : "/app/settings?settings=connections";
+    const callback = new URL(returnPath, "http://127.0.0.1:4317");
+    callback.searchParams.set("google_session", "native-google-ticket");
+    callback.searchParams.set("google_status", "success");
+    return redirect(response, callback.toString());
+  }
+  if (url.pathname === "/v1/google-oauth/claim" && request.method === "POST") {
+    const body = await readJSON(request);
+    if (body.session !== "native-google-ticket") {
+      return json(response, 400, { code: "invalid_ticket" });
+    }
+    state.nativeGoogleConnected = true;
+    state.relationshipConnected = true;
+    state.googleBackfillPollsRemaining = 1;
+    return json(response, 200, {
+      accountId: "connector-e2e@example.com",
+      connected: true,
     });
   }
 
@@ -391,9 +448,11 @@ const server = http.createServer(async (request, response) => {
     return json(response, 200, relationshipSourcesResponse());
   }
   if (url.pathname === "/v1/relationship-sources/status" && request.method === "GET") {
-    return json(response, 200, {
+    const result = {
       sources: relationshipSourcesResponse().sources.flatMap((source) => source.accounts),
-    });
+    };
+    if (state.googleBackfillPollsRemaining > 0) state.googleBackfillPollsRemaining -= 1;
+    return json(response, 200, result);
   }
 
   if (url.pathname === "/v1/revenue-leak-scans" && request.method === "GET") {
@@ -420,27 +479,12 @@ const server = http.createServer(async (request, response) => {
         response.writeHead(200, { "content-type": "text/markdown; charset=utf-8" });
         return response.end("# Open promises\n\nE2E fixture report.\n");
       }
-      if (scanId === completedScan.id) {
-        return json(response, 200, openPromisesReport);
-      }
-      return json(response, 404, {
-        code: "not_found",
-        status: 404,
-        title: "Not found",
-        type: "about:blank",
-      });
+      return json(response, 200, openPromisesReport);
     }
     if (scanId === completedScan.id) {
       return json(response, 200, completedScan);
     }
-    return json(response, 200, {
-      id: scanId,
-      status: "running",
-      mode: "linked",
-      lookbackDays: 90,
-      threadsSeen: 3,
-      startedAt: new Date().toISOString(),
-    });
+    return json(response, 200, { ...completedScan, id: scanId });
   }
 
   if (url.pathname === "/v1/revenue-actions" && request.method === "GET") {
