@@ -21,6 +21,7 @@ const navigation = vi.hoisted(() => ({
 }));
 
 const mocks = vi.hoisted(() => ({
+  createGoogleCommitmentsAuthorizationURL: vi.fn(),
   getDigest: vi.fn(),
   getImpact: vi.fn(),
   getOpenPromisesReport: vi.fn(),
@@ -45,6 +46,9 @@ vi.mock("next/link", () => ({
 vi.mock("@/lib/revenue", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/revenue")>()),
   ...mocks,
+}));
+vi.mock("@/lib/api/connectors/google-oauth", () => ({
+  createGoogleCommitmentsAuthorizationURL: mocks.createGoogleCommitmentsAuthorizationURL,
 }));
 vi.mock("@/lib/analytics", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/analytics")>()),
@@ -167,6 +171,9 @@ beforeEach(() => {
   mocks.listRelationshipSourceStatuses.mockResolvedValue([sourceStatus("live")]);
   mocks.listScans.mockResolvedValue([]);
   mocks.getDigest.mockResolvedValue(null);
+  mocks.createGoogleCommitmentsAuthorizationURL.mockResolvedValue(
+    new URL("https://accounts.google.com/o/oauth2/v2/auth"),
+  );
 });
 
 describe("Open Promises report hardening", () => {
@@ -174,23 +181,27 @@ describe("Open Promises report hardening", () => {
     {
       statuses: [] as RelationshipSourceStatus[],
       action: "Connect Gmail & Calendar",
-      href: "/app/settings?settings=connections",
     },
     {
       statuses: [sourceStatus("reconnect_required")],
       action: "Reconnect Google",
-      href: "/app/settings?settings=connections",
     },
-  ])("gates scans behind the $action source action", async ({ statuses, action, href }) => {
-    mocks.listRelationshipSourceStatuses.mockResolvedValue(statuses);
+  ])(
+    "starts Google authorization directly from the $action action",
+    async ({ statuses, action }) => {
+      mocks.listRelationshipSourceStatuses.mockResolvedValue(statuses);
 
-    renderWithQuery(<OpenPromisesReportClient />);
+      renderWithQuery(<OpenPromisesReportClient />);
 
-    const link = await screen.findByRole("link", { name: action });
-    expect(link).toHaveAttribute("href", href);
-    expect(screen.queryByRole("button", { name: "Find my open promises" })).not.toBeInTheDocument();
-    expect(mocks.startScan).not.toHaveBeenCalled();
-  });
+      await userEvent.click(await screen.findByRole("button", { name: action }));
+
+      expect(mocks.createGoogleCommitmentsAuthorizationURL).toHaveBeenCalledOnce();
+      expect(
+        screen.queryByRole("button", { name: "Find my open promises" }),
+      ).not.toBeInTheDocument();
+      expect(mocks.startScan).not.toHaveBeenCalled();
+    },
+  );
 
   it("loads a deep-linked scan, refreshes terminal health, and selects another scan in the URL", async () => {
     navigation.params = new URLSearchParams("scan=scan-deep");

@@ -11,42 +11,18 @@ import {
   TooltipTrigger,
 } from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
-import type { FileUIPart, UIMessage } from "ai";
+import type { FileUIPart } from "ai";
 import { CaretLeft, CaretRight, Paperclip, X } from "@/lib/icons";
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
 import { createContext, memo, useContext, useEffect, useMemo, useState } from "react";
 import { Streamdown } from "streamdown";
 
-export type MessageProps = HTMLAttributes<HTMLDivElement> & {
-  from: UIMessage["role"];
-};
-
-export const Message = ({ className, from, ...props }: MessageProps) => (
-  <div
-    className={cn(
-      "group flex w-full max-w-[95%] flex-col gap-2",
-      from === "user" ? "is-user ml-auto justify-end" : "is-assistant",
-      className,
-    )}
-    {...props}
-  />
-);
-
-export type MessageContentProps = HTMLAttributes<HTMLDivElement>;
-
-export const MessageContent = ({ children, className, ...props }: MessageContentProps) => (
-  <div
-    className={cn(
-      "is-user:dark flex w-fit max-w-full min-w-0 flex-col gap-2 overflow-hidden text-sm",
-      "group-[.is-user]:ml-auto group-[.is-user]:rounded-none group-[.is-user]:bg-secondary group-[.is-user]:px-4 group-[.is-user]:py-3 group-[.is-user]:text-foreground",
-      "group-[.is-assistant]:text-foreground",
-      className,
-    )}
-    {...props}
-  >
-    {children}
-  </div>
-);
+export {
+  Message,
+  MessageContent,
+  type MessageContentProps,
+  type MessageProps,
+} from "@/components/ai-elements/message-shell";
 
 export type MessageActionsProps = ComponentProps<"div">;
 

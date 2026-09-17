@@ -609,9 +609,10 @@ export const acknowledgeMissionControl = (id: string, stateVersion: number, stat
     acknowledgedAt: string;
   }>;
 
-export const getRelationshipTimeline = (id: string, limit = 50) =>
+export const getRelationshipTimeline = (id: string, limit = 50, signal?: AbortSignal) =>
   call<{ observations: RelationshipObservation[] }>(
     `/relationships/${id}/timeline?limit=${limit}`,
+    { signal },
   ).then((body) => body.observations ?? []);
 
 export const getRelationshipChanges = (id: string) =>

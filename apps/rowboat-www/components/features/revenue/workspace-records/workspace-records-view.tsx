@@ -88,7 +88,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@oppulence/ui/components/sheet";
-import { collapseWorkspaceNotes, plateText, type WorkspaceNote } from "@/lib/revenue-records";
+import {
+  collapseWorkspaceNotes,
+  mapSettledWithConcurrency,
+  plateText,
+  type WorkspaceNote,
+} from "@/lib/revenue-records";
 import {
   createConsoleResource,
   deleteConsoleResource,
@@ -110,6 +115,7 @@ import {
   safeResearchCitationURL,
 } from "@/lib/revenue";
 import type {
+  RelationshipObservation,
   RelationshipPerson,
   RelationshipPersonAttribute,
   RevenueAction,
@@ -555,20 +561,28 @@ function PersonSheet({
   );
 }
 
-async function listWorkspaceNotes(): Promise<{
+async function listWorkspaceNotes(signal?: AbortSignal): Promise<{
   notes: WorkspaceNote[];
   relationships: RevenueRelationship[];
+  failedTimelineCount: number;
 }> {
-  const relationships = (await listRelationships()).filter(
+  const relationships = (await listRelationships({}, signal)).filter(
     (relationship) => relationship.kind !== "person",
   );
-  // ponytail: timeline fan-out is sufficient for the current 200-record beta; add a global notes endpoint when this becomes measurably slow.
-  const timelines = await Promise.all(
-    relationships.map((relationship) => getRelationshipTimeline(relationship.id, 200)),
+  const results = await mapSettledWithConcurrency(relationships, 6, (relationship) =>
+    getRelationshipTimeline(relationship.id, 200, signal),
   );
+  const successfulRelationships: RevenueRelationship[] = [];
+  const timelines: RelationshipObservation[][] = [];
+  results.forEach((result, index) => {
+    if (result.status !== "fulfilled") return;
+    successfulRelationships.push(relationships[index]);
+    timelines.push(result.value);
+  });
   return {
-    notes: collapseWorkspaceNotes(relationships, timelines),
+    notes: collapseWorkspaceNotes(successfulRelationships, timelines),
     relationships,
+    failedTimelineCount: results.length - successfulRelationships.length,
   };
 }
 
@@ -618,21 +632,34 @@ export function NotesView({ onError, onNotice }: ViewProps) {
       queryClient.invalidateQueries({ queryKey: ["console", "resources", "note_favorite"] }),
     onError: (error) => onError(errMessage(error, "Could not update the favorite.")),
   });
-  const load = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await listWorkspaceNotes();
-      setNotes(result.notes);
-      setRelationships(result.relationships);
-    } catch (error) {
-      onError(errMessage(error, "Could not load notes."));
-    } finally {
-      setLoading(false);
-    }
-  }, [onError]);
+  const load = React.useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      try {
+        const result = await listWorkspaceNotes(signal);
+        setNotes(result.notes);
+        setRelationships(result.relationships);
+        if (result.failedTimelineCount > 0) {
+          onNotice(
+            `Loaded available notes, but ${String(result.failedTimelineCount)} relationship timeline${result.failedTimelineCount === 1 ? "" : "s"} could not be read.`,
+          );
+        }
+      } catch (error) {
+        if (signal?.aborted) return;
+        onError(errMessage(error, "Could not load notes."));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onError, onNotice],
+  );
   React.useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 0);
-    return () => window.clearTimeout(timer);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => void load(controller.signal), 0);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
   }, [load]);
   const visible = [...notes].sort((left, right) =>
     newestFirst

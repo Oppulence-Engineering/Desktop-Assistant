@@ -14,7 +14,6 @@ import { CardDescription } from "@oppulence/ui/components/card";
 import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import { cn } from "@oppulence/ui/lib/utils";
-import { AgentConfigurationForm } from "@/components/agents/agent-configuration-form";
 import { useAuthSession } from "@/components/auth-gate";
 import {
   Artifact,
@@ -27,13 +26,11 @@ import {
   ArtifactTitle,
 } from "@/components/ai-elements/artifact";
 import { Conversation, ConversationContent } from "@/components/ai-elements/conversation";
-import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
-import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning";
+import { Message, MessageContent } from "@/components/ai-elements/message-shell";
 import {
   useChatRouteState,
   useDashboardChatController,
 } from "@/components/features/dashboard/chat-route-provider/chat-route-provider";
-import { HomeAgentSurface } from "@/components/features/dashboard/home-agent-surface/home-agent-surface";
 import {
   Tool,
   ToolContent,
@@ -41,9 +38,6 @@ import {
   ToolInput,
   ToolOutput,
 } from "@/components/ai-elements/tool";
-import { JsonEditor } from "@/components/json-editor";
-import { MarkdownViewer } from "@/components/markdown-viewer";
-import { TiptapMarkdownEditor } from "@/components/tiptap-markdown-editor";
 import { useProductRouteState } from "@/hooks/use-product-route-state";
 import type { AgentHistoryItem } from "@/lib/agent-history";
 import type { RevenueTab, SettingsSection, WorkflowFocus } from "@/lib/product-navigation";
@@ -66,6 +60,37 @@ const OpenPromisesReportClient = dynamic(() =>
   import("@/app/(product)/app/report/report-client").then(
     (module) => module.OpenPromisesReportClient,
   ),
+);
+const AgentConfigurationForm = dynamic(() =>
+  import("@/components/agents/agent-configuration-form").then(
+    (module) => module.AgentConfigurationForm,
+  ),
+);
+const JsonEditor = dynamic(() =>
+  import("@/components/json-editor").then((module) => module.JsonEditor),
+);
+const MarkdownViewer = dynamic(() =>
+  import("@/components/markdown-viewer").then((module) => module.MarkdownViewer),
+);
+const TiptapMarkdownEditor = dynamic(() =>
+  import("@/components/tiptap-markdown-editor").then((module) => module.TiptapMarkdownEditor),
+);
+const HomeAgentSurface = dynamic(() =>
+  import("@/components/features/dashboard/home-agent-surface/home-agent-surface").then(
+    (module) => module.HomeAgentSurface,
+  ),
+);
+const MessageResponse = dynamic(() =>
+  import("@/components/ai-elements/message").then((module) => module.MessageResponse),
+);
+const Reasoning = dynamic(() =>
+  import("@/components/ai-elements/reasoning").then((module) => module.Reasoning),
+);
+const ReasoningContent = dynamic(() =>
+  import("@/components/ai-elements/reasoning").then((module) => module.ReasoningContent),
+);
+const ReasoningTrigger = dynamic(() =>
+  import("@/components/ai-elements/reasoning").then((module) => module.ReasoningTrigger),
 );
 
 type ToolCall = Extract<AgentHistoryItem, { type: "tool" }>;
