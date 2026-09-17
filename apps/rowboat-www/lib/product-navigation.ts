@@ -35,7 +35,7 @@ export const REVENUE_TAB_LABELS: Record<RevenueTab, string> = {
   queue: "Recovery",
   scans: "Audits",
   impact: "Impact",
-  actions: "Actions",
+  actions: "Agent approvals",
   workspace: "Sources",
 };
 

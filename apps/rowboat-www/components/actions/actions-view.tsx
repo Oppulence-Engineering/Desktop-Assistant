@@ -205,8 +205,8 @@ export function ActionsView() {
         <ListSkeleton rows={3} />
       ) : disabled ? (
         <ActionsEmpty
-          description="Approvals are not switched on for this workspace yet. When they are, every finance action an agent proposes will wait here before anything happens."
-          title="Actions"
+          description="Agent approvals are not switched on for this workspace yet. When they are, every finance action an agent proposes will wait here before anything happens."
+          title="Agent approvals"
         />
       ) : proposals.length === 0 ? (
         <ActionsEmpty
@@ -217,7 +217,7 @@ export function ActionsView() {
               will land here for your approval.
             </>
           }
-          title="Actions"
+          title="Agent approvals"
         />
       ) : (
         <ul className="flex flex-col gap-3 p-3">

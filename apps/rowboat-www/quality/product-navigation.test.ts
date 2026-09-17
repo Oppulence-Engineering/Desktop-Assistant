@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   PRODUCT_VIEW_PATHS,
+  REVENUE_TAB_LABELS,
   productViewForPathname,
   revenueTabFromParam,
   settingsSectionFromParam,
@@ -26,5 +27,10 @@ describe("product navigation", () => {
     expect(settingsSectionFromParam("not-a-section")).toBe("overview");
     expect(workflowFocusFromParam("runs")).toBe("runs");
     expect(workflowFocusFromParam("not-a-focus")).toBe("scheduled");
+  });
+
+  it("distinguishes governed agent approvals from the recovery queue", () => {
+    expect(REVENUE_TAB_LABELS.queue).toBe("Recovery");
+    expect(REVENUE_TAB_LABELS.actions).toBe("Agent approvals");
   });
 });
