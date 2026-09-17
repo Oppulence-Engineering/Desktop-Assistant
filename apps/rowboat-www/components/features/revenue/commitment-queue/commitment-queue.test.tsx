@@ -249,7 +249,14 @@ describe("when the register is empty for a reason", () => {
 
     expect(screen.getByText("Google needs reconnecting")).toBeInTheDocument();
     expect(screen.getByText(/stopped accepting the authorization/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Reconnect Google/ })).toBeEnabled();
+    // The toolbar's audit button becomes the fix too. It used to stay "Run
+    // audit" beside this error and start scans that failed within a second.
+    const reconnect = screen.getAllByRole("button", { name: /Reconnect Google/ });
+    expect(reconnect).toHaveLength(2);
+    for (const button of reconnect) expect(button).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: /Run 90-day Promise Leak Audit/ }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /Connect Gmail & Calendar/ }),
     ).not.toBeInTheDocument();

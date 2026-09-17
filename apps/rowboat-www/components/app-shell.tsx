@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -49,7 +50,10 @@ import {
 } from "@oppulence/ui/components/dropdown-menu";
 import { dashboardFetch } from "@/lib/auth/client";
 import { getPref, setPref, usePref } from "@/lib/console-prefs";
-import { listRelationshipSourceStatuses } from "@/lib/revenue";
+import {
+  listRelationshipSourceStatuses,
+  RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
+} from "@/lib/revenue";
 import { loadChangelog, type ChangelogEntry } from "@/lib/api/changelog/changelog";
 import type { ProductView } from "@/lib/product-navigation";
 import type { RelationshipSourceStatus } from "@/types/revenue";
@@ -519,6 +523,22 @@ export function connectedSourceCount(sources: RelationshipSourceStatus[]) {
   return sources.filter((source) => !STOPPED_SOURCE_STATUSES.has(source.status)).length;
 }
 
+/**
+ * Whether an audit can only fail: Google has accounts and every one of them
+ * needs the user back through OAuth. One working account means a reconnect
+ * already happened. The desktop app can record that under a different account
+ * id than the one that failed, so a stale row must not block the audit.
+ */
+export function googleNeedsReconnect(sources: RelationshipSourceStatus[]) {
+  const google = sources.filter((source) => source.source === "google");
+  return (
+    google.length > 0 &&
+    google.every(
+      (source) => source.status === "reconnect_required" || source.status === "disconnected",
+    )
+  );
+}
+
 /** A row of ticks, filled up to `ratio`. */
 function TickMeter({ ratio }: { ratio: number }) {
   const ticks = "repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 4px)";
@@ -539,34 +559,20 @@ function TickMeter({ ratio }: { ratio: number }) {
  * difference between "no risk" and "we cannot see the risk".
  */
 function SidebarStatusCard({ billing, onOpen }: { billing?: ShellBilling; onOpen?: () => void }) {
-  const [status, setStatus] = React.useState<{
-    health: SourceHealth;
-    connected?: number;
-    total?: number;
-  } | null>(null);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    listRelationshipSourceStatuses()
-      .then((sources) => {
-        if (cancelled) return;
-        setStatus({
-          health: sourceHealth(sources),
-          connected: connectedSourceCount(sources),
-          total: sources.length,
-        });
-      })
-      .catch(() => {
-        if (!cancelled) setStatus({ health: { tone: "idle", label: "Source status unavailable" } });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // A shared query, not a one-time load: this card used to keep saying "No
+  // sources connected" after an audit had just marked Google for reconnecting.
+  const sources = useQuery({
+    queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
+    queryFn: listRelationshipSourceStatuses,
+  });
 
   const trialDaysLeft = trialDaysRemaining(billing);
-  if (!status) return null;
-  const { health, connected, total } = status;
+  if (sources.isPending) return null;
+  const health: SourceHealth = sources.isError
+    ? { tone: "idle", label: "Source status unavailable" }
+    : sourceHealth(sources.data);
+  const connected = sources.isError ? undefined : connectedSourceCount(sources.data);
+  const total = sources.isError ? undefined : sources.data.length;
   return (
     <button
       className={cn(

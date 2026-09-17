@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkle, WarningCircle } from "@phosphor-icons/react";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
-import type { RevenueTab } from "@/components/app-shell";
+import { googleNeedsReconnect, type RevenueTab } from "@/components/app-shell";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import {
   appendCommitmentTransition,
@@ -18,6 +18,8 @@ import {
   listScans,
   listCommitments,
   listRelationshipSources,
+  listRelationshipSourceStatuses,
+  RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
   RevenueAPIError,
   runCommitmentRecovery,
   startScan,
@@ -95,6 +97,13 @@ export function RevenuePanel({
     setNotice(msg);
     setError(null);
   }, []);
+
+  const queryClient = useQueryClient();
+  const sourceStatusQuery = useQuery({
+    queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
+    queryFn: listRelationshipSourceStatuses,
+  });
+  const reconnectBeforeAudit = googleNeedsReconnect(sourceStatusQuery.data ?? []);
 
   const activeScanIsRunning = activeScan?.status === "running" || activeScan?.status === "pending";
   const scanQuery = useQuery({
@@ -174,11 +183,21 @@ export function RevenuePanel({
     if (next.status === "completed" || next.status === "failed") {
       setScanning(false);
       if (next.status === "failed") setError(next.error || "The scan failed.");
-      else setRefreshKey((key) => key + 1);
+      // Either outcome changes the sources: a failed audit marks a dead grant.
+      // Refetching only after success left the page saying "the connection
+      // looks healthy" beside the reconnect error it had just shown.
+      setRefreshKey((key) => key + 1);
+      void queryClient.invalidateQueries({ queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY });
     }
-  }, [scanQuery.data]);
+  }, [scanQuery.data, queryClient]);
 
   const runScan = React.useCallback(async () => {
+    // Every audit button routes here. With every Google account needing a
+    // reconnect the audit can only fail, so send the user to the fix instead.
+    if (reconnectBeforeAudit && onOpenConnectors) {
+      onOpenConnectors();
+      return;
+    }
     setError(null);
     setNotice(null);
     setScanning(true);
@@ -195,7 +214,7 @@ export function RevenuePanel({
         setError(e instanceof Error ? e.message : "Could not start the scan.");
       }
     }
-  }, []);
+  }, [reconnectBeforeAudit, onOpenConnectors]);
 
   const transitionCommitment = React.useCallback(
     async (item: CommitmentQueueItem, transition: CommitmentQueueTransition) => {
@@ -319,6 +338,7 @@ export function RevenuePanel({
             onNotice={setNoticeMsg}
             onScan={runScan}
             scanning={scanning}
+            needsReconnect={reconnectBeforeAudit}
             refreshKey={refreshKey}
           />
         ) : tab === "actions" ? (
@@ -338,7 +358,13 @@ export function RevenuePanel({
             onOpenConnectors={onOpenConnectors}
           />
         ) : tab === "scans" ? (
-          <ScansView scans={scans} activeScan={activeScan} scanning={scanning} onScan={runScan} />
+          <ScansView
+            scans={scans}
+            activeScan={activeScan}
+            scanning={scanning}
+            needsReconnect={reconnectBeforeAudit}
+            onScan={runScan}
+          />
         ) : (
           <div className="p-4">
             <WorkspaceView
