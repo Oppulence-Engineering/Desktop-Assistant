@@ -74,7 +74,10 @@ export function useChatSessions({
     let cancelled = false;
     const load = async () => {
       try {
-        const data = await requestDashboardJson("/agent-sessions", ListAgentSessions200Response);
+        const data = await requestDashboardJson("/agent-sessions", ListAgentSessions200Response, {
+          softFail: true,
+        });
+        if (!data) return;
         const remote = data.sessions.map<SessionMeta>((session) => ({
           runId: session.sessionId,
           title: sessionTitle(session),
@@ -83,7 +86,7 @@ export function useChatSessions({
         }));
         if (!cancelled) setRemoteSessions(remote);
       } catch (error) {
-        console.error("Failed to load durable chat history", error);
+        console.warn("Failed to load durable chat history", error);
       }
     };
     void load();

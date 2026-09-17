@@ -28,6 +28,7 @@ export type ArtifactRouteState = {
 };
 
 export type ChatRouteState = {
+  activeAgent: string;
   workspace: string;
   processing: boolean;
   conversation: ConversationItem[];
@@ -35,6 +36,7 @@ export type ChatRouteState = {
   promptInput: ReactNode;
   artifact: ArtifactRouteState | null;
   onOpenRevenueTab: (tab: RevenueTab) => void;
+  onSelectPrompt: (prompt: string) => void;
   onResolveApproval: (approval: ApprovalRequest, decision: "granted" | "denied") => Promise<void>;
 };
 

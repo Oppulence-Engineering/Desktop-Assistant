@@ -18,12 +18,19 @@ const ErrorResponseSchema = z.union([
 
 type DashboardJsonOptions = RequestInit & {
   allow404?: boolean;
+  /** When true, missing or temporarily unavailable backends return null instead of throwing. */
+  softFail?: boolean;
 };
+
+/** Backend features that may be absent (404) or unreachable during local dev (502/503). */
+export function isOptionalDashboardFailure(status: number): boolean {
+  return status === 404 || status === 502 || status === 503;
+}
 
 export async function requestDashboardJson<T>(
   url: string,
   schema: z.ZodType<T>,
-  options: DashboardJsonOptions & { allow404: true },
+  options: DashboardJsonOptions & ({ allow404: true } | { softFail: true }),
 ): Promise<T | null>;
 export async function requestDashboardJson<T>(
   url: string,
@@ -40,7 +47,8 @@ export async function requestDashboardJson<T>(
   schema: z.ZodType<T>,
   options: DashboardJsonOptions = {},
 ): Promise<T | null> {
-  const { allow404, ...requestInit } = options;
+  const { allow404, softFail, ...requestInit } = options;
+  const optionalFailure = allow404 || softFail;
   const response = await dashboardFetch(toDashboardAPIPath(url), {
     ...requestInit,
     headers: {
@@ -52,7 +60,7 @@ export async function requestDashboardJson<T>(
   const text = await response.text();
 
   if (!response.ok) {
-    if (response.status === 404 && allow404) return null;
+    if (optionalFailure && isOptionalDashboardFailure(response.status)) return null;
     if (contentType.includes("application/json") && text) {
       let parsed: unknown;
       try {

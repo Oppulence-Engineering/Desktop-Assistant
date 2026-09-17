@@ -25,7 +25,10 @@ export function useAgentCatalog() {
   const { data: discoveredAgents = [], refetch } = useQuery({
     queryKey: ["dashboard", "agent-options"],
     queryFn: async () => {
-      const response = await requestDashboardJson("/agents", AgentsResponseSchema);
+      const response = await requestDashboardJson("/agents", AgentsResponseSchema, {
+        softFail: true,
+      });
+      if (!response) return [];
       return parseAgentsResponse(response).map((agent) => stripExtension(agent.slug));
     },
   });

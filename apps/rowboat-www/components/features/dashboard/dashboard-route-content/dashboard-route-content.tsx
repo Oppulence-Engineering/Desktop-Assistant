@@ -3,40 +3,14 @@
 import "client-only";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useEffect, useState, type ComponentPropsWithoutRef } from "react";
 import { z } from "zod";
-import {
-  AddressBook,
-  ArrowSquareOut,
-  BookOpen,
-  CheckSquare,
-  FileText,
-  FloppyDisk,
-  LockSimple,
-  Question,
-  Tray,
-} from "@/lib/icons";
+import { FloppyDisk, LockSimple } from "@/lib/icons";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@oppulence/ui/components/card";
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemMedia,
-  ItemTitle,
-} from "@oppulence/ui/components/item";
-import { Label } from "@oppulence/ui/components/label";
+import { CardDescription } from "@oppulence/ui/components/card";
 import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import { cn } from "@oppulence/ui/lib/utils";
@@ -54,6 +28,7 @@ import {
 import { Conversation, ConversationContent } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning";
+import { HomeAgentSurface } from "@/components/features/dashboard/home-agent-surface/home-agent-surface";
 import {
   Tool,
   ToolContent,
@@ -65,7 +40,7 @@ import { JsonEditor } from "@/components/json-editor";
 import { MarkdownViewer } from "@/components/markdown-viewer";
 import { TiptapMarkdownEditor } from "@/components/tiptap-markdown-editor";
 import type { AgentHistoryItem } from "@/lib/agent-history";
-import { REVENUE_TAB_LABELS, type RevenueTab } from "@/lib/product-navigation";
+import type { RevenueTab } from "@/lib/product-navigation";
 import { getImpact } from "@/lib/revenue";
 import type { RevenueImpact } from "@/types/revenue";
 
@@ -95,46 +70,19 @@ const ScalarToolOutputSchema = z.union([z.string(), z.number(), z.boolean(), z.n
 
 const HOME_STATS: {
   tab: RevenueTab;
-  icon: typeof CheckSquare;
-  caption: string;
+  label: string;
   read: (impact: RevenueImpact) => number;
 }[] = [
   {
     tab: "commitments",
-    icon: CheckSquare,
-    caption: "Overdue commitments",
+    label: "commitments",
     read: (impact) => impact.overdueCommitments,
   },
-  { tab: "queue", icon: Tray, caption: "Open actions", read: (impact) => impact.open },
+  { tab: "queue", label: "recovery", read: (impact) => impact.open },
   {
     tab: "relationships",
-    icon: AddressBook,
-    caption: "Accounts at risk",
+    label: "at risk",
     read: (impact) => impact.atRiskRelationships,
-  },
-];
-
-const HOME_LINKS = [
-  {
-    href: "/app/report",
-    icon: FileText,
-    label: "Open promises",
-    detail: "The commitments with no evidence of fulfilment",
-    external: false,
-  },
-  {
-    href: "/api/reference",
-    icon: BookOpen,
-    label: "API",
-    detail: "Drive the workspace programmatically",
-    external: true,
-  },
-  {
-    href: "/blog",
-    icon: Question,
-    label: "Help",
-    detail: "Guides, changes, and how the scoring works",
-    external: true,
   },
 ];
 
@@ -179,72 +127,36 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
   }, []);
 
   return (
-    <>
-      <section className="mt-10 grid gap-3 sm:grid-cols-3">
-        {HOME_STATS.map((stat) => (
-          <Card
-            className="cursor-pointer gap-0 py-0 transition-colors hover:bg-background-100/70"
-            key={stat.tab}
+    <footer
+      aria-label="Workspace pulse"
+      className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 pb-7 text-[11px] text-primary/30"
+    >
+      {HOME_STATS.map((stat, index) => (
+        <span className="inline-flex items-center gap-3" key={stat.tab}>
+          {index > 0 ? (
+            <span aria-hidden className="text-primary/15">
+              ·
+            </span>
+          ) : null}
+          <button
+            className="inline-flex items-baseline gap-1.5 font-normal transition-colors hover:text-primary/65"
             onClick={() => onOpenTab(stat.tab)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onOpenTab(stat.tab);
-              }
-            }}
+            type="button"
           >
-            <CardHeader className="border-b px-3 py-2.5">
-              <CardTitle className="flex items-center gap-2 text-[13px] font-medium text-primary">
-                <stat.icon className="size-4 text-primary/45" />
-                {REVENUE_TAB_LABELS[stat.tab]}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-3 pb-3 pt-4">
-              <div className="text-3xl font-semibold tabular-nums text-primary">
-                {impact ? (
-                  stat.read(impact)
-                ) : failed ? (
-                  "—"
-                ) : (
-                  <Skeleton className="inline-block h-7 w-10 align-middle" />
-                )}
-              </div>
-              <CardDescription className="mt-1 text-[12px] text-primary/45">
-                {stat.caption}
-              </CardDescription>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
-      <section className="mt-10">
-        <Label className="mb-3 block text-[13px] text-primary">Explore</Label>
-        <ItemGroup className="grid gap-3 sm:grid-cols-3">
-          {HOME_LINKS.map((link) => (
-            <Item asChild key={link.href} size="sm" variant="outline">
-              <Link
-                href={link.href}
-                {...(link.external ? { rel: "noopener noreferrer", target: "_blank" } : {})}
-              >
-                <ItemMedia variant="icon">
-                  <link.icon className="size-4 text-primary/45" />
-                </ItemMedia>
-                <ItemContent>
-                  <ItemTitle className="gap-1.5 text-[13px] text-primary">
-                    {link.label}
-                    {link.external ? <ArrowSquareOut className="size-3 text-primary/35" /> : null}
-                  </ItemTitle>
-                  <ItemDescription className="text-[12px] text-primary/45">
-                    {link.detail}
-                  </ItemDescription>
-                </ItemContent>
-              </Link>
-            </Item>
-          ))}
-        </ItemGroup>
-      </section>
-    </>
+            <span className="font-mono tabular-nums text-primary/50">
+              {impact ? (
+                stat.read(impact)
+              ) : failed ? (
+                "—"
+              ) : (
+                <Skeleton className="inline-block h-3 w-4" />
+              )}
+            </span>
+            <span>{stat.label}</span>
+          </button>
+        </span>
+      ))}
+    </footer>
   );
 }
 
@@ -414,18 +326,14 @@ export function ChatDashboardRoute() {
         </Conversation>
 
         {chat.empty ? (
-          <div className="absolute inset-0 overflow-y-auto px-4">
-            <div className="mx-auto w-full max-w-3xl pb-12 pt-20">
-              <Label className="text-[13px] font-normal text-primary/50">👋 Welcome back</Label>
-              <CardTitle className="mt-1 text-2xl tracking-tight text-foreground">
-                {chat.workspace}
-              </CardTitle>
-              <CardDescription className="mt-1 text-[13px] text-primary/50">
-                Find the promises, relationship risks, and next steps that need attention.
-              </CardDescription>
-              <div className="mt-5">{chat.promptInput}</div>
-              <HomeOverview onOpenTab={chat.onOpenRevenueTab} />
-            </div>
+          <div className="absolute inset-0 overflow-y-auto">
+            <HomeAgentSurface
+              activeAgent={chat.activeAgent}
+              onSelectPrompt={chat.onSelectPrompt}
+              promptInput={chat.promptInput}
+              signalPanel={<HomeOverview onOpenTab={chat.onOpenRevenueTab} />}
+              workspace={chat.workspace}
+            />
           </div>
         ) : (
           <div className="w-full px-4 pb-5 pt-2">
