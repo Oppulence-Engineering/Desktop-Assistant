@@ -274,6 +274,10 @@ type parkedPayload struct {
 	// ReturnTo is "web" when the web app started the flow. The callback then
 	// returns the browser to the web app, which claims the ticket there.
 	ReturnTo string `json:"return_to,omitempty"`
+	// ReturnPath is an allowlisted product path selected by the web surface that
+	// started consent. It never carries an origin, so provider-controlled input
+	// cannot turn the callback into an open redirect.
+	ReturnPath string `json:"return_path,omitempty"`
 }
 
 // returnToWeb marks a flow the web app started.

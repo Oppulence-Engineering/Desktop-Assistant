@@ -61,11 +61,18 @@ func (h *Handler) Start(w http.ResponseWriter, r *http.Request) {
 	// the ticket. The return was once one global setting, so production sent
 	// every web reconnect to the desktop deep link and nothing claimed it.
 	returnTo := ""
+	returnPath := ""
 	if r.URL.Query().Get("return") == returnToWeb {
 		returnTo = returnToWeb
+		returnPath = allowedWebReturnPath(r.URL.Query().Get("return_path"))
 	}
 	// The starter identity is sealed at rest with the eventual token bundle.
-	initial, _ := json.Marshal(parkedPayload{WorkOSUserID: u.WorkosUserID, PKCEVerifier: verifier, ReturnTo: returnTo})
+	initial, _ := json.Marshal(parkedPayload{
+		WorkOSUserID: u.WorkosUserID,
+		PKCEVerifier: verifier,
+		ReturnTo:     returnTo,
+		ReturnPath:   returnPath,
+	})
 	sealed, err := h.sealer.Seal(initial)
 	if err != nil {
 		h.errorPage(w, http.StatusInternalServerError, "Could not start sign-in.")
@@ -135,7 +142,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if oauthErr := q.Get("error"); oauthErr != "" {
-		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb, initial.ReturnPath)
 		return
 	}
 	if code == "" {
@@ -163,26 +170,26 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 
 	upReq, err := http.NewRequestWithContext(ctx, http.MethodPost, h.tokenURL, strings.NewReader(form.Encode()))
 	if err != nil {
-		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb, initial.ReturnPath)
 		return
 	}
 	upReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := h.http.Do(upReq)
 	if err != nil {
 		h.log.Warn("google callback: token exchange", zap.Error(err))
-		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb, initial.ReturnPath)
 		return
 	}
 	defer func() { _ = resp.Body.Close() }()
 	body, err := outbound.ReadAll(resp.Body, h.http.MaxResponseBytes())
 	if err != nil {
 		h.log.Warn("google callback: token response read", zap.Error(err))
-		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb, initial.ReturnPath)
 		return
 	}
 	if resp.StatusCode != http.StatusOK {
 		h.log.Warn("google callback: token exchange non-200", zap.Int("status", resp.StatusCode))
-		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb, initial.ReturnPath)
 		return
 	}
 
@@ -195,7 +202,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		IDToken      string `json:"id_token"` // present: scopes include openid email
 	}
 	if err := json.Unmarshal(body, &gtok); err != nil || gtok.AccessToken == "" {
-		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb, initial.ReturnPath)
 		return
 	}
 
@@ -208,6 +215,8 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 			TokenType:    defaultStr(gtok.TokenType, "Bearer"),
 		},
 		WorkOSUserID: initial.WorkOSUserID,
+		ReturnTo:     initial.ReturnTo,
+		ReturnPath:   initial.ReturnPath,
 		// The Google account email keys webhook user resolution (RFC 003).
 		// Decoding without signature verification is fine here: the id_token
 		// came straight from Google's token endpoint over TLS.
@@ -216,23 +225,23 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	raw, _ := json.Marshal(payload)
 	sealed, err := h.sealer.Seal(raw)
 	if err != nil {
-		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb, initial.ReturnPath)
 		return
 	}
 	if err := pending.Update().SetPayloadEncrypted(sealed).Exec(ctx); err != nil {
 		h.log.Error("google callback: park tokens", zap.Error(err))
-		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb)
+		h.deepLink(w, state, "error", initial.ReturnTo == returnToWeb, initial.ReturnPath)
 		return
 	}
-	h.deepLink(w, state, "success", initial.ReturnTo == returnToWeb)
+	h.deepLink(w, state, "success", initial.ReturnTo == returnToWeb, initial.ReturnPath)
 }
 
 // deepLink bounces the browser back to whoever started the flow: the web app
 // for a web flow, else the desktop via its custom scheme (solomon-ai:// by
 // default). That side claims the parked tokens with its bearer. An HTML page is
 // used because a bare 302 to a custom scheme is unreliable across browsers.
-func (h *Handler) deepLink(w http.ResponseWriter, state, status string, web bool) {
-	target := h.completionTarget(state, status, web)
+func (h *Handler) deepLink(w http.ResponseWriter, state, status string, web bool, returnPath string) {
+	target := h.completionTarget(state, status, web, returnPath)
 	title := "Google connected"
 	message := "Oppulence is now syncing your Google data."
 	if status != "success" {
@@ -262,16 +271,33 @@ func (h *Handler) deepLink(w http.ResponseWriter, state, status string, web bool
 		"</script></body></html>")
 }
 
-func (h *Handler) completionTarget(state, status string, web bool) string {
+func (h *Handler) completionTarget(state, status string, web bool, returnPath string) string {
 	if !web || h.webReturnURL == "" {
 		return h.deepLinkScheme + "://oauth/google/done?session=" + url.QueryEscape(state) + "&status=" + status
 	}
 	target, _ := url.Parse(h.webReturnURL)
+	if path := allowedWebReturnPath(returnPath); path != "" {
+		destination, _ := url.Parse(path)
+		target.Path = destination.Path
+		target.RawQuery = destination.RawQuery
+	}
 	query := target.Query()
 	query.Set("google_session", state)
 	query.Set("google_status", status)
 	target.RawQuery = query.Encode()
 	return target.String()
+}
+
+// allowedWebReturnPath keeps OAuth completion on known authenticated product
+// pages. Exact matching avoids open redirects and prevents callers from
+// smuggling arbitrary query parameters through the provider round trip.
+func allowedWebReturnPath(value string) string {
+	switch value {
+	case "/app/report", "/app/settings?settings=connections":
+		return value
+	default:
+		return ""
+	}
 }
 
 func (h *Handler) errorPage(w http.ResponseWriter, code int, msg string) {
