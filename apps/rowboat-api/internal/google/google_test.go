@@ -310,6 +310,7 @@ func TestCallbackReturnsToTheClientThatStartedTheFlow(t *testing.T) {
 		want  string
 	}{
 		{"web", "/v1/google-oauth/start?profile=commitments&return=web", "https://app.example/app/settings?google_session="},
+		{"web report", "/v1/google-oauth/start?profile=commitments&return=web&return_path=%2Fapp%2Freport", "https://app.example/app/report?google_session="},
 		{"desktop", "/v1/google-oauth/start", "rowboat://oauth/google/done?session="},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

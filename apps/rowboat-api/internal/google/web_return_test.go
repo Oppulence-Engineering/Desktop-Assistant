@@ -10,10 +10,37 @@ import (
 func TestCompletionTargetUsesWebReturn(t *testing.T) {
 	h := &Handler{deepLinkScheme: "rowboat"}
 	h.SetWebReturnURL("http://localhost:3000/app/settings?settings=connections")
-	target, err := url.Parse(h.completionTarget("ticket", "success", true))
+	target, err := url.Parse(h.completionTarget("ticket", "success", true, ""))
 	if err != nil || target.Query().Get("settings") != "connections" ||
 		target.Query().Get("google_session") != "ticket" || target.Query().Get("google_status") != "success" {
 		t.Fatalf("completion target = %q, err = %v", target, err)
+	}
+}
+
+func TestCompletionTargetUsesOnlyAllowlistedProductPaths(t *testing.T) {
+	h := &Handler{deepLinkScheme: "rowboat"}
+	h.SetWebReturnURL("https://oppulence.io/app/settings?settings=connections")
+
+	report, err := url.Parse(h.completionTarget("ticket", "success", true, "/app/report"))
+	if err != nil || report.Path != "/app/report" || report.Query().Get("settings") != "" ||
+		report.Query().Get("google_session") != "ticket" {
+		t.Fatalf("report completion target = %q, err = %v", report, err)
+	}
+
+	for _, unsafe := range []string{
+		"https://evil.example/app/report",
+		"//evil.example/app/report",
+		"/app/report?next=https://evil.example",
+		"/admin",
+	} {
+		target, parseErr := url.Parse(h.completionTarget("ticket", "success", true, unsafe))
+		if parseErr != nil {
+			t.Fatal(parseErr)
+		}
+		if target.Host != "oppulence.io" || target.Path != "/app/settings" ||
+			target.Query().Get("settings") != "connections" {
+			t.Fatalf("unsafe return path %q changed completion target to %q", unsafe, target)
+		}
 	}
 }
 
@@ -24,7 +51,7 @@ func TestCompletionTargetUsesWebReturn(t *testing.T) {
 func TestCompletionTargetKeepsDesktopDeepLink(t *testing.T) {
 	h := &Handler{deepLinkScheme: "rowboat"}
 	h.SetWebReturnURL("https://oppulence.io/app/settings?settings=connections")
-	if got := h.completionTarget("ticket", "success", false); got != "rowboat://oauth/google/done?session=ticket&status=success" {
+	if got := h.completionTarget("ticket", "success", false, ""); got != "rowboat://oauth/google/done?session=ticket&status=success" {
 		t.Fatalf("desktop completion target = %q", got)
 	}
 }
@@ -32,7 +59,7 @@ func TestCompletionTargetKeepsDesktopDeepLink(t *testing.T) {
 func TestDeepLinkScrubsOAuthCallbackAndShowsCompletion(t *testing.T) {
 	h := &Handler{deepLinkScheme: "rowboat"}
 	rec := httptest.NewRecorder()
-	h.deepLink(rec, "ticket", "success", false)
+	h.deepLink(rec, "ticket", "success", false, "")
 
 	body := rec.Body.String()
 	for _, want := range []string{
@@ -58,7 +85,7 @@ func TestDeepLinkScrubsOAuthCallbackAndShowsCompletion(t *testing.T) {
 func TestDeepLinkShowsRetryCopyOnError(t *testing.T) {
 	h := &Handler{deepLinkScheme: "rowboat"}
 	rec := httptest.NewRecorder()
-	h.deepLink(rec, "ticket", "error", false)
+	h.deepLink(rec, "ticket", "error", false, "")
 
 	body := rec.Body.String()
 	if !strings.Contains(body, "Google connection incomplete") || !strings.Contains(body, "try connecting Google again") {
