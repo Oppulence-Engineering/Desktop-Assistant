@@ -14,7 +14,11 @@ import { Button } from "@oppulence/ui/components/button";
 import { Label } from "@oppulence/ui/components/label";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import { createGoogleCommitmentsAuthorizationURL } from "@/lib/api/connectors/google-oauth";
-import { GOOGLE_OAUTH_CONNECTED_EVENT } from "@/components/features/connectors/google-oauth-return-handler";
+import {
+  GOOGLE_OAUTH_CLAIM_RESULT_EVENT,
+  GOOGLE_OAUTH_CONNECTED_EVENT,
+  type GoogleOAuthClaimResult,
+} from "@/components/features/connectors/google-oauth-return-handler";
 import {
   downloadMarkdown,
   friendlyRevenueError,
@@ -29,7 +33,7 @@ import {
   safeResearchCitationURL,
   startScan,
 } from "@/lib/revenue";
-import type { OpenPromisesReport } from "@/types/revenue";
+import type { OpenPromisesReport, RelationshipSourceStatus } from "@/types/revenue";
 
 export function OpenPromisesReportClient() {
   // The app shell already holds the session; Suspense is here for the scan id,
@@ -49,6 +53,7 @@ function ReportBody() {
   const params = useSearchParams();
   const scanId = params.get("scan");
   const googleConnectedInURL = params.get("google_connected") === "1";
+  const hasGoogleCallback = Boolean(params.get("google_session") || params.get("google_status"));
   const setScanId = React.useCallback(
     (id: string | null) => {
       router.replace(id ? `/app/report?scan=${encodeURIComponent(id)}` : "/app/report");
@@ -59,22 +64,35 @@ function ReportBody() {
   const [connecting, setConnecting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [googleOAuthClaimed, setGoogleOAuthClaimed] = React.useState(false);
+  const [googleClaimState, setGoogleClaimState] = React.useState<
+    GoogleOAuthClaimResult | "claiming" | "idle"
+  >(hasGoogleCallback ? "claiming" : "idle");
   const autoScanStarted = React.useRef(false);
 
   React.useEffect(() => {
     const acknowledgeReturn = () => {
       setGoogleOAuthClaimed(true);
     };
+    const recordClaimResult = (event: Event) => {
+      setGoogleClaimState((event as CustomEvent<GoogleOAuthClaimResult>).detail);
+    };
     window.addEventListener(GOOGLE_OAUTH_CONNECTED_EVENT, acknowledgeReturn);
+    window.addEventListener(GOOGLE_OAUTH_CLAIM_RESULT_EVENT, recordClaimResult);
     return () => {
       window.removeEventListener(GOOGLE_OAUTH_CONNECTED_EVENT, acknowledgeReturn);
+      window.removeEventListener(GOOGLE_OAUTH_CLAIM_RESULT_EVENT, recordClaimResult);
     };
   }, []);
 
   const sourcesQuery = useQuery({
     queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
     queryFn: listRelationshipSourceStatuses,
+    refetchInterval: (query) => {
+      const google = (query.state.data ?? []).find((source) => source.source === "google");
+      return googleSourceSyncActive(google) ? 2_000 : false;
+    },
   });
+  const googleSource = sourcesQuery.data?.find((source) => source.source === "google");
   const health = relationshipSourceHealth(sourcesQuery.data ?? []);
 
   const scansQuery = useQuery({
@@ -220,6 +238,8 @@ function ReportBody() {
         </p>
       ) : null}
 
+      <GoogleEvidenceSyncState claiming={googleClaimState === "claiming"} source={googleSource} />
+
       {sourcesQuery.isLoading || (!scanId && scansQuery.isLoading) ? (
         <p className="flex items-center gap-2 text-[13px] text-primary/55">
           <CircleNotchIcon className="size-4 animate-spin" /> Loading your report.
@@ -280,6 +300,92 @@ function ReportBody() {
         </p>
       )}
     </div>
+  );
+}
+
+function googleSourceSyncActive(source?: RelationshipSourceStatus): boolean {
+  return (
+    source?.status === "authorizing" ||
+    source?.status === "backfilling" ||
+    source?.status === "rebuilding" ||
+    source?.backfillPhase === "queued" ||
+    source?.backfillPhase === "running"
+  );
+}
+
+function GoogleEvidenceSyncState({
+  claiming,
+  source,
+}: {
+  claiming: boolean;
+  source?: RelationshipSourceStatus;
+}) {
+  if (claiming) {
+    return (
+      <section className="border border-border bg-background-50 p-4" role="status">
+        <p className="flex items-center gap-2 text-[13px] font-medium text-primary">
+          <CircleNotchIcon className="size-4 animate-spin" /> Saving your Google connection
+        </p>
+        <p className="mt-1 text-[12px] text-primary/55">
+          Oppulence is securely claiming the authorization returned by Google.
+        </p>
+      </section>
+    );
+  }
+  if (!source) return null;
+
+  const active = googleSourceSyncActive(source);
+  const failed = source.backfillPhase === "failed" || source.status === "reconnect_required";
+  const completed = Math.max(0, source.backfillCompleted);
+  const total = Math.max(0, source.backfillTotal);
+  const progress = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
+  const title = failed
+    ? source.status === "reconnect_required"
+      ? "Google needs to be reconnected"
+      : "Google evidence sync failed"
+    : active
+      ? "Syncing Google evidence"
+      : source.status === "live"
+        ? "Google evidence is live"
+        : "Google connected; sync is waiting to start";
+
+  return (
+    <section
+      className={
+        failed
+          ? "border border-destructive/40 bg-destructive/5 p-4"
+          : "border border-border bg-background-50 p-4"
+      }
+      role={failed ? "alert" : "status"}
+    >
+      <p className="flex items-center gap-2 text-[13px] font-medium text-primary">
+        {active ? <CircleNotchIcon className="size-4 animate-spin" /> : null}
+        {title}
+      </p>
+      <p className="mt-1 text-[12px] text-primary/55">
+        {failed
+          ? source.lastError || "The source could not advance. Reconnect or retry the sync."
+          : active && total > 0
+            ? `${String(completed)} of ${String(total)} evidence records processed.`
+            : active
+              ? "Reading relevant external customer and contact activity from the last 90 days."
+              : source.status === "live"
+                ? "Gmail and primary Calendar evidence finished its initial backfill."
+                : "The authorization is valid, but the initial evidence backfill is not active yet."}
+      </p>
+      {active && total > 0 ? (
+        <div
+          aria-label="Google evidence sync progress"
+          aria-valuemax={100}
+          aria-valuemin={0}
+          aria-valuenow={progress}
+          className="mt-3 h-1.5 overflow-hidden bg-primary/10"
+          role="progressbar"
+        >
+          <div className="h-full bg-[#3478f6]" style={{ width: `${String(progress)}%` }} />
+        </div>
+      ) : null}
+    </section>
   );
 }
 

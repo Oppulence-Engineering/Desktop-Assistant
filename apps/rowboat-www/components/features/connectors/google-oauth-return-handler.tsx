@@ -10,6 +10,16 @@ import { dashboardFetch } from "@/lib/auth/client";
 import { RELATIONSHIP_SOURCE_STATUS_QUERY_KEY } from "@/lib/revenue";
 
 export const GOOGLE_OAUTH_CONNECTED_EVENT = "oppulence:google-oauth-connected";
+export const GOOGLE_OAUTH_CLAIM_RESULT_EVENT = "oppulence:google-oauth-claim-result";
+export type GoogleOAuthClaimResult = "success" | "error";
+
+function dispatchClaimResult(result: GoogleOAuthClaimResult): void {
+  queueMicrotask(() => {
+    window.dispatchEvent(
+      new CustomEvent<GoogleOAuthClaimResult>(GOOGLE_OAUTH_CLAIM_RESULT_EVENT, { detail: result }),
+    );
+  });
+}
 
 function replaceOAuthParameters(url: URL, connected: boolean): void {
   url.searchParams.delete("google_session");
@@ -44,6 +54,7 @@ export function GoogleOAuthReturnHandler() {
 
     if (!session || status !== "success") {
       replaceOAuthParameters(url, false);
+      dispatchClaimResult("error");
       toast.error("Google authorization was not completed. Please try again.");
       return;
     }
@@ -60,10 +71,12 @@ export function GoogleOAuthReturnHandler() {
         await queryClient.invalidateQueries({ queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY });
         replaceOAuthParameters(url, true);
         window.dispatchEvent(new Event(GOOGLE_OAUTH_CONNECTED_EVENT));
+        dispatchClaimResult("success");
         toast.success("Google connected. Your evidence sync has started.");
       })
       .catch(() => {
         replaceOAuthParameters(url, false);
+        dispatchClaimResult("error");
         toast.error("Google authorization could not be saved. Please reconnect.");
       });
   }, [queryClient]);
