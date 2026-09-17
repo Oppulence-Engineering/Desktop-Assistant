@@ -14,6 +14,7 @@ import { Button } from "@oppulence/ui/components/button";
 import { Label } from "@oppulence/ui/components/label";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import { createGoogleCommitmentsAuthorizationURL } from "@/lib/api/connectors/google-oauth";
+import { GOOGLE_OAUTH_CONNECTED_EVENT } from "@/components/features/connectors/google-oauth-return-handler";
 import {
   downloadMarkdown,
   friendlyRevenueError,
@@ -47,6 +48,7 @@ function ReportBody() {
   const queryClient = useQueryClient();
   const params = useSearchParams();
   const scanId = params.get("scan");
+  const googleConnectedInURL = params.get("google_connected") === "1";
   const setScanId = React.useCallback(
     (id: string | null) => {
       router.replace(id ? `/app/report?scan=${encodeURIComponent(id)}` : "/app/report");
@@ -56,6 +58,18 @@ function ReportBody() {
   const [starting, setStarting] = React.useState(false);
   const [connecting, setConnecting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [googleOAuthClaimed, setGoogleOAuthClaimed] = React.useState(false);
+  const autoScanStarted = React.useRef(false);
+
+  React.useEffect(() => {
+    const acknowledgeReturn = () => {
+      setGoogleOAuthClaimed(true);
+    };
+    window.addEventListener(GOOGLE_OAUTH_CONNECTED_EVENT, acknowledgeReturn);
+    return () => {
+      window.removeEventListener(GOOGLE_OAUTH_CONNECTED_EVENT, acknowledgeReturn);
+    };
+  }, []);
 
   const sourcesQuery = useQuery({
     queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
@@ -124,6 +138,36 @@ function ReportBody() {
       setStarting(false);
     }
   }, [health, setScanId]);
+
+  React.useEffect(() => {
+    if (
+      (!googleConnectedInURL && !googleOAuthClaimed) ||
+      autoScanStarted.current ||
+      sourcesQuery.isLoading ||
+      scansQuery.isLoading ||
+      health !== "ready"
+    ) {
+      return;
+    }
+    autoScanStarted.current = true;
+    const activeScan = scansQuery.data?.find(
+      (scan) => scan.status !== "completed" && scan.status !== "failed",
+    );
+    if (activeScan) {
+      setScanId(activeScan.id);
+      return;
+    }
+    void run();
+  }, [
+    googleConnectedInURL,
+    googleOAuthClaimed,
+    health,
+    run,
+    scansQuery.data,
+    scansQuery.isLoading,
+    setScanId,
+    sourcesQuery.isLoading,
+  ]);
 
   const connectGoogle = React.useCallback(async () => {
     setConnecting(true);

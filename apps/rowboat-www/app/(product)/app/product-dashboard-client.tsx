@@ -5,6 +5,7 @@ import "client-only";
 import type { ReactNode } from "react";
 
 import { AuthGate } from "@/components/auth-gate";
+import { GoogleOAuthReturnHandler } from "@/components/features/connectors/google-oauth-return-handler";
 import { ChatRouteProvider } from "@/components/features/dashboard/chat-route-provider/chat-route-provider";
 import { DashboardShell } from "@/components/features/dashboard/dashboard-shell/dashboard-shell";
 import type { BrowserSessionResponse } from "@/lib/auth/schemas";
@@ -25,6 +26,7 @@ export default function ProductDashboardClient({
 }: ProductDashboardClientProps) {
   return (
     <AuthGate initialSession={initialSession}>
+      <GoogleOAuthReturnHandler />
       <ChatRouteProvider>
         <DashboardShell>{children}</DashboardShell>
       </ChatRouteProvider>

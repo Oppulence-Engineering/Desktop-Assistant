@@ -24,6 +24,7 @@ import type {
 import { GetGoogleConnectionStatus200Response } from "@/lib/api/generated/zod/google-oauth/google-oauth";
 import { createGoogleCommitmentsAuthorizationURL } from "@/lib/api/connectors/google-oauth";
 import { startHostedOAuth } from "@/lib/api/connectors/hosted-oauth";
+import { GOOGLE_OAUTH_CONNECTED_EVENT } from "@/components/features/connectors/google-oauth-return-handler";
 import { listRelationshipSourceStatuses } from "@/lib/revenue";
 import { cn } from "@/lib/utils";
 import { ComposioConnections } from "@/components/features/connectors/composio-connections";
@@ -148,7 +149,6 @@ function GoogleConnectionSettings() {
   const [sourceStatus, setSourceStatus] = React.useState<string | undefined>(undefined);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const claimStarted = React.useRef(false);
 
   const loadStatus = React.useCallback(async () => {
     const response = await dashboardFetch("/api/rowboat/v1/google-oauth");
@@ -173,38 +173,9 @@ function GoogleConnectionSettings() {
   }, [loadStatus]);
 
   React.useEffect(() => {
-    const parameters = new URLSearchParams(window.location.search);
-    const session = parameters.get("google_session");
-    const outcome = parameters.get("google_status");
-    if (!session && !outcome) return;
-    parameters.delete("google_session");
-    parameters.delete("google_status");
-    window.history.replaceState(
-      null,
-      "",
-      `${window.location.pathname}${parameters.size ? `?${parameters.toString()}` : ""}`,
-    );
-    if (claimStarted.current) return;
-    claimStarted.current = true;
-    if (!session || outcome !== "success") {
-      setError("Google authorization was not completed.");
-      return;
-    }
-    setBusy(true);
-    dashboardFetch("/api/rowboat/v1/google-oauth/claim", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session }),
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`Could not claim Google connection (${response.status})`);
-        // Claim persists the grant and the API's on-connect hook owns source
-        // authorization plus durable backfill. Re-reporting completion here
-        // used to rewind that newly queued work to connected/idle.
-        await loadStatus();
-      })
-      .catch(() => setError("Google authorization could not be saved."))
-      .finally(() => setBusy(false));
+    const refresh = () => void loadStatus();
+    window.addEventListener(GOOGLE_OAUTH_CONNECTED_EVENT, refresh);
+    return () => window.removeEventListener(GOOGLE_OAUTH_CONNECTED_EVENT, refresh);
   }, [loadStatus]);
 
   const connect = async () => {
