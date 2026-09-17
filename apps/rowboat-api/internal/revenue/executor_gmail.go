@@ -240,7 +240,9 @@ func (e *GmailExecutor) connection(ctx context.Context, userID uuid.UUID, requir
 	token, err := e.google.AccessTokenForConnection(ctx, e.sealer, e.secrets, conn)
 	if err != nil {
 		if errors.Is(err, googleapi.ErrReconnectRequired) {
-			return nil, "", errors.New("revenue: google refresh token is invalid; reconnect Google")
+			// Wrap, never replace: the scan keys on this sentinel to mark the
+			// source reconnect_required and to tell the user why.
+			return nil, "", fmt.Errorf("revenue: google refresh token is invalid; reconnect Google: %w", err)
 		}
 		return nil, "", fmt.Errorf("revenue: could not obtain a google access token: %w", err)
 	}

@@ -190,3 +190,87 @@ describe("hosted connector settings", () => {
     expect(window.location.search).toBe("?settings=connections");
   });
 });
+
+describe("Google grant claimed in the web app", () => {
+  function mockDashboard(options: { connectors?: Connector[]; toolkits?: unknown[] } = {}) {
+    const calls: string[] = [];
+    const json = (body: unknown) =>
+      new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        calls.push(
+          `${init?.method ?? "GET"} ${url} ${typeof init?.body === "string" ? init.body : ""}`,
+        );
+        if (url.includes("/google-oauth/claim")) return json({});
+        if (url.includes("/google-oauth")) {
+          return json({
+            connected: true,
+            accounts: [
+              {
+                accountId: "me@x.co",
+                scopes: ["https://www.googleapis.com/auth/gmail.readonly"],
+                connectedAt: "2026-09-16T00:00:00Z",
+              },
+            ],
+          });
+        }
+        if (url.includes("/relationship-sources/google/authorization")) {
+          return json({ source: "google", status: "connected" });
+        }
+        if (url.includes("/relationship-sources/status")) return json({ sources: [] });
+        if (url.includes("/composio/toolkits")) return json({ toolkits: options.toolkits ?? [] });
+        if (url.includes("/composio/connections")) return json({ connections: [] });
+        return json({ connectors: options.connectors ?? [] });
+      }),
+    );
+    return calls;
+  }
+
+  // The claim stores the grant, but the relationship source only learns of it
+  // when told. Without this the sidebar said "No sources connected" while the
+  // card said "Active", and the daily audit had no row to flag once the grant
+  // died.
+  it("reports the claimed account as an authorized relationship source", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/app/settings?settings=connections&google_session=s1&google_status=success",
+    );
+    const calls = mockDashboard();
+    render(<ConnectorSettings />);
+
+    await vi.waitFor(() => {
+      expect(
+        calls.some((call) => call.includes("/relationship-sources/google/authorization")),
+      ).toBe(true);
+    });
+    const report = calls.find((call) =>
+      call.includes("/relationship-sources/google/authorization"),
+    );
+    expect(report).toMatch(/^POST /);
+    expect(report).toContain('"sourceAccountId":"me@x.co"');
+    expect(report).toContain('"state":"completed"');
+  });
+
+  // A disabled native card next to a working Composio row is the same product
+  // twice, and only one of the two connect buttons does anything.
+  it("drops a disabled native card for a product Composio already offers", async () => {
+    mockDashboard({
+      connectors: [
+        connector({ name: "github", displayName: "GitHub", status: "disabled", connected: false }),
+        connector({ name: "stripe", displayName: "Stripe", status: "enabled" }),
+      ],
+      toolkits: [{ slug: "github", name: "GitHub via Composio", managedAuth: true }],
+    });
+    render(<ConnectorSettings />);
+
+    expect(await screen.findByText("GitHub via Composio")).toBeInTheDocument();
+    expect(await screen.findByText("Stripe")).toBeInTheDocument();
+    expect(screen.queryByText("GitHub")).not.toBeInTheDocument();
+  });
+});

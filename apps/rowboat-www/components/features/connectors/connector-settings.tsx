@@ -23,7 +23,10 @@ import {
   StartGoogleOAuth200Response,
 } from "@/lib/api/generated/zod/google-oauth/google-oauth";
 import { startHostedOAuth } from "@/lib/api/connectors/hosted-oauth";
-import { listRelationshipSourceStatuses } from "@/lib/revenue";
+import {
+  listRelationshipSourceStatuses,
+  reportRelationshipSourceAuthorization,
+} from "@/lib/revenue";
 import { cn } from "@/lib/utils";
 import { ComposioConnections } from "@/components/features/connectors/composio-connections";
 import { parseConnectorsResponse } from "@/lib/api/connectors/schema";
@@ -141,7 +144,8 @@ function GoogleConnectionSettings() {
   const loadStatus = React.useCallback(async () => {
     const response = await dashboardFetch("/api/rowboat/v1/google-oauth");
     if (!response.ok) throw new Error(`Could not load Google status (${response.status})`);
-    setStatus(GetGoogleConnectionStatus200Response.parse(await response.json()));
+    const parsed = GetGoogleConnectionStatus200Response.parse(await response.json());
+    setStatus(parsed);
     // Health, not existence. A row in the OAuth table only says the user once
     // authorized; the source status says whether the grant still works.
     try {
@@ -152,6 +156,7 @@ function GoogleConnectionSettings() {
       // connect/reconnect action, it just cannot promise the grant is good.
       setSourceStatus(undefined);
     }
+    return parsed;
   }, []);
 
   React.useEffect(() => {
@@ -184,6 +189,21 @@ function GoogleConnectionSettings() {
     })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Could not claim Google connection (${response.status})`);
+        const fresh = await loadStatus();
+        // The claim stores the grant; the relationship source only learns of
+        // it when told. Without this report no source row existed, so the
+        // sidebar said "No sources connected" while this card said "Active",
+        // and a dead grant had no row to flag. The grant is saved either way,
+        // so a failed report must not read as a failed authorization.
+        await Promise.all(
+          fresh.accounts.map((account) =>
+            reportRelationshipSourceAuthorization("google", {
+              sourceAccountId: account.accountId,
+              state: "completed",
+              grantedScopes: account.scopes,
+            }).catch(() => undefined),
+          ),
+        );
         await loadStatus();
       })
       .catch(() => setError("Google authorization could not be saved."))
@@ -524,6 +544,12 @@ export function ConnectorSettings() {
   const [state, setState] = React.useState<"loading" | "ready" | "error">("loading");
   const [refreshKey, setRefreshKey] = React.useState(0);
   const [notice, setNotice] = React.useState<{ outcome: HostedOAuthOutcome; connector?: string }>();
+  const [composioSlugs, setComposioSlugs] = React.useState<string[]>([]);
+  // A disabled native card next to a working Composio row is the same product
+  // twice, and only one of the two connect buttons does anything.
+  const visibleConnectors = connectors.filter(
+    (connector) => connector.status === "enabled" || !composioSlugs.includes(connector.name),
+  );
 
   React.useEffect(() => {
     const parameters = new URLSearchParams(window.location.search);
@@ -580,17 +606,17 @@ export function ConnectorSettings() {
         </div>
       ) : null}
       <GoogleConnectionSettings />
-      <ComposioConnections />
+      <ComposioConnections onToolkits={setComposioSlugs} />
       <div className="settings-panel flex flex-col">
         {state === "loading" ? (
           <p className="p-4 text-sm text-muted-foreground">Loading connectors…</p>
         ) : state === "error" ? (
           <p className="p-4 text-sm text-muted-foreground">Could not load connectors.</p>
-        ) : connectors.length === 0 ? (
+        ) : visibleConnectors.length === 0 ? (
           <p className="p-4 text-sm text-muted-foreground">No connectors are available yet.</p>
         ) : (
           <div className="flex flex-col divide-y divide-primary/10">
-            {connectors.map((connector) => (
+            {visibleConnectors.map((connector) => (
               <ConnectorRow
                 connector={connector}
                 key={connector.name}

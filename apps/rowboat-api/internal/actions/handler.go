@@ -49,6 +49,17 @@ func (h *Handler) Mount(r chi.Router) {
 	r.Get("/v1/objects/{resourceRef}/audit", h.Audit)
 }
 
+// MountDisabled answers the action routes while the broker ships dark. A bare
+// 404 reads as "no such route" to every client; 501 with a code says the
+// feature is off on purpose.
+func MountDisabled(r chi.Router) {
+	disabled := func(w http.ResponseWriter, _ *http.Request) {
+		httpx.Error(w, http.StatusNotImplemented, "closed-loop actions are not enabled", "actions_disabled")
+	}
+	r.HandleFunc("/v1/action-proposals", disabled)
+	r.HandleFunc("/v1/action-proposals/*", disabled)
+}
+
 // proposalDTO is the wire shape of a proposal (no token material).
 type proposalDTO struct {
 	ID            string     `json:"id"`

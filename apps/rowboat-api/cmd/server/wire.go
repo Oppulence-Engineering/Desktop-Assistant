@@ -950,6 +950,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 				r.Use(rl.PerUserWindow(ratelimit.GroupActions, 120, time.Minute))
 				actionsH.Mount(r)
 			})
+		} else {
+			actions.MountDisabled(r)
 		}
 
 		r.With(rl.PerUser(ratelimit.GroupConnections, 30), rl.PerUserWindow(ratelimit.GroupConnections+":burst", 8, 10*time.Second)).
