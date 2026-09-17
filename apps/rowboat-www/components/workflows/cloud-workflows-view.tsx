@@ -53,6 +53,7 @@ import {
 } from "@oppulence/ui/components/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import { Textarea } from "@oppulence/ui/components/textarea";
+import { WorkspaceEmptyState } from "@/components/revenue/shared";
 import { VisualWorkflowBuilder } from "@/components/features/workflows/visual-workflow-builder/visual-workflow-builder";
 import {
   cancelCloudRun,
@@ -482,13 +483,19 @@ function WorkflowLibrary({
             </TableBody>
           </table>
           {filtered.length === 0 ? (
-            <div className="flex min-h-72 flex-col items-center justify-center px-6 text-center">
-              <Cloud className="size-8 text-muted-foreground" />
-              <h2 className="mt-4 text-[15px] font-medium">No workflows found</h2>
-              <p className="mt-1 text-[12px] text-muted-foreground">
-                Try another search or create a workflow from scratch.
-              </p>
-            </div>
+            <WorkspaceEmptyState
+              description={
+                query
+                  ? "No workflows match this search. Try another phrase."
+                  : "Create a workflow to automate recurring relationship work."
+              }
+              image="workflows"
+              learnMore={[
+                { label: "Start from a trigger or schedule" },
+                { label: "Review every workflow run" },
+              ]}
+              title="Workflows"
+            />
           ) : null}
         </div>
       </ScrollArea>
@@ -888,7 +895,10 @@ function WorkflowEditor({
           ))}
         </TabsList>
 
-        <TabsContent className="min-h-0 flex-1" value="editor">
+        <TabsContent
+          className="min-h-0 flex-1 overflow-hidden data-[state=active]:flex"
+          value="editor"
+        >
           <VisualWorkflowBuilder
             aria-label={`${task.name} workflow editor`}
             disabled={!editable}

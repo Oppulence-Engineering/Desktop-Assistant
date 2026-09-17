@@ -34,7 +34,7 @@ import {
   resyncRelationshipSource,
   RevenueAPIError,
 } from "@/lib/revenue";
-import { Field, errMessage } from "@/components/revenue/shared";
+import { Field, errMessage, WorkspaceEmptyState } from "@/components/revenue/shared";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import { listCloudRuns } from "@/lib/cloud-workflows";
 import type { RelationshipSourceStatus, RevenueWorkspace } from "@/types/revenue";
@@ -123,6 +123,40 @@ export function WorkspaceView({
     }
   };
 
+  if (sources === null) {
+    return (
+      <div className="flex flex-col gap-2 p-4">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-24 w-full rounded-[2px]" />
+      </div>
+    );
+  }
+
+  if (sources.length === 0) {
+    return (
+      <WorkspaceEmptyState
+        action={
+          onOpenConnectors ? (
+            <Button
+              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              onClick={onOpenConnectors}
+              size="sm"
+            >
+              <Plugs /> Connect sources
+            </Button>
+          ) : undefined
+        }
+        description="Connect Gmail, Calendar, Slack, or CRM so Oppulence can read relationship evidence. Nothing is sent without your approval."
+        image="sources"
+        learnMore={[
+          { label: "Sources are read-only observers" },
+          { label: "Sync health stays visible" },
+        ]}
+        title="Sources"
+      />
+    );
+  }
+
   return (
     <div className="flex w-full min-w-0 flex-col gap-6">
       <Card className="gap-0 rounded-[2px] border-border py-0 shadow-none">
@@ -137,37 +171,26 @@ export function WorkspaceView({
           ) : null}
         </CardHeader>
         <CardContent className="p-0">
-          {sources === null ? (
-            <div className="flex flex-col gap-2 px-4 py-3">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-full" />
-            </div>
-          ) : sources.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-primary/50">
-              No sources are connected yet, so there is nothing to read promises from.
-            </p>
-          ) : (
-            <ItemGroup className="text-sm">
-              {sources.map((source, index) => (
-                <React.Fragment key={`${source.source}:${source.sourceAccountId}`}>
-                  {index > 0 ? <ItemSeparator /> : null}
-                  <SourceRow
-                    source={source}
-                    autoRefreshBlocker={autoRefreshBlocker}
-                    onError={onError}
-                    onNotice={onNotice}
-                    onUpdated={(updated) =>
-                      setSources((current) =>
-                        (current ?? []).map((item) =>
-                          item.connectionId === updated.connectionId ? updated : item,
-                        ),
-                      )
-                    }
-                  />
-                </React.Fragment>
-              ))}
-            </ItemGroup>
-          )}
+          <ItemGroup className="text-sm">
+            {sources.map((source, index) => (
+              <React.Fragment key={`${source.source}:${source.sourceAccountId}`}>
+                {index > 0 ? <ItemSeparator /> : null}
+                <SourceRow
+                  autoRefreshBlocker={autoRefreshBlocker}
+                  onError={onError}
+                  onNotice={onNotice}
+                  onUpdated={(updated) =>
+                    setSources((current) =>
+                      (current ?? []).map((item) =>
+                        item.connectionId === updated.connectionId ? updated : item,
+                      ),
+                    )
+                  }
+                  source={source}
+                />
+              </React.Fragment>
+            ))}
+          </ItemGroup>
         </CardContent>
       </Card>
 

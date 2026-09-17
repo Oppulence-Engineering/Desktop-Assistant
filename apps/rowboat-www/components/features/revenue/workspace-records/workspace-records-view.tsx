@@ -16,7 +16,6 @@ import {
   GridFour,
   Link,
   List,
-  ListChecks,
   MagnifyingGlass,
   Minus,
   Note,
@@ -33,7 +32,12 @@ import {
   X,
 } from "@/lib/icons";
 
-import { EmptyBlock, errMessage, ListSkeleton } from "@/components/revenue/shared";
+import {
+  EmptyBlock,
+  errMessage,
+  ListSkeleton,
+  WorkspaceEmptyState,
+} from "@/components/revenue/shared";
 import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
@@ -88,7 +92,6 @@ import {
   createRelationship,
   dismissAction,
   getPersonAttributes,
-  getRelationship,
   getRelationshipTimeline,
   ingestRelationshipObservations,
   listActions,
@@ -100,7 +103,6 @@ import {
 import type {
   RelationshipPerson,
   RelationshipPersonAttribute,
-  RelationshipDetail,
   RevenueAction,
   RevenueRelationship,
 } from "@/types/revenue";
@@ -251,11 +253,19 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         </div>
       ) : people.length === 0 ? (
         <EmptyBlock
-          icon={<User className="size-6" />}
-          title="No people yet"
           body="Connect Gmail or add a person to build a relationship-aware contact record."
+          image="people"
+          learnMore={[
+            { label: "See who you are talking to" },
+            { label: "Enrich profiles with evidence" },
+          ]}
+          title="People"
         >
-          <Button size="sm" onClick={() => setCreating(true)}>
+          <Button
+            className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+            onClick={() => setCreating(true)}
+            size="sm"
+          >
             <Plus /> Add person
           </Button>
         </EmptyBlock>
@@ -707,6 +717,31 @@ export function NotesView({ onError, onNotice }: ViewProps) {
             <Plus /> Create new template
           </Button>
         </div>
+      ) : visible.length === 0 ? (
+        <WorkspaceEmptyState
+          action={
+            <Button
+              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              onClick={() => setEditing("new")}
+              size="sm"
+            >
+              <Plus /> New note
+            </Button>
+          }
+          description={
+            <>
+              No notes yet! Create your first
+              <br />
+              note to get started.
+            </>
+          }
+          image="notes"
+          learnMore={[
+            { label: "Link notes to accounts" },
+            { label: "Turn notes into commitments" },
+          ]}
+          title="Notes"
+        />
       ) : (
         <div className="min-h-0 flex-1 overflow-auto">
           {showFavorites ? (
@@ -731,69 +766,58 @@ export function NotesView({ onError, onNotice }: ViewProps) {
                 {visible.length}
               </Badge>
             </Label>
-            {visible.length ? (
-              <div
-                className={
-                  layout === "grid"
-                    ? "grid grid-cols-[repeat(auto-fill,minmax(300px,368px))] gap-3"
-                    : "space-y-2"
-                }
-              >
-                {visible.map((note) => (
-                  <Card
-                    className={cn(
-                      "cursor-pointer gap-0 py-0 transition-colors hover:bg-background-100",
-                      layout === "grid" ? "h-52 max-w-[368px]" : "h-24 w-full",
-                    )}
-                    key={note.externalId}
-                    onClick={() => setEditing(note)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setEditing(note);
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <CardHeader className="flex-1 gap-1 px-4 pb-0 pt-4">
-                      <div className="flex items-center gap-2 text-[12px] text-primary/65">
-                        <Note className="size-3.5" />
-                        <Label className="font-normal underline">{note.relationshipName}</Label>
-                      </div>
-                      <CardTitle className="mt-3 text-[15px] text-primary">
-                        {note.title || "Untitled note"}
-                      </CardTitle>
-                      <CardDescription className="line-clamp-2 text-[13px]">
-                        {note.body || "This note has no content."}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardFooter className="flex h-10 items-center justify-between border-t px-4 text-[12px] text-primary/50">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="size-4 rounded-none" size="sm">
-                          <AvatarFallback className="rounded-none bg-cyan-600 text-[9px] text-white">
-                            Y
-                          </AvatarFallback>
-                        </Avatar>
-                        <Label className="font-normal">You</Label>
-                      </div>
-                      <Badge className="font-normal" variant="secondary">
-                        {relativeTime(note.occurredAt)}
-                      </Badge>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Button
-                type="button"
-                className="flex h-36 w-full items-center justify-center rounded-none border border-dashed border-border text-[13px] text-primary/45 hover:bg-background-100"
-                variant="ghost"
-                onClick={() => setEditing("new")}
-              >
-                <Plus className="mr-2 size-4" /> Create your first note
-              </Button>
-            )}
+            <div
+              className={
+                layout === "grid"
+                  ? "grid grid-cols-[repeat(auto-fill,minmax(300px,368px))] gap-3"
+                  : "space-y-2"
+              }
+            >
+              {visible.map((note) => (
+                <Card
+                  className={cn(
+                    "cursor-pointer gap-0 py-0 transition-colors hover:bg-background-100",
+                    layout === "grid" ? "h-52 max-w-[368px]" : "h-24 w-full",
+                  )}
+                  key={note.externalId}
+                  onClick={() => setEditing(note)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setEditing(note);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <CardHeader className="flex-1 gap-1 px-4 pb-0 pt-4">
+                    <div className="flex items-center gap-2 text-[12px] text-primary/65">
+                      <Note className="size-3.5" />
+                      <Label className="font-normal underline">{note.relationshipName}</Label>
+                    </div>
+                    <CardTitle className="mt-3 text-[15px] text-primary">
+                      {note.title || "Untitled note"}
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2 text-[13px]">
+                      {note.body || "This note has no content."}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardFooter className="flex h-10 items-center justify-between border-t px-4 text-[12px] text-primary/50">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="size-4 rounded-none" size="sm">
+                        <AvatarFallback className="rounded-none bg-cyan-600 text-[9px] text-white">
+                          Y
+                        </AvatarFallback>
+                      </Avatar>
+                      <Label className="font-normal">You</Label>
+                    </div>
+                    <Badge className="font-normal" variant="secondary">
+                      {relativeTime(note.occurredAt)}
+                    </Badge>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -836,49 +860,14 @@ function NoteDialog({
   );
   const [content, setContent] = React.useState<Value>(() => plateValue(note));
   const [meetingLinked, setMeetingLinked] = React.useState(Boolean(note?.meetingLinked));
-  const [liveLinked, setLiveLinked] = React.useState(note?.liveLinked ?? true);
-  const [liveRecord, setLiveRecord] = React.useState<RelationshipDetail | null>(null);
-  const [liveUpdatedAt, setLiveUpdatedAt] = React.useState<string | null>(null);
   const [maximized, setMaximized] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [saveState, setSaveState] = React.useState<"saved" | "saving" | "error">("saved");
   const lastSaved = React.useRef(
-    note ? JSON.stringify([title, relationshipId, content, meetingLinked, liveLinked]) : "",
+    note ? JSON.stringify([title, relationshipId, content, meetingLinked]) : "",
   );
   const editor = usePlateEditor({ plugins: notePlugins, value: content });
-  const snapshot = JSON.stringify([title, relationshipId, content, meetingLinked, liveLinked]);
-
-  const refreshLiveRecord = React.useCallback(async () => {
-    if (!relationshipId || !liveLinked) {
-      setLiveRecord(null);
-      return;
-    }
-    const detail = await getRelationship(relationshipId);
-    setLiveRecord(detail);
-    setLiveUpdatedAt(new Date().toISOString());
-  }, [liveLinked, relationshipId]);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    const refresh = async () => {
-      try {
-        const detail = await getRelationship(relationshipId);
-        if (!cancelled) {
-          setLiveRecord(detail);
-          setLiveUpdatedAt(new Date().toISOString());
-        }
-      } catch {
-        if (!cancelled) setLiveRecord(null);
-      }
-    };
-    if (!liveLinked || !relationshipId) return;
-    void refresh();
-    const timer = window.setInterval(() => void refresh(), 30_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [liveLinked, relationshipId]);
+  const snapshot = JSON.stringify([title, relationshipId, content, meetingLinked]);
 
   const publish = React.useCallback(
     async (eventType: "note" | "note_deleted") => {
@@ -903,7 +892,6 @@ function NoteDialog({
                     body,
                     content,
                     meetingLinked,
-                    liveLinked,
                   }
                 : { noteId },
           },
@@ -918,7 +906,7 @@ function NoteDialog({
         return false;
       }
     },
-    [content, liveLinked, meetingLinked, noteId, onError, onSaved, relationshipId, snapshot, title],
+    [content, meetingLinked, noteId, onError, onSaved, relationshipId, snapshot, title],
   );
 
   React.useEffect(() => {
@@ -927,8 +915,14 @@ function NoteDialog({
     return () => window.clearTimeout(timer);
   }, [publish, relationshipId, snapshot]);
 
+  const noteHasDraftContent = Boolean(title.trim() || plateText(content).trim());
+
   const closeEditor = async () => {
-    if (snapshot !== lastSaved.current && !(await publish("note"))) return;
+    const dirty = snapshot !== lastSaved.current;
+    // Empty drafts and notes without a linked company should still dismiss on close.
+    if (dirty && noteHasDraftContent && relationshipId) {
+      if (!(await publish("note"))) return;
+    }
     onClose();
   };
   const selectedRelationship = relationships.find((item) => item.id === relationshipId);
@@ -937,17 +931,17 @@ function NoteDialog({
     <Dialog open onOpenChange={(open) => !open && void closeEditor()}>
       <DialogContent
         showCloseButton={false}
-        className={`${maximized ? "h-screen w-screen" : "h-[min(588px,calc(100vh-32px))] w-[min(794px,calc(100vw-32px))]"} flex max-w-none translate-y-[-50%] flex-col gap-0 overflow-hidden border-border bg-[#17181a] p-0 shadow-2xl sm:max-w-none`}
+        className={`${maximized ? "h-screen w-screen" : "h-[min(588px,calc(100vh-32px))] w-[min(794px,calc(100vw-32px))]"} flex max-w-none translate-y-[-50%] flex-col gap-0 overflow-hidden border-border bg-background p-0 shadow-2xl sm:max-w-none`}
       >
         <DialogTitle className="sr-only">{title || "Untitled note"}</DialogTitle>
-        <div className="flex h-12 shrink-0 items-center justify-between border-b border-white/8 px-5">
-          <div className="flex min-w-0 items-center gap-2 text-[12px] text-white/80">
-            <Note className="size-3.5 text-white/50" />
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-5">
+          <div className="flex min-w-0 items-center gap-2 text-[12px] text-primary/80">
+            <Note className="size-3.5 text-primary/45" />
             <Select value={relationshipId || undefined} onValueChange={setRelationshipId}>
               <SelectTrigger
                 id="note-relationship"
                 aria-label="Linked company"
-                className="h-auto max-w-56 border-0 bg-transparent p-0 text-[12px] text-white/85 underline shadow-none focus:ring-0"
+                className="h-auto max-w-56 border-0 bg-transparent p-0 text-[12px] text-primary underline shadow-none focus:ring-0"
               >
                 <SelectValue placeholder="Link a company" />
               </SelectTrigger>
@@ -960,11 +954,11 @@ function NoteDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-2 text-white/50">
+          <div className="flex items-center gap-2 text-primary/45">
             <Button
               aria-label="Minimize note"
               type="button"
-              className="size-7 rounded-none text-white/50 hover:bg-white/5 hover:text-white"
+              className="size-7 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
               size="icon-xs"
               variant="ghost"
               onClick={() => void closeEditor()}
@@ -974,7 +968,7 @@ function NoteDialog({
             <Button
               aria-label={maximized ? "Restore note" : "Maximize note"}
               type="button"
-              className="size-7 rounded-none text-white/50 hover:bg-white/5 hover:text-white"
+              className="size-7 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
               size="icon-xs"
               variant="ghost"
               onClick={() => setMaximized((value) => !value)}
@@ -984,7 +978,7 @@ function NoteDialog({
             <Button
               aria-label="Close note"
               type="button"
-              className="size-7 rounded-none text-white/50 hover:bg-white/5 hover:text-white"
+              className="size-7 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
               size="icon-xs"
               variant="ghost"
               onClick={() => void closeEditor()}
@@ -993,16 +987,16 @@ function NoteDialog({
             </Button>
           </div>
         </div>
-        <div className="relative min-h-0 flex-1 overflow-auto px-[52px] pb-14 pt-[57px] text-white/80">
-          <div className="absolute right-[18px] top-1 flex items-center gap-3 text-[13px] text-white/55">
+        <div className="relative min-h-0 flex-1 overflow-auto px-[52px] pb-14 pt-[57px] text-primary/80">
+          <div className="absolute right-[18px] top-1 flex items-center gap-3 text-[13px] text-primary/55">
             <Avatar className="size-5 rounded-none">
-              <AvatarFallback className="rounded-none bg-cyan-600 text-[10px] font-semibold text-white">
+              <AvatarFallback className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/70">
                 Y
               </AvatarFallback>
             </Avatar>
             <Button
               type="button"
-              className="h-auto rounded-none px-0 py-0 text-[13px] text-white/55 hover:bg-transparent hover:text-white"
+              className="h-auto rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
               variant="ghost"
               onClick={async () => {
                 await navigator.clipboard.writeText(
@@ -1017,7 +1011,7 @@ function NoteDialog({
               <Button
                 aria-label="Note actions"
                 type="button"
-                className="size-7 rounded-none text-white/55 hover:bg-white/5 hover:text-white"
+                className="size-7 rounded-none text-primary/55 hover:bg-background-100 hover:text-primary"
                 size="icon-xs"
                 variant="ghost"
                 onClick={() => setMenuOpen((value) => !value)}
@@ -1025,10 +1019,10 @@ function NoteDialog({
                 <DotsThree className="size-4" />
               </Button>
               {menuOpen ? (
-                <div className="absolute right-0 top-8 z-10 w-36 border border-white/10 bg-[#202124] p-1 shadow-xl">
+                <div className="absolute right-0 top-8 z-10 w-36 border border-border bg-background p-1 shadow-xl">
                   <Button
                     type="button"
-                    className="h-auto w-full justify-start rounded-none px-3 py-2 text-[12px] text-red-400 hover:bg-white/5"
+                    className="h-auto w-full justify-start rounded-none px-3 py-2 text-[12px] text-destructive hover:bg-background-100"
                     variant="ghost"
                     onClick={async () => {
                       if (await publish("note_deleted")) onClose();
@@ -1042,16 +1036,16 @@ function NoteDialog({
           </div>
           <Input
             aria-label="Note title"
-            className="mt-8 h-auto rounded-none border-0 bg-transparent px-0 text-[32px] font-semibold leading-tight tracking-[-0.03em] text-white/85 shadow-none placeholder:text-white/55 focus-visible:ring-0"
+            className="mt-8 h-auto rounded-none border-0 bg-transparent px-0 text-[32px] font-semibold leading-tight tracking-[-0.03em] text-primary shadow-none placeholder:text-primary/45 focus-visible:ring-0"
             placeholder="Untitled note"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
           />
-          <div className="mt-3 flex items-center gap-4 text-[13px] text-white/55">
+          <div className="mt-3 flex items-center gap-4 text-[13px] text-primary/55">
             <Label
               className={cn(
-                "flex items-center gap-2 font-normal text-white/55",
-                selectedRelationship && "text-white/80 underline",
+                "flex items-center gap-2 font-normal text-primary/55",
+                selectedRelationship && "text-primary underline",
               )}
             >
               <Note className="size-3.5" />
@@ -1059,91 +1053,15 @@ function NoteDialog({
             </Label>
             <Button
               type="button"
-              className="h-auto rounded-none px-0 py-0 text-[13px] text-white/55 hover:bg-transparent hover:text-white"
+              className="h-auto rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
               variant="ghost"
               onClick={() => setMeetingLinked((value) => !value)}
             >
               <CalendarBlank className="size-4" />
               {meetingLinked ? "Meeting linked" : "Link a meeting"}
             </Button>
-            <Button
-              type="button"
-              className="h-auto rounded-none px-0 py-0 text-[13px] text-white/55 hover:bg-transparent hover:text-white"
-              variant="ghost"
-              onClick={() => setLiveLinked((value) => !value)}
-            >
-              <ArrowClockwise className={cn("size-4", liveLinked && "text-cyan-400")} />
-              {liveLinked ? "Live account context" : "Make this note live"}
-            </Button>
           </div>
-          {liveLinked ? (
-            <section
-              aria-live="polite"
-              className="mt-6 border border-white/10 bg-white/[0.025]"
-              data-capability="live-record-note"
-            >
-              <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
-                <div>
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-cyan-300/80">
-                    Live account context
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-white/55">
-                    Auto-refreshes every 30 seconds without changing your writing
-                  </p>
-                </div>
-                <Button
-                  aria-label="Refresh live account context"
-                  className="size-7 rounded-none border border-white/10 text-white/55 hover:bg-white/5 hover:text-white"
-                  onClick={() => void refreshLiveRecord().catch(() => setLiveRecord(null))}
-                  size="icon-xs"
-                  type="button"
-                  variant="ghost"
-                >
-                  <ArrowClockwise className="size-3.5" />
-                </Button>
-              </div>
-              {liveRecord ? (
-                <div className="grid grid-cols-2 gap-px bg-white/10 text-[12px] md:grid-cols-4">
-                  {[
-                    ["Health", liveRecord.relationship.health.replaceAll("_", " ")],
-                    ["Open commitments", String(liveRecord.relationship.commitmentCount ?? 0)],
-                    [
-                      "Last interaction",
-                      liveRecord.relationship.lastTouchAt
-                        ? relativeTime(liveRecord.relationship.lastTouchAt)
-                        : "No activity",
-                    ],
-                    [
-                      "Next action",
-                      liveRecord.relationship.nextAction ||
-                        liveRecord.relationship.stateReason ||
-                        "Not established",
-                    ],
-                  ].map(([label, value]) => (
-                    <div className="min-w-0 bg-[#17181a] p-3" key={label}>
-                      <p className="text-[10px] uppercase tracking-wide text-white/55">{label}</p>
-                      <p className="mt-1 truncate capitalize text-white/70">{value}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="px-3 py-4 text-[12px] text-white/55">
-                  Loading current account state…
-                </p>
-              )}
-              {liveRecord?.relationship.risks.length ? (
-                <p className="border-t border-white/10 px-3 py-2 text-[11px] text-amber-200/70">
-                  {liveRecord.relationship.risks.length} open risk
-                  {liveRecord.relationship.risks.length === 1 ? "" : "s"}:{" "}
-                  {liveRecord.relationship.risks.join(" · ")}
-                </p>
-              ) : null}
-              {liveUpdatedAt ? (
-                <p className="sr-only">Live context updated {relativeTime(liveUpdatedAt)}</p>
-              ) : null}
-            </section>
-          ) : null}
-          <div className="mt-6 flex items-center gap-1 border-y border-white/10 py-1">
+          <div className="mt-6 flex items-center gap-1 border-y border-border py-1">
             {[
               { label: "Bold", icon: TextB, run: () => editor.tf.toggleMark("bold") },
               { label: "Italic", icon: TextItalic, run: () => editor.tf.toggleMark("italic") },
@@ -1157,7 +1075,7 @@ function NoteDialog({
             ].map(({ label, icon: Icon, run }) => (
               <Button
                 aria-label={label}
-                className="size-8 rounded-none text-white/50 hover:bg-white/5 hover:text-white"
+                className="size-8 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
                 key={label}
                 onMouseDown={(event) => {
                   event.preventDefault();
@@ -1174,32 +1092,32 @@ function NoteDialog({
           <Plate editor={editor} onChange={({ value }) => setContent(value)}>
             <PlateContent
               aria-label="Note content"
-              className="mt-6 min-h-24 text-[14px] leading-6 text-white/80 outline-none [&_.slate-blockquote]:my-3 [&_.slate-blockquote]:border-l-2 [&_.slate-blockquote]:border-cyan-400/40 [&_.slate-blockquote]:pl-3 [&_.slate-blockquote]:text-white/60 [&_.slate-h2]:my-3 [&_.slate-h2]:text-xl [&_.slate-h2]:font-semibold [&_[data-slate-placeholder]]:text-white/55"
+              className="mt-6 min-h-24 text-[14px] leading-6 text-primary/80 outline-none [&_.slate-blockquote]:my-3 [&_.slate-blockquote]:border-l-2 [&_.slate-blockquote]:border-primary/25 [&_.slate-blockquote]:pl-3 [&_.slate-blockquote]:text-primary/60 [&_.slate-h2]:my-3 [&_.slate-h2]:text-xl [&_.slate-h2]:font-semibold [&_[data-slate-placeholder]]:text-primary/45"
               placeholder="Start typing your note"
             />
           </Plate>
           {bodyEmpty ? (
-            <div className="mt-6 space-y-7 text-[13px] text-white/55">
+            <div className="mt-6 space-y-7 text-[13px] text-primary/55">
               <div>
-                <p className="text-[10px] font-medium uppercase tracking-wide text-white/50">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-primary/45">
                   Favorite templates
                 </p>
                 <p className="mt-2">Templates that you favorite will appear here</p>
               </div>
               <div className="space-y-3">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-white/50">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-primary/45">
                   Actions
                 </p>
                 <Button
                   type="button"
-                  className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-white/55 hover:bg-transparent hover:text-white"
+                  className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
                   variant="ghost"
                 >
                   <Note className="size-4" /> View all templates
                 </Button>
                 <Button
                   type="button"
-                  className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-white/55 hover:bg-transparent hover:text-white"
+                  className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
                   variant="ghost"
                 >
                   <Note className="size-4" /> Create new template
@@ -1209,7 +1127,7 @@ function NoteDialog({
           ) : null}
           {saveState !== "saved" ? (
             <Label
-              className={`absolute right-5 bottom-3 text-[11px] font-normal ${saveState === "error" ? "text-red-400" : "text-white/55"}`}
+              className={`absolute right-5 bottom-3 text-[11px] font-normal ${saveState === "error" ? "text-destructive" : "text-primary/55"}`}
             >
               {saveState === "saving" ? "Saving…" : "Save failed"}
             </Label>
@@ -1218,7 +1136,7 @@ function NoteDialog({
         <Button
           aria-label="Insert content"
           type="button"
-          className="absolute bottom-3 left-4 size-5 rounded-none border border-white/10 p-0 text-white/55 hover:bg-white/5 hover:text-white"
+          className="absolute bottom-3 left-4 size-5 rounded-none border border-border p-0 text-primary/55 hover:bg-background-100 hover:text-primary"
           size="icon-xs"
           variant="ghost"
         >
@@ -1328,44 +1246,26 @@ export function TasksView({ onError, onNotice }: ViewProps) {
           <ListSkeleton />
         </div>
       ) : visible.length === 0 ? (
-        <div className="flex min-h-[560px] flex-1 flex-col justify-between px-16 py-14">
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <div className="relative flex size-48 items-center justify-center border-x border-dashed border-border/60 before:absolute before:inset-x-[-30px] before:top-1/2 before:border-t before:border-dashed before:border-border/60">
-              <ListChecks className="relative z-10 size-16 text-primary/25" weight="thin" />
-            </div>
-            <p className="mt-4 text-[22px] font-semibold text-primary">Tasks</p>
-            <p className="mt-1 max-w-64 text-[14px] leading-5 text-primary/50">
-              No tasks yet! Create your first
-              <br />
-              task to get started.
-            </p>
+        <WorkspaceEmptyState
+          action={
             <Button
-              className="mt-4 bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-              size="sm"
+              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
               onClick={() => setCreating(true)}
+              size="sm"
             >
               <Plus /> New task
             </Button>
-          </div>
-          <div>
-            <p className="mb-3 text-[12px] text-primary/45">Learn more</p>
-            <div className="grid grid-cols-2 gap-3">
-              {["Notes, Tasks, and Email sending", "Introduction to tasks"].map((label) => (
-                <div
-                  key={label}
-                  className="flex h-20 items-center gap-4 border border-border px-4 text-[13px] text-primary"
-                >
-                  <Avatar className="size-12 rounded-none">
-                    <AvatarFallback className="rounded-none border border-border">
-                      <SquaresFour className="size-6 text-primary/45" />
-                    </AvatarFallback>
-                  </Avatar>
-                  {label}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+          }
+          description={
+            <>
+              No tasks yet! Create your first
+              <br />
+              task to get started.
+            </>
+          }
+          image="tasks"
+          title="Tasks"
+        />
       ) : (
         <ul className="divide-y divide-border">
           {visible.map((task) => {

@@ -663,18 +663,22 @@ export function RelationshipsView({
             </div>
           ) : companies.length === 0 ? (
             <EmptyBlock
-              icon={<Buildings className="size-6" />}
-              title="No matching companies"
               body={
                 hasConnectedSource
                   ? "Gmail is connected. Run the 90-day audit from Commitments to discover companies and the people behind each conversation."
                   : "Connect Gmail to discover companies from real conversations, or add one by hand."
               }
+              image="companies"
+              learnMore={[
+                { label: "One model per account" },
+                { label: "People roll up to companies" },
+              ]}
+              title="Companies"
             >
               <Button
-                size="sm"
-                className="bg-[#3478f6] text-white"
+                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
                 onClick={() => setCreating(true)}
+                size="sm"
               >
                 <Plus /> Add company
               </Button>

@@ -1,8 +1,17 @@
 "use client";
 
 import * as React from "react";
-import { CheckCircle, EnvelopeSimple, PaperPlaneTilt, Prohibit, WarningCircle } from "@/lib/icons";
+import Image from "next/image";
+import {
+  CheckCircle,
+  EnvelopeSimple,
+  PaperPlaneTilt,
+  Prohibit,
+  SquaresFour,
+  WarningCircle,
+} from "@/lib/icons";
 
+import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@oppulence/ui/components/card";
 import {
@@ -144,30 +153,191 @@ export function ListSkeleton({ rows = 3 }: { rows?: number }) {
   );
 }
 
+export type WorkspaceLearnMoreItem = {
+  label: string;
+};
+
+const DEFAULT_LEARN_MORE: WorkspaceLearnMoreItem[] = [
+  { label: "Notes, Tasks, and Email sending" },
+  { label: "Introduction to tasks" },
+];
+
+type WorkspaceEmptyImageSet = {
+  light: string;
+  dark: string;
+};
+
+const emptyImage = (name: string): WorkspaceEmptyImageSet => ({
+  light: `/marketing/relationship-system/${name}-empty-light-v2.png`,
+  dark: `/marketing/relationship-system/${name}-empty-v2.png`,
+});
+
+/** Hero illustrations for workspace empty states (commitment-queue style). */
+export const workspaceEmptyImages = {
+  actions: emptyImage("actions"),
+  agents: emptyImage("agents"),
+  audits: emptyImage("audits"),
+  commitments: {
+    light: "/marketing/relationship-system/commitment-queue-empty-light-v2.png",
+    dark: "/marketing/relationship-system/commitment-queue-empty-v2.png",
+  },
+  companies: emptyImage("companies"),
+  impact: emptyImage("impact"),
+  notes: emptyImage("notes"),
+  openPromises: emptyImage("open-promises"),
+  people: emptyImage("people"),
+  recovery: emptyImage("recovery"),
+  sources: emptyImage("sources"),
+  tasks: emptyImage("tasks"),
+  workflows: emptyImage("workflows"),
+} as const satisfies Record<string, WorkspaceEmptyImageSet>;
+
+export type WorkspaceEmptyImageKey = keyof typeof workspaceEmptyImages;
+
+const EMPTY_ILLUSTRATION_CLASS = "mb-4 h-[150px] w-[225px] object-cover opacity-90";
+
+/** Theme-aware hero art: light illustration in light mode, dark in dark mode. */
+export function WorkspaceEmptyIllustration({ image }: { image: WorkspaceEmptyImageKey }) {
+  const set = workspaceEmptyImages[image];
+  return (
+    <>
+      <Image
+        alt=""
+        aria-hidden="true"
+        className={cn(EMPTY_ILLUSTRATION_CLASS, "dark:hidden")}
+        height={160}
+        priority
+        src={set.light}
+        width={240}
+      />
+      <Image
+        alt=""
+        aria-hidden="true"
+        className={cn(EMPTY_ILLUSTRATION_CLASS, "hidden dark:block")}
+        height={160}
+        priority
+        src={set.dark}
+        width={240}
+      />
+    </>
+  );
+}
+
+/** Tasks-style empty canvas shared across workspace revenue surfaces. */
+export function WorkspaceEmptyState({
+  image,
+  icon,
+  title,
+  description,
+  action,
+  learnMore = DEFAULT_LEARN_MORE,
+}: {
+  image?: WorkspaceEmptyImageKey;
+  icon?: React.ReactNode;
+  title: string;
+  description: React.ReactNode;
+  action?: React.ReactNode;
+  learnMore?: WorkspaceLearnMoreItem[];
+}) {
+  const illustrated = Boolean(image);
+
+  return (
+    <div
+      className={cn(
+        "flex min-h-[520px] flex-1 flex-col text-center",
+        illustrated ? "items-center px-6 pt-[84px]" : "justify-between px-16 py-14",
+      )}
+    >
+      <div
+        className={cn(
+          "flex flex-col items-center",
+          illustrated ? "w-full" : "flex flex-1 flex-col justify-center",
+        )}
+      >
+        {image ? (
+          <WorkspaceEmptyIllustration image={image} />
+        ) : icon ? (
+          <div className="relative flex size-48 items-center justify-center border-x border-dashed border-border/60 before:absolute before:inset-x-[-30px] before:top-1/2 before:border-t before:border-dashed before:border-border/60">
+            {icon}
+          </div>
+        ) : null}
+        <h2
+          className={cn(
+            "font-semibold text-primary",
+            illustrated ? "text-[20px] leading-6" : "mt-4 text-[22px]",
+          )}
+        >
+          {title}
+        </h2>
+        <p
+          className={cn(
+            "max-w-md",
+            illustrated
+              ? "mt-2 text-sm leading-6 text-primary/55"
+              : "mt-1 max-w-sm text-[14px] leading-5 text-primary/50",
+          )}
+        >
+          {description}
+        </p>
+        {action ? (
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">{action}</div>
+        ) : null}
+      </div>
+      {learnMore.length > 0 ? (
+        <div className={cn("w-full", illustrated ? "mb-4 mt-auto max-w-[640px] text-left" : "")}>
+          <p className={cn("text-[12px] text-primary/45", illustrated ? "mb-2" : "mb-3")}>
+            Learn more
+          </p>
+          <div className={cn("grid gap-2 sm:grid-cols-2", !illustrated && "grid-cols-2 gap-3")}>
+            {learnMore.map((item) => (
+              <div
+                className={cn(
+                  "flex items-center gap-4 text-[13px] text-primary",
+                  illustrated
+                    ? "h-[72px] justify-start border border-border bg-background-50 px-3 text-primary/80"
+                    : "h-20 border border-border px-4",
+                )}
+                key={item.label}
+              >
+                <Avatar className={cn("rounded-none", illustrated ? "size-10" : "size-12")}>
+                  <AvatarFallback className="rounded-none border border-border bg-background text-primary/45">
+                    <SquaresFour className={illustrated ? "size-4" : "size-6"} />
+                  </AvatarFallback>
+                </Avatar>
+                {item.label}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function EmptyBlock({
+  image,
   icon,
   title,
   body,
   children,
+  learnMore,
 }: {
-  icon: React.ReactNode;
+  image?: WorkspaceEmptyImageKey;
+  icon?: React.ReactNode;
   title: string;
   body?: string;
   children?: React.ReactNode;
+  learnMore?: WorkspaceLearnMoreItem[];
 }) {
   return (
-    <Empty className="min-h-[70vh] flex-1 border-0 py-16">
-      <EmptyHeader>
-        <EmptyMedia className="text-primary/35" variant="icon">
-          {icon}
-        </EmptyMedia>
-        <EmptyTitle className="text-base text-primary">{title}</EmptyTitle>
-        {body ? (
-          <EmptyDescription className="mx-auto max-w-sm text-primary/60">{body}</EmptyDescription>
-        ) : null}
-      </EmptyHeader>
-      {children ? <EmptyContent>{children}</EmptyContent> : null}
-    </Empty>
+    <WorkspaceEmptyState
+      action={children}
+      description={body ?? ""}
+      icon={icon}
+      image={image}
+      learnMore={learnMore}
+      title={title}
+    />
   );
 }
 

@@ -3,7 +3,6 @@
 import "client-only";
 
 import * as React from "react";
-import Image from "next/image";
 import {
   ArrowClockwise,
   Check,
@@ -54,6 +53,7 @@ import {
   SelectValue,
 } from "@oppulence/ui/components/select";
 import { cn } from "@oppulence/ui/lib/utils";
+import { WorkspaceEmptyIllustration } from "@/components/revenue/shared";
 
 import type {
   CommitmentRegisterFilter,
@@ -776,15 +776,7 @@ export function CommitmentQueue({
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[84px] text-center">
-          <Image
-            alt=""
-            aria-hidden="true"
-            className="mb-4 h-[150px] w-[225px] object-cover opacity-90"
-            height={160}
-            priority
-            src="/marketing/relationship-system/commitment-queue-empty-v2.png"
-            width={240}
-          />
+          <WorkspaceEmptyIllustration image="commitments" />
           <h2 className="text-[20px] font-semibold leading-6 text-primary">
             {items.length === 0 ? "Commitment Queue" : "No commitments match this view"}
           </h2>

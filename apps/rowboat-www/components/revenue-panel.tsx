@@ -366,15 +366,13 @@ export function RevenuePanel({
             onScan={runScan}
           />
         ) : (
-          <div className="p-4">
-            <WorkspaceView
-              workspace={workspace}
-              onLinked={setWorkspace}
-              onError={setBanner}
-              onNotice={setNoticeMsg}
-              onOpenConnectors={onOpenConnectors}
-            />
-          </div>
+          <WorkspaceView
+            onError={setBanner}
+            onLinked={setWorkspace}
+            onNotice={setNoticeMsg}
+            onOpenConnectors={onOpenConnectors}
+            workspace={workspace}
+          />
         )}
       </div>
     </div>

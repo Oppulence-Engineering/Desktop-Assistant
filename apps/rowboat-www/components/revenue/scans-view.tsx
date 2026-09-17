@@ -6,15 +6,8 @@ import { CheckCircle, MagnifyingGlass, Plugs, WarningCircle } from "@/lib/icons"
 import { Badge } from "@oppulence/ui/components/badge";
 import { Label } from "@oppulence/ui/components/label";
 import { Button } from "@oppulence/ui/components/button";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@oppulence/ui/components/empty";
 import { Spinner } from "@oppulence/ui/components/spinner";
+import { WorkspaceEmptyState } from "@/components/revenue/shared";
 import {
   Table,
   TableBody,
@@ -61,18 +54,14 @@ export function ScansView({
       </div>
 
       {rows.length === 0 ? (
-        <Empty className="flex min-h-[70vh] flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
-          <EmptyMedia className="flex size-12 items-center justify-center text-primary/35">
-            <MagnifyingGlass className="size-6" />
-          </EmptyMedia>
-          <EmptyHeader>
-            <EmptyTitle className="text-base font-medium text-primary">No audits yet</EmptyTitle>
-            <EmptyDescription className="mx-auto mt-1 max-w-sm text-sm text-primary/60">
-              Run your first audit to build a reviewable Commitment Queue from Gmail evidence.
-            </EmptyDescription>
-          </EmptyHeader>
-          <EmptyContent>
-            <Button size="sm" onClick={onScan} disabled={scanning}>
+        <WorkspaceEmptyState
+          action={
+            <Button
+              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              disabled={scanning}
+              onClick={onScan}
+              size="sm"
+            >
               {needsReconnect ? (
                 <>
                   <Plugs /> Reconnect Google
@@ -81,8 +70,21 @@ export function ScansView({
                 <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run audit</>
               )}
             </Button>
-          </EmptyContent>
-        </Empty>
+          }
+          description={
+            <>
+              No audits yet! Run your first audit
+              <br />
+              to build the commitment register.
+            </>
+          }
+          image="audits"
+          learnMore={[
+            { label: "Promise Leak Audit explained" },
+            { label: "How evidence becomes commitments" },
+          ]}
+          title="Audits"
+        />
       ) : (
         <div className="min-w-0 flex-1 overflow-auto">
           <Table className="min-w-[760px]">

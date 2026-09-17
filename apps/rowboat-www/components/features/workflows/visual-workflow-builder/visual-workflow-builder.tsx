@@ -444,7 +444,7 @@ export function VisualWorkflowBuilder({
   return (
     <section
       className={cn(
-        "grid min-h-0 flex-1 grid-cols-1 overflow-hidden border-t border-border bg-background lg:grid-cols-[minmax(0,1fr)_320px]",
+        "grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(440px,1fr)_auto] overflow-y-auto border-t border-border bg-background md:grid-cols-[minmax(0,1fr)_320px] md:grid-rows-1 md:overflow-hidden",
         className,
       )}
       data-slot="visual-workflow-builder"
@@ -485,7 +485,7 @@ export function VisualWorkflowBuilder({
         </div>
       </div>
 
-      <aside className="min-h-0 overflow-y-auto border-l border-border bg-background">
+      <aside className="min-h-0 border-t border-border bg-background md:overflow-y-auto md:border-l md:border-t-0">
         <div className="sticky top-0 z-10 flex h-11 items-center justify-between border-b border-border bg-background px-4">
           <p className="text-[12px] font-medium">Step configuration</p>
           <Badge className="rounded-none text-[10px]" variant="outline">

@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRightIcon, CircleNotchIcon, ExportIcon, PlugsIcon, WarningIcon } from "@/lib/icons";
 
+import { WorkspaceEmptyState } from "@/components/revenue/shared";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import { Label } from "@oppulence/ui/components/label";
@@ -176,18 +177,22 @@ function ReportBody() {
 // Step one, and the only thing asked for. No model key, no workspace setup.
 function ConnectStep() {
   return (
-    <section className="border border-border bg-background-50 p-5">
-      <h2 className="text-[15px] font-medium text-primary">Connect Gmail to begin</h2>
-      <p className="mt-1.5 max-w-lg text-[13px] leading-relaxed text-primary/60">
-        Oppulence reads the last 90 days to find promises. Nothing is sent, written, or replied to
-        on your behalf.
-      </p>
-      <Button asChild className="mt-4 bg-[#3478f6] text-white hover:bg-[#2f6fe6]">
-        <Link href="/app/settings">
-          <PlugsIcon /> Connect Gmail &amp; Calendar
-        </Link>
-      </Button>
-    </section>
+    <WorkspaceEmptyState
+      action={
+        <Button asChild className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]" size="sm">
+          <Link href="/app/settings">
+            <PlugsIcon /> Connect Gmail &amp; Calendar
+          </Link>
+        </Button>
+      }
+      description="Oppulence reads the last 90 days to find promises. Nothing is sent, written, or replied to on your behalf."
+      image="openPromises"
+      learnMore={[
+        { label: "See exact message evidence" },
+        { label: "Nothing is sent on your behalf" },
+      ]}
+      title="Open promises"
+    />
   );
 }
 
@@ -195,42 +200,50 @@ function ConnectStep() {
 // that cannot read anything.
 function ReconnectStep() {
   return (
-    <section className="border border-destructive/40 bg-destructive/[0.04] p-5">
-      <h2 className="flex items-center gap-2 text-[15px] font-medium text-primary">
-        <WarningIcon className="size-4 text-destructive" /> Google needs reconnecting
-      </h2>
-      <p className="mt-1.5 max-w-lg text-[13px] leading-relaxed text-primary/60">
-        Google stopped accepting the authorization, so we cannot read your mail. Reconnect to run
-        the audit.
-      </p>
-      <Button asChild className="mt-4 bg-[#3478f6] text-white hover:bg-[#2f6fe6]">
-        <Link href="/app/settings">
-          <PlugsIcon /> Reconnect Google
-        </Link>
-      </Button>
-    </section>
+    <WorkspaceEmptyState
+      action={
+        <Button asChild className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]" size="sm">
+          <Link href="/app/settings">
+            <PlugsIcon /> Reconnect Google
+          </Link>
+        </Button>
+      }
+      description="Google stopped accepting the authorization, so we cannot read your mail. Reconnect to run the audit."
+      image="openPromises"
+      learnMore={[
+        { label: "See exact message evidence" },
+        { label: "Nothing is sent on your behalf" },
+      ]}
+      title="Open promises"
+    />
   );
 }
 
 function StartStep({ onRun, busy }: { onRun: () => void; busy: boolean }) {
   return (
-    <section className="border border-border bg-background-50 p-5">
-      <h2 className="text-[15px] font-medium text-primary">Read the last 90 days</h2>
-      <p className="mt-1.5 max-w-lg text-[13px] leading-relaxed text-primary/60">
-        This takes a few minutes. You can leave the page and come back.
-      </p>
-      <Button
-        className="mt-4 bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-        disabled={busy}
-        onClick={() => {
-          onRun();
-        }}
-        type="button"
-      >
-        {busy ? <CircleNotchIcon className="animate-spin" /> : <ArrowRightIcon />}
-        {busy ? "Starting" : "Find my open promises"}
-      </Button>
-    </section>
+    <WorkspaceEmptyState
+      action={
+        <Button
+          className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+          disabled={busy}
+          onClick={() => {
+            onRun();
+          }}
+          size="sm"
+          type="button"
+        >
+          {busy ? <CircleNotchIcon className="animate-spin" /> : <ArrowRightIcon />}
+          {busy ? "Starting" : "Find my open promises"}
+        </Button>
+      }
+      description="Read the last 90 days to surface commitments with no evidence of fulfilment. This takes a few minutes — you can leave and come back."
+      image="openPromises"
+      learnMore={[
+        { label: "See exact message evidence" },
+        { label: "Nothing is sent on your behalf" },
+      ]}
+      title="Open promises"
+    />
   );
 }
 

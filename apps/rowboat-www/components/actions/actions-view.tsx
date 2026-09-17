@@ -16,13 +16,6 @@ import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/al
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import { Card, CardContent, CardFooter } from "@oppulence/ui/components/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@oppulence/ui/components/empty";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import {
   Dialog,
@@ -35,7 +28,7 @@ import {
 import { Textarea } from "@oppulence/ui/components/textarea";
 import { capture, ActionEvents } from "@/lib/analytics";
 import { ActionAPIError, approve, execute, listPending, reject } from "@/lib/actions";
-import { errMessage, ListSkeleton } from "@/components/revenue/shared";
+import { errMessage, ListSkeleton, WorkspaceEmptyState } from "@/components/revenue/shared";
 import { ActionAuditSheet } from "@/components/actions/audit-sheet";
 import type { ActionProposal, ActionStatus } from "@/types/actions";
 
@@ -212,16 +205,19 @@ export function ActionsView() {
         <ListSkeleton rows={3} />
       ) : disabled ? (
         <ActionsEmpty
-          title="Closed-loop actions are not enabled"
-          // Was: "The action broker ships dark. Once ACTIONS_ENABLED is turned
-          // on for your workspace…" — an internal flag name shown to a customer
-          // who cannot set it, describing a rollout state in our own words.
-          body="Approvals are not switched on for this workspace yet. When they are, every action an agent proposes will wait here for you to approve before anything happens."
+          description="Approvals are not switched on for this workspace yet. When they are, every finance action an agent proposes will wait here before anything happens."
+          title="Actions"
         />
       ) : proposals.length === 0 ? (
         <ActionsEmpty
-          title="No pending actions"
-          body="When an agent proposes a finance action — advancing a dunning step, marking a dispute — it lands here for your approval."
+          description={
+            <>
+              No pending actions yet! Agent proposals
+              <br />
+              will land here for your approval.
+            </>
+          }
+          title="Actions"
         />
       ) : (
         <ul className="flex flex-col gap-3 p-3">
@@ -363,19 +359,17 @@ function ExecutedNote({ proposal }: { proposal: ActionProposal }) {
   );
 }
 
-function ActionsEmpty({ title, body }: { title: string; body: string }) {
+function ActionsEmpty({ title, description }: { title: string; description: React.ReactNode }) {
   return (
-    <Empty className="flex min-h-[70vh] flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
-      <EmptyMedia className="flex size-12 items-center justify-center text-primary/35">
-        <ListChecks className="size-6" />
-      </EmptyMedia>
-      <EmptyHeader>
-        <EmptyTitle className="text-base font-medium text-primary">{title}</EmptyTitle>
-        <EmptyDescription className="mx-auto mt-1 max-w-sm text-sm text-primary/60">
-          {body}
-        </EmptyDescription>
-      </EmptyHeader>
-    </Empty>
+    <WorkspaceEmptyState
+      description={description}
+      image="actions"
+      learnMore={[
+        { label: "Approve before anything executes" },
+        { label: "Audit trail for every action" },
+      ]}
+      title={title}
+    />
   );
 }
 

@@ -7,7 +7,6 @@ import {
   CircleNotch,
   Code,
   Copy,
-  Folder,
   Plus,
   Robot,
   Trash,
@@ -18,13 +17,6 @@ import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/al
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import { CardDescription } from "@oppulence/ui/components/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@oppulence/ui/components/empty";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +30,7 @@ import { Input } from "@oppulence/ui/components/input";
 import { Label } from "@oppulence/ui/components/label";
 import { ScrollArea } from "@oppulence/ui/components/scroll-area";
 import { Textarea } from "@oppulence/ui/components/textarea";
+import { WorkspaceEmptyState } from "@/components/revenue/shared";
 
 import { dashboardFetch } from "@/lib/auth/client";
 import { parseAgentsResponse, type AgentSummary } from "@/lib/agents/agent-schemas";
@@ -308,17 +301,15 @@ export function AgentsView({
       ) : null}
 
       {agents.length === 0 && !error ? (
-        <Empty className="flex-1 border-0">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Folder className="size-8 text-muted-foreground" />
-            </EmptyMedia>
-            <EmptyTitle className="text-sm">No agents are available</EmptyTitle>
-            <EmptyDescription className="text-xs leading-5">
-              Agent definitions will appear here after they are provisioned for this workspace.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <WorkspaceEmptyState
+          description="Create an agent to give recurring work a clear role, instructions, and tools."
+          image="agents"
+          learnMore={[
+            { label: "Give each agent one clear responsibility" },
+            { label: "Control the tools each agent can use" },
+          ]}
+          title="Agents"
+        />
       ) : (
         <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-[auto_minmax(0,1fr)] md:grid-cols-[220px_minmax(0,1fr)] md:grid-rows-1">
           <aside className="max-h-52 min-h-0 border-b bg-muted/5 md:max-h-none md:border-r md:border-b-0">

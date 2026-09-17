@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChartLineUp, EnvelopeSimple, WarningDiamond } from "@/lib/icons";
+import { EnvelopeSimple, WarningDiamond } from "@/lib/icons";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { Badge } from "@oppulence/ui/components/badge";
@@ -49,9 +49,10 @@ export function ImpactView({ onError }: { onError: (m: string) => void }) {
   if (data.surfaced === 0 && data.atRiskRelationships === 0 && data.overdueCommitments === 0) {
     return (
       <EmptyBlock
-        icon={<ChartLineUp className="size-6" />}
-        title="No impact to show yet"
-        body="Run a scan and start reviewing actions — results (replies, meetings, wins) show up here as they come in."
+        body="Run a scan and start reviewing actions — replies, meetings, and wins show up here as they come in."
+        image="impact"
+        learnMore={[{ label: "Track recovery outcomes" }, { label: "Measure portfolio risk" }]}
+        title="Impact"
       />
     );
   }

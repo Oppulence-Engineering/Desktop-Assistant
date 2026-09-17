@@ -25,6 +25,7 @@ import {
 } from "@oppulence/ui/components/empty";
 import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
+import { WorkspaceEmptyState } from "@/components/revenue/shared";
 import {
   Dialog,
   DialogContent,
@@ -151,25 +152,43 @@ export function QueueView({
         </div>
       ) : empty ? (
         filter === "open" ? (
-          <QueueEmpty
-            icon={<MagnifyingGlass className="size-6" />}
-            title="No recovery drafts"
-            body="Run a Promise Leak Audit or draft recovery from a confirmed commitment."
-          >
-            <Button size="sm" onClick={onScan} disabled={scanning}>
-              {needsReconnect ? (
-                <>
-                  <Plugs /> Reconnect Google
-                </>
-              ) : (
-                <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run audit</>
-              )}
-            </Button>
-          </QueueEmpty>
+          <WorkspaceEmptyState
+            action={
+              <Button
+                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+                disabled={scanning}
+                onClick={onScan}
+                size="sm"
+              >
+                {needsReconnect ? (
+                  <>
+                    <Plugs /> Reconnect Google
+                  </>
+                ) : (
+                  <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run audit</>
+                )}
+              </Button>
+            }
+            description={
+              <>
+                No recovery drafts yet! Run an audit
+                <br />
+                or draft recovery from a commitment.
+              </>
+            }
+            image="recovery"
+            learnMore={[
+              { label: "Approve recovery before sending" },
+              { label: "Draft from confirmed commitments" },
+            ]}
+            title="Recovery"
+          />
         ) : (
-          <QueueEmpty
-            icon={<ClockCounterClockwise className="size-6" />}
-            title={`Nothing ${filter}`}
+          <WorkspaceEmptyState
+            description={`Nothing in the ${filter} queue right now.`}
+            image="recovery"
+            learnMore={[]}
+            title="Recovery"
           />
         )
       ) : (
@@ -344,35 +363,6 @@ function ActionCard({
         </div>
       </CardFooter>
     </Card>
-  );
-}
-
-function QueueEmpty({
-  icon,
-  title,
-  body,
-  children,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  body?: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <Empty className="flex min-h-[70vh] flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
-      <EmptyMedia className="flex size-12 items-center justify-center text-primary/35">
-        {icon}
-      </EmptyMedia>
-      <EmptyHeader>
-        <EmptyTitle className="text-base font-medium text-primary">{title}</EmptyTitle>
-        {body ? (
-          <EmptyDescription className="mx-auto mt-1 max-w-sm text-sm text-primary/60">
-            {body}
-          </EmptyDescription>
-        ) : null}
-      </EmptyHeader>
-      {children ? <EmptyContent>{children}</EmptyContent> : null}
-    </Empty>
   );
 }
 
