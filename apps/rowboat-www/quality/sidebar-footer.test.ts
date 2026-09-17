@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { sourceHealth, trialDaysRemaining } from "@/components/app-shell";
+import {
+  connectedSourceCount,
+  googleNeedsReconnect,
+  revenueTabFromParam,
+  revenueTabSearch,
+  sourceHealth,
+  trialDaysRemaining,
+} from "@/components/app-shell";
 import type { RelationshipSourceStatus } from "@/types/revenue";
 
 const inDays = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
@@ -52,5 +59,66 @@ describe("sidebar source status", () => {
     expect(
       sourceHealth([source({ status: "stale" }), source({ completeness: "partial" })]),
     ).toEqual({ tone: "attention", label: "2 sources are behind" });
+  });
+
+  // The status card's meter reads "connected / total". A source that needs
+  // reconnecting delivers nothing, so counting it would show a full meter over
+  // a dead grant.
+  it("does not count a source that stopped reporting as connected", () => {
+    expect(
+      connectedSourceCount([
+        source(),
+        source({ status: "reconnect_required" }),
+        source({ status: "disconnected" }),
+        source({ status: "backfilling", completeness: "partial" }),
+      ]),
+    ).toBe(2);
+  });
+});
+
+describe("audit reconnect guard", () => {
+  const google = (status: string, sourceAccountId = "me@x.co") =>
+    ({ source: "google", sourceAccountId, status }) as RelationshipSourceStatus;
+
+  it("sends the user to reconnect when every Google account stopped", () => {
+    expect(googleNeedsReconnect([google("reconnect_required")])).toBe(true);
+    expect(googleNeedsReconnect([google("disconnected"), google("reconnect_required", "b")])).toBe(
+      true,
+    );
+  });
+
+  // The desktop app can record a reconnect under "default" while the failed
+  // row keeps the email. One working account means the audit can run.
+  it("lets the audit run when any Google account works again", () => {
+    expect(
+      googleNeedsReconnect([google("reconnect_required"), google("connected", "default")]),
+    ).toBe(false);
+  });
+
+  // With no rows the audit runs, fails if it must, and marks the real account.
+  it("does not block when nothing is known about Google yet", () => {
+    expect(googleNeedsReconnect([])).toBe(false);
+    expect(
+      googleNeedsReconnect([
+        { source: "slack", status: "reconnect_required" } as RelationshipSourceStatus,
+      ]),
+    ).toBe(false);
+  });
+});
+
+describe("revenue tab address", () => {
+  it("round-trips every tab through the query string", () => {
+    for (const tab of ["people", "queue", "scans", "workspace", "commitments"] as const) {
+      const search = revenueTabSearch(tab);
+      expect(revenueTabFromParam(new URLSearchParams(search).get("tab"))).toBe(tab);
+    }
+    expect(revenueTabSearch("commitments")).toBe("");
+  });
+
+  // A hand-edited or stale link must not render an empty view.
+  it("falls back to Commitments for an unknown or inherited key", () => {
+    expect(revenueTabFromParam("bogus")).toBe("commitments");
+    expect(revenueTabFromParam("toString")).toBe("commitments");
+    expect(revenueTabFromParam(null)).toBe("commitments");
   });
 });

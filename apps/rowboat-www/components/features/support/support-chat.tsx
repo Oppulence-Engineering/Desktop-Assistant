@@ -27,6 +27,7 @@ interface PlainAPI {
   init: (options: Record<string, unknown>) => void;
   isInitialized?: () => boolean;
   setCustomerDetails?: (details: Record<string, unknown>) => void;
+  open?: () => void;
 }
 
 declare global {

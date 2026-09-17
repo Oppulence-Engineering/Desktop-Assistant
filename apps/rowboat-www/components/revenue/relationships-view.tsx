@@ -1754,7 +1754,7 @@ function RelationshipSheet({
       <SheetContent
         overlayClassName="bg-transparent"
         closeButtonClassName="left-4 right-auto"
-        className="left-0 flex w-full flex-col gap-0 overflow-hidden border-l-0 p-0 shadow-none sm:max-w-none md:left-[274px] md:w-[calc(100%-274px)]"
+        className="left-0 flex w-full flex-col gap-0 overflow-hidden border-l-0 p-0 shadow-none sm:max-w-none md:left-[285px] md:w-[calc(100%-285px)]"
       >
         <SheetHeader className="min-h-12 flex-row items-center border-b border-border py-2 pl-14 pr-3">
           <SheetTitle className="text-xs font-normal text-primary/55">
