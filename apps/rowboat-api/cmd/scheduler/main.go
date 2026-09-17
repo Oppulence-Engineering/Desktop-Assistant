@@ -60,18 +60,16 @@ func main() {
 }
 
 func run(cfg appconfig.Config, log *zap.Logger) error {
+	// These are core scheduler responsibilities, not rollout options. Setting
+	// the legacy booleans before validation preserves the shared Config
+	// validator while making environment attempts to disable them ineffective.
+	cfg.CloudSchedulerEnabled = true
+	cfg.GoogleWatchEnabled = true
+	cfg.RevenueMailPushSyncEnabled = true
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
-	// Disabled is a clean no-op exit, mirroring the worker's
-	// TEMPORAL_WORKER_ENABLED guard so the Deployment can ship dark. The
-	// process hosts two independent loops: the task scheduler (RFC 001) and
-	// the Google watch manager (RFC 003); it runs as long as either is on.
-	if !cfg.CloudSchedulerEnabled && !cfg.GoogleWatchEnabled && !cfg.RevenueMailPushSyncEnabled {
-		log.Info("all scheduler loops are disabled; scheduler exiting cleanly")
-		return nil
-	}
-	if cfg.CloudSchedulerEnabled && !cfg.TemporalEnabled {
+	if !cfg.TemporalEnabled {
 		return fmt.Errorf("TEMPORAL_ENABLED must be true for the scheduler")
 	}
 	location, err := cfg.SchedulerLocation()
@@ -110,18 +108,10 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 	// else ever revisits those rows.
 	go quota.RunReaper(ctx, database.Client, log)
 
-	// Self-running revenue leak scans (RFC 030 WP3). Ships dark behind
-	// REVENUE_AUTO_SCAN_ENABLED; when on, every Google-connected user gets a
-	// bounded incremental scan on a cadence.
-	if cfg.RevenueAutoScanEnabled {
-		if err := startRevenueAutoScan(ctx, cfg, log, database); err != nil {
-			log.Warn("revenue auto-scan not started", zap.Error(err))
-		}
-	} else {
-		log.Warn(
-			"revenue auto-scan disabled; ongoing Gmail refresh will require manual audits",
-			zap.String("enable_with", "REVENUE_AUTO_SCAN_ENABLED=true"),
-		)
+	// Reconciliation is part of sync correctness: provider watches are
+	// invalidation hints and cannot be the sole source of mailbox coverage.
+	if err := startRevenueAutoScan(ctx, cfg, log, database); err != nil {
+		log.Warn("revenue auto-scan not started", zap.Error(err))
 	}
 
 	// Proactive digest emails (RFC 030). Ships dark behind
@@ -132,28 +122,17 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 		}
 	}
 
-	if cfg.GoogleWatchEnabled {
-		watchMgr, werr := buildWatchManager(ctx, cfg, log, database)
-		if werr != nil {
-			return werr
-		}
-		go func() { _ = watchMgr.Run(ctx) }()
+	watchMgr, werr := buildWatchManager(ctx, cfg, log, database)
+	if werr != nil {
+		return werr
 	}
+	go func() { _ = watchMgr.Run(ctx) }()
 
-	if cfg.RevenueMailPushSyncEnabled {
-		syncService, syncErr := buildCommunicationSync(ctx, cfg, log, database)
-		if syncErr != nil {
-			return syncErr
-		}
-		go func() { _ = syncService.Run(ctx) }()
+	syncService, syncErr := buildCommunicationSync(ctx, cfg, log, database)
+	if syncErr != nil {
+		return syncErr
 	}
-
-	if !cfg.CloudSchedulerEnabled {
-		// Auxiliary-loop-only mode needs no Temporal.
-		ready.Store(true)
-		<-ctx.Done()
-		return nil
-	}
+	go func() { _ = syncService.Run(ctx) }()
 
 	return runScheduler(ctx, cfg, log, database, location, &ready)
 }

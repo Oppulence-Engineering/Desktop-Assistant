@@ -320,15 +320,13 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		GoogleWebhookToken:   cfg.GoogleWebhookToken,
 		WebhookSigningSecret: cfg.WebhookSigningSecret,
 	}, log)
-	if cfg.RevenueMailPushSyncEnabled {
-		communicationSync := communicationsync.New(client, sealer, sec, googleapi.New(googleapi.Config{
-			TokenURL:        cfg.GoogleTokenURL,
-			GmailBaseURL:    cfg.GmailAPIBaseURL,
-			CalendarBaseURL: cfg.CalendarAPIBaseURL,
-			DriveBaseURL:    cfg.DriveAPIBaseURL,
-		}), communicationsync.Config{}, log)
-		cloudEventsH.SetGoogleInvalidationConsumer(communicationSync.EnqueueInvalidation)
-	}
+	communicationSync := communicationsync.New(client, sealer, sec, googleapi.New(googleapi.Config{
+		TokenURL:        cfg.GoogleTokenURL,
+		GmailBaseURL:    cfg.GmailAPIBaseURL,
+		CalendarBaseURL: cfg.CalendarAPIBaseURL,
+		DriveBaseURL:    cfg.DriveAPIBaseURL,
+	}), communicationsync.Config{}, log)
+	cloudEventsH.SetGoogleInvalidationConsumer(communicationSync.EnqueueInvalidation)
 	if strings.TrimSpace(cfg.GoogleWebhookOIDCAudience) != "" {
 		googlePushVerifier, err := oauthrs.NewGeneric(ctx, oauthrs.GenericConfig{
 			IssuerURL:      "https://accounts.google.com",
@@ -601,11 +599,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		return err
 	})
 	entitiesH := entities.NewHandler(entitySvc)
-	// The legacy RFC 031 mail index remains available while the same flag now
-	// also enables the durable Gmail + Calendar communication projector.
-	if cfg.RevenueMailPushSyncEnabled {
-		revenueSvc.SetMailSyncer(gmailExec)
-	}
+	// Gmail history synchronization is a required part of the Google source.
+	revenueSvc.SetMailSyncer(gmailExec)
 	// RFC 031: disconnecting Google purges the mail index (Layers 1-3);
 	// Layer-4 evidence quotes survive as the user's own action history.
 	googleH.SetOnDisconnect(func(ctx context.Context, u *ent.User) error {
