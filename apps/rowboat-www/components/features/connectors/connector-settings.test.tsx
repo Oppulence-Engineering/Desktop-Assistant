@@ -4,7 +4,7 @@ import "@testing-library/jest-dom/vitest";
 
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Connector } from "@/lib/api/generated/client/model";
 
@@ -46,7 +46,26 @@ function connector(overrides: Partial<Connector> = {}): Connector {
 function mockConnectors(...connectors: Connector[]) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
     void _init;
-    if (String(input).includes("/api/connectors/")) {
+    const url = String(input);
+    if (url.includes("/api/rowboat/v1/google-oauth")) {
+      return new Response(JSON.stringify({ connected: false, accounts: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.includes("/relationship-sources/status")) {
+      return new Response(JSON.stringify({ sources: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.includes("/composio/")) {
+      return new Response(JSON.stringify({ toolkits: [], connections: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.includes("/api/connectors/")) {
       return new Response(JSON.stringify({ outcome: "retry" }), {
         status: 429,
         headers: { "Content-Type": "application/json" },
@@ -60,6 +79,17 @@ function mockConnectors(...connectors: Connector[]) {
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }
+
+beforeEach(() => {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+});
 
 afterEach(() => {
   cleanup();
@@ -255,11 +285,10 @@ describe("Google grant claimed in the web app", () => {
     expect(start).toContain("return=web");
   });
 
-  // The claim stores the grant, but the relationship source only learns of it
-  // when told. Without this the sidebar said "No sources connected" while the
-  // card said "Active", and the daily audit had no row to flag once the grant
-  // died.
-  it("reports the claimed account as an authorized relationship source", async () => {
+  // Claiming is centralized at the persistent dashboard boundary. Settings
+  // must never replay authorization lifecycle writes after the API has queued
+  // the durable backfill.
+  it("does not claim or re-report Google authorization from Settings", async () => {
     window.history.replaceState(
       null,
       "",
@@ -269,16 +298,12 @@ describe("Google grant claimed in the web app", () => {
     render(<ConnectorSettings />);
 
     await vi.waitFor(() => {
-      expect(
-        calls.some((call) => call.includes("/relationship-sources/google/authorization")),
-      ).toBe(true);
+      expect(calls.some((call) => call.includes("/google-oauth"))).toBe(true);
     });
-    const report = calls.find((call) =>
-      call.includes("/relationship-sources/google/authorization"),
+    expect(calls.some((call) => call.includes("/google-oauth/claim"))).toBe(false);
+    expect(calls.some((call) => call.includes("/relationship-sources/google/authorization"))).toBe(
+      false,
     );
-    expect(report).toMatch(/^POST /);
-    expect(report).toContain('"sourceAccountId":"me@x.co"');
-    expect(report).toContain('"state":"completed"');
   });
 
   // A disabled native card next to a working Composio row is the same product

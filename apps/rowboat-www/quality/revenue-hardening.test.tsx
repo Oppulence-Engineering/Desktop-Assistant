@@ -195,13 +195,47 @@ describe("Open Promises report hardening", () => {
 
       await userEvent.click(await screen.findByRole("button", { name: action }));
 
-      expect(mocks.createGoogleCommitmentsAuthorizationURL).toHaveBeenCalledOnce();
+      expect(mocks.createGoogleCommitmentsAuthorizationURL).toHaveBeenCalledWith("/app/report");
       expect(
         screen.queryByRole("button", { name: "Find my open promises" }),
       ).not.toBeInTheDocument();
       expect(mocks.startScan).not.toHaveBeenCalled();
     },
   );
+
+  it("shows bounded source progress and starts the first audit once after OAuth", async () => {
+    navigation.params = new URLSearchParams("google_connected=1");
+    mocks.listRelationshipSourceStatuses.mockResolvedValue([
+      {
+        ...sourceStatus("backfilling"),
+        backfillPhase: "running",
+        backfillCompleted: 25,
+        backfillTotal: 100,
+        completeness: "partial",
+      },
+    ]);
+    mocks.startScan.mockResolvedValue({
+      ...completedScan("scan-first"),
+      status: "queued",
+      completedAt: undefined,
+    });
+
+    const view = renderWithQuery(<OpenPromisesReportClient />);
+
+    expect(await screen.findByText("Syncing Google evidence")).toBeInTheDocument();
+    expect(screen.getByText("25 of 100 evidence records processed.")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "25");
+    await waitFor(() => {
+      expect(mocks.startScan).toHaveBeenCalledOnce();
+    });
+    view.rerender(
+      <QueryClientProvider client={view.client}>
+        <OpenPromisesReportClient />
+      </QueryClientProvider>,
+    );
+    expect(mocks.startScan).toHaveBeenCalledOnce();
+    expect(navigation.replace).toHaveBeenCalledWith("/app/report?scan=scan-first");
+  });
 
   it("loads a deep-linked scan, refreshes terminal health, and selects another scan in the URL", async () => {
     navigation.params = new URLSearchParams("scan=scan-deep");
