@@ -352,15 +352,17 @@ type ConnectLink struct {
 }
 
 // nativeRelationshipToolkits are the products Oppulence ingests itself through
-// its own connectors: mail, calendar and Slack become relationship evidence.
-// Composio reaches the same products, but an account linked there feeds nothing
-// into the relationship graph, so offering them here sends a user down a path
-// that looks identical and silently does less. They are hidden, and the native
-// connector stays the only way to link them.
+// its own connectors: Gmail, Google Calendar, Slack and HubSpot become
+// relationship evidence. Composio reaches the same products, but an account
+// linked there feeds nothing into the relationship graph, so offering them here
+// sends a user down a path that looks identical and silently does less. They
+// are hidden, and the native connector stays the only way to link them.
 var nativeRelationshipToolkits = map[string]bool{
 	"gmail":          true,
 	"googlecalendar": true,
 	"slack":          true,
+	"slackbot":       true,
+	"hubspot":        true,
 }
 
 // ListToolkits returns connectable products, newest page only. Only toolkits
