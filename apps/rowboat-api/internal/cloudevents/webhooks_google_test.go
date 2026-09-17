@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -87,6 +88,11 @@ func TestGoogleWebhookTokenVerification(t *testing.T) {
 	connectGoogle(t, client, u, "me@gmail.com")
 	addGoogleWatch(t, client, u, "gmail", "me@gmail.com", "", "")
 	h := New(client, testSealer(t), &fakeRouteController{}, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
+	var queuedSource, queuedAccount string
+	h.SetGoogleInvalidationConsumer(func(_ context.Context, _ *ent.User, source, account string, _ time.Time) error {
+		queuedSource, queuedAccount = source, account
+		return nil
+	})
 	if _, ok := h.resolveActiveGoogleWatch(httptest.NewRequest(http.MethodPost, "/v1/webhooks/google", nil), "gmail", "me@gmail.com", "", ""); !ok {
 		t.Fatal("active Gmail watch did not resolve")
 	}
@@ -109,6 +115,27 @@ func TestGoogleWebhookTokenVerification(t *testing.T) {
 	ev := client.CloudEvent.Query().OnlyX(auth.WithInternal(context.Background()))
 	if ev.Source != SourceGmail || ev.DedupeKey != "gmail:history:me@gmail.com:998877" {
 		t.Fatalf("event = %s/%s, want gmail dedupe key", ev.Source, ev.DedupeKey)
+	}
+	if queuedSource != SourceGmail || queuedAccount != "me@gmail.com" {
+		t.Fatalf("durable invalidation = %s/%s", queuedSource, queuedAccount)
+	}
+}
+
+func TestGoogleWebhookRetriesWhenDurableEnqueueFails(t *testing.T) {
+	client, u := setup(t)
+	connectGoogle(t, client, u, "me@gmail.com")
+	addGoogleWatch(t, client, u, "gmail", "me@gmail.com", "", "")
+	h := New(client, testSealer(t), nil, Config{MaxPayloadBytes: 1 << 20, GoogleWebhookToken: "tok-1"}, zap.NewNop())
+	h.SetGoogleInvalidationConsumer(func(context.Context, *ent.User, string, string, time.Time) error {
+		return fmt.Errorf("database unavailable")
+	})
+	srv := newWebhookServer(t, h)
+
+	if status := postWebhook(t, srv.URL+"/v1/webhooks/google?token=tok-1", gmailPushBody(t, "me@gmail.com", 998878)); status != http.StatusInternalServerError {
+		t.Fatalf("enqueue failure status = %d, want 500 for provider retry", status)
+	}
+	if n := client.CloudEvent.Query().CountX(auth.WithInternal(context.Background())); n != 0 {
+		t.Fatalf("event count = %d, failed enqueue must not leave an acknowledged event", n)
 	}
 }
 

@@ -13,10 +13,12 @@ import (
 // extracted text use sealed, expiring caches after policy admission.
 type CommunicationAttachment struct{ ent.Schema }
 
+// Mixin scopes attachment metadata to its workspace.
 func (CommunicationAttachment) Mixin() []ent.Mixin {
 	return []ent.Mixin{mixin.WorkspaceTenantMixin{}}
 }
 
+// Fields defines metadata, scan state, and sealed short-lived derivatives.
 func (CommunicationAttachment) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("provider_attachment_id").NotEmpty().Sensitive(),
@@ -37,6 +39,7 @@ func (CommunicationAttachment) Fields() []ent.Field {
 	}
 }
 
+// Edges binds an attachment to its interaction and workspace.
 func (CommunicationAttachment) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
@@ -46,6 +49,7 @@ func (CommunicationAttachment) Edges() []ent.Edge {
 	}
 }
 
+// Indexes supports provider idempotency and retention sweeps.
 func (CommunicationAttachment) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("interaction").Fields("provider_attachment_id").Unique(),

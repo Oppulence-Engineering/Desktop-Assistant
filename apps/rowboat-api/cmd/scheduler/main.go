@@ -25,6 +25,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskruns"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskschedule"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/communicationsync"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/email"
@@ -66,8 +67,8 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 	// TEMPORAL_WORKER_ENABLED guard so the Deployment can ship dark. The
 	// process hosts two independent loops: the task scheduler (RFC 001) and
 	// the Google watch manager (RFC 003); it runs as long as either is on.
-	if !cfg.CloudSchedulerEnabled && !cfg.GoogleWatchEnabled {
-		log.Info("CLOUD_SCHEDULER_ENABLED and GOOGLE_WATCH_ENABLED are false; scheduler exiting cleanly")
+	if !cfg.CloudSchedulerEnabled && !cfg.GoogleWatchEnabled && !cfg.CommunicationSyncEnabled {
+		log.Info("all scheduler loops are disabled; scheduler exiting cleanly")
 		return nil
 	}
 	if cfg.CloudSchedulerEnabled && !cfg.TemporalEnabled {
@@ -136,15 +137,46 @@ func run(cfg appconfig.Config, log *zap.Logger) error {
 		if werr != nil {
 			return werr
 		}
-		if !cfg.CloudSchedulerEnabled {
-			// Watch-only mode needs no Temporal; the watch loop is the process.
-			ready.Store(true)
-			return watchMgr.Run(ctx)
-		}
 		go func() { _ = watchMgr.Run(ctx) }()
 	}
 
+	if cfg.CommunicationSyncEnabled {
+		syncService, syncErr := buildCommunicationSync(ctx, cfg, log, database)
+		if syncErr != nil {
+			return syncErr
+		}
+		go func() { _ = syncService.Run(ctx) }()
+	}
+
+	if !cfg.CloudSchedulerEnabled {
+		// Auxiliary-loop-only mode needs no Temporal.
+		ready.Store(true)
+		<-ctx.Done()
+		return nil
+	}
+
 	return runScheduler(ctx, cfg, log, database, location, &ready)
+}
+
+func buildCommunicationSync(ctx context.Context, cfg appconfig.Config, log *zap.Logger, database *db.DB) (*communicationsync.Service, error) {
+	sealer, err := schedulerColumnSealer(cfg)
+	if err != nil {
+		return nil, err
+	}
+	sec := secrets.NewFromConfig(cfg)
+	if err := sec.LoadInfisical(ctx, cfg); err != nil {
+		if cfg.InfisicalEnabled && cfg.IsProduction() {
+			return nil, fmt.Errorf("infisical secret load failed in production: %w", err)
+		}
+		log.Warn("infisical load failed; using env vendor keys", zap.Error(err))
+	}
+	sec.StartRefresh(ctx, cfg, 5*time.Minute, log)
+	return communicationsync.New(database.Client, sealer, sec, googleapi.New(googleapi.Config{
+		TokenURL:        cfg.GoogleTokenURL,
+		GmailBaseURL:    cfg.GmailAPIBaseURL,
+		CalendarBaseURL: cfg.CalendarAPIBaseURL,
+		DriveBaseURL:    cfg.DriveAPIBaseURL,
+	}), communicationsync.Config{}, log), nil
 }
 
 // buildWatchManager assembles the RFC 003 Google watch manager: the sealer

@@ -37,7 +37,7 @@ type Handler struct {
 	log    *zap.Logger
 
 	slackAgentDispatcher SlackAgentDispatcher
-	gmailHistoryConsumer GmailHistoryConsumer
+	googleInvalidator    GoogleInvalidationConsumer
 	googlePushVerifier   googlePushVerifier
 	googlePushEmail      string
 }
@@ -61,14 +61,14 @@ func (h *Handler) SetSlackAgentDispatcher(fn SlackAgentDispatcher) {
 	h.slackAgentDispatcher = fn
 }
 
-// GmailHistoryConsumer syncs the RFC 031 Layer-1 mail index from a Gmail push
-// (a history pointer) for owner. It never carries mail content in the push.
-type GmailHistoryConsumer func(ctx context.Context, owner *ent.User, historyID uint64) error
+// GoogleInvalidationConsumer durably queues provider synchronization in the
+// same acknowledgment path that persists the verified CloudEvent.
+type GoogleInvalidationConsumer func(ctx context.Context, owner *ent.User, source, accountID string, providerEventAt time.Time) error
 
-// SetGmailHistoryConsumer lets /v1/webhooks/google keep the revenue mail index
-// live: each Gmail push triggers an incremental History-API sync.
-func (h *Handler) SetGmailHistoryConsumer(fn GmailHistoryConsumer) {
-	h.gmailHistoryConsumer = fn
+// SetGoogleInvalidationConsumer wires Gmail and Calendar push invalidations to
+// the leased communication synchronization worker.
+func (h *Handler) SetGoogleInvalidationConsumer(fn GoogleInvalidationConsumer) {
+	h.googleInvalidator = fn
 }
 
 // SetGooglePushVerifier enables OIDC verification for Gmail Pub/Sub pushes.
@@ -115,7 +115,11 @@ func (h *Handler) IngestInternal(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) respondIngest(w http.ResponseWriter, r *http.Request, u *ent.User, req IngestRequest) {
-	ev, deduped, err := h.ingest(r.Context(), u, req)
+	h.respondIngestAfterCreate(w, r, u, req, nil)
+}
+
+func (h *Handler) respondIngestAfterCreate(w http.ResponseWriter, r *http.Request, u *ent.User, req IngestRequest, afterCreate func(context.Context, *ent.CloudEvent) error) {
+	ev, deduped, err := h.ingestWithAfterCreate(r.Context(), u, req, afterCreate)
 	if err != nil {
 		writeIngestError(w, err, h.log)
 		return

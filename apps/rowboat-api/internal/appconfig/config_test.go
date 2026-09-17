@@ -76,6 +76,19 @@ func TestLoadConnectorOAuthLegacyStateWriteDefaultsSecureAndRequiresOptIn(t *tes
 	}
 }
 
+func TestCommunicationSyncFlagSupportsLegacyRollout(t *testing.T) {
+	t.Setenv("COMMUNICATION_SYNC_ENABLED", "")
+	t.Setenv("REVENUE_MAIL_PUSH_SYNC_ENABLED", "true")
+	if !Load().CommunicationSyncEnabled {
+		t.Fatal("legacy Gmail push flag must keep communication sync enabled during rollout")
+	}
+
+	t.Setenv("COMMUNICATION_SYNC_ENABLED", "false")
+	if Load().CommunicationSyncEnabled {
+		t.Fatal("dedicated communication sync flag must override the legacy default")
+	}
+}
+
 func TestDBEncryptionKeyringParsesExplicitRotationRing(t *testing.T) {
 	cfg := Config{
 		DBEncryptionPrimaryKeyID:   "2026-08",

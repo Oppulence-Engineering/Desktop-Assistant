@@ -13,10 +13,12 @@ import (
 // body or attachment content for one bounded resource.
 type CommunicationShareGrant struct{ ent.Schema }
 
+// Mixin scopes explicit grants to their workspace.
 func (CommunicationShareGrant) Mixin() []ent.Mixin {
 	return []ent.Mixin{mixin.WorkspaceTenantMixin{}}
 }
 
+// Fields defines bounded content scope, target, expiry, and revocation.
 func (CommunicationShareGrant) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("scope").
@@ -30,6 +32,7 @@ func (CommunicationShareGrant) Fields() []ent.Field {
 	}
 }
 
+// Edges binds a grant to its owner, optional grantee, and workspace.
 func (CommunicationShareGrant) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
@@ -41,6 +44,7 @@ func (CommunicationShareGrant) Edges() []ent.Edge {
 	}
 }
 
+// Indexes prevents duplicate grants and supports active-grant evaluation.
 func (CommunicationShareGrant) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("workspace", "owner", "grantee").

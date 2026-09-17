@@ -16,10 +16,12 @@ import (
 // owner authorization.
 type CommunicationInteraction struct{ ent.Schema }
 
+// Mixin scopes communication metadata to its workspace.
 func (CommunicationInteraction) Mixin() []ent.Mixin {
 	return []ent.Mixin{mixin.WorkspaceTenantMixin{}}
 }
 
+// Fields defines provider identity, redacted metadata, and tombstone state.
 func (CommunicationInteraction) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("source").Validate(oneOfRevenue("source", "gmail", "calendar")),
@@ -43,6 +45,7 @@ func (CommunicationInteraction) Fields() []ent.Field {
 	}
 }
 
+// Edges preserves immutable ownership while linking sanitized projections.
 func (CommunicationInteraction) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
@@ -60,6 +63,7 @@ func (CommunicationInteraction) Edges() []ent.Edge {
 	}
 }
 
+// Indexes enforces replay-safe provider identity and timeline access paths.
 func (CommunicationInteraction) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("workspace").

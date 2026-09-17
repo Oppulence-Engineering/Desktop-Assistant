@@ -13,10 +13,12 @@ import (
 // by incremental Gmail and Calendar workers.
 type CommunicationSyncCursor struct{ ent.Schema }
 
+// Mixin scopes provider watermarks to their workspace.
 func (CommunicationSyncCursor) Mixin() []ent.Mixin {
 	return []ent.Mixin{mixin.WorkspaceTenantMixin{}}
 }
 
+// Fields defines cursor state, retry health, and worker lease data.
 func (CommunicationSyncCursor) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("source").Validate(oneOfRevenue("source", "gmail", "calendar")),
@@ -33,6 +35,7 @@ func (CommunicationSyncCursor) Fields() []ent.Field {
 	}
 }
 
+// Edges binds each cursor to its immutable mailbox owner and workspace.
 func (CommunicationSyncCursor) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
@@ -42,6 +45,7 @@ func (CommunicationSyncCursor) Edges() []ent.Edge {
 	}
 }
 
+// Indexes enforces one cursor per owner source and supports worker claims.
 func (CommunicationSyncCursor) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("workspace", "owner").Fields("source", "source_account_id").Unique(),

@@ -13,10 +13,12 @@ import (
 // timelines without granting access to the underlying provider content.
 type CommunicationParticipant struct{ ent.Schema }
 
+// Mixin scopes participant metadata to its workspace.
 func (CommunicationParticipant) Mixin() []ent.Mixin {
 	return []ent.Mixin{mixin.WorkspaceTenantMixin{}}
 }
 
+// Fields defines the normalized address and interaction role.
 func (CommunicationParticipant) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("email").NotEmpty().Sensitive(),
@@ -28,6 +30,7 @@ func (CommunicationParticipant) Fields() []ent.Field {
 	}
 }
 
+// Edges binds each participant to one interaction and workspace.
 func (CommunicationParticipant) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
@@ -37,6 +40,7 @@ func (CommunicationParticipant) Edges() []ent.Edge {
 	}
 }
 
+// Indexes prevents duplicate roles and supports address-based timelines.
 func (CommunicationParticipant) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("interaction").Fields("email", "role").Unique(),

@@ -26,6 +26,7 @@ type mockGoogle struct {
 	mu            sync.Mutex
 	tokenErr      string // non-empty → token endpoint returns this OAuth error
 	gmailCalls    int
+	gmailBodies   []map[string]any
 	calendarCalls []map[string]any // events.watch bodies
 	driveCalls    []map[string]any // changes.watch bodies
 	stopCalls     []map[string]any // channels/stop bodies
@@ -49,8 +50,11 @@ func newMockGoogle(t *testing.T) *mockGoogle {
 		_ = json.NewEncoder(w).Encode(map[string]string{"access_token": "ya29.test"})
 	})
 	mux.HandleFunc("/gmail/v1/users/me/watch", func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
 		m.mu.Lock()
 		m.gmailCalls++
+		m.gmailBodies = append(m.gmailBodies, body)
 		m.mu.Unlock()
 		if got := r.Header.Get("Authorization"); got != "Bearer ya29.test" {
 			w.WriteHeader(http.StatusUnauthorized)
@@ -163,6 +167,12 @@ func TestBootstrapCreatesWatches(t *testing.T) {
 	gm := byKind[KindGmail]
 	if gm == nil || gm.HistoryID != "998877" || !gm.ExpiresAt.After(time.Now()) {
 		t.Fatalf("gmail row = %+v", gm)
+	}
+	if len(g.gmailBodies) != 1 || g.gmailBodies[0]["topicName"] != "projects/p/topics/t" {
+		t.Fatalf("gmail watch body = %+v", g.gmailBodies)
+	}
+	if _, filtered := g.gmailBodies[0]["labelIds"]; filtered {
+		t.Fatalf("gmail watch must cover sent, archived, and deleted mail: %+v", g.gmailBodies[0])
 	}
 	cal := byKind[KindCalendar]
 	if cal == nil || !strings.HasPrefix(cal.ChannelID, "gcal:me@gmail.com:") || cal.ResourceID != "res-1" {

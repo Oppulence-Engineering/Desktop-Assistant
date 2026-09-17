@@ -13,10 +13,12 @@ import (
 // recipient rule. Only keyed hashes are used for matching in logs and audits.
 type CommunicationPrivacyRule struct{ ent.Schema }
 
+// Mixin scopes owner privacy rules to their workspace.
 func (CommunicationPrivacyRule) Mixin() []ent.Mixin {
 	return []ent.Mixin{mixin.WorkspaceTenantMixin{}}
 }
 
+// Fields defines normalized protected and blocked address rules.
 func (CommunicationPrivacyRule) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("kind").
@@ -27,6 +29,7 @@ func (CommunicationPrivacyRule) Fields() []ent.Field {
 	}
 }
 
+// Edges binds each rule to its immutable owner and workspace.
 func (CommunicationPrivacyRule) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("workspace", RevenueWorkspace.Type).
@@ -36,6 +39,7 @@ func (CommunicationPrivacyRule) Edges() []ent.Edge {
 	}
 }
 
+// Indexes prevents duplicate rules and supports active-policy reads.
 func (CommunicationPrivacyRule) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("workspace", "owner").Fields("kind", "value_hash").Unique(),

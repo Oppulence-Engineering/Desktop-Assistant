@@ -28,6 +28,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/billing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/communicationsync"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composioapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/config"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
@@ -319,6 +320,15 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		GoogleWebhookToken:   cfg.GoogleWebhookToken,
 		WebhookSigningSecret: cfg.WebhookSigningSecret,
 	}, log)
+	if cfg.CommunicationSyncEnabled {
+		communicationSync := communicationsync.New(client, sealer, sec, googleapi.New(googleapi.Config{
+			TokenURL:        cfg.GoogleTokenURL,
+			GmailBaseURL:    cfg.GmailAPIBaseURL,
+			CalendarBaseURL: cfg.CalendarAPIBaseURL,
+			DriveBaseURL:    cfg.DriveAPIBaseURL,
+		}), communicationsync.Config{}, log)
+		cloudEventsH.SetGoogleInvalidationConsumer(communicationSync.EnqueueInvalidation)
+	}
 	if strings.TrimSpace(cfg.GoogleWebhookOIDCAudience) != "" {
 		googlePushVerifier, err := oauthrs.NewGeneric(ctx, oauthrs.GenericConfig{
 			IssuerURL:      "https://accounts.google.com",
@@ -591,13 +601,10 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		return err
 	})
 	entitiesH := entities.NewHandler(entitySvc)
-	// RFC 031 Layer-1 push sync: keep the mail index live from Gmail pushes.
-	// Ships dark behind REVENUE_MAIL_PUSH_SYNC_ENABLED.
+	// The legacy RFC 031 mail index remains available while the same flag now
+	// also enables the durable Gmail + Calendar communication projector.
 	if cfg.RevenueMailPushSyncEnabled {
 		revenueSvc.SetMailSyncer(gmailExec)
-		cloudEventsH.SetGmailHistoryConsumer(func(ctx context.Context, owner *ent.User, historyID uint64) error {
-			return revenueSvc.SyncMailFromPush(ctx, owner, historyID)
-		})
 	}
 	// RFC 031: disconnecting Google purges the mail index (Layers 1-3);
 	// Layer-4 evidence quotes survive as the user's own action history.
