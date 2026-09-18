@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.34](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.33...v0.1.34) (2026-09-18)
+
+
+### Features
+
+* Google evidence sync and communication intelligence ([faaf7ed](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/faaf7ed1d40d693863290743f077966c17f296ce))
+* promote Google communication intelligence to main ([6cd8459](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6cd8459e6cb60e619973023eb0dfefd4a442b869))
+* **rowboat-www:** complete shared UI migration ([93b5abc](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/93b5abc214f6eafd2fc892d8485a86e8c60d9ff8))
+
+
+### Bug Fixes
+
+* **ci:** install react-day-picker for renderer types and keep the ESLint plugin typed ([b585926](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/b585926691701d9b27a77e668ac8df3840324418))
+* **ci:** resolve UI deps in www tests and keep renderer knip stable ([6e85186](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/6e85186e17a0e02fa73ae323a087099b1b212500))
+* **ci:** resolve UI peers from the renderer and ESLint peers from cwd ([654d838](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/654d838255ede778bb3789d62038a325cafa9663))
+* **ci:** unblock contract drift, cascade coverage, and desktop peers ([23672b4](https://github.com/Oppulence-Engineering/Desktop-Assistant/commit/23672b4afa7eccfb3761e4f291a767c84be4bb46))
+
 ## [0.1.33](https://github.com/Oppulence-Engineering/Desktop-Assistant/compare/v0.1.32...v0.1.33) (2026-09-15)
 
 
