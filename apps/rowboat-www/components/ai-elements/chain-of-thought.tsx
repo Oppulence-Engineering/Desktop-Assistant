@@ -2,19 +2,14 @@
 
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import { Badge } from "@oppulence/ui/components/badge";
+import { Label } from "@oppulence/ui/components/label";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@oppulence/ui/components/collapsible";
 import { cn } from "@/lib/utils";
-import {
-  Brain,
-  CaretDown,
-  Circle,
-  type Icon as PhosphorIcon,
-  type IconProps,
-} from "@phosphor-icons/react";
+import { Brain, CaretDown, Circle, type Icon as PhosphorIcon, type IconProps } from "@/lib/icons";
 import type { ComponentProps, ReactNode } from "react";
 import { createContext, forwardRef, memo, useContext, useMemo } from "react";
 
@@ -87,7 +82,7 @@ export const ChainOfThoughtHeader = memo(
           {...props}
         >
           <Brain className="size-4" />
-          <span className="flex-1 text-left">{children ?? "Chain of Thought"}</span>
+          <Label className="flex-1 text-left font-normal">{children ?? "Chain of Thought"}</Label>
           <CaretDown
             className={cn("size-4 transition-transform", isOpen ? "rotate-180" : "rotate-0")}
           />

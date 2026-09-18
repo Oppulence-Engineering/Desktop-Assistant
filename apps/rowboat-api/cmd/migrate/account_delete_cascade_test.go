@@ -45,6 +45,19 @@ type cascadeFK struct{ table, column, parent string }
 // Atlas output: it rewrites exactly the foreign keys that the Ent schema says
 // cascade, and nothing else (no CHECK, index, or column drift).
 func TestAccountDeleteCascadeMigrationMatchesTheEntSchema(t *testing.T) {
+	// Tables introduced after the corrective migration declare CASCADE in their
+	// CREATE TABLE statements and therefore must not appear in the old rewrite.
+	createdWithCascade := map[string]bool{
+		"communication_attachments":      true,
+		"communication_interactions":     true,
+		"communication_participants":     true,
+		"communication_privacy_policies": true,
+		"communication_privacy_rules":    true,
+		"communication_share_grants":     true,
+		"communication_sync_cursors":     true,
+		"console_resources":              true,
+		"user_preferences":               true,
+	}
 	migrated := map[cascadeFK]string{}
 	for _, stmt := range accountDeleteStatements(t, cascadeMigrationFile) {
 		m := cascadeStatementPattern.FindStringSubmatch(stmt)
@@ -75,9 +88,11 @@ func TestAccountDeleteCascadeMigrationMatchesTheEntSchema(t *testing.T) {
 			if parent != "users" && parent != "revenue_workspaces" {
 				continue
 			}
-			want[cascadeFK{table: table.Name, column: fk.Columns[0].Name, parent: parent}] = true
 			if fk.OnDelete != entschema.Cascade {
 				t.Errorf("Ent schema: %s.%s -> %s is ON DELETE %q, want CASCADE", table.Name, fk.Columns[0].Name, parent, fk.OnDelete)
+			}
+			if !createdWithCascade[table.Name] {
+				want[cascadeFK{table: table.Name, column: fk.Columns[0].Name, parent: parent}] = true
 			}
 		}
 	}

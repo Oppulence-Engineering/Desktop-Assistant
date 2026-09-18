@@ -19,12 +19,16 @@ vi.mock("@/lib/auth/cookies", () => ({
   setSessionCookie: mocks.setSessionCookie,
 }));
 
-vi.mock("@/lib/auth/rowboat-api", () => ({
-  fetchViewer: mocks.fetchViewer,
-  fetchViewerIdentity: mocks.fetchViewerIdentity,
-  refreshWorkOSSession: mocks.refreshWorkOSSession,
-  shouldRefreshSession: mocks.shouldRefreshSession,
-}));
+vi.mock("@/lib/auth/rowboat-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/rowboat-api")>();
+  return {
+    ...actual,
+    fetchViewer: mocks.fetchViewer,
+    fetchViewerIdentity: mocks.fetchViewerIdentity,
+    refreshWorkOSSession: mocks.refreshWorkOSSession,
+    shouldRefreshSession: mocks.shouldRefreshSession,
+  };
+});
 
 import { GET } from "@/app/api/auth/session/route";
 
@@ -71,13 +75,27 @@ describe("browser session route", () => {
     });
   });
 
-  it("keeps the cookie when a refresh service is temporarily unavailable", async () => {
+  it("returns 503 when refresh is unavailable and the access token is expired", async () => {
+    mocks.readSessionCookie.mockReturnValue({ ...session, expiresAt: 1 });
     mocks.shouldRefreshSession.mockReturnValue(true);
     mocks.refreshWorkOSSession.mockRejectedValue(new Error("rate limited"));
 
     const response = await GET(new NextRequest("https://oppulence.io/api/auth/session"));
 
     expect(response.status).toBe(503);
+    expect(mocks.clearAuthCookies).not.toHaveBeenCalled();
+  });
+
+  it("keeps the session usable when refresh is unavailable but the access token is still valid", async () => {
+    mocks.shouldRefreshSession.mockReturnValue(true);
+    mocks.refreshWorkOSSession.mockRejectedValue(new Error("rate limited"));
+    mocks.fetchViewer.mockResolvedValue({
+      user: { id: "local-user", email: "user@example.com" },
+    });
+
+    const response = await GET(new NextRequest("https://oppulence.io/api/auth/session"));
+
+    expect(response.status).toBe(200);
     expect(mocks.clearAuthCookies).not.toHaveBeenCalled();
   });
 });

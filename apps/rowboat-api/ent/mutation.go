@@ -32,10 +32,18 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
@@ -89,6 +97,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -126,10 +135,18 @@ const (
 	TypeCommitment                        = "Commitment"
 	TypeCommitmentDependency              = "CommitmentDependency"
 	TypeCommitmentEvent                   = "CommitmentEvent"
+	TypeCommunicationAttachment           = "CommunicationAttachment"
+	TypeCommunicationInteraction          = "CommunicationInteraction"
+	TypeCommunicationParticipant          = "CommunicationParticipant"
+	TypeCommunicationPrivacyPolicy        = "CommunicationPrivacyPolicy"
+	TypeCommunicationPrivacyRule          = "CommunicationPrivacyRule"
+	TypeCommunicationShareGrant           = "CommunicationShareGrant"
+	TypeCommunicationSyncCursor           = "CommunicationSyncCursor"
 	TypeConnectorAuditEvent               = "ConnectorAuditEvent"
 	TypeConnectorCredentialCleanupJob     = "ConnectorCredentialCleanupJob"
 	TypeConnectorCredentialRecovery       = "ConnectorCredentialRecovery"
 	TypeConnectorRevocationJob            = "ConnectorRevocationJob"
+	TypeConsoleResource                   = "ConsoleResource"
 	TypeConversationIntelligenceArtifact  = "ConversationIntelligenceArtifact"
 	TypeCreditLedger                      = "CreditLedger"
 	TypeDeletedIdentity                   = "DeletedIdentity"
@@ -182,6 +199,7 @@ const (
 	TypeTenantEvidenceKey                 = "TenantEvidenceKey"
 	TypeUser                              = "User"
 	TypeUserHistory                       = "UserHistory"
+	TypeUserPreference                    = "UserPreference"
 	TypeVoiceAPIKey                       = "VoiceAPIKey"
 	TypeVoiceSyncItem                     = "VoiceSyncItem"
 	TypeWorkspaceFeatureControl           = "WorkspaceFeatureControl"
@@ -29853,6 +29871,7452 @@ func (m *CommitmentEventMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown CommitmentEvent edge %s", name)
 }
 
+// CommunicationAttachmentMutation represents an operation that mutates the CommunicationAttachment nodes in the graph.
+type CommunicationAttachmentMutation struct {
+	config
+	op                     Op
+	typ                    string
+	id                     *uuid.UUID
+	created_at             *time.Time
+	updated_at             *time.Time
+	provider_attachment_id *string
+	filename               *string
+	mime_type              *string
+	size_bytes             *int64
+	addsize_bytes          *int64
+	checksum               *string
+	visibility             *string
+	scan_status            *string
+	scanned_at             *time.Time
+	expires_at             *time.Time
+	sealed_content         *[]byte
+	sealed_extracted_text  *string
+	clearedFields          map[string]struct{}
+	workspace              *uuid.UUID
+	clearedworkspace       bool
+	interaction            *uuid.UUID
+	clearedinteraction     bool
+	done                   bool
+	oldValue               func(context.Context) (*CommunicationAttachment, error)
+	predicates             []predicate.CommunicationAttachment
+}
+
+var _ ent.Mutation = (*CommunicationAttachmentMutation)(nil)
+
+// communicationattachmentOption allows management of the mutation configuration using functional options.
+type communicationattachmentOption func(*CommunicationAttachmentMutation)
+
+// newCommunicationAttachmentMutation creates new mutation for the CommunicationAttachment entity.
+func newCommunicationAttachmentMutation(c config, op Op, opts ...communicationattachmentOption) *CommunicationAttachmentMutation {
+	m := &CommunicationAttachmentMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCommunicationAttachment,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCommunicationAttachmentID sets the ID field of the mutation.
+func withCommunicationAttachmentID(id uuid.UUID) communicationattachmentOption {
+	return func(m *CommunicationAttachmentMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CommunicationAttachment
+		)
+		m.oldValue = func(ctx context.Context) (*CommunicationAttachment, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CommunicationAttachment.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCommunicationAttachment sets the old CommunicationAttachment of the mutation.
+func withCommunicationAttachment(node *CommunicationAttachment) communicationattachmentOption {
+	return func(m *CommunicationAttachmentMutation) {
+		m.oldValue = func(context.Context) (*CommunicationAttachment, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CommunicationAttachmentMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CommunicationAttachmentMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CommunicationAttachment entities.
+func (m *CommunicationAttachmentMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CommunicationAttachmentMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CommunicationAttachmentMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CommunicationAttachment.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CommunicationAttachmentMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CommunicationAttachmentMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CommunicationAttachment entity.
+// If the CommunicationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationAttachmentMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CommunicationAttachmentMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *CommunicationAttachmentMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *CommunicationAttachmentMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the CommunicationAttachment entity.
+// If the CommunicationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationAttachmentMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *CommunicationAttachmentMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetProviderAttachmentID sets the "provider_attachment_id" field.
+func (m *CommunicationAttachmentMutation) SetProviderAttachmentID(s string) {
+	m.provider_attachment_id = &s
+}
+
+// ProviderAttachmentID returns the value of the "provider_attachment_id" field in the mutation.
+func (m *CommunicationAttachmentMutation) ProviderAttachmentID() (r string, exists bool) {
+	v := m.provider_attachment_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProviderAttachmentID returns the old "provider_attachment_id" field's value of the CommunicationAttachment entity.
+// If the CommunicationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationAttachmentMutation) OldProviderAttachmentID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProviderAttachmentID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProviderAttachmentID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProviderAttachmentID: %w", err)
+	}
+	return oldValue.ProviderAttachmentID, nil
+}
+
+// ResetProviderAttachmentID resets all changes to the "provider_attachment_id" field.
+func (m *CommunicationAttachmentMutation) ResetProviderAttachmentID() {
+	m.provider_attachment_id = nil
+}
+
+// SetFilename sets the "filename" field.
+func (m *CommunicationAttachmentMutation) SetFilename(s string) {
+	m.filename = &s
+}
+
+// Filename returns the value of the "filename" field in the mutation.
+func (m *CommunicationAttachmentMutation) Filename() (r string, exists bool) {
+	v := m.filename
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFilename returns the old "filename" field's value of the CommunicationAttachment entity.
+// If the CommunicationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationAttachmentMutation) OldFilename(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFilename is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFilename requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFilename: %w", err)
+	}
+	return oldValue.Filename, nil
+}
+
+// ClearFilename clears the value of the "filename" field.
+func (m *CommunicationAttachmentMutation) ClearFilename() {
+	m.filename = nil
+	m.clearedFields[communicationattachment.FieldFilename] = struct{}{}
+}
+
+// FilenameCleared returns if the "filename" field was cleared in this mutation.
+func (m *CommunicationAttachmentMutation) FilenameCleared() bool {
+	_, ok := m.clearedFields[communicationattachment.FieldFilename]
+	return ok
+}
+
+// ResetFilename resets all changes to the "filename" field.
+func (m *CommunicationAttachmentMutation) ResetFilename() {
+	m.filename = nil
+	delete(m.clearedFields, communicationattachment.FieldFilename)
+}
+
+// SetMimeType sets the "mime_type" field.
+func (m *CommunicationAttachmentMutation) SetMimeType(s string) {
+	m.mime_type = &s
+}
+
+// MimeType returns the value of the "mime_type" field in the mutation.
+func (m *CommunicationAttachmentMutation) MimeType() (r string, exists bool) {
+	v := m.mime_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMimeType returns the old "mime_type" field's value of the CommunicationAttachment entity.
+// If the CommunicationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationAttachmentMutation) OldMimeType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMimeType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMimeType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMimeType: %w", err)
+	}
+	return oldValue.MimeType, nil
+}
+
+// ClearMimeType clears the value of the "mime_type" field.
+func (m *CommunicationAttachmentMutation) ClearMimeType() {
+	m.mime_type = nil
+	m.clearedFields[communicationattachment.FieldMimeType] = struct{}{}
+}
+
+// MimeTypeCleared returns if the "mime_type" field was cleared in this mutation.
+func (m *CommunicationAttachmentMutation) MimeTypeCleared() bool {
+	_, ok := m.clearedFields[communicationattachment.FieldMimeType]
+	return ok
+}
+
+// ResetMimeType resets all changes to the "mime_type" field.
+func (m *CommunicationAttachmentMutation) ResetMimeType() {
+	m.mime_type = nil
+	delete(m.clearedFields, communicationattachment.FieldMimeType)
+}
+
+// SetSizeBytes sets the "size_bytes" field.
+func (m *CommunicationAttachmentMutation) SetSizeBytes(i int64) {
+	m.size_bytes = &i
+	m.addsize_bytes = nil
+}
+
+// SizeBytes returns the value of the "size_bytes" field in the mutation.
+func (m *CommunicationAttachmentMutation) SizeBytes() (r int64, exists bool) {
+	v := m.size_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSizeBytes returns the old "size_bytes" field's value of the CommunicationAttachment entity.
+// If the CommunicationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationAttachmentMutation) OldSizeBytes(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSizeBytes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSizeBytes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSizeBytes: %w", err)
+	}
+	return oldValue.SizeBytes, nil
+}
+
+// AddSizeBytes adds i to the "size_bytes" field.
+func (m *CommunicationAttachmentMutation) AddSizeBytes(i int64) {
+	if m.addsize_bytes != nil {
+		*m.addsize_bytes += i
+	} else {
+		m.addsize_bytes = &i
+	}
+}
+
+// AddedSizeBytes returns the value that was added to the "size_bytes" field in this mutation.
+func (m *CommunicationAttachmentMutation) AddedSizeBytes() (r int64, exists bool) {
+	v := m.addsize_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSizeBytes resets all changes to the "size_bytes" field.
+func (m *CommunicationAttachmentMutation) ResetSizeBytes() {
+	m.size_bytes = nil
+	m.addsize_bytes = nil
+}
+
+// SetChecksum sets the "checksum" field.
+func (m *CommunicationAttachmentMutation) SetChecksum(s string) {
+	m.checksum = &s
+}
+
+// Checksum returns the value of the "checksum" field in the mutation.
+func (m *CommunicationAttachmentMutation) Checksum() (r string, exists bool) {
+	v := m.checksum
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldChecksum returns the old "checksum" field's value of the CommunicationAttachment entity.
+// If the CommunicationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationAttachmentMutation) OldChecksum(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldChecksum is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldChecksum requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldChecksum: %w", err)
+	}
+	return oldValue.Checksum, nil
+}
+
+// ClearChecksum clears the value of the "checksum" field.
+func (m *CommunicationAttachmentMutation) ClearChecksum() {
+	m.checksum = nil
+	m.clearedFields[communicationattachment.FieldChecksum] = struct{}{}
+}
+
+// ChecksumCleared returns if the "checksum" field was cleared in this mutation.
+func (m *CommunicationAttachmentMutation) ChecksumCleared() bool {
+	_, ok := m.clearedFields[communicationattachment.FieldChecksum]
+	return ok
+}
+
+// ResetChecksum resets all changes to the "checksum" field.
+func (m *CommunicationAttachmentMutation) ResetChecksum() {
+	m.checksum = nil
+	delete(m.clearedFields, communicationattachment.FieldChecksum)
+}
+
+// SetVisibility sets the "visibility" field.
+func (m *CommunicationAttachmentMutation) SetVisibility(s string) {
+	m.visibility = &s
+}
+
+// Visibility returns the value of the "visibility" field in the mutation.
+func (m *CommunicationAttachmentMutation) Visibility() (r string, exists bool) {
+	v := m.visibility
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVisibility returns the old "visibility" field's value of the CommunicationAttachment entity.
+// If the CommunicationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationAttachmentMutation) OldVisibility(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVisibility is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVisibility requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVisibility: %w", err)
+	}
+	return oldValue.Visibility, nil
+}
+
+// ResetVisibility resets all changes to the "visibility" field.
+func (m *CommunicationAttachmentMutation) ResetVisibility() {
+	m.visibility = nil
+}
+
+// SetScanStatus sets the "scan_status" field.
+func (m *CommunicationAttachmentMutation) SetScanStatus(s string) {
+	m.scan_status = &s
+}
+
+// ScanStatus returns the value of the "scan_status" field in the mutation.
+func (m *CommunicationAttachmentMutation) ScanStatus() (r string, exists bool) {
+	v := m.scan_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScanStatus returns the old "scan_status" field's value of the CommunicationAttachment entity.
+// If the CommunicationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationAttachmentMutation) OldScanStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScanStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScanStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScanStatus: %w", err)
+	}
+	return oldValue.ScanStatus, nil
+}
+
+// ResetScanStatus resets all changes to the "scan_status" field.
+func (m *CommunicationAttachmentMutation) ResetScanStatus() {
+	m.scan_status = nil
+}
+
+// SetScannedAt sets the "scanned_at" field.
+func (m *CommunicationAttachmentMutation) SetScannedAt(t time.Time) {
+	m.scanned_at = &t
+}
+
+// ScannedAt returns the value of the "scanned_at" field in the mutation.
+func (m *CommunicationAttachmentMutation) ScannedAt() (r time.Time, exists bool) {
+	v := m.scanned_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScannedAt returns the old "scanned_at" field's value of the CommunicationAttachment entity.
+// If the CommunicationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationAttachmentMutation) OldScannedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScannedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScannedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScannedAt: %w", err)
+	}
+	return oldValue.ScannedAt, nil
+}
+
+// ClearScannedAt clears the value of the "scanned_at" field.
+func (m *CommunicationAttachmentMutation) ClearScannedAt() {
+	m.scanned_at = nil
+	m.clearedFields[communicationattachment.FieldScannedAt] = struct{}{}
+}
+
+// ScannedAtCleared returns if the "scanned_at" field was cleared in this mutation.
+func (m *CommunicationAttachmentMutation) ScannedAtCleared() bool {
+	_, ok := m.clearedFields[communicationattachment.FieldScannedAt]
+	return ok
+}
+
+// ResetScannedAt resets all changes to the "scanned_at" field.
+func (m *CommunicationAttachmentMutation) ResetScannedAt() {
+	m.scanned_at = nil
+	delete(m.clearedFields, communicationattachment.FieldScannedAt)
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (m *CommunicationAttachmentMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *CommunicationAttachmentMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the CommunicationAttachment entity.
+// If the CommunicationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationAttachmentMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (m *CommunicationAttachmentMutation) ClearExpiresAt() {
+	m.expires_at = nil
+	m.clearedFields[communicationattachment.FieldExpiresAt] = struct{}{}
+}
+
+// ExpiresAtCleared returns if the "expires_at" field was cleared in this mutation.
+func (m *CommunicationAttachmentMutation) ExpiresAtCleared() bool {
+	_, ok := m.clearedFields[communicationattachment.FieldExpiresAt]
+	return ok
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *CommunicationAttachmentMutation) ResetExpiresAt() {
+	m.expires_at = nil
+	delete(m.clearedFields, communicationattachment.FieldExpiresAt)
+}
+
+// SetSealedContent sets the "sealed_content" field.
+func (m *CommunicationAttachmentMutation) SetSealedContent(b []byte) {
+	m.sealed_content = &b
+}
+
+// SealedContent returns the value of the "sealed_content" field in the mutation.
+func (m *CommunicationAttachmentMutation) SealedContent() (r []byte, exists bool) {
+	v := m.sealed_content
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSealedContent returns the old "sealed_content" field's value of the CommunicationAttachment entity.
+// If the CommunicationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationAttachmentMutation) OldSealedContent(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSealedContent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSealedContent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSealedContent: %w", err)
+	}
+	return oldValue.SealedContent, nil
+}
+
+// ClearSealedContent clears the value of the "sealed_content" field.
+func (m *CommunicationAttachmentMutation) ClearSealedContent() {
+	m.sealed_content = nil
+	m.clearedFields[communicationattachment.FieldSealedContent] = struct{}{}
+}
+
+// SealedContentCleared returns if the "sealed_content" field was cleared in this mutation.
+func (m *CommunicationAttachmentMutation) SealedContentCleared() bool {
+	_, ok := m.clearedFields[communicationattachment.FieldSealedContent]
+	return ok
+}
+
+// ResetSealedContent resets all changes to the "sealed_content" field.
+func (m *CommunicationAttachmentMutation) ResetSealedContent() {
+	m.sealed_content = nil
+	delete(m.clearedFields, communicationattachment.FieldSealedContent)
+}
+
+// SetSealedExtractedText sets the "sealed_extracted_text" field.
+func (m *CommunicationAttachmentMutation) SetSealedExtractedText(s string) {
+	m.sealed_extracted_text = &s
+}
+
+// SealedExtractedText returns the value of the "sealed_extracted_text" field in the mutation.
+func (m *CommunicationAttachmentMutation) SealedExtractedText() (r string, exists bool) {
+	v := m.sealed_extracted_text
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSealedExtractedText returns the old "sealed_extracted_text" field's value of the CommunicationAttachment entity.
+// If the CommunicationAttachment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationAttachmentMutation) OldSealedExtractedText(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSealedExtractedText is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSealedExtractedText requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSealedExtractedText: %w", err)
+	}
+	return oldValue.SealedExtractedText, nil
+}
+
+// ClearSealedExtractedText clears the value of the "sealed_extracted_text" field.
+func (m *CommunicationAttachmentMutation) ClearSealedExtractedText() {
+	m.sealed_extracted_text = nil
+	m.clearedFields[communicationattachment.FieldSealedExtractedText] = struct{}{}
+}
+
+// SealedExtractedTextCleared returns if the "sealed_extracted_text" field was cleared in this mutation.
+func (m *CommunicationAttachmentMutation) SealedExtractedTextCleared() bool {
+	_, ok := m.clearedFields[communicationattachment.FieldSealedExtractedText]
+	return ok
+}
+
+// ResetSealedExtractedText resets all changes to the "sealed_extracted_text" field.
+func (m *CommunicationAttachmentMutation) ResetSealedExtractedText() {
+	m.sealed_extracted_text = nil
+	delete(m.clearedFields, communicationattachment.FieldSealedExtractedText)
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *CommunicationAttachmentMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *CommunicationAttachmentMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *CommunicationAttachmentMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *CommunicationAttachmentMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *CommunicationAttachmentMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *CommunicationAttachmentMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetInteractionID sets the "interaction" edge to the CommunicationInteraction entity by id.
+func (m *CommunicationAttachmentMutation) SetInteractionID(id uuid.UUID) {
+	m.interaction = &id
+}
+
+// ClearInteraction clears the "interaction" edge to the CommunicationInteraction entity.
+func (m *CommunicationAttachmentMutation) ClearInteraction() {
+	m.clearedinteraction = true
+}
+
+// InteractionCleared reports if the "interaction" edge to the CommunicationInteraction entity was cleared.
+func (m *CommunicationAttachmentMutation) InteractionCleared() bool {
+	return m.clearedinteraction
+}
+
+// InteractionID returns the "interaction" edge ID in the mutation.
+func (m *CommunicationAttachmentMutation) InteractionID() (id uuid.UUID, exists bool) {
+	if m.interaction != nil {
+		return *m.interaction, true
+	}
+	return
+}
+
+// InteractionIDs returns the "interaction" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// InteractionID instead. It exists only for internal usage by the builders.
+func (m *CommunicationAttachmentMutation) InteractionIDs() (ids []uuid.UUID) {
+	if id := m.interaction; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetInteraction resets all changes to the "interaction" edge.
+func (m *CommunicationAttachmentMutation) ResetInteraction() {
+	m.interaction = nil
+	m.clearedinteraction = false
+}
+
+// Where appends a list predicates to the CommunicationAttachmentMutation builder.
+func (m *CommunicationAttachmentMutation) Where(ps ...predicate.CommunicationAttachment) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CommunicationAttachmentMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CommunicationAttachmentMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CommunicationAttachment, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CommunicationAttachmentMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CommunicationAttachmentMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CommunicationAttachment).
+func (m *CommunicationAttachmentMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CommunicationAttachmentMutation) Fields() []string {
+	fields := make([]string, 0, 13)
+	if m.created_at != nil {
+		fields = append(fields, communicationattachment.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, communicationattachment.FieldUpdatedAt)
+	}
+	if m.provider_attachment_id != nil {
+		fields = append(fields, communicationattachment.FieldProviderAttachmentID)
+	}
+	if m.filename != nil {
+		fields = append(fields, communicationattachment.FieldFilename)
+	}
+	if m.mime_type != nil {
+		fields = append(fields, communicationattachment.FieldMimeType)
+	}
+	if m.size_bytes != nil {
+		fields = append(fields, communicationattachment.FieldSizeBytes)
+	}
+	if m.checksum != nil {
+		fields = append(fields, communicationattachment.FieldChecksum)
+	}
+	if m.visibility != nil {
+		fields = append(fields, communicationattachment.FieldVisibility)
+	}
+	if m.scan_status != nil {
+		fields = append(fields, communicationattachment.FieldScanStatus)
+	}
+	if m.scanned_at != nil {
+		fields = append(fields, communicationattachment.FieldScannedAt)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, communicationattachment.FieldExpiresAt)
+	}
+	if m.sealed_content != nil {
+		fields = append(fields, communicationattachment.FieldSealedContent)
+	}
+	if m.sealed_extracted_text != nil {
+		fields = append(fields, communicationattachment.FieldSealedExtractedText)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CommunicationAttachmentMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case communicationattachment.FieldCreatedAt:
+		return m.CreatedAt()
+	case communicationattachment.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case communicationattachment.FieldProviderAttachmentID:
+		return m.ProviderAttachmentID()
+	case communicationattachment.FieldFilename:
+		return m.Filename()
+	case communicationattachment.FieldMimeType:
+		return m.MimeType()
+	case communicationattachment.FieldSizeBytes:
+		return m.SizeBytes()
+	case communicationattachment.FieldChecksum:
+		return m.Checksum()
+	case communicationattachment.FieldVisibility:
+		return m.Visibility()
+	case communicationattachment.FieldScanStatus:
+		return m.ScanStatus()
+	case communicationattachment.FieldScannedAt:
+		return m.ScannedAt()
+	case communicationattachment.FieldExpiresAt:
+		return m.ExpiresAt()
+	case communicationattachment.FieldSealedContent:
+		return m.SealedContent()
+	case communicationattachment.FieldSealedExtractedText:
+		return m.SealedExtractedText()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CommunicationAttachmentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case communicationattachment.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case communicationattachment.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case communicationattachment.FieldProviderAttachmentID:
+		return m.OldProviderAttachmentID(ctx)
+	case communicationattachment.FieldFilename:
+		return m.OldFilename(ctx)
+	case communicationattachment.FieldMimeType:
+		return m.OldMimeType(ctx)
+	case communicationattachment.FieldSizeBytes:
+		return m.OldSizeBytes(ctx)
+	case communicationattachment.FieldChecksum:
+		return m.OldChecksum(ctx)
+	case communicationattachment.FieldVisibility:
+		return m.OldVisibility(ctx)
+	case communicationattachment.FieldScanStatus:
+		return m.OldScanStatus(ctx)
+	case communicationattachment.FieldScannedAt:
+		return m.OldScannedAt(ctx)
+	case communicationattachment.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	case communicationattachment.FieldSealedContent:
+		return m.OldSealedContent(ctx)
+	case communicationattachment.FieldSealedExtractedText:
+		return m.OldSealedExtractedText(ctx)
+	}
+	return nil, fmt.Errorf("unknown CommunicationAttachment field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationAttachmentMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case communicationattachment.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case communicationattachment.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case communicationattachment.FieldProviderAttachmentID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProviderAttachmentID(v)
+		return nil
+	case communicationattachment.FieldFilename:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFilename(v)
+		return nil
+	case communicationattachment.FieldMimeType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMimeType(v)
+		return nil
+	case communicationattachment.FieldSizeBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSizeBytes(v)
+		return nil
+	case communicationattachment.FieldChecksum:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetChecksum(v)
+		return nil
+	case communicationattachment.FieldVisibility:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVisibility(v)
+		return nil
+	case communicationattachment.FieldScanStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScanStatus(v)
+		return nil
+	case communicationattachment.FieldScannedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScannedAt(v)
+		return nil
+	case communicationattachment.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	case communicationattachment.FieldSealedContent:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSealedContent(v)
+		return nil
+	case communicationattachment.FieldSealedExtractedText:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSealedExtractedText(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationAttachment field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CommunicationAttachmentMutation) AddedFields() []string {
+	var fields []string
+	if m.addsize_bytes != nil {
+		fields = append(fields, communicationattachment.FieldSizeBytes)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CommunicationAttachmentMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case communicationattachment.FieldSizeBytes:
+		return m.AddedSizeBytes()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationAttachmentMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case communicationattachment.FieldSizeBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSizeBytes(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationAttachment numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CommunicationAttachmentMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(communicationattachment.FieldFilename) {
+		fields = append(fields, communicationattachment.FieldFilename)
+	}
+	if m.FieldCleared(communicationattachment.FieldMimeType) {
+		fields = append(fields, communicationattachment.FieldMimeType)
+	}
+	if m.FieldCleared(communicationattachment.FieldChecksum) {
+		fields = append(fields, communicationattachment.FieldChecksum)
+	}
+	if m.FieldCleared(communicationattachment.FieldScannedAt) {
+		fields = append(fields, communicationattachment.FieldScannedAt)
+	}
+	if m.FieldCleared(communicationattachment.FieldExpiresAt) {
+		fields = append(fields, communicationattachment.FieldExpiresAt)
+	}
+	if m.FieldCleared(communicationattachment.FieldSealedContent) {
+		fields = append(fields, communicationattachment.FieldSealedContent)
+	}
+	if m.FieldCleared(communicationattachment.FieldSealedExtractedText) {
+		fields = append(fields, communicationattachment.FieldSealedExtractedText)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CommunicationAttachmentMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CommunicationAttachmentMutation) ClearField(name string) error {
+	switch name {
+	case communicationattachment.FieldFilename:
+		m.ClearFilename()
+		return nil
+	case communicationattachment.FieldMimeType:
+		m.ClearMimeType()
+		return nil
+	case communicationattachment.FieldChecksum:
+		m.ClearChecksum()
+		return nil
+	case communicationattachment.FieldScannedAt:
+		m.ClearScannedAt()
+		return nil
+	case communicationattachment.FieldExpiresAt:
+		m.ClearExpiresAt()
+		return nil
+	case communicationattachment.FieldSealedContent:
+		m.ClearSealedContent()
+		return nil
+	case communicationattachment.FieldSealedExtractedText:
+		m.ClearSealedExtractedText()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationAttachment nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CommunicationAttachmentMutation) ResetField(name string) error {
+	switch name {
+	case communicationattachment.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case communicationattachment.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case communicationattachment.FieldProviderAttachmentID:
+		m.ResetProviderAttachmentID()
+		return nil
+	case communicationattachment.FieldFilename:
+		m.ResetFilename()
+		return nil
+	case communicationattachment.FieldMimeType:
+		m.ResetMimeType()
+		return nil
+	case communicationattachment.FieldSizeBytes:
+		m.ResetSizeBytes()
+		return nil
+	case communicationattachment.FieldChecksum:
+		m.ResetChecksum()
+		return nil
+	case communicationattachment.FieldVisibility:
+		m.ResetVisibility()
+		return nil
+	case communicationattachment.FieldScanStatus:
+		m.ResetScanStatus()
+		return nil
+	case communicationattachment.FieldScannedAt:
+		m.ResetScannedAt()
+		return nil
+	case communicationattachment.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	case communicationattachment.FieldSealedContent:
+		m.ResetSealedContent()
+		return nil
+	case communicationattachment.FieldSealedExtractedText:
+		m.ResetSealedExtractedText()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationAttachment field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CommunicationAttachmentMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.workspace != nil {
+		edges = append(edges, communicationattachment.EdgeWorkspace)
+	}
+	if m.interaction != nil {
+		edges = append(edges, communicationattachment.EdgeInteraction)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CommunicationAttachmentMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case communicationattachment.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case communicationattachment.EdgeInteraction:
+		if id := m.interaction; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CommunicationAttachmentMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CommunicationAttachmentMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CommunicationAttachmentMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedworkspace {
+		edges = append(edges, communicationattachment.EdgeWorkspace)
+	}
+	if m.clearedinteraction {
+		edges = append(edges, communicationattachment.EdgeInteraction)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CommunicationAttachmentMutation) EdgeCleared(name string) bool {
+	switch name {
+	case communicationattachment.EdgeWorkspace:
+		return m.clearedworkspace
+	case communicationattachment.EdgeInteraction:
+		return m.clearedinteraction
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CommunicationAttachmentMutation) ClearEdge(name string) error {
+	switch name {
+	case communicationattachment.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case communicationattachment.EdgeInteraction:
+		m.ClearInteraction()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationAttachment unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CommunicationAttachmentMutation) ResetEdge(name string) error {
+	switch name {
+	case communicationattachment.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case communicationattachment.EdgeInteraction:
+		m.ResetInteraction()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationAttachment edge %s", name)
+}
+
+// CommunicationInteractionMutation represents an operation that mutates the CommunicationInteraction nodes in the graph.
+type CommunicationInteractionMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *uuid.UUID
+	created_at          *time.Time
+	updated_at          *time.Time
+	source              *string
+	source_account_id   *string
+	provider_object_id  *string
+	source_version      *string
+	interaction_type    *string
+	direction           *string
+	subject             *string
+	occurred_at         *time.Time
+	received_at         *time.Time
+	visibility          *string
+	deleted             *bool
+	content_hash        *string
+	metadata_json       *string
+	clearedFields       map[string]struct{}
+	workspace           *uuid.UUID
+	clearedworkspace    bool
+	owner               *uuid.UUID
+	clearedowner        bool
+	relationship        *uuid.UUID
+	clearedrelationship bool
+	participants        map[uuid.UUID]struct{}
+	removedparticipants map[uuid.UUID]struct{}
+	clearedparticipants bool
+	attachments         map[uuid.UUID]struct{}
+	removedattachments  map[uuid.UUID]struct{}
+	clearedattachments  bool
+	done                bool
+	oldValue            func(context.Context) (*CommunicationInteraction, error)
+	predicates          []predicate.CommunicationInteraction
+}
+
+var _ ent.Mutation = (*CommunicationInteractionMutation)(nil)
+
+// communicationinteractionOption allows management of the mutation configuration using functional options.
+type communicationinteractionOption func(*CommunicationInteractionMutation)
+
+// newCommunicationInteractionMutation creates new mutation for the CommunicationInteraction entity.
+func newCommunicationInteractionMutation(c config, op Op, opts ...communicationinteractionOption) *CommunicationInteractionMutation {
+	m := &CommunicationInteractionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCommunicationInteraction,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCommunicationInteractionID sets the ID field of the mutation.
+func withCommunicationInteractionID(id uuid.UUID) communicationinteractionOption {
+	return func(m *CommunicationInteractionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CommunicationInteraction
+		)
+		m.oldValue = func(ctx context.Context) (*CommunicationInteraction, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CommunicationInteraction.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCommunicationInteraction sets the old CommunicationInteraction of the mutation.
+func withCommunicationInteraction(node *CommunicationInteraction) communicationinteractionOption {
+	return func(m *CommunicationInteractionMutation) {
+		m.oldValue = func(context.Context) (*CommunicationInteraction, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CommunicationInteractionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CommunicationInteractionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CommunicationInteraction entities.
+func (m *CommunicationInteractionMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CommunicationInteractionMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CommunicationInteractionMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CommunicationInteraction.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CommunicationInteractionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CommunicationInteractionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CommunicationInteractionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *CommunicationInteractionMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *CommunicationInteractionMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *CommunicationInteractionMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetSource sets the "source" field.
+func (m *CommunicationInteractionMutation) SetSource(s string) {
+	m.source = &s
+}
+
+// Source returns the value of the "source" field in the mutation.
+func (m *CommunicationInteractionMutation) Source() (r string, exists bool) {
+	v := m.source
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSource returns the old "source" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldSource(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSource is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSource requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSource: %w", err)
+	}
+	return oldValue.Source, nil
+}
+
+// ResetSource resets all changes to the "source" field.
+func (m *CommunicationInteractionMutation) ResetSource() {
+	m.source = nil
+}
+
+// SetSourceAccountID sets the "source_account_id" field.
+func (m *CommunicationInteractionMutation) SetSourceAccountID(s string) {
+	m.source_account_id = &s
+}
+
+// SourceAccountID returns the value of the "source_account_id" field in the mutation.
+func (m *CommunicationInteractionMutation) SourceAccountID() (r string, exists bool) {
+	v := m.source_account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceAccountID returns the old "source_account_id" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldSourceAccountID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceAccountID: %w", err)
+	}
+	return oldValue.SourceAccountID, nil
+}
+
+// ResetSourceAccountID resets all changes to the "source_account_id" field.
+func (m *CommunicationInteractionMutation) ResetSourceAccountID() {
+	m.source_account_id = nil
+}
+
+// SetProviderObjectID sets the "provider_object_id" field.
+func (m *CommunicationInteractionMutation) SetProviderObjectID(s string) {
+	m.provider_object_id = &s
+}
+
+// ProviderObjectID returns the value of the "provider_object_id" field in the mutation.
+func (m *CommunicationInteractionMutation) ProviderObjectID() (r string, exists bool) {
+	v := m.provider_object_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProviderObjectID returns the old "provider_object_id" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldProviderObjectID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProviderObjectID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProviderObjectID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProviderObjectID: %w", err)
+	}
+	return oldValue.ProviderObjectID, nil
+}
+
+// ResetProviderObjectID resets all changes to the "provider_object_id" field.
+func (m *CommunicationInteractionMutation) ResetProviderObjectID() {
+	m.provider_object_id = nil
+}
+
+// SetSourceVersion sets the "source_version" field.
+func (m *CommunicationInteractionMutation) SetSourceVersion(s string) {
+	m.source_version = &s
+}
+
+// SourceVersion returns the value of the "source_version" field in the mutation.
+func (m *CommunicationInteractionMutation) SourceVersion() (r string, exists bool) {
+	v := m.source_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceVersion returns the old "source_version" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldSourceVersion(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceVersion: %w", err)
+	}
+	return oldValue.SourceVersion, nil
+}
+
+// ResetSourceVersion resets all changes to the "source_version" field.
+func (m *CommunicationInteractionMutation) ResetSourceVersion() {
+	m.source_version = nil
+}
+
+// SetInteractionType sets the "interaction_type" field.
+func (m *CommunicationInteractionMutation) SetInteractionType(s string) {
+	m.interaction_type = &s
+}
+
+// InteractionType returns the value of the "interaction_type" field in the mutation.
+func (m *CommunicationInteractionMutation) InteractionType() (r string, exists bool) {
+	v := m.interaction_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldInteractionType returns the old "interaction_type" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldInteractionType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldInteractionType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldInteractionType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInteractionType: %w", err)
+	}
+	return oldValue.InteractionType, nil
+}
+
+// ResetInteractionType resets all changes to the "interaction_type" field.
+func (m *CommunicationInteractionMutation) ResetInteractionType() {
+	m.interaction_type = nil
+}
+
+// SetDirection sets the "direction" field.
+func (m *CommunicationInteractionMutation) SetDirection(s string) {
+	m.direction = &s
+}
+
+// Direction returns the value of the "direction" field in the mutation.
+func (m *CommunicationInteractionMutation) Direction() (r string, exists bool) {
+	v := m.direction
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDirection returns the old "direction" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldDirection(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDirection is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDirection requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDirection: %w", err)
+	}
+	return oldValue.Direction, nil
+}
+
+// ClearDirection clears the value of the "direction" field.
+func (m *CommunicationInteractionMutation) ClearDirection() {
+	m.direction = nil
+	m.clearedFields[communicationinteraction.FieldDirection] = struct{}{}
+}
+
+// DirectionCleared returns if the "direction" field was cleared in this mutation.
+func (m *CommunicationInteractionMutation) DirectionCleared() bool {
+	_, ok := m.clearedFields[communicationinteraction.FieldDirection]
+	return ok
+}
+
+// ResetDirection resets all changes to the "direction" field.
+func (m *CommunicationInteractionMutation) ResetDirection() {
+	m.direction = nil
+	delete(m.clearedFields, communicationinteraction.FieldDirection)
+}
+
+// SetSubject sets the "subject" field.
+func (m *CommunicationInteractionMutation) SetSubject(s string) {
+	m.subject = &s
+}
+
+// Subject returns the value of the "subject" field in the mutation.
+func (m *CommunicationInteractionMutation) Subject() (r string, exists bool) {
+	v := m.subject
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSubject returns the old "subject" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldSubject(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSubject is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSubject requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSubject: %w", err)
+	}
+	return oldValue.Subject, nil
+}
+
+// ClearSubject clears the value of the "subject" field.
+func (m *CommunicationInteractionMutation) ClearSubject() {
+	m.subject = nil
+	m.clearedFields[communicationinteraction.FieldSubject] = struct{}{}
+}
+
+// SubjectCleared returns if the "subject" field was cleared in this mutation.
+func (m *CommunicationInteractionMutation) SubjectCleared() bool {
+	_, ok := m.clearedFields[communicationinteraction.FieldSubject]
+	return ok
+}
+
+// ResetSubject resets all changes to the "subject" field.
+func (m *CommunicationInteractionMutation) ResetSubject() {
+	m.subject = nil
+	delete(m.clearedFields, communicationinteraction.FieldSubject)
+}
+
+// SetOccurredAt sets the "occurred_at" field.
+func (m *CommunicationInteractionMutation) SetOccurredAt(t time.Time) {
+	m.occurred_at = &t
+}
+
+// OccurredAt returns the value of the "occurred_at" field in the mutation.
+func (m *CommunicationInteractionMutation) OccurredAt() (r time.Time, exists bool) {
+	v := m.occurred_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOccurredAt returns the old "occurred_at" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldOccurredAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOccurredAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOccurredAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOccurredAt: %w", err)
+	}
+	return oldValue.OccurredAt, nil
+}
+
+// ResetOccurredAt resets all changes to the "occurred_at" field.
+func (m *CommunicationInteractionMutation) ResetOccurredAt() {
+	m.occurred_at = nil
+}
+
+// SetReceivedAt sets the "received_at" field.
+func (m *CommunicationInteractionMutation) SetReceivedAt(t time.Time) {
+	m.received_at = &t
+}
+
+// ReceivedAt returns the value of the "received_at" field in the mutation.
+func (m *CommunicationInteractionMutation) ReceivedAt() (r time.Time, exists bool) {
+	v := m.received_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReceivedAt returns the old "received_at" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldReceivedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReceivedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReceivedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReceivedAt: %w", err)
+	}
+	return oldValue.ReceivedAt, nil
+}
+
+// ResetReceivedAt resets all changes to the "received_at" field.
+func (m *CommunicationInteractionMutation) ResetReceivedAt() {
+	m.received_at = nil
+}
+
+// SetVisibility sets the "visibility" field.
+func (m *CommunicationInteractionMutation) SetVisibility(s string) {
+	m.visibility = &s
+}
+
+// Visibility returns the value of the "visibility" field in the mutation.
+func (m *CommunicationInteractionMutation) Visibility() (r string, exists bool) {
+	v := m.visibility
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVisibility returns the old "visibility" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldVisibility(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVisibility is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVisibility requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVisibility: %w", err)
+	}
+	return oldValue.Visibility, nil
+}
+
+// ResetVisibility resets all changes to the "visibility" field.
+func (m *CommunicationInteractionMutation) ResetVisibility() {
+	m.visibility = nil
+}
+
+// SetDeleted sets the "deleted" field.
+func (m *CommunicationInteractionMutation) SetDeleted(b bool) {
+	m.deleted = &b
+}
+
+// Deleted returns the value of the "deleted" field in the mutation.
+func (m *CommunicationInteractionMutation) Deleted() (r bool, exists bool) {
+	v := m.deleted
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeleted returns the old "deleted" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldDeleted(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeleted is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeleted requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeleted: %w", err)
+	}
+	return oldValue.Deleted, nil
+}
+
+// ResetDeleted resets all changes to the "deleted" field.
+func (m *CommunicationInteractionMutation) ResetDeleted() {
+	m.deleted = nil
+}
+
+// SetContentHash sets the "content_hash" field.
+func (m *CommunicationInteractionMutation) SetContentHash(s string) {
+	m.content_hash = &s
+}
+
+// ContentHash returns the value of the "content_hash" field in the mutation.
+func (m *CommunicationInteractionMutation) ContentHash() (r string, exists bool) {
+	v := m.content_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContentHash returns the old "content_hash" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldContentHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContentHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContentHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContentHash: %w", err)
+	}
+	return oldValue.ContentHash, nil
+}
+
+// ResetContentHash resets all changes to the "content_hash" field.
+func (m *CommunicationInteractionMutation) ResetContentHash() {
+	m.content_hash = nil
+}
+
+// SetMetadataJSON sets the "metadata_json" field.
+func (m *CommunicationInteractionMutation) SetMetadataJSON(s string) {
+	m.metadata_json = &s
+}
+
+// MetadataJSON returns the value of the "metadata_json" field in the mutation.
+func (m *CommunicationInteractionMutation) MetadataJSON() (r string, exists bool) {
+	v := m.metadata_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadataJSON returns the old "metadata_json" field's value of the CommunicationInteraction entity.
+// If the CommunicationInteraction object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationInteractionMutation) OldMetadataJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadataJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadataJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadataJSON: %w", err)
+	}
+	return oldValue.MetadataJSON, nil
+}
+
+// ResetMetadataJSON resets all changes to the "metadata_json" field.
+func (m *CommunicationInteractionMutation) ResetMetadataJSON() {
+	m.metadata_json = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *CommunicationInteractionMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *CommunicationInteractionMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *CommunicationInteractionMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *CommunicationInteractionMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *CommunicationInteractionMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *CommunicationInteractionMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetOwnerID sets the "owner" edge to the User entity by id.
+func (m *CommunicationInteractionMutation) SetOwnerID(id uuid.UUID) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the User entity.
+func (m *CommunicationInteractionMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the User entity was cleared.
+func (m *CommunicationInteractionMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *CommunicationInteractionMutation) OwnerID() (id uuid.UUID, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *CommunicationInteractionMutation) OwnerIDs() (ids []uuid.UUID) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *CommunicationInteractionMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// SetRelationshipID sets the "relationship" edge to the Relationship entity by id.
+func (m *CommunicationInteractionMutation) SetRelationshipID(id uuid.UUID) {
+	m.relationship = &id
+}
+
+// ClearRelationship clears the "relationship" edge to the Relationship entity.
+func (m *CommunicationInteractionMutation) ClearRelationship() {
+	m.clearedrelationship = true
+}
+
+// RelationshipCleared reports if the "relationship" edge to the Relationship entity was cleared.
+func (m *CommunicationInteractionMutation) RelationshipCleared() bool {
+	return m.clearedrelationship
+}
+
+// RelationshipID returns the "relationship" edge ID in the mutation.
+func (m *CommunicationInteractionMutation) RelationshipID() (id uuid.UUID, exists bool) {
+	if m.relationship != nil {
+		return *m.relationship, true
+	}
+	return
+}
+
+// RelationshipIDs returns the "relationship" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RelationshipID instead. It exists only for internal usage by the builders.
+func (m *CommunicationInteractionMutation) RelationshipIDs() (ids []uuid.UUID) {
+	if id := m.relationship; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRelationship resets all changes to the "relationship" edge.
+func (m *CommunicationInteractionMutation) ResetRelationship() {
+	m.relationship = nil
+	m.clearedrelationship = false
+}
+
+// AddParticipantIDs adds the "participants" edge to the CommunicationParticipant entity by ids.
+func (m *CommunicationInteractionMutation) AddParticipantIDs(ids ...uuid.UUID) {
+	if m.participants == nil {
+		m.participants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.participants[ids[i]] = struct{}{}
+	}
+}
+
+// ClearParticipants clears the "participants" edge to the CommunicationParticipant entity.
+func (m *CommunicationInteractionMutation) ClearParticipants() {
+	m.clearedparticipants = true
+}
+
+// ParticipantsCleared reports if the "participants" edge to the CommunicationParticipant entity was cleared.
+func (m *CommunicationInteractionMutation) ParticipantsCleared() bool {
+	return m.clearedparticipants
+}
+
+// RemoveParticipantIDs removes the "participants" edge to the CommunicationParticipant entity by IDs.
+func (m *CommunicationInteractionMutation) RemoveParticipantIDs(ids ...uuid.UUID) {
+	if m.removedparticipants == nil {
+		m.removedparticipants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.participants, ids[i])
+		m.removedparticipants[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedParticipants returns the removed IDs of the "participants" edge to the CommunicationParticipant entity.
+func (m *CommunicationInteractionMutation) RemovedParticipantsIDs() (ids []uuid.UUID) {
+	for id := range m.removedparticipants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ParticipantsIDs returns the "participants" edge IDs in the mutation.
+func (m *CommunicationInteractionMutation) ParticipantsIDs() (ids []uuid.UUID) {
+	for id := range m.participants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetParticipants resets all changes to the "participants" edge.
+func (m *CommunicationInteractionMutation) ResetParticipants() {
+	m.participants = nil
+	m.clearedparticipants = false
+	m.removedparticipants = nil
+}
+
+// AddAttachmentIDs adds the "attachments" edge to the CommunicationAttachment entity by ids.
+func (m *CommunicationInteractionMutation) AddAttachmentIDs(ids ...uuid.UUID) {
+	if m.attachments == nil {
+		m.attachments = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.attachments[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAttachments clears the "attachments" edge to the CommunicationAttachment entity.
+func (m *CommunicationInteractionMutation) ClearAttachments() {
+	m.clearedattachments = true
+}
+
+// AttachmentsCleared reports if the "attachments" edge to the CommunicationAttachment entity was cleared.
+func (m *CommunicationInteractionMutation) AttachmentsCleared() bool {
+	return m.clearedattachments
+}
+
+// RemoveAttachmentIDs removes the "attachments" edge to the CommunicationAttachment entity by IDs.
+func (m *CommunicationInteractionMutation) RemoveAttachmentIDs(ids ...uuid.UUID) {
+	if m.removedattachments == nil {
+		m.removedattachments = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.attachments, ids[i])
+		m.removedattachments[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAttachments returns the removed IDs of the "attachments" edge to the CommunicationAttachment entity.
+func (m *CommunicationInteractionMutation) RemovedAttachmentsIDs() (ids []uuid.UUID) {
+	for id := range m.removedattachments {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AttachmentsIDs returns the "attachments" edge IDs in the mutation.
+func (m *CommunicationInteractionMutation) AttachmentsIDs() (ids []uuid.UUID) {
+	for id := range m.attachments {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAttachments resets all changes to the "attachments" edge.
+func (m *CommunicationInteractionMutation) ResetAttachments() {
+	m.attachments = nil
+	m.clearedattachments = false
+	m.removedattachments = nil
+}
+
+// Where appends a list predicates to the CommunicationInteractionMutation builder.
+func (m *CommunicationInteractionMutation) Where(ps ...predicate.CommunicationInteraction) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CommunicationInteractionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CommunicationInteractionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CommunicationInteraction, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CommunicationInteractionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CommunicationInteractionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CommunicationInteraction).
+func (m *CommunicationInteractionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CommunicationInteractionMutation) Fields() []string {
+	fields := make([]string, 0, 15)
+	if m.created_at != nil {
+		fields = append(fields, communicationinteraction.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, communicationinteraction.FieldUpdatedAt)
+	}
+	if m.source != nil {
+		fields = append(fields, communicationinteraction.FieldSource)
+	}
+	if m.source_account_id != nil {
+		fields = append(fields, communicationinteraction.FieldSourceAccountID)
+	}
+	if m.provider_object_id != nil {
+		fields = append(fields, communicationinteraction.FieldProviderObjectID)
+	}
+	if m.source_version != nil {
+		fields = append(fields, communicationinteraction.FieldSourceVersion)
+	}
+	if m.interaction_type != nil {
+		fields = append(fields, communicationinteraction.FieldInteractionType)
+	}
+	if m.direction != nil {
+		fields = append(fields, communicationinteraction.FieldDirection)
+	}
+	if m.subject != nil {
+		fields = append(fields, communicationinteraction.FieldSubject)
+	}
+	if m.occurred_at != nil {
+		fields = append(fields, communicationinteraction.FieldOccurredAt)
+	}
+	if m.received_at != nil {
+		fields = append(fields, communicationinteraction.FieldReceivedAt)
+	}
+	if m.visibility != nil {
+		fields = append(fields, communicationinteraction.FieldVisibility)
+	}
+	if m.deleted != nil {
+		fields = append(fields, communicationinteraction.FieldDeleted)
+	}
+	if m.content_hash != nil {
+		fields = append(fields, communicationinteraction.FieldContentHash)
+	}
+	if m.metadata_json != nil {
+		fields = append(fields, communicationinteraction.FieldMetadataJSON)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CommunicationInteractionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case communicationinteraction.FieldCreatedAt:
+		return m.CreatedAt()
+	case communicationinteraction.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case communicationinteraction.FieldSource:
+		return m.Source()
+	case communicationinteraction.FieldSourceAccountID:
+		return m.SourceAccountID()
+	case communicationinteraction.FieldProviderObjectID:
+		return m.ProviderObjectID()
+	case communicationinteraction.FieldSourceVersion:
+		return m.SourceVersion()
+	case communicationinteraction.FieldInteractionType:
+		return m.InteractionType()
+	case communicationinteraction.FieldDirection:
+		return m.Direction()
+	case communicationinteraction.FieldSubject:
+		return m.Subject()
+	case communicationinteraction.FieldOccurredAt:
+		return m.OccurredAt()
+	case communicationinteraction.FieldReceivedAt:
+		return m.ReceivedAt()
+	case communicationinteraction.FieldVisibility:
+		return m.Visibility()
+	case communicationinteraction.FieldDeleted:
+		return m.Deleted()
+	case communicationinteraction.FieldContentHash:
+		return m.ContentHash()
+	case communicationinteraction.FieldMetadataJSON:
+		return m.MetadataJSON()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CommunicationInteractionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case communicationinteraction.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case communicationinteraction.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case communicationinteraction.FieldSource:
+		return m.OldSource(ctx)
+	case communicationinteraction.FieldSourceAccountID:
+		return m.OldSourceAccountID(ctx)
+	case communicationinteraction.FieldProviderObjectID:
+		return m.OldProviderObjectID(ctx)
+	case communicationinteraction.FieldSourceVersion:
+		return m.OldSourceVersion(ctx)
+	case communicationinteraction.FieldInteractionType:
+		return m.OldInteractionType(ctx)
+	case communicationinteraction.FieldDirection:
+		return m.OldDirection(ctx)
+	case communicationinteraction.FieldSubject:
+		return m.OldSubject(ctx)
+	case communicationinteraction.FieldOccurredAt:
+		return m.OldOccurredAt(ctx)
+	case communicationinteraction.FieldReceivedAt:
+		return m.OldReceivedAt(ctx)
+	case communicationinteraction.FieldVisibility:
+		return m.OldVisibility(ctx)
+	case communicationinteraction.FieldDeleted:
+		return m.OldDeleted(ctx)
+	case communicationinteraction.FieldContentHash:
+		return m.OldContentHash(ctx)
+	case communicationinteraction.FieldMetadataJSON:
+		return m.OldMetadataJSON(ctx)
+	}
+	return nil, fmt.Errorf("unknown CommunicationInteraction field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationInteractionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case communicationinteraction.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case communicationinteraction.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case communicationinteraction.FieldSource:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSource(v)
+		return nil
+	case communicationinteraction.FieldSourceAccountID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceAccountID(v)
+		return nil
+	case communicationinteraction.FieldProviderObjectID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProviderObjectID(v)
+		return nil
+	case communicationinteraction.FieldSourceVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceVersion(v)
+		return nil
+	case communicationinteraction.FieldInteractionType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetInteractionType(v)
+		return nil
+	case communicationinteraction.FieldDirection:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDirection(v)
+		return nil
+	case communicationinteraction.FieldSubject:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSubject(v)
+		return nil
+	case communicationinteraction.FieldOccurredAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOccurredAt(v)
+		return nil
+	case communicationinteraction.FieldReceivedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReceivedAt(v)
+		return nil
+	case communicationinteraction.FieldVisibility:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVisibility(v)
+		return nil
+	case communicationinteraction.FieldDeleted:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeleted(v)
+		return nil
+	case communicationinteraction.FieldContentHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContentHash(v)
+		return nil
+	case communicationinteraction.FieldMetadataJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadataJSON(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationInteraction field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CommunicationInteractionMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CommunicationInteractionMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationInteractionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CommunicationInteraction numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CommunicationInteractionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(communicationinteraction.FieldDirection) {
+		fields = append(fields, communicationinteraction.FieldDirection)
+	}
+	if m.FieldCleared(communicationinteraction.FieldSubject) {
+		fields = append(fields, communicationinteraction.FieldSubject)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CommunicationInteractionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CommunicationInteractionMutation) ClearField(name string) error {
+	switch name {
+	case communicationinteraction.FieldDirection:
+		m.ClearDirection()
+		return nil
+	case communicationinteraction.FieldSubject:
+		m.ClearSubject()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationInteraction nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CommunicationInteractionMutation) ResetField(name string) error {
+	switch name {
+	case communicationinteraction.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case communicationinteraction.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case communicationinteraction.FieldSource:
+		m.ResetSource()
+		return nil
+	case communicationinteraction.FieldSourceAccountID:
+		m.ResetSourceAccountID()
+		return nil
+	case communicationinteraction.FieldProviderObjectID:
+		m.ResetProviderObjectID()
+		return nil
+	case communicationinteraction.FieldSourceVersion:
+		m.ResetSourceVersion()
+		return nil
+	case communicationinteraction.FieldInteractionType:
+		m.ResetInteractionType()
+		return nil
+	case communicationinteraction.FieldDirection:
+		m.ResetDirection()
+		return nil
+	case communicationinteraction.FieldSubject:
+		m.ResetSubject()
+		return nil
+	case communicationinteraction.FieldOccurredAt:
+		m.ResetOccurredAt()
+		return nil
+	case communicationinteraction.FieldReceivedAt:
+		m.ResetReceivedAt()
+		return nil
+	case communicationinteraction.FieldVisibility:
+		m.ResetVisibility()
+		return nil
+	case communicationinteraction.FieldDeleted:
+		m.ResetDeleted()
+		return nil
+	case communicationinteraction.FieldContentHash:
+		m.ResetContentHash()
+		return nil
+	case communicationinteraction.FieldMetadataJSON:
+		m.ResetMetadataJSON()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationInteraction field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CommunicationInteractionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.workspace != nil {
+		edges = append(edges, communicationinteraction.EdgeWorkspace)
+	}
+	if m.owner != nil {
+		edges = append(edges, communicationinteraction.EdgeOwner)
+	}
+	if m.relationship != nil {
+		edges = append(edges, communicationinteraction.EdgeRelationship)
+	}
+	if m.participants != nil {
+		edges = append(edges, communicationinteraction.EdgeParticipants)
+	}
+	if m.attachments != nil {
+		edges = append(edges, communicationinteraction.EdgeAttachments)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CommunicationInteractionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case communicationinteraction.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case communicationinteraction.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case communicationinteraction.EdgeRelationship:
+		if id := m.relationship; id != nil {
+			return []ent.Value{*id}
+		}
+	case communicationinteraction.EdgeParticipants:
+		ids := make([]ent.Value, 0, len(m.participants))
+		for id := range m.participants {
+			ids = append(ids, id)
+		}
+		return ids
+	case communicationinteraction.EdgeAttachments:
+		ids := make([]ent.Value, 0, len(m.attachments))
+		for id := range m.attachments {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CommunicationInteractionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.removedparticipants != nil {
+		edges = append(edges, communicationinteraction.EdgeParticipants)
+	}
+	if m.removedattachments != nil {
+		edges = append(edges, communicationinteraction.EdgeAttachments)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CommunicationInteractionMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case communicationinteraction.EdgeParticipants:
+		ids := make([]ent.Value, 0, len(m.removedparticipants))
+		for id := range m.removedparticipants {
+			ids = append(ids, id)
+		}
+		return ids
+	case communicationinteraction.EdgeAttachments:
+		ids := make([]ent.Value, 0, len(m.removedattachments))
+		for id := range m.removedattachments {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CommunicationInteractionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.clearedworkspace {
+		edges = append(edges, communicationinteraction.EdgeWorkspace)
+	}
+	if m.clearedowner {
+		edges = append(edges, communicationinteraction.EdgeOwner)
+	}
+	if m.clearedrelationship {
+		edges = append(edges, communicationinteraction.EdgeRelationship)
+	}
+	if m.clearedparticipants {
+		edges = append(edges, communicationinteraction.EdgeParticipants)
+	}
+	if m.clearedattachments {
+		edges = append(edges, communicationinteraction.EdgeAttachments)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CommunicationInteractionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case communicationinteraction.EdgeWorkspace:
+		return m.clearedworkspace
+	case communicationinteraction.EdgeOwner:
+		return m.clearedowner
+	case communicationinteraction.EdgeRelationship:
+		return m.clearedrelationship
+	case communicationinteraction.EdgeParticipants:
+		return m.clearedparticipants
+	case communicationinteraction.EdgeAttachments:
+		return m.clearedattachments
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CommunicationInteractionMutation) ClearEdge(name string) error {
+	switch name {
+	case communicationinteraction.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case communicationinteraction.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	case communicationinteraction.EdgeRelationship:
+		m.ClearRelationship()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationInteraction unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CommunicationInteractionMutation) ResetEdge(name string) error {
+	switch name {
+	case communicationinteraction.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case communicationinteraction.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case communicationinteraction.EdgeRelationship:
+		m.ResetRelationship()
+		return nil
+	case communicationinteraction.EdgeParticipants:
+		m.ResetParticipants()
+		return nil
+	case communicationinteraction.EdgeAttachments:
+		m.ResetAttachments()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationInteraction edge %s", name)
+}
+
+// CommunicationParticipantMutation represents an operation that mutates the CommunicationParticipant nodes in the graph.
+type CommunicationParticipantMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *uuid.UUID
+	created_at         *time.Time
+	updated_at         *time.Time
+	email              *string
+	display_name       *string
+	role               *string
+	external           *bool
+	owner              *bool
+	clearedFields      map[string]struct{}
+	workspace          *uuid.UUID
+	clearedworkspace   bool
+	interaction        *uuid.UUID
+	clearedinteraction bool
+	done               bool
+	oldValue           func(context.Context) (*CommunicationParticipant, error)
+	predicates         []predicate.CommunicationParticipant
+}
+
+var _ ent.Mutation = (*CommunicationParticipantMutation)(nil)
+
+// communicationparticipantOption allows management of the mutation configuration using functional options.
+type communicationparticipantOption func(*CommunicationParticipantMutation)
+
+// newCommunicationParticipantMutation creates new mutation for the CommunicationParticipant entity.
+func newCommunicationParticipantMutation(c config, op Op, opts ...communicationparticipantOption) *CommunicationParticipantMutation {
+	m := &CommunicationParticipantMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCommunicationParticipant,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCommunicationParticipantID sets the ID field of the mutation.
+func withCommunicationParticipantID(id uuid.UUID) communicationparticipantOption {
+	return func(m *CommunicationParticipantMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CommunicationParticipant
+		)
+		m.oldValue = func(ctx context.Context) (*CommunicationParticipant, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CommunicationParticipant.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCommunicationParticipant sets the old CommunicationParticipant of the mutation.
+func withCommunicationParticipant(node *CommunicationParticipant) communicationparticipantOption {
+	return func(m *CommunicationParticipantMutation) {
+		m.oldValue = func(context.Context) (*CommunicationParticipant, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CommunicationParticipantMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CommunicationParticipantMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CommunicationParticipant entities.
+func (m *CommunicationParticipantMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CommunicationParticipantMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CommunicationParticipantMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CommunicationParticipant.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CommunicationParticipantMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CommunicationParticipantMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CommunicationParticipant entity.
+// If the CommunicationParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationParticipantMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CommunicationParticipantMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *CommunicationParticipantMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *CommunicationParticipantMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the CommunicationParticipant entity.
+// If the CommunicationParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationParticipantMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *CommunicationParticipantMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetEmail sets the "email" field.
+func (m *CommunicationParticipantMutation) SetEmail(s string) {
+	m.email = &s
+}
+
+// Email returns the value of the "email" field in the mutation.
+func (m *CommunicationParticipantMutation) Email() (r string, exists bool) {
+	v := m.email
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEmail returns the old "email" field's value of the CommunicationParticipant entity.
+// If the CommunicationParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationParticipantMutation) OldEmail(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEmail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEmail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEmail: %w", err)
+	}
+	return oldValue.Email, nil
+}
+
+// ResetEmail resets all changes to the "email" field.
+func (m *CommunicationParticipantMutation) ResetEmail() {
+	m.email = nil
+}
+
+// SetDisplayName sets the "display_name" field.
+func (m *CommunicationParticipantMutation) SetDisplayName(s string) {
+	m.display_name = &s
+}
+
+// DisplayName returns the value of the "display_name" field in the mutation.
+func (m *CommunicationParticipantMutation) DisplayName() (r string, exists bool) {
+	v := m.display_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDisplayName returns the old "display_name" field's value of the CommunicationParticipant entity.
+// If the CommunicationParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationParticipantMutation) OldDisplayName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDisplayName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDisplayName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDisplayName: %w", err)
+	}
+	return oldValue.DisplayName, nil
+}
+
+// ClearDisplayName clears the value of the "display_name" field.
+func (m *CommunicationParticipantMutation) ClearDisplayName() {
+	m.display_name = nil
+	m.clearedFields[communicationparticipant.FieldDisplayName] = struct{}{}
+}
+
+// DisplayNameCleared returns if the "display_name" field was cleared in this mutation.
+func (m *CommunicationParticipantMutation) DisplayNameCleared() bool {
+	_, ok := m.clearedFields[communicationparticipant.FieldDisplayName]
+	return ok
+}
+
+// ResetDisplayName resets all changes to the "display_name" field.
+func (m *CommunicationParticipantMutation) ResetDisplayName() {
+	m.display_name = nil
+	delete(m.clearedFields, communicationparticipant.FieldDisplayName)
+}
+
+// SetRole sets the "role" field.
+func (m *CommunicationParticipantMutation) SetRole(s string) {
+	m.role = &s
+}
+
+// Role returns the value of the "role" field in the mutation.
+func (m *CommunicationParticipantMutation) Role() (r string, exists bool) {
+	v := m.role
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRole returns the old "role" field's value of the CommunicationParticipant entity.
+// If the CommunicationParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationParticipantMutation) OldRole(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRole is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRole requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRole: %w", err)
+	}
+	return oldValue.Role, nil
+}
+
+// ResetRole resets all changes to the "role" field.
+func (m *CommunicationParticipantMutation) ResetRole() {
+	m.role = nil
+}
+
+// SetExternal sets the "external" field.
+func (m *CommunicationParticipantMutation) SetExternal(b bool) {
+	m.external = &b
+}
+
+// External returns the value of the "external" field in the mutation.
+func (m *CommunicationParticipantMutation) External() (r bool, exists bool) {
+	v := m.external
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExternal returns the old "external" field's value of the CommunicationParticipant entity.
+// If the CommunicationParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationParticipantMutation) OldExternal(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExternal is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExternal requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExternal: %w", err)
+	}
+	return oldValue.External, nil
+}
+
+// ResetExternal resets all changes to the "external" field.
+func (m *CommunicationParticipantMutation) ResetExternal() {
+	m.external = nil
+}
+
+// SetOwner sets the "owner" field.
+func (m *CommunicationParticipantMutation) SetOwner(b bool) {
+	m.owner = &b
+}
+
+// Owner returns the value of the "owner" field in the mutation.
+func (m *CommunicationParticipantMutation) Owner() (r bool, exists bool) {
+	v := m.owner
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOwner returns the old "owner" field's value of the CommunicationParticipant entity.
+// If the CommunicationParticipant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationParticipantMutation) OldOwner(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOwner is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOwner requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOwner: %w", err)
+	}
+	return oldValue.Owner, nil
+}
+
+// ResetOwner resets all changes to the "owner" field.
+func (m *CommunicationParticipantMutation) ResetOwner() {
+	m.owner = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *CommunicationParticipantMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *CommunicationParticipantMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *CommunicationParticipantMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *CommunicationParticipantMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *CommunicationParticipantMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *CommunicationParticipantMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetInteractionID sets the "interaction" edge to the CommunicationInteraction entity by id.
+func (m *CommunicationParticipantMutation) SetInteractionID(id uuid.UUID) {
+	m.interaction = &id
+}
+
+// ClearInteraction clears the "interaction" edge to the CommunicationInteraction entity.
+func (m *CommunicationParticipantMutation) ClearInteraction() {
+	m.clearedinteraction = true
+}
+
+// InteractionCleared reports if the "interaction" edge to the CommunicationInteraction entity was cleared.
+func (m *CommunicationParticipantMutation) InteractionCleared() bool {
+	return m.clearedinteraction
+}
+
+// InteractionID returns the "interaction" edge ID in the mutation.
+func (m *CommunicationParticipantMutation) InteractionID() (id uuid.UUID, exists bool) {
+	if m.interaction != nil {
+		return *m.interaction, true
+	}
+	return
+}
+
+// InteractionIDs returns the "interaction" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// InteractionID instead. It exists only for internal usage by the builders.
+func (m *CommunicationParticipantMutation) InteractionIDs() (ids []uuid.UUID) {
+	if id := m.interaction; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetInteraction resets all changes to the "interaction" edge.
+func (m *CommunicationParticipantMutation) ResetInteraction() {
+	m.interaction = nil
+	m.clearedinteraction = false
+}
+
+// Where appends a list predicates to the CommunicationParticipantMutation builder.
+func (m *CommunicationParticipantMutation) Where(ps ...predicate.CommunicationParticipant) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CommunicationParticipantMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CommunicationParticipantMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CommunicationParticipant, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CommunicationParticipantMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CommunicationParticipantMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CommunicationParticipant).
+func (m *CommunicationParticipantMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CommunicationParticipantMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.created_at != nil {
+		fields = append(fields, communicationparticipant.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, communicationparticipant.FieldUpdatedAt)
+	}
+	if m.email != nil {
+		fields = append(fields, communicationparticipant.FieldEmail)
+	}
+	if m.display_name != nil {
+		fields = append(fields, communicationparticipant.FieldDisplayName)
+	}
+	if m.role != nil {
+		fields = append(fields, communicationparticipant.FieldRole)
+	}
+	if m.external != nil {
+		fields = append(fields, communicationparticipant.FieldExternal)
+	}
+	if m.owner != nil {
+		fields = append(fields, communicationparticipant.FieldOwner)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CommunicationParticipantMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case communicationparticipant.FieldCreatedAt:
+		return m.CreatedAt()
+	case communicationparticipant.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case communicationparticipant.FieldEmail:
+		return m.Email()
+	case communicationparticipant.FieldDisplayName:
+		return m.DisplayName()
+	case communicationparticipant.FieldRole:
+		return m.Role()
+	case communicationparticipant.FieldExternal:
+		return m.External()
+	case communicationparticipant.FieldOwner:
+		return m.Owner()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CommunicationParticipantMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case communicationparticipant.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case communicationparticipant.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case communicationparticipant.FieldEmail:
+		return m.OldEmail(ctx)
+	case communicationparticipant.FieldDisplayName:
+		return m.OldDisplayName(ctx)
+	case communicationparticipant.FieldRole:
+		return m.OldRole(ctx)
+	case communicationparticipant.FieldExternal:
+		return m.OldExternal(ctx)
+	case communicationparticipant.FieldOwner:
+		return m.OldOwner(ctx)
+	}
+	return nil, fmt.Errorf("unknown CommunicationParticipant field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationParticipantMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case communicationparticipant.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case communicationparticipant.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case communicationparticipant.FieldEmail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEmail(v)
+		return nil
+	case communicationparticipant.FieldDisplayName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDisplayName(v)
+		return nil
+	case communicationparticipant.FieldRole:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRole(v)
+		return nil
+	case communicationparticipant.FieldExternal:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExternal(v)
+		return nil
+	case communicationparticipant.FieldOwner:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOwner(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationParticipant field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CommunicationParticipantMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CommunicationParticipantMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationParticipantMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CommunicationParticipant numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CommunicationParticipantMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(communicationparticipant.FieldDisplayName) {
+		fields = append(fields, communicationparticipant.FieldDisplayName)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CommunicationParticipantMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CommunicationParticipantMutation) ClearField(name string) error {
+	switch name {
+	case communicationparticipant.FieldDisplayName:
+		m.ClearDisplayName()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationParticipant nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CommunicationParticipantMutation) ResetField(name string) error {
+	switch name {
+	case communicationparticipant.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case communicationparticipant.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case communicationparticipant.FieldEmail:
+		m.ResetEmail()
+		return nil
+	case communicationparticipant.FieldDisplayName:
+		m.ResetDisplayName()
+		return nil
+	case communicationparticipant.FieldRole:
+		m.ResetRole()
+		return nil
+	case communicationparticipant.FieldExternal:
+		m.ResetExternal()
+		return nil
+	case communicationparticipant.FieldOwner:
+		m.ResetOwner()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationParticipant field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CommunicationParticipantMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.workspace != nil {
+		edges = append(edges, communicationparticipant.EdgeWorkspace)
+	}
+	if m.interaction != nil {
+		edges = append(edges, communicationparticipant.EdgeInteraction)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CommunicationParticipantMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case communicationparticipant.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case communicationparticipant.EdgeInteraction:
+		if id := m.interaction; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CommunicationParticipantMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CommunicationParticipantMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CommunicationParticipantMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedworkspace {
+		edges = append(edges, communicationparticipant.EdgeWorkspace)
+	}
+	if m.clearedinteraction {
+		edges = append(edges, communicationparticipant.EdgeInteraction)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CommunicationParticipantMutation) EdgeCleared(name string) bool {
+	switch name {
+	case communicationparticipant.EdgeWorkspace:
+		return m.clearedworkspace
+	case communicationparticipant.EdgeInteraction:
+		return m.clearedinteraction
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CommunicationParticipantMutation) ClearEdge(name string) error {
+	switch name {
+	case communicationparticipant.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case communicationparticipant.EdgeInteraction:
+		m.ClearInteraction()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationParticipant unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CommunicationParticipantMutation) ResetEdge(name string) error {
+	switch name {
+	case communicationparticipant.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case communicationparticipant.EdgeInteraction:
+		m.ResetInteraction()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationParticipant edge %s", name)
+}
+
+// CommunicationPrivacyPolicyMutation represents an operation that mutates the CommunicationPrivacyPolicy nodes in the graph.
+type CommunicationPrivacyPolicyMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *uuid.UUID
+	created_at               *time.Time
+	updated_at               *time.Time
+	source_account_id        *string
+	metadata_visibility      *string
+	share_subject            *bool
+	share_body               *bool
+	share_attachments        *bool
+	signature_enrichment     *bool
+	model_contact_extraction *bool
+	retention_days           *int
+	addretention_days        *int
+	version                  *int
+	addversion               *int
+	clearedFields            map[string]struct{}
+	workspace                *uuid.UUID
+	clearedworkspace         bool
+	owner                    *uuid.UUID
+	clearedowner             bool
+	done                     bool
+	oldValue                 func(context.Context) (*CommunicationPrivacyPolicy, error)
+	predicates               []predicate.CommunicationPrivacyPolicy
+}
+
+var _ ent.Mutation = (*CommunicationPrivacyPolicyMutation)(nil)
+
+// communicationprivacypolicyOption allows management of the mutation configuration using functional options.
+type communicationprivacypolicyOption func(*CommunicationPrivacyPolicyMutation)
+
+// newCommunicationPrivacyPolicyMutation creates new mutation for the CommunicationPrivacyPolicy entity.
+func newCommunicationPrivacyPolicyMutation(c config, op Op, opts ...communicationprivacypolicyOption) *CommunicationPrivacyPolicyMutation {
+	m := &CommunicationPrivacyPolicyMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCommunicationPrivacyPolicy,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCommunicationPrivacyPolicyID sets the ID field of the mutation.
+func withCommunicationPrivacyPolicyID(id uuid.UUID) communicationprivacypolicyOption {
+	return func(m *CommunicationPrivacyPolicyMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CommunicationPrivacyPolicy
+		)
+		m.oldValue = func(ctx context.Context) (*CommunicationPrivacyPolicy, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CommunicationPrivacyPolicy.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCommunicationPrivacyPolicy sets the old CommunicationPrivacyPolicy of the mutation.
+func withCommunicationPrivacyPolicy(node *CommunicationPrivacyPolicy) communicationprivacypolicyOption {
+	return func(m *CommunicationPrivacyPolicyMutation) {
+		m.oldValue = func(context.Context) (*CommunicationPrivacyPolicy, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CommunicationPrivacyPolicyMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CommunicationPrivacyPolicyMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CommunicationPrivacyPolicy entities.
+func (m *CommunicationPrivacyPolicyMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CommunicationPrivacyPolicyMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CommunicationPrivacyPolicyMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CommunicationPrivacyPolicy.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CommunicationPrivacyPolicyMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CommunicationPrivacyPolicyMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CommunicationPrivacyPolicy entity.
+// If the CommunicationPrivacyPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyPolicyMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CommunicationPrivacyPolicyMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *CommunicationPrivacyPolicyMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *CommunicationPrivacyPolicyMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the CommunicationPrivacyPolicy entity.
+// If the CommunicationPrivacyPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyPolicyMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *CommunicationPrivacyPolicyMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetSourceAccountID sets the "source_account_id" field.
+func (m *CommunicationPrivacyPolicyMutation) SetSourceAccountID(s string) {
+	m.source_account_id = &s
+}
+
+// SourceAccountID returns the value of the "source_account_id" field in the mutation.
+func (m *CommunicationPrivacyPolicyMutation) SourceAccountID() (r string, exists bool) {
+	v := m.source_account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceAccountID returns the old "source_account_id" field's value of the CommunicationPrivacyPolicy entity.
+// If the CommunicationPrivacyPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyPolicyMutation) OldSourceAccountID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceAccountID: %w", err)
+	}
+	return oldValue.SourceAccountID, nil
+}
+
+// ResetSourceAccountID resets all changes to the "source_account_id" field.
+func (m *CommunicationPrivacyPolicyMutation) ResetSourceAccountID() {
+	m.source_account_id = nil
+}
+
+// SetMetadataVisibility sets the "metadata_visibility" field.
+func (m *CommunicationPrivacyPolicyMutation) SetMetadataVisibility(s string) {
+	m.metadata_visibility = &s
+}
+
+// MetadataVisibility returns the value of the "metadata_visibility" field in the mutation.
+func (m *CommunicationPrivacyPolicyMutation) MetadataVisibility() (r string, exists bool) {
+	v := m.metadata_visibility
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadataVisibility returns the old "metadata_visibility" field's value of the CommunicationPrivacyPolicy entity.
+// If the CommunicationPrivacyPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyPolicyMutation) OldMetadataVisibility(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadataVisibility is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadataVisibility requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadataVisibility: %w", err)
+	}
+	return oldValue.MetadataVisibility, nil
+}
+
+// ResetMetadataVisibility resets all changes to the "metadata_visibility" field.
+func (m *CommunicationPrivacyPolicyMutation) ResetMetadataVisibility() {
+	m.metadata_visibility = nil
+}
+
+// SetShareSubject sets the "share_subject" field.
+func (m *CommunicationPrivacyPolicyMutation) SetShareSubject(b bool) {
+	m.share_subject = &b
+}
+
+// ShareSubject returns the value of the "share_subject" field in the mutation.
+func (m *CommunicationPrivacyPolicyMutation) ShareSubject() (r bool, exists bool) {
+	v := m.share_subject
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldShareSubject returns the old "share_subject" field's value of the CommunicationPrivacyPolicy entity.
+// If the CommunicationPrivacyPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyPolicyMutation) OldShareSubject(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldShareSubject is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldShareSubject requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldShareSubject: %w", err)
+	}
+	return oldValue.ShareSubject, nil
+}
+
+// ResetShareSubject resets all changes to the "share_subject" field.
+func (m *CommunicationPrivacyPolicyMutation) ResetShareSubject() {
+	m.share_subject = nil
+}
+
+// SetShareBody sets the "share_body" field.
+func (m *CommunicationPrivacyPolicyMutation) SetShareBody(b bool) {
+	m.share_body = &b
+}
+
+// ShareBody returns the value of the "share_body" field in the mutation.
+func (m *CommunicationPrivacyPolicyMutation) ShareBody() (r bool, exists bool) {
+	v := m.share_body
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldShareBody returns the old "share_body" field's value of the CommunicationPrivacyPolicy entity.
+// If the CommunicationPrivacyPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyPolicyMutation) OldShareBody(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldShareBody is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldShareBody requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldShareBody: %w", err)
+	}
+	return oldValue.ShareBody, nil
+}
+
+// ResetShareBody resets all changes to the "share_body" field.
+func (m *CommunicationPrivacyPolicyMutation) ResetShareBody() {
+	m.share_body = nil
+}
+
+// SetShareAttachments sets the "share_attachments" field.
+func (m *CommunicationPrivacyPolicyMutation) SetShareAttachments(b bool) {
+	m.share_attachments = &b
+}
+
+// ShareAttachments returns the value of the "share_attachments" field in the mutation.
+func (m *CommunicationPrivacyPolicyMutation) ShareAttachments() (r bool, exists bool) {
+	v := m.share_attachments
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldShareAttachments returns the old "share_attachments" field's value of the CommunicationPrivacyPolicy entity.
+// If the CommunicationPrivacyPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyPolicyMutation) OldShareAttachments(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldShareAttachments is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldShareAttachments requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldShareAttachments: %w", err)
+	}
+	return oldValue.ShareAttachments, nil
+}
+
+// ResetShareAttachments resets all changes to the "share_attachments" field.
+func (m *CommunicationPrivacyPolicyMutation) ResetShareAttachments() {
+	m.share_attachments = nil
+}
+
+// SetSignatureEnrichment sets the "signature_enrichment" field.
+func (m *CommunicationPrivacyPolicyMutation) SetSignatureEnrichment(b bool) {
+	m.signature_enrichment = &b
+}
+
+// SignatureEnrichment returns the value of the "signature_enrichment" field in the mutation.
+func (m *CommunicationPrivacyPolicyMutation) SignatureEnrichment() (r bool, exists bool) {
+	v := m.signature_enrichment
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSignatureEnrichment returns the old "signature_enrichment" field's value of the CommunicationPrivacyPolicy entity.
+// If the CommunicationPrivacyPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyPolicyMutation) OldSignatureEnrichment(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSignatureEnrichment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSignatureEnrichment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSignatureEnrichment: %w", err)
+	}
+	return oldValue.SignatureEnrichment, nil
+}
+
+// ResetSignatureEnrichment resets all changes to the "signature_enrichment" field.
+func (m *CommunicationPrivacyPolicyMutation) ResetSignatureEnrichment() {
+	m.signature_enrichment = nil
+}
+
+// SetModelContactExtraction sets the "model_contact_extraction" field.
+func (m *CommunicationPrivacyPolicyMutation) SetModelContactExtraction(b bool) {
+	m.model_contact_extraction = &b
+}
+
+// ModelContactExtraction returns the value of the "model_contact_extraction" field in the mutation.
+func (m *CommunicationPrivacyPolicyMutation) ModelContactExtraction() (r bool, exists bool) {
+	v := m.model_contact_extraction
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldModelContactExtraction returns the old "model_contact_extraction" field's value of the CommunicationPrivacyPolicy entity.
+// If the CommunicationPrivacyPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyPolicyMutation) OldModelContactExtraction(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModelContactExtraction is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModelContactExtraction requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModelContactExtraction: %w", err)
+	}
+	return oldValue.ModelContactExtraction, nil
+}
+
+// ResetModelContactExtraction resets all changes to the "model_contact_extraction" field.
+func (m *CommunicationPrivacyPolicyMutation) ResetModelContactExtraction() {
+	m.model_contact_extraction = nil
+}
+
+// SetRetentionDays sets the "retention_days" field.
+func (m *CommunicationPrivacyPolicyMutation) SetRetentionDays(i int) {
+	m.retention_days = &i
+	m.addretention_days = nil
+}
+
+// RetentionDays returns the value of the "retention_days" field in the mutation.
+func (m *CommunicationPrivacyPolicyMutation) RetentionDays() (r int, exists bool) {
+	v := m.retention_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRetentionDays returns the old "retention_days" field's value of the CommunicationPrivacyPolicy entity.
+// If the CommunicationPrivacyPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyPolicyMutation) OldRetentionDays(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRetentionDays is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRetentionDays requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRetentionDays: %w", err)
+	}
+	return oldValue.RetentionDays, nil
+}
+
+// AddRetentionDays adds i to the "retention_days" field.
+func (m *CommunicationPrivacyPolicyMutation) AddRetentionDays(i int) {
+	if m.addretention_days != nil {
+		*m.addretention_days += i
+	} else {
+		m.addretention_days = &i
+	}
+}
+
+// AddedRetentionDays returns the value that was added to the "retention_days" field in this mutation.
+func (m *CommunicationPrivacyPolicyMutation) AddedRetentionDays() (r int, exists bool) {
+	v := m.addretention_days
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRetentionDays resets all changes to the "retention_days" field.
+func (m *CommunicationPrivacyPolicyMutation) ResetRetentionDays() {
+	m.retention_days = nil
+	m.addretention_days = nil
+}
+
+// SetVersion sets the "version" field.
+func (m *CommunicationPrivacyPolicyMutation) SetVersion(i int) {
+	m.version = &i
+	m.addversion = nil
+}
+
+// Version returns the value of the "version" field in the mutation.
+func (m *CommunicationPrivacyPolicyMutation) Version() (r int, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersion returns the old "version" field's value of the CommunicationPrivacyPolicy entity.
+// If the CommunicationPrivacyPolicy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyPolicyMutation) OldVersion(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// AddVersion adds i to the "version" field.
+func (m *CommunicationPrivacyPolicyMutation) AddVersion(i int) {
+	if m.addversion != nil {
+		*m.addversion += i
+	} else {
+		m.addversion = &i
+	}
+}
+
+// AddedVersion returns the value that was added to the "version" field in this mutation.
+func (m *CommunicationPrivacyPolicyMutation) AddedVersion() (r int, exists bool) {
+	v := m.addversion
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetVersion resets all changes to the "version" field.
+func (m *CommunicationPrivacyPolicyMutation) ResetVersion() {
+	m.version = nil
+	m.addversion = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *CommunicationPrivacyPolicyMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *CommunicationPrivacyPolicyMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *CommunicationPrivacyPolicyMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *CommunicationPrivacyPolicyMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *CommunicationPrivacyPolicyMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *CommunicationPrivacyPolicyMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetOwnerID sets the "owner" edge to the User entity by id.
+func (m *CommunicationPrivacyPolicyMutation) SetOwnerID(id uuid.UUID) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the User entity.
+func (m *CommunicationPrivacyPolicyMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the User entity was cleared.
+func (m *CommunicationPrivacyPolicyMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *CommunicationPrivacyPolicyMutation) OwnerID() (id uuid.UUID, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *CommunicationPrivacyPolicyMutation) OwnerIDs() (ids []uuid.UUID) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *CommunicationPrivacyPolicyMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// Where appends a list predicates to the CommunicationPrivacyPolicyMutation builder.
+func (m *CommunicationPrivacyPolicyMutation) Where(ps ...predicate.CommunicationPrivacyPolicy) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CommunicationPrivacyPolicyMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CommunicationPrivacyPolicyMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CommunicationPrivacyPolicy, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CommunicationPrivacyPolicyMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CommunicationPrivacyPolicyMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CommunicationPrivacyPolicy).
+func (m *CommunicationPrivacyPolicyMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CommunicationPrivacyPolicyMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.created_at != nil {
+		fields = append(fields, communicationprivacypolicy.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, communicationprivacypolicy.FieldUpdatedAt)
+	}
+	if m.source_account_id != nil {
+		fields = append(fields, communicationprivacypolicy.FieldSourceAccountID)
+	}
+	if m.metadata_visibility != nil {
+		fields = append(fields, communicationprivacypolicy.FieldMetadataVisibility)
+	}
+	if m.share_subject != nil {
+		fields = append(fields, communicationprivacypolicy.FieldShareSubject)
+	}
+	if m.share_body != nil {
+		fields = append(fields, communicationprivacypolicy.FieldShareBody)
+	}
+	if m.share_attachments != nil {
+		fields = append(fields, communicationprivacypolicy.FieldShareAttachments)
+	}
+	if m.signature_enrichment != nil {
+		fields = append(fields, communicationprivacypolicy.FieldSignatureEnrichment)
+	}
+	if m.model_contact_extraction != nil {
+		fields = append(fields, communicationprivacypolicy.FieldModelContactExtraction)
+	}
+	if m.retention_days != nil {
+		fields = append(fields, communicationprivacypolicy.FieldRetentionDays)
+	}
+	if m.version != nil {
+		fields = append(fields, communicationprivacypolicy.FieldVersion)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CommunicationPrivacyPolicyMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case communicationprivacypolicy.FieldCreatedAt:
+		return m.CreatedAt()
+	case communicationprivacypolicy.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case communicationprivacypolicy.FieldSourceAccountID:
+		return m.SourceAccountID()
+	case communicationprivacypolicy.FieldMetadataVisibility:
+		return m.MetadataVisibility()
+	case communicationprivacypolicy.FieldShareSubject:
+		return m.ShareSubject()
+	case communicationprivacypolicy.FieldShareBody:
+		return m.ShareBody()
+	case communicationprivacypolicy.FieldShareAttachments:
+		return m.ShareAttachments()
+	case communicationprivacypolicy.FieldSignatureEnrichment:
+		return m.SignatureEnrichment()
+	case communicationprivacypolicy.FieldModelContactExtraction:
+		return m.ModelContactExtraction()
+	case communicationprivacypolicy.FieldRetentionDays:
+		return m.RetentionDays()
+	case communicationprivacypolicy.FieldVersion:
+		return m.Version()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CommunicationPrivacyPolicyMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case communicationprivacypolicy.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case communicationprivacypolicy.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case communicationprivacypolicy.FieldSourceAccountID:
+		return m.OldSourceAccountID(ctx)
+	case communicationprivacypolicy.FieldMetadataVisibility:
+		return m.OldMetadataVisibility(ctx)
+	case communicationprivacypolicy.FieldShareSubject:
+		return m.OldShareSubject(ctx)
+	case communicationprivacypolicy.FieldShareBody:
+		return m.OldShareBody(ctx)
+	case communicationprivacypolicy.FieldShareAttachments:
+		return m.OldShareAttachments(ctx)
+	case communicationprivacypolicy.FieldSignatureEnrichment:
+		return m.OldSignatureEnrichment(ctx)
+	case communicationprivacypolicy.FieldModelContactExtraction:
+		return m.OldModelContactExtraction(ctx)
+	case communicationprivacypolicy.FieldRetentionDays:
+		return m.OldRetentionDays(ctx)
+	case communicationprivacypolicy.FieldVersion:
+		return m.OldVersion(ctx)
+	}
+	return nil, fmt.Errorf("unknown CommunicationPrivacyPolicy field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationPrivacyPolicyMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case communicationprivacypolicy.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case communicationprivacypolicy.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case communicationprivacypolicy.FieldSourceAccountID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceAccountID(v)
+		return nil
+	case communicationprivacypolicy.FieldMetadataVisibility:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadataVisibility(v)
+		return nil
+	case communicationprivacypolicy.FieldShareSubject:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetShareSubject(v)
+		return nil
+	case communicationprivacypolicy.FieldShareBody:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetShareBody(v)
+		return nil
+	case communicationprivacypolicy.FieldShareAttachments:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetShareAttachments(v)
+		return nil
+	case communicationprivacypolicy.FieldSignatureEnrichment:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSignatureEnrichment(v)
+		return nil
+	case communicationprivacypolicy.FieldModelContactExtraction:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModelContactExtraction(v)
+		return nil
+	case communicationprivacypolicy.FieldRetentionDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRetentionDays(v)
+		return nil
+	case communicationprivacypolicy.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersion(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationPrivacyPolicy field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CommunicationPrivacyPolicyMutation) AddedFields() []string {
+	var fields []string
+	if m.addretention_days != nil {
+		fields = append(fields, communicationprivacypolicy.FieldRetentionDays)
+	}
+	if m.addversion != nil {
+		fields = append(fields, communicationprivacypolicy.FieldVersion)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CommunicationPrivacyPolicyMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case communicationprivacypolicy.FieldRetentionDays:
+		return m.AddedRetentionDays()
+	case communicationprivacypolicy.FieldVersion:
+		return m.AddedVersion()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationPrivacyPolicyMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case communicationprivacypolicy.FieldRetentionDays:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRetentionDays(v)
+		return nil
+	case communicationprivacypolicy.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddVersion(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationPrivacyPolicy numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CommunicationPrivacyPolicyMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CommunicationPrivacyPolicyMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CommunicationPrivacyPolicyMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown CommunicationPrivacyPolicy nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CommunicationPrivacyPolicyMutation) ResetField(name string) error {
+	switch name {
+	case communicationprivacypolicy.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case communicationprivacypolicy.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case communicationprivacypolicy.FieldSourceAccountID:
+		m.ResetSourceAccountID()
+		return nil
+	case communicationprivacypolicy.FieldMetadataVisibility:
+		m.ResetMetadataVisibility()
+		return nil
+	case communicationprivacypolicy.FieldShareSubject:
+		m.ResetShareSubject()
+		return nil
+	case communicationprivacypolicy.FieldShareBody:
+		m.ResetShareBody()
+		return nil
+	case communicationprivacypolicy.FieldShareAttachments:
+		m.ResetShareAttachments()
+		return nil
+	case communicationprivacypolicy.FieldSignatureEnrichment:
+		m.ResetSignatureEnrichment()
+		return nil
+	case communicationprivacypolicy.FieldModelContactExtraction:
+		m.ResetModelContactExtraction()
+		return nil
+	case communicationprivacypolicy.FieldRetentionDays:
+		m.ResetRetentionDays()
+		return nil
+	case communicationprivacypolicy.FieldVersion:
+		m.ResetVersion()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationPrivacyPolicy field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CommunicationPrivacyPolicyMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.workspace != nil {
+		edges = append(edges, communicationprivacypolicy.EdgeWorkspace)
+	}
+	if m.owner != nil {
+		edges = append(edges, communicationprivacypolicy.EdgeOwner)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CommunicationPrivacyPolicyMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case communicationprivacypolicy.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case communicationprivacypolicy.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CommunicationPrivacyPolicyMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CommunicationPrivacyPolicyMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CommunicationPrivacyPolicyMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedworkspace {
+		edges = append(edges, communicationprivacypolicy.EdgeWorkspace)
+	}
+	if m.clearedowner {
+		edges = append(edges, communicationprivacypolicy.EdgeOwner)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CommunicationPrivacyPolicyMutation) EdgeCleared(name string) bool {
+	switch name {
+	case communicationprivacypolicy.EdgeWorkspace:
+		return m.clearedworkspace
+	case communicationprivacypolicy.EdgeOwner:
+		return m.clearedowner
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CommunicationPrivacyPolicyMutation) ClearEdge(name string) error {
+	switch name {
+	case communicationprivacypolicy.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case communicationprivacypolicy.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationPrivacyPolicy unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CommunicationPrivacyPolicyMutation) ResetEdge(name string) error {
+	switch name {
+	case communicationprivacypolicy.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case communicationprivacypolicy.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationPrivacyPolicy edge %s", name)
+}
+
+// CommunicationPrivacyRuleMutation represents an operation that mutates the CommunicationPrivacyRule nodes in the graph.
+type CommunicationPrivacyRuleMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	kind             *string
+	value            *string
+	value_hash       *string
+	active           *bool
+	clearedFields    map[string]struct{}
+	workspace        *uuid.UUID
+	clearedworkspace bool
+	owner            *uuid.UUID
+	clearedowner     bool
+	done             bool
+	oldValue         func(context.Context) (*CommunicationPrivacyRule, error)
+	predicates       []predicate.CommunicationPrivacyRule
+}
+
+var _ ent.Mutation = (*CommunicationPrivacyRuleMutation)(nil)
+
+// communicationprivacyruleOption allows management of the mutation configuration using functional options.
+type communicationprivacyruleOption func(*CommunicationPrivacyRuleMutation)
+
+// newCommunicationPrivacyRuleMutation creates new mutation for the CommunicationPrivacyRule entity.
+func newCommunicationPrivacyRuleMutation(c config, op Op, opts ...communicationprivacyruleOption) *CommunicationPrivacyRuleMutation {
+	m := &CommunicationPrivacyRuleMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCommunicationPrivacyRule,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCommunicationPrivacyRuleID sets the ID field of the mutation.
+func withCommunicationPrivacyRuleID(id uuid.UUID) communicationprivacyruleOption {
+	return func(m *CommunicationPrivacyRuleMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CommunicationPrivacyRule
+		)
+		m.oldValue = func(ctx context.Context) (*CommunicationPrivacyRule, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CommunicationPrivacyRule.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCommunicationPrivacyRule sets the old CommunicationPrivacyRule of the mutation.
+func withCommunicationPrivacyRule(node *CommunicationPrivacyRule) communicationprivacyruleOption {
+	return func(m *CommunicationPrivacyRuleMutation) {
+		m.oldValue = func(context.Context) (*CommunicationPrivacyRule, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CommunicationPrivacyRuleMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CommunicationPrivacyRuleMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CommunicationPrivacyRule entities.
+func (m *CommunicationPrivacyRuleMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CommunicationPrivacyRuleMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CommunicationPrivacyRuleMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CommunicationPrivacyRule.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CommunicationPrivacyRuleMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CommunicationPrivacyRuleMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CommunicationPrivacyRule entity.
+// If the CommunicationPrivacyRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyRuleMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CommunicationPrivacyRuleMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *CommunicationPrivacyRuleMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *CommunicationPrivacyRuleMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the CommunicationPrivacyRule entity.
+// If the CommunicationPrivacyRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyRuleMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *CommunicationPrivacyRuleMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *CommunicationPrivacyRuleMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *CommunicationPrivacyRuleMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the CommunicationPrivacyRule entity.
+// If the CommunicationPrivacyRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyRuleMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *CommunicationPrivacyRuleMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetValue sets the "value" field.
+func (m *CommunicationPrivacyRuleMutation) SetValue(s string) {
+	m.value = &s
+}
+
+// Value returns the value of the "value" field in the mutation.
+func (m *CommunicationPrivacyRuleMutation) Value() (r string, exists bool) {
+	v := m.value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValue returns the old "value" field's value of the CommunicationPrivacyRule entity.
+// If the CommunicationPrivacyRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyRuleMutation) OldValue(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValue: %w", err)
+	}
+	return oldValue.Value, nil
+}
+
+// ResetValue resets all changes to the "value" field.
+func (m *CommunicationPrivacyRuleMutation) ResetValue() {
+	m.value = nil
+}
+
+// SetValueHash sets the "value_hash" field.
+func (m *CommunicationPrivacyRuleMutation) SetValueHash(s string) {
+	m.value_hash = &s
+}
+
+// ValueHash returns the value of the "value_hash" field in the mutation.
+func (m *CommunicationPrivacyRuleMutation) ValueHash() (r string, exists bool) {
+	v := m.value_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldValueHash returns the old "value_hash" field's value of the CommunicationPrivacyRule entity.
+// If the CommunicationPrivacyRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyRuleMutation) OldValueHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldValueHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldValueHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldValueHash: %w", err)
+	}
+	return oldValue.ValueHash, nil
+}
+
+// ResetValueHash resets all changes to the "value_hash" field.
+func (m *CommunicationPrivacyRuleMutation) ResetValueHash() {
+	m.value_hash = nil
+}
+
+// SetActive sets the "active" field.
+func (m *CommunicationPrivacyRuleMutation) SetActive(b bool) {
+	m.active = &b
+}
+
+// Active returns the value of the "active" field in the mutation.
+func (m *CommunicationPrivacyRuleMutation) Active() (r bool, exists bool) {
+	v := m.active
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActive returns the old "active" field's value of the CommunicationPrivacyRule entity.
+// If the CommunicationPrivacyRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationPrivacyRuleMutation) OldActive(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActive is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActive requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActive: %w", err)
+	}
+	return oldValue.Active, nil
+}
+
+// ResetActive resets all changes to the "active" field.
+func (m *CommunicationPrivacyRuleMutation) ResetActive() {
+	m.active = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *CommunicationPrivacyRuleMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *CommunicationPrivacyRuleMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *CommunicationPrivacyRuleMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *CommunicationPrivacyRuleMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *CommunicationPrivacyRuleMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *CommunicationPrivacyRuleMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetOwnerID sets the "owner" edge to the User entity by id.
+func (m *CommunicationPrivacyRuleMutation) SetOwnerID(id uuid.UUID) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the User entity.
+func (m *CommunicationPrivacyRuleMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the User entity was cleared.
+func (m *CommunicationPrivacyRuleMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *CommunicationPrivacyRuleMutation) OwnerID() (id uuid.UUID, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *CommunicationPrivacyRuleMutation) OwnerIDs() (ids []uuid.UUID) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *CommunicationPrivacyRuleMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// Where appends a list predicates to the CommunicationPrivacyRuleMutation builder.
+func (m *CommunicationPrivacyRuleMutation) Where(ps ...predicate.CommunicationPrivacyRule) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CommunicationPrivacyRuleMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CommunicationPrivacyRuleMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CommunicationPrivacyRule, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CommunicationPrivacyRuleMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CommunicationPrivacyRuleMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CommunicationPrivacyRule).
+func (m *CommunicationPrivacyRuleMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CommunicationPrivacyRuleMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.created_at != nil {
+		fields = append(fields, communicationprivacyrule.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, communicationprivacyrule.FieldUpdatedAt)
+	}
+	if m.kind != nil {
+		fields = append(fields, communicationprivacyrule.FieldKind)
+	}
+	if m.value != nil {
+		fields = append(fields, communicationprivacyrule.FieldValue)
+	}
+	if m.value_hash != nil {
+		fields = append(fields, communicationprivacyrule.FieldValueHash)
+	}
+	if m.active != nil {
+		fields = append(fields, communicationprivacyrule.FieldActive)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CommunicationPrivacyRuleMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case communicationprivacyrule.FieldCreatedAt:
+		return m.CreatedAt()
+	case communicationprivacyrule.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case communicationprivacyrule.FieldKind:
+		return m.Kind()
+	case communicationprivacyrule.FieldValue:
+		return m.Value()
+	case communicationprivacyrule.FieldValueHash:
+		return m.ValueHash()
+	case communicationprivacyrule.FieldActive:
+		return m.Active()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CommunicationPrivacyRuleMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case communicationprivacyrule.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case communicationprivacyrule.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case communicationprivacyrule.FieldKind:
+		return m.OldKind(ctx)
+	case communicationprivacyrule.FieldValue:
+		return m.OldValue(ctx)
+	case communicationprivacyrule.FieldValueHash:
+		return m.OldValueHash(ctx)
+	case communicationprivacyrule.FieldActive:
+		return m.OldActive(ctx)
+	}
+	return nil, fmt.Errorf("unknown CommunicationPrivacyRule field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationPrivacyRuleMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case communicationprivacyrule.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case communicationprivacyrule.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case communicationprivacyrule.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case communicationprivacyrule.FieldValue:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValue(v)
+		return nil
+	case communicationprivacyrule.FieldValueHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetValueHash(v)
+		return nil
+	case communicationprivacyrule.FieldActive:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActive(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationPrivacyRule field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CommunicationPrivacyRuleMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CommunicationPrivacyRuleMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationPrivacyRuleMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CommunicationPrivacyRule numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CommunicationPrivacyRuleMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CommunicationPrivacyRuleMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CommunicationPrivacyRuleMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown CommunicationPrivacyRule nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CommunicationPrivacyRuleMutation) ResetField(name string) error {
+	switch name {
+	case communicationprivacyrule.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case communicationprivacyrule.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case communicationprivacyrule.FieldKind:
+		m.ResetKind()
+		return nil
+	case communicationprivacyrule.FieldValue:
+		m.ResetValue()
+		return nil
+	case communicationprivacyrule.FieldValueHash:
+		m.ResetValueHash()
+		return nil
+	case communicationprivacyrule.FieldActive:
+		m.ResetActive()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationPrivacyRule field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CommunicationPrivacyRuleMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.workspace != nil {
+		edges = append(edges, communicationprivacyrule.EdgeWorkspace)
+	}
+	if m.owner != nil {
+		edges = append(edges, communicationprivacyrule.EdgeOwner)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CommunicationPrivacyRuleMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case communicationprivacyrule.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case communicationprivacyrule.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CommunicationPrivacyRuleMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CommunicationPrivacyRuleMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CommunicationPrivacyRuleMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedworkspace {
+		edges = append(edges, communicationprivacyrule.EdgeWorkspace)
+	}
+	if m.clearedowner {
+		edges = append(edges, communicationprivacyrule.EdgeOwner)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CommunicationPrivacyRuleMutation) EdgeCleared(name string) bool {
+	switch name {
+	case communicationprivacyrule.EdgeWorkspace:
+		return m.clearedworkspace
+	case communicationprivacyrule.EdgeOwner:
+		return m.clearedowner
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CommunicationPrivacyRuleMutation) ClearEdge(name string) error {
+	switch name {
+	case communicationprivacyrule.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case communicationprivacyrule.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationPrivacyRule unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CommunicationPrivacyRuleMutation) ResetEdge(name string) error {
+	switch name {
+	case communicationprivacyrule.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case communicationprivacyrule.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationPrivacyRule edge %s", name)
+}
+
+// CommunicationShareGrantMutation represents an operation that mutates the CommunicationShareGrant nodes in the graph.
+type CommunicationShareGrantMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	scope            *string
+	resource_type    *string
+	resource_id      *string
+	expires_at       *time.Time
+	revoked_at       *time.Time
+	reason           *string
+	clearedFields    map[string]struct{}
+	workspace        *uuid.UUID
+	clearedworkspace bool
+	owner            *uuid.UUID
+	clearedowner     bool
+	grantee          *uuid.UUID
+	clearedgrantee   bool
+	done             bool
+	oldValue         func(context.Context) (*CommunicationShareGrant, error)
+	predicates       []predicate.CommunicationShareGrant
+}
+
+var _ ent.Mutation = (*CommunicationShareGrantMutation)(nil)
+
+// communicationsharegrantOption allows management of the mutation configuration using functional options.
+type communicationsharegrantOption func(*CommunicationShareGrantMutation)
+
+// newCommunicationShareGrantMutation creates new mutation for the CommunicationShareGrant entity.
+func newCommunicationShareGrantMutation(c config, op Op, opts ...communicationsharegrantOption) *CommunicationShareGrantMutation {
+	m := &CommunicationShareGrantMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCommunicationShareGrant,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCommunicationShareGrantID sets the ID field of the mutation.
+func withCommunicationShareGrantID(id uuid.UUID) communicationsharegrantOption {
+	return func(m *CommunicationShareGrantMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CommunicationShareGrant
+		)
+		m.oldValue = func(ctx context.Context) (*CommunicationShareGrant, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CommunicationShareGrant.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCommunicationShareGrant sets the old CommunicationShareGrant of the mutation.
+func withCommunicationShareGrant(node *CommunicationShareGrant) communicationsharegrantOption {
+	return func(m *CommunicationShareGrantMutation) {
+		m.oldValue = func(context.Context) (*CommunicationShareGrant, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CommunicationShareGrantMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CommunicationShareGrantMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CommunicationShareGrant entities.
+func (m *CommunicationShareGrantMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CommunicationShareGrantMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CommunicationShareGrantMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CommunicationShareGrant.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CommunicationShareGrantMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CommunicationShareGrantMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CommunicationShareGrant entity.
+// If the CommunicationShareGrant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationShareGrantMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CommunicationShareGrantMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *CommunicationShareGrantMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *CommunicationShareGrantMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the CommunicationShareGrant entity.
+// If the CommunicationShareGrant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationShareGrantMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *CommunicationShareGrantMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetScope sets the "scope" field.
+func (m *CommunicationShareGrantMutation) SetScope(s string) {
+	m.scope = &s
+}
+
+// Scope returns the value of the "scope" field in the mutation.
+func (m *CommunicationShareGrantMutation) Scope() (r string, exists bool) {
+	v := m.scope
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScope returns the old "scope" field's value of the CommunicationShareGrant entity.
+// If the CommunicationShareGrant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationShareGrantMutation) OldScope(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScope is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScope requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScope: %w", err)
+	}
+	return oldValue.Scope, nil
+}
+
+// ResetScope resets all changes to the "scope" field.
+func (m *CommunicationShareGrantMutation) ResetScope() {
+	m.scope = nil
+}
+
+// SetResourceType sets the "resource_type" field.
+func (m *CommunicationShareGrantMutation) SetResourceType(s string) {
+	m.resource_type = &s
+}
+
+// ResourceType returns the value of the "resource_type" field in the mutation.
+func (m *CommunicationShareGrantMutation) ResourceType() (r string, exists bool) {
+	v := m.resource_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResourceType returns the old "resource_type" field's value of the CommunicationShareGrant entity.
+// If the CommunicationShareGrant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationShareGrantMutation) OldResourceType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResourceType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResourceType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResourceType: %w", err)
+	}
+	return oldValue.ResourceType, nil
+}
+
+// ResetResourceType resets all changes to the "resource_type" field.
+func (m *CommunicationShareGrantMutation) ResetResourceType() {
+	m.resource_type = nil
+}
+
+// SetResourceID sets the "resource_id" field.
+func (m *CommunicationShareGrantMutation) SetResourceID(s string) {
+	m.resource_id = &s
+}
+
+// ResourceID returns the value of the "resource_id" field in the mutation.
+func (m *CommunicationShareGrantMutation) ResourceID() (r string, exists bool) {
+	v := m.resource_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResourceID returns the old "resource_id" field's value of the CommunicationShareGrant entity.
+// If the CommunicationShareGrant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationShareGrantMutation) OldResourceID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResourceID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResourceID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResourceID: %w", err)
+	}
+	return oldValue.ResourceID, nil
+}
+
+// ResetResourceID resets all changes to the "resource_id" field.
+func (m *CommunicationShareGrantMutation) ResetResourceID() {
+	m.resource_id = nil
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (m *CommunicationShareGrantMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *CommunicationShareGrantMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the CommunicationShareGrant entity.
+// If the CommunicationShareGrant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationShareGrantMutation) OldExpiresAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ClearExpiresAt clears the value of the "expires_at" field.
+func (m *CommunicationShareGrantMutation) ClearExpiresAt() {
+	m.expires_at = nil
+	m.clearedFields[communicationsharegrant.FieldExpiresAt] = struct{}{}
+}
+
+// ExpiresAtCleared returns if the "expires_at" field was cleared in this mutation.
+func (m *CommunicationShareGrantMutation) ExpiresAtCleared() bool {
+	_, ok := m.clearedFields[communicationsharegrant.FieldExpiresAt]
+	return ok
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *CommunicationShareGrantMutation) ResetExpiresAt() {
+	m.expires_at = nil
+	delete(m.clearedFields, communicationsharegrant.FieldExpiresAt)
+}
+
+// SetRevokedAt sets the "revoked_at" field.
+func (m *CommunicationShareGrantMutation) SetRevokedAt(t time.Time) {
+	m.revoked_at = &t
+}
+
+// RevokedAt returns the value of the "revoked_at" field in the mutation.
+func (m *CommunicationShareGrantMutation) RevokedAt() (r time.Time, exists bool) {
+	v := m.revoked_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRevokedAt returns the old "revoked_at" field's value of the CommunicationShareGrant entity.
+// If the CommunicationShareGrant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationShareGrantMutation) OldRevokedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRevokedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRevokedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRevokedAt: %w", err)
+	}
+	return oldValue.RevokedAt, nil
+}
+
+// ClearRevokedAt clears the value of the "revoked_at" field.
+func (m *CommunicationShareGrantMutation) ClearRevokedAt() {
+	m.revoked_at = nil
+	m.clearedFields[communicationsharegrant.FieldRevokedAt] = struct{}{}
+}
+
+// RevokedAtCleared returns if the "revoked_at" field was cleared in this mutation.
+func (m *CommunicationShareGrantMutation) RevokedAtCleared() bool {
+	_, ok := m.clearedFields[communicationsharegrant.FieldRevokedAt]
+	return ok
+}
+
+// ResetRevokedAt resets all changes to the "revoked_at" field.
+func (m *CommunicationShareGrantMutation) ResetRevokedAt() {
+	m.revoked_at = nil
+	delete(m.clearedFields, communicationsharegrant.FieldRevokedAt)
+}
+
+// SetReason sets the "reason" field.
+func (m *CommunicationShareGrantMutation) SetReason(s string) {
+	m.reason = &s
+}
+
+// Reason returns the value of the "reason" field in the mutation.
+func (m *CommunicationShareGrantMutation) Reason() (r string, exists bool) {
+	v := m.reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReason returns the old "reason" field's value of the CommunicationShareGrant entity.
+// If the CommunicationShareGrant object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationShareGrantMutation) OldReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReason: %w", err)
+	}
+	return oldValue.Reason, nil
+}
+
+// ClearReason clears the value of the "reason" field.
+func (m *CommunicationShareGrantMutation) ClearReason() {
+	m.reason = nil
+	m.clearedFields[communicationsharegrant.FieldReason] = struct{}{}
+}
+
+// ReasonCleared returns if the "reason" field was cleared in this mutation.
+func (m *CommunicationShareGrantMutation) ReasonCleared() bool {
+	_, ok := m.clearedFields[communicationsharegrant.FieldReason]
+	return ok
+}
+
+// ResetReason resets all changes to the "reason" field.
+func (m *CommunicationShareGrantMutation) ResetReason() {
+	m.reason = nil
+	delete(m.clearedFields, communicationsharegrant.FieldReason)
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *CommunicationShareGrantMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *CommunicationShareGrantMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *CommunicationShareGrantMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *CommunicationShareGrantMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *CommunicationShareGrantMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *CommunicationShareGrantMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetOwnerID sets the "owner" edge to the User entity by id.
+func (m *CommunicationShareGrantMutation) SetOwnerID(id uuid.UUID) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the User entity.
+func (m *CommunicationShareGrantMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the User entity was cleared.
+func (m *CommunicationShareGrantMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *CommunicationShareGrantMutation) OwnerID() (id uuid.UUID, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *CommunicationShareGrantMutation) OwnerIDs() (ids []uuid.UUID) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *CommunicationShareGrantMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// SetGranteeID sets the "grantee" edge to the User entity by id.
+func (m *CommunicationShareGrantMutation) SetGranteeID(id uuid.UUID) {
+	m.grantee = &id
+}
+
+// ClearGrantee clears the "grantee" edge to the User entity.
+func (m *CommunicationShareGrantMutation) ClearGrantee() {
+	m.clearedgrantee = true
+}
+
+// GranteeCleared reports if the "grantee" edge to the User entity was cleared.
+func (m *CommunicationShareGrantMutation) GranteeCleared() bool {
+	return m.clearedgrantee
+}
+
+// GranteeID returns the "grantee" edge ID in the mutation.
+func (m *CommunicationShareGrantMutation) GranteeID() (id uuid.UUID, exists bool) {
+	if m.grantee != nil {
+		return *m.grantee, true
+	}
+	return
+}
+
+// GranteeIDs returns the "grantee" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GranteeID instead. It exists only for internal usage by the builders.
+func (m *CommunicationShareGrantMutation) GranteeIDs() (ids []uuid.UUID) {
+	if id := m.grantee; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGrantee resets all changes to the "grantee" edge.
+func (m *CommunicationShareGrantMutation) ResetGrantee() {
+	m.grantee = nil
+	m.clearedgrantee = false
+}
+
+// Where appends a list predicates to the CommunicationShareGrantMutation builder.
+func (m *CommunicationShareGrantMutation) Where(ps ...predicate.CommunicationShareGrant) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CommunicationShareGrantMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CommunicationShareGrantMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CommunicationShareGrant, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CommunicationShareGrantMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CommunicationShareGrantMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CommunicationShareGrant).
+func (m *CommunicationShareGrantMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CommunicationShareGrantMutation) Fields() []string {
+	fields := make([]string, 0, 8)
+	if m.created_at != nil {
+		fields = append(fields, communicationsharegrant.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, communicationsharegrant.FieldUpdatedAt)
+	}
+	if m.scope != nil {
+		fields = append(fields, communicationsharegrant.FieldScope)
+	}
+	if m.resource_type != nil {
+		fields = append(fields, communicationsharegrant.FieldResourceType)
+	}
+	if m.resource_id != nil {
+		fields = append(fields, communicationsharegrant.FieldResourceID)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, communicationsharegrant.FieldExpiresAt)
+	}
+	if m.revoked_at != nil {
+		fields = append(fields, communicationsharegrant.FieldRevokedAt)
+	}
+	if m.reason != nil {
+		fields = append(fields, communicationsharegrant.FieldReason)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CommunicationShareGrantMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case communicationsharegrant.FieldCreatedAt:
+		return m.CreatedAt()
+	case communicationsharegrant.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case communicationsharegrant.FieldScope:
+		return m.Scope()
+	case communicationsharegrant.FieldResourceType:
+		return m.ResourceType()
+	case communicationsharegrant.FieldResourceID:
+		return m.ResourceID()
+	case communicationsharegrant.FieldExpiresAt:
+		return m.ExpiresAt()
+	case communicationsharegrant.FieldRevokedAt:
+		return m.RevokedAt()
+	case communicationsharegrant.FieldReason:
+		return m.Reason()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CommunicationShareGrantMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case communicationsharegrant.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case communicationsharegrant.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case communicationsharegrant.FieldScope:
+		return m.OldScope(ctx)
+	case communicationsharegrant.FieldResourceType:
+		return m.OldResourceType(ctx)
+	case communicationsharegrant.FieldResourceID:
+		return m.OldResourceID(ctx)
+	case communicationsharegrant.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	case communicationsharegrant.FieldRevokedAt:
+		return m.OldRevokedAt(ctx)
+	case communicationsharegrant.FieldReason:
+		return m.OldReason(ctx)
+	}
+	return nil, fmt.Errorf("unknown CommunicationShareGrant field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationShareGrantMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case communicationsharegrant.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case communicationsharegrant.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case communicationsharegrant.FieldScope:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScope(v)
+		return nil
+	case communicationsharegrant.FieldResourceType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResourceType(v)
+		return nil
+	case communicationsharegrant.FieldResourceID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResourceID(v)
+		return nil
+	case communicationsharegrant.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	case communicationsharegrant.FieldRevokedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRevokedAt(v)
+		return nil
+	case communicationsharegrant.FieldReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReason(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationShareGrant field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CommunicationShareGrantMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CommunicationShareGrantMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationShareGrantMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CommunicationShareGrant numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CommunicationShareGrantMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(communicationsharegrant.FieldExpiresAt) {
+		fields = append(fields, communicationsharegrant.FieldExpiresAt)
+	}
+	if m.FieldCleared(communicationsharegrant.FieldRevokedAt) {
+		fields = append(fields, communicationsharegrant.FieldRevokedAt)
+	}
+	if m.FieldCleared(communicationsharegrant.FieldReason) {
+		fields = append(fields, communicationsharegrant.FieldReason)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CommunicationShareGrantMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CommunicationShareGrantMutation) ClearField(name string) error {
+	switch name {
+	case communicationsharegrant.FieldExpiresAt:
+		m.ClearExpiresAt()
+		return nil
+	case communicationsharegrant.FieldRevokedAt:
+		m.ClearRevokedAt()
+		return nil
+	case communicationsharegrant.FieldReason:
+		m.ClearReason()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationShareGrant nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CommunicationShareGrantMutation) ResetField(name string) error {
+	switch name {
+	case communicationsharegrant.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case communicationsharegrant.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case communicationsharegrant.FieldScope:
+		m.ResetScope()
+		return nil
+	case communicationsharegrant.FieldResourceType:
+		m.ResetResourceType()
+		return nil
+	case communicationsharegrant.FieldResourceID:
+		m.ResetResourceID()
+		return nil
+	case communicationsharegrant.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	case communicationsharegrant.FieldRevokedAt:
+		m.ResetRevokedAt()
+		return nil
+	case communicationsharegrant.FieldReason:
+		m.ResetReason()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationShareGrant field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CommunicationShareGrantMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.workspace != nil {
+		edges = append(edges, communicationsharegrant.EdgeWorkspace)
+	}
+	if m.owner != nil {
+		edges = append(edges, communicationsharegrant.EdgeOwner)
+	}
+	if m.grantee != nil {
+		edges = append(edges, communicationsharegrant.EdgeGrantee)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CommunicationShareGrantMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case communicationsharegrant.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case communicationsharegrant.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	case communicationsharegrant.EdgeGrantee:
+		if id := m.grantee; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CommunicationShareGrantMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CommunicationShareGrantMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CommunicationShareGrantMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedworkspace {
+		edges = append(edges, communicationsharegrant.EdgeWorkspace)
+	}
+	if m.clearedowner {
+		edges = append(edges, communicationsharegrant.EdgeOwner)
+	}
+	if m.clearedgrantee {
+		edges = append(edges, communicationsharegrant.EdgeGrantee)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CommunicationShareGrantMutation) EdgeCleared(name string) bool {
+	switch name {
+	case communicationsharegrant.EdgeWorkspace:
+		return m.clearedworkspace
+	case communicationsharegrant.EdgeOwner:
+		return m.clearedowner
+	case communicationsharegrant.EdgeGrantee:
+		return m.clearedgrantee
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CommunicationShareGrantMutation) ClearEdge(name string) error {
+	switch name {
+	case communicationsharegrant.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case communicationsharegrant.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	case communicationsharegrant.EdgeGrantee:
+		m.ClearGrantee()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationShareGrant unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CommunicationShareGrantMutation) ResetEdge(name string) error {
+	switch name {
+	case communicationsharegrant.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case communicationsharegrant.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	case communicationsharegrant.EdgeGrantee:
+		m.ResetGrantee()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationShareGrant edge %s", name)
+}
+
+// CommunicationSyncCursorMutation represents an operation that mutates the CommunicationSyncCursor nodes in the graph.
+type CommunicationSyncCursorMutation struct {
+	config
+	op                     Op
+	typ                    string
+	id                     *uuid.UUID
+	created_at             *time.Time
+	updated_at             *time.Time
+	source                 *string
+	source_account_id      *string
+	cursor                 *string
+	status                 *string
+	last_provider_event_at *time.Time
+	last_success_at        *time.Time
+	lease_claimed_at       *time.Time
+	retry_count            *int
+	addretry_count         *int
+	last_error             *string
+	clearedFields          map[string]struct{}
+	workspace              *uuid.UUID
+	clearedworkspace       bool
+	owner                  *uuid.UUID
+	clearedowner           bool
+	done                   bool
+	oldValue               func(context.Context) (*CommunicationSyncCursor, error)
+	predicates             []predicate.CommunicationSyncCursor
+}
+
+var _ ent.Mutation = (*CommunicationSyncCursorMutation)(nil)
+
+// communicationsynccursorOption allows management of the mutation configuration using functional options.
+type communicationsynccursorOption func(*CommunicationSyncCursorMutation)
+
+// newCommunicationSyncCursorMutation creates new mutation for the CommunicationSyncCursor entity.
+func newCommunicationSyncCursorMutation(c config, op Op, opts ...communicationsynccursorOption) *CommunicationSyncCursorMutation {
+	m := &CommunicationSyncCursorMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCommunicationSyncCursor,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCommunicationSyncCursorID sets the ID field of the mutation.
+func withCommunicationSyncCursorID(id uuid.UUID) communicationsynccursorOption {
+	return func(m *CommunicationSyncCursorMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CommunicationSyncCursor
+		)
+		m.oldValue = func(ctx context.Context) (*CommunicationSyncCursor, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CommunicationSyncCursor.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCommunicationSyncCursor sets the old CommunicationSyncCursor of the mutation.
+func withCommunicationSyncCursor(node *CommunicationSyncCursor) communicationsynccursorOption {
+	return func(m *CommunicationSyncCursorMutation) {
+		m.oldValue = func(context.Context) (*CommunicationSyncCursor, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CommunicationSyncCursorMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CommunicationSyncCursorMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CommunicationSyncCursor entities.
+func (m *CommunicationSyncCursorMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CommunicationSyncCursorMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CommunicationSyncCursorMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CommunicationSyncCursor.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *CommunicationSyncCursorMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *CommunicationSyncCursorMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the CommunicationSyncCursor entity.
+// If the CommunicationSyncCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationSyncCursorMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *CommunicationSyncCursorMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *CommunicationSyncCursorMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *CommunicationSyncCursorMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the CommunicationSyncCursor entity.
+// If the CommunicationSyncCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationSyncCursorMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *CommunicationSyncCursorMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetSource sets the "source" field.
+func (m *CommunicationSyncCursorMutation) SetSource(s string) {
+	m.source = &s
+}
+
+// Source returns the value of the "source" field in the mutation.
+func (m *CommunicationSyncCursorMutation) Source() (r string, exists bool) {
+	v := m.source
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSource returns the old "source" field's value of the CommunicationSyncCursor entity.
+// If the CommunicationSyncCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationSyncCursorMutation) OldSource(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSource is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSource requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSource: %w", err)
+	}
+	return oldValue.Source, nil
+}
+
+// ResetSource resets all changes to the "source" field.
+func (m *CommunicationSyncCursorMutation) ResetSource() {
+	m.source = nil
+}
+
+// SetSourceAccountID sets the "source_account_id" field.
+func (m *CommunicationSyncCursorMutation) SetSourceAccountID(s string) {
+	m.source_account_id = &s
+}
+
+// SourceAccountID returns the value of the "source_account_id" field in the mutation.
+func (m *CommunicationSyncCursorMutation) SourceAccountID() (r string, exists bool) {
+	v := m.source_account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSourceAccountID returns the old "source_account_id" field's value of the CommunicationSyncCursor entity.
+// If the CommunicationSyncCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationSyncCursorMutation) OldSourceAccountID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSourceAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSourceAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSourceAccountID: %w", err)
+	}
+	return oldValue.SourceAccountID, nil
+}
+
+// ResetSourceAccountID resets all changes to the "source_account_id" field.
+func (m *CommunicationSyncCursorMutation) ResetSourceAccountID() {
+	m.source_account_id = nil
+}
+
+// SetCursor sets the "cursor" field.
+func (m *CommunicationSyncCursorMutation) SetCursor(s string) {
+	m.cursor = &s
+}
+
+// Cursor returns the value of the "cursor" field in the mutation.
+func (m *CommunicationSyncCursorMutation) Cursor() (r string, exists bool) {
+	v := m.cursor
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCursor returns the old "cursor" field's value of the CommunicationSyncCursor entity.
+// If the CommunicationSyncCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationSyncCursorMutation) OldCursor(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCursor is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCursor requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCursor: %w", err)
+	}
+	return oldValue.Cursor, nil
+}
+
+// ClearCursor clears the value of the "cursor" field.
+func (m *CommunicationSyncCursorMutation) ClearCursor() {
+	m.cursor = nil
+	m.clearedFields[communicationsynccursor.FieldCursor] = struct{}{}
+}
+
+// CursorCleared returns if the "cursor" field was cleared in this mutation.
+func (m *CommunicationSyncCursorMutation) CursorCleared() bool {
+	_, ok := m.clearedFields[communicationsynccursor.FieldCursor]
+	return ok
+}
+
+// ResetCursor resets all changes to the "cursor" field.
+func (m *CommunicationSyncCursorMutation) ResetCursor() {
+	m.cursor = nil
+	delete(m.clearedFields, communicationsynccursor.FieldCursor)
+}
+
+// SetStatus sets the "status" field.
+func (m *CommunicationSyncCursorMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *CommunicationSyncCursorMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the CommunicationSyncCursor entity.
+// If the CommunicationSyncCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationSyncCursorMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *CommunicationSyncCursorMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetLastProviderEventAt sets the "last_provider_event_at" field.
+func (m *CommunicationSyncCursorMutation) SetLastProviderEventAt(t time.Time) {
+	m.last_provider_event_at = &t
+}
+
+// LastProviderEventAt returns the value of the "last_provider_event_at" field in the mutation.
+func (m *CommunicationSyncCursorMutation) LastProviderEventAt() (r time.Time, exists bool) {
+	v := m.last_provider_event_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastProviderEventAt returns the old "last_provider_event_at" field's value of the CommunicationSyncCursor entity.
+// If the CommunicationSyncCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationSyncCursorMutation) OldLastProviderEventAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastProviderEventAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastProviderEventAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastProviderEventAt: %w", err)
+	}
+	return oldValue.LastProviderEventAt, nil
+}
+
+// ClearLastProviderEventAt clears the value of the "last_provider_event_at" field.
+func (m *CommunicationSyncCursorMutation) ClearLastProviderEventAt() {
+	m.last_provider_event_at = nil
+	m.clearedFields[communicationsynccursor.FieldLastProviderEventAt] = struct{}{}
+}
+
+// LastProviderEventAtCleared returns if the "last_provider_event_at" field was cleared in this mutation.
+func (m *CommunicationSyncCursorMutation) LastProviderEventAtCleared() bool {
+	_, ok := m.clearedFields[communicationsynccursor.FieldLastProviderEventAt]
+	return ok
+}
+
+// ResetLastProviderEventAt resets all changes to the "last_provider_event_at" field.
+func (m *CommunicationSyncCursorMutation) ResetLastProviderEventAt() {
+	m.last_provider_event_at = nil
+	delete(m.clearedFields, communicationsynccursor.FieldLastProviderEventAt)
+}
+
+// SetLastSuccessAt sets the "last_success_at" field.
+func (m *CommunicationSyncCursorMutation) SetLastSuccessAt(t time.Time) {
+	m.last_success_at = &t
+}
+
+// LastSuccessAt returns the value of the "last_success_at" field in the mutation.
+func (m *CommunicationSyncCursorMutation) LastSuccessAt() (r time.Time, exists bool) {
+	v := m.last_success_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastSuccessAt returns the old "last_success_at" field's value of the CommunicationSyncCursor entity.
+// If the CommunicationSyncCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationSyncCursorMutation) OldLastSuccessAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastSuccessAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastSuccessAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastSuccessAt: %w", err)
+	}
+	return oldValue.LastSuccessAt, nil
+}
+
+// ClearLastSuccessAt clears the value of the "last_success_at" field.
+func (m *CommunicationSyncCursorMutation) ClearLastSuccessAt() {
+	m.last_success_at = nil
+	m.clearedFields[communicationsynccursor.FieldLastSuccessAt] = struct{}{}
+}
+
+// LastSuccessAtCleared returns if the "last_success_at" field was cleared in this mutation.
+func (m *CommunicationSyncCursorMutation) LastSuccessAtCleared() bool {
+	_, ok := m.clearedFields[communicationsynccursor.FieldLastSuccessAt]
+	return ok
+}
+
+// ResetLastSuccessAt resets all changes to the "last_success_at" field.
+func (m *CommunicationSyncCursorMutation) ResetLastSuccessAt() {
+	m.last_success_at = nil
+	delete(m.clearedFields, communicationsynccursor.FieldLastSuccessAt)
+}
+
+// SetLeaseClaimedAt sets the "lease_claimed_at" field.
+func (m *CommunicationSyncCursorMutation) SetLeaseClaimedAt(t time.Time) {
+	m.lease_claimed_at = &t
+}
+
+// LeaseClaimedAt returns the value of the "lease_claimed_at" field in the mutation.
+func (m *CommunicationSyncCursorMutation) LeaseClaimedAt() (r time.Time, exists bool) {
+	v := m.lease_claimed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLeaseClaimedAt returns the old "lease_claimed_at" field's value of the CommunicationSyncCursor entity.
+// If the CommunicationSyncCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationSyncCursorMutation) OldLeaseClaimedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLeaseClaimedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLeaseClaimedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLeaseClaimedAt: %w", err)
+	}
+	return oldValue.LeaseClaimedAt, nil
+}
+
+// ClearLeaseClaimedAt clears the value of the "lease_claimed_at" field.
+func (m *CommunicationSyncCursorMutation) ClearLeaseClaimedAt() {
+	m.lease_claimed_at = nil
+	m.clearedFields[communicationsynccursor.FieldLeaseClaimedAt] = struct{}{}
+}
+
+// LeaseClaimedAtCleared returns if the "lease_claimed_at" field was cleared in this mutation.
+func (m *CommunicationSyncCursorMutation) LeaseClaimedAtCleared() bool {
+	_, ok := m.clearedFields[communicationsynccursor.FieldLeaseClaimedAt]
+	return ok
+}
+
+// ResetLeaseClaimedAt resets all changes to the "lease_claimed_at" field.
+func (m *CommunicationSyncCursorMutation) ResetLeaseClaimedAt() {
+	m.lease_claimed_at = nil
+	delete(m.clearedFields, communicationsynccursor.FieldLeaseClaimedAt)
+}
+
+// SetRetryCount sets the "retry_count" field.
+func (m *CommunicationSyncCursorMutation) SetRetryCount(i int) {
+	m.retry_count = &i
+	m.addretry_count = nil
+}
+
+// RetryCount returns the value of the "retry_count" field in the mutation.
+func (m *CommunicationSyncCursorMutation) RetryCount() (r int, exists bool) {
+	v := m.retry_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRetryCount returns the old "retry_count" field's value of the CommunicationSyncCursor entity.
+// If the CommunicationSyncCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationSyncCursorMutation) OldRetryCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRetryCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRetryCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRetryCount: %w", err)
+	}
+	return oldValue.RetryCount, nil
+}
+
+// AddRetryCount adds i to the "retry_count" field.
+func (m *CommunicationSyncCursorMutation) AddRetryCount(i int) {
+	if m.addretry_count != nil {
+		*m.addretry_count += i
+	} else {
+		m.addretry_count = &i
+	}
+}
+
+// AddedRetryCount returns the value that was added to the "retry_count" field in this mutation.
+func (m *CommunicationSyncCursorMutation) AddedRetryCount() (r int, exists bool) {
+	v := m.addretry_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRetryCount resets all changes to the "retry_count" field.
+func (m *CommunicationSyncCursorMutation) ResetRetryCount() {
+	m.retry_count = nil
+	m.addretry_count = nil
+}
+
+// SetLastError sets the "last_error" field.
+func (m *CommunicationSyncCursorMutation) SetLastError(s string) {
+	m.last_error = &s
+}
+
+// LastError returns the value of the "last_error" field in the mutation.
+func (m *CommunicationSyncCursorMutation) LastError() (r string, exists bool) {
+	v := m.last_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastError returns the old "last_error" field's value of the CommunicationSyncCursor entity.
+// If the CommunicationSyncCursor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CommunicationSyncCursorMutation) OldLastError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastError: %w", err)
+	}
+	return oldValue.LastError, nil
+}
+
+// ClearLastError clears the value of the "last_error" field.
+func (m *CommunicationSyncCursorMutation) ClearLastError() {
+	m.last_error = nil
+	m.clearedFields[communicationsynccursor.FieldLastError] = struct{}{}
+}
+
+// LastErrorCleared returns if the "last_error" field was cleared in this mutation.
+func (m *CommunicationSyncCursorMutation) LastErrorCleared() bool {
+	_, ok := m.clearedFields[communicationsynccursor.FieldLastError]
+	return ok
+}
+
+// ResetLastError resets all changes to the "last_error" field.
+func (m *CommunicationSyncCursorMutation) ResetLastError() {
+	m.last_error = nil
+	delete(m.clearedFields, communicationsynccursor.FieldLastError)
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *CommunicationSyncCursorMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *CommunicationSyncCursorMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *CommunicationSyncCursorMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *CommunicationSyncCursorMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *CommunicationSyncCursorMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *CommunicationSyncCursorMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetOwnerID sets the "owner" edge to the User entity by id.
+func (m *CommunicationSyncCursorMutation) SetOwnerID(id uuid.UUID) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the User entity.
+func (m *CommunicationSyncCursorMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the User entity was cleared.
+func (m *CommunicationSyncCursorMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *CommunicationSyncCursorMutation) OwnerID() (id uuid.UUID, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *CommunicationSyncCursorMutation) OwnerIDs() (ids []uuid.UUID) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *CommunicationSyncCursorMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
+// Where appends a list predicates to the CommunicationSyncCursorMutation builder.
+func (m *CommunicationSyncCursorMutation) Where(ps ...predicate.CommunicationSyncCursor) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CommunicationSyncCursorMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CommunicationSyncCursorMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CommunicationSyncCursor, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CommunicationSyncCursorMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CommunicationSyncCursorMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CommunicationSyncCursor).
+func (m *CommunicationSyncCursorMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CommunicationSyncCursorMutation) Fields() []string {
+	fields := make([]string, 0, 11)
+	if m.created_at != nil {
+		fields = append(fields, communicationsynccursor.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, communicationsynccursor.FieldUpdatedAt)
+	}
+	if m.source != nil {
+		fields = append(fields, communicationsynccursor.FieldSource)
+	}
+	if m.source_account_id != nil {
+		fields = append(fields, communicationsynccursor.FieldSourceAccountID)
+	}
+	if m.cursor != nil {
+		fields = append(fields, communicationsynccursor.FieldCursor)
+	}
+	if m.status != nil {
+		fields = append(fields, communicationsynccursor.FieldStatus)
+	}
+	if m.last_provider_event_at != nil {
+		fields = append(fields, communicationsynccursor.FieldLastProviderEventAt)
+	}
+	if m.last_success_at != nil {
+		fields = append(fields, communicationsynccursor.FieldLastSuccessAt)
+	}
+	if m.lease_claimed_at != nil {
+		fields = append(fields, communicationsynccursor.FieldLeaseClaimedAt)
+	}
+	if m.retry_count != nil {
+		fields = append(fields, communicationsynccursor.FieldRetryCount)
+	}
+	if m.last_error != nil {
+		fields = append(fields, communicationsynccursor.FieldLastError)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CommunicationSyncCursorMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case communicationsynccursor.FieldCreatedAt:
+		return m.CreatedAt()
+	case communicationsynccursor.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case communicationsynccursor.FieldSource:
+		return m.Source()
+	case communicationsynccursor.FieldSourceAccountID:
+		return m.SourceAccountID()
+	case communicationsynccursor.FieldCursor:
+		return m.Cursor()
+	case communicationsynccursor.FieldStatus:
+		return m.Status()
+	case communicationsynccursor.FieldLastProviderEventAt:
+		return m.LastProviderEventAt()
+	case communicationsynccursor.FieldLastSuccessAt:
+		return m.LastSuccessAt()
+	case communicationsynccursor.FieldLeaseClaimedAt:
+		return m.LeaseClaimedAt()
+	case communicationsynccursor.FieldRetryCount:
+		return m.RetryCount()
+	case communicationsynccursor.FieldLastError:
+		return m.LastError()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CommunicationSyncCursorMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case communicationsynccursor.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case communicationsynccursor.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case communicationsynccursor.FieldSource:
+		return m.OldSource(ctx)
+	case communicationsynccursor.FieldSourceAccountID:
+		return m.OldSourceAccountID(ctx)
+	case communicationsynccursor.FieldCursor:
+		return m.OldCursor(ctx)
+	case communicationsynccursor.FieldStatus:
+		return m.OldStatus(ctx)
+	case communicationsynccursor.FieldLastProviderEventAt:
+		return m.OldLastProviderEventAt(ctx)
+	case communicationsynccursor.FieldLastSuccessAt:
+		return m.OldLastSuccessAt(ctx)
+	case communicationsynccursor.FieldLeaseClaimedAt:
+		return m.OldLeaseClaimedAt(ctx)
+	case communicationsynccursor.FieldRetryCount:
+		return m.OldRetryCount(ctx)
+	case communicationsynccursor.FieldLastError:
+		return m.OldLastError(ctx)
+	}
+	return nil, fmt.Errorf("unknown CommunicationSyncCursor field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationSyncCursorMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case communicationsynccursor.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case communicationsynccursor.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case communicationsynccursor.FieldSource:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSource(v)
+		return nil
+	case communicationsynccursor.FieldSourceAccountID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSourceAccountID(v)
+		return nil
+	case communicationsynccursor.FieldCursor:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCursor(v)
+		return nil
+	case communicationsynccursor.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case communicationsynccursor.FieldLastProviderEventAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastProviderEventAt(v)
+		return nil
+	case communicationsynccursor.FieldLastSuccessAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastSuccessAt(v)
+		return nil
+	case communicationsynccursor.FieldLeaseClaimedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLeaseClaimedAt(v)
+		return nil
+	case communicationsynccursor.FieldRetryCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRetryCount(v)
+		return nil
+	case communicationsynccursor.FieldLastError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastError(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationSyncCursor field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CommunicationSyncCursorMutation) AddedFields() []string {
+	var fields []string
+	if m.addretry_count != nil {
+		fields = append(fields, communicationsynccursor.FieldRetryCount)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CommunicationSyncCursorMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case communicationsynccursor.FieldRetryCount:
+		return m.AddedRetryCount()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CommunicationSyncCursorMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case communicationsynccursor.FieldRetryCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRetryCount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationSyncCursor numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CommunicationSyncCursorMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(communicationsynccursor.FieldCursor) {
+		fields = append(fields, communicationsynccursor.FieldCursor)
+	}
+	if m.FieldCleared(communicationsynccursor.FieldLastProviderEventAt) {
+		fields = append(fields, communicationsynccursor.FieldLastProviderEventAt)
+	}
+	if m.FieldCleared(communicationsynccursor.FieldLastSuccessAt) {
+		fields = append(fields, communicationsynccursor.FieldLastSuccessAt)
+	}
+	if m.FieldCleared(communicationsynccursor.FieldLeaseClaimedAt) {
+		fields = append(fields, communicationsynccursor.FieldLeaseClaimedAt)
+	}
+	if m.FieldCleared(communicationsynccursor.FieldLastError) {
+		fields = append(fields, communicationsynccursor.FieldLastError)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CommunicationSyncCursorMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CommunicationSyncCursorMutation) ClearField(name string) error {
+	switch name {
+	case communicationsynccursor.FieldCursor:
+		m.ClearCursor()
+		return nil
+	case communicationsynccursor.FieldLastProviderEventAt:
+		m.ClearLastProviderEventAt()
+		return nil
+	case communicationsynccursor.FieldLastSuccessAt:
+		m.ClearLastSuccessAt()
+		return nil
+	case communicationsynccursor.FieldLeaseClaimedAt:
+		m.ClearLeaseClaimedAt()
+		return nil
+	case communicationsynccursor.FieldLastError:
+		m.ClearLastError()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationSyncCursor nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CommunicationSyncCursorMutation) ResetField(name string) error {
+	switch name {
+	case communicationsynccursor.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case communicationsynccursor.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case communicationsynccursor.FieldSource:
+		m.ResetSource()
+		return nil
+	case communicationsynccursor.FieldSourceAccountID:
+		m.ResetSourceAccountID()
+		return nil
+	case communicationsynccursor.FieldCursor:
+		m.ResetCursor()
+		return nil
+	case communicationsynccursor.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case communicationsynccursor.FieldLastProviderEventAt:
+		m.ResetLastProviderEventAt()
+		return nil
+	case communicationsynccursor.FieldLastSuccessAt:
+		m.ResetLastSuccessAt()
+		return nil
+	case communicationsynccursor.FieldLeaseClaimedAt:
+		m.ResetLeaseClaimedAt()
+		return nil
+	case communicationsynccursor.FieldRetryCount:
+		m.ResetRetryCount()
+		return nil
+	case communicationsynccursor.FieldLastError:
+		m.ResetLastError()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationSyncCursor field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CommunicationSyncCursorMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.workspace != nil {
+		edges = append(edges, communicationsynccursor.EdgeWorkspace)
+	}
+	if m.owner != nil {
+		edges = append(edges, communicationsynccursor.EdgeOwner)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CommunicationSyncCursorMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case communicationsynccursor.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case communicationsynccursor.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CommunicationSyncCursorMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CommunicationSyncCursorMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CommunicationSyncCursorMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedworkspace {
+		edges = append(edges, communicationsynccursor.EdgeWorkspace)
+	}
+	if m.clearedowner {
+		edges = append(edges, communicationsynccursor.EdgeOwner)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CommunicationSyncCursorMutation) EdgeCleared(name string) bool {
+	switch name {
+	case communicationsynccursor.EdgeWorkspace:
+		return m.clearedworkspace
+	case communicationsynccursor.EdgeOwner:
+		return m.clearedowner
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CommunicationSyncCursorMutation) ClearEdge(name string) error {
+	switch name {
+	case communicationsynccursor.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case communicationsynccursor.EdgeOwner:
+		m.ClearOwner()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationSyncCursor unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CommunicationSyncCursorMutation) ResetEdge(name string) error {
+	switch name {
+	case communicationsynccursor.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case communicationsynccursor.EdgeOwner:
+		m.ResetOwner()
+		return nil
+	}
+	return fmt.Errorf("unknown CommunicationSyncCursor edge %s", name)
+}
+
 // ConnectorAuditEventMutation represents an operation that mutates the ConnectorAuditEvent nodes in the graph.
 type ConnectorAuditEventMutation struct {
 	config
@@ -35111,6 +42575,938 @@ func (m *ConnectorRevocationJobMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ConnectorRevocationJobMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown ConnectorRevocationJob edge %s", name)
+}
+
+// ConsoleResourceMutation represents an operation that mutates the ConsoleResource nodes in the graph.
+type ConsoleResourceMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	kind             *string
+	name             *string
+	name_key         *string
+	note_id          *string
+	payload_json     *string
+	sort_order       *int
+	addsort_order    *int
+	clearedFields    map[string]struct{}
+	workspace        *uuid.UUID
+	clearedworkspace bool
+	user             *uuid.UUID
+	cleareduser      bool
+	done             bool
+	oldValue         func(context.Context) (*ConsoleResource, error)
+	predicates       []predicate.ConsoleResource
+}
+
+var _ ent.Mutation = (*ConsoleResourceMutation)(nil)
+
+// consoleresourceOption allows management of the mutation configuration using functional options.
+type consoleresourceOption func(*ConsoleResourceMutation)
+
+// newConsoleResourceMutation creates new mutation for the ConsoleResource entity.
+func newConsoleResourceMutation(c config, op Op, opts ...consoleresourceOption) *ConsoleResourceMutation {
+	m := &ConsoleResourceMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeConsoleResource,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withConsoleResourceID sets the ID field of the mutation.
+func withConsoleResourceID(id uuid.UUID) consoleresourceOption {
+	return func(m *ConsoleResourceMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ConsoleResource
+		)
+		m.oldValue = func(ctx context.Context) (*ConsoleResource, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ConsoleResource.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withConsoleResource sets the old ConsoleResource of the mutation.
+func withConsoleResource(node *ConsoleResource) consoleresourceOption {
+	return func(m *ConsoleResourceMutation) {
+		m.oldValue = func(context.Context) (*ConsoleResource, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ConsoleResourceMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ConsoleResourceMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ConsoleResource entities.
+func (m *ConsoleResourceMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ConsoleResourceMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ConsoleResourceMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ConsoleResource.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ConsoleResourceMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ConsoleResourceMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ConsoleResourceMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ConsoleResourceMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ConsoleResourceMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ConsoleResourceMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *ConsoleResourceMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *ConsoleResourceMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *ConsoleResourceMutation) ResetKind() {
+	m.kind = nil
+}
+
+// SetName sets the "name" field.
+func (m *ConsoleResourceMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *ConsoleResourceMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ClearName clears the value of the "name" field.
+func (m *ConsoleResourceMutation) ClearName() {
+	m.name = nil
+	m.clearedFields[consoleresource.FieldName] = struct{}{}
+}
+
+// NameCleared returns if the "name" field was cleared in this mutation.
+func (m *ConsoleResourceMutation) NameCleared() bool {
+	_, ok := m.clearedFields[consoleresource.FieldName]
+	return ok
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *ConsoleResourceMutation) ResetName() {
+	m.name = nil
+	delete(m.clearedFields, consoleresource.FieldName)
+}
+
+// SetNameKey sets the "name_key" field.
+func (m *ConsoleResourceMutation) SetNameKey(s string) {
+	m.name_key = &s
+}
+
+// NameKey returns the value of the "name_key" field in the mutation.
+func (m *ConsoleResourceMutation) NameKey() (r string, exists bool) {
+	v := m.name_key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNameKey returns the old "name_key" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldNameKey(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNameKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNameKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNameKey: %w", err)
+	}
+	return oldValue.NameKey, nil
+}
+
+// ClearNameKey clears the value of the "name_key" field.
+func (m *ConsoleResourceMutation) ClearNameKey() {
+	m.name_key = nil
+	m.clearedFields[consoleresource.FieldNameKey] = struct{}{}
+}
+
+// NameKeyCleared returns if the "name_key" field was cleared in this mutation.
+func (m *ConsoleResourceMutation) NameKeyCleared() bool {
+	_, ok := m.clearedFields[consoleresource.FieldNameKey]
+	return ok
+}
+
+// ResetNameKey resets all changes to the "name_key" field.
+func (m *ConsoleResourceMutation) ResetNameKey() {
+	m.name_key = nil
+	delete(m.clearedFields, consoleresource.FieldNameKey)
+}
+
+// SetNoteID sets the "note_id" field.
+func (m *ConsoleResourceMutation) SetNoteID(s string) {
+	m.note_id = &s
+}
+
+// NoteID returns the value of the "note_id" field in the mutation.
+func (m *ConsoleResourceMutation) NoteID() (r string, exists bool) {
+	v := m.note_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNoteID returns the old "note_id" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldNoteID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNoteID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNoteID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNoteID: %w", err)
+	}
+	return oldValue.NoteID, nil
+}
+
+// ClearNoteID clears the value of the "note_id" field.
+func (m *ConsoleResourceMutation) ClearNoteID() {
+	m.note_id = nil
+	m.clearedFields[consoleresource.FieldNoteID] = struct{}{}
+}
+
+// NoteIDCleared returns if the "note_id" field was cleared in this mutation.
+func (m *ConsoleResourceMutation) NoteIDCleared() bool {
+	_, ok := m.clearedFields[consoleresource.FieldNoteID]
+	return ok
+}
+
+// ResetNoteID resets all changes to the "note_id" field.
+func (m *ConsoleResourceMutation) ResetNoteID() {
+	m.note_id = nil
+	delete(m.clearedFields, consoleresource.FieldNoteID)
+}
+
+// SetPayloadJSON sets the "payload_json" field.
+func (m *ConsoleResourceMutation) SetPayloadJSON(s string) {
+	m.payload_json = &s
+}
+
+// PayloadJSON returns the value of the "payload_json" field in the mutation.
+func (m *ConsoleResourceMutation) PayloadJSON() (r string, exists bool) {
+	v := m.payload_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPayloadJSON returns the old "payload_json" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldPayloadJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPayloadJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPayloadJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayloadJSON: %w", err)
+	}
+	return oldValue.PayloadJSON, nil
+}
+
+// ResetPayloadJSON resets all changes to the "payload_json" field.
+func (m *ConsoleResourceMutation) ResetPayloadJSON() {
+	m.payload_json = nil
+}
+
+// SetSortOrder sets the "sort_order" field.
+func (m *ConsoleResourceMutation) SetSortOrder(i int) {
+	m.sort_order = &i
+	m.addsort_order = nil
+}
+
+// SortOrder returns the value of the "sort_order" field in the mutation.
+func (m *ConsoleResourceMutation) SortOrder() (r int, exists bool) {
+	v := m.sort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSortOrder returns the old "sort_order" field's value of the ConsoleResource entity.
+// If the ConsoleResource object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsoleResourceMutation) OldSortOrder(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSortOrder is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSortOrder requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSortOrder: %w", err)
+	}
+	return oldValue.SortOrder, nil
+}
+
+// AddSortOrder adds i to the "sort_order" field.
+func (m *ConsoleResourceMutation) AddSortOrder(i int) {
+	if m.addsort_order != nil {
+		*m.addsort_order += i
+	} else {
+		m.addsort_order = &i
+	}
+}
+
+// AddedSortOrder returns the value that was added to the "sort_order" field in this mutation.
+func (m *ConsoleResourceMutation) AddedSortOrder() (r int, exists bool) {
+	v := m.addsort_order
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSortOrder resets all changes to the "sort_order" field.
+func (m *ConsoleResourceMutation) ResetSortOrder() {
+	m.sort_order = nil
+	m.addsort_order = nil
+}
+
+// SetWorkspaceID sets the "workspace" edge to the RevenueWorkspace entity by id.
+func (m *ConsoleResourceMutation) SetWorkspaceID(id uuid.UUID) {
+	m.workspace = &id
+}
+
+// ClearWorkspace clears the "workspace" edge to the RevenueWorkspace entity.
+func (m *ConsoleResourceMutation) ClearWorkspace() {
+	m.clearedworkspace = true
+}
+
+// WorkspaceCleared reports if the "workspace" edge to the RevenueWorkspace entity was cleared.
+func (m *ConsoleResourceMutation) WorkspaceCleared() bool {
+	return m.clearedworkspace
+}
+
+// WorkspaceID returns the "workspace" edge ID in the mutation.
+func (m *ConsoleResourceMutation) WorkspaceID() (id uuid.UUID, exists bool) {
+	if m.workspace != nil {
+		return *m.workspace, true
+	}
+	return
+}
+
+// WorkspaceIDs returns the "workspace" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// WorkspaceID instead. It exists only for internal usage by the builders.
+func (m *ConsoleResourceMutation) WorkspaceIDs() (ids []uuid.UUID) {
+	if id := m.workspace; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetWorkspace resets all changes to the "workspace" edge.
+func (m *ConsoleResourceMutation) ResetWorkspace() {
+	m.workspace = nil
+	m.clearedworkspace = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *ConsoleResourceMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *ConsoleResourceMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *ConsoleResourceMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *ConsoleResourceMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *ConsoleResourceMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *ConsoleResourceMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the ConsoleResourceMutation builder.
+func (m *ConsoleResourceMutation) Where(ps ...predicate.ConsoleResource) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ConsoleResourceMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ConsoleResourceMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ConsoleResource, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ConsoleResourceMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ConsoleResourceMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ConsoleResource).
+func (m *ConsoleResourceMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ConsoleResourceMutation) Fields() []string {
+	fields := make([]string, 0, 8)
+	if m.created_at != nil {
+		fields = append(fields, consoleresource.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, consoleresource.FieldUpdatedAt)
+	}
+	if m.kind != nil {
+		fields = append(fields, consoleresource.FieldKind)
+	}
+	if m.name != nil {
+		fields = append(fields, consoleresource.FieldName)
+	}
+	if m.name_key != nil {
+		fields = append(fields, consoleresource.FieldNameKey)
+	}
+	if m.note_id != nil {
+		fields = append(fields, consoleresource.FieldNoteID)
+	}
+	if m.payload_json != nil {
+		fields = append(fields, consoleresource.FieldPayloadJSON)
+	}
+	if m.sort_order != nil {
+		fields = append(fields, consoleresource.FieldSortOrder)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ConsoleResourceMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case consoleresource.FieldCreatedAt:
+		return m.CreatedAt()
+	case consoleresource.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case consoleresource.FieldKind:
+		return m.Kind()
+	case consoleresource.FieldName:
+		return m.Name()
+	case consoleresource.FieldNameKey:
+		return m.NameKey()
+	case consoleresource.FieldNoteID:
+		return m.NoteID()
+	case consoleresource.FieldPayloadJSON:
+		return m.PayloadJSON()
+	case consoleresource.FieldSortOrder:
+		return m.SortOrder()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ConsoleResourceMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case consoleresource.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case consoleresource.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case consoleresource.FieldKind:
+		return m.OldKind(ctx)
+	case consoleresource.FieldName:
+		return m.OldName(ctx)
+	case consoleresource.FieldNameKey:
+		return m.OldNameKey(ctx)
+	case consoleresource.FieldNoteID:
+		return m.OldNoteID(ctx)
+	case consoleresource.FieldPayloadJSON:
+		return m.OldPayloadJSON(ctx)
+	case consoleresource.FieldSortOrder:
+		return m.OldSortOrder(ctx)
+	}
+	return nil, fmt.Errorf("unknown ConsoleResource field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConsoleResourceMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case consoleresource.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case consoleresource.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case consoleresource.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
+	case consoleresource.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case consoleresource.FieldNameKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNameKey(v)
+		return nil
+	case consoleresource.FieldNoteID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNoteID(v)
+		return nil
+	case consoleresource.FieldPayloadJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPayloadJSON(v)
+		return nil
+	case consoleresource.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSortOrder(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ConsoleResource field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ConsoleResourceMutation) AddedFields() []string {
+	var fields []string
+	if m.addsort_order != nil {
+		fields = append(fields, consoleresource.FieldSortOrder)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ConsoleResourceMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case consoleresource.FieldSortOrder:
+		return m.AddedSortOrder()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConsoleResourceMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case consoleresource.FieldSortOrder:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSortOrder(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ConsoleResource numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ConsoleResourceMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(consoleresource.FieldName) {
+		fields = append(fields, consoleresource.FieldName)
+	}
+	if m.FieldCleared(consoleresource.FieldNameKey) {
+		fields = append(fields, consoleresource.FieldNameKey)
+	}
+	if m.FieldCleared(consoleresource.FieldNoteID) {
+		fields = append(fields, consoleresource.FieldNoteID)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ConsoleResourceMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ConsoleResourceMutation) ClearField(name string) error {
+	switch name {
+	case consoleresource.FieldName:
+		m.ClearName()
+		return nil
+	case consoleresource.FieldNameKey:
+		m.ClearNameKey()
+		return nil
+	case consoleresource.FieldNoteID:
+		m.ClearNoteID()
+		return nil
+	}
+	return fmt.Errorf("unknown ConsoleResource nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ConsoleResourceMutation) ResetField(name string) error {
+	switch name {
+	case consoleresource.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case consoleresource.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case consoleresource.FieldKind:
+		m.ResetKind()
+		return nil
+	case consoleresource.FieldName:
+		m.ResetName()
+		return nil
+	case consoleresource.FieldNameKey:
+		m.ResetNameKey()
+		return nil
+	case consoleresource.FieldNoteID:
+		m.ResetNoteID()
+		return nil
+	case consoleresource.FieldPayloadJSON:
+		m.ResetPayloadJSON()
+		return nil
+	case consoleresource.FieldSortOrder:
+		m.ResetSortOrder()
+		return nil
+	}
+	return fmt.Errorf("unknown ConsoleResource field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ConsoleResourceMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.workspace != nil {
+		edges = append(edges, consoleresource.EdgeWorkspace)
+	}
+	if m.user != nil {
+		edges = append(edges, consoleresource.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ConsoleResourceMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case consoleresource.EdgeWorkspace:
+		if id := m.workspace; id != nil {
+			return []ent.Value{*id}
+		}
+	case consoleresource.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ConsoleResourceMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ConsoleResourceMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ConsoleResourceMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedworkspace {
+		edges = append(edges, consoleresource.EdgeWorkspace)
+	}
+	if m.cleareduser {
+		edges = append(edges, consoleresource.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ConsoleResourceMutation) EdgeCleared(name string) bool {
+	switch name {
+	case consoleresource.EdgeWorkspace:
+		return m.clearedworkspace
+	case consoleresource.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ConsoleResourceMutation) ClearEdge(name string) error {
+	switch name {
+	case consoleresource.EdgeWorkspace:
+		m.ClearWorkspace()
+		return nil
+	case consoleresource.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown ConsoleResource unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ConsoleResourceMutation) ResetEdge(name string) error {
+	switch name {
+	case consoleresource.EdgeWorkspace:
+		m.ResetWorkspace()
+		return nil
+	case consoleresource.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown ConsoleResource edge %s", name)
 }
 
 // ConversationIntelligenceArtifactMutation represents an operation that mutates the ConversationIntelligenceArtifact nodes in the graph.
@@ -65719,6 +74115,9 @@ type RelationshipMutation struct {
 	mail_threads                               map[uuid.UUID]struct{}
 	removedmail_threads                        map[uuid.UUID]struct{}
 	clearedmail_threads                        bool
+	communication_interactions                 map[uuid.UUID]struct{}
+	removedcommunication_interactions          map[uuid.UUID]struct{}
+	clearedcommunication_interactions          bool
 	participants                               map[uuid.UUID]struct{}
 	removedparticipants                        map[uuid.UUID]struct{}
 	clearedparticipants                        bool
@@ -67816,6 +76215,60 @@ func (m *RelationshipMutation) ResetMailThreads() {
 	m.removedmail_threads = nil
 }
 
+// AddCommunicationInteractionIDs adds the "communication_interactions" edge to the CommunicationInteraction entity by ids.
+func (m *RelationshipMutation) AddCommunicationInteractionIDs(ids ...uuid.UUID) {
+	if m.communication_interactions == nil {
+		m.communication_interactions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.communication_interactions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommunicationInteractions clears the "communication_interactions" edge to the CommunicationInteraction entity.
+func (m *RelationshipMutation) ClearCommunicationInteractions() {
+	m.clearedcommunication_interactions = true
+}
+
+// CommunicationInteractionsCleared reports if the "communication_interactions" edge to the CommunicationInteraction entity was cleared.
+func (m *RelationshipMutation) CommunicationInteractionsCleared() bool {
+	return m.clearedcommunication_interactions
+}
+
+// RemoveCommunicationInteractionIDs removes the "communication_interactions" edge to the CommunicationInteraction entity by IDs.
+func (m *RelationshipMutation) RemoveCommunicationInteractionIDs(ids ...uuid.UUID) {
+	if m.removedcommunication_interactions == nil {
+		m.removedcommunication_interactions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.communication_interactions, ids[i])
+		m.removedcommunication_interactions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommunicationInteractions returns the removed IDs of the "communication_interactions" edge to the CommunicationInteraction entity.
+func (m *RelationshipMutation) RemovedCommunicationInteractionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommunication_interactions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommunicationInteractionsIDs returns the "communication_interactions" edge IDs in the mutation.
+func (m *RelationshipMutation) CommunicationInteractionsIDs() (ids []uuid.UUID) {
+	for id := range m.communication_interactions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommunicationInteractions resets all changes to the "communication_interactions" edge.
+func (m *RelationshipMutation) ResetCommunicationInteractions() {
+	m.communication_interactions = nil
+	m.clearedcommunication_interactions = false
+	m.removedcommunication_interactions = nil
+}
+
 // AddParticipantIDs adds the "participants" edge to the RelationshipParticipant entity by ids.
 func (m *RelationshipMutation) AddParticipantIDs(ids ...uuid.UUID) {
 	if m.participants == nil {
@@ -69267,7 +77720,7 @@ func (m *RelationshipMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RelationshipMutation) AddedEdges() []string {
-	edges := make([]string, 0, 21)
+	edges := make([]string, 0, 22)
 	if m.workspace != nil {
 		edges = append(edges, relationship.EdgeWorkspace)
 	}
@@ -69294,6 +77747,9 @@ func (m *RelationshipMutation) AddedEdges() []string {
 	}
 	if m.mail_threads != nil {
 		edges = append(edges, relationship.EdgeMailThreads)
+	}
+	if m.communication_interactions != nil {
+		edges = append(edges, relationship.EdgeCommunicationInteractions)
 	}
 	if m.participants != nil {
 		edges = append(edges, relationship.EdgeParticipants)
@@ -69388,6 +77844,12 @@ func (m *RelationshipMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case relationship.EdgeCommunicationInteractions:
+		ids := make([]ent.Value, 0, len(m.communication_interactions))
+		for id := range m.communication_interactions {
+			ids = append(ids, id)
+		}
+		return ids
 	case relationship.EdgeParticipants:
 		ids := make([]ent.Value, 0, len(m.participants))
 		for id := range m.participants {
@@ -69466,7 +77928,7 @@ func (m *RelationshipMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RelationshipMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 21)
+	edges := make([]string, 0, 22)
 	if m.removedcommitments != nil {
 		edges = append(edges, relationship.EdgeCommitments)
 	}
@@ -69487,6 +77949,9 @@ func (m *RelationshipMutation) RemovedEdges() []string {
 	}
 	if m.removedmail_threads != nil {
 		edges = append(edges, relationship.EdgeMailThreads)
+	}
+	if m.removedcommunication_interactions != nil {
+		edges = append(edges, relationship.EdgeCommunicationInteractions)
 	}
 	if m.removedparticipants != nil {
 		edges = append(edges, relationship.EdgeParticipants)
@@ -69573,6 +78038,12 @@ func (m *RelationshipMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case relationship.EdgeCommunicationInteractions:
+		ids := make([]ent.Value, 0, len(m.removedcommunication_interactions))
+		for id := range m.removedcommunication_interactions {
+			ids = append(ids, id)
+		}
+		return ids
 	case relationship.EdgeParticipants:
 		ids := make([]ent.Value, 0, len(m.removedparticipants))
 		for id := range m.removedparticipants {
@@ -69651,7 +78122,7 @@ func (m *RelationshipMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RelationshipMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 21)
+	edges := make([]string, 0, 22)
 	if m.clearedworkspace {
 		edges = append(edges, relationship.EdgeWorkspace)
 	}
@@ -69678,6 +78149,9 @@ func (m *RelationshipMutation) ClearedEdges() []string {
 	}
 	if m.clearedmail_threads {
 		edges = append(edges, relationship.EdgeMailThreads)
+	}
+	if m.clearedcommunication_interactions {
+		edges = append(edges, relationship.EdgeCommunicationInteractions)
 	}
 	if m.clearedparticipants {
 		edges = append(edges, relationship.EdgeParticipants)
@@ -69740,6 +78214,8 @@ func (m *RelationshipMutation) EdgeCleared(name string) bool {
 		return m.clearedevidences
 	case relationship.EdgeMailThreads:
 		return m.clearedmail_threads
+	case relationship.EdgeCommunicationInteractions:
+		return m.clearedcommunication_interactions
 	case relationship.EdgeParticipants:
 		return m.clearedparticipants
 	case relationship.EdgeIdentities:
@@ -69812,6 +78288,9 @@ func (m *RelationshipMutation) ResetEdge(name string) error {
 		return nil
 	case relationship.EdgeMailThreads:
 		m.ResetMailThreads()
+		return nil
+	case relationship.EdgeCommunicationInteractions:
+		m.ResetCommunicationInteractions()
 		return nil
 	case relationship.EdgeParticipants:
 		m.ResetParticipants()
@@ -99385,6 +107864,27 @@ type RevenueWorkspaceMutation struct {
 	scans                                       map[uuid.UUID]struct{}
 	removedscans                                map[uuid.UUID]struct{}
 	clearedscans                                bool
+	communication_interactions                  map[uuid.UUID]struct{}
+	removedcommunication_interactions           map[uuid.UUID]struct{}
+	clearedcommunication_interactions           bool
+	communication_participants                  map[uuid.UUID]struct{}
+	removedcommunication_participants           map[uuid.UUID]struct{}
+	clearedcommunication_participants           bool
+	communication_attachments                   map[uuid.UUID]struct{}
+	removedcommunication_attachments            map[uuid.UUID]struct{}
+	clearedcommunication_attachments            bool
+	communication_sync_cursors                  map[uuid.UUID]struct{}
+	removedcommunication_sync_cursors           map[uuid.UUID]struct{}
+	clearedcommunication_sync_cursors           bool
+	communication_privacy_policies              map[uuid.UUID]struct{}
+	removedcommunication_privacy_policies       map[uuid.UUID]struct{}
+	clearedcommunication_privacy_policies       bool
+	communication_privacy_rules                 map[uuid.UUID]struct{}
+	removedcommunication_privacy_rules          map[uuid.UUID]struct{}
+	clearedcommunication_privacy_rules          bool
+	communication_share_grants                  map[uuid.UUID]struct{}
+	removedcommunication_share_grants           map[uuid.UUID]struct{}
+	clearedcommunication_share_grants           bool
 	relationship_participants                   map[uuid.UUID]struct{}
 	removedrelationship_participants            map[uuid.UUID]struct{}
 	clearedrelationship_participants            bool
@@ -99457,6 +107957,9 @@ type RevenueWorkspaceMutation struct {
 	person_merge_candidates                     map[uuid.UUID]struct{}
 	removedperson_merge_candidates              map[uuid.UUID]struct{}
 	clearedperson_merge_candidates              bool
+	console_resources                           map[uuid.UUID]struct{}
+	removedconsole_resources                    map[uuid.UUID]struct{}
+	clearedconsole_resources                    bool
 	done                                        bool
 	oldValue                                    func(context.Context) (*RevenueWorkspace, error)
 	predicates                                  []predicate.RevenueWorkspace
@@ -100776,6 +109279,384 @@ func (m *RevenueWorkspaceMutation) ResetScans() {
 	m.removedscans = nil
 }
 
+// AddCommunicationInteractionIDs adds the "communication_interactions" edge to the CommunicationInteraction entity by ids.
+func (m *RevenueWorkspaceMutation) AddCommunicationInteractionIDs(ids ...uuid.UUID) {
+	if m.communication_interactions == nil {
+		m.communication_interactions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.communication_interactions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommunicationInteractions clears the "communication_interactions" edge to the CommunicationInteraction entity.
+func (m *RevenueWorkspaceMutation) ClearCommunicationInteractions() {
+	m.clearedcommunication_interactions = true
+}
+
+// CommunicationInteractionsCleared reports if the "communication_interactions" edge to the CommunicationInteraction entity was cleared.
+func (m *RevenueWorkspaceMutation) CommunicationInteractionsCleared() bool {
+	return m.clearedcommunication_interactions
+}
+
+// RemoveCommunicationInteractionIDs removes the "communication_interactions" edge to the CommunicationInteraction entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveCommunicationInteractionIDs(ids ...uuid.UUID) {
+	if m.removedcommunication_interactions == nil {
+		m.removedcommunication_interactions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.communication_interactions, ids[i])
+		m.removedcommunication_interactions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommunicationInteractions returns the removed IDs of the "communication_interactions" edge to the CommunicationInteraction entity.
+func (m *RevenueWorkspaceMutation) RemovedCommunicationInteractionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommunication_interactions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommunicationInteractionsIDs returns the "communication_interactions" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) CommunicationInteractionsIDs() (ids []uuid.UUID) {
+	for id := range m.communication_interactions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommunicationInteractions resets all changes to the "communication_interactions" edge.
+func (m *RevenueWorkspaceMutation) ResetCommunicationInteractions() {
+	m.communication_interactions = nil
+	m.clearedcommunication_interactions = false
+	m.removedcommunication_interactions = nil
+}
+
+// AddCommunicationParticipantIDs adds the "communication_participants" edge to the CommunicationParticipant entity by ids.
+func (m *RevenueWorkspaceMutation) AddCommunicationParticipantIDs(ids ...uuid.UUID) {
+	if m.communication_participants == nil {
+		m.communication_participants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.communication_participants[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommunicationParticipants clears the "communication_participants" edge to the CommunicationParticipant entity.
+func (m *RevenueWorkspaceMutation) ClearCommunicationParticipants() {
+	m.clearedcommunication_participants = true
+}
+
+// CommunicationParticipantsCleared reports if the "communication_participants" edge to the CommunicationParticipant entity was cleared.
+func (m *RevenueWorkspaceMutation) CommunicationParticipantsCleared() bool {
+	return m.clearedcommunication_participants
+}
+
+// RemoveCommunicationParticipantIDs removes the "communication_participants" edge to the CommunicationParticipant entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveCommunicationParticipantIDs(ids ...uuid.UUID) {
+	if m.removedcommunication_participants == nil {
+		m.removedcommunication_participants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.communication_participants, ids[i])
+		m.removedcommunication_participants[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommunicationParticipants returns the removed IDs of the "communication_participants" edge to the CommunicationParticipant entity.
+func (m *RevenueWorkspaceMutation) RemovedCommunicationParticipantsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommunication_participants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommunicationParticipantsIDs returns the "communication_participants" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) CommunicationParticipantsIDs() (ids []uuid.UUID) {
+	for id := range m.communication_participants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommunicationParticipants resets all changes to the "communication_participants" edge.
+func (m *RevenueWorkspaceMutation) ResetCommunicationParticipants() {
+	m.communication_participants = nil
+	m.clearedcommunication_participants = false
+	m.removedcommunication_participants = nil
+}
+
+// AddCommunicationAttachmentIDs adds the "communication_attachments" edge to the CommunicationAttachment entity by ids.
+func (m *RevenueWorkspaceMutation) AddCommunicationAttachmentIDs(ids ...uuid.UUID) {
+	if m.communication_attachments == nil {
+		m.communication_attachments = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.communication_attachments[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommunicationAttachments clears the "communication_attachments" edge to the CommunicationAttachment entity.
+func (m *RevenueWorkspaceMutation) ClearCommunicationAttachments() {
+	m.clearedcommunication_attachments = true
+}
+
+// CommunicationAttachmentsCleared reports if the "communication_attachments" edge to the CommunicationAttachment entity was cleared.
+func (m *RevenueWorkspaceMutation) CommunicationAttachmentsCleared() bool {
+	return m.clearedcommunication_attachments
+}
+
+// RemoveCommunicationAttachmentIDs removes the "communication_attachments" edge to the CommunicationAttachment entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveCommunicationAttachmentIDs(ids ...uuid.UUID) {
+	if m.removedcommunication_attachments == nil {
+		m.removedcommunication_attachments = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.communication_attachments, ids[i])
+		m.removedcommunication_attachments[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommunicationAttachments returns the removed IDs of the "communication_attachments" edge to the CommunicationAttachment entity.
+func (m *RevenueWorkspaceMutation) RemovedCommunicationAttachmentsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommunication_attachments {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommunicationAttachmentsIDs returns the "communication_attachments" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) CommunicationAttachmentsIDs() (ids []uuid.UUID) {
+	for id := range m.communication_attachments {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommunicationAttachments resets all changes to the "communication_attachments" edge.
+func (m *RevenueWorkspaceMutation) ResetCommunicationAttachments() {
+	m.communication_attachments = nil
+	m.clearedcommunication_attachments = false
+	m.removedcommunication_attachments = nil
+}
+
+// AddCommunicationSyncCursorIDs adds the "communication_sync_cursors" edge to the CommunicationSyncCursor entity by ids.
+func (m *RevenueWorkspaceMutation) AddCommunicationSyncCursorIDs(ids ...uuid.UUID) {
+	if m.communication_sync_cursors == nil {
+		m.communication_sync_cursors = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.communication_sync_cursors[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommunicationSyncCursors clears the "communication_sync_cursors" edge to the CommunicationSyncCursor entity.
+func (m *RevenueWorkspaceMutation) ClearCommunicationSyncCursors() {
+	m.clearedcommunication_sync_cursors = true
+}
+
+// CommunicationSyncCursorsCleared reports if the "communication_sync_cursors" edge to the CommunicationSyncCursor entity was cleared.
+func (m *RevenueWorkspaceMutation) CommunicationSyncCursorsCleared() bool {
+	return m.clearedcommunication_sync_cursors
+}
+
+// RemoveCommunicationSyncCursorIDs removes the "communication_sync_cursors" edge to the CommunicationSyncCursor entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveCommunicationSyncCursorIDs(ids ...uuid.UUID) {
+	if m.removedcommunication_sync_cursors == nil {
+		m.removedcommunication_sync_cursors = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.communication_sync_cursors, ids[i])
+		m.removedcommunication_sync_cursors[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommunicationSyncCursors returns the removed IDs of the "communication_sync_cursors" edge to the CommunicationSyncCursor entity.
+func (m *RevenueWorkspaceMutation) RemovedCommunicationSyncCursorsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommunication_sync_cursors {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommunicationSyncCursorsIDs returns the "communication_sync_cursors" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) CommunicationSyncCursorsIDs() (ids []uuid.UUID) {
+	for id := range m.communication_sync_cursors {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommunicationSyncCursors resets all changes to the "communication_sync_cursors" edge.
+func (m *RevenueWorkspaceMutation) ResetCommunicationSyncCursors() {
+	m.communication_sync_cursors = nil
+	m.clearedcommunication_sync_cursors = false
+	m.removedcommunication_sync_cursors = nil
+}
+
+// AddCommunicationPrivacyPolicyIDs adds the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity by ids.
+func (m *RevenueWorkspaceMutation) AddCommunicationPrivacyPolicyIDs(ids ...uuid.UUID) {
+	if m.communication_privacy_policies == nil {
+		m.communication_privacy_policies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.communication_privacy_policies[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommunicationPrivacyPolicies clears the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity.
+func (m *RevenueWorkspaceMutation) ClearCommunicationPrivacyPolicies() {
+	m.clearedcommunication_privacy_policies = true
+}
+
+// CommunicationPrivacyPoliciesCleared reports if the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity was cleared.
+func (m *RevenueWorkspaceMutation) CommunicationPrivacyPoliciesCleared() bool {
+	return m.clearedcommunication_privacy_policies
+}
+
+// RemoveCommunicationPrivacyPolicyIDs removes the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveCommunicationPrivacyPolicyIDs(ids ...uuid.UUID) {
+	if m.removedcommunication_privacy_policies == nil {
+		m.removedcommunication_privacy_policies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.communication_privacy_policies, ids[i])
+		m.removedcommunication_privacy_policies[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommunicationPrivacyPolicies returns the removed IDs of the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity.
+func (m *RevenueWorkspaceMutation) RemovedCommunicationPrivacyPoliciesIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommunication_privacy_policies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommunicationPrivacyPoliciesIDs returns the "communication_privacy_policies" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) CommunicationPrivacyPoliciesIDs() (ids []uuid.UUID) {
+	for id := range m.communication_privacy_policies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommunicationPrivacyPolicies resets all changes to the "communication_privacy_policies" edge.
+func (m *RevenueWorkspaceMutation) ResetCommunicationPrivacyPolicies() {
+	m.communication_privacy_policies = nil
+	m.clearedcommunication_privacy_policies = false
+	m.removedcommunication_privacy_policies = nil
+}
+
+// AddCommunicationPrivacyRuleIDs adds the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity by ids.
+func (m *RevenueWorkspaceMutation) AddCommunicationPrivacyRuleIDs(ids ...uuid.UUID) {
+	if m.communication_privacy_rules == nil {
+		m.communication_privacy_rules = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.communication_privacy_rules[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommunicationPrivacyRules clears the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity.
+func (m *RevenueWorkspaceMutation) ClearCommunicationPrivacyRules() {
+	m.clearedcommunication_privacy_rules = true
+}
+
+// CommunicationPrivacyRulesCleared reports if the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity was cleared.
+func (m *RevenueWorkspaceMutation) CommunicationPrivacyRulesCleared() bool {
+	return m.clearedcommunication_privacy_rules
+}
+
+// RemoveCommunicationPrivacyRuleIDs removes the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveCommunicationPrivacyRuleIDs(ids ...uuid.UUID) {
+	if m.removedcommunication_privacy_rules == nil {
+		m.removedcommunication_privacy_rules = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.communication_privacy_rules, ids[i])
+		m.removedcommunication_privacy_rules[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommunicationPrivacyRules returns the removed IDs of the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity.
+func (m *RevenueWorkspaceMutation) RemovedCommunicationPrivacyRulesIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommunication_privacy_rules {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommunicationPrivacyRulesIDs returns the "communication_privacy_rules" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) CommunicationPrivacyRulesIDs() (ids []uuid.UUID) {
+	for id := range m.communication_privacy_rules {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommunicationPrivacyRules resets all changes to the "communication_privacy_rules" edge.
+func (m *RevenueWorkspaceMutation) ResetCommunicationPrivacyRules() {
+	m.communication_privacy_rules = nil
+	m.clearedcommunication_privacy_rules = false
+	m.removedcommunication_privacy_rules = nil
+}
+
+// AddCommunicationShareGrantIDs adds the "communication_share_grants" edge to the CommunicationShareGrant entity by ids.
+func (m *RevenueWorkspaceMutation) AddCommunicationShareGrantIDs(ids ...uuid.UUID) {
+	if m.communication_share_grants == nil {
+		m.communication_share_grants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.communication_share_grants[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommunicationShareGrants clears the "communication_share_grants" edge to the CommunicationShareGrant entity.
+func (m *RevenueWorkspaceMutation) ClearCommunicationShareGrants() {
+	m.clearedcommunication_share_grants = true
+}
+
+// CommunicationShareGrantsCleared reports if the "communication_share_grants" edge to the CommunicationShareGrant entity was cleared.
+func (m *RevenueWorkspaceMutation) CommunicationShareGrantsCleared() bool {
+	return m.clearedcommunication_share_grants
+}
+
+// RemoveCommunicationShareGrantIDs removes the "communication_share_grants" edge to the CommunicationShareGrant entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveCommunicationShareGrantIDs(ids ...uuid.UUID) {
+	if m.removedcommunication_share_grants == nil {
+		m.removedcommunication_share_grants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.communication_share_grants, ids[i])
+		m.removedcommunication_share_grants[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommunicationShareGrants returns the removed IDs of the "communication_share_grants" edge to the CommunicationShareGrant entity.
+func (m *RevenueWorkspaceMutation) RemovedCommunicationShareGrantsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommunication_share_grants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommunicationShareGrantsIDs returns the "communication_share_grants" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) CommunicationShareGrantsIDs() (ids []uuid.UUID) {
+	for id := range m.communication_share_grants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommunicationShareGrants resets all changes to the "communication_share_grants" edge.
+func (m *RevenueWorkspaceMutation) ResetCommunicationShareGrants() {
+	m.communication_share_grants = nil
+	m.clearedcommunication_share_grants = false
+	m.removedcommunication_share_grants = nil
+}
+
 // AddRelationshipParticipantIDs adds the "relationship_participants" edge to the RelationshipParticipant entity by ids.
 func (m *RevenueWorkspaceMutation) AddRelationshipParticipantIDs(ids ...uuid.UUID) {
 	if m.relationship_participants == nil {
@@ -102072,6 +110953,60 @@ func (m *RevenueWorkspaceMutation) ResetPersonMergeCandidates() {
 	m.removedperson_merge_candidates = nil
 }
 
+// AddConsoleResourceIDs adds the "console_resources" edge to the ConsoleResource entity by ids.
+func (m *RevenueWorkspaceMutation) AddConsoleResourceIDs(ids ...uuid.UUID) {
+	if m.console_resources == nil {
+		m.console_resources = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.console_resources[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConsoleResources clears the "console_resources" edge to the ConsoleResource entity.
+func (m *RevenueWorkspaceMutation) ClearConsoleResources() {
+	m.clearedconsole_resources = true
+}
+
+// ConsoleResourcesCleared reports if the "console_resources" edge to the ConsoleResource entity was cleared.
+func (m *RevenueWorkspaceMutation) ConsoleResourcesCleared() bool {
+	return m.clearedconsole_resources
+}
+
+// RemoveConsoleResourceIDs removes the "console_resources" edge to the ConsoleResource entity by IDs.
+func (m *RevenueWorkspaceMutation) RemoveConsoleResourceIDs(ids ...uuid.UUID) {
+	if m.removedconsole_resources == nil {
+		m.removedconsole_resources = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.console_resources, ids[i])
+		m.removedconsole_resources[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConsoleResources returns the removed IDs of the "console_resources" edge to the ConsoleResource entity.
+func (m *RevenueWorkspaceMutation) RemovedConsoleResourcesIDs() (ids []uuid.UUID) {
+	for id := range m.removedconsole_resources {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConsoleResourcesIDs returns the "console_resources" edge IDs in the mutation.
+func (m *RevenueWorkspaceMutation) ConsoleResourcesIDs() (ids []uuid.UUID) {
+	for id := range m.console_resources {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConsoleResources resets all changes to the "console_resources" edge.
+func (m *RevenueWorkspaceMutation) ResetConsoleResources() {
+	m.console_resources = nil
+	m.clearedconsole_resources = false
+	m.removedconsole_resources = nil
+}
+
 // Where appends a list predicates to the RevenueWorkspaceMutation builder.
 func (m *RevenueWorkspaceMutation) Where(ps ...predicate.RevenueWorkspace) {
 	m.predicates = append(m.predicates, ps...)
@@ -102437,7 +111372,7 @@ func (m *RevenueWorkspaceMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RevenueWorkspaceMutation) AddedEdges() []string {
-	edges := make([]string, 0, 37)
+	edges := make([]string, 0, 45)
 	if m.user != nil {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -102476,6 +111411,27 @@ func (m *RevenueWorkspaceMutation) AddedEdges() []string {
 	}
 	if m.scans != nil {
 		edges = append(edges, revenueworkspace.EdgeScans)
+	}
+	if m.communication_interactions != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationInteractions)
+	}
+	if m.communication_participants != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationParticipants)
+	}
+	if m.communication_attachments != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationAttachments)
+	}
+	if m.communication_sync_cursors != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationSyncCursors)
+	}
+	if m.communication_privacy_policies != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationPrivacyPolicies)
+	}
+	if m.communication_privacy_rules != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationPrivacyRules)
+	}
+	if m.communication_share_grants != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationShareGrants)
 	}
 	if m.relationship_participants != nil {
 		edges = append(edges, revenueworkspace.EdgeRelationshipParticipants)
@@ -102548,6 +111504,9 @@ func (m *RevenueWorkspaceMutation) AddedEdges() []string {
 	}
 	if m.person_merge_candidates != nil {
 		edges = append(edges, revenueworkspace.EdgePersonMergeCandidates)
+	}
+	if m.console_resources != nil {
+		edges = append(edges, revenueworkspace.EdgeConsoleResources)
 	}
 	return edges
 }
@@ -102629,6 +111588,48 @@ func (m *RevenueWorkspaceMutation) AddedIDs(name string) []ent.Value {
 	case revenueworkspace.EdgeScans:
 		ids := make([]ent.Value, 0, len(m.scans))
 		for id := range m.scans {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationInteractions:
+		ids := make([]ent.Value, 0, len(m.communication_interactions))
+		for id := range m.communication_interactions {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationParticipants:
+		ids := make([]ent.Value, 0, len(m.communication_participants))
+		for id := range m.communication_participants {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationAttachments:
+		ids := make([]ent.Value, 0, len(m.communication_attachments))
+		for id := range m.communication_attachments {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationSyncCursors:
+		ids := make([]ent.Value, 0, len(m.communication_sync_cursors))
+		for id := range m.communication_sync_cursors {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationPrivacyPolicies:
+		ids := make([]ent.Value, 0, len(m.communication_privacy_policies))
+		for id := range m.communication_privacy_policies {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationPrivacyRules:
+		ids := make([]ent.Value, 0, len(m.communication_privacy_rules))
+		for id := range m.communication_privacy_rules {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationShareGrants:
+		ids := make([]ent.Value, 0, len(m.communication_share_grants))
+		for id := range m.communication_share_grants {
 			ids = append(ids, id)
 		}
 		return ids
@@ -102776,13 +111777,19 @@ func (m *RevenueWorkspaceMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeConsoleResources:
+		ids := make([]ent.Value, 0, len(m.console_resources))
+		for id := range m.console_resources {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 37)
+	edges := make([]string, 0, 45)
 	if m.removedmembers != nil {
 		edges = append(edges, revenueworkspace.EdgeMembers)
 	}
@@ -102818,6 +111825,27 @@ func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
 	}
 	if m.removedscans != nil {
 		edges = append(edges, revenueworkspace.EdgeScans)
+	}
+	if m.removedcommunication_interactions != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationInteractions)
+	}
+	if m.removedcommunication_participants != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationParticipants)
+	}
+	if m.removedcommunication_attachments != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationAttachments)
+	}
+	if m.removedcommunication_sync_cursors != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationSyncCursors)
+	}
+	if m.removedcommunication_privacy_policies != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationPrivacyPolicies)
+	}
+	if m.removedcommunication_privacy_rules != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationPrivacyRules)
+	}
+	if m.removedcommunication_share_grants != nil {
+		edges = append(edges, revenueworkspace.EdgeCommunicationShareGrants)
 	}
 	if m.removedrelationship_participants != nil {
 		edges = append(edges, revenueworkspace.EdgeRelationshipParticipants)
@@ -102890,6 +111918,9 @@ func (m *RevenueWorkspaceMutation) RemovedEdges() []string {
 	}
 	if m.removedperson_merge_candidates != nil {
 		edges = append(edges, revenueworkspace.EdgePersonMergeCandidates)
+	}
+	if m.removedconsole_resources != nil {
+		edges = append(edges, revenueworkspace.EdgeConsoleResources)
 	}
 	return edges
 }
@@ -102967,6 +111998,48 @@ func (m *RevenueWorkspaceMutation) RemovedIDs(name string) []ent.Value {
 	case revenueworkspace.EdgeScans:
 		ids := make([]ent.Value, 0, len(m.removedscans))
 		for id := range m.removedscans {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationInteractions:
+		ids := make([]ent.Value, 0, len(m.removedcommunication_interactions))
+		for id := range m.removedcommunication_interactions {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationParticipants:
+		ids := make([]ent.Value, 0, len(m.removedcommunication_participants))
+		for id := range m.removedcommunication_participants {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationAttachments:
+		ids := make([]ent.Value, 0, len(m.removedcommunication_attachments))
+		for id := range m.removedcommunication_attachments {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationSyncCursors:
+		ids := make([]ent.Value, 0, len(m.removedcommunication_sync_cursors))
+		for id := range m.removedcommunication_sync_cursors {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationPrivacyPolicies:
+		ids := make([]ent.Value, 0, len(m.removedcommunication_privacy_policies))
+		for id := range m.removedcommunication_privacy_policies {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationPrivacyRules:
+		ids := make([]ent.Value, 0, len(m.removedcommunication_privacy_rules))
+		for id := range m.removedcommunication_privacy_rules {
+			ids = append(ids, id)
+		}
+		return ids
+	case revenueworkspace.EdgeCommunicationShareGrants:
+		ids := make([]ent.Value, 0, len(m.removedcommunication_share_grants))
+		for id := range m.removedcommunication_share_grants {
 			ids = append(ids, id)
 		}
 		return ids
@@ -103114,13 +112187,19 @@ func (m *RevenueWorkspaceMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case revenueworkspace.EdgeConsoleResources:
+		ids := make([]ent.Value, 0, len(m.removedconsole_resources))
+		for id := range m.removedconsole_resources {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 37)
+	edges := make([]string, 0, 45)
 	if m.cleareduser {
 		edges = append(edges, revenueworkspace.EdgeUser)
 	}
@@ -103159,6 +112238,27 @@ func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
 	}
 	if m.clearedscans {
 		edges = append(edges, revenueworkspace.EdgeScans)
+	}
+	if m.clearedcommunication_interactions {
+		edges = append(edges, revenueworkspace.EdgeCommunicationInteractions)
+	}
+	if m.clearedcommunication_participants {
+		edges = append(edges, revenueworkspace.EdgeCommunicationParticipants)
+	}
+	if m.clearedcommunication_attachments {
+		edges = append(edges, revenueworkspace.EdgeCommunicationAttachments)
+	}
+	if m.clearedcommunication_sync_cursors {
+		edges = append(edges, revenueworkspace.EdgeCommunicationSyncCursors)
+	}
+	if m.clearedcommunication_privacy_policies {
+		edges = append(edges, revenueworkspace.EdgeCommunicationPrivacyPolicies)
+	}
+	if m.clearedcommunication_privacy_rules {
+		edges = append(edges, revenueworkspace.EdgeCommunicationPrivacyRules)
+	}
+	if m.clearedcommunication_share_grants {
+		edges = append(edges, revenueworkspace.EdgeCommunicationShareGrants)
 	}
 	if m.clearedrelationship_participants {
 		edges = append(edges, revenueworkspace.EdgeRelationshipParticipants)
@@ -103232,6 +112332,9 @@ func (m *RevenueWorkspaceMutation) ClearedEdges() []string {
 	if m.clearedperson_merge_candidates {
 		edges = append(edges, revenueworkspace.EdgePersonMergeCandidates)
 	}
+	if m.clearedconsole_resources {
+		edges = append(edges, revenueworkspace.EdgeConsoleResources)
+	}
 	return edges
 }
 
@@ -103265,6 +112368,20 @@ func (m *RevenueWorkspaceMutation) EdgeCleared(name string) bool {
 		return m.clearedoutbox_events
 	case revenueworkspace.EdgeScans:
 		return m.clearedscans
+	case revenueworkspace.EdgeCommunicationInteractions:
+		return m.clearedcommunication_interactions
+	case revenueworkspace.EdgeCommunicationParticipants:
+		return m.clearedcommunication_participants
+	case revenueworkspace.EdgeCommunicationAttachments:
+		return m.clearedcommunication_attachments
+	case revenueworkspace.EdgeCommunicationSyncCursors:
+		return m.clearedcommunication_sync_cursors
+	case revenueworkspace.EdgeCommunicationPrivacyPolicies:
+		return m.clearedcommunication_privacy_policies
+	case revenueworkspace.EdgeCommunicationPrivacyRules:
+		return m.clearedcommunication_privacy_rules
+	case revenueworkspace.EdgeCommunicationShareGrants:
+		return m.clearedcommunication_share_grants
 	case revenueworkspace.EdgeRelationshipParticipants:
 		return m.clearedrelationship_participants
 	case revenueworkspace.EdgeRelationshipIdentities:
@@ -103313,6 +112430,8 @@ func (m *RevenueWorkspaceMutation) EdgeCleared(name string) bool {
 		return m.clearedperson_interaction_stats
 	case revenueworkspace.EdgePersonMergeCandidates:
 		return m.clearedperson_merge_candidates
+	case revenueworkspace.EdgeConsoleResources:
+		return m.clearedconsole_resources
 	}
 	return false
 }
@@ -103370,6 +112489,27 @@ func (m *RevenueWorkspaceMutation) ResetEdge(name string) error {
 		return nil
 	case revenueworkspace.EdgeScans:
 		m.ResetScans()
+		return nil
+	case revenueworkspace.EdgeCommunicationInteractions:
+		m.ResetCommunicationInteractions()
+		return nil
+	case revenueworkspace.EdgeCommunicationParticipants:
+		m.ResetCommunicationParticipants()
+		return nil
+	case revenueworkspace.EdgeCommunicationAttachments:
+		m.ResetCommunicationAttachments()
+		return nil
+	case revenueworkspace.EdgeCommunicationSyncCursors:
+		m.ResetCommunicationSyncCursors()
+		return nil
+	case revenueworkspace.EdgeCommunicationPrivacyPolicies:
+		m.ResetCommunicationPrivacyPolicies()
+		return nil
+	case revenueworkspace.EdgeCommunicationPrivacyRules:
+		m.ResetCommunicationPrivacyRules()
+		return nil
+	case revenueworkspace.EdgeCommunicationShareGrants:
+		m.ResetCommunicationShareGrants()
 		return nil
 	case revenueworkspace.EdgeRelationshipParticipants:
 		m.ResetRelationshipParticipants()
@@ -103442,6 +112582,9 @@ func (m *RevenueWorkspaceMutation) ResetEdge(name string) error {
 		return nil
 	case revenueworkspace.EdgePersonMergeCandidates:
 		m.ResetPersonMergeCandidates()
+		return nil
+	case revenueworkspace.EdgeConsoleResources:
+		m.ResetConsoleResources()
 		return nil
 	}
 	return fmt.Errorf("unknown RevenueWorkspace edge %s", name)
@@ -107145,6 +116288,24 @@ type UserMutation struct {
 	mail_signals                                map[uuid.UUID]struct{}
 	removedmail_signals                         map[uuid.UUID]struct{}
 	clearedmail_signals                         bool
+	owned_communication_interactions            map[uuid.UUID]struct{}
+	removedowned_communication_interactions     map[uuid.UUID]struct{}
+	clearedowned_communication_interactions     bool
+	communication_sync_cursors                  map[uuid.UUID]struct{}
+	removedcommunication_sync_cursors           map[uuid.UUID]struct{}
+	clearedcommunication_sync_cursors           bool
+	communication_privacy_policies              map[uuid.UUID]struct{}
+	removedcommunication_privacy_policies       map[uuid.UUID]struct{}
+	clearedcommunication_privacy_policies       bool
+	communication_privacy_rules                 map[uuid.UUID]struct{}
+	removedcommunication_privacy_rules          map[uuid.UUID]struct{}
+	clearedcommunication_privacy_rules          bool
+	owned_communication_share_grants            map[uuid.UUID]struct{}
+	removedowned_communication_share_grants     map[uuid.UUID]struct{}
+	clearedowned_communication_share_grants     bool
+	received_communication_share_grants         map[uuid.UUID]struct{}
+	removedreceived_communication_share_grants  map[uuid.UUID]struct{}
+	clearedreceived_communication_share_grants  bool
 	relationship_participants                   map[uuid.UUID]struct{}
 	removedrelationship_participants            map[uuid.UUID]struct{}
 	clearedrelationship_participants            bool
@@ -107220,6 +116381,12 @@ type UserMutation struct {
 	approval_tokens                             map[uuid.UUID]struct{}
 	removedapproval_tokens                      map[uuid.UUID]struct{}
 	clearedapproval_tokens                      bool
+	user_preferences                            map[uuid.UUID]struct{}
+	removeduser_preferences                     map[uuid.UUID]struct{}
+	cleareduser_preferences                     bool
+	console_resources                           map[uuid.UUID]struct{}
+	removedconsole_resources                    map[uuid.UUID]struct{}
+	clearedconsole_resources                    bool
 	done                                        bool
 	oldValue                                    func(context.Context) (*User, error)
 	predicates                                  []predicate.User
@@ -109788,6 +118955,330 @@ func (m *UserMutation) ResetMailSignals() {
 	m.removedmail_signals = nil
 }
 
+// AddOwnedCommunicationInteractionIDs adds the "owned_communication_interactions" edge to the CommunicationInteraction entity by ids.
+func (m *UserMutation) AddOwnedCommunicationInteractionIDs(ids ...uuid.UUID) {
+	if m.owned_communication_interactions == nil {
+		m.owned_communication_interactions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.owned_communication_interactions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearOwnedCommunicationInteractions clears the "owned_communication_interactions" edge to the CommunicationInteraction entity.
+func (m *UserMutation) ClearOwnedCommunicationInteractions() {
+	m.clearedowned_communication_interactions = true
+}
+
+// OwnedCommunicationInteractionsCleared reports if the "owned_communication_interactions" edge to the CommunicationInteraction entity was cleared.
+func (m *UserMutation) OwnedCommunicationInteractionsCleared() bool {
+	return m.clearedowned_communication_interactions
+}
+
+// RemoveOwnedCommunicationInteractionIDs removes the "owned_communication_interactions" edge to the CommunicationInteraction entity by IDs.
+func (m *UserMutation) RemoveOwnedCommunicationInteractionIDs(ids ...uuid.UUID) {
+	if m.removedowned_communication_interactions == nil {
+		m.removedowned_communication_interactions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.owned_communication_interactions, ids[i])
+		m.removedowned_communication_interactions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedOwnedCommunicationInteractions returns the removed IDs of the "owned_communication_interactions" edge to the CommunicationInteraction entity.
+func (m *UserMutation) RemovedOwnedCommunicationInteractionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedowned_communication_interactions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// OwnedCommunicationInteractionsIDs returns the "owned_communication_interactions" edge IDs in the mutation.
+func (m *UserMutation) OwnedCommunicationInteractionsIDs() (ids []uuid.UUID) {
+	for id := range m.owned_communication_interactions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetOwnedCommunicationInteractions resets all changes to the "owned_communication_interactions" edge.
+func (m *UserMutation) ResetOwnedCommunicationInteractions() {
+	m.owned_communication_interactions = nil
+	m.clearedowned_communication_interactions = false
+	m.removedowned_communication_interactions = nil
+}
+
+// AddCommunicationSyncCursorIDs adds the "communication_sync_cursors" edge to the CommunicationSyncCursor entity by ids.
+func (m *UserMutation) AddCommunicationSyncCursorIDs(ids ...uuid.UUID) {
+	if m.communication_sync_cursors == nil {
+		m.communication_sync_cursors = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.communication_sync_cursors[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommunicationSyncCursors clears the "communication_sync_cursors" edge to the CommunicationSyncCursor entity.
+func (m *UserMutation) ClearCommunicationSyncCursors() {
+	m.clearedcommunication_sync_cursors = true
+}
+
+// CommunicationSyncCursorsCleared reports if the "communication_sync_cursors" edge to the CommunicationSyncCursor entity was cleared.
+func (m *UserMutation) CommunicationSyncCursorsCleared() bool {
+	return m.clearedcommunication_sync_cursors
+}
+
+// RemoveCommunicationSyncCursorIDs removes the "communication_sync_cursors" edge to the CommunicationSyncCursor entity by IDs.
+func (m *UserMutation) RemoveCommunicationSyncCursorIDs(ids ...uuid.UUID) {
+	if m.removedcommunication_sync_cursors == nil {
+		m.removedcommunication_sync_cursors = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.communication_sync_cursors, ids[i])
+		m.removedcommunication_sync_cursors[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommunicationSyncCursors returns the removed IDs of the "communication_sync_cursors" edge to the CommunicationSyncCursor entity.
+func (m *UserMutation) RemovedCommunicationSyncCursorsIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommunication_sync_cursors {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommunicationSyncCursorsIDs returns the "communication_sync_cursors" edge IDs in the mutation.
+func (m *UserMutation) CommunicationSyncCursorsIDs() (ids []uuid.UUID) {
+	for id := range m.communication_sync_cursors {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommunicationSyncCursors resets all changes to the "communication_sync_cursors" edge.
+func (m *UserMutation) ResetCommunicationSyncCursors() {
+	m.communication_sync_cursors = nil
+	m.clearedcommunication_sync_cursors = false
+	m.removedcommunication_sync_cursors = nil
+}
+
+// AddCommunicationPrivacyPolicyIDs adds the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity by ids.
+func (m *UserMutation) AddCommunicationPrivacyPolicyIDs(ids ...uuid.UUID) {
+	if m.communication_privacy_policies == nil {
+		m.communication_privacy_policies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.communication_privacy_policies[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommunicationPrivacyPolicies clears the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity.
+func (m *UserMutation) ClearCommunicationPrivacyPolicies() {
+	m.clearedcommunication_privacy_policies = true
+}
+
+// CommunicationPrivacyPoliciesCleared reports if the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity was cleared.
+func (m *UserMutation) CommunicationPrivacyPoliciesCleared() bool {
+	return m.clearedcommunication_privacy_policies
+}
+
+// RemoveCommunicationPrivacyPolicyIDs removes the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity by IDs.
+func (m *UserMutation) RemoveCommunicationPrivacyPolicyIDs(ids ...uuid.UUID) {
+	if m.removedcommunication_privacy_policies == nil {
+		m.removedcommunication_privacy_policies = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.communication_privacy_policies, ids[i])
+		m.removedcommunication_privacy_policies[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommunicationPrivacyPolicies returns the removed IDs of the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity.
+func (m *UserMutation) RemovedCommunicationPrivacyPoliciesIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommunication_privacy_policies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommunicationPrivacyPoliciesIDs returns the "communication_privacy_policies" edge IDs in the mutation.
+func (m *UserMutation) CommunicationPrivacyPoliciesIDs() (ids []uuid.UUID) {
+	for id := range m.communication_privacy_policies {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommunicationPrivacyPolicies resets all changes to the "communication_privacy_policies" edge.
+func (m *UserMutation) ResetCommunicationPrivacyPolicies() {
+	m.communication_privacy_policies = nil
+	m.clearedcommunication_privacy_policies = false
+	m.removedcommunication_privacy_policies = nil
+}
+
+// AddCommunicationPrivacyRuleIDs adds the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity by ids.
+func (m *UserMutation) AddCommunicationPrivacyRuleIDs(ids ...uuid.UUID) {
+	if m.communication_privacy_rules == nil {
+		m.communication_privacy_rules = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.communication_privacy_rules[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCommunicationPrivacyRules clears the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity.
+func (m *UserMutation) ClearCommunicationPrivacyRules() {
+	m.clearedcommunication_privacy_rules = true
+}
+
+// CommunicationPrivacyRulesCleared reports if the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity was cleared.
+func (m *UserMutation) CommunicationPrivacyRulesCleared() bool {
+	return m.clearedcommunication_privacy_rules
+}
+
+// RemoveCommunicationPrivacyRuleIDs removes the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity by IDs.
+func (m *UserMutation) RemoveCommunicationPrivacyRuleIDs(ids ...uuid.UUID) {
+	if m.removedcommunication_privacy_rules == nil {
+		m.removedcommunication_privacy_rules = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.communication_privacy_rules, ids[i])
+		m.removedcommunication_privacy_rules[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCommunicationPrivacyRules returns the removed IDs of the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity.
+func (m *UserMutation) RemovedCommunicationPrivacyRulesIDs() (ids []uuid.UUID) {
+	for id := range m.removedcommunication_privacy_rules {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CommunicationPrivacyRulesIDs returns the "communication_privacy_rules" edge IDs in the mutation.
+func (m *UserMutation) CommunicationPrivacyRulesIDs() (ids []uuid.UUID) {
+	for id := range m.communication_privacy_rules {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCommunicationPrivacyRules resets all changes to the "communication_privacy_rules" edge.
+func (m *UserMutation) ResetCommunicationPrivacyRules() {
+	m.communication_privacy_rules = nil
+	m.clearedcommunication_privacy_rules = false
+	m.removedcommunication_privacy_rules = nil
+}
+
+// AddOwnedCommunicationShareGrantIDs adds the "owned_communication_share_grants" edge to the CommunicationShareGrant entity by ids.
+func (m *UserMutation) AddOwnedCommunicationShareGrantIDs(ids ...uuid.UUID) {
+	if m.owned_communication_share_grants == nil {
+		m.owned_communication_share_grants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.owned_communication_share_grants[ids[i]] = struct{}{}
+	}
+}
+
+// ClearOwnedCommunicationShareGrants clears the "owned_communication_share_grants" edge to the CommunicationShareGrant entity.
+func (m *UserMutation) ClearOwnedCommunicationShareGrants() {
+	m.clearedowned_communication_share_grants = true
+}
+
+// OwnedCommunicationShareGrantsCleared reports if the "owned_communication_share_grants" edge to the CommunicationShareGrant entity was cleared.
+func (m *UserMutation) OwnedCommunicationShareGrantsCleared() bool {
+	return m.clearedowned_communication_share_grants
+}
+
+// RemoveOwnedCommunicationShareGrantIDs removes the "owned_communication_share_grants" edge to the CommunicationShareGrant entity by IDs.
+func (m *UserMutation) RemoveOwnedCommunicationShareGrantIDs(ids ...uuid.UUID) {
+	if m.removedowned_communication_share_grants == nil {
+		m.removedowned_communication_share_grants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.owned_communication_share_grants, ids[i])
+		m.removedowned_communication_share_grants[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedOwnedCommunicationShareGrants returns the removed IDs of the "owned_communication_share_grants" edge to the CommunicationShareGrant entity.
+func (m *UserMutation) RemovedOwnedCommunicationShareGrantsIDs() (ids []uuid.UUID) {
+	for id := range m.removedowned_communication_share_grants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// OwnedCommunicationShareGrantsIDs returns the "owned_communication_share_grants" edge IDs in the mutation.
+func (m *UserMutation) OwnedCommunicationShareGrantsIDs() (ids []uuid.UUID) {
+	for id := range m.owned_communication_share_grants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetOwnedCommunicationShareGrants resets all changes to the "owned_communication_share_grants" edge.
+func (m *UserMutation) ResetOwnedCommunicationShareGrants() {
+	m.owned_communication_share_grants = nil
+	m.clearedowned_communication_share_grants = false
+	m.removedowned_communication_share_grants = nil
+}
+
+// AddReceivedCommunicationShareGrantIDs adds the "received_communication_share_grants" edge to the CommunicationShareGrant entity by ids.
+func (m *UserMutation) AddReceivedCommunicationShareGrantIDs(ids ...uuid.UUID) {
+	if m.received_communication_share_grants == nil {
+		m.received_communication_share_grants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.received_communication_share_grants[ids[i]] = struct{}{}
+	}
+}
+
+// ClearReceivedCommunicationShareGrants clears the "received_communication_share_grants" edge to the CommunicationShareGrant entity.
+func (m *UserMutation) ClearReceivedCommunicationShareGrants() {
+	m.clearedreceived_communication_share_grants = true
+}
+
+// ReceivedCommunicationShareGrantsCleared reports if the "received_communication_share_grants" edge to the CommunicationShareGrant entity was cleared.
+func (m *UserMutation) ReceivedCommunicationShareGrantsCleared() bool {
+	return m.clearedreceived_communication_share_grants
+}
+
+// RemoveReceivedCommunicationShareGrantIDs removes the "received_communication_share_grants" edge to the CommunicationShareGrant entity by IDs.
+func (m *UserMutation) RemoveReceivedCommunicationShareGrantIDs(ids ...uuid.UUID) {
+	if m.removedreceived_communication_share_grants == nil {
+		m.removedreceived_communication_share_grants = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.received_communication_share_grants, ids[i])
+		m.removedreceived_communication_share_grants[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedReceivedCommunicationShareGrants returns the removed IDs of the "received_communication_share_grants" edge to the CommunicationShareGrant entity.
+func (m *UserMutation) RemovedReceivedCommunicationShareGrantsIDs() (ids []uuid.UUID) {
+	for id := range m.removedreceived_communication_share_grants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ReceivedCommunicationShareGrantsIDs returns the "received_communication_share_grants" edge IDs in the mutation.
+func (m *UserMutation) ReceivedCommunicationShareGrantsIDs() (ids []uuid.UUID) {
+	for id := range m.received_communication_share_grants {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetReceivedCommunicationShareGrants resets all changes to the "received_communication_share_grants" edge.
+func (m *UserMutation) ResetReceivedCommunicationShareGrants() {
+	m.received_communication_share_grants = nil
+	m.clearedreceived_communication_share_grants = false
+	m.removedreceived_communication_share_grants = nil
+}
+
 // AddRelationshipParticipantIDs adds the "relationship_participants" edge to the RelationshipParticipant entity by ids.
 func (m *UserMutation) AddRelationshipParticipantIDs(ids ...uuid.UUID) {
 	if m.relationship_participants == nil {
@@ -111138,6 +120629,114 @@ func (m *UserMutation) ResetApprovalTokens() {
 	m.removedapproval_tokens = nil
 }
 
+// AddUserPreferenceIDs adds the "user_preferences" edge to the UserPreference entity by ids.
+func (m *UserMutation) AddUserPreferenceIDs(ids ...uuid.UUID) {
+	if m.user_preferences == nil {
+		m.user_preferences = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.user_preferences[ids[i]] = struct{}{}
+	}
+}
+
+// ClearUserPreferences clears the "user_preferences" edge to the UserPreference entity.
+func (m *UserMutation) ClearUserPreferences() {
+	m.cleareduser_preferences = true
+}
+
+// UserPreferencesCleared reports if the "user_preferences" edge to the UserPreference entity was cleared.
+func (m *UserMutation) UserPreferencesCleared() bool {
+	return m.cleareduser_preferences
+}
+
+// RemoveUserPreferenceIDs removes the "user_preferences" edge to the UserPreference entity by IDs.
+func (m *UserMutation) RemoveUserPreferenceIDs(ids ...uuid.UUID) {
+	if m.removeduser_preferences == nil {
+		m.removeduser_preferences = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.user_preferences, ids[i])
+		m.removeduser_preferences[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedUserPreferences returns the removed IDs of the "user_preferences" edge to the UserPreference entity.
+func (m *UserMutation) RemovedUserPreferencesIDs() (ids []uuid.UUID) {
+	for id := range m.removeduser_preferences {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// UserPreferencesIDs returns the "user_preferences" edge IDs in the mutation.
+func (m *UserMutation) UserPreferencesIDs() (ids []uuid.UUID) {
+	for id := range m.user_preferences {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetUserPreferences resets all changes to the "user_preferences" edge.
+func (m *UserMutation) ResetUserPreferences() {
+	m.user_preferences = nil
+	m.cleareduser_preferences = false
+	m.removeduser_preferences = nil
+}
+
+// AddConsoleResourceIDs adds the "console_resources" edge to the ConsoleResource entity by ids.
+func (m *UserMutation) AddConsoleResourceIDs(ids ...uuid.UUID) {
+	if m.console_resources == nil {
+		m.console_resources = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.console_resources[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConsoleResources clears the "console_resources" edge to the ConsoleResource entity.
+func (m *UserMutation) ClearConsoleResources() {
+	m.clearedconsole_resources = true
+}
+
+// ConsoleResourcesCleared reports if the "console_resources" edge to the ConsoleResource entity was cleared.
+func (m *UserMutation) ConsoleResourcesCleared() bool {
+	return m.clearedconsole_resources
+}
+
+// RemoveConsoleResourceIDs removes the "console_resources" edge to the ConsoleResource entity by IDs.
+func (m *UserMutation) RemoveConsoleResourceIDs(ids ...uuid.UUID) {
+	if m.removedconsole_resources == nil {
+		m.removedconsole_resources = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.console_resources, ids[i])
+		m.removedconsole_resources[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConsoleResources returns the removed IDs of the "console_resources" edge to the ConsoleResource entity.
+func (m *UserMutation) RemovedConsoleResourcesIDs() (ids []uuid.UUID) {
+	for id := range m.removedconsole_resources {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConsoleResourcesIDs returns the "console_resources" edge IDs in the mutation.
+func (m *UserMutation) ConsoleResourcesIDs() (ids []uuid.UUID) {
+	for id := range m.console_resources {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConsoleResources resets all changes to the "console_resources" edge.
+func (m *UserMutation) ResetConsoleResources() {
+	m.console_resources = nil
+	m.clearedconsole_resources = false
+	m.removedconsole_resources = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -111354,7 +120953,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 67)
+	edges := make([]string, 0, 75)
 	if m.subscription != nil {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -111481,6 +121080,24 @@ func (m *UserMutation) AddedEdges() []string {
 	if m.mail_signals != nil {
 		edges = append(edges, user.EdgeMailSignals)
 	}
+	if m.owned_communication_interactions != nil {
+		edges = append(edges, user.EdgeOwnedCommunicationInteractions)
+	}
+	if m.communication_sync_cursors != nil {
+		edges = append(edges, user.EdgeCommunicationSyncCursors)
+	}
+	if m.communication_privacy_policies != nil {
+		edges = append(edges, user.EdgeCommunicationPrivacyPolicies)
+	}
+	if m.communication_privacy_rules != nil {
+		edges = append(edges, user.EdgeCommunicationPrivacyRules)
+	}
+	if m.owned_communication_share_grants != nil {
+		edges = append(edges, user.EdgeOwnedCommunicationShareGrants)
+	}
+	if m.received_communication_share_grants != nil {
+		edges = append(edges, user.EdgeReceivedCommunicationShareGrants)
+	}
 	if m.relationship_participants != nil {
 		edges = append(edges, user.EdgeRelationshipParticipants)
 	}
@@ -111555,6 +121172,12 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.approval_tokens != nil {
 		edges = append(edges, user.EdgeApprovalTokens)
+	}
+	if m.user_preferences != nil {
+		edges = append(edges, user.EdgeUserPreferences)
+	}
+	if m.console_resources != nil {
+		edges = append(edges, user.EdgeConsoleResources)
 	}
 	return edges
 }
@@ -111813,6 +121436,42 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeOwnedCommunicationInteractions:
+		ids := make([]ent.Value, 0, len(m.owned_communication_interactions))
+		for id := range m.owned_communication_interactions {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeCommunicationSyncCursors:
+		ids := make([]ent.Value, 0, len(m.communication_sync_cursors))
+		for id := range m.communication_sync_cursors {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeCommunicationPrivacyPolicies:
+		ids := make([]ent.Value, 0, len(m.communication_privacy_policies))
+		for id := range m.communication_privacy_policies {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeCommunicationPrivacyRules:
+		ids := make([]ent.Value, 0, len(m.communication_privacy_rules))
+		for id := range m.communication_privacy_rules {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeOwnedCommunicationShareGrants:
+		ids := make([]ent.Value, 0, len(m.owned_communication_share_grants))
+		for id := range m.owned_communication_share_grants {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeReceivedCommunicationShareGrants:
+		ids := make([]ent.Value, 0, len(m.received_communication_share_grants))
+		for id := range m.received_communication_share_grants {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeRelationshipParticipants:
 		ids := make([]ent.Value, 0, len(m.relationship_participants))
 		for id := range m.relationship_participants {
@@ -111963,13 +121622,25 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeUserPreferences:
+		ids := make([]ent.Value, 0, len(m.user_preferences))
+		for id := range m.user_preferences {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeConsoleResources:
+		ids := make([]ent.Value, 0, len(m.console_resources))
+		for id := range m.console_resources {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 67)
+	edges := make([]string, 0, 75)
 	if m.removedledger_entries != nil {
 		edges = append(edges, user.EdgeLedgerEntries)
 	}
@@ -112093,6 +121764,24 @@ func (m *UserMutation) RemovedEdges() []string {
 	if m.removedmail_signals != nil {
 		edges = append(edges, user.EdgeMailSignals)
 	}
+	if m.removedowned_communication_interactions != nil {
+		edges = append(edges, user.EdgeOwnedCommunicationInteractions)
+	}
+	if m.removedcommunication_sync_cursors != nil {
+		edges = append(edges, user.EdgeCommunicationSyncCursors)
+	}
+	if m.removedcommunication_privacy_policies != nil {
+		edges = append(edges, user.EdgeCommunicationPrivacyPolicies)
+	}
+	if m.removedcommunication_privacy_rules != nil {
+		edges = append(edges, user.EdgeCommunicationPrivacyRules)
+	}
+	if m.removedowned_communication_share_grants != nil {
+		edges = append(edges, user.EdgeOwnedCommunicationShareGrants)
+	}
+	if m.removedreceived_communication_share_grants != nil {
+		edges = append(edges, user.EdgeReceivedCommunicationShareGrants)
+	}
 	if m.removedrelationship_participants != nil {
 		edges = append(edges, user.EdgeRelationshipParticipants)
 	}
@@ -112167,6 +121856,12 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedapproval_tokens != nil {
 		edges = append(edges, user.EdgeApprovalTokens)
+	}
+	if m.removeduser_preferences != nil {
+		edges = append(edges, user.EdgeUserPreferences)
+	}
+	if m.removedconsole_resources != nil {
+		edges = append(edges, user.EdgeConsoleResources)
 	}
 	return edges
 }
@@ -112421,6 +122116,42 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeOwnedCommunicationInteractions:
+		ids := make([]ent.Value, 0, len(m.removedowned_communication_interactions))
+		for id := range m.removedowned_communication_interactions {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeCommunicationSyncCursors:
+		ids := make([]ent.Value, 0, len(m.removedcommunication_sync_cursors))
+		for id := range m.removedcommunication_sync_cursors {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeCommunicationPrivacyPolicies:
+		ids := make([]ent.Value, 0, len(m.removedcommunication_privacy_policies))
+		for id := range m.removedcommunication_privacy_policies {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeCommunicationPrivacyRules:
+		ids := make([]ent.Value, 0, len(m.removedcommunication_privacy_rules))
+		for id := range m.removedcommunication_privacy_rules {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeOwnedCommunicationShareGrants:
+		ids := make([]ent.Value, 0, len(m.removedowned_communication_share_grants))
+		for id := range m.removedowned_communication_share_grants {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeReceivedCommunicationShareGrants:
+		ids := make([]ent.Value, 0, len(m.removedreceived_communication_share_grants))
+		for id := range m.removedreceived_communication_share_grants {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeRelationshipParticipants:
 		ids := make([]ent.Value, 0, len(m.removedrelationship_participants))
 		for id := range m.removedrelationship_participants {
@@ -112571,13 +122302,25 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeUserPreferences:
+		ids := make([]ent.Value, 0, len(m.removeduser_preferences))
+		for id := range m.removeduser_preferences {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeConsoleResources:
+		ids := make([]ent.Value, 0, len(m.removedconsole_resources))
+		for id := range m.removedconsole_resources {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 67)
+	edges := make([]string, 0, 75)
 	if m.clearedsubscription {
 		edges = append(edges, user.EdgeSubscription)
 	}
@@ -112704,6 +122447,24 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedmail_signals {
 		edges = append(edges, user.EdgeMailSignals)
 	}
+	if m.clearedowned_communication_interactions {
+		edges = append(edges, user.EdgeOwnedCommunicationInteractions)
+	}
+	if m.clearedcommunication_sync_cursors {
+		edges = append(edges, user.EdgeCommunicationSyncCursors)
+	}
+	if m.clearedcommunication_privacy_policies {
+		edges = append(edges, user.EdgeCommunicationPrivacyPolicies)
+	}
+	if m.clearedcommunication_privacy_rules {
+		edges = append(edges, user.EdgeCommunicationPrivacyRules)
+	}
+	if m.clearedowned_communication_share_grants {
+		edges = append(edges, user.EdgeOwnedCommunicationShareGrants)
+	}
+	if m.clearedreceived_communication_share_grants {
+		edges = append(edges, user.EdgeReceivedCommunicationShareGrants)
+	}
 	if m.clearedrelationship_participants {
 		edges = append(edges, user.EdgeRelationshipParticipants)
 	}
@@ -112778,6 +122539,12 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedapproval_tokens {
 		edges = append(edges, user.EdgeApprovalTokens)
+	}
+	if m.cleareduser_preferences {
+		edges = append(edges, user.EdgeUserPreferences)
+	}
+	if m.clearedconsole_resources {
+		edges = append(edges, user.EdgeConsoleResources)
 	}
 	return edges
 }
@@ -112870,6 +122637,18 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedmail_body_caches
 	case user.EdgeMailSignals:
 		return m.clearedmail_signals
+	case user.EdgeOwnedCommunicationInteractions:
+		return m.clearedowned_communication_interactions
+	case user.EdgeCommunicationSyncCursors:
+		return m.clearedcommunication_sync_cursors
+	case user.EdgeCommunicationPrivacyPolicies:
+		return m.clearedcommunication_privacy_policies
+	case user.EdgeCommunicationPrivacyRules:
+		return m.clearedcommunication_privacy_rules
+	case user.EdgeOwnedCommunicationShareGrants:
+		return m.clearedowned_communication_share_grants
+	case user.EdgeReceivedCommunicationShareGrants:
+		return m.clearedreceived_communication_share_grants
 	case user.EdgeRelationshipParticipants:
 		return m.clearedrelationship_participants
 	case user.EdgeRelationshipIdentities:
@@ -112920,6 +122699,10 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedaction_proposals
 	case user.EdgeApprovalTokens:
 		return m.clearedapproval_tokens
+	case user.EdgeUserPreferences:
+		return m.cleareduser_preferences
+	case user.EdgeConsoleResources:
+		return m.clearedconsole_resources
 	}
 	return false
 }
@@ -113065,6 +122848,24 @@ func (m *UserMutation) ResetEdge(name string) error {
 	case user.EdgeMailSignals:
 		m.ResetMailSignals()
 		return nil
+	case user.EdgeOwnedCommunicationInteractions:
+		m.ResetOwnedCommunicationInteractions()
+		return nil
+	case user.EdgeCommunicationSyncCursors:
+		m.ResetCommunicationSyncCursors()
+		return nil
+	case user.EdgeCommunicationPrivacyPolicies:
+		m.ResetCommunicationPrivacyPolicies()
+		return nil
+	case user.EdgeCommunicationPrivacyRules:
+		m.ResetCommunicationPrivacyRules()
+		return nil
+	case user.EdgeOwnedCommunicationShareGrants:
+		m.ResetOwnedCommunicationShareGrants()
+		return nil
+	case user.EdgeReceivedCommunicationShareGrants:
+		m.ResetReceivedCommunicationShareGrants()
+		return nil
 	case user.EdgeRelationshipParticipants:
 		m.ResetRelationshipParticipants()
 		return nil
@@ -113139,6 +122940,12 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeApprovalTokens:
 		m.ResetApprovalTokens()
+		return nil
+	case user.EdgeUserPreferences:
+		m.ResetUserPreferences()
+		return nil
+	case user.EdgeConsoleResources:
+		m.ResetConsoleResources()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)
@@ -113912,6 +123719,513 @@ func (m *UserHistoryMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *UserHistoryMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown UserHistory edge %s", name)
+}
+
+// UserPreferenceMutation represents an operation that mutates the UserPreference nodes in the graph.
+type UserPreferenceMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	preferences_json *string
+	clearedFields    map[string]struct{}
+	user             *uuid.UUID
+	cleareduser      bool
+	done             bool
+	oldValue         func(context.Context) (*UserPreference, error)
+	predicates       []predicate.UserPreference
+}
+
+var _ ent.Mutation = (*UserPreferenceMutation)(nil)
+
+// userpreferenceOption allows management of the mutation configuration using functional options.
+type userpreferenceOption func(*UserPreferenceMutation)
+
+// newUserPreferenceMutation creates new mutation for the UserPreference entity.
+func newUserPreferenceMutation(c config, op Op, opts ...userpreferenceOption) *UserPreferenceMutation {
+	m := &UserPreferenceMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeUserPreference,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withUserPreferenceID sets the ID field of the mutation.
+func withUserPreferenceID(id uuid.UUID) userpreferenceOption {
+	return func(m *UserPreferenceMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *UserPreference
+		)
+		m.oldValue = func(ctx context.Context) (*UserPreference, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().UserPreference.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withUserPreference sets the old UserPreference of the mutation.
+func withUserPreference(node *UserPreference) userpreferenceOption {
+	return func(m *UserPreferenceMutation) {
+		m.oldValue = func(context.Context) (*UserPreference, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m UserPreferenceMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m UserPreferenceMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of UserPreference entities.
+func (m *UserPreferenceMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *UserPreferenceMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *UserPreferenceMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().UserPreference.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *UserPreferenceMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *UserPreferenceMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the UserPreference entity.
+// If the UserPreference object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPreferenceMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *UserPreferenceMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *UserPreferenceMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *UserPreferenceMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the UserPreference entity.
+// If the UserPreference object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPreferenceMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *UserPreferenceMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetPreferencesJSON sets the "preferences_json" field.
+func (m *UserPreferenceMutation) SetPreferencesJSON(s string) {
+	m.preferences_json = &s
+}
+
+// PreferencesJSON returns the value of the "preferences_json" field in the mutation.
+func (m *UserPreferenceMutation) PreferencesJSON() (r string, exists bool) {
+	v := m.preferences_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPreferencesJSON returns the old "preferences_json" field's value of the UserPreference entity.
+// If the UserPreference object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserPreferenceMutation) OldPreferencesJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPreferencesJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPreferencesJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPreferencesJSON: %w", err)
+	}
+	return oldValue.PreferencesJSON, nil
+}
+
+// ResetPreferencesJSON resets all changes to the "preferences_json" field.
+func (m *UserPreferenceMutation) ResetPreferencesJSON() {
+	m.preferences_json = nil
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *UserPreferenceMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *UserPreferenceMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *UserPreferenceMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *UserPreferenceMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *UserPreferenceMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *UserPreferenceMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the UserPreferenceMutation builder.
+func (m *UserPreferenceMutation) Where(ps ...predicate.UserPreference) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the UserPreferenceMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *UserPreferenceMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.UserPreference, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *UserPreferenceMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *UserPreferenceMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (UserPreference).
+func (m *UserPreferenceMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *UserPreferenceMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.created_at != nil {
+		fields = append(fields, userpreference.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, userpreference.FieldUpdatedAt)
+	}
+	if m.preferences_json != nil {
+		fields = append(fields, userpreference.FieldPreferencesJSON)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *UserPreferenceMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case userpreference.FieldCreatedAt:
+		return m.CreatedAt()
+	case userpreference.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case userpreference.FieldPreferencesJSON:
+		return m.PreferencesJSON()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *UserPreferenceMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case userpreference.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case userpreference.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case userpreference.FieldPreferencesJSON:
+		return m.OldPreferencesJSON(ctx)
+	}
+	return nil, fmt.Errorf("unknown UserPreference field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserPreferenceMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case userpreference.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case userpreference.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case userpreference.FieldPreferencesJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPreferencesJSON(v)
+		return nil
+	}
+	return fmt.Errorf("unknown UserPreference field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *UserPreferenceMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *UserPreferenceMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserPreferenceMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown UserPreference numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *UserPreferenceMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *UserPreferenceMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *UserPreferenceMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown UserPreference nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *UserPreferenceMutation) ResetField(name string) error {
+	switch name {
+	case userpreference.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case userpreference.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case userpreference.FieldPreferencesJSON:
+		m.ResetPreferencesJSON()
+		return nil
+	}
+	return fmt.Errorf("unknown UserPreference field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *UserPreferenceMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, userpreference.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *UserPreferenceMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case userpreference.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *UserPreferenceMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *UserPreferenceMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *UserPreferenceMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, userpreference.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *UserPreferenceMutation) EdgeCleared(name string) bool {
+	switch name {
+	case userpreference.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *UserPreferenceMutation) ClearEdge(name string) error {
+	switch name {
+	case userpreference.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown UserPreference unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *UserPreferenceMutation) ResetEdge(name string) error {
+	switch name {
+	case userpreference.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown UserPreference edge %s", name)
 }
 
 // VoiceAPIKeyMutation represents an operation that mutates the VoiceAPIKey nodes in the graph.

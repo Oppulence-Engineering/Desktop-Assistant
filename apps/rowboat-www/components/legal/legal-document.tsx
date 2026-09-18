@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { Badge } from "@oppulence/ui/components/badge";
+import { Label } from "@oppulence/ui/components/label";
 import { CurrentYear } from "./current-year";
 
 /**
@@ -80,9 +82,11 @@ export function LegalDocument({
       <header className="sm-legal-header">
         <Link className="sm-legal-lockup" href="/">
           <img alt="" src="/marketing/oppulence-icon.png" />
-          <span>Oppulence</span>
+          <Label className="font-normal">Oppulence</Label>
         </Link>
-        <span className="sm-legal-header-tag">Legal</span>
+        <Badge className="sm-legal-header-tag rounded-none font-normal" variant="outline">
+          Legal
+        </Badge>
       </header>
 
       <article className="sm-legal-body">
@@ -126,9 +130,9 @@ export function LegalDocument({
       </article>
 
       <footer className="sm-legal-footer">
-        <span>
+        <Label className="font-normal">
           © <CurrentYear /> Playbook Media · Oppulence
-        </span>
+        </Label>
         <div>
           {related.map((doc) => (
             <Link href={doc.href} key={doc.href}>

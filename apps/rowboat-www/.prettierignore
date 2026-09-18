@@ -1,4 +1,5 @@
 .next/
+public/mockServiceWorker.js
 coverage/
 config/deployment/*.toml
 lib/api/generated/

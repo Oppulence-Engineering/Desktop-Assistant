@@ -42,11 +42,16 @@ npm run component:new -- --kind route --route revenue/relationships --name relat
 npm run component:new -- --kind feature --domain agents --name agent-card --dry-run
 ```
 
-Shared primitives continue to use the repository's Radix-based shadcn configuration:
+Shared primitives use the repository's Radix-based shadcn CLI (`shadcn@4` in
+`apps/rowboat-www`). Primitives install into `packages/ui`; the app imports them
+from `@oppulence/ui/components/*`.
 
 ```bash
+npm run ui:init          # validate shadcn wiring for rowboat-www + packages/ui
+npm run ui:info          # print shadcn project info for both workspaces
 npm run ui:add -- <new-primitive>
 npm run ui:add -- button --diff
+npm run shadcn -- add card --cwd ../../packages/ui --dry-run
 ```
 
 Existing shared primitives cannot be overwritten through the wrapper. Inspect an upstream change with

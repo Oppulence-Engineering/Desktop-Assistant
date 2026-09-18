@@ -7,7 +7,7 @@ import {
   CollapsibleTrigger,
 } from "@oppulence/ui/components/collapsible";
 import { cn } from "@/lib/utils";
-import { Brain, CaretDown } from "@phosphor-icons/react";
+import { Brain, CaretDown } from "@/lib/icons";
 import type { ComponentProps, ReactNode } from "react";
 import { createContext, memo, useContext, useEffect, useState } from "react";
 import { Streamdown } from "streamdown";

@@ -1539,7 +1539,7 @@ func (h *Handler) StartScan(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		LookbackDays int `json:"lookbackDays"`
 	}
-	// The body is optional: the default lookback is 90 days.
+	// The body is optional: the default lookback is six months.
 	if r.ContentLength != 0 && !httpx.DecodeJSON(w, r, maxBody, &body) {
 		return
 	}

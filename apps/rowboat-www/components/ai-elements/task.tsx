@@ -6,7 +6,7 @@ import {
   CollapsibleTrigger,
 } from "@oppulence/ui/components/collapsible";
 import { cn } from "@/lib/utils";
-import { CaretDown, MagnifyingGlass } from "@phosphor-icons/react";
+import { CaretDown, MagnifyingGlass } from "@/lib/icons";
 import type { ComponentProps } from "react";
 
 export type TaskItemFileProps = ComponentProps<"div">;

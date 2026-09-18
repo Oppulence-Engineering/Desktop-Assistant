@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { OpenAPIDocumentSchema } from "@/lib/api/routes/schemas/openapi";
+import { isRecord, streamUpstreamResponse } from "@/lib/bff/upstream-response";
 import { publicRowboatApiBaseURL, publicRowboatApiURL } from "@/lib/rowboat-public-api";
 
 const ROWBOAT_API_DESCRIPTION =
@@ -14,17 +16,21 @@ export async function GET(): Promise<NextResponse> {
     });
 
     if (!upstream.ok) {
-      return new NextResponse(upstream.body, {
-        headers: {
-          "Cache-Control": upstream.headers.get("Cache-Control") ?? "no-store",
-          "Content-Type": upstream.headers.get("Content-Type") ?? "application/json; charset=utf-8",
-        },
-        status: upstream.status,
-        statusText: upstream.statusText,
+      return streamUpstreamResponse(upstream, {
+        cacheControl: "upstream",
+        defaultContentType: "application/json; charset=utf-8",
       });
     }
 
-    const document = (await upstream.json()) as Record<string, unknown>;
+    const parsedDocument = OpenAPIDocumentSchema.safeParse(await upstream.json());
+    if (!parsedDocument.success) {
+      return NextResponse.json(
+        { code: "api_unavailable", error: "upstream OpenAPI document was invalid" },
+        { status: 502 },
+      );
+    }
+
+    const document = parsedDocument.data;
     const apiBase = publicRowboatApiBaseURL().toString().replace(/\/$/, "");
     document.servers = [{ description: "Oppulence API", url: apiBase }];
 
@@ -35,7 +41,7 @@ export async function GET(): Promise<NextResponse> {
       title: "Oppulence API",
     };
 
-    return NextResponse.json(document, {
+    return NextResponse.json(OpenAPIDocumentSchema.parse(document), {
       headers: {
         "Cache-Control": "no-store",
       },
@@ -46,8 +52,4 @@ export async function GET(): Promise<NextResponse> {
       { status: 502 },
     );
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

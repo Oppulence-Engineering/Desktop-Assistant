@@ -8,6 +8,7 @@
 import type { Commitment } from "./commitment";
 import type { CommitmentDependency } from "./commitmentDependency";
 import type { CommitmentEvent } from "./commitmentEvent";
+import type { CommunicationInteraction } from "./communicationInteraction";
 import type { ConversationIntelligenceArtifact } from "./conversationIntelligenceArtifact";
 import type { MailThread } from "./mailThread";
 import type { PersonInteractionStat } from "./personInteractionStat";
@@ -34,6 +35,7 @@ export interface Relationship {
   commitment_dependencies?: CommitmentDependency[];
   commitment_events?: CommitmentEvent[];
   commitments?: Commitment[];
+  communication_interactions?: CommunicationInteraction[];
   company_categories: string[];
   company_description?: string;
   company_enriched_at?: string;

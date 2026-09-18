@@ -1,7 +1,9 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
+import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { Label } from "@oppulence/ui/components/label";
 import {
   Collapsible,
   CollapsibleContent,
@@ -9,7 +11,7 @@ import {
 } from "@oppulence/ui/components/collapsible";
 import { ScrollArea } from "@oppulence/ui/components/scroll-area";
 import { cn } from "@/lib/utils";
-import { CaretDown, Paperclip } from "@phosphor-icons/react";
+import { CaretDown, Paperclip } from "@/lib/icons";
 import type { ComponentProps } from "react";
 
 export type QueueMessagePart = {
@@ -53,19 +55,20 @@ export const QueueItemIndicator = ({
   className,
   ...props
 }: QueueItemIndicatorProps) => (
-  <span
+  <Badge
     className={cn(
-      "mt-0.5 inline-block size-2.5 rounded-full border",
+      "mt-0.5 inline-block size-2.5 rounded-full border-0 p-0",
       completed
         ? "border-muted-foreground/20 bg-muted-foreground/10"
-        : "border-muted-foreground/50",
+        : "border border-muted-foreground/50 bg-transparent",
       className,
     )}
+    variant="outline"
     {...props}
   />
 );
 
-export type QueueItemContentProps = ComponentProps<"span"> & {
+export type QueueItemContentProps = ComponentProps<typeof Label> & {
   completed?: boolean;
 };
 
@@ -74,9 +77,9 @@ export const QueueItemContent = ({
   className,
   ...props
 }: QueueItemContentProps) => (
-  <span
+  <Label
     className={cn(
-      "line-clamp-1 grow break-words",
+      "line-clamp-1 grow break-words font-normal",
       completed ? "text-muted-foreground/50 line-through" : "text-muted-foreground",
       className,
     )}
@@ -145,13 +148,17 @@ export const QueueItemImage = ({ className, ...props }: QueueItemImageProps) => 
 export type QueueItemFileProps = ComponentProps<"span">;
 
 export const QueueItemFile = ({ children, className, ...props }: QueueItemFileProps) => (
-  <span
-    className={cn("flex items-center gap-1 rounded border bg-muted px-2 py-1 text-xs", className)}
+  <Badge
+    className={cn(
+      "flex items-center gap-1 rounded-none bg-muted px-2 py-1 text-xs font-normal",
+      className,
+    )}
+    variant="outline"
     {...props}
   >
     <Paperclip size={12} />
-    <span className="max-w-[100px] truncate">{children}</span>
-  </span>
+    <Label className="max-w-[100px] truncate font-normal">{children}</Label>
+  </Badge>
 );
 
 export type QueueListProps = ComponentProps<typeof ScrollArea>;
@@ -172,7 +179,7 @@ export const QueueSection = ({ className, defaultOpen = true, ...props }: QueueS
 );
 
 // QueueSectionTrigger - section header/trigger
-export type QueueSectionTriggerProps = ComponentProps<"button">;
+export type QueueSectionTriggerProps = ComponentProps<typeof Button>;
 
 export const QueueSectionTrigger = ({
   children,
@@ -180,21 +187,22 @@ export const QueueSectionTrigger = ({
   ...props
 }: QueueSectionTriggerProps) => (
   <CollapsibleTrigger asChild>
-    <button
+    <Button
       className={cn(
-        "group flex w-full items-center justify-between rounded-none bg-muted/40 px-3 py-2 text-left font-medium text-muted-foreground text-sm transition-colors hover:bg-muted",
+        "group h-auto w-full justify-between rounded-none bg-muted/40 px-3 py-2 text-left font-medium text-muted-foreground text-sm hover:bg-muted",
         className,
       )}
       type="button"
+      variant="ghost"
       {...props}
     >
       {children}
-    </button>
+    </Button>
   </CollapsibleTrigger>
 );
 
 // QueueSectionLabel - label content with icon and count
-export type QueueSectionLabelProps = ComponentProps<"span"> & {
+export type QueueSectionLabelProps = ComponentProps<typeof Label> & {
   count?: number;
   label: string;
   icon?: React.ReactNode;
@@ -207,13 +215,11 @@ export const QueueSectionLabel = ({
   className,
   ...props
 }: QueueSectionLabelProps) => (
-  <span className={cn("flex items-center gap-2", className)} {...props}>
+  <Label className={cn("flex items-center gap-2 font-normal", className)} {...props}>
     <CaretDown className="group-data-[state=closed]:-rotate-90 size-4 transition-transform" />
     {icon}
-    <span>
-      {count} {label}
-    </span>
-  </span>
+    {count} {label}
+  </Label>
 );
 
 // QueueSectionContent - collapsible content area

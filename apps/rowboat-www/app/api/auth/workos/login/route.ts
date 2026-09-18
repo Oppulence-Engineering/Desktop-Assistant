@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { publicOrigin } from "@/lib/auth/origin";
 
 import { setPKCECookie } from "@/lib/auth/cookies";
+import { parseSearchParams } from "@/lib/api/routes/parse";
+import { WorkOSLoginQuerySchema } from "@/lib/api/routes/schemas/auth";
 import { createPKCECookie, safeReturnTo } from "@/lib/auth/pkce";
 import { getWorkOSLoginURL } from "@/lib/auth/rowboat-api";
 
 export async function GET(request: NextRequest) {
-  const returnTo = safeReturnTo(request.nextUrl.searchParams.get("return_to"));
+  const query = parseSearchParams(request.nextUrl.searchParams, WorkOSLoginQuerySchema);
+  const returnTo = safeReturnTo(query.success ? query.data.return_to : undefined);
   const pkce = createPKCECookie(returnTo);
   const origin = publicOrigin(request);
   const redirectURI = new URL("/api/auth/callback", origin).toString();
@@ -23,7 +26,8 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.redirect(url);
     setPKCECookie(response, pkce);
     return response;
-  } catch {
+  } catch (error) {
+    console.error("Failed to create WorkOS sign-in URL", error);
     const fallback = new URL("/sign-in", origin);
     fallback.searchParams.set("error", "sign_in_unavailable");
     fallback.searchParams.set("return_to", returnTo);

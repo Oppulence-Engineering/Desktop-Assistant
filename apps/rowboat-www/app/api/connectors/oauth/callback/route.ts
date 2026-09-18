@@ -1,71 +1,85 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import type { ConnectionClaimRequest } from "@/lib/api/generated/client/model";
-import { clearAuthCookies, setSessionCookie } from "@/lib/auth/cookies";
+import { parseSearchParams } from "@/lib/api/routes/parse";
+import { ConnectorSlugSchema } from "@/lib/api/routes/schemas/common";
+import { ConnectorOAuthCallbackQuerySchema } from "@/lib/api/routes/schemas/connectors";
+import { claimHostedConnector } from "@/lib/bff/connectors/hosted-oauth";
+import { clearAuthCookies } from "@/lib/auth/cookies";
 import { publicOrigin } from "@/lib/auth/origin";
-import { getAuthorizedSession } from "@/lib/auth/proxy";
+import {
+  applyAuthorizedSessionCookies,
+  getAuthorizedSession,
+  type AuthorizedSessionResult,
+} from "@/lib/auth/proxy";
 import {
   callbackStatusOutcome,
   claimOutcome,
   connectorSettingsURL,
-  isConnectorSlug,
 } from "@/lib/connectors/hosted-oauth";
-import { claimHostedConnector } from "@/lib/bff/connectors/hosted-oauth";
+
+type AuthorizedSession = Extract<AuthorizedSessionResult, { ok: true }>;
 
 function unauthenticatedResponse(request: NextRequest, connector?: string): NextResponse {
   const origin = publicOrigin(request);
   const login = new URL("/sign-in", origin);
-  login.searchParams.set(
-    "return_to",
-    connectorSettingsURL(origin, "restart", connector).pathname +
-      connectorSettingsURL(origin, "restart", connector).search,
-  );
+  const returnTo = connectorSettingsURL(origin, "restart", connector);
+  login.searchParams.set("return_to", `${returnTo.pathname}${returnTo.search}`);
   const response = NextResponse.redirect(login, 303);
   clearAuthCookies(response);
   return response;
 }
 
+function requireConnectorAuth(
+  request: NextRequest,
+  auth: AuthorizedSessionResult,
+  connector?: string,
+): AuthorizedSession | NextResponse {
+  if (auth.ok) return auth;
+  if (auth.response.status === 503) return auth.response;
+  return unauthenticatedResponse(request, connector);
+}
+
+function redirectWithSession(
+  url: URL,
+  auth: AuthorizedSession,
+  upstreamStatus?: number,
+): NextResponse {
+  const response = NextResponse.redirect(url, 303);
+  applyAuthorizedSessionCookies(response, auth, upstreamStatus);
+  return response;
+}
+
 export async function GET(request: NextRequest) {
   const origin = publicOrigin(request);
-  const connector = request.nextUrl.searchParams.get("connector") || "";
-  if (!isConnectorSlug(connector)) {
+  const query = parseSearchParams(request.nextUrl.searchParams, ConnectorOAuthCallbackQuerySchema);
+  const connector = query.success ? query.data.connector : "";
+  if (!ConnectorSlugSchema.safeParse(connector).success) {
     return NextResponse.redirect(connectorSettingsURL(origin, "error"), 303);
   }
 
-  const auth = await getAuthorizedSession(request);
-  if (!auth.ok) return unauthenticatedResponse(request, connector);
+  const authResult = await getAuthorizedSession(request);
+  const authOrResponse = requireConnectorAuth(request, authResult, connector);
+  if (!("session" in authOrResponse)) return authOrResponse;
+  const auth = authOrResponse;
 
-  const callbackOutcome = callbackStatusOutcome(request.nextUrl.searchParams.get("status"));
+  const callbackOutcome = callbackStatusOutcome(query.success ? (query.data.status ?? null) : null);
   if (callbackOutcome) {
-    const response = NextResponse.redirect(
-      connectorSettingsURL(origin, callbackOutcome, connector),
-      303,
-    );
-    if (auth.refreshed) setSessionCookie(response, auth.refreshed);
-    return response;
+    return redirectWithSession(connectorSettingsURL(origin, callbackOutcome, connector), auth);
   }
 
-  const state = request.nextUrl.searchParams.get("session");
-  if (request.nextUrl.searchParams.get("status") !== "success" || !state || state.length > 2048) {
-    return NextResponse.redirect(connectorSettingsURL(origin, "error", connector), 303);
+  const state = query.success ? query.data.session : undefined;
+  if (!query.success || query.data.status !== "success" || !state) {
+    return redirectWithSession(connectorSettingsURL(origin, "error", connector), auth);
   }
 
-  const claimRequest: ConnectionClaimRequest = { state };
   try {
-    const result = await claimHostedConnector(
-      connector,
-      claimRequest,
-      auth.session,
-      request.signal,
-    );
-    const response = NextResponse.redirect(
+    const result = await claimHostedConnector(connector, { state }, auth.session, request.signal);
+    return redirectWithSession(
       connectorSettingsURL(origin, claimOutcome(result), connector),
-      303,
+      auth,
+      result.status,
     );
-    if (result.status === 401) clearAuthCookies(response);
-    else if (auth.refreshed) setSessionCookie(response, auth.refreshed);
-    return response;
   } catch {
-    return NextResponse.redirect(connectorSettingsURL(origin, "error", connector), 303);
+    return redirectWithSession(connectorSettingsURL(origin, "error", connector), auth);
   }
 }

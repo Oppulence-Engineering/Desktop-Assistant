@@ -27,19 +27,12 @@ type AdapterEvent struct {
 
 // AdaptGmailEvent converts a Gmail adapter event into a relationship observation.
 func AdaptGmailEvent(event AdapterEvent) (RelationshipObservationInput, error) {
-	observation, err := adaptRelationshipEvent("gmail", event)
-	if err == nil {
-		observation.PreferredKind = "company"
-		if observation.PrimaryEmail != "" && observation.AccountDomain == "" {
-			observation.PreferredKind = "person"
-		}
-	}
-	return observation, err
+	return adaptContactEvent("gmail", event)
 }
 
 // AdaptCalendarEvent converts a calendar adapter event into a relationship observation.
 func AdaptCalendarEvent(event AdapterEvent) (RelationshipObservationInput, error) {
-	return adaptRelationshipEvent("calendar", event)
+	return adaptContactEvent("calendar", event)
 }
 
 // AdaptSlackEvent converts a Slack adapter event into a relationship observation.
@@ -50,6 +43,17 @@ func AdaptSlackEvent(event AdapterEvent) (RelationshipObservationInput, error) {
 // AdaptHubSpotEvent converts a HubSpot adapter event into a relationship observation.
 func AdaptHubSpotEvent(event AdapterEvent) (RelationshipObservationInput, error) {
 	return adaptRelationshipEvent("hubspot", event)
+}
+
+func adaptContactEvent(source string, event AdapterEvent) (RelationshipObservationInput, error) {
+	observation, err := adaptRelationshipEvent(source, event)
+	if err == nil {
+		observation.PreferredKind = "company"
+		if observation.PrimaryEmail != "" && observation.AccountDomain == "" {
+			observation.PreferredKind = "person"
+		}
+	}
+	return observation, err
 }
 
 func adaptRelationshipEvent(source string, event AdapterEvent) (RelationshipObservationInput, error) {

@@ -69,6 +69,27 @@ type CommitmentDependency func(*sql.Selector)
 // CommitmentEvent is the predicate function for commitmentevent builders.
 type CommitmentEvent func(*sql.Selector)
 
+// CommunicationAttachment is the predicate function for communicationattachment builders.
+type CommunicationAttachment func(*sql.Selector)
+
+// CommunicationInteraction is the predicate function for communicationinteraction builders.
+type CommunicationInteraction func(*sql.Selector)
+
+// CommunicationParticipant is the predicate function for communicationparticipant builders.
+type CommunicationParticipant func(*sql.Selector)
+
+// CommunicationPrivacyPolicy is the predicate function for communicationprivacypolicy builders.
+type CommunicationPrivacyPolicy func(*sql.Selector)
+
+// CommunicationPrivacyRule is the predicate function for communicationprivacyrule builders.
+type CommunicationPrivacyRule func(*sql.Selector)
+
+// CommunicationShareGrant is the predicate function for communicationsharegrant builders.
+type CommunicationShareGrant func(*sql.Selector)
+
+// CommunicationSyncCursor is the predicate function for communicationsynccursor builders.
+type CommunicationSyncCursor func(*sql.Selector)
+
 // ConnectorAuditEvent is the predicate function for connectorauditevent builders.
 type ConnectorAuditEvent func(*sql.Selector)
 
@@ -80,6 +101,9 @@ type ConnectorCredentialRecovery func(*sql.Selector)
 
 // ConnectorRevocationJob is the predicate function for connectorrevocationjob builders.
 type ConnectorRevocationJob func(*sql.Selector)
+
+// ConsoleResource is the predicate function for consoleresource builders.
+type ConsoleResource func(*sql.Selector)
 
 // ConversationIntelligenceArtifact is the predicate function for conversationintelligenceartifact builders.
 type ConversationIntelligenceArtifact func(*sql.Selector)
@@ -236,6 +260,9 @@ type User func(*sql.Selector)
 
 // UserHistory is the predicate function for userhistory builders.
 type UserHistory func(*sql.Selector)
+
+// UserPreference is the predicate function for userpreference builders.
+type UserPreference func(*sql.Selector)
 
 // VoiceAPIKey is the predicate function for voiceapikey builders.
 type VoiceAPIKey func(*sql.Selector)

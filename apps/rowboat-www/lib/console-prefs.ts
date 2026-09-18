@@ -28,18 +28,24 @@ export function setPref(key: string, value: string | null) {
 }
 
 export function usePref(key: string): string | null {
-  const [value, setValue] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    setValue(getPref(key));
-    const listener = () => setValue(getPref(key));
+  const subscribe = React.useCallback((onStoreChange: () => void) => {
+    const listener = () => onStoreChange();
     window.addEventListener(EVENT, listener);
     window.addEventListener("storage", listener);
     return () => {
       window.removeEventListener(EVENT, listener);
       window.removeEventListener("storage", listener);
     };
-  }, [key]);
+  }, []);
+  const getSnapshot = React.useCallback(() => getPref(key), [key]);
+  return React.useSyncExternalStore(subscribe, getSnapshot, () => null);
+}
 
-  return value;
+export function useBooleanPref(
+  key: string,
+  defaultValue: boolean,
+): readonly [boolean, (value: boolean) => void] {
+  const stored = usePref(key);
+  const setValue = React.useCallback((value: boolean) => setPref(key, value ? "1" : "0"), [key]);
+  return [stored === null ? defaultValue : stored === "1", setValue] as const;
 }

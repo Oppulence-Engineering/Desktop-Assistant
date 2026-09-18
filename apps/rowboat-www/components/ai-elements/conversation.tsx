@@ -2,7 +2,7 @@
 
 import { Button } from "@oppulence/ui/components/button";
 import { cn } from "@/lib/utils";
-import { ArrowDown } from "@phosphor-icons/react";
+import { ArrowDown } from "@/lib/icons";
 import type { ComponentProps } from "react";
 import { useCallback } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";

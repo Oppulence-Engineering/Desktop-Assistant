@@ -1085,6 +1085,167 @@ func HasScansWith(preds ...predicate.RevenueLeakScan) predicate.RevenueWorkspace
 	})
 }
 
+// HasCommunicationInteractions applies the HasEdge predicate on the "communication_interactions" edge.
+func HasCommunicationInteractions() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommunicationInteractionsTable, CommunicationInteractionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommunicationInteractionsWith applies the HasEdge predicate on the "communication_interactions" edge with a given conditions (other predicates).
+func HasCommunicationInteractionsWith(preds ...predicate.CommunicationInteraction) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newCommunicationInteractionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommunicationParticipants applies the HasEdge predicate on the "communication_participants" edge.
+func HasCommunicationParticipants() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommunicationParticipantsTable, CommunicationParticipantsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommunicationParticipantsWith applies the HasEdge predicate on the "communication_participants" edge with a given conditions (other predicates).
+func HasCommunicationParticipantsWith(preds ...predicate.CommunicationParticipant) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newCommunicationParticipantsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommunicationAttachments applies the HasEdge predicate on the "communication_attachments" edge.
+func HasCommunicationAttachments() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommunicationAttachmentsTable, CommunicationAttachmentsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommunicationAttachmentsWith applies the HasEdge predicate on the "communication_attachments" edge with a given conditions (other predicates).
+func HasCommunicationAttachmentsWith(preds ...predicate.CommunicationAttachment) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newCommunicationAttachmentsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommunicationSyncCursors applies the HasEdge predicate on the "communication_sync_cursors" edge.
+func HasCommunicationSyncCursors() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommunicationSyncCursorsTable, CommunicationSyncCursorsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommunicationSyncCursorsWith applies the HasEdge predicate on the "communication_sync_cursors" edge with a given conditions (other predicates).
+func HasCommunicationSyncCursorsWith(preds ...predicate.CommunicationSyncCursor) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newCommunicationSyncCursorsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommunicationPrivacyPolicies applies the HasEdge predicate on the "communication_privacy_policies" edge.
+func HasCommunicationPrivacyPolicies() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommunicationPrivacyPoliciesTable, CommunicationPrivacyPoliciesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommunicationPrivacyPoliciesWith applies the HasEdge predicate on the "communication_privacy_policies" edge with a given conditions (other predicates).
+func HasCommunicationPrivacyPoliciesWith(preds ...predicate.CommunicationPrivacyPolicy) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newCommunicationPrivacyPoliciesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommunicationPrivacyRules applies the HasEdge predicate on the "communication_privacy_rules" edge.
+func HasCommunicationPrivacyRules() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommunicationPrivacyRulesTable, CommunicationPrivacyRulesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommunicationPrivacyRulesWith applies the HasEdge predicate on the "communication_privacy_rules" edge with a given conditions (other predicates).
+func HasCommunicationPrivacyRulesWith(preds ...predicate.CommunicationPrivacyRule) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newCommunicationPrivacyRulesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommunicationShareGrants applies the HasEdge predicate on the "communication_share_grants" edge.
+func HasCommunicationShareGrants() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommunicationShareGrantsTable, CommunicationShareGrantsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommunicationShareGrantsWith applies the HasEdge predicate on the "communication_share_grants" edge with a given conditions (other predicates).
+func HasCommunicationShareGrantsWith(preds ...predicate.CommunicationShareGrant) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newCommunicationShareGrantsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasRelationshipParticipants applies the HasEdge predicate on the "relationship_participants" edge.
 func HasRelationshipParticipants() predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(func(s *sql.Selector) {
@@ -1629,6 +1790,29 @@ func HasPersonMergeCandidates() predicate.RevenueWorkspace {
 func HasPersonMergeCandidatesWith(preds ...predicate.PersonMergeCandidate) predicate.RevenueWorkspace {
 	return predicate.RevenueWorkspace(func(s *sql.Selector) {
 		step := newPersonMergeCandidatesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasConsoleResources applies the HasEdge predicate on the "console_resources" edge.
+func HasConsoleResources() predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ConsoleResourcesTable, ConsoleResourcesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConsoleResourcesWith applies the HasEdge predicate on the "console_resources" edge with a given conditions (other predicates).
+func HasConsoleResourcesWith(preds ...predicate.ConsoleResource) predicate.RevenueWorkspace {
+	return predicate.RevenueWorkspace(func(s *sql.Selector) {
+		step := newConsoleResourcesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

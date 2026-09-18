@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
@@ -679,6 +680,21 @@ func (_u *RelationshipUpdate) AddMailThreads(v ...*MailThread) *RelationshipUpda
 	return _u.AddMailThreadIDs(ids...)
 }
 
+// AddCommunicationInteractionIDs adds the "communication_interactions" edge to the CommunicationInteraction entity by IDs.
+func (_u *RelationshipUpdate) AddCommunicationInteractionIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.AddCommunicationInteractionIDs(ids...)
+	return _u
+}
+
+// AddCommunicationInteractions adds the "communication_interactions" edges to the CommunicationInteraction entity.
+func (_u *RelationshipUpdate) AddCommunicationInteractions(v ...*CommunicationInteraction) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommunicationInteractionIDs(ids...)
+}
+
 // AddParticipantIDs adds the "participants" edge to the RelationshipParticipant entity by IDs.
 func (_u *RelationshipUpdate) AddParticipantIDs(ids ...uuid.UUID) *RelationshipUpdate {
 	_u.mutation.AddParticipantIDs(ids...)
@@ -1009,6 +1025,27 @@ func (_u *RelationshipUpdate) RemoveMailThreads(v ...*MailThread) *RelationshipU
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMailThreadIDs(ids...)
+}
+
+// ClearCommunicationInteractions clears all "communication_interactions" edges to the CommunicationInteraction entity.
+func (_u *RelationshipUpdate) ClearCommunicationInteractions() *RelationshipUpdate {
+	_u.mutation.ClearCommunicationInteractions()
+	return _u
+}
+
+// RemoveCommunicationInteractionIDs removes the "communication_interactions" edge to CommunicationInteraction entities by IDs.
+func (_u *RelationshipUpdate) RemoveCommunicationInteractionIDs(ids ...uuid.UUID) *RelationshipUpdate {
+	_u.mutation.RemoveCommunicationInteractionIDs(ids...)
+	return _u
+}
+
+// RemoveCommunicationInteractions removes "communication_interactions" edges to CommunicationInteraction entities.
+func (_u *RelationshipUpdate) RemoveCommunicationInteractions(v ...*CommunicationInteraction) *RelationshipUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommunicationInteractionIDs(ids...)
 }
 
 // ClearParticipants clears all "participants" edges to the RelationshipParticipant entity.
@@ -1851,6 +1888,51 @@ func (_u *RelationshipUpdate) sqlSave(ctx context.Context) (_node int, err error
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommunicationInteractionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.CommunicationInteractionsTable,
+			Columns: []string{relationship.CommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommunicationInteractionsIDs(); len(nodes) > 0 && !_u.mutation.CommunicationInteractionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.CommunicationInteractionsTable,
+			Columns: []string{relationship.CommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommunicationInteractionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.CommunicationInteractionsTable,
+			Columns: []string{relationship.CommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -3049,6 +3131,21 @@ func (_u *RelationshipUpdateOne) AddMailThreads(v ...*MailThread) *RelationshipU
 	return _u.AddMailThreadIDs(ids...)
 }
 
+// AddCommunicationInteractionIDs adds the "communication_interactions" edge to the CommunicationInteraction entity by IDs.
+func (_u *RelationshipUpdateOne) AddCommunicationInteractionIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.AddCommunicationInteractionIDs(ids...)
+	return _u
+}
+
+// AddCommunicationInteractions adds the "communication_interactions" edges to the CommunicationInteraction entity.
+func (_u *RelationshipUpdateOne) AddCommunicationInteractions(v ...*CommunicationInteraction) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommunicationInteractionIDs(ids...)
+}
+
 // AddParticipantIDs adds the "participants" edge to the RelationshipParticipant entity by IDs.
 func (_u *RelationshipUpdateOne) AddParticipantIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
 	_u.mutation.AddParticipantIDs(ids...)
@@ -3379,6 +3476,27 @@ func (_u *RelationshipUpdateOne) RemoveMailThreads(v ...*MailThread) *Relationsh
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveMailThreadIDs(ids...)
+}
+
+// ClearCommunicationInteractions clears all "communication_interactions" edges to the CommunicationInteraction entity.
+func (_u *RelationshipUpdateOne) ClearCommunicationInteractions() *RelationshipUpdateOne {
+	_u.mutation.ClearCommunicationInteractions()
+	return _u
+}
+
+// RemoveCommunicationInteractionIDs removes the "communication_interactions" edge to CommunicationInteraction entities by IDs.
+func (_u *RelationshipUpdateOne) RemoveCommunicationInteractionIDs(ids ...uuid.UUID) *RelationshipUpdateOne {
+	_u.mutation.RemoveCommunicationInteractionIDs(ids...)
+	return _u
+}
+
+// RemoveCommunicationInteractions removes "communication_interactions" edges to CommunicationInteraction entities.
+func (_u *RelationshipUpdateOne) RemoveCommunicationInteractions(v ...*CommunicationInteraction) *RelationshipUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommunicationInteractionIDs(ids...)
 }
 
 // ClearParticipants clears all "participants" edges to the RelationshipParticipant entity.
@@ -4251,6 +4369,51 @@ func (_u *RelationshipUpdateOne) sqlSave(ctx context.Context) (_node *Relationsh
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommunicationInteractionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.CommunicationInteractionsTable,
+			Columns: []string{relationship.CommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommunicationInteractionsIDs(); len(nodes) > 0 && !_u.mutation.CommunicationInteractionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.CommunicationInteractionsTable,
+			Columns: []string{relationship.CommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommunicationInteractionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.CommunicationInteractionsTable,
+			Columns: []string{relationship.CommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

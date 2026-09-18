@@ -2088,6 +2088,29 @@ func HasMailThreadsWith(preds ...predicate.MailThread) predicate.Relationship {
 	})
 }
 
+// HasCommunicationInteractions applies the HasEdge predicate on the "communication_interactions" edge.
+func HasCommunicationInteractions() predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommunicationInteractionsTable, CommunicationInteractionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommunicationInteractionsWith applies the HasEdge predicate on the "communication_interactions" edge with a given conditions (other predicates).
+func HasCommunicationInteractionsWith(preds ...predicate.CommunicationInteraction) predicate.Relationship {
+	return predicate.Relationship(func(s *sql.Selector) {
+		step := newCommunicationInteractionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasParticipants applies the HasEdge predicate on the "participants" edge.
 func HasParticipants() predicate.Relationship {
 	return predicate.Relationship(func(s *sql.Selector) {

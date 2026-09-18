@@ -7,6 +7,9 @@ COPY packages/relationship-contract /repo/packages/relationship-contract
 COPY packages/ui /repo/packages/ui
 COPY packages/eslint-plugin-oppulence-web /repo/packages/eslint-plugin-oppulence-web
 RUN npm ci
+# Turbopack resolves @oppulence/ui from packages/ui (next.config turbopack.root). npm ci does
+# not hoist file:-linked package deps where the bundler looks — symlink this app's tree.
+RUN ln -s /repo/apps/rowboat-www/node_modules /repo/packages/ui/node_modules
 
 FROM deps AS build
 WORKDIR /repo/apps/rowboat-www

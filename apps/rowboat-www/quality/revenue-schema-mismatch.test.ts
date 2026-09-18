@@ -42,4 +42,28 @@ describe("a response that does not match its contract", () => {
 
     await expect(listCommitments()).resolves.toEqual([]);
   });
+
+  it("validates revenue impact before home cards consume it", async () => {
+    const { getImpact } = await import("@/lib/revenue");
+    respond({
+      approved: 0,
+      atRiskRelationships: 1,
+      criticalRelationships: 0,
+      executed: 0,
+      handled: 0,
+      longestOverdueDays: 3,
+      open: 2,
+      overdueByThem: 0,
+      overdueByUs: 1,
+      overdueCommitments: 1,
+      portfolioRiskScore: 25,
+      relationships: "not-a-number",
+      riskReasons: [],
+      surfaced: 2,
+    });
+
+    await expect(getImpact()).rejects.toMatchObject({
+      code: "schema_mismatch",
+    });
+  });
 });

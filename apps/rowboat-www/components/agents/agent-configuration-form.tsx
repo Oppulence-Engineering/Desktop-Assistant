@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Robot, ShieldCheck, Wrench, X } from "@phosphor-icons/react";
+import { Plus, Robot, ShieldCheck, Wrench, X } from "@/lib/icons";
 
 import {
   Accordion,
@@ -11,6 +11,7 @@ import {
 } from "@oppulence/ui/components/accordion";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { CardDescription } from "@oppulence/ui/components/card";
 import { Input } from "@oppulence/ui/components/input";
 import { Label } from "@oppulence/ui/components/label";
 import {
@@ -266,14 +267,16 @@ function TagEditor({
             >
               {value}
               {!disabled ? (
-                <button
+                <Button
                   aria-label={`Remove ${value}`}
-                  className="rounded p-0.5 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+                  className="size-auto rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
                   onClick={() => onChange(values.filter((candidate) => candidate !== value))}
+                  size="icon-xs"
                   type="button"
+                  variant="ghost"
                 >
                   <X className="size-3" />
-                </button>
+                </Button>
               ) : null}
             </Badge>
           ))}
@@ -521,12 +524,12 @@ export function AgentConfigurationForm({
                 )}
                 key={tool.name}
               >
-                <span className="min-w-0">
-                  <span className="block text-sm font-medium">{tool.label}</span>
-                  <span className="mt-0.5 block text-xs leading-4 text-muted-foreground">
+                <div className="min-w-0">
+                  <Label className="block text-sm font-medium">{tool.label}</Label>
+                  <CardDescription className="mt-0.5 block text-xs leading-4">
                     {tool.description}
-                  </span>
-                </span>
+                  </CardDescription>
+                </div>
                 <Switch
                   checked={checked}
                   disabled={readOnly}
@@ -628,15 +631,15 @@ export function AgentConfigurationForm({
         <Accordion collapsible type="single">
           <AccordionItem className="rounded-none border px-4" value="limits">
             <AccordionTrigger className="hover:no-underline">
-              <span className="flex items-center gap-3">
+              <div className="flex items-center gap-3">
                 <ShieldCheck className="size-5 text-muted-foreground" />
-                <span>
-                  <span className="block text-sm font-medium">Advanced run limits</span>
-                  <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                <div>
+                  <Label className="block text-sm font-medium">Advanced run limits</Label>
+                  <CardDescription className="mt-1 block text-xs font-normal">
                     Optional safeguards; blank fields inherit workspace limits.
-                  </span>
-                </span>
-              </span>
+                  </CardDescription>
+                </div>
+              </div>
             </AccordionTrigger>
             <AccordionContent>
               <div className="grid gap-4 border-t pt-4 sm:grid-cols-2">

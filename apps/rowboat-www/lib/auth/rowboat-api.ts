@@ -98,6 +98,12 @@ export async function exchangeWorkOSCode(input: {
   return WorkOSTokenBundleSchema.parse(await parseJSON(res));
 }
 
+function refreshRequiresReconnect(status: number, body: unknown): boolean {
+  if (status === 400 || status === 401 || status === 403 || status === 409) return true;
+  const parsed = RowboatAPIErrorSchema.safeParse(body);
+  return parsed.success && parsed.data.code === "reconnect_required";
+}
+
 async function refreshWorkOSSessionOnce(
   session: DashboardSessionCookie,
 ): Promise<DashboardSessionCookie | null> {
@@ -114,7 +120,8 @@ async function refreshWorkOSSessionOnce(
     if (res.ok) {
       return sessionFromTokenBundle(WorkOSTokenBundleSchema.parse(await parseJSON(res)), session);
     }
-    if (res.status === 400 || res.status === 401 || res.status === 403) return null;
+    const body = await parseJSON(res);
+    if (refreshRequiresReconnect(res.status, body)) return null;
     if (res.status !== 429 || attempt === 1) {
       throw new Error("session refresh is temporarily unavailable");
     }
@@ -208,4 +215,10 @@ export function sessionFromTokenBundle(
 export function shouldRefreshSession(session: DashboardSessionCookie): boolean {
   const now = Math.floor(Date.now() / 1000);
   return session.expiresAt <= now + 60;
+}
+
+/** True while the sealed access token is still within its advertised lifetime. */
+export function sessionAccessValid(session: DashboardSessionCookie): boolean {
+  const now = Math.floor(Date.now() / 1000);
+  return session.expiresAt > now;
 }

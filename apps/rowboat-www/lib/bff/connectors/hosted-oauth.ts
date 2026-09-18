@@ -21,6 +21,15 @@ function authorizationHeaders(session: DashboardSessionCookie): HeadersInit {
   };
 }
 
+function parseUpstreamJSON<T>(body: string | null): T {
+  if (!body) return {} as T;
+  try {
+    return JSON.parse(body) as T;
+  } catch {
+    return {} as T;
+  }
+}
+
 export async function startHostedConnector(
   name: string,
   request: ConnectionStartRequest,
@@ -35,7 +44,7 @@ export async function startHostedConnector(
     signal,
   });
   const body = [204, 205, 304].includes(response.status) ? null : await response.text();
-  const data: startConnectionResponse["data"] = body ? JSON.parse(body) : {};
+  const data = parseUpstreamJSON<startConnectionResponse["data"]>(body);
   return {
     data,
     status: response.status,
@@ -57,7 +66,7 @@ export async function claimHostedConnector(
     signal,
   });
   const body = [204, 205, 304].includes(response.status) ? null : await response.text();
-  const data: claimConnectionResponse["data"] = body ? JSON.parse(body) : {};
+  const data = parseUpstreamJSON<claimConnectionResponse["data"]>(body);
   return {
     data,
     status: response.status,

@@ -28,6 +28,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -183,6 +190,41 @@ var commitmenteventImplementors = []string{"CommitmentEvent", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*CommitmentEvent) IsNode() {}
+
+var communicationattachmentImplementors = []string{"CommunicationAttachment", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CommunicationAttachment) IsNode() {}
+
+var communicationinteractionImplementors = []string{"CommunicationInteraction", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CommunicationInteraction) IsNode() {}
+
+var communicationparticipantImplementors = []string{"CommunicationParticipant", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CommunicationParticipant) IsNode() {}
+
+var communicationprivacypolicyImplementors = []string{"CommunicationPrivacyPolicy", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CommunicationPrivacyPolicy) IsNode() {}
+
+var communicationprivacyruleImplementors = []string{"CommunicationPrivacyRule", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CommunicationPrivacyRule) IsNode() {}
+
+var communicationsharegrantImplementors = []string{"CommunicationShareGrant", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CommunicationShareGrant) IsNode() {}
+
+var communicationsynccursorImplementors = []string{"CommunicationSyncCursor", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CommunicationSyncCursor) IsNode() {}
 
 var conversationintelligenceartifactImplementors = []string{"ConversationIntelligenceArtifact", "Node"}
 
@@ -653,6 +695,69 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(commitmentevent.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, commitmenteventImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case communicationattachment.Table:
+		query := c.CommunicationAttachment.Query().
+			Where(communicationattachment.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, communicationattachmentImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case communicationinteraction.Table:
+		query := c.CommunicationInteraction.Query().
+			Where(communicationinteraction.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, communicationinteractionImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case communicationparticipant.Table:
+		query := c.CommunicationParticipant.Query().
+			Where(communicationparticipant.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, communicationparticipantImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case communicationprivacypolicy.Table:
+		query := c.CommunicationPrivacyPolicy.Query().
+			Where(communicationprivacypolicy.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, communicationprivacypolicyImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case communicationprivacyrule.Table:
+		query := c.CommunicationPrivacyRule.Query().
+			Where(communicationprivacyrule.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, communicationprivacyruleImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case communicationsharegrant.Table:
+		query := c.CommunicationShareGrant.Query().
+			Where(communicationsharegrant.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, communicationsharegrantImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case communicationsynccursor.Table:
+		query := c.CommunicationSyncCursor.Query().
+			Where(communicationsynccursor.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, communicationsynccursorImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -1461,6 +1566,118 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.CommitmentEvent.Query().
 			Where(commitmentevent.IDIn(ids...))
 		query, err := query.CollectFields(ctx, commitmenteventImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case communicationattachment.Table:
+		query := c.CommunicationAttachment.Query().
+			Where(communicationattachment.IDIn(ids...))
+		query, err := query.CollectFields(ctx, communicationattachmentImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case communicationinteraction.Table:
+		query := c.CommunicationInteraction.Query().
+			Where(communicationinteraction.IDIn(ids...))
+		query, err := query.CollectFields(ctx, communicationinteractionImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case communicationparticipant.Table:
+		query := c.CommunicationParticipant.Query().
+			Where(communicationparticipant.IDIn(ids...))
+		query, err := query.CollectFields(ctx, communicationparticipantImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case communicationprivacypolicy.Table:
+		query := c.CommunicationPrivacyPolicy.Query().
+			Where(communicationprivacypolicy.IDIn(ids...))
+		query, err := query.CollectFields(ctx, communicationprivacypolicyImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case communicationprivacyrule.Table:
+		query := c.CommunicationPrivacyRule.Query().
+			Where(communicationprivacyrule.IDIn(ids...))
+		query, err := query.CollectFields(ctx, communicationprivacyruleImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case communicationsharegrant.Table:
+		query := c.CommunicationShareGrant.Query().
+			Where(communicationsharegrant.IDIn(ids...))
+		query, err := query.CollectFields(ctx, communicationsharegrantImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case communicationsynccursor.Table:
+		query := c.CommunicationSyncCursor.Query().
+			Where(communicationsynccursor.IDIn(ids...))
+		query, err := query.CollectFields(ctx, communicationsynccursorImplementors...)
 		if err != nil {
 			return nil, err
 		}

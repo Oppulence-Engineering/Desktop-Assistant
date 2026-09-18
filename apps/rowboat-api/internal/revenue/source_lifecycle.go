@@ -158,11 +158,17 @@ func (s *Service) ReportSourceAuthorization(ctx context.Context, u *ent.User, so
 	case "completed":
 		granted := sortedUniqueStrings(in.GrantedScopes)
 		missing := differenceStrings(status.RequiredScopes, granted)
-		update.SetStatus("connected").SetAuthorizedAt(now).SetGrantedScopes(granted).
-			SetMissingScopes(missing).SetCompleteness("partial").SetBackfillPhase("idle").
-			SetBackfillCompleted(0).SetBackfillTotal(0).SetRetryCount(0).
-			ClearSyncStartedAt().ClearBackfillCompletedAt().ClearLastFailedSyncAt().ClearNextRetryAt().
+		update.SetAuthorizedAt(now).SetGrantedScopes(granted).SetMissingScopes(missing).
+			SetRetryCount(0).ClearLastFailedSyncAt().ClearNextRetryAt().
 			ClearLastError().ClearErrorCode().ClearDisconnectedAt().ClearRevokedAt()
+		// Claim is the server authority for consent and immediately queues a
+		// backfill. Older clients also replay "completed" after claim; that
+		// replay must not erase a queue the server has already started.
+		if !preserveAuthorizedSourceSync(status, missing) {
+			update.SetStatus("connected").SetCompleteness("partial").SetBackfillPhase("idle").
+				SetBackfillCompleted(0).SetBackfillTotal(0).
+				ClearSyncStartedAt().ClearBackfillCompletedAt()
+		}
 		event.Name, event.Outcome, event.ReasonCode = "source_authorization_succeeded", "succeeded", "provider_consent"
 	case "canceled":
 		update.SetStatus("not_connected").SetCompleteness("partial").SetErrorCode("authorization_canceled").
@@ -186,6 +192,21 @@ func (s *Service) ReportSourceAuthorization(ctx context.Context, u *ent.User, so
 	_ = appendTrustEvent(ctx, s.client, ws, u, event)
 	_ = s.RefreshRelationshipAttention(ctx, u)
 	return updated, nil
+}
+
+// preserveAuthorizedSourceSync identifies a harmless replay of successful
+// consent. Queue ownership belongs to the backfill worker once work is queued;
+// authorization replay may refresh scopes but cannot rewind worker progress.
+func preserveAuthorizedSourceSync(status *ent.RelationshipSourceStatus, missingScopes []string) bool {
+	if status == nil || len(missingScopes) > 0 {
+		return false
+	}
+	switch status.BackfillPhase {
+	case "queued", "running", "live":
+		return true
+	default:
+		return false
+	}
 }
 
 // BeginSourceBackfill queues bounded provider work for a fully authorized

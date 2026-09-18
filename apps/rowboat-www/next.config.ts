@@ -1,6 +1,57 @@
 import bundleAnalyzer from "@next/bundle-analyzer";
+import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
 import path from "path";
+import uiPackage from "../../packages/ui/package.json" with { type: "json" };
+import { isDevelopment } from "./lib/environment";
+
+const repoRoot = path.join(__dirname, "../..");
+
+type Bundler = "webpack" | "turbopack";
+
+/** Normalize alias targets for Turbopack (repo-root-relative, forward slashes). */
+function toTurbopackAliasTarget(...segments: string[]): string {
+  return path
+    .join(...segments)
+    .split(path.sep)
+    .join("/");
+}
+
+/**
+ * @oppulence/ui is file:-linked; pin its runtime deps to this app's node_modules.
+ * Webpack accepts absolute paths; Turbopack prepends `./` to alias targets, so absolute
+ * paths become invalid server-relative imports — use repo-root-relative paths instead.
+ */
+function uiPackageResolveAlias(bundler: Bundler): Record<string, string> {
+  const appNodeModulesAbs = path.join(__dirname, "node_modules");
+  const uiSrcAbs = path.join(repoRoot, "packages/ui/src");
+  const runtimeDeps = Object.keys(uiPackage.dependencies ?? {});
+
+  const depPath = (dep: string) =>
+    bundler === "turbopack"
+      ? toTurbopackAliasTarget("apps/rowboat-www/node_modules", dep)
+      : path.join(appNodeModulesAbs, dep);
+
+  const uiInternal = (suffix: string) =>
+    bundler === "turbopack"
+      ? toTurbopackAliasTarget("packages/ui/src", suffix)
+      : path.join(uiSrcAbs, suffix);
+
+  const aliases = Object.fromEntries(runtimeDeps.map((dep) => [dep, depPath(dep)]));
+
+  return {
+    ...aliases,
+    react: depPath("react"),
+    "react-dom": depPath("react-dom"),
+    "#lib/utils": uiInternal("lib/utils.ts"),
+    "#lib/icons": uiInternal("lib/icons.tsx"),
+    "#components": uiInternal("components"),
+  };
+}
+
+const withMDX = createMDX({
+  configPath: "config/fumadocs/source.config.ts",
+});
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
@@ -25,13 +76,27 @@ const plainChat = {
   ],
 };
 
+// react-grab loads from unpkg in dev and talks to a local MCP server (Cursor 5567,
+// Claude 4567, Gemini 5568, OpenCode 6567). Keep these origins dev-only.
+const reactGrabDev = {
+  script: "https://unpkg.com",
+  connect: [
+    "http://localhost:4567",
+    "http://localhost:5567",
+    "http://localhost:5568",
+    "http://localhost:6567",
+  ],
+};
+
+const developmentBuild = isDevelopment();
+
 const contentSecurityPolicy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' ${plainChat.script}${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' ${plainChat.script}${developmentBuild ? ` ${reactGrabDev.script} 'unsafe-eval'` : ""}`,
   `style-src 'self' 'unsafe-inline' ${plainChat.style}`,
   `img-src 'self' data: blob: ${plainChat.img.join(" ")}`,
   `font-src 'self' data: ${plainChat.style} ${plainChat.script}`,
-  `connect-src 'self' https://api.workos.com https://us.i.posthog.com ${plainChat.connect.join(" ")}`,
+  `connect-src 'self' https://api.workos.com https://us.i.posthog.com ${plainChat.connect.join(" ")}${developmentBuild ? ` ${reactGrabDev.connect.join(" ")}` : ""}`,
   "frame-src 'self' https://api.oppulence.io https://api.x.staging.oppulence.io",
   "frame-ancestors 'self'",
   "base-uri 'self'",
@@ -58,6 +123,10 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../.."),
   transpilePackages: ["@oppulence/ui"],
+  // Cursor's embedded browser uses the loopback IP. Without this development
+  // exception Next blocks client chunks, leaving the app before hydration on
+  // the server-rendered "Checking session" fallback indefinitely.
+  allowedDevOrigins: ["127.0.0.1"],
   images: {
     unoptimized: true,
   },
@@ -76,11 +145,19 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  webpack(config) {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      ...uiPackageResolveAlias("webpack"),
+    };
+    return config;
+  },
   turbopack: {
     // Relationship contracts are shared with the desktop from the repository
     // package boundary, so Turbopack must be allowed to trace that package.
-    root: path.join(__dirname, "../.."),
+    root: repoRoot,
+    resolveAlias: uiPackageResolveAlias("turbopack"),
   },
 };
 
-export default withBundleAnalyzer(nextConfig);
+export default withBundleAnalyzer(withMDX(nextConfig));

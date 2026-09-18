@@ -1342,6 +1342,144 @@ func HasMailSignalsWith(preds ...predicate.MailSignal) predicate.User {
 	})
 }
 
+// HasOwnedCommunicationInteractions applies the HasEdge predicate on the "owned_communication_interactions" edge.
+func HasOwnedCommunicationInteractions() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, OwnedCommunicationInteractionsTable, OwnedCommunicationInteractionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOwnedCommunicationInteractionsWith applies the HasEdge predicate on the "owned_communication_interactions" edge with a given conditions (other predicates).
+func HasOwnedCommunicationInteractionsWith(preds ...predicate.CommunicationInteraction) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newOwnedCommunicationInteractionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommunicationSyncCursors applies the HasEdge predicate on the "communication_sync_cursors" edge.
+func HasCommunicationSyncCursors() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommunicationSyncCursorsTable, CommunicationSyncCursorsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommunicationSyncCursorsWith applies the HasEdge predicate on the "communication_sync_cursors" edge with a given conditions (other predicates).
+func HasCommunicationSyncCursorsWith(preds ...predicate.CommunicationSyncCursor) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newCommunicationSyncCursorsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommunicationPrivacyPolicies applies the HasEdge predicate on the "communication_privacy_policies" edge.
+func HasCommunicationPrivacyPolicies() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommunicationPrivacyPoliciesTable, CommunicationPrivacyPoliciesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommunicationPrivacyPoliciesWith applies the HasEdge predicate on the "communication_privacy_policies" edge with a given conditions (other predicates).
+func HasCommunicationPrivacyPoliciesWith(preds ...predicate.CommunicationPrivacyPolicy) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newCommunicationPrivacyPoliciesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCommunicationPrivacyRules applies the HasEdge predicate on the "communication_privacy_rules" edge.
+func HasCommunicationPrivacyRules() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CommunicationPrivacyRulesTable, CommunicationPrivacyRulesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCommunicationPrivacyRulesWith applies the HasEdge predicate on the "communication_privacy_rules" edge with a given conditions (other predicates).
+func HasCommunicationPrivacyRulesWith(preds ...predicate.CommunicationPrivacyRule) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newCommunicationPrivacyRulesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasOwnedCommunicationShareGrants applies the HasEdge predicate on the "owned_communication_share_grants" edge.
+func HasOwnedCommunicationShareGrants() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, OwnedCommunicationShareGrantsTable, OwnedCommunicationShareGrantsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOwnedCommunicationShareGrantsWith applies the HasEdge predicate on the "owned_communication_share_grants" edge with a given conditions (other predicates).
+func HasOwnedCommunicationShareGrantsWith(preds ...predicate.CommunicationShareGrant) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newOwnedCommunicationShareGrantsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasReceivedCommunicationShareGrants applies the HasEdge predicate on the "received_communication_share_grants" edge.
+func HasReceivedCommunicationShareGrants() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ReceivedCommunicationShareGrantsTable, ReceivedCommunicationShareGrantsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasReceivedCommunicationShareGrantsWith applies the HasEdge predicate on the "received_communication_share_grants" edge with a given conditions (other predicates).
+func HasReceivedCommunicationShareGrantsWith(preds ...predicate.CommunicationShareGrant) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newReceivedCommunicationShareGrantsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasRelationshipParticipants applies the HasEdge predicate on the "relationship_participants" edge.
 func HasRelationshipParticipants() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
@@ -1909,6 +2047,52 @@ func HasApprovalTokens() predicate.User {
 func HasApprovalTokensWith(preds ...predicate.ApprovalToken) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := newApprovalTokensStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasUserPreferences applies the HasEdge predicate on the "user_preferences" edge.
+func HasUserPreferences() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, UserPreferencesTable, UserPreferencesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasUserPreferencesWith applies the HasEdge predicate on the "user_preferences" edge with a given conditions (other predicates).
+func HasUserPreferencesWith(preds ...predicate.UserPreference) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newUserPreferencesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasConsoleResources applies the HasEdge predicate on the "console_resources" edge.
+func HasConsoleResources() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ConsoleResourcesTable, ConsoleResourcesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConsoleResourcesWith applies the HasEdge predicate on the "console_resources" edge with a given conditions (other predicates).
+func HasConsoleResourcesWith(preds ...predicate.ConsoleResource) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newConsoleResourcesStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

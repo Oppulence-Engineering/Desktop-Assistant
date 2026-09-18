@@ -33,10 +33,18 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
@@ -89,6 +97,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -173,10 +182,18 @@ func checkColumn(t, c string) error {
 			commitment.Table:                        commitment.ValidColumn,
 			commitmentdependency.Table:              commitmentdependency.ValidColumn,
 			commitmentevent.Table:                   commitmentevent.ValidColumn,
+			communicationattachment.Table:           communicationattachment.ValidColumn,
+			communicationinteraction.Table:          communicationinteraction.ValidColumn,
+			communicationparticipant.Table:          communicationparticipant.ValidColumn,
+			communicationprivacypolicy.Table:        communicationprivacypolicy.ValidColumn,
+			communicationprivacyrule.Table:          communicationprivacyrule.ValidColumn,
+			communicationsharegrant.Table:           communicationsharegrant.ValidColumn,
+			communicationsynccursor.Table:           communicationsynccursor.ValidColumn,
 			connectorauditevent.Table:               connectorauditevent.ValidColumn,
 			connectorcredentialcleanupjob.Table:     connectorcredentialcleanupjob.ValidColumn,
 			connectorcredentialrecovery.Table:       connectorcredentialrecovery.ValidColumn,
 			connectorrevocationjob.Table:            connectorrevocationjob.ValidColumn,
+			consoleresource.Table:                   consoleresource.ValidColumn,
 			conversationintelligenceartifact.Table:  conversationintelligenceartifact.ValidColumn,
 			creditledger.Table:                      creditledger.ValidColumn,
 			deletedidentity.Table:                   deletedidentity.ValidColumn,
@@ -229,6 +246,7 @@ func checkColumn(t, c string) error {
 			tenantevidencekey.Table:                 tenantevidencekey.ValidColumn,
 			user.Table:                              user.ValidColumn,
 			userhistory.Table:                       userhistory.ValidColumn,
+			userpreference.Table:                    userpreference.ValidColumn,
 			voiceapikey.Table:                       voiceapikey.ValidColumn,
 			voicesyncitem.Table:                     voicesyncitem.ValidColumn,
 			workspacefeaturecontrol.Table:           workspacefeaturecontrol.ValidColumn,

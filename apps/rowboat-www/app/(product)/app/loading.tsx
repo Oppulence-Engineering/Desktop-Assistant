@@ -1,4 +1,4 @@
-import { CircleNotchIcon } from "@phosphor-icons/react/dist/ssr";
+import { CircleNotchIcon } from "@/lib/icons";
 
 export default function ProductLoading() {
   return (

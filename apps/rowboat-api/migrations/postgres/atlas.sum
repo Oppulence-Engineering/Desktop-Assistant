@@ -1,4 +1,4 @@
-h1:wni5ms2sbdlCFDCW7HAM58aHMJghXw47wTTkmnbEmcs=
+h1:GT8aeFIGFuYqZqYL+eXhnk8laJ2fleUMN/McVbH4dFU=
 20260821000000_baseline.sql h1:ZTvCxMIes/Jroxm9juxg6wPrT5n6uaFh7AqXnStxjAo=
 20260821010000_ent_hardening.sql h1:ovo6NSYCx4KpCbDWpMw4L/k7TPjiOm6CbVgvQJaFX2w=
 20260821020000_identifier_normalization.sql h1:1xx4DAQ5Bzb/PjveAqpp7YKM3Zq5Ihs49nQCrbC+NaM=
@@ -23,3 +23,5 @@ h1:wni5ms2sbdlCFDCW7HAM58aHMJghXw47wTTkmnbEmcs=
 20260915173435_account_delete_cascade.sql h1:A2ILoVj5/NtOmpWADoezy2OBCwVYXXNyVavL0yKcfXk=
 20260915173436_account_delete_cascade_validate.sql h1:YAzsvFbGL3eqVl9w8tq+djFCiAWsJj0cBqQb6Us1lCU=
 20260915223000_deleted_identities.sql h1:hpQh4q302OTKaPATEOpJPDLPNnV8BGkfYltoYvUbkDM=
+20260917210500_console_state.sql h1:d8k+OWcJKfROMWl388v6EeA0poihheBFXlcM4vLHcvw=
+20260917223000_communication_intelligence.sql h1:lEJLPlSlUyPN5/E+klBENQrmLAtUFWjz204hj/cNZag=

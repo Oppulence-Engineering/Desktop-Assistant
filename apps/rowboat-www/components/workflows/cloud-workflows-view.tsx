@@ -5,7 +5,6 @@ import {
   ArrowClockwise,
   CaretRight,
   CheckCircle,
-  CircleNotch,
   Clock,
   Cloud,
   Gear,
@@ -17,7 +16,7 @@ import {
   SlidersHorizontal,
   Warning,
   XCircle,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
@@ -41,10 +40,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@oppulence/ui/components/select";
+import { CardDescription } from "@oppulence/ui/components/card";
 import { Separator } from "@oppulence/ui/components/separator";
+import { Spinner } from "@oppulence/ui/components/spinner";
 import { Switch } from "@oppulence/ui/components/switch";
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@oppulence/ui/components/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import { Textarea } from "@oppulence/ui/components/textarea";
+import { WorkspaceEmptyState } from "@/components/revenue/shared";
 import { VisualWorkflowBuilder } from "@/components/features/workflows/visual-workflow-builder/visual-workflow-builder";
 import {
   cancelCloudRun,
@@ -123,8 +132,7 @@ function StatusIcon({ status }: { status: string }) {
   if (status === "succeeded" || status === "current")
     return <CheckCircle className="size-4" weight="fill" />;
   if (status === "failed") return <XCircle className="size-4" weight="fill" />;
-  if (status === "running" || status === "syncing")
-    return <CircleNotch className="size-4 animate-spin" />;
+  if (status === "running" || status === "syncing") return <Spinner className="size-4" />;
   if (status === "queued") return <Clock className="size-4" />;
   return <Pause className="size-4" />;
 }
@@ -288,7 +296,7 @@ function CreateWorkflowDialog({
                 disabled={busy || !name.trim() || !objective.trim()}
                 onClick={create}
               >
-                {busy ? <CircleNotch className="animate-spin" /> : <Cloud />} Create draft
+                {busy ? <Spinner className="size-4" /> : <Cloud />} Create draft
               </Button>
             </DialogFooter>
           </TabsContent>
@@ -388,64 +396,106 @@ function WorkflowLibrary({
       </div>
       <ScrollArea className="min-h-0 flex-1">
         <div className="min-w-[760px]">
-          <div className="grid h-9 grid-cols-[minmax(260px,1.5fr)_minmax(190px,1fr)_110px_110px_150px_32px] items-center border-b border-border px-4 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-            <span>Workflow</span>
-            <span>Starts</span>
-            <span>Steps</span>
-            <span>Status</span>
-            <span>Last run</span>
-            <span />
-          </div>
-          {filtered.map((task) => {
-            const lastRun = runs.find((run) => run.slug === task.slug);
-            return (
-              <button
-                className="grid min-h-14 w-full grid-cols-[minmax(260px,1.5fr)_minmax(190px,1fr)_110px_110px_150px_32px] items-center border-b border-border px-4 text-left transition-colors hover:bg-muted/35"
-                key={task.id}
-                onClick={() => onSelect(task)}
-                type="button"
-              >
-                <span className="min-w-0">
-                  <span className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "size-2 shrink-0",
-                        task.active ? "bg-emerald-500" : "bg-muted-foreground/35",
-                      )}
-                    />
-                    <span className="truncate text-[13px] font-medium">{task.name}</span>
-                    {task.systemManaged ? (
-                      <Badge className="rounded-none text-[9px]" variant="secondary">
-                        Oppulence
+          <table className="w-full border-collapse text-left" aria-label="Workflows">
+            <TableHeader>
+              <TableRow className="h-9 border-b hover:bg-transparent">
+                <TableHead className="h-9 px-4 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                  Workflow
+                </TableHead>
+                <TableHead className="h-9 px-4 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                  Starts
+                </TableHead>
+                <TableHead className="h-9 w-[110px] px-4 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                  Steps
+                </TableHead>
+                <TableHead className="h-9 w-[110px] px-4 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                  Status
+                </TableHead>
+                <TableHead className="h-9 w-[150px] px-4 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                  Last run
+                </TableHead>
+                <TableHead className="h-9 w-8 px-4" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((task) => {
+                const lastRun = runs.find((run) => run.slug === task.slug);
+                return (
+                  <TableRow
+                    className="cursor-pointer border-b hover:bg-muted/35"
+                    key={task.id}
+                    onClick={() => onSelect(task)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onSelect(task);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <TableCell className="px-4 py-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            className={cn(
+                              "size-2 shrink-0 rounded-none p-0",
+                              task.active ? "bg-emerald-500" : "bg-muted-foreground/35",
+                            )}
+                            variant="default"
+                          />
+                          <Label className="truncate text-[13px] font-medium">{task.name}</Label>
+                          {task.systemManaged ? (
+                            <Badge className="rounded-none text-[9px]" variant="secondary">
+                              Oppulence
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <CardDescription className="ml-4.5 mt-0.5 truncate text-[11px]">
+                          {taskVisualWorkflow(task)?.objective ||
+                            "Always-on relationship intelligence"}
+                        </CardDescription>
+                      </div>
+                    </TableCell>
+                    <TableCell className="truncate px-4 text-[12px] text-muted-foreground">
+                      {scheduleLabel(task)}
+                    </TableCell>
+                    <TableCell className="px-4 text-[12px] text-muted-foreground">
+                      {workflowStepCount(task)} steps
+                    </TableCell>
+                    <TableCell className="px-4 text-[12px]">
+                      <Badge
+                        className="font-normal"
+                        variant={task.active ? "secondary" : "outline"}
+                      >
+                        {task.active ? "Live" : "Draft"}
                       </Badge>
-                    ) : null}
-                  </span>
-                  <span className="ml-4.5 mt-0.5 block truncate text-[11px] text-muted-foreground">
-                    {taskVisualWorkflow(task)?.objective || "Always-on relationship intelligence"}
-                  </span>
-                </span>
-                <span className="truncate text-[12px] text-muted-foreground">
-                  {scheduleLabel(task)}
-                </span>
-                <span className="text-[12px] text-muted-foreground">
-                  {workflowStepCount(task)} steps
-                </span>
-                <span className="text-[12px]">{task.active ? "Live" : "Draft"}</span>
-                <span className="text-[12px] text-muted-foreground">
-                  {lastRun ? formatDate(lastRun.createdAt) : "Never"}
-                </span>
-                <CaretRight className="size-4 text-muted-foreground" />
-              </button>
-            );
-          })}
+                    </TableCell>
+                    <TableCell className="px-4 text-[12px] text-muted-foreground">
+                      {lastRun ? formatDate(lastRun.createdAt) : "Never"}
+                    </TableCell>
+                    <TableCell className="px-4">
+                      <CaretRight className="size-4 text-muted-foreground" />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </table>
           {filtered.length === 0 ? (
-            <div className="flex min-h-72 flex-col items-center justify-center px-6 text-center">
-              <Cloud className="size-8 text-muted-foreground" />
-              <h2 className="mt-4 text-[15px] font-medium">No workflows found</h2>
-              <p className="mt-1 text-[12px] text-muted-foreground">
-                Try another search or create a workflow from scratch.
-              </p>
-            </div>
+            <WorkspaceEmptyState
+              description={
+                query
+                  ? "No workflows match this search. Try another phrase."
+                  : "Create a workflow to automate recurring relationship work."
+              }
+              image="workflows"
+              learnMore={[
+                { label: "Start from a trigger or schedule" },
+                { label: "Review every workflow run" },
+              ]}
+              title="Workflows"
+            />
           ) : null}
         </div>
       </ScrollArea>
@@ -518,19 +568,19 @@ function RunInspector({
         ) : null}
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div>
-            <span className="text-muted-foreground">Trigger</span>
+            <Label className="font-normal text-muted-foreground">Trigger</Label>
             <p className="mt-0.5">{run.trigger}</p>
           </div>
           <div>
-            <span className="text-muted-foreground">Attempt</span>
+            <Label className="font-normal text-muted-foreground">Attempt</Label>
             <p className="mt-0.5">{run.attempt}</p>
           </div>
           <div>
-            <span className="text-muted-foreground">Started</span>
+            <Label className="font-normal text-muted-foreground">Started</Label>
             <p className="mt-0.5">{formatDate(run.startedAt || run.createdAt)}</p>
           </div>
           <div>
-            <span className="text-muted-foreground">Completed</span>
+            <Label className="font-normal text-muted-foreground">Completed</Label>
             <p className="mt-0.5">{formatDate(run.completedAt)}</p>
           </div>
         </div>
@@ -553,12 +603,15 @@ function RunInspector({
           <ol className="space-y-3">
             {events.map((event) => (
               <li className="grid grid-cols-[28px_minmax(0,1fr)] gap-2 text-xs" key={event.id}>
-                <span className="flex size-7 items-center justify-center border border-border bg-background font-mono text-[10px]">
+                <Badge
+                  className="flex size-7 items-center justify-center rounded-none border border-border bg-background font-mono text-[10px] font-normal"
+                  variant="outline"
+                >
                   {event.seq}
-                </span>
+                </Badge>
                 <div className="min-w-0 border border-border p-2.5">
                   <div className="flex justify-between gap-2">
-                    <span className="font-medium">{event.type}</span>
+                    <Label className="font-medium">{event.type}</Label>
                     <time className="text-muted-foreground">{formatDate(event.receivedAt)}</time>
                   </div>
                   <pre className="mt-1.5 overflow-x-auto whitespace-pre-wrap font-sans leading-5 text-muted-foreground">
@@ -666,26 +719,27 @@ function WorkflowRuns({
         <ScrollArea className="min-h-0 flex-1">
           <div>
             {runs.map((run) => (
-              <button
+              <Button
                 className={cn(
-                  "flex min-h-14 w-full items-center gap-3 border-b border-border px-3 text-left hover:bg-muted/35",
+                  "h-auto min-h-14 w-full justify-start gap-3 rounded-none border-b border-border px-3 text-left font-normal hover:bg-muted/35",
                   selectedRun?.runId === run.runId && "bg-muted/50",
                 )}
                 key={run.id}
                 onClick={() => onSelectRun(run)}
                 type="button"
+                variant="ghost"
               >
                 <StatusIcon status={run.status} />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[12px] font-medium">
+                <div className="min-w-0 flex-1">
+                  <Label className="block truncate text-[12px] font-medium">
                     {tasks.find((task) => task.slug === run.slug)?.name || run.slug}
-                  </span>
-                  <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                  </Label>
+                  <CardDescription className="mt-0.5 block text-[11px]">
                     {run.trigger} · {formatDate(run.createdAt)}
-                  </span>
-                </span>
+                  </CardDescription>
+                </div>
                 <CaretRight className="size-4 text-muted-foreground" />
-              </button>
+              </Button>
             ))}
             {runs.length === 0 ? (
               <p className="p-10 text-center text-xs text-muted-foreground">
@@ -778,7 +832,7 @@ function WorkflowEditor({
             Workflows
           </Button>
           <CaretRight className="size-3 text-muted-foreground" />
-          <span className="truncate font-medium">{task.name}</span>
+          <Label className="truncate font-medium">{task.name}</Label>
           {task.systemManaged ? <Robot className="size-3.5 text-muted-foreground" /> : null}
         </div>
         <div className="flex items-center gap-2">
@@ -800,7 +854,7 @@ function WorkflowEditor({
               size="sm"
               variant="outline"
             >
-              {busy ? <CircleNotch className="animate-spin" /> : null} Save
+              {busy ? <Spinner className="size-4" /> : null} Save
             </Button>
           ) : null}
           <Button
@@ -813,147 +867,158 @@ function WorkflowEditor({
           </Button>
         </div>
       </div>
-      <div className="flex h-10 shrink-0 items-center gap-5 border-b border-border px-3">
-        {(["editor", "runs", "settings"] as const).map((value) => (
-          <button
-            className={cn(
-              "flex h-full items-center gap-1.5 border-b text-[12px] capitalize",
-              tab === value
-                ? "border-foreground text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground",
-            )}
-            key={value}
-            onClick={() => setTab(value)}
-            type="button"
-          >
-            {value === "settings" ? <Gear className="size-3.5" /> : null}
-            {value}
-            {value === "runs" ? (
-              <Badge className="rounded-none text-[9px]" variant="secondary">
-                {taskRuns.length}
-              </Badge>
-            ) : null}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        className="flex min-h-0 flex-1 flex-col"
+        onValueChange={(value) => setTab(value as EditorTab)}
+        value={tab}
+      >
+        <TabsList className="h-10 shrink-0 justify-start gap-5 rounded-none border-b border-border bg-transparent px-3">
+          {(["editor", "runs", "settings"] as const).map((value) => (
+            <TabsTrigger
+              className={cn(
+                "h-full rounded-none border-b bg-transparent px-0 text-[12px] capitalize shadow-none data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none",
+                tab === value
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+              key={value}
+              value={value}
+            >
+              {value === "settings" ? <Gear className="size-3.5" /> : null}
+              {value}
+              {value === "runs" ? (
+                <Badge className="rounded-none text-[9px]" variant="secondary">
+                  {taskRuns.length}
+                </Badge>
+              ) : null}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {tab === "editor" ? (
-        <VisualWorkflowBuilder
-          aria-label={`${task.name} workflow editor`}
-          disabled={!editable}
-          onChange={setWorkflow}
-          value={workflow}
-        />
-      ) : tab === "runs" ? (
-        <div className="grid min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)]">
-          <ScrollArea className="min-h-0 border-r border-border">
-            {taskRuns.map((run) => (
-              <button
-                className={cn(
-                  "flex min-h-14 w-full items-center gap-3 border-b border-border px-3 text-left hover:bg-muted/35",
-                  selectedRun?.runId === run.runId && "bg-muted/50",
-                )}
-                key={run.id}
-                onClick={() => onSelectRun(run)}
-                type="button"
-              >
-                <StatusIcon status={run.status} />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[12px] font-medium">{run.status}</span>
-                  <span className="text-[11px] text-muted-foreground">
-                    {run.trigger} · {formatDate(run.createdAt)}
-                  </span>
-                </span>
-                <CaretRight className="size-4 text-muted-foreground" />
-              </button>
-            ))}
-            {taskRuns.length === 0 ? (
-              <p className="p-8 text-center text-xs text-muted-foreground">No runs yet.</p>
-            ) : null}
-          </ScrollArea>
-          <ScrollArea className="min-h-0">
-            <RunInspector
-              busy={busy}
-              events={events}
-              onCancel={onCancel}
-              onRetry={onRetry}
-              run={selectedRun}
-              taskExecutionTarget={task.executionTarget}
-            />
-          </ScrollArea>
-        </div>
-      ) : (
-        <ScrollArea className="min-h-0 flex-1">
-          <div className="mx-auto max-w-2xl space-y-7 px-6 py-7">
-            <div>
-              <h2 className="text-[15px] font-medium">Workflow settings</h2>
-              <p className="mt-1 text-[12px] text-muted-foreground">
-                Keep the operational details simple. The cloud runtime handles scheduling and
-                execution.
-              </p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="workflow-editor-name">Name</Label>
-              <Input
-                className="rounded-none"
-                disabled={!editable}
-                id="workflow-editor-name"
-                onChange={(event) => setName(event.target.value)}
-                value={name}
-              />
-            </div>
-            <div className="grid grid-cols-2 border border-border">
-              <div className="border-r border-border p-4">
-                <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-                  Starts
-                </p>
-                <p className="mt-2 text-[13px]">{scheduleLabel(task)}</p>
-              </div>
-              <div className="p-4">
-                <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-                  Next run
-                </p>
-                <p className="mt-2 text-[13px]">{formatDate(schedule?.nextDueAt)}</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between border-y border-border py-4">
-              <div>
-                <p className="text-[13px] font-medium">Run in Oppulence Cloud</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  Runs continue even when the desktop app is closed.
-                </p>
-              </div>
-              <Badge
-                className={cn(
-                  "rounded-none",
-                  statusTone(schedule?.health || task.scheduleSyncState),
-                )}
-                variant="outline"
-              >
-                <StatusIcon status={schedule?.health || task.scheduleSyncState} />{" "}
-                {schedule?.health || task.scheduleSyncState}
-              </Badge>
-            </div>
-            {task.systemManaged ? (
-              <p className="text-[11px] text-muted-foreground">
-                This workflow is maintained by Oppulence. You can pause it, inspect it, and run it
-                on demand.
-              </p>
-            ) : null}
-            {editable ? (
-              <div className="flex justify-end">
+        <TabsContent
+          className="min-h-0 flex-1 overflow-hidden data-[state=active]:flex"
+          value="editor"
+        >
+          <VisualWorkflowBuilder
+            aria-label={`${task.name} workflow editor`}
+            disabled={!editable}
+            onChange={setWorkflow}
+            value={workflow}
+          />
+        </TabsContent>
+        <TabsContent className="min-h-0 flex-1" value="runs">
+          <div className="grid min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)]">
+            <ScrollArea className="min-h-0 border-r border-border">
+              {taskRuns.map((run) => (
                 <Button
-                  className="rounded-none"
-                  disabled={!dirty || busy || !name.trim()}
-                  onClick={() => void save()}
+                  className={cn(
+                    "h-auto min-h-14 w-full justify-start gap-3 rounded-none border-b border-border px-3 text-left font-normal hover:bg-muted/35",
+                    selectedRun?.runId === run.runId && "bg-muted/50",
+                  )}
+                  key={run.id}
+                  onClick={() => onSelectRun(run)}
+                  type="button"
+                  variant="ghost"
                 >
-                  Save settings
+                  <StatusIcon status={run.status} />
+                  <div className="min-w-0 flex-1">
+                    <Label className="block truncate text-[12px] font-medium">{run.status}</Label>
+                    <CardDescription className="text-[11px]">
+                      {run.trigger} · {formatDate(run.createdAt)}
+                    </CardDescription>
+                  </div>
+                  <CaretRight className="size-4 text-muted-foreground" />
                 </Button>
-              </div>
-            ) : null}
+              ))}
+              {taskRuns.length === 0 ? (
+                <p className="p-8 text-center text-xs text-muted-foreground">No runs yet.</p>
+              ) : null}
+            </ScrollArea>
+            <ScrollArea className="min-h-0">
+              <RunInspector
+                busy={busy}
+                events={events}
+                onCancel={onCancel}
+                onRetry={onRetry}
+                run={selectedRun}
+                taskExecutionTarget={task.executionTarget}
+              />
+            </ScrollArea>
           </div>
-        </ScrollArea>
-      )}
+        </TabsContent>
+        <TabsContent className="min-h-0 flex-1" value="settings">
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="mx-auto max-w-2xl space-y-7 px-6 py-7">
+              <div>
+                <h2 className="text-[15px] font-medium">Workflow settings</h2>
+                <p className="mt-1 text-[12px] text-muted-foreground">
+                  Keep the operational details simple. The cloud runtime handles scheduling and
+                  execution.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="workflow-editor-name">Name</Label>
+                <Input
+                  className="rounded-none"
+                  disabled={!editable}
+                  id="workflow-editor-name"
+                  onChange={(event) => setName(event.target.value)}
+                  value={name}
+                />
+              </div>
+              <div className="grid grid-cols-2 border border-border">
+                <div className="border-r border-border p-4">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                    Starts
+                  </p>
+                  <p className="mt-2 text-[13px]">{scheduleLabel(task)}</p>
+                </div>
+                <div className="p-4">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                    Next run
+                  </p>
+                  <p className="mt-2 text-[13px]">{formatDate(schedule?.nextDueAt)}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between border-y border-border py-4">
+                <div>
+                  <p className="text-[13px] font-medium">Run in Oppulence Cloud</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Runs continue even when the desktop app is closed.
+                  </p>
+                </div>
+                <Badge
+                  className={cn(
+                    "rounded-none",
+                    statusTone(schedule?.health || task.scheduleSyncState),
+                  )}
+                  variant="outline"
+                >
+                  <StatusIcon status={schedule?.health || task.scheduleSyncState} />{" "}
+                  {schedule?.health || task.scheduleSyncState}
+                </Badge>
+              </div>
+              {task.systemManaged ? (
+                <p className="text-[11px] text-muted-foreground">
+                  This workflow is maintained by Oppulence. You can pause it, inspect it, and run it
+                  on demand.
+                </p>
+              ) : null}
+              {editable ? (
+                <div className="flex justify-end">
+                  <Button
+                    className="rounded-none"
+                    disabled={!dirty || busy || !name.trim()}
+                    onClick={() => void save()}
+                  >
+                    Save settings
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -1147,7 +1212,7 @@ export function CloudWorkflowsView({
   if (loading)
     return (
       <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
-        <CircleNotch className="size-4 animate-spin" /> Loading workflows
+        <Spinner className="size-4" /> Loading workflows
       </div>
     );
 

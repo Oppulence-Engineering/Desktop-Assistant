@@ -1000,7 +1000,7 @@ func Load() Config {
 		RevenueAutoScanInterval:      getdur("REVENUE_AUTO_SCAN_INTERVAL", time.Hour),
 		RevenueAutoScanMinInterval:   getdur("REVENUE_AUTO_SCAN_MIN_INTERVAL", 24*time.Hour),
 		RevenueAutoScanMaxPerCycle:   getint("REVENUE_AUTO_SCAN_MAX_PER_CYCLE", 200),
-		RevenueAutoScanLookbackDays:  getint("REVENUE_AUTO_SCAN_LOOKBACK_DAYS", 90),
+		RevenueAutoScanLookbackDays:  getint("REVENUE_AUTO_SCAN_LOOKBACK_DAYS", 180),
 		RevenueMailRetentionMonths:   getint("REVENUE_MAIL_RETENTION_MONTHS", 18),
 		MailBodyCacheTTLHours:        getint("MAIL_BODY_CACHE_TTL_HOURS", 72),
 		RevenueSemanticMemoryEnabled: getbool("REVENUE_SEMANTIC_MEMORY_ENABLED", false),

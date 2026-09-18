@@ -65,6 +65,7 @@ func Enrich(spec obj) {
 		obj{"name": "Webhooks", "description": "Shared-secret webhooks from OAuth infrastructure."},
 		obj{"name": "Relationship Intelligence", "description": "Living relationship state, append-only evidence, deterministic projections, corrections, source health, and governed recommendations (RFC 036)."},
 		obj{"name": "Revenue", "description": "Revenue Action Queue: relationships, evidence-backed actions, OutboundConsole policy preflight, approval, and governed execution (RFC 030)."},
+		obj{"name": "Console", "description": "Authenticated cross-device preferences and caller-owned workspace console artifacts."},
 		obj{"name": "Entities", "description": "Org-scoped minimal entity identity spine (RFC 022)."},
 		obj{"name": "Internal", "description": "Server-to-server APIs. Most use X-Internal-Secret; connector invalidation uses individually scoped HMAC/JWT service principals."},
 		obj{"name": "GraphQL", "description": "Internal admin GraphQL over the ent graph."},
@@ -80,11 +81,13 @@ func Enrich(spec obj) {
 	addEntitySchemas(schemas)
 	addVoiceCloudSchemas(schemas)
 	addRevenueSchemas(schemas)
+	addConsoleSchemas(schemas)
 	enrichEntitySchemas(schemas)
 	restoreRevenueSchemaOverrides(schemas)
 
 	paths := obj{}
 	addRuntimePaths(paths)
+	addConsolePaths(paths)
 	addEntityPaths(paths)
 	spec["paths"] = paths
 }

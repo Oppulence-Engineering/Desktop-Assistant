@@ -113,7 +113,7 @@ describe("CommitmentQueue", () => {
     expect(component).toHaveTextContent("I will send the signed security packet by Friday.");
     expect(component).toHaveTextContent("Due within 72h");
     expect(screen.getByText("At risk")).toHaveClass("border-amber-500/40");
-    expect(screen.getByRole("button", { name: /Run 90-day Promise Leak Audit/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Run 6-month Promise Leak Audit/ })).toBeEnabled();
     expect(screen.getByRole("button", { name: /Connect Gmail & Calendar/ })).toBeEnabled();
   });
 
@@ -255,7 +255,7 @@ describe("when the register is empty for a reason", () => {
     expect(reconnect).toHaveLength(2);
     for (const button of reconnect) expect(button).toBeEnabled();
     expect(
-      screen.queryByRole("button", { name: /Run 90-day Promise Leak Audit/ }),
+      screen.queryByRole("button", { name: /Run 6-month Promise Leak Audit/ }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /Connect Gmail & Calendar/ }),
@@ -285,7 +285,7 @@ describe("when the register is empty for a reason", () => {
   it("says it is still reading while a scan runs", () => {
     render(<CommitmentQueue {...props({ entries: [], scanning: true })} />);
 
-    expect(screen.getByText("Reading your last 90 days")).toBeInTheDocument();
+    expect(screen.getByText("Reading your last 6 months")).toBeInTheDocument();
     expect(screen.queryByText(/No explicit promises were found/)).not.toBeInTheDocument();
   });
 });

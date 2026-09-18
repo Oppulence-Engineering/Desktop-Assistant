@@ -1,20 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import type { ConnectionStartRequest } from "@/lib/api/generated/client/model";
-import { clearAuthCookies, setSessionCookie } from "@/lib/auth/cookies";
+import { parseRouteParams } from "@/lib/api/routes/parse";
+import {
+  ConnectorRouteParamsSchema,
+  ConnectorStartFormSchema,
+} from "@/lib/api/routes/schemas/connectors";
+import { startHostedConnector } from "@/lib/bff/connectors/hosted-oauth";
+import { isSameOriginBrowserRequest } from "@/lib/bff/same-origin-request";
+import { clearAuthCookies } from "@/lib/auth/cookies";
 import { publicOrigin } from "@/lib/auth/origin";
-import { getAuthorizedSession } from "@/lib/auth/proxy";
+import {
+  applyAuthorizedSessionCookies,
+  getAuthorizedSession,
+  type AuthorizedSessionResult,
+} from "@/lib/auth/proxy";
 import {
   connectorSettingsURL,
   HOSTED_CONNECTOR_CALLBACK_PATH,
-  isConnectorSlug,
   safeAuthorizationURL,
   startOutcome,
   type HostedOAuthOutcome,
 } from "@/lib/connectors/hosted-oauth";
-import { startHostedConnector } from "@/lib/bff/connectors/hosted-oauth";
 
 type RouteContext = { params: Promise<{ name: string }> };
+type AuthorizedSession = Extract<AuthorizedSessionResult, { ok: true }>;
 
 function expectsJSON(request: NextRequest): boolean {
   return request.headers.get("accept")?.includes("application/json") ?? false;
@@ -41,6 +51,19 @@ function outcomeResponse(
   return NextResponse.redirect(connectorSettingsURL(origin, outcome, connector), 303);
 }
 
+function finishOutcome(
+  request: NextRequest,
+  origin: string,
+  auth: AuthorizedSession,
+  outcome: HostedOAuthOutcome,
+  connector?: string,
+  upstreamStatus?: number,
+): NextResponse {
+  const response = outcomeResponse(request, origin, outcome, connector);
+  applyAuthorizedSessionCookies(response, auth, upstreamStatus);
+  return response;
+}
+
 function signInResponse(request: NextRequest): NextResponse {
   const url = new URL("/api/auth/workos/login", publicOrigin(request));
   url.searchParams.set("return_to", "/app/settings?settings=connections");
@@ -51,67 +74,71 @@ function signInResponse(request: NextRequest): NextResponse {
   return response;
 }
 
-function requestedScopes(form: FormData): string[] | null {
-  const scopes = form
-    .getAll("requested_scope")
-    .filter((value): value is string => typeof value === "string")
-    .map((value) => value.trim());
-  if (scopes.some((scope) => !scope || scope.length > 200) || scopes.length > 64) return null;
-  return [...new Set(scopes)];
+function requireConnectorAuth(
+  request: NextRequest,
+  auth: AuthorizedSessionResult,
+): AuthorizedSession | NextResponse {
+  if (auth.ok) return auth;
+  if (auth.response.status === 503) return auth.response;
+  return signInResponse(request);
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
   const origin = publicOrigin(request);
-  const requestOrigin = request.headers.get("origin");
-  if (requestOrigin && requestOrigin !== origin) {
+  if (!isSameOriginBrowserRequest(request, origin)) {
     return outcomeResponse(request, origin, "error");
   }
 
-  const { name } = await context.params;
-  if (!isConnectorSlug(name)) {
+  const routeParams = parseRouteParams(await context.params, ConnectorRouteParamsSchema);
+  if (!routeParams.success) {
     return outcomeResponse(request, origin, "error");
   }
+  const { name } = routeParams.data;
 
-  const auth = await getAuthorizedSession(request);
-  if (!auth.ok) return signInResponse(request);
+  const authResult = await getAuthorizedSession(request);
+  const authOrResponse = requireConnectorAuth(request, authResult);
+  if (!("session" in authOrResponse)) return authOrResponse;
+  const auth = authOrResponse;
 
   let form: FormData;
   try {
     form = await request.formData();
   } catch {
-    return outcomeResponse(request, origin, "error", name);
+    return finishOutcome(request, origin, auth, "error", name);
   }
-  const scopes = requestedScopes(form);
-  if (!scopes) {
-    return outcomeResponse(request, origin, "scope", name);
+
+  const formParsed = ConnectorStartFormSchema.safeParse({
+    requested_scope: form
+      .getAll("requested_scope")
+      .filter((value): value is string => typeof value === "string"),
+  });
+  if (!formParsed.success) {
+    return finishOutcome(request, origin, auth, "scope", name);
   }
 
   const startRequest: ConnectionStartRequest = {
     redirectTarget: new URL(HOSTED_CONNECTOR_CALLBACK_PATH, origin).toString(),
-    requestedScopes: scopes,
+    requestedScopes: formParsed.data.requested_scope,
   };
 
   try {
     const result = await startHostedConnector(name, startRequest, auth.session, request.signal);
     if (result.status !== 200) {
-      const response = outcomeResponse(request, origin, startOutcome(result), name);
-      if (result.status === 401) clearAuthCookies(response);
-      else if (auth.refreshed) setSessionCookie(response, auth.refreshed);
-      return response;
+      return finishOutcome(request, origin, auth, startOutcome(result), name, result.status);
     }
 
     const authorizationURL = safeAuthorizationURL(
       result.data.authorization_url || result.data.authorize_url,
     );
     if (!authorizationURL) {
-      return outcomeResponse(request, origin, "error", name);
+      return finishOutcome(request, origin, auth, "error", name);
     }
     const response = expectsJSON(request)
       ? NextResponse.json({ authorizationUrl: authorizationURL.toString() })
       : NextResponse.redirect(authorizationURL, 303);
-    if (auth.refreshed) setSessionCookie(response, auth.refreshed);
+    applyAuthorizedSessionCookies(response, auth);
     return response;
   } catch {
-    return outcomeResponse(request, origin, "error", name);
+    return finishOutcome(request, origin, auth, "error", name);
   }
 }

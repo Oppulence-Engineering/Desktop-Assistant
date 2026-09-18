@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const port = 4317;
+const authFile = "e2e/.auth/session.json";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -12,7 +13,20 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${port}`,
     trace: "on-first-retry",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+      testIgnore: [/auth\.setup\.ts/, /smoke\.spec\.ts/],
+    },
+    {
+      name: "chromium-authenticated",
+      use: { ...devices["Desktop Chrome"], storageState: authFile },
+      testMatch: /smoke\.spec\.ts/,
+      dependencies: ["setup"],
+    },
+  ],
   webServer: [
     {
       command: "node e2e/fake-rowboat-api.mjs",

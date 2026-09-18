@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { MarketingSpan } from "./marketing-primitives";
 import { cn } from "@/lib/utils";
 
 type RelationshipView = "observe" | "model" | "prioritize" | "act";
@@ -143,7 +144,7 @@ export function RelationshipSystemSection() {
         <div className="relationship-pillar-grid">
           {relationshipPillars.map((pillar, index) => (
             <article className="relationship-pillar" key={pillar.title}>
-              <span className="relationship-pillar-index">0{index + 1}</span>
+              <MarketingSpan className="relationship-pillar-index">0{index + 1}</MarketingSpan>
               <Image
                 alt=""
                 aria-hidden="true"
@@ -178,7 +179,7 @@ export function RelationshipSystemSection() {
               </figure>
             </div>
             <div className="relationship-deep-dive-copy">
-              <span className="relationship-deep-dive-number">0{index + 1}</span>
+              <MarketingSpan className="relationship-deep-dive-number">0{index + 1}</MarketingSpan>
               <p className="linear-eyebrow">[{section.eyebrow.toLowerCase()}]</p>
               <h3>{section.title}</h3>
               <p>{section.body}</p>
@@ -188,7 +189,8 @@ export function RelationshipSystemSection() {
                 ))}
               </ul>
               <Link href="/product">
-                See how {section.eyebrow.toLowerCase()} works <span aria-hidden="true">→</span>
+                See how {section.eyebrow.toLowerCase()} works{" "}
+                <MarketingSpan aria-hidden="true">→</MarketingSpan>
               </Link>
             </div>
           </article>

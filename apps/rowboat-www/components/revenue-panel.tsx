@@ -2,16 +2,17 @@
 
 import * as React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkle, WarningCircle } from "@phosphor-icons/react";
+import { Sparkle, WarningCircle } from "@/lib/icons";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
-import { googleNeedsReconnect, type RevenueTab } from "@/components/app-shell";
+import type { RevenueTab } from "@/components/app-shell";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import {
   appendCommitmentTransition,
   downloadMarkdown,
   friendlyRevenueError,
   getRelationshipGraph,
+  googleNeedsReconnect,
   getScan,
   getCommitmentRecordMarkdown,
   getWorkspace,
@@ -19,6 +20,7 @@ import {
   listCommitments,
   listRelationshipSources,
   listRelationshipSourceStatuses,
+  REVENUE_EVIDENCE_LOOKBACK_DAYS,
   RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
   RevenueAPIError,
   runCommitmentRecovery,
@@ -203,7 +205,7 @@ export function RevenuePanel({
     setScanning(true);
     capture(RevenueEvents.ScanStarted);
     try {
-      const s = await startScan(90);
+      const s = await startScan(REVENUE_EVIDENCE_LOOKBACK_DAYS);
       setActiveScan(s);
       setScans((prev) => [s, ...prev.filter((p) => p.id !== s.id)]);
     } catch (e) {
@@ -366,15 +368,13 @@ export function RevenuePanel({
             onScan={runScan}
           />
         ) : (
-          <div className="p-4">
-            <WorkspaceView
-              workspace={workspace}
-              onLinked={setWorkspace}
-              onError={setBanner}
-              onNotice={setNoticeMsg}
-              onOpenConnectors={onOpenConnectors}
-            />
-          </div>
+          <WorkspaceView
+            onError={setBanner}
+            onLinked={setWorkspace}
+            onNotice={setNoticeMsg}
+            onOpenConnectors={onOpenConnectors}
+            workspace={workspace}
+          />
         )}
       </div>
     </div>

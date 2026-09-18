@@ -32,7 +32,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -78,6 +84,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -133,6 +140,12 @@ type UserQuery struct {
 	withMailMessageMetas                        *MailMessageMetaQuery
 	withMailBodyCaches                          *MailBodyCacheQuery
 	withMailSignals                             *MailSignalQuery
+	withOwnedCommunicationInteractions          *CommunicationInteractionQuery
+	withCommunicationSyncCursors                *CommunicationSyncCursorQuery
+	withCommunicationPrivacyPolicies            *CommunicationPrivacyPolicyQuery
+	withCommunicationPrivacyRules               *CommunicationPrivacyRuleQuery
+	withOwnedCommunicationShareGrants           *CommunicationShareGrantQuery
+	withReceivedCommunicationShareGrants        *CommunicationShareGrantQuery
 	withRelationshipParticipants                *RelationshipParticipantQuery
 	withRelationshipIdentities                  *RelationshipIdentityQuery
 	withRelationshipPersons                     *PersonQuery
@@ -158,6 +171,8 @@ type UserQuery struct {
 	withEntityIdentifiers                       *EntityIdentifierQuery
 	withActionProposals                         *ActionProposalQuery
 	withApprovalTokens                          *ApprovalTokenQuery
+	withUserPreferences                         *UserPreferenceQuery
+	withConsoleResources                        *ConsoleResourceQuery
 	modifiers                                   []func(*sql.Selector)
 	loadTotal                                   []func(context.Context, []*User) error
 	withNamedLedgerEntries                      map[string]*CreditLedgerQuery
@@ -201,6 +216,12 @@ type UserQuery struct {
 	withNamedMailMessageMetas                   map[string]*MailMessageMetaQuery
 	withNamedMailBodyCaches                     map[string]*MailBodyCacheQuery
 	withNamedMailSignals                        map[string]*MailSignalQuery
+	withNamedOwnedCommunicationInteractions     map[string]*CommunicationInteractionQuery
+	withNamedCommunicationSyncCursors           map[string]*CommunicationSyncCursorQuery
+	withNamedCommunicationPrivacyPolicies       map[string]*CommunicationPrivacyPolicyQuery
+	withNamedCommunicationPrivacyRules          map[string]*CommunicationPrivacyRuleQuery
+	withNamedOwnedCommunicationShareGrants      map[string]*CommunicationShareGrantQuery
+	withNamedReceivedCommunicationShareGrants   map[string]*CommunicationShareGrantQuery
 	withNamedRelationshipParticipants           map[string]*RelationshipParticipantQuery
 	withNamedRelationshipIdentities             map[string]*RelationshipIdentityQuery
 	withNamedRelationshipPersons                map[string]*PersonQuery
@@ -226,6 +247,8 @@ type UserQuery struct {
 	withNamedEntityIdentifiers                  map[string]*EntityIdentifierQuery
 	withNamedActionProposals                    map[string]*ActionProposalQuery
 	withNamedApprovalTokens                     map[string]*ApprovalTokenQuery
+	withNamedUserPreferences                    map[string]*UserPreferenceQuery
+	withNamedConsoleResources                   map[string]*ConsoleResourceQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -1186,6 +1209,138 @@ func (_q *UserQuery) QueryMailSignals() *MailSignalQuery {
 	return query
 }
 
+// QueryOwnedCommunicationInteractions chains the current query on the "owned_communication_interactions" edge.
+func (_q *UserQuery) QueryOwnedCommunicationInteractions() *CommunicationInteractionQuery {
+	query := (&CommunicationInteractionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(communicationinteraction.Table, communicationinteraction.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OwnedCommunicationInteractionsTable, user.OwnedCommunicationInteractionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommunicationSyncCursors chains the current query on the "communication_sync_cursors" edge.
+func (_q *UserQuery) QueryCommunicationSyncCursors() *CommunicationSyncCursorQuery {
+	query := (&CommunicationSyncCursorClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(communicationsynccursor.Table, communicationsynccursor.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommunicationSyncCursorsTable, user.CommunicationSyncCursorsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommunicationPrivacyPolicies chains the current query on the "communication_privacy_policies" edge.
+func (_q *UserQuery) QueryCommunicationPrivacyPolicies() *CommunicationPrivacyPolicyQuery {
+	query := (&CommunicationPrivacyPolicyClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(communicationprivacypolicy.Table, communicationprivacypolicy.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommunicationPrivacyPoliciesTable, user.CommunicationPrivacyPoliciesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCommunicationPrivacyRules chains the current query on the "communication_privacy_rules" edge.
+func (_q *UserQuery) QueryCommunicationPrivacyRules() *CommunicationPrivacyRuleQuery {
+	query := (&CommunicationPrivacyRuleClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(communicationprivacyrule.Table, communicationprivacyrule.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.CommunicationPrivacyRulesTable, user.CommunicationPrivacyRulesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOwnedCommunicationShareGrants chains the current query on the "owned_communication_share_grants" edge.
+func (_q *UserQuery) QueryOwnedCommunicationShareGrants() *CommunicationShareGrantQuery {
+	query := (&CommunicationShareGrantClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(communicationsharegrant.Table, communicationsharegrant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OwnedCommunicationShareGrantsTable, user.OwnedCommunicationShareGrantsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryReceivedCommunicationShareGrants chains the current query on the "received_communication_share_grants" edge.
+func (_q *UserQuery) QueryReceivedCommunicationShareGrants() *CommunicationShareGrantQuery {
+	query := (&CommunicationShareGrantClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(communicationsharegrant.Table, communicationsharegrant.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ReceivedCommunicationShareGrantsTable, user.ReceivedCommunicationShareGrantsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryRelationshipParticipants chains the current query on the "relationship_participants" edge.
 func (_q *UserQuery) QueryRelationshipParticipants() *RelationshipParticipantQuery {
 	query := (&RelationshipParticipantClient{config: _q.config}).Query()
@@ -1736,6 +1891,50 @@ func (_q *UserQuery) QueryApprovalTokens() *ApprovalTokenQuery {
 	return query
 }
 
+// QueryUserPreferences chains the current query on the "user_preferences" edge.
+func (_q *UserQuery) QueryUserPreferences() *UserPreferenceQuery {
+	query := (&UserPreferenceClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(userpreference.Table, userpreference.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.UserPreferencesTable, user.UserPreferencesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryConsoleResources chains the current query on the "console_resources" edge.
+func (_q *UserQuery) QueryConsoleResources() *ConsoleResourceQuery {
+	query := (&ConsoleResourceClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(consoleresource.Table, consoleresource.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.ConsoleResourcesTable, user.ConsoleResourcesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // First returns the first User entity from the query.
 // Returns a *NotFoundError when no User was found.
 func (_q *UserQuery) First(ctx context.Context) (*User, error) {
@@ -1970,6 +2169,12 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withMailMessageMetas:                   _q.withMailMessageMetas.Clone(),
 		withMailBodyCaches:                     _q.withMailBodyCaches.Clone(),
 		withMailSignals:                        _q.withMailSignals.Clone(),
+		withOwnedCommunicationInteractions:     _q.withOwnedCommunicationInteractions.Clone(),
+		withCommunicationSyncCursors:           _q.withCommunicationSyncCursors.Clone(),
+		withCommunicationPrivacyPolicies:       _q.withCommunicationPrivacyPolicies.Clone(),
+		withCommunicationPrivacyRules:          _q.withCommunicationPrivacyRules.Clone(),
+		withOwnedCommunicationShareGrants:      _q.withOwnedCommunicationShareGrants.Clone(),
+		withReceivedCommunicationShareGrants:   _q.withReceivedCommunicationShareGrants.Clone(),
 		withRelationshipParticipants:           _q.withRelationshipParticipants.Clone(),
 		withRelationshipIdentities:             _q.withRelationshipIdentities.Clone(),
 		withRelationshipPersons:                _q.withRelationshipPersons.Clone(),
@@ -1995,6 +2200,8 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withEntityIdentifiers:                  _q.withEntityIdentifiers.Clone(),
 		withActionProposals:                    _q.withActionProposals.Clone(),
 		withApprovalTokens:                     _q.withApprovalTokens.Clone(),
+		withUserPreferences:                    _q.withUserPreferences.Clone(),
+		withConsoleResources:                   _q.withConsoleResources.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -2463,6 +2670,72 @@ func (_q *UserQuery) WithMailSignals(opts ...func(*MailSignalQuery)) *UserQuery 
 	return _q
 }
 
+// WithOwnedCommunicationInteractions tells the query-builder to eager-load the nodes that are connected to
+// the "owned_communication_interactions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithOwnedCommunicationInteractions(opts ...func(*CommunicationInteractionQuery)) *UserQuery {
+	query := (&CommunicationInteractionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withOwnedCommunicationInteractions = query
+	return _q
+}
+
+// WithCommunicationSyncCursors tells the query-builder to eager-load the nodes that are connected to
+// the "communication_sync_cursors" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithCommunicationSyncCursors(opts ...func(*CommunicationSyncCursorQuery)) *UserQuery {
+	query := (&CommunicationSyncCursorClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommunicationSyncCursors = query
+	return _q
+}
+
+// WithCommunicationPrivacyPolicies tells the query-builder to eager-load the nodes that are connected to
+// the "communication_privacy_policies" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithCommunicationPrivacyPolicies(opts ...func(*CommunicationPrivacyPolicyQuery)) *UserQuery {
+	query := (&CommunicationPrivacyPolicyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommunicationPrivacyPolicies = query
+	return _q
+}
+
+// WithCommunicationPrivacyRules tells the query-builder to eager-load the nodes that are connected to
+// the "communication_privacy_rules" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithCommunicationPrivacyRules(opts ...func(*CommunicationPrivacyRuleQuery)) *UserQuery {
+	query := (&CommunicationPrivacyRuleClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCommunicationPrivacyRules = query
+	return _q
+}
+
+// WithOwnedCommunicationShareGrants tells the query-builder to eager-load the nodes that are connected to
+// the "owned_communication_share_grants" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithOwnedCommunicationShareGrants(opts ...func(*CommunicationShareGrantQuery)) *UserQuery {
+	query := (&CommunicationShareGrantClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withOwnedCommunicationShareGrants = query
+	return _q
+}
+
+// WithReceivedCommunicationShareGrants tells the query-builder to eager-load the nodes that are connected to
+// the "received_communication_share_grants" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithReceivedCommunicationShareGrants(opts ...func(*CommunicationShareGrantQuery)) *UserQuery {
+	query := (&CommunicationShareGrantClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withReceivedCommunicationShareGrants = query
+	return _q
+}
+
 // WithRelationshipParticipants tells the query-builder to eager-load the nodes that are connected to
 // the "relationship_participants" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithRelationshipParticipants(opts ...func(*RelationshipParticipantQuery)) *UserQuery {
@@ -2738,6 +3011,28 @@ func (_q *UserQuery) WithApprovalTokens(opts ...func(*ApprovalTokenQuery)) *User
 	return _q
 }
 
+// WithUserPreferences tells the query-builder to eager-load the nodes that are connected to
+// the "user_preferences" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithUserPreferences(opts ...func(*UserPreferenceQuery)) *UserQuery {
+	query := (&UserPreferenceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withUserPreferences = query
+	return _q
+}
+
+// WithConsoleResources tells the query-builder to eager-load the nodes that are connected to
+// the "console_resources" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithConsoleResources(opts ...func(*ConsoleResourceQuery)) *UserQuery {
+	query := (&ConsoleResourceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withConsoleResources = query
+	return _q
+}
+
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
@@ -2816,7 +3111,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [67]bool{
+		loadedTypes = [75]bool{
 			_q.withSubscription != nil,
 			_q.withLedgerEntries != nil,
 			_q.withMeetingMinuteUsages != nil,
@@ -2859,6 +3154,12 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withMailMessageMetas != nil,
 			_q.withMailBodyCaches != nil,
 			_q.withMailSignals != nil,
+			_q.withOwnedCommunicationInteractions != nil,
+			_q.withCommunicationSyncCursors != nil,
+			_q.withCommunicationPrivacyPolicies != nil,
+			_q.withCommunicationPrivacyRules != nil,
+			_q.withOwnedCommunicationShareGrants != nil,
+			_q.withReceivedCommunicationShareGrants != nil,
 			_q.withRelationshipParticipants != nil,
 			_q.withRelationshipIdentities != nil,
 			_q.withRelationshipPersons != nil,
@@ -2884,6 +3185,8 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withEntityIdentifiers != nil,
 			_q.withActionProposals != nil,
 			_q.withApprovalTokens != nil,
+			_q.withUserPreferences != nil,
+			_q.withConsoleResources != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -3228,6 +3531,60 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	if query := _q.withOwnedCommunicationInteractions; query != nil {
+		if err := _q.loadOwnedCommunicationInteractions(ctx, query, nodes,
+			func(n *User) { n.Edges.OwnedCommunicationInteractions = []*CommunicationInteraction{} },
+			func(n *User, e *CommunicationInteraction) {
+				n.Edges.OwnedCommunicationInteractions = append(n.Edges.OwnedCommunicationInteractions, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCommunicationSyncCursors; query != nil {
+		if err := _q.loadCommunicationSyncCursors(ctx, query, nodes,
+			func(n *User) { n.Edges.CommunicationSyncCursors = []*CommunicationSyncCursor{} },
+			func(n *User, e *CommunicationSyncCursor) {
+				n.Edges.CommunicationSyncCursors = append(n.Edges.CommunicationSyncCursors, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCommunicationPrivacyPolicies; query != nil {
+		if err := _q.loadCommunicationPrivacyPolicies(ctx, query, nodes,
+			func(n *User) { n.Edges.CommunicationPrivacyPolicies = []*CommunicationPrivacyPolicy{} },
+			func(n *User, e *CommunicationPrivacyPolicy) {
+				n.Edges.CommunicationPrivacyPolicies = append(n.Edges.CommunicationPrivacyPolicies, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCommunicationPrivacyRules; query != nil {
+		if err := _q.loadCommunicationPrivacyRules(ctx, query, nodes,
+			func(n *User) { n.Edges.CommunicationPrivacyRules = []*CommunicationPrivacyRule{} },
+			func(n *User, e *CommunicationPrivacyRule) {
+				n.Edges.CommunicationPrivacyRules = append(n.Edges.CommunicationPrivacyRules, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withOwnedCommunicationShareGrants; query != nil {
+		if err := _q.loadOwnedCommunicationShareGrants(ctx, query, nodes,
+			func(n *User) { n.Edges.OwnedCommunicationShareGrants = []*CommunicationShareGrant{} },
+			func(n *User, e *CommunicationShareGrant) {
+				n.Edges.OwnedCommunicationShareGrants = append(n.Edges.OwnedCommunicationShareGrants, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withReceivedCommunicationShareGrants; query != nil {
+		if err := _q.loadReceivedCommunicationShareGrants(ctx, query, nodes,
+			func(n *User) { n.Edges.ReceivedCommunicationShareGrants = []*CommunicationShareGrant{} },
+			func(n *User, e *CommunicationShareGrant) {
+				n.Edges.ReceivedCommunicationShareGrants = append(n.Edges.ReceivedCommunicationShareGrants, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withRelationshipParticipants; query != nil {
 		if err := _q.loadRelationshipParticipants(ctx, query, nodes,
 			func(n *User) { n.Edges.RelationshipParticipants = []*RelationshipParticipant{} },
@@ -3436,6 +3793,20 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadApprovalTokens(ctx, query, nodes,
 			func(n *User) { n.Edges.ApprovalTokens = []*ApprovalToken{} },
 			func(n *User, e *ApprovalToken) { n.Edges.ApprovalTokens = append(n.Edges.ApprovalTokens, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withUserPreferences; query != nil {
+		if err := _q.loadUserPreferences(ctx, query, nodes,
+			func(n *User) { n.Edges.UserPreferences = []*UserPreference{} },
+			func(n *User, e *UserPreference) { n.Edges.UserPreferences = append(n.Edges.UserPreferences, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withConsoleResources; query != nil {
+		if err := _q.loadConsoleResources(ctx, query, nodes,
+			func(n *User) { n.Edges.ConsoleResources = []*ConsoleResource{} },
+			func(n *User, e *ConsoleResource) { n.Edges.ConsoleResources = append(n.Edges.ConsoleResources, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -3728,6 +4099,48 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			return nil, err
 		}
 	}
+	for name, query := range _q.withNamedOwnedCommunicationInteractions {
+		if err := _q.loadOwnedCommunicationInteractions(ctx, query, nodes,
+			func(n *User) { n.appendNamedOwnedCommunicationInteractions(name) },
+			func(n *User, e *CommunicationInteraction) { n.appendNamedOwnedCommunicationInteractions(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCommunicationSyncCursors {
+		if err := _q.loadCommunicationSyncCursors(ctx, query, nodes,
+			func(n *User) { n.appendNamedCommunicationSyncCursors(name) },
+			func(n *User, e *CommunicationSyncCursor) { n.appendNamedCommunicationSyncCursors(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCommunicationPrivacyPolicies {
+		if err := _q.loadCommunicationPrivacyPolicies(ctx, query, nodes,
+			func(n *User) { n.appendNamedCommunicationPrivacyPolicies(name) },
+			func(n *User, e *CommunicationPrivacyPolicy) { n.appendNamedCommunicationPrivacyPolicies(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedCommunicationPrivacyRules {
+		if err := _q.loadCommunicationPrivacyRules(ctx, query, nodes,
+			func(n *User) { n.appendNamedCommunicationPrivacyRules(name) },
+			func(n *User, e *CommunicationPrivacyRule) { n.appendNamedCommunicationPrivacyRules(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedOwnedCommunicationShareGrants {
+		if err := _q.loadOwnedCommunicationShareGrants(ctx, query, nodes,
+			func(n *User) { n.appendNamedOwnedCommunicationShareGrants(name) },
+			func(n *User, e *CommunicationShareGrant) { n.appendNamedOwnedCommunicationShareGrants(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedReceivedCommunicationShareGrants {
+		if err := _q.loadReceivedCommunicationShareGrants(ctx, query, nodes,
+			func(n *User) { n.appendNamedReceivedCommunicationShareGrants(name) },
+			func(n *User, e *CommunicationShareGrant) { n.appendNamedReceivedCommunicationShareGrants(name, e) }); err != nil {
+			return nil, err
+		}
+	}
 	for name, query := range _q.withNamedRelationshipParticipants {
 		if err := _q.loadRelationshipParticipants(ctx, query, nodes,
 			func(n *User) { n.appendNamedRelationshipParticipants(name) },
@@ -3902,6 +4315,20 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadApprovalTokens(ctx, query, nodes,
 			func(n *User) { n.appendNamedApprovalTokens(name) },
 			func(n *User, e *ApprovalToken) { n.appendNamedApprovalTokens(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedUserPreferences {
+		if err := _q.loadUserPreferences(ctx, query, nodes,
+			func(n *User) { n.appendNamedUserPreferences(name) },
+			func(n *User, e *UserPreference) { n.appendNamedUserPreferences(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range _q.withNamedConsoleResources {
+		if err := _q.loadConsoleResources(ctx, query, nodes,
+			func(n *User) { n.appendNamedConsoleResources(name) },
+			func(n *User, e *ConsoleResource) { n.appendNamedConsoleResources(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -5212,6 +5639,192 @@ func (_q *UserQuery) loadMailSignals(ctx context.Context, query *MailSignalQuery
 	}
 	return nil
 }
+func (_q *UserQuery) loadOwnedCommunicationInteractions(ctx context.Context, query *CommunicationInteractionQuery, nodes []*User, init func(*User), assign func(*User, *CommunicationInteraction)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationInteraction(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.OwnedCommunicationInteractionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_owned_communication_interactions
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_owned_communication_interactions" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_owned_communication_interactions" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadCommunicationSyncCursors(ctx context.Context, query *CommunicationSyncCursorQuery, nodes []*User, init func(*User), assign func(*User, *CommunicationSyncCursor)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationSyncCursor(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.CommunicationSyncCursorsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_communication_sync_cursors
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_communication_sync_cursors" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_communication_sync_cursors" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadCommunicationPrivacyPolicies(ctx context.Context, query *CommunicationPrivacyPolicyQuery, nodes []*User, init func(*User), assign func(*User, *CommunicationPrivacyPolicy)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationPrivacyPolicy(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.CommunicationPrivacyPoliciesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_communication_privacy_policies
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_communication_privacy_policies" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_communication_privacy_policies" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadCommunicationPrivacyRules(ctx context.Context, query *CommunicationPrivacyRuleQuery, nodes []*User, init func(*User), assign func(*User, *CommunicationPrivacyRule)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationPrivacyRule(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.CommunicationPrivacyRulesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_communication_privacy_rules
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_communication_privacy_rules" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_communication_privacy_rules" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadOwnedCommunicationShareGrants(ctx context.Context, query *CommunicationShareGrantQuery, nodes []*User, init func(*User), assign func(*User, *CommunicationShareGrant)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationShareGrant(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.OwnedCommunicationShareGrantsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_owned_communication_share_grants
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_owned_communication_share_grants" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_owned_communication_share_grants" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadReceivedCommunicationShareGrants(ctx context.Context, query *CommunicationShareGrantQuery, nodes []*User, init func(*User), assign func(*User, *CommunicationShareGrant)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.CommunicationShareGrant(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ReceivedCommunicationShareGrantsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_received_communication_share_grants
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_received_communication_share_grants" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_received_communication_share_grants" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *UserQuery) loadRelationshipParticipants(ctx context.Context, query *RelationshipParticipantQuery, nodes []*User, init func(*User), assign func(*User, *RelationshipParticipant)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*User)
@@ -5987,6 +6600,68 @@ func (_q *UserQuery) loadApprovalTokens(ctx context.Context, query *ApprovalToke
 	}
 	return nil
 }
+func (_q *UserQuery) loadUserPreferences(ctx context.Context, query *UserPreferenceQuery, nodes []*User, init func(*User), assign func(*User, *UserPreference)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.UserPreference(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.UserPreferencesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_user_preferences
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_user_preferences" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_user_preferences" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadConsoleResources(ctx context.Context, query *ConsoleResourceQuery, nodes []*User, init func(*User), assign func(*User, *ConsoleResource)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.ConsoleResource(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.ConsoleResourcesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_console_resources
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_console_resources" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_console_resources" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (_q *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -6646,6 +7321,90 @@ func (_q *UserQuery) WithNamedMailSignals(name string, opts ...func(*MailSignalQ
 	return _q
 }
 
+// WithNamedOwnedCommunicationInteractions tells the query-builder to eager-load the nodes that are connected to the "owned_communication_interactions"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedOwnedCommunicationInteractions(name string, opts ...func(*CommunicationInteractionQuery)) *UserQuery {
+	query := (&CommunicationInteractionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedOwnedCommunicationInteractions == nil {
+		_q.withNamedOwnedCommunicationInteractions = make(map[string]*CommunicationInteractionQuery)
+	}
+	_q.withNamedOwnedCommunicationInteractions[name] = query
+	return _q
+}
+
+// WithNamedCommunicationSyncCursors tells the query-builder to eager-load the nodes that are connected to the "communication_sync_cursors"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedCommunicationSyncCursors(name string, opts ...func(*CommunicationSyncCursorQuery)) *UserQuery {
+	query := (&CommunicationSyncCursorClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommunicationSyncCursors == nil {
+		_q.withNamedCommunicationSyncCursors = make(map[string]*CommunicationSyncCursorQuery)
+	}
+	_q.withNamedCommunicationSyncCursors[name] = query
+	return _q
+}
+
+// WithNamedCommunicationPrivacyPolicies tells the query-builder to eager-load the nodes that are connected to the "communication_privacy_policies"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedCommunicationPrivacyPolicies(name string, opts ...func(*CommunicationPrivacyPolicyQuery)) *UserQuery {
+	query := (&CommunicationPrivacyPolicyClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommunicationPrivacyPolicies == nil {
+		_q.withNamedCommunicationPrivacyPolicies = make(map[string]*CommunicationPrivacyPolicyQuery)
+	}
+	_q.withNamedCommunicationPrivacyPolicies[name] = query
+	return _q
+}
+
+// WithNamedCommunicationPrivacyRules tells the query-builder to eager-load the nodes that are connected to the "communication_privacy_rules"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedCommunicationPrivacyRules(name string, opts ...func(*CommunicationPrivacyRuleQuery)) *UserQuery {
+	query := (&CommunicationPrivacyRuleClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedCommunicationPrivacyRules == nil {
+		_q.withNamedCommunicationPrivacyRules = make(map[string]*CommunicationPrivacyRuleQuery)
+	}
+	_q.withNamedCommunicationPrivacyRules[name] = query
+	return _q
+}
+
+// WithNamedOwnedCommunicationShareGrants tells the query-builder to eager-load the nodes that are connected to the "owned_communication_share_grants"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedOwnedCommunicationShareGrants(name string, opts ...func(*CommunicationShareGrantQuery)) *UserQuery {
+	query := (&CommunicationShareGrantClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedOwnedCommunicationShareGrants == nil {
+		_q.withNamedOwnedCommunicationShareGrants = make(map[string]*CommunicationShareGrantQuery)
+	}
+	_q.withNamedOwnedCommunicationShareGrants[name] = query
+	return _q
+}
+
+// WithNamedReceivedCommunicationShareGrants tells the query-builder to eager-load the nodes that are connected to the "received_communication_share_grants"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedReceivedCommunicationShareGrants(name string, opts ...func(*CommunicationShareGrantQuery)) *UserQuery {
+	query := (&CommunicationShareGrantClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedReceivedCommunicationShareGrants == nil {
+		_q.withNamedReceivedCommunicationShareGrants = make(map[string]*CommunicationShareGrantQuery)
+	}
+	_q.withNamedReceivedCommunicationShareGrants[name] = query
+	return _q
+}
+
 // WithNamedRelationshipParticipants tells the query-builder to eager-load the nodes that are connected to the "relationship_participants"
 // edge with the given name. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithNamedRelationshipParticipants(name string, opts ...func(*RelationshipParticipantQuery)) *UserQuery {
@@ -6993,6 +7752,34 @@ func (_q *UserQuery) WithNamedApprovalTokens(name string, opts ...func(*Approval
 		_q.withNamedApprovalTokens = make(map[string]*ApprovalTokenQuery)
 	}
 	_q.withNamedApprovalTokens[name] = query
+	return _q
+}
+
+// WithNamedUserPreferences tells the query-builder to eager-load the nodes that are connected to the "user_preferences"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedUserPreferences(name string, opts ...func(*UserPreferenceQuery)) *UserQuery {
+	query := (&UserPreferenceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedUserPreferences == nil {
+		_q.withNamedUserPreferences = make(map[string]*UserPreferenceQuery)
+	}
+	_q.withNamedUserPreferences[name] = query
+	return _q
+}
+
+// WithNamedConsoleResources tells the query-builder to eager-load the nodes that are connected to the "console_resources"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithNamedConsoleResources(name string, opts ...func(*ConsoleResourceQuery)) *UserQuery {
+	query := (&ConsoleResourceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if _q.withNamedConsoleResources == nil {
+		_q.withNamedConsoleResources = make(map[string]*ConsoleResourceQuery)
+	}
+	_q.withNamedConsoleResources[name] = query
 	return _q
 }
 

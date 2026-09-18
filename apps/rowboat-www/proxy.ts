@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { readSessionCookie } from "@/lib/auth/cookies";
+import { isSessionUsable, readSessionCookie } from "@/lib/auth/cookies";
 import { safeReturnTo } from "@/lib/auth/pkce";
 
 /**
@@ -13,7 +13,9 @@ import { safeReturnTo } from "@/lib/auth/pkce";
 export function proxy(request: NextRequest) {
   const session = readSessionCookie(request);
 
-  if (!session || session.expiresAt <= Math.floor(Date.now() / 1000)) {
+  // Access-token expiry is not session expiry when a refresh token is present.
+  // The session endpoint refreshes the token bundle before protected API use.
+  if (!isSessionUsable(session)) {
     const login = new URL("/api/auth/workos/login", request.url);
     login.searchParams.set(
       "return_to",

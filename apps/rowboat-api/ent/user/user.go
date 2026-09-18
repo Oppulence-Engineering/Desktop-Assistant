@@ -109,6 +109,18 @@ const (
 	EdgeMailBodyCaches = "mail_body_caches"
 	// EdgeMailSignals holds the string denoting the mail_signals edge name in mutations.
 	EdgeMailSignals = "mail_signals"
+	// EdgeOwnedCommunicationInteractions holds the string denoting the owned_communication_interactions edge name in mutations.
+	EdgeOwnedCommunicationInteractions = "owned_communication_interactions"
+	// EdgeCommunicationSyncCursors holds the string denoting the communication_sync_cursors edge name in mutations.
+	EdgeCommunicationSyncCursors = "communication_sync_cursors"
+	// EdgeCommunicationPrivacyPolicies holds the string denoting the communication_privacy_policies edge name in mutations.
+	EdgeCommunicationPrivacyPolicies = "communication_privacy_policies"
+	// EdgeCommunicationPrivacyRules holds the string denoting the communication_privacy_rules edge name in mutations.
+	EdgeCommunicationPrivacyRules = "communication_privacy_rules"
+	// EdgeOwnedCommunicationShareGrants holds the string denoting the owned_communication_share_grants edge name in mutations.
+	EdgeOwnedCommunicationShareGrants = "owned_communication_share_grants"
+	// EdgeReceivedCommunicationShareGrants holds the string denoting the received_communication_share_grants edge name in mutations.
+	EdgeReceivedCommunicationShareGrants = "received_communication_share_grants"
 	// EdgeRelationshipParticipants holds the string denoting the relationship_participants edge name in mutations.
 	EdgeRelationshipParticipants = "relationship_participants"
 	// EdgeRelationshipIdentities holds the string denoting the relationship_identities edge name in mutations.
@@ -159,6 +171,10 @@ const (
 	EdgeActionProposals = "action_proposals"
 	// EdgeApprovalTokens holds the string denoting the approval_tokens edge name in mutations.
 	EdgeApprovalTokens = "approval_tokens"
+	// EdgeUserPreferences holds the string denoting the user_preferences edge name in mutations.
+	EdgeUserPreferences = "user_preferences"
+	// EdgeConsoleResources holds the string denoting the console_resources edge name in mutations.
+	EdgeConsoleResources = "console_resources"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -455,6 +471,48 @@ const (
 	MailSignalsInverseTable = "mail_signals"
 	// MailSignalsColumn is the table column denoting the mail_signals relation/edge.
 	MailSignalsColumn = "user_mail_signals"
+	// OwnedCommunicationInteractionsTable is the table that holds the owned_communication_interactions relation/edge.
+	OwnedCommunicationInteractionsTable = "communication_interactions"
+	// OwnedCommunicationInteractionsInverseTable is the table name for the CommunicationInteraction entity.
+	// It exists in this package in order to avoid circular dependency with the "communicationinteraction" package.
+	OwnedCommunicationInteractionsInverseTable = "communication_interactions"
+	// OwnedCommunicationInteractionsColumn is the table column denoting the owned_communication_interactions relation/edge.
+	OwnedCommunicationInteractionsColumn = "user_owned_communication_interactions"
+	// CommunicationSyncCursorsTable is the table that holds the communication_sync_cursors relation/edge.
+	CommunicationSyncCursorsTable = "communication_sync_cursors"
+	// CommunicationSyncCursorsInverseTable is the table name for the CommunicationSyncCursor entity.
+	// It exists in this package in order to avoid circular dependency with the "communicationsynccursor" package.
+	CommunicationSyncCursorsInverseTable = "communication_sync_cursors"
+	// CommunicationSyncCursorsColumn is the table column denoting the communication_sync_cursors relation/edge.
+	CommunicationSyncCursorsColumn = "user_communication_sync_cursors"
+	// CommunicationPrivacyPoliciesTable is the table that holds the communication_privacy_policies relation/edge.
+	CommunicationPrivacyPoliciesTable = "communication_privacy_policies"
+	// CommunicationPrivacyPoliciesInverseTable is the table name for the CommunicationPrivacyPolicy entity.
+	// It exists in this package in order to avoid circular dependency with the "communicationprivacypolicy" package.
+	CommunicationPrivacyPoliciesInverseTable = "communication_privacy_policies"
+	// CommunicationPrivacyPoliciesColumn is the table column denoting the communication_privacy_policies relation/edge.
+	CommunicationPrivacyPoliciesColumn = "user_communication_privacy_policies"
+	// CommunicationPrivacyRulesTable is the table that holds the communication_privacy_rules relation/edge.
+	CommunicationPrivacyRulesTable = "communication_privacy_rules"
+	// CommunicationPrivacyRulesInverseTable is the table name for the CommunicationPrivacyRule entity.
+	// It exists in this package in order to avoid circular dependency with the "communicationprivacyrule" package.
+	CommunicationPrivacyRulesInverseTable = "communication_privacy_rules"
+	// CommunicationPrivacyRulesColumn is the table column denoting the communication_privacy_rules relation/edge.
+	CommunicationPrivacyRulesColumn = "user_communication_privacy_rules"
+	// OwnedCommunicationShareGrantsTable is the table that holds the owned_communication_share_grants relation/edge.
+	OwnedCommunicationShareGrantsTable = "communication_share_grants"
+	// OwnedCommunicationShareGrantsInverseTable is the table name for the CommunicationShareGrant entity.
+	// It exists in this package in order to avoid circular dependency with the "communicationsharegrant" package.
+	OwnedCommunicationShareGrantsInverseTable = "communication_share_grants"
+	// OwnedCommunicationShareGrantsColumn is the table column denoting the owned_communication_share_grants relation/edge.
+	OwnedCommunicationShareGrantsColumn = "user_owned_communication_share_grants"
+	// ReceivedCommunicationShareGrantsTable is the table that holds the received_communication_share_grants relation/edge.
+	ReceivedCommunicationShareGrantsTable = "communication_share_grants"
+	// ReceivedCommunicationShareGrantsInverseTable is the table name for the CommunicationShareGrant entity.
+	// It exists in this package in order to avoid circular dependency with the "communicationsharegrant" package.
+	ReceivedCommunicationShareGrantsInverseTable = "communication_share_grants"
+	// ReceivedCommunicationShareGrantsColumn is the table column denoting the received_communication_share_grants relation/edge.
+	ReceivedCommunicationShareGrantsColumn = "user_received_communication_share_grants"
 	// RelationshipParticipantsTable is the table that holds the relationship_participants relation/edge.
 	RelationshipParticipantsTable = "relationship_participants"
 	// RelationshipParticipantsInverseTable is the table name for the RelationshipParticipant entity.
@@ -630,6 +688,20 @@ const (
 	ApprovalTokensInverseTable = "approval_tokens"
 	// ApprovalTokensColumn is the table column denoting the approval_tokens relation/edge.
 	ApprovalTokensColumn = "user_approval_tokens"
+	// UserPreferencesTable is the table that holds the user_preferences relation/edge.
+	UserPreferencesTable = "user_preferences"
+	// UserPreferencesInverseTable is the table name for the UserPreference entity.
+	// It exists in this package in order to avoid circular dependency with the "userpreference" package.
+	UserPreferencesInverseTable = "user_preferences"
+	// UserPreferencesColumn is the table column denoting the user_preferences relation/edge.
+	UserPreferencesColumn = "user_user_preferences"
+	// ConsoleResourcesTable is the table that holds the console_resources relation/edge.
+	ConsoleResourcesTable = "console_resources"
+	// ConsoleResourcesInverseTable is the table name for the ConsoleResource entity.
+	// It exists in this package in order to avoid circular dependency with the "consoleresource" package.
+	ConsoleResourcesInverseTable = "console_resources"
+	// ConsoleResourcesColumn is the table column denoting the console_resources relation/edge.
+	ConsoleResourcesColumn = "user_console_resources"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -1279,6 +1351,90 @@ func ByMailSignals(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByOwnedCommunicationInteractionsCount orders the results by owned_communication_interactions count.
+func ByOwnedCommunicationInteractionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOwnedCommunicationInteractionsStep(), opts...)
+	}
+}
+
+// ByOwnedCommunicationInteractions orders the results by owned_communication_interactions terms.
+func ByOwnedCommunicationInteractions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOwnedCommunicationInteractionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByCommunicationSyncCursorsCount orders the results by communication_sync_cursors count.
+func ByCommunicationSyncCursorsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommunicationSyncCursorsStep(), opts...)
+	}
+}
+
+// ByCommunicationSyncCursors orders the results by communication_sync_cursors terms.
+func ByCommunicationSyncCursors(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommunicationSyncCursorsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByCommunicationPrivacyPoliciesCount orders the results by communication_privacy_policies count.
+func ByCommunicationPrivacyPoliciesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommunicationPrivacyPoliciesStep(), opts...)
+	}
+}
+
+// ByCommunicationPrivacyPolicies orders the results by communication_privacy_policies terms.
+func ByCommunicationPrivacyPolicies(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommunicationPrivacyPoliciesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByCommunicationPrivacyRulesCount orders the results by communication_privacy_rules count.
+func ByCommunicationPrivacyRulesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCommunicationPrivacyRulesStep(), opts...)
+	}
+}
+
+// ByCommunicationPrivacyRules orders the results by communication_privacy_rules terms.
+func ByCommunicationPrivacyRules(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCommunicationPrivacyRulesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByOwnedCommunicationShareGrantsCount orders the results by owned_communication_share_grants count.
+func ByOwnedCommunicationShareGrantsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOwnedCommunicationShareGrantsStep(), opts...)
+	}
+}
+
+// ByOwnedCommunicationShareGrants orders the results by owned_communication_share_grants terms.
+func ByOwnedCommunicationShareGrants(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOwnedCommunicationShareGrantsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByReceivedCommunicationShareGrantsCount orders the results by received_communication_share_grants count.
+func ByReceivedCommunicationShareGrantsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newReceivedCommunicationShareGrantsStep(), opts...)
+	}
+}
+
+// ByReceivedCommunicationShareGrants orders the results by received_communication_share_grants terms.
+func ByReceivedCommunicationShareGrants(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newReceivedCommunicationShareGrantsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByRelationshipParticipantsCount orders the results by relationship_participants count.
 func ByRelationshipParticipantsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -1628,6 +1784,34 @@ func ByApprovalTokens(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newApprovalTokensStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByUserPreferencesCount orders the results by user_preferences count.
+func ByUserPreferencesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newUserPreferencesStep(), opts...)
+	}
+}
+
+// ByUserPreferences orders the results by user_preferences terms.
+func ByUserPreferences(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newUserPreferencesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByConsoleResourcesCount orders the results by console_resources count.
+func ByConsoleResourcesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newConsoleResourcesStep(), opts...)
+	}
+}
+
+// ByConsoleResources orders the results by console_resources terms.
+func ByConsoleResources(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newConsoleResourcesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSubscriptionStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -1922,6 +2106,48 @@ func newMailSignalsStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.O2M, false, MailSignalsTable, MailSignalsColumn),
 	)
 }
+func newOwnedCommunicationInteractionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OwnedCommunicationInteractionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, OwnedCommunicationInteractionsTable, OwnedCommunicationInteractionsColumn),
+	)
+}
+func newCommunicationSyncCursorsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommunicationSyncCursorsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommunicationSyncCursorsTable, CommunicationSyncCursorsColumn),
+	)
+}
+func newCommunicationPrivacyPoliciesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommunicationPrivacyPoliciesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommunicationPrivacyPoliciesTable, CommunicationPrivacyPoliciesColumn),
+	)
+}
+func newCommunicationPrivacyRulesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CommunicationPrivacyRulesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CommunicationPrivacyRulesTable, CommunicationPrivacyRulesColumn),
+	)
+}
+func newOwnedCommunicationShareGrantsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OwnedCommunicationShareGrantsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, OwnedCommunicationShareGrantsTable, OwnedCommunicationShareGrantsColumn),
+	)
+}
+func newReceivedCommunicationShareGrantsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ReceivedCommunicationShareGrantsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ReceivedCommunicationShareGrantsTable, ReceivedCommunicationShareGrantsColumn),
+	)
+}
 func newRelationshipParticipantsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -2095,5 +2321,19 @@ func newApprovalTokensStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ApprovalTokensInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ApprovalTokensTable, ApprovalTokensColumn),
+	)
+}
+func newUserPreferencesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(UserPreferencesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, UserPreferencesTable, UserPreferencesColumn),
+	)
+}
+func newConsoleResourcesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ConsoleResourcesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ConsoleResourcesTable, ConsoleResourcesColumn),
 	)
 }

@@ -68,10 +68,10 @@
   --color-selection: var(--selection);
   --color-selection-foreground: var(--selection-foreground);
   --radius: var(--radius);
-  --radius-sm: calc(var(--radius) - 2px);
-  --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 2px);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
 }
 
 /*
@@ -1089,7 +1089,7 @@
   --border: #e5e7eb;
   --input: #e5e7eb;
   --ring: oklch(70.8% 0 0);
-  --radius: 0.25rem;
+  --radius: 0;
   --sidebar: hsl(0 0% 98%);
   --sidebar-foreground: hsl(240 5.3% 26.1%);
   --sidebar-primary: hsl(240 5.9% 10%);
@@ -1241,7 +1241,7 @@
     --border: #171717;
     --input: #34343a;
     --ring: #828fff;
-    --radius: 0.5rem;
+    --radius: 0;
     --linear-violet: #5e6ad2;
     --linear-text-secondary: #d0d6e0;
     --linear-text-tertiary: #8a8f98;
@@ -6818,6 +6818,9 @@
   .sm-site:has(.sm-attio-home) .sm-header {
     height: 68px;
     border-bottom-color: var(--attio-line, #e4e7ec);
+    /* The global translucent header lets scrolled section copy show through,
+       which makes the fixed navigation look like overlapping text. */
+    background: #ffffff;
   }
 
   .sm-site:has(.sm-attio-home) .sm-header .linear-header-inner {
@@ -7109,6 +7112,236 @@
     /* The mark stays lighter than its label, but not so light that it reads as
        disabled beside the darkened text. */
     color: #8b95a3;
+  }
+
+  /* Homepage story sections use their own semantic class names so their
+     layouts remain independent from catalog-page card styles. */
+  .sm-attio-problem,
+  .sm-attio-sources,
+  .sm-attio-capabilities,
+  .sm-attio-usecases,
+  .sm-attio-trust,
+  .sm-attio-download {
+    border-top: 1px solid var(--attio-line);
+    padding-block: clamp(72px, 7.5vw, 120px);
+  }
+
+  .sm-attio-problem,
+  .sm-attio-sources,
+  .sm-attio-usecases,
+  .sm-attio-download {
+    background: #ffffff;
+  }
+
+  .sm-attio-capabilities,
+  .sm-attio-trust {
+    background: var(--attio-soft);
+  }
+
+  .sm-attio-problem h2,
+  .sm-attio-sources h2,
+  .sm-attio-download h2 {
+    margin-top: 24px;
+  }
+
+  .sm-attio-problem-lede,
+  .sm-attio-sources > .sm-attio-shell > p:not(.sm-attio-section-label),
+  .sm-attio-download > .sm-attio-shell > p:not(.sm-attio-section-label) {
+    max-width: 760px;
+    margin-top: 22px;
+    color: var(--attio-muted);
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  /* The problem statement is a four-column ledger, not a run-on list. */
+  .sm-attio-problem-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: clamp(40px, 4vw, 64px);
+    border-block: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-problem-grid article {
+    display: grid;
+    align-content: start;
+    gap: 10px;
+    min-height: 176px;
+    padding: 28px 24px;
+  }
+
+  .sm-attio-problem-grid article + article {
+    border-left: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-problem-grid h3 {
+    color: var(--attio-ink);
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .sm-attio-problem-grid p {
+    color: var(--attio-muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Integration names need explicit cells; bare inline links collapse into
+     one unreadable string when there is no separator in the source text. */
+  .sm-attio-source-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    margin-top: clamp(40px, 4vw, 64px);
+    border-block: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-source-row a {
+    display: flex;
+    min-height: 72px;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 20px;
+    color: var(--attio-ink);
+    font-size: 15px;
+    font-weight: 500;
+    transition:
+      background 140ms ease,
+      color 140ms ease;
+  }
+
+  .sm-attio-source-row a + a {
+    border-left: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-source-row a:hover {
+    background: var(--attio-chip);
+    color: var(--attio-blue);
+  }
+
+  /* Capability rows alternate editorial copy and real product imagery. The
+     bounded media column prevents intrinsic screenshots from inflating the
+     page into several thousand pixels of unstructured content. */
+  .sm-attio-capability-list {
+    display: grid;
+    margin-top: clamp(48px, 5vw, 76px);
+    border-top: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-capability-list article {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.25fr);
+    border-bottom: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-capability-list article > div {
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    gap: 14px;
+    padding: clamp(40px, 5vw, 76px);
+  }
+
+  .sm-attio-capability-list article > div > p:first-child {
+    color: var(--attio-blue);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .sm-attio-capability-list h3 {
+    max-width: 18ch;
+    color: var(--attio-ink);
+    font-size: clamp(24px, 2.4vw, 36px);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1.1;
+  }
+
+  .sm-attio-capability-list h3 + p {
+    max-width: 48ch;
+    color: var(--attio-muted);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .sm-attio-capability-list article > div > a {
+    border-bottom: 1px solid currentColor;
+    color: var(--attio-ink);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .sm-attio-capability-list figure {
+    overflow: hidden;
+    min-height: 420px;
+    border-left: 1px solid var(--attio-line);
+    background: #ffffff;
+  }
+
+  .sm-attio-capability-list img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-height: 560px;
+    object-fit: cover;
+    object-position: top left;
+  }
+
+  .sm-attio-usecase-grid,
+  .sm-attio-trust-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: clamp(44px, 4.6vw, 68px);
+    border-top: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-trust-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .sm-attio-usecase-grid > a,
+  .sm-attio-trust-grid article {
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    gap: 12px;
+    min-height: 220px;
+    padding: 28px 24px;
+  }
+
+  .sm-attio-usecase-grid > a + a,
+  .sm-attio-trust-grid article + article {
+    border-left: 1px solid var(--attio-line);
+  }
+
+  .sm-attio-usecase-grid strong,
+  .sm-attio-trust-grid h3 {
+    color: var(--attio-ink);
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.25;
+  }
+
+  .sm-attio-usecase-grid p,
+  .sm-attio-trust-grid p {
+    color: var(--attio-muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .sm-attio-faq {
+    border-top: 1px solid var(--attio-line);
+    background: var(--attio-soft);
+  }
+
+  .sm-attio-download > .sm-attio-shell {
+    display: grid;
+    justify-items: start;
+  }
+
+  .sm-attio-download .sm-attio-actions {
+    justify-content: flex-start;
   }
 
   /* Shared section rhythm. Attio alternates #ffffff and #fafafb bands and
@@ -7754,6 +7987,21 @@
       gap: 0;
     }
 
+    .sm-attio-problem-grid,
+    .sm-attio-usecase-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sm-attio-problem-grid article:nth-child(odd),
+    .sm-attio-usecase-grid > a:nth-child(odd) {
+      border-left: 0;
+    }
+
+    .sm-attio-problem-grid article:nth-child(n + 3),
+    .sm-attio-usecase-grid > a:nth-child(n + 3) {
+      border-top: 1px solid var(--attio-line);
+    }
+
     .sm-attio-rail {
       top: 70px;
       z-index: 4;
@@ -7814,6 +8062,42 @@
       padding-top: 108px;
     }
 
+    .sm-attio-problem-grid,
+    .sm-attio-source-row,
+    .sm-attio-usecase-grid,
+    .sm-attio-trust-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .sm-attio-problem-grid article,
+    .sm-attio-source-row a,
+    .sm-attio-usecase-grid > a,
+    .sm-attio-trust-grid article {
+      min-height: 0;
+      border-left: 0;
+    }
+
+    .sm-attio-problem-grid article + article,
+    .sm-attio-source-row a + a,
+    .sm-attio-usecase-grid > a + a,
+    .sm-attio-trust-grid article + article {
+      border-top: 1px solid var(--attio-line);
+    }
+
+    .sm-attio-capability-list article {
+      grid-template-columns: 1fr;
+    }
+
+    .sm-attio-capability-list article > div {
+      padding: 40px 0;
+    }
+
+    .sm-attio-capability-list figure {
+      min-height: 280px;
+      border-top: 1px solid var(--attio-line);
+      border-left: 0;
+    }
+
     .sm-attio-hero h1 {
       max-width: 100%;
       font-size: clamp(2.4rem, 11vw, 3.1rem);
@@ -7852,6 +8136,10 @@
 
     .sm-attio-logo-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sm-attio-logo-grid > div:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
     }
 
     .sm-attio-context-grid article,

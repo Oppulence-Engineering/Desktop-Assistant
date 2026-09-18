@@ -1,12 +1,15 @@
-import ProductDashboardClient from "../product-dashboard-client";
-
-export const instant = false;
+import { WorkflowsDashboardRoute } from "@/components/features/dashboard/dashboard-route-content/dashboard-route-content";
+import { workflowFocusFromParam } from "@/lib/product-navigation";
 
 export default async function WorkflowsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ focus?: string }>;
+  searchParams: Promise<{ focus?: string | string[] }>;
 }) {
-  const parameters = await searchParams;
-  return <ProductDashboardClient initialWorkflowFocus={parameters.focus} initialView="workflows" />;
+  const { focus } = await searchParams;
+  return (
+    <WorkflowsDashboardRoute
+      focus={workflowFocusFromParam(Array.isArray(focus) ? focus[0] : focus)}
+    />
+  );
 }

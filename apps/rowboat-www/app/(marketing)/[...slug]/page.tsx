@@ -1,17 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import {
-  BlogArticlePage,
-  BlogIndexPage,
-  CustomerIndexPage,
-  CustomerStoryPage,
-  GenericPage,
-  LegalPage,
-  PricingPage,
-  ProductPage,
-} from "../marketing-components";
+import { GenericPage, LegalPage, ProductPage } from "../marketing-components";
 import { getMarketingPage, marketingPaths } from "../marketing-data";
+import { marketingMetadata } from "../metadata";
+import { dedicatedMarketingPaths } from "../site";
 
 type PageProps = {
   params: Promise<{ slug: string[] }>;
@@ -20,9 +13,14 @@ type PageProps = {
 export const instant = false;
 
 export function generateStaticParams() {
-  return marketingPaths.map((path) => ({
-    slug: path.split("/"),
-  }));
+  const moved = new Set<string>([...dedicatedMarketingPaths, "pricing", "blog", "customers"]);
+  return marketingPaths
+    .filter(
+      (path) => !moved.has(path) && !path.startsWith("blog/") && !path.startsWith("customers/"),
+    )
+    .map((path) => ({
+      slug: path.split("/"),
+    }));
 }
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
@@ -35,10 +33,11 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     };
   }
 
-  return {
-    title: `${page.eyebrow} - Oppulence`,
+  return marketingMetadata({
+    title: page.title,
     description: page.description,
-  };
+    path: `/${page.path}`,
+  });
 }
 
 export default async function Page(props: PageProps) {
@@ -51,26 +50,6 @@ export default async function Page(props: PageProps) {
 
   if (page.path === "product") {
     return <ProductPage page={page} />;
-  }
-
-  if (page.path === "pricing") {
-    return <PricingPage page={page} />;
-  }
-
-  if (page.path === "blog") {
-    return <BlogIndexPage page={page} />;
-  }
-
-  if (page.path.startsWith("blog/")) {
-    return <BlogArticlePage page={page} />;
-  }
-
-  if (page.path === "customers") {
-    return <CustomerIndexPage page={page} />;
-  }
-
-  if (page.path.startsWith("customers/")) {
-    return <CustomerStoryPage page={page} />;
   }
 
   if (page.path.startsWith("legal/")) {

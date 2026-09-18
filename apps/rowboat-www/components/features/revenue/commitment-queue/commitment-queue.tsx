@@ -3,21 +3,40 @@
 import "client-only";
 
 import * as React from "react";
-import Image from "next/image";
 import {
   ArrowClockwise,
   Check,
-  CircleNotch,
   Export,
   MagnifyingGlass,
   PencilSimple,
   Plugs,
   Warning,
   X,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 
+import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
+import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@oppulence/ui/components/card";
+import { Checkbox } from "@oppulence/ui/components/checkbox";
+import { Label } from "@oppulence/ui/components/label";
+import { Spinner } from "@oppulence/ui/components/spinner";
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@oppulence/ui/components/table";
+import { Tabs, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
+import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +54,7 @@ import {
   SelectValue,
 } from "@oppulence/ui/components/select";
 import { cn } from "@oppulence/ui/lib/utils";
+import { WorkspaceEmptyIllustration } from "@/components/revenue/shared";
 
 import type {
   CommitmentRegisterFilter,
@@ -458,7 +478,7 @@ export function CommitmentQueue({
         aria-label="Register views"
       >
         {REGISTER_VIEWS.map((registerView) => (
-          <button
+          <Button
             key={registerView.id}
             role="tab"
             type="button"
@@ -471,9 +491,11 @@ export function CommitmentQueue({
                 ? "border-border bg-background-100 text-primary"
                 : "border-transparent text-primary/55 hover:text-primary",
             )}
+            size="sm"
+            variant="ghost"
           >
             {registerView.label}
-          </button>
+          </Button>
         ))}
       </div>
       <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-2 border-b border-border px-3 py-2">
@@ -543,13 +565,15 @@ export function CommitmentQueue({
               <Plugs /> Connect Gmail & Calendar
             </Button>
           ) : googleConnected ? (
-            <button
-              className="hidden h-8 items-center gap-1.5 text-[12px] text-emerald-400 2xl:flex"
+            <Button
+              className="hidden h-8 items-center gap-1.5 text-[12px] text-emerald-400 hover:bg-transparent hover:text-emerald-400 2xl:flex"
               onClick={onOpenAccounts}
               type="button"
+              variant="ghost"
             >
-              <span className="size-1.5 rounded-full bg-emerald-400" /> Google connected
-            </button>
+              <Badge className="size-1.5 rounded-full bg-emerald-400 p-0" variant="default" />{" "}
+              Google connected
+            </Button>
           ) : null}
           {/* A dead grant turns the audit button into the fix. It used to stay
               "Run audit" beside a reconnect error and start scans that failed
@@ -571,11 +595,13 @@ export function CommitmentQueue({
               onClick={onScan}
               disabled={scanning}
             >
-              {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />}
-              <span className="hidden xl:inline">
-                {scanning ? "Scanning 90 days" : "Run 90-day Promise Leak Audit"}
-              </span>
-              <span className="xl:hidden">{scanning ? "Scanning" : "Run audit"}</span>
+              {scanning ? <Spinner className="size-4" /> : <MagnifyingGlass />}
+              <Label className="hidden font-normal xl:inline">
+                {scanning
+                  ? `Scanning ${REVENUE_EVIDENCE_LOOKBACK_LABEL}`
+                  : "Run 6-month Promise Leak Audit"}
+              </Label>
+              <Label className="font-normal xl:hidden">{scanning ? "Scanning" : "Run audit"}</Label>
             </Button>
           )}
         </div>
@@ -583,29 +609,29 @@ export function CommitmentQueue({
           className="hidden items-center gap-4 text-[11px] text-primary/45 2xl:flex"
           aria-label="Commitment summary"
         >
-          <span>
+          <Badge className="font-normal" variant="secondary">
             <b className="font-medium text-primary">{openPromises}</b> open
-          </span>
-          <span>
+          </Badge>
+          <Badge className="font-normal" variant="secondary">
             <b className="font-medium text-primary">{needsReview}</b> review
-          </span>
-          <span>
+          </Badge>
+          <Badge className="font-normal" variant="secondary">
             <b className="font-medium text-primary">{dueSoon}</b> due soon
-          </span>
-          <span>
+          </Badge>
+          <Badge className="font-normal" variant="secondary">
             <b className="font-medium text-primary">
               {items.filter((item) => item.state === "met").length}
             </b>{" "}
             fulfilled
-          </span>
+          </Badge>
         </div>
       </div>
 
       {latestScan?.status === "completed" ? (
         <div className="flex min-h-12 flex-wrap items-center gap-4 border-b border-border bg-background-50 px-3 text-[12px] text-primary/55">
-          <span className="font-medium text-primary">
+          <Label className="font-medium text-primary">
             Latest {latestScan.lookbackDays}-day audit
-          </span>
+          </Label>
           <dl className="flex items-center gap-4">
             {/* "Conversations reviewed" used to show every thread swept,
                 including inbox mail the audit never judged. It now counts what
@@ -662,28 +688,28 @@ export function CommitmentQueue({
           empty state below repeats it at full size when there is nothing else
           to show. */}
       {failure && items.length > 0 ? (
-        <div
-          role="alert"
-          className="mx-3 mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-none border border-destructive/40 bg-destructive/[0.04] px-3 py-2 text-[13px] text-destructive"
+        <Alert
+          className="mx-3 mt-3 rounded-none border-destructive/40 bg-destructive/[0.04]"
+          variant="destructive"
         >
-          <Warning className="size-4 shrink-0" />
-          <span className="font-medium">{failure.headline}</span>
-          <span className="text-destructive/80">
+          <Warning className="size-4" />
+          <AlertTitle className="text-[13px]">{failure.headline}</AlertTitle>
+          <AlertDescription className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-destructive/80">
             {failure.needsReconnect
               ? "This register is not being updated until you reconnect."
               : "The last audit did not finish, so this register may be incomplete."}
-          </span>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="ml-auto h-7 border-destructive/40 px-2 text-[12px] text-destructive"
-            onClick={failure.needsReconnect ? onOpenConnectors : onScan}
-            disabled={!failure.needsReconnect && scanning}
-          >
-            {failure.needsReconnect ? "Reconnect Google" : "Run the audit again"}
-          </Button>
-        </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="ml-auto h-7 border-destructive/40 px-2 text-[12px] text-destructive"
+              onClick={failure.needsReconnect ? onOpenConnectors : onScan}
+              disabled={!failure.needsReconnect && scanning}
+            >
+              {failure.needsReconnect ? "Reconnect Google" : "Run the audit again"}
+            </Button>
+          </AlertDescription>
+        </Alert>
       ) : null}
 
       {error ? (
@@ -695,7 +721,7 @@ export function CommitmentQueue({
         </div>
       ) : loading ? (
         <div className="flex flex-1 items-center justify-center gap-2 p-6 text-sm text-primary/55">
-          <CircleNotch className="animate-spin" /> Loading commitments…
+          <Spinner className="size-4" /> Loading commitments…
         </div>
       ) : scopeMissing ? (
         <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
@@ -713,9 +739,9 @@ export function CommitmentQueue({
         // because nothing was found. Saying "no promises were found" here reads
         // as a result and it is the wrong one.
         <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
-          <CircleNotch className="mb-3 size-7 animate-spin text-primary/40" />
+          <Spinner className="mb-3 size-7 text-primary/40" />
           <h2 className="text-[20px] font-semibold leading-6 text-primary">
-            Reading your last 90 days
+            Reading your last {REVENUE_EVIDENCE_LOOKBACK_LABEL}
           </h2>
           <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
             This takes a few minutes. You can keep working and come back.
@@ -745,7 +771,7 @@ export function CommitmentQueue({
                 onClick={onScan}
                 disabled={scanning}
               >
-                {scanning ? <CircleNotch className="animate-spin" /> : <MagnifyingGlass />}
+                {scanning ? <Spinner className="size-4" /> : <MagnifyingGlass />}
                 Run the audit again
               </Button>
             )}
@@ -753,15 +779,7 @@ export function CommitmentQueue({
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[84px] text-center">
-          <Image
-            alt=""
-            aria-hidden="true"
-            className="mb-4 h-[150px] w-[225px] object-cover opacity-90"
-            height={160}
-            priority
-            src="/marketing/relationship-system/commitment-queue-empty-v2.png"
-            width={240}
-          />
+          <WorkspaceEmptyIllustration image="commitments" />
           <h2 className="text-[20px] font-semibold leading-6 text-primary">
             {items.length === 0 ? "Commitment Queue" : "No commitments match this view"}
           </h2>
@@ -793,7 +811,7 @@ export function CommitmentQueue({
                   onClick={onScan}
                   disabled={scanning}
                 >
-                  <MagnifyingGlass /> Run 90-day audit
+                  <MagnifyingGlass /> Run 6-month audit
                 </Button>
               )}
               <Button type="button" size="sm" variant="outline" onClick={onOpenAccounts}>
@@ -805,26 +823,32 @@ export function CommitmentQueue({
             <div className="mb-4 mt-auto w-full max-w-[640px] text-left">
               <p className="mb-2 text-[12px] text-primary/45">Learn more</p>
               <div className="grid gap-2 sm:grid-cols-2">
-                <button
-                  className="flex h-[72px] items-center gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] text-primary/80 transition-colors hover:bg-background-100"
+                <Button
+                  className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-primary/80 hover:bg-background-100"
                   onClick={onOpenAccounts}
                   type="button"
+                  variant="ghost"
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-none border border-border bg-background text-primary/45">
-                    <Check className="size-4" />
-                  </span>
+                  <Avatar className="size-10 rounded-none">
+                    <AvatarFallback className="rounded-none border border-border bg-background text-primary/45">
+                      <Check className="size-4" />
+                    </AvatarFallback>
+                  </Avatar>
                   Confirm promises with exact evidence
-                </button>
-                <button
-                  className="flex h-[72px] items-center gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] text-primary/80 transition-colors hover:bg-background-100"
+                </Button>
+                <Button
+                  className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-primary/80 hover:bg-background-100"
                   onClick={onOpenRecoveryQueue}
                   type="button"
+                  variant="ghost"
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-none border border-border bg-background text-primary/45">
-                    <ArrowClockwise className="size-4" />
-                  </span>
+                  <Avatar className="size-10 rounded-none">
+                    <AvatarFallback className="rounded-none border border-border bg-background text-primary/45">
+                      <ArrowClockwise className="size-4" />
+                    </AvatarFallback>
+                  </Avatar>
                   Approve recovery before anything is sent
-                </button>
+                </Button>
               </div>
             </div>
           ) : null}
@@ -835,84 +859,80 @@ export function CommitmentQueue({
             className="w-full min-w-[1040px] border-collapse text-left"
             aria-label="Commitments"
           >
-            <thead className="sticky top-0 z-10 bg-background">
-              <tr className="h-10 border-b border-border text-[12px] font-medium text-primary/55">
-                <th className="w-10 border-r border-border px-3">
-                  <input
-                    aria-label="Select all commitments"
-                    className="size-4 accent-[#3478f6]"
-                    type="checkbox"
-                  />
-                </th>
-                <th className="min-w-[330px] border-r border-border px-3">Commitment</th>
-                <th className="w-36 border-r border-border px-3">Promised by</th>
-                <th className="w-36 border-r border-border px-3">To</th>
-                <th className="w-44 border-r border-border px-3">Due date</th>
-                <th className="w-40 border-r border-border px-3">Status</th>
-                <th className="w-36 px-3">Next step</th>
-              </tr>
-            </thead>
-            <tbody>
+            <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-border">
+              <TableRow className="h-10 border-b text-[12px] font-medium text-primary/55 hover:bg-transparent">
+                <TableHead className="h-10 w-10 border-r px-3">
+                  <Checkbox aria-label="Select all commitments" className="size-4" />
+                </TableHead>
+                <TableHead className="h-10 min-w-[330px] border-r px-3">Commitment</TableHead>
+                <TableHead className="h-10 w-36 border-r px-3">Promised by</TableHead>
+                <TableHead className="h-10 w-36 border-r px-3">To</TableHead>
+                <TableHead className="h-10 w-44 border-r px-3">Due date</TableHead>
+                <TableHead className="h-10 w-40 border-r px-3">Status</TableHead>
+                <TableHead className="h-10 w-36 px-3">Next step</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {filtered.map((item) => (
-                <tr
-                  key={item.id}
-                  className="group border-b border-border hover:bg-background-100/70"
-                >
-                  <td className="border-r border-border px-3">
+                <TableRow key={item.id} className="group border-border hover:bg-background-100/70">
+                  <TableCell className="border-r px-3">
                     <label className="flex items-center" htmlFor={`commitment-${item.id}`}>
-                      <span className="sr-only">Select {item.text}</span>
-                      <input
+                      <Label className="sr-only">Select {item.text}</Label>
+                      <Checkbox
                         aria-label={`Select ${item.text}`}
-                        className="size-4 accent-[#3478f6]"
+                        className="size-4"
                         id={`commitment-${item.id}`}
-                        type="checkbox"
                       />
                     </label>
-                  </td>
-                  <td className="border-r border-border px-3 py-2">
-                    <button
+                  </TableCell>
+                  <TableCell className="border-r px-3 py-2">
+                    <Button
                       aria-label={`Open ${item.text}`}
-                      className="block w-full min-w-0 text-left"
+                      className="block h-auto w-full min-w-0 justify-start px-0 py-0 text-left font-normal hover:bg-transparent"
                       onClick={() => setSelected(item)}
                       type="button"
+                      variant="ghost"
                     >
-                      <span className="block truncate text-[13px] font-medium text-primary">
+                      <Label className="block truncate text-[13px] font-medium text-primary">
                         {item.text}
-                      </span>
-                      <span className="mt-0.5 block truncate text-[12px] text-primary/45">
+                      </Label>
+                      <CardDescription className="mt-0.5 block truncate text-[12px]">
                         {item.relationshipName} · {item.quote ? `“${item.quote}”` : item.nextAction}
-                      </span>
-                    </button>
-                  </td>
-                  <td className="truncate border-r border-border px-3 text-[13px] text-primary/70">
+                      </CardDescription>
+                    </Button>
+                  </TableCell>
+                  <TableCell className="truncate border-r px-3 text-[13px] text-primary/70">
                     {item.owner}
-                  </td>
-                  <td className="truncate border-r border-border px-3 text-[13px] text-primary/70">
+                  </TableCell>
+                  <TableCell className="truncate border-r px-3 text-[13px] text-primary/70">
                     {item.counterparty}
-                  </td>
-                  <td className="border-r border-border px-3 text-[12px] text-primary/60">
+                  </TableCell>
+                  <TableCell className="border-r px-3 text-[12px] text-primary/60">
                     {item.dueAt ? (
                       new Date(item.dueAt).toLocaleString()
                     ) : (
-                      <span className="text-amber-400">Due date missing</span>
+                      <Badge className="font-normal text-amber-400" variant="outline">
+                        Due date missing
+                      </Badge>
                     )}
-                  </td>
-                  <td className="border-r border-border px-3">
+                  </TableCell>
+                  <TableCell className="border-r px-3">
                     <div className="flex flex-col items-start gap-1">
                       <StatusBadge state={item.state} />
                       {item.urgency === "overdue" || item.urgency === "due_soon" ? (
-                        <span
+                        <Badge
                           className={cn(
-                            "text-[11px]",
+                            "text-[11px] font-normal",
                             item.urgency === "overdue" ? "text-red-400" : "text-amber-400",
                           )}
+                          variant="outline"
                         >
                           {item.urgency === "overdue" ? "Overdue" : "Due within 72h"}
-                        </span>
+                        </Badge>
                       ) : null}
                     </div>
-                  </td>
-                  <td className="px-2 py-1.5">
+                  </TableCell>
+                  <TableCell className="px-2 py-1.5">
                     <div className="flex items-center gap-1">
                       {item.acceptance === "candidate" ? (
                         <ActionButton
@@ -924,15 +944,16 @@ export function CommitmentQueue({
                           <Check /> Confirm promise
                         </ActionButton>
                       ) : (
-                        <button
-                          className="truncate text-left text-[12px] text-primary/55 hover:text-primary"
+                        <Button
+                          className="h-auto truncate px-0 py-0 text-left text-[12px] text-primary/55 hover:bg-transparent hover:text-primary"
                           onClick={() => setSelected(item)}
                           type="button"
+                          variant="ghost"
                         >
                           {item.urgency === "overdue" || item.urgency === "due_soon"
                             ? "Review now"
                             : "Open"}
-                        </button>
+                        </Button>
                       )}
                       <Button
                         type="button"
@@ -949,10 +970,10 @@ export function CommitmentQueue({
                         <PencilSimple /> Correct
                       </Button>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
+            </TableBody>
           </table>
         </div>
       )}
@@ -961,15 +982,17 @@ export function CommitmentQueue({
         <div className="fixed inset-y-0 right-0 z-40 flex bg-background md:left-[285px]">
           <aside className="flex w-[320px] shrink-0 flex-col border-r border-border bg-background">
             <div className="flex h-12 items-center gap-2 border-b border-border px-3">
-              <button
-                className="flex size-8 items-center justify-center rounded-none text-primary/50 hover:bg-background-100 hover:text-primary"
+              <Button
+                className="size-8 rounded-none text-primary/50 hover:bg-background-100 hover:text-primary"
                 onClick={() => setSelected(null)}
                 type="button"
                 aria-label="Close commitment"
+                size="icon-xs"
+                variant="ghost"
               >
                 <X className="size-4" />
-              </button>
-              <span className="text-[12px] text-primary/45">Commitment record</span>
+              </Button>
+              <Label className="text-[12px] font-normal text-primary/45">Commitment record</Label>
               {/* One-pager §3: a record that cannot leave the tool cannot
                   settle an argument. */}
               {onExport ? (
@@ -984,7 +1007,7 @@ export function CommitmentQueue({
                     void onExport(selected).finally(() => setExporting(false));
                   }}
                 >
-                  {exporting ? <CircleNotch className="animate-spin" /> : <Export />}
+                  {exporting ? <Spinner className="size-4" /> : <Export />}
                   Export record
                 </Button>
               ) : null}
@@ -1019,7 +1042,7 @@ export function CommitmentQueue({
                     }}
                   >
                     {busy === `${selected.id}:recovery` ? (
-                      <CircleNotch className="animate-spin" />
+                      <Spinner className="size-4" />
                     ) : (
                       <ArrowClockwise />
                     )}
@@ -1065,13 +1088,28 @@ export function CommitmentQueue({
             </div>
           </aside>
           <div className="min-w-0 flex-1 overflow-y-auto">
-            <div className="flex h-12 items-center gap-2 border-b border-border px-4">
-              <span className="rounded-none bg-background-200 px-3 py-1.5 text-[13px] font-medium text-primary">
-                Overview
-              </span>
-              <span className="px-2 text-[13px] text-primary/45">Evidence</span>
-              <span className="px-2 text-[13px] text-primary/45">Activity</span>
-            </div>
+            <Tabs defaultValue="overview">
+              <TabsList className="h-12 w-full justify-start rounded-none border-b border-border bg-transparent px-4">
+                <TabsTrigger
+                  className="rounded-none bg-background-200 px-3 py-1.5 text-[13px] data-[state=active]:bg-background-200"
+                  value="overview"
+                >
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger
+                  className="rounded-none px-2 text-[13px] text-primary/45"
+                  value="evidence"
+                >
+                  Evidence
+                </TabsTrigger>
+                <TabsTrigger
+                  className="rounded-none px-2 text-[13px] text-primary/45"
+                  value="activity"
+                >
+                  Activity
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
             <div className="mx-auto max-w-4xl p-6">
               <h3 className="text-sm font-medium text-primary/60">Highlights</h3>
               <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -1105,7 +1143,9 @@ export function CommitmentQueue({
               <section className="mt-8">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-medium text-primary/60">Supporting evidence</h3>
-                  <span className="text-[12px] text-primary/40">Exact quote</span>
+                  <Badge className="text-[12px] font-normal text-primary/40" variant="secondary">
+                    Exact quote
+                  </Badge>
                 </div>
                 <blockquote className="mt-3 rounded-none border border-border bg-background-50 p-4 text-[14px] leading-6 text-primary/75">
                   {selected.quote ? `“${selected.quote}”` : "No exact quote is attached yet."}
@@ -1113,8 +1153,10 @@ export function CommitmentQueue({
               </section>
               <section className="mt-8">
                 <h3 className="text-sm font-medium text-primary/60">Next action</h3>
-                <div className="mt-3 rounded-none border border-border p-4">
-                  <p className="text-[14px] text-primary">{selected.nextAction}</p>
+                <Card className="mt-3 gap-3 py-4">
+                  <CardContent className="px-4 text-[14px] text-primary">
+                    {selected.nextAction}
+                  </CardContent>
                   {selected.missingEvidence.length > 0 ? (
                     <p className="mt-2 flex items-center gap-1.5 text-[12px] text-amber-400">
                       <Warning /> Missing {selected.missingEvidence.join(", ")}
@@ -1194,7 +1236,7 @@ export function CommitmentQueue({
                       </Button>
                     ) : null}
                   </div>
-                </div>
+                </Card>
               </section>
             </div>
           </div>
@@ -1243,9 +1285,7 @@ export function CommitmentQueue({
                 }).then((saved) => saved && setEditing(null));
               }}
             >
-              {busy === `${editing?.id}:corrected` ? (
-                <CircleNotch className="animate-spin" />
-              ) : null}
+              {busy === `${editing?.id}:corrected` ? <Spinner className="size-4" /> : null}
               Save correction
             </Button>
           </DialogFooter>
@@ -1257,17 +1297,21 @@ export function CommitmentQueue({
 
 function DetailCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-h-24 rounded-none border border-border bg-background-50 p-3">
-      <p className="text-[12px] text-primary/45">{label}</p>
-      <p className="mt-5 text-[14px] font-medium text-primary">{value}</p>
-    </div>
+    <Card className="min-h-24 gap-3 bg-background-50 py-3">
+      <CardHeader className="px-3 pb-0">
+        <CardDescription className="text-[12px]">{label}</CardDescription>
+      </CardHeader>
+      <CardContent className="px-3 pt-0 text-[14px] font-medium text-primary">{value}</CardContent>
+    </Card>
   );
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[10px] uppercase tracking-wide text-primary/40">{label}</dt>
+      <Label asChild className="text-[10px] font-normal uppercase tracking-wide text-primary/40">
+        <dt>{label}</dt>
+      </Label>
       <dd className="mt-1 text-primary/70">{value}</dd>
     </div>
   );
@@ -1297,7 +1341,7 @@ function ActionButton({
 }: React.ComponentProps<typeof Button> & { busy: boolean }) {
   return (
     <Button type="button" size="sm" {...props}>
-      {busy ? <CircleNotch className="animate-spin" /> : children}
+      {busy ? <Spinner className="size-4" /> : children}
     </Button>
   );
 }

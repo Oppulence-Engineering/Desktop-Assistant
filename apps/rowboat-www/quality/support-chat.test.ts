@@ -77,6 +77,22 @@ describe("support chat config route", () => {
     await expect(callJSON()).resolves.toEqual({ configured: false });
   });
 
+  it("skips Plain in development unless ROWBOAT_WWW_PLAIN_CHAT_ENABLED=1", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+
+    await expect(callJSON()).resolves.toEqual({ configured: false });
+  });
+
+  it("loads Plain in development when explicitly enabled", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_ENABLED", "1");
+
+    await expect(callJSON()).resolves.toMatchObject({
+      configured: true,
+      appId: "chat-app-id",
+    });
+  });
+
   it("serves the app id without an identity for anonymous visitors", async () => {
     const body = await callJSON();
 
@@ -112,6 +128,19 @@ describe("support chat config route", () => {
     expect((await callJSON()).labelTypeIds).toEqual(["lt_01M20XH6PFZ1F5EY4V19WWP7DG"]);
   });
 
+  it("omits identity in development even when Plain is enabled", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_ENABLED", "1");
+    mocks.readSessionCookie.mockReturnValue(session);
+    mocks.fetchViewerIdentity.mockResolvedValue({
+      user: { id: "u1", email: "verified@example.com" },
+    });
+
+    const body = await callJSON();
+
+    expect(body.customer).toBeUndefined();
+  });
+
   it("identifies a signed-in user with a verified email and its hash", async () => {
     mocks.readSessionCookie.mockReturnValue(session);
     mocks.fetchViewerIdentity.mockResolvedValue({
@@ -126,13 +155,13 @@ describe("support chat config route", () => {
     });
   });
 
-  it("falls back to the sealed session email when the API is unavailable", async () => {
+  it("omits the identity when the API cannot verify the current email", async () => {
     mocks.readSessionCookie.mockReturnValue(session);
     mocks.fetchViewerIdentity.mockRejectedValue(new Error("api down"));
 
     const body = await callJSON();
 
-    expect(body.customer?.email).toBe("stale@example.com");
+    expect(body.customer).toBeUndefined();
   });
 
   it("omits the identity when no chat secret can sign it", async () => {

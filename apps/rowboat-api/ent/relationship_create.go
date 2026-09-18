@@ -15,6 +15,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/mailthread"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/personinteractionstat"
@@ -581,6 +582,21 @@ func (_c *RelationshipCreate) AddMailThreads(v ...*MailThread) *RelationshipCrea
 		ids[i] = v[i].ID
 	}
 	return _c.AddMailThreadIDs(ids...)
+}
+
+// AddCommunicationInteractionIDs adds the "communication_interactions" edge to the CommunicationInteraction entity by IDs.
+func (_c *RelationshipCreate) AddCommunicationInteractionIDs(ids ...uuid.UUID) *RelationshipCreate {
+	_c.mutation.AddCommunicationInteractionIDs(ids...)
+	return _c
+}
+
+// AddCommunicationInteractions adds the "communication_interactions" edges to the CommunicationInteraction entity.
+func (_c *RelationshipCreate) AddCommunicationInteractions(v ...*CommunicationInteraction) *RelationshipCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCommunicationInteractionIDs(ids...)
 }
 
 // AddParticipantIDs adds the "participants" edge to the RelationshipParticipant entity by IDs.
@@ -1287,6 +1303,22 @@ func (_c *RelationshipCreate) createSpec() (*Relationship, *sqlgraph.CreateSpec)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(mailthread.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CommunicationInteractionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   relationship.CommunicationInteractionsTable,
+			Columns: []string{relationship.CommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

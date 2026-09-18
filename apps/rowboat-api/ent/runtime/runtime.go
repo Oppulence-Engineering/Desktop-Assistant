@@ -27,10 +27,18 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
@@ -84,6 +92,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -1329,6 +1338,374 @@ func init() {
 	commitmenteventDescID := commitmenteventMixinFields0[0].Descriptor()
 	// commitmentevent.DefaultID holds the default value on creation for the id field.
 	commitmentevent.DefaultID = commitmenteventDescID.Default.(func() uuid.UUID)
+	communicationattachmentMixin := schema.CommunicationAttachment{}.Mixin()
+	communicationattachment.Policy = privacy.NewPolicies(communicationattachmentMixin[0], schema.CommunicationAttachment{})
+	communicationattachment.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := communicationattachment.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	communicationattachmentMixinFields0 := communicationattachmentMixin[0].Fields()
+	_ = communicationattachmentMixinFields0
+	communicationattachmentFields := schema.CommunicationAttachment{}.Fields()
+	_ = communicationattachmentFields
+	// communicationattachmentDescCreatedAt is the schema descriptor for created_at field.
+	communicationattachmentDescCreatedAt := communicationattachmentMixinFields0[1].Descriptor()
+	// communicationattachment.DefaultCreatedAt holds the default value on creation for the created_at field.
+	communicationattachment.DefaultCreatedAt = communicationattachmentDescCreatedAt.Default.(func() time.Time)
+	// communicationattachmentDescUpdatedAt is the schema descriptor for updated_at field.
+	communicationattachmentDescUpdatedAt := communicationattachmentMixinFields0[2].Descriptor()
+	// communicationattachment.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	communicationattachment.DefaultUpdatedAt = communicationattachmentDescUpdatedAt.Default.(func() time.Time)
+	// communicationattachment.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	communicationattachment.UpdateDefaultUpdatedAt = communicationattachmentDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// communicationattachmentDescProviderAttachmentID is the schema descriptor for provider_attachment_id field.
+	communicationattachmentDescProviderAttachmentID := communicationattachmentFields[0].Descriptor()
+	// communicationattachment.ProviderAttachmentIDValidator is a validator for the "provider_attachment_id" field. It is called by the builders before save.
+	communicationattachment.ProviderAttachmentIDValidator = communicationattachmentDescProviderAttachmentID.Validators[0].(func(string) error)
+	// communicationattachmentDescSizeBytes is the schema descriptor for size_bytes field.
+	communicationattachmentDescSizeBytes := communicationattachmentFields[3].Descriptor()
+	// communicationattachment.DefaultSizeBytes holds the default value on creation for the size_bytes field.
+	communicationattachment.DefaultSizeBytes = communicationattachmentDescSizeBytes.Default.(int64)
+	// communicationattachment.SizeBytesValidator is a validator for the "size_bytes" field. It is called by the builders before save.
+	communicationattachment.SizeBytesValidator = communicationattachmentDescSizeBytes.Validators[0].(func(int64) error)
+	// communicationattachmentDescVisibility is the schema descriptor for visibility field.
+	communicationattachmentDescVisibility := communicationattachmentFields[5].Descriptor()
+	// communicationattachment.DefaultVisibility holds the default value on creation for the visibility field.
+	communicationattachment.DefaultVisibility = communicationattachmentDescVisibility.Default.(string)
+	// communicationattachment.VisibilityValidator is a validator for the "visibility" field. It is called by the builders before save.
+	communicationattachment.VisibilityValidator = communicationattachmentDescVisibility.Validators[0].(func(string) error)
+	// communicationattachmentDescScanStatus is the schema descriptor for scan_status field.
+	communicationattachmentDescScanStatus := communicationattachmentFields[6].Descriptor()
+	// communicationattachment.DefaultScanStatus holds the default value on creation for the scan_status field.
+	communicationattachment.DefaultScanStatus = communicationattachmentDescScanStatus.Default.(string)
+	// communicationattachment.ScanStatusValidator is a validator for the "scan_status" field. It is called by the builders before save.
+	communicationattachment.ScanStatusValidator = communicationattachmentDescScanStatus.Validators[0].(func(string) error)
+	// communicationattachmentDescID is the schema descriptor for id field.
+	communicationattachmentDescID := communicationattachmentMixinFields0[0].Descriptor()
+	// communicationattachment.DefaultID holds the default value on creation for the id field.
+	communicationattachment.DefaultID = communicationattachmentDescID.Default.(func() uuid.UUID)
+	communicationinteractionMixin := schema.CommunicationInteraction{}.Mixin()
+	communicationinteraction.Policy = privacy.NewPolicies(communicationinteractionMixin[0], schema.CommunicationInteraction{})
+	communicationinteraction.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := communicationinteraction.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	communicationinteractionMixinFields0 := communicationinteractionMixin[0].Fields()
+	_ = communicationinteractionMixinFields0
+	communicationinteractionFields := schema.CommunicationInteraction{}.Fields()
+	_ = communicationinteractionFields
+	// communicationinteractionDescCreatedAt is the schema descriptor for created_at field.
+	communicationinteractionDescCreatedAt := communicationinteractionMixinFields0[1].Descriptor()
+	// communicationinteraction.DefaultCreatedAt holds the default value on creation for the created_at field.
+	communicationinteraction.DefaultCreatedAt = communicationinteractionDescCreatedAt.Default.(func() time.Time)
+	// communicationinteractionDescUpdatedAt is the schema descriptor for updated_at field.
+	communicationinteractionDescUpdatedAt := communicationinteractionMixinFields0[2].Descriptor()
+	// communicationinteraction.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	communicationinteraction.DefaultUpdatedAt = communicationinteractionDescUpdatedAt.Default.(func() time.Time)
+	// communicationinteraction.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	communicationinteraction.UpdateDefaultUpdatedAt = communicationinteractionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// communicationinteractionDescSource is the schema descriptor for source field.
+	communicationinteractionDescSource := communicationinteractionFields[0].Descriptor()
+	// communicationinteraction.SourceValidator is a validator for the "source" field. It is called by the builders before save.
+	communicationinteraction.SourceValidator = communicationinteractionDescSource.Validators[0].(func(string) error)
+	// communicationinteractionDescSourceAccountID is the schema descriptor for source_account_id field.
+	communicationinteractionDescSourceAccountID := communicationinteractionFields[1].Descriptor()
+	// communicationinteraction.SourceAccountIDValidator is a validator for the "source_account_id" field. It is called by the builders before save.
+	communicationinteraction.SourceAccountIDValidator = communicationinteractionDescSourceAccountID.Validators[0].(func(string) error)
+	// communicationinteractionDescProviderObjectID is the schema descriptor for provider_object_id field.
+	communicationinteractionDescProviderObjectID := communicationinteractionFields[2].Descriptor()
+	// communicationinteraction.ProviderObjectIDValidator is a validator for the "provider_object_id" field. It is called by the builders before save.
+	communicationinteraction.ProviderObjectIDValidator = communicationinteractionDescProviderObjectID.Validators[0].(func(string) error)
+	// communicationinteractionDescSourceVersion is the schema descriptor for source_version field.
+	communicationinteractionDescSourceVersion := communicationinteractionFields[3].Descriptor()
+	// communicationinteraction.DefaultSourceVersion holds the default value on creation for the source_version field.
+	communicationinteraction.DefaultSourceVersion = communicationinteractionDescSourceVersion.Default.(string)
+	// communicationinteractionDescInteractionType is the schema descriptor for interaction_type field.
+	communicationinteractionDescInteractionType := communicationinteractionFields[4].Descriptor()
+	// communicationinteraction.InteractionTypeValidator is a validator for the "interaction_type" field. It is called by the builders before save.
+	communicationinteraction.InteractionTypeValidator = communicationinteractionDescInteractionType.Validators[0].(func(string) error)
+	// communicationinteractionDescDirection is the schema descriptor for direction field.
+	communicationinteractionDescDirection := communicationinteractionFields[5].Descriptor()
+	// communicationinteraction.DirectionValidator is a validator for the "direction" field. It is called by the builders before save.
+	communicationinteraction.DirectionValidator = communicationinteractionDescDirection.Validators[0].(func(string) error)
+	// communicationinteractionDescVisibility is the schema descriptor for visibility field.
+	communicationinteractionDescVisibility := communicationinteractionFields[9].Descriptor()
+	// communicationinteraction.DefaultVisibility holds the default value on creation for the visibility field.
+	communicationinteraction.DefaultVisibility = communicationinteractionDescVisibility.Default.(string)
+	// communicationinteraction.VisibilityValidator is a validator for the "visibility" field. It is called by the builders before save.
+	communicationinteraction.VisibilityValidator = communicationinteractionDescVisibility.Validators[0].(func(string) error)
+	// communicationinteractionDescDeleted is the schema descriptor for deleted field.
+	communicationinteractionDescDeleted := communicationinteractionFields[10].Descriptor()
+	// communicationinteraction.DefaultDeleted holds the default value on creation for the deleted field.
+	communicationinteraction.DefaultDeleted = communicationinteractionDescDeleted.Default.(bool)
+	// communicationinteractionDescContentHash is the schema descriptor for content_hash field.
+	communicationinteractionDescContentHash := communicationinteractionFields[11].Descriptor()
+	// communicationinteraction.ContentHashValidator is a validator for the "content_hash" field. It is called by the builders before save.
+	communicationinteraction.ContentHashValidator = communicationinteractionDescContentHash.Validators[0].(func(string) error)
+	// communicationinteractionDescMetadataJSON is the schema descriptor for metadata_json field.
+	communicationinteractionDescMetadataJSON := communicationinteractionFields[12].Descriptor()
+	// communicationinteraction.DefaultMetadataJSON holds the default value on creation for the metadata_json field.
+	communicationinteraction.DefaultMetadataJSON = communicationinteractionDescMetadataJSON.Default.(string)
+	// communicationinteraction.MetadataJSONValidator is a validator for the "metadata_json" field. It is called by the builders before save.
+	communicationinteraction.MetadataJSONValidator = communicationinteractionDescMetadataJSON.Validators[0].(func(string) error)
+	// communicationinteractionDescID is the schema descriptor for id field.
+	communicationinteractionDescID := communicationinteractionMixinFields0[0].Descriptor()
+	// communicationinteraction.DefaultID holds the default value on creation for the id field.
+	communicationinteraction.DefaultID = communicationinteractionDescID.Default.(func() uuid.UUID)
+	communicationparticipantMixin := schema.CommunicationParticipant{}.Mixin()
+	communicationparticipant.Policy = privacy.NewPolicies(communicationparticipantMixin[0], schema.CommunicationParticipant{})
+	communicationparticipant.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := communicationparticipant.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	communicationparticipantMixinFields0 := communicationparticipantMixin[0].Fields()
+	_ = communicationparticipantMixinFields0
+	communicationparticipantFields := schema.CommunicationParticipant{}.Fields()
+	_ = communicationparticipantFields
+	// communicationparticipantDescCreatedAt is the schema descriptor for created_at field.
+	communicationparticipantDescCreatedAt := communicationparticipantMixinFields0[1].Descriptor()
+	// communicationparticipant.DefaultCreatedAt holds the default value on creation for the created_at field.
+	communicationparticipant.DefaultCreatedAt = communicationparticipantDescCreatedAt.Default.(func() time.Time)
+	// communicationparticipantDescUpdatedAt is the schema descriptor for updated_at field.
+	communicationparticipantDescUpdatedAt := communicationparticipantMixinFields0[2].Descriptor()
+	// communicationparticipant.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	communicationparticipant.DefaultUpdatedAt = communicationparticipantDescUpdatedAt.Default.(func() time.Time)
+	// communicationparticipant.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	communicationparticipant.UpdateDefaultUpdatedAt = communicationparticipantDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// communicationparticipantDescEmail is the schema descriptor for email field.
+	communicationparticipantDescEmail := communicationparticipantFields[0].Descriptor()
+	// communicationparticipant.EmailValidator is a validator for the "email" field. It is called by the builders before save.
+	communicationparticipant.EmailValidator = communicationparticipantDescEmail.Validators[0].(func(string) error)
+	// communicationparticipantDescRole is the schema descriptor for role field.
+	communicationparticipantDescRole := communicationparticipantFields[2].Descriptor()
+	// communicationparticipant.RoleValidator is a validator for the "role" field. It is called by the builders before save.
+	communicationparticipant.RoleValidator = communicationparticipantDescRole.Validators[0].(func(string) error)
+	// communicationparticipantDescExternal is the schema descriptor for external field.
+	communicationparticipantDescExternal := communicationparticipantFields[3].Descriptor()
+	// communicationparticipant.DefaultExternal holds the default value on creation for the external field.
+	communicationparticipant.DefaultExternal = communicationparticipantDescExternal.Default.(bool)
+	// communicationparticipantDescOwner is the schema descriptor for owner field.
+	communicationparticipantDescOwner := communicationparticipantFields[4].Descriptor()
+	// communicationparticipant.DefaultOwner holds the default value on creation for the owner field.
+	communicationparticipant.DefaultOwner = communicationparticipantDescOwner.Default.(bool)
+	// communicationparticipantDescID is the schema descriptor for id field.
+	communicationparticipantDescID := communicationparticipantMixinFields0[0].Descriptor()
+	// communicationparticipant.DefaultID holds the default value on creation for the id field.
+	communicationparticipant.DefaultID = communicationparticipantDescID.Default.(func() uuid.UUID)
+	communicationprivacypolicyMixin := schema.CommunicationPrivacyPolicy{}.Mixin()
+	communicationprivacypolicy.Policy = privacy.NewPolicies(communicationprivacypolicyMixin[0], schema.CommunicationPrivacyPolicy{})
+	communicationprivacypolicy.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := communicationprivacypolicy.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	communicationprivacypolicyMixinFields0 := communicationprivacypolicyMixin[0].Fields()
+	_ = communicationprivacypolicyMixinFields0
+	communicationprivacypolicyFields := schema.CommunicationPrivacyPolicy{}.Fields()
+	_ = communicationprivacypolicyFields
+	// communicationprivacypolicyDescCreatedAt is the schema descriptor for created_at field.
+	communicationprivacypolicyDescCreatedAt := communicationprivacypolicyMixinFields0[1].Descriptor()
+	// communicationprivacypolicy.DefaultCreatedAt holds the default value on creation for the created_at field.
+	communicationprivacypolicy.DefaultCreatedAt = communicationprivacypolicyDescCreatedAt.Default.(func() time.Time)
+	// communicationprivacypolicyDescUpdatedAt is the schema descriptor for updated_at field.
+	communicationprivacypolicyDescUpdatedAt := communicationprivacypolicyMixinFields0[2].Descriptor()
+	// communicationprivacypolicy.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	communicationprivacypolicy.DefaultUpdatedAt = communicationprivacypolicyDescUpdatedAt.Default.(func() time.Time)
+	// communicationprivacypolicy.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	communicationprivacypolicy.UpdateDefaultUpdatedAt = communicationprivacypolicyDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// communicationprivacypolicyDescSourceAccountID is the schema descriptor for source_account_id field.
+	communicationprivacypolicyDescSourceAccountID := communicationprivacypolicyFields[0].Descriptor()
+	// communicationprivacypolicy.SourceAccountIDValidator is a validator for the "source_account_id" field. It is called by the builders before save.
+	communicationprivacypolicy.SourceAccountIDValidator = communicationprivacypolicyDescSourceAccountID.Validators[0].(func(string) error)
+	// communicationprivacypolicyDescMetadataVisibility is the schema descriptor for metadata_visibility field.
+	communicationprivacypolicyDescMetadataVisibility := communicationprivacypolicyFields[1].Descriptor()
+	// communicationprivacypolicy.DefaultMetadataVisibility holds the default value on creation for the metadata_visibility field.
+	communicationprivacypolicy.DefaultMetadataVisibility = communicationprivacypolicyDescMetadataVisibility.Default.(string)
+	// communicationprivacypolicy.MetadataVisibilityValidator is a validator for the "metadata_visibility" field. It is called by the builders before save.
+	communicationprivacypolicy.MetadataVisibilityValidator = communicationprivacypolicyDescMetadataVisibility.Validators[0].(func(string) error)
+	// communicationprivacypolicyDescShareSubject is the schema descriptor for share_subject field.
+	communicationprivacypolicyDescShareSubject := communicationprivacypolicyFields[2].Descriptor()
+	// communicationprivacypolicy.DefaultShareSubject holds the default value on creation for the share_subject field.
+	communicationprivacypolicy.DefaultShareSubject = communicationprivacypolicyDescShareSubject.Default.(bool)
+	// communicationprivacypolicyDescShareBody is the schema descriptor for share_body field.
+	communicationprivacypolicyDescShareBody := communicationprivacypolicyFields[3].Descriptor()
+	// communicationprivacypolicy.DefaultShareBody holds the default value on creation for the share_body field.
+	communicationprivacypolicy.DefaultShareBody = communicationprivacypolicyDescShareBody.Default.(bool)
+	// communicationprivacypolicyDescShareAttachments is the schema descriptor for share_attachments field.
+	communicationprivacypolicyDescShareAttachments := communicationprivacypolicyFields[4].Descriptor()
+	// communicationprivacypolicy.DefaultShareAttachments holds the default value on creation for the share_attachments field.
+	communicationprivacypolicy.DefaultShareAttachments = communicationprivacypolicyDescShareAttachments.Default.(bool)
+	// communicationprivacypolicyDescSignatureEnrichment is the schema descriptor for signature_enrichment field.
+	communicationprivacypolicyDescSignatureEnrichment := communicationprivacypolicyFields[5].Descriptor()
+	// communicationprivacypolicy.DefaultSignatureEnrichment holds the default value on creation for the signature_enrichment field.
+	communicationprivacypolicy.DefaultSignatureEnrichment = communicationprivacypolicyDescSignatureEnrichment.Default.(bool)
+	// communicationprivacypolicyDescModelContactExtraction is the schema descriptor for model_contact_extraction field.
+	communicationprivacypolicyDescModelContactExtraction := communicationprivacypolicyFields[6].Descriptor()
+	// communicationprivacypolicy.DefaultModelContactExtraction holds the default value on creation for the model_contact_extraction field.
+	communicationprivacypolicy.DefaultModelContactExtraction = communicationprivacypolicyDescModelContactExtraction.Default.(bool)
+	// communicationprivacypolicyDescRetentionDays is the schema descriptor for retention_days field.
+	communicationprivacypolicyDescRetentionDays := communicationprivacypolicyFields[7].Descriptor()
+	// communicationprivacypolicy.DefaultRetentionDays holds the default value on creation for the retention_days field.
+	communicationprivacypolicy.DefaultRetentionDays = communicationprivacypolicyDescRetentionDays.Default.(int)
+	// communicationprivacypolicy.RetentionDaysValidator is a validator for the "retention_days" field. It is called by the builders before save.
+	communicationprivacypolicy.RetentionDaysValidator = communicationprivacypolicyDescRetentionDays.Validators[0].(func(int) error)
+	// communicationprivacypolicyDescVersion is the schema descriptor for version field.
+	communicationprivacypolicyDescVersion := communicationprivacypolicyFields[8].Descriptor()
+	// communicationprivacypolicy.DefaultVersion holds the default value on creation for the version field.
+	communicationprivacypolicy.DefaultVersion = communicationprivacypolicyDescVersion.Default.(int)
+	// communicationprivacypolicy.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	communicationprivacypolicy.VersionValidator = communicationprivacypolicyDescVersion.Validators[0].(func(int) error)
+	// communicationprivacypolicyDescID is the schema descriptor for id field.
+	communicationprivacypolicyDescID := communicationprivacypolicyMixinFields0[0].Descriptor()
+	// communicationprivacypolicy.DefaultID holds the default value on creation for the id field.
+	communicationprivacypolicy.DefaultID = communicationprivacypolicyDescID.Default.(func() uuid.UUID)
+	communicationprivacyruleMixin := schema.CommunicationPrivacyRule{}.Mixin()
+	communicationprivacyrule.Policy = privacy.NewPolicies(communicationprivacyruleMixin[0], schema.CommunicationPrivacyRule{})
+	communicationprivacyrule.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := communicationprivacyrule.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	communicationprivacyruleMixinFields0 := communicationprivacyruleMixin[0].Fields()
+	_ = communicationprivacyruleMixinFields0
+	communicationprivacyruleFields := schema.CommunicationPrivacyRule{}.Fields()
+	_ = communicationprivacyruleFields
+	// communicationprivacyruleDescCreatedAt is the schema descriptor for created_at field.
+	communicationprivacyruleDescCreatedAt := communicationprivacyruleMixinFields0[1].Descriptor()
+	// communicationprivacyrule.DefaultCreatedAt holds the default value on creation for the created_at field.
+	communicationprivacyrule.DefaultCreatedAt = communicationprivacyruleDescCreatedAt.Default.(func() time.Time)
+	// communicationprivacyruleDescUpdatedAt is the schema descriptor for updated_at field.
+	communicationprivacyruleDescUpdatedAt := communicationprivacyruleMixinFields0[2].Descriptor()
+	// communicationprivacyrule.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	communicationprivacyrule.DefaultUpdatedAt = communicationprivacyruleDescUpdatedAt.Default.(func() time.Time)
+	// communicationprivacyrule.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	communicationprivacyrule.UpdateDefaultUpdatedAt = communicationprivacyruleDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// communicationprivacyruleDescKind is the schema descriptor for kind field.
+	communicationprivacyruleDescKind := communicationprivacyruleFields[0].Descriptor()
+	// communicationprivacyrule.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	communicationprivacyrule.KindValidator = communicationprivacyruleDescKind.Validators[0].(func(string) error)
+	// communicationprivacyruleDescValue is the schema descriptor for value field.
+	communicationprivacyruleDescValue := communicationprivacyruleFields[1].Descriptor()
+	// communicationprivacyrule.ValueValidator is a validator for the "value" field. It is called by the builders before save.
+	communicationprivacyrule.ValueValidator = communicationprivacyruleDescValue.Validators[0].(func(string) error)
+	// communicationprivacyruleDescValueHash is the schema descriptor for value_hash field.
+	communicationprivacyruleDescValueHash := communicationprivacyruleFields[2].Descriptor()
+	// communicationprivacyrule.ValueHashValidator is a validator for the "value_hash" field. It is called by the builders before save.
+	communicationprivacyrule.ValueHashValidator = communicationprivacyruleDescValueHash.Validators[0].(func(string) error)
+	// communicationprivacyruleDescActive is the schema descriptor for active field.
+	communicationprivacyruleDescActive := communicationprivacyruleFields[3].Descriptor()
+	// communicationprivacyrule.DefaultActive holds the default value on creation for the active field.
+	communicationprivacyrule.DefaultActive = communicationprivacyruleDescActive.Default.(bool)
+	// communicationprivacyruleDescID is the schema descriptor for id field.
+	communicationprivacyruleDescID := communicationprivacyruleMixinFields0[0].Descriptor()
+	// communicationprivacyrule.DefaultID holds the default value on creation for the id field.
+	communicationprivacyrule.DefaultID = communicationprivacyruleDescID.Default.(func() uuid.UUID)
+	communicationsharegrantMixin := schema.CommunicationShareGrant{}.Mixin()
+	communicationsharegrant.Policy = privacy.NewPolicies(communicationsharegrantMixin[0], schema.CommunicationShareGrant{})
+	communicationsharegrant.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := communicationsharegrant.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	communicationsharegrantMixinFields0 := communicationsharegrantMixin[0].Fields()
+	_ = communicationsharegrantMixinFields0
+	communicationsharegrantFields := schema.CommunicationShareGrant{}.Fields()
+	_ = communicationsharegrantFields
+	// communicationsharegrantDescCreatedAt is the schema descriptor for created_at field.
+	communicationsharegrantDescCreatedAt := communicationsharegrantMixinFields0[1].Descriptor()
+	// communicationsharegrant.DefaultCreatedAt holds the default value on creation for the created_at field.
+	communicationsharegrant.DefaultCreatedAt = communicationsharegrantDescCreatedAt.Default.(func() time.Time)
+	// communicationsharegrantDescUpdatedAt is the schema descriptor for updated_at field.
+	communicationsharegrantDescUpdatedAt := communicationsharegrantMixinFields0[2].Descriptor()
+	// communicationsharegrant.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	communicationsharegrant.DefaultUpdatedAt = communicationsharegrantDescUpdatedAt.Default.(func() time.Time)
+	// communicationsharegrant.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	communicationsharegrant.UpdateDefaultUpdatedAt = communicationsharegrantDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// communicationsharegrantDescScope is the schema descriptor for scope field.
+	communicationsharegrantDescScope := communicationsharegrantFields[0].Descriptor()
+	// communicationsharegrant.ScopeValidator is a validator for the "scope" field. It is called by the builders before save.
+	communicationsharegrant.ScopeValidator = communicationsharegrantDescScope.Validators[0].(func(string) error)
+	// communicationsharegrantDescResourceType is the schema descriptor for resource_type field.
+	communicationsharegrantDescResourceType := communicationsharegrantFields[1].Descriptor()
+	// communicationsharegrant.ResourceTypeValidator is a validator for the "resource_type" field. It is called by the builders before save.
+	communicationsharegrant.ResourceTypeValidator = communicationsharegrantDescResourceType.Validators[0].(func(string) error)
+	// communicationsharegrantDescResourceID is the schema descriptor for resource_id field.
+	communicationsharegrantDescResourceID := communicationsharegrantFields[2].Descriptor()
+	// communicationsharegrant.ResourceIDValidator is a validator for the "resource_id" field. It is called by the builders before save.
+	communicationsharegrant.ResourceIDValidator = communicationsharegrantDescResourceID.Validators[0].(func(string) error)
+	// communicationsharegrantDescID is the schema descriptor for id field.
+	communicationsharegrantDescID := communicationsharegrantMixinFields0[0].Descriptor()
+	// communicationsharegrant.DefaultID holds the default value on creation for the id field.
+	communicationsharegrant.DefaultID = communicationsharegrantDescID.Default.(func() uuid.UUID)
+	communicationsynccursorMixin := schema.CommunicationSyncCursor{}.Mixin()
+	communicationsynccursor.Policy = privacy.NewPolicies(communicationsynccursorMixin[0], schema.CommunicationSyncCursor{})
+	communicationsynccursor.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := communicationsynccursor.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	communicationsynccursorMixinFields0 := communicationsynccursorMixin[0].Fields()
+	_ = communicationsynccursorMixinFields0
+	communicationsynccursorFields := schema.CommunicationSyncCursor{}.Fields()
+	_ = communicationsynccursorFields
+	// communicationsynccursorDescCreatedAt is the schema descriptor for created_at field.
+	communicationsynccursorDescCreatedAt := communicationsynccursorMixinFields0[1].Descriptor()
+	// communicationsynccursor.DefaultCreatedAt holds the default value on creation for the created_at field.
+	communicationsynccursor.DefaultCreatedAt = communicationsynccursorDescCreatedAt.Default.(func() time.Time)
+	// communicationsynccursorDescUpdatedAt is the schema descriptor for updated_at field.
+	communicationsynccursorDescUpdatedAt := communicationsynccursorMixinFields0[2].Descriptor()
+	// communicationsynccursor.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	communicationsynccursor.DefaultUpdatedAt = communicationsynccursorDescUpdatedAt.Default.(func() time.Time)
+	// communicationsynccursor.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	communicationsynccursor.UpdateDefaultUpdatedAt = communicationsynccursorDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// communicationsynccursorDescSource is the schema descriptor for source field.
+	communicationsynccursorDescSource := communicationsynccursorFields[0].Descriptor()
+	// communicationsynccursor.SourceValidator is a validator for the "source" field. It is called by the builders before save.
+	communicationsynccursor.SourceValidator = communicationsynccursorDescSource.Validators[0].(func(string) error)
+	// communicationsynccursorDescSourceAccountID is the schema descriptor for source_account_id field.
+	communicationsynccursorDescSourceAccountID := communicationsynccursorFields[1].Descriptor()
+	// communicationsynccursor.SourceAccountIDValidator is a validator for the "source_account_id" field. It is called by the builders before save.
+	communicationsynccursor.SourceAccountIDValidator = communicationsynccursorDescSourceAccountID.Validators[0].(func(string) error)
+	// communicationsynccursorDescStatus is the schema descriptor for status field.
+	communicationsynccursorDescStatus := communicationsynccursorFields[3].Descriptor()
+	// communicationsynccursor.DefaultStatus holds the default value on creation for the status field.
+	communicationsynccursor.DefaultStatus = communicationsynccursorDescStatus.Default.(string)
+	// communicationsynccursor.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	communicationsynccursor.StatusValidator = communicationsynccursorDescStatus.Validators[0].(func(string) error)
+	// communicationsynccursorDescRetryCount is the schema descriptor for retry_count field.
+	communicationsynccursorDescRetryCount := communicationsynccursorFields[7].Descriptor()
+	// communicationsynccursor.DefaultRetryCount holds the default value on creation for the retry_count field.
+	communicationsynccursor.DefaultRetryCount = communicationsynccursorDescRetryCount.Default.(int)
+	// communicationsynccursor.RetryCountValidator is a validator for the "retry_count" field. It is called by the builders before save.
+	communicationsynccursor.RetryCountValidator = communicationsynccursorDescRetryCount.Validators[0].(func(int) error)
+	// communicationsynccursorDescID is the schema descriptor for id field.
+	communicationsynccursorDescID := communicationsynccursorMixinFields0[0].Descriptor()
+	// communicationsynccursor.DefaultID holds the default value on creation for the id field.
+	communicationsynccursor.DefaultID = communicationsynccursorDescID.Default.(func() uuid.UUID)
 	connectorauditeventMixin := schema.ConnectorAuditEvent{}.Mixin()
 	connectorauditevent.Policy = privacy.NewPolicies(connectorauditeventMixin[0], schema.ConnectorAuditEvent{})
 	connectorauditevent.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -1458,6 +1835,60 @@ func init() {
 	connectorrevocationjobDescID := connectorrevocationjobMixinFields0[0].Descriptor()
 	// connectorrevocationjob.DefaultID holds the default value on creation for the id field.
 	connectorrevocationjob.DefaultID = connectorrevocationjobDescID.Default.(func() uuid.UUID)
+	consoleresourceMixin := schema.ConsoleResource{}.Mixin()
+	consoleresource.Policy = privacy.NewPolicies(consoleresourceMixin[0], schema.ConsoleResource{})
+	consoleresource.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := consoleresource.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	consoleresourceMixinFields0 := consoleresourceMixin[0].Fields()
+	_ = consoleresourceMixinFields0
+	consoleresourceFields := schema.ConsoleResource{}.Fields()
+	_ = consoleresourceFields
+	// consoleresourceDescCreatedAt is the schema descriptor for created_at field.
+	consoleresourceDescCreatedAt := consoleresourceMixinFields0[1].Descriptor()
+	// consoleresource.DefaultCreatedAt holds the default value on creation for the created_at field.
+	consoleresource.DefaultCreatedAt = consoleresourceDescCreatedAt.Default.(func() time.Time)
+	// consoleresourceDescUpdatedAt is the schema descriptor for updated_at field.
+	consoleresourceDescUpdatedAt := consoleresourceMixinFields0[2].Descriptor()
+	// consoleresource.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	consoleresource.DefaultUpdatedAt = consoleresourceDescUpdatedAt.Default.(func() time.Time)
+	// consoleresource.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	consoleresource.UpdateDefaultUpdatedAt = consoleresourceDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// consoleresourceDescKind is the schema descriptor for kind field.
+	consoleresourceDescKind := consoleresourceFields[0].Descriptor()
+	// consoleresource.KindValidator is a validator for the "kind" field. It is called by the builders before save.
+	consoleresource.KindValidator = consoleresourceDescKind.Validators[0].(func(string) error)
+	// consoleresourceDescPayloadJSON is the schema descriptor for payload_json field.
+	consoleresourceDescPayloadJSON := consoleresourceFields[4].Descriptor()
+	// consoleresource.PayloadJSONValidator is a validator for the "payload_json" field. It is called by the builders before save.
+	consoleresource.PayloadJSONValidator = func() func(string) error {
+		validators := consoleresourceDescPayloadJSON.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(payload_json string) error {
+			for _, fn := range fns {
+				if err := fn(payload_json); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// consoleresourceDescSortOrder is the schema descriptor for sort_order field.
+	consoleresourceDescSortOrder := consoleresourceFields[5].Descriptor()
+	// consoleresource.DefaultSortOrder holds the default value on creation for the sort_order field.
+	consoleresource.DefaultSortOrder = consoleresourceDescSortOrder.Default.(int)
+	// consoleresourceDescID is the schema descriptor for id field.
+	consoleresourceDescID := consoleresourceMixinFields0[0].Descriptor()
+	// consoleresource.DefaultID holds the default value on creation for the id field.
+	consoleresource.DefaultID = consoleresourceDescID.Default.(func() uuid.UUID)
 	conversationintelligenceartifactMixin := schema.ConversationIntelligenceArtifact{}.Mixin()
 	conversationintelligenceartifact.Policy = privacy.NewPolicies(conversationintelligenceartifactMixin[0], schema.ConversationIntelligenceArtifact{})
 	conversationintelligenceartifact.Hooks[0] = func(next ent.Mutator) ent.Mutator {
@@ -4428,6 +4859,40 @@ func init() {
 	userhistoryDescID := userhistoryFields[0].Descriptor()
 	// userhistory.DefaultID holds the default value on creation for the id field.
 	userhistory.DefaultID = userhistoryDescID.Default.(func() uuid.UUID)
+	userpreferenceMixin := schema.UserPreference{}.Mixin()
+	userpreference.Policy = privacy.NewPolicies(userpreferenceMixin[0], schema.UserPreference{})
+	userpreference.Hooks[0] = func(next ent.Mutator) ent.Mutator {
+		return ent.MutateFunc(func(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+			if err := userpreference.Policy.EvalMutation(ctx, m); err != nil {
+				return nil, err
+			}
+			return next.Mutate(ctx, m)
+		})
+	}
+	userpreferenceMixinFields0 := userpreferenceMixin[0].Fields()
+	_ = userpreferenceMixinFields0
+	userpreferenceFields := schema.UserPreference{}.Fields()
+	_ = userpreferenceFields
+	// userpreferenceDescCreatedAt is the schema descriptor for created_at field.
+	userpreferenceDescCreatedAt := userpreferenceMixinFields0[1].Descriptor()
+	// userpreference.DefaultCreatedAt holds the default value on creation for the created_at field.
+	userpreference.DefaultCreatedAt = userpreferenceDescCreatedAt.Default.(func() time.Time)
+	// userpreferenceDescUpdatedAt is the schema descriptor for updated_at field.
+	userpreferenceDescUpdatedAt := userpreferenceMixinFields0[2].Descriptor()
+	// userpreference.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	userpreference.DefaultUpdatedAt = userpreferenceDescUpdatedAt.Default.(func() time.Time)
+	// userpreference.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	userpreference.UpdateDefaultUpdatedAt = userpreferenceDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// userpreferenceDescPreferencesJSON is the schema descriptor for preferences_json field.
+	userpreferenceDescPreferencesJSON := userpreferenceFields[0].Descriptor()
+	// userpreference.DefaultPreferencesJSON holds the default value on creation for the preferences_json field.
+	userpreference.DefaultPreferencesJSON = userpreferenceDescPreferencesJSON.Default.(string)
+	// userpreference.PreferencesJSONValidator is a validator for the "preferences_json" field. It is called by the builders before save.
+	userpreference.PreferencesJSONValidator = userpreferenceDescPreferencesJSON.Validators[0].(func(string) error)
+	// userpreferenceDescID is the schema descriptor for id field.
+	userpreferenceDescID := userpreferenceMixinFields0[0].Descriptor()
+	// userpreference.DefaultID holds the default value on creation for the id field.
+	userpreference.DefaultID = userpreferenceDescID.Default.(func() uuid.UUID)
 	voiceapikeyMixin := schema.VoiceAPIKey{}.Mixin()
 	voiceapikey.Policy = privacy.NewPolicies(voiceapikeyMixin[0], schema.VoiceAPIKey{})
 	voiceapikey.Hooks[0] = func(next ent.Mutator) ent.Mutator {

@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
+import { MarketingSpan } from "./marketing-primitives";
+
 export type PlatformRailItem = {
   id: string;
   nav: string;
@@ -85,8 +87,8 @@ export function PlatformRail({ items }: { items: readonly PlatformRailItem[] }) 
           >
             <div className="sm-attio-row-copy">
               <h3>
-                <span>{item.title}</span>
-                <span>{` ${item.description}`}</span>
+                <MarketingSpan>{item.title}</MarketingSpan>
+                <MarketingSpan>{` ${item.description}`}</MarketingSpan>
               </h3>
             </div>
             <figure className="sm-attio-row-media">

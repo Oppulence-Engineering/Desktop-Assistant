@@ -126,21 +126,6 @@ func (h *Handler) handleGmailPush(w http.ResponseWriter, r *http.Request, body [
 		return
 	}
 
-	// Keep the RFC 031 Layer-1 mail index live: a detached, tenant-scoped
-	// incremental sync from the Gmail History API. Best-effort — the webhook
-	// still acknowledges the push regardless, and a stale cursor self-heals on
-	// the next scan.
-	if h.gmailHistoryConsumer != nil {
-		historyID := note.HistoryID
-		go func() {
-			ctx, cancel := context.WithTimeout(auth.WithUser(context.Background(), owner), 2*time.Minute)
-			defer cancel()
-			if err := h.gmailHistoryConsumer(ctx, owner, historyID); err != nil {
-				h.log.Debug("gmail history sync", zap.Error(err))
-			}
-		}()
-	}
-
 	req := IngestRequest{
 		Source:          SourceGmail,
 		SourceEventID:   fmt.Sprintf("%d", note.HistoryID),
@@ -152,7 +137,7 @@ func (h *Handler) handleGmailPush(w http.ResponseWriter, r *http.Request, body [
 		Payload:   json.RawMessage(decoded),
 		DedupeKey: fmt.Sprintf("gmail:history:%s:%d", email, note.HistoryID),
 	}
-	h.respondIngest(w, r, owner, req)
+	h.respondGoogleInvalidation(w, r, owner, req, time.Now().UTC())
 }
 
 func (h *Handler) handleGoogleChannelNotification(w http.ResponseWriter, r *http.Request, state string) {
@@ -210,7 +195,17 @@ func (h *Handler) handleCalendarNotification(w http.ResponseWriter, r *http.Requ
 		Payload:         payload,
 		DedupeKey:       fmt.Sprintf("gcal:%s:%s", channelID, messageNumber),
 	}
-	h.respondIngest(w, r, owner, req)
+	h.respondGoogleInvalidation(w, r, owner, req, time.Now().UTC())
+}
+
+func (h *Handler) respondGoogleInvalidation(w http.ResponseWriter, r *http.Request, owner *ent.User, req IngestRequest, providerEventAt time.Time) {
+	var afterCreate func(context.Context, *ent.CloudEvent) error
+	if h.googleInvalidator != nil {
+		afterCreate = func(ctx context.Context, _ *ent.CloudEvent) error {
+			return h.googleInvalidator(ctx, owner, req.Source, req.SourceAccountID, providerEventAt)
+		}
+	}
+	h.respondIngestAfterCreate(w, r, owner, req, afterCreate)
 }
 
 func (h *Handler) handleDriveNotification(w http.ResponseWriter, r *http.Request, state, channelID, messageNumber, resourceID string) {

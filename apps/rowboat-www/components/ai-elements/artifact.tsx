@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@oppulence/ui/components/button";
+import { Label } from "@oppulence/ui/components/label";
 import {
   Tooltip,
   TooltipContent,
@@ -8,7 +9,7 @@ import {
   TooltipTrigger,
 } from "@oppulence/ui/components/tooltip";
 import { cn } from "@/lib/utils";
-import { type Icon as PhosphorIcon, X } from "@phosphor-icons/react";
+import { type Icon as PhosphorIcon, X } from "@/lib/icons";
 import type { ComponentProps, HTMLAttributes } from "react";
 
 export type ArtifactProps = HTMLAttributes<HTMLDivElement>;
@@ -49,7 +50,7 @@ export const ArtifactClose = ({
     {...props}
   >
     {children ?? <X className="size-4" />}
-    <span className="sr-only">Close</span>
+    <Label className="sr-only">Close</Label>
   </Button>
 );
 
@@ -96,7 +97,7 @@ export const ArtifactAction = ({
       {...props}
     >
       {Icon ? <Icon className="size-4" /> : children}
-      <span className="sr-only">{label || tooltip}</span>
+      <Label className="sr-only">{label || tooltip}</Label>
     </Button>
   );
 
