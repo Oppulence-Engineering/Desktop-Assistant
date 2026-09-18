@@ -167,7 +167,8 @@
     "sharp": "0.35.4",
     "undici": "6.28.0",
     "hono": "4.13.5",
-    "js-yaml": "4.3.2"
+    "js-yaml": "4.3.2",
+    "uuid": "11.1.1"
   },
   "msw": {
     "workerDirectory": [
