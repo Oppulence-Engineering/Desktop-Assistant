@@ -7,6 +7,10 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/hook"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspace"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/revenueworkspacemember"
@@ -33,6 +37,32 @@ type workspaceScopedMutation interface {
 	userScopedMutation
 	WorkspaceID() (uuid.UUID, bool)
 	WorkspaceCleared() bool
+}
+
+// ownerWorkspaceScopedMutation covers mailbox records whose immutable user
+// edge is deliberately named "owner". They do not satisfy userScopedMutation,
+// so handling them explicitly prevents the generic workspace collaborator
+// path from granting control over another user's communication.
+type ownerWorkspaceScopedMutation interface {
+	ent.Mutation
+	OwnerID() (uuid.UUID, bool)
+	OwnerCleared() bool
+	WorkspaceID() (uuid.UUID, bool)
+	WorkspaceCleared() bool
+	WhereP(...func(*sql.Selector))
+}
+
+var communicationOwnerColumns = map[string]string{
+	ent.TypeCommunicationInteraction:   communicationinteraction.OwnerColumn,
+	ent.TypeCommunicationPrivacyPolicy: communicationprivacypolicy.OwnerColumn,
+	ent.TypeCommunicationPrivacyRule:   communicationprivacyrule.OwnerColumn,
+	ent.TypeCommunicationShareGrant:    communicationsharegrant.OwnerColumn,
+}
+
+var internalOnlyCommunicationMutations = map[string]bool{
+	ent.TypeCommunicationAttachment:  true,
+	ent.TypeCommunicationParticipant: true,
+	ent.TypeCommunicationSyncCursor:  true,
 }
 
 // registerHooks installs write-side middleware on the client:
@@ -79,6 +109,15 @@ func registerHooks(client *ent.Client, log *zap.Logger) {
 func tenantMutationHook() ent.Hook {
 	return func(next ent.Mutator) ent.Mutator {
 		return ent.MutateFunc(func(ctx context.Context, mutation ent.Mutation) (ent.Value, error) {
+			if internalOnlyCommunicationMutations[mutation.Type()] {
+				if _, hasUser := auth.UserFromCtx(ctx); !hasUser && auth.IsInternalCaller(ctx) {
+					return next.Mutate(ctx, mutation)
+				}
+				return nil, fmt.Errorf("%w: communication child records require an authorized service", ErrTenantMutation)
+			}
+			if ownerColumn, ownerScoped := communicationOwnerColumns[mutation.Type()]; ownerScoped {
+				return enforceCommunicationOwnerMutation(ctx, mutation, ownerColumn, next)
+			}
 			m, ok := mutation.(userScopedMutation)
 			if !ok {
 				return next.Mutate(ctx, mutation)
@@ -170,6 +209,47 @@ func tenantMutationHook() ent.Hook {
 			return next.Mutate(ctx, mutation)
 		})
 	}
+}
+
+func enforceCommunicationOwnerMutation(
+	ctx context.Context,
+	mutation ent.Mutation,
+	ownerColumn string,
+	next ent.Mutator,
+) (ent.Value, error) {
+	actor, ok := auth.UserFromCtx(ctx)
+	if !ok {
+		if auth.IsInternalCaller(ctx) {
+			return next.Mutate(ctx, mutation)
+		}
+		return nil, ErrNoViewer
+	}
+	m, ok := mutation.(ownerWorkspaceScopedMutation)
+	if !ok {
+		return nil, fmt.Errorf("%w: missing communication owner contract for %s", ErrTenantMutation, mutation.Type())
+	}
+	if m.OwnerCleared() || m.WorkspaceCleared() {
+		return nil, fmt.Errorf("%w: communication ownership is immutable", ErrTenantMutation)
+	}
+	switch {
+	case mutation.Op().Is(ent.OpCreate):
+		ownerID, hasOwner := m.OwnerID()
+		workspaceID, hasWorkspace := m.WorkspaceID()
+		if !hasOwner || ownerID != actor.ID || !hasWorkspace || !auth.CanWriteRevenueWorkspace(ctx, workspaceID) {
+			return nil, fmt.Errorf("%w: mailbox owner does not match viewer", ErrTenantMutation)
+		}
+	case mutation.Op().Is(ent.OpUpdate | ent.OpUpdateOne | ent.OpDelete | ent.OpDeleteOne):
+		if _, reparenting := m.OwnerID(); reparenting {
+			return nil, fmt.Errorf("%w: mailbox owner re-parenting is forbidden", ErrTenantMutation)
+		}
+		if _, reparenting := m.WorkspaceID(); reparenting {
+			return nil, fmt.Errorf("%w: workspace re-parenting is forbidden", ErrTenantMutation)
+		}
+		m.WhereP(func(selector *sql.Selector) {
+			selector.Where(sql.EQ(selector.C(ownerColumn), actor.ID))
+		})
+	}
+	return next.Mutate(ctx, mutation)
 }
 
 // writableRevenueWorkspaceIDs returns owner/admin/member workspaces. Viewer

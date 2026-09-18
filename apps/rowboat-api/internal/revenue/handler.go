@@ -56,6 +56,17 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Post("/current/evidence-keys/destroy", h.DestroyTenantEvidenceKeys)
 		r.Get("/current/features", h.WorkspaceFeatureControls)
 		r.Put("/current/features/{capability}", h.SetWorkspaceFeatureControl)
+		r.Put("/current/communication-defaults", h.SetWorkspaceCommunicationDefaults)
+		r.Get("/current/communication-policy/{sourceAccountId}", h.GetCommunicationPolicy)
+		r.Put("/current/communication-policy/{sourceAccountId}", h.PutCommunicationPolicy)
+		r.Delete("/current/communication-policy/{sourceAccountId}", h.DeleteCommunicationPolicy)
+		r.Get("/current/communication-privacy-rules", h.ListCommunicationPrivacyRules)
+		r.Post("/current/communication-privacy-rules", h.CreateCommunicationPrivacyRule)
+		r.Put("/current/communication-privacy-rules/{ruleId}", h.SetCommunicationPrivacyRule)
+		r.Delete("/current/communication-privacy-rules/{ruleId}", h.DeleteCommunicationPrivacyRule)
+		r.Post("/current/communication-grants", h.GrantCommunicationAccess)
+		r.Post("/current/communication-grants/{grantId}/revoke", h.RevokeCommunicationAccess)
+		r.Delete("/current/communications/{interactionId}", h.PurgeCommunication)
 	})
 	// The register: obligations across every account, which is the product.
 	// Every other commitment route is scoped to one relationship and cannot

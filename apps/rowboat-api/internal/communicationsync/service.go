@@ -25,6 +25,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/revenue"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/secrets"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -524,9 +525,26 @@ func (s *Service) persistCalendar(ctx context.Context, workspace *ent.RevenueWor
 }
 
 func (s *Service) persist(ctx context.Context, workspace *ent.RevenueWorkspace, owner *ent.User, p projection) error {
+	addresses := make([]string, 0, len(p.participants))
+	for _, item := range p.participants {
+		addresses = append(addresses, item.email)
+	}
+	visibility, shareSubject, err := revenue.NewCommunicationAuthorization(s.client).
+		ProjectionVisibility(ctx, workspace.ID, owner.ID, p.accountID, addresses)
+	if err != nil {
+		return fmt.Errorf("authorize communication projection: %w", err)
+	}
+	if !shareSubject {
+		p.subject = ""
+	}
 	raw, err := json.Marshal(p.metadata)
 	if err != nil {
 		return err
+	}
+	if visibility == "private" {
+		// Provider snippets and event descriptions are content, not metadata.
+		// A private projection retains only replay identity and timestamps.
+		raw = []byte("{}")
 	}
 	hash := hashBytes(raw)
 	tx, err := s.client.Tx(ctx)
@@ -553,6 +571,7 @@ func (s *Service) persist(ctx context.Context, workspace *ent.RevenueWorkspace, 
 			SetSubject(p.subject).
 			SetOccurredAt(p.occurredAt).
 			SetReceivedAt(s.now().UTC()).
+			SetVisibility(visibility).
 			SetDeleted(p.deleted).
 			SetContentHash(hash).
 			SetMetadataJSON(string(raw))
@@ -564,6 +583,7 @@ func (s *Service) persist(ctx context.Context, workspace *ent.RevenueWorkspace, 
 		update := interaction.Update().
 			SetSubject(p.subject).
 			SetOccurredAt(p.occurredAt).
+			SetVisibility(visibility).
 			SetDeleted(p.deleted).
 			SetContentHash(hash).
 			SetMetadataJSON(string(raw))

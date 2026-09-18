@@ -612,14 +612,31 @@ func registerInterceptors(client *ent.Client, log *zap.Logger) {
 	client.RelationshipObservation.Intercept(intercept.TraverseRelationshipObservation(
 		func(ctx context.Context, q *ent.RelationshipObservationQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(relationshipobservation.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+				q.Where(
+					relationshipobservation.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)),
+					relationshipobservation.Or(
+						relationshipobservation.SourceNotIn("gmail", "calendar"),
+						relationshipobservation.HasUserWith(user.IDEQ(uid)),
+					),
+				)
 			})
 		}))
 
 	client.RelationshipAssertion.Intercept(intercept.TraverseRelationshipAssertion(
 		func(ctx context.Context, q *ent.RelationshipAssertionQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(relationshipassertion.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+				q.Where(
+					relationshipassertion.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)),
+					relationshipassertion.Or(
+						relationshipassertion.Not(relationshipassertion.HasObservation()),
+						relationshipassertion.HasObservationWith(
+							relationshipobservation.Or(
+								relationshipobservation.SourceNotIn("gmail", "calendar"),
+								relationshipobservation.HasUserWith(user.IDEQ(uid)),
+							),
+						),
+					),
+				)
 			})
 		}))
 
@@ -661,7 +678,13 @@ func registerInterceptors(client *ent.Client, log *zap.Logger) {
 	client.RevenueEvidence.Intercept(intercept.TraverseRevenueEvidence(
 		func(ctx context.Context, q *ent.RevenueEvidenceQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(revenueevidence.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+				q.Where(
+					revenueevidence.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)),
+					revenueevidence.Or(
+						revenueevidence.SourceNotIn("gmail", "calendar"),
+						revenueevidence.HasUserWith(user.IDEQ(uid)),
+					),
+				)
 			})
 		}))
 
@@ -696,21 +719,43 @@ func registerInterceptors(client *ent.Client, log *zap.Logger) {
 	client.CommunicationInteraction.Intercept(intercept.TraverseCommunicationInteraction(
 		func(ctx context.Context, q *ent.CommunicationInteractionQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(communicationinteraction.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+				q.Where(
+					communicationinteraction.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)),
+					communicationinteraction.Or(
+						communicationinteraction.HasOwnerWith(user.IDEQ(uid)),
+						communicationinteraction.VisibilityNEQ("private"),
+					),
+				)
 			})
 		}))
 
 	client.CommunicationParticipant.Intercept(intercept.TraverseCommunicationParticipant(
 		func(ctx context.Context, q *ent.CommunicationParticipantQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(communicationparticipant.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+				q.Where(
+					communicationparticipant.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)),
+					communicationparticipant.HasInteractionWith(
+						communicationinteraction.Or(
+							communicationinteraction.HasOwnerWith(user.IDEQ(uid)),
+							communicationinteraction.VisibilityNEQ("private"),
+						),
+					),
+				)
 			})
 		}))
 
 	client.CommunicationAttachment.Intercept(intercept.TraverseCommunicationAttachment(
 		func(ctx context.Context, q *ent.CommunicationAttachmentQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(communicationattachment.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+				// Attachment records may contain sealed bytes or extracted text.
+				// Non-owner access must go through CommunicationAuthorization,
+				// which evaluates an active bounded grant before redacting DTOs.
+				q.Where(
+					communicationattachment.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)),
+					communicationattachment.HasInteractionWith(
+						communicationinteraction.HasOwnerWith(user.IDEQ(uid)),
+					),
+				)
 			})
 		}))
 
@@ -724,21 +769,33 @@ func registerInterceptors(client *ent.Client, log *zap.Logger) {
 	client.CommunicationPrivacyPolicy.Intercept(intercept.TraverseCommunicationPrivacyPolicy(
 		func(ctx context.Context, q *ent.CommunicationPrivacyPolicyQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(communicationprivacypolicy.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+				q.Where(
+					communicationprivacypolicy.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)),
+					communicationprivacypolicy.HasOwnerWith(user.IDEQ(uid)),
+				)
 			})
 		}))
 
 	client.CommunicationPrivacyRule.Intercept(intercept.TraverseCommunicationPrivacyRule(
 		func(ctx context.Context, q *ent.CommunicationPrivacyRuleQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(communicationprivacyrule.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+				q.Where(
+					communicationprivacyrule.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)),
+					communicationprivacyrule.HasOwnerWith(user.IDEQ(uid)),
+				)
 			})
 		}))
 
 	client.CommunicationShareGrant.Intercept(intercept.TraverseCommunicationShareGrant(
 		func(ctx context.Context, q *ent.CommunicationShareGrantQuery) error {
 			return scopeToUser(ctx, func(uid uuid.UUID) {
-				q.Where(communicationsharegrant.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)))
+				q.Where(
+					communicationsharegrant.HasWorkspaceWith(revenueWorkspaceAccessibleTo(uid)),
+					communicationsharegrant.Or(
+						communicationsharegrant.HasOwnerWith(user.IDEQ(uid)),
+						communicationsharegrant.HasGranteeWith(user.IDEQ(uid)),
+					),
+				)
 			})
 		}))
 
