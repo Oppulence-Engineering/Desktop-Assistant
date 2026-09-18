@@ -102,7 +102,13 @@ export function CommunicationPrivacySettings() {
             <select
               className="settings-input"
               id="metadata-visibility"
-              onChange={(event) => setPolicy({ ...policy, metadataVisibility: event.target.value })}
+              onChange={(event) =>
+                setPolicy({
+                  ...policy,
+                  metadataVisibility: event.target
+                    .value as CommunicationPolicy["metadataVisibility"],
+                })
+              }
               value={policy.metadataVisibility}
             >
               <option value="workspace">Workspace-visible metadata</option>
