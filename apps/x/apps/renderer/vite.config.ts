@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
@@ -6,10 +7,11 @@ import { defineConfig } from "vite";
 
 type ViteAlias = { find: string | RegExp; replacement: string };
 
+const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../../../..");
 const uiSrc = path.join(repoRoot, "packages/ui/src");
-const workspaceModules = path.resolve(__dirname, "../../node_modules");
+const uiRequire = createRequire(require.resolve("@oppulence/ui/components/button"));
 
 /**
  * @oppulence/ui uses package.json "imports" (#lib, #components, #hooks). Vite does not
@@ -25,26 +27,60 @@ function uiInternalImportAliases(): ViteAlias[] {
   ];
 }
 
+function resolvedPackage(id: string): string {
+  return path.dirname(require.resolve(`${id}/package.json`));
+}
+
+function resolveUiBareImport(id: string): string | undefined {
+  if (id.startsWith(".") || id.startsWith("#") || path.isAbsolute(id)) {
+    return undefined;
+  }
+  try {
+    return uiRequire.resolve(id);
+  } catch {
+    try {
+      return require.resolve(id);
+    } catch {
+      return undefined;
+    }
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   base: "./", // Use relative paths for assets (required for Electron custom protocol)
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    {
+      name: "resolve-ui-workspace-deps",
+      resolveId(id, importer) {
+        if (!importer) {
+          return undefined;
+        }
+        const fromUi =
+          importer.includes(`${path.sep}packages${path.sep}ui${path.sep}`) ||
+          importer.includes(`${path.sep}@oppulence+ui@`);
+        if (!fromUi) {
+          return undefined;
+        }
+        return resolveUiBareImport(id);
+      },
+    },
+  ],
   resolve: {
-    // packages/ui is compiled from source. Pin React to the desktop workspace
-    // copy so peer imports resolve in CI, where the UI package has no nested React.
+    // packages/ui is compiled from source. Pin React to the renderer copy so
+    // peer imports resolve even when the UI package has no nested React.
     dedupe: ["react", "react-dom"],
     alias: [
       { find: "@", replacement: path.resolve(__dirname, "./src") },
-      { find: /^react$/, replacement: path.join(workspaceModules, "react") },
-      {
-        find: /^react\/jsx-runtime$/,
-        replacement: path.join(workspaceModules, "react/jsx-runtime.js"),
-      },
+      { find: /^react$/, replacement: resolvedPackage("react") },
+      { find: /^react\/jsx-runtime$/, replacement: require.resolve("react/jsx-runtime") },
       {
         find: /^react\/jsx-dev-runtime$/,
-        replacement: path.join(workspaceModules, "react/jsx-dev-runtime.js"),
+        replacement: require.resolve("react/jsx-dev-runtime"),
       },
-      { find: /^react-dom$/, replacement: path.join(workspaceModules, "react-dom") },
+      { find: /^react-dom$/, replacement: resolvedPackage("react-dom") },
       ...uiInternalImportAliases(),
     ],
   },
@@ -52,7 +88,7 @@ export default defineConfig({
     fs: {
       // Electron imports the authenticated web console's canonical product
       // theme directly so both surfaces remain visually locked together.
-      allow: [path.resolve(__dirname, "../../../..")],
+      allow: [repoRoot],
     },
   },
   build: {
