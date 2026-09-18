@@ -25,16 +25,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@oppulence/ui/components/card";
-import { Checkbox } from "@oppulence/ui/components/checkbox";
 import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
-import {
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@oppulence/ui/components/table";
 import { Tabs, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue";
 import {
@@ -54,7 +46,22 @@ import {
   SelectValue,
 } from "@oppulence/ui/components/select";
 import { cn } from "@oppulence/ui/lib/utils";
+import { Badge as SimBadge, Chip } from "@sim/emcn";
+import {
+  Columns3,
+  ListFilter,
+  Plus,
+  Table as TableIcon,
+  TagIcon,
+  TypeNumber,
+  TypeText,
+} from "@sim/emcn/icons";
 import { WorkspaceEmptyIllustration } from "@/components/revenue/shared";
+import {
+  SimProductHeader,
+  SimProductPanel,
+  SimProductToolbar,
+} from "@/components/features/sim-product/sim-product-frame";
 
 import type {
   CommitmentRegisterFilter,
@@ -95,6 +102,7 @@ export interface CommitmentQueueItem {
   missingEvidence: string[];
   nextAction: string;
   urgency: "overdue" | "due_soon" | "open" | "closed";
+  confidence: number;
   currentEventVersion: number;
 }
 
@@ -281,6 +289,7 @@ function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQue
         missingEvidence: missing,
         nextAction: nextAction(entry.state, missing, urgency, Boolean(entry.blocker?.trim())),
         urgency,
+        confidence: Math.round((entry.confidence ?? 0) * 100),
         currentEventVersion: entry.currentEventVersion ?? 0,
       };
     })
@@ -374,6 +383,23 @@ function localDateTime(iso?: string) {
   return local.toISOString().slice(0, 16);
 }
 
+const REGISTER_COLUMNS = [
+  { name: "Company", icon: TypeText },
+  { name: "Score", icon: TypeNumber },
+  { name: "Status", icon: TagIcon },
+  { name: "Contact", icon: TypeText },
+] as const;
+
+function registerPreviewStatus(item: CommitmentQueueItem) {
+  if (item.acceptance === "candidate") {
+    return { label: "Review", variant: "amber" as const };
+  }
+  if (item.state === "at_risk" || item.urgency === "overdue") {
+    return { label: "At risk", variant: "red" as const };
+  }
+  return { label: "Confirmed", variant: "green" as const };
+}
+
 export function CommitmentQueue({
   className,
   entries,
@@ -440,13 +466,6 @@ export function CommitmentQueue({
   const deepRead = latestScan?.threadsDeepRead ?? 0;
   const examined = deepRead + snippetOnly > 0 || skipped > 0 ? deepRead + snippetOnly : swept;
   const googleConnected = !googleNeedsReconnect && sourceConnected(google);
-  const needsReview = items.filter(
-    (item) => item.urgency !== "closed" && item.missingEvidence.length > 0,
-  ).length;
-  const openPromises = items.filter((item) => item.urgency !== "closed").length;
-  const dueSoon = items.filter(
-    (item) => item.urgency === "overdue" || item.urgency === "due_soon",
-  ).length;
 
   const transition = async (
     item: CommitmentQueueItem,
@@ -472,336 +491,274 @@ export function CommitmentQueue({
       className={cn("relative flex min-h-full w-full min-w-0 flex-col", className)}
       {...props}
     >
-      <div
-        className="flex shrink-0 flex-wrap items-center gap-1 border-b border-border px-3 py-1.5"
-        role="tablist"
-        aria-label="Register views"
-      >
-        {REGISTER_VIEWS.map((registerView) => (
-          <Button
-            key={registerView.id}
-            role="tab"
-            type="button"
-            aria-selected={view === registerView.id}
-            title={registerView.hint}
-            onClick={() => onViewChange?.(registerView.id)}
-            className={cn(
-              "h-7 rounded-none border px-2.5 text-[12px] transition-colors",
-              view === registerView.id
-                ? "border-border bg-background-100 text-primary"
-                : "border-transparent text-primary/55 hover:text-primary",
-            )}
-            size="sm"
-            variant="ghost"
+      <SimProductPanel className="mx-3 mt-3 flex min-h-0 flex-1 flex-col">
+        <SimProductHeader
+          actions={`${filtered.length} row${filtered.length === 1 ? "" : "s"}`}
+          icon={TableIcon}
+          title="Commitment register"
+        />
+        <SimProductToolbar aria-label="Register views" role="tablist">
+          {REGISTER_VIEWS.map((registerView) => (
+            <button
+              aria-selected={view === registerView.id}
+              className={cn(view === registerView.id && "opacity-100")}
+              key={registerView.id}
+              onClick={() => onViewChange?.(registerView.id)}
+              role="tab"
+              title={registerView.hint}
+              type="button"
+            >
+              <Chip>{registerView.label}</Chip>
+            </button>
+          ))}
+        </SimProductToolbar>
+        <SimProductToolbar className="h-auto min-h-[38px] flex-wrap py-1.5">
+          <div className="relative min-w-[180px] max-w-sm flex-1">
+            <MagnifyingGlass className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--text-icon)]" />
+            <Input
+              aria-label="Search commitments"
+              className="h-8 border-[var(--border)] bg-[var(--bg)] pl-8 text-[13px]"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search commitments"
+              value={query}
+            />
+          </div>
+          {view === "by_account" ? (
+            <Select onValueChange={onAccountChange} value={accountId}>
+              <SelectTrigger aria-label="Choose account" className="h-8 w-44">
+                <SelectValue placeholder="Choose an account" />
+              </SelectTrigger>
+              <SelectContent className="app-shell rounded-none">
+                {accounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+          {view === "by_owner" ? (
+            <Input
+              aria-label="Filter by owner"
+              className="h-8 w-44 border-[var(--border)] bg-[var(--bg)] text-[13px]"
+              onChange={(event) => onOwnerChange?.(event.target.value)}
+              placeholder="Owner name or email"
+              value={owner}
+            />
+          ) : null}
+          <Select
+            onValueChange={(value) => {
+              setFilter(value);
+              onIncludeCandidatesChange?.(value === "review");
+            }}
+            value={filter}
           >
-            {registerView.label}
-          </Button>
-        ))}
-      </div>
-      <div className="flex min-h-12 shrink-0 flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <div className="relative min-w-[220px] max-w-sm flex-1">
-          <MagnifyingGlass className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-primary/35" />
-          <Input
-            aria-label="Search commitments"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search commitments"
-            className="h-8 border-border bg-background pl-8 text-[13px]"
-          />
-        </div>
-        {view === "by_account" ? (
-          <Select value={accountId} onValueChange={onAccountChange}>
-            <SelectTrigger className="h-8 w-48" aria-label="Choose account">
-              <SelectValue placeholder="Choose an account" />
+            <SelectTrigger aria-label="Filter commitments" className="h-8 w-36">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent className="app-shell rounded-none">
-              {accounts.map((account) => (
-                <SelectItem key={account.id} value={account.id}>
-                  {account.label}
-                </SelectItem>
-              ))}
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="review">Needs review</SelectItem>
+              <SelectItem value="due">Due soon or overdue</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+              <SelectItem value="all">All</SelectItem>
             </SelectContent>
           </Select>
-        ) : null}
-        {view === "by_owner" ? (
-          <Input
-            aria-label="Filter by owner"
-            className="h-8 w-48 border-border bg-background text-[13px]"
-            onChange={(event) => onOwnerChange?.(event.target.value)}
-            placeholder="Owner name or email"
-            value={owner}
-          />
-        ) : null}
-        <Select
-          value={filter}
-          onValueChange={(value) => {
-            setFilter(value);
-            onIncludeCandidatesChange?.(value === "review");
-          }}
-        >
-          <SelectTrigger className="h-8 w-40" aria-label="Filter commitments">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="app-shell rounded-none">
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="review">Needs review</SelectItem>
-            <SelectItem value="due">Due soon or overdue</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-            <SelectItem value="all">All</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="hidden 2xl:inline-flex"
-          onClick={onOpenRecoveryQueue}
-        >
-          Recovery drafts
-        </Button>
-        <div className="ml-auto flex items-center gap-2">
-          {!googleNeedsReconnect && !googleConnected ? (
-            <Button type="button" variant="outline" size="sm" onClick={onOpenConnectors}>
-              <Plugs /> Connect Gmail & Calendar
-            </Button>
-          ) : googleConnected ? (
-            <Button
-              className="hidden h-8 items-center gap-1.5 text-[12px] text-emerald-400 hover:bg-transparent hover:text-emerald-400 2xl:flex"
-              onClick={onOpenAccounts}
-              type="button"
-              variant="ghost"
-            >
-              <Badge className="size-1.5 rounded-full bg-emerald-400 p-0" variant="default" />{" "}
-              Google connected
-            </Button>
-          ) : null}
-          {/* A dead grant turns the audit button into the fix. It used to stay
-              "Run audit" beside a reconnect error and start scans that failed
-              within a second. */}
-          {googleNeedsReconnect ? (
-            <Button
-              type="button"
-              size="sm"
-              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-              onClick={onOpenConnectors}
-            >
-              <Plugs /> Reconnect Google
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              size="sm"
-              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-              onClick={onScan}
-              disabled={scanning}
-            >
-              {scanning ? <Spinner className="size-4" /> : <MagnifyingGlass />}
-              <Label className="hidden font-normal xl:inline">
-                {scanning
-                  ? `Scanning ${REVENUE_EVIDENCE_LOOKBACK_LABEL}`
-                  : "Run 6-month Promise Leak Audit"}
-              </Label>
-              <Label className="font-normal xl:hidden">{scanning ? "Scanning" : "Run audit"}</Label>
-            </Button>
-          )}
-        </div>
-        <div
-          className="hidden items-center gap-4 text-[11px] text-primary/45 2xl:flex"
-          aria-label="Commitment summary"
-        >
-          <Badge className="font-normal" variant="secondary">
-            <b className="font-medium text-primary">{openPromises}</b> open
-          </Badge>
-          <Badge className="font-normal" variant="secondary">
-            <b className="font-medium text-primary">{needsReview}</b> review
-          </Badge>
-          <Badge className="font-normal" variant="secondary">
-            <b className="font-medium text-primary">{dueSoon}</b> due soon
-          </Badge>
-          <Badge className="font-normal" variant="secondary">
-            <b className="font-medium text-primary">
-              {items.filter((item) => item.state === "met").length}
-            </b>{" "}
-            fulfilled
-          </Badge>
-        </div>
-      </div>
-
-      {latestScan?.status === "completed" ? (
-        <div className="flex min-h-12 flex-wrap items-center gap-4 border-b border-border bg-background-50 px-3 text-[12px] text-primary/55">
-          <Label className="font-medium text-primary">
-            Latest {latestScan.lookbackDays}-day audit
-          </Label>
-          <dl className="flex items-center gap-4">
-            {/* "Conversations reviewed" used to show every thread swept,
-                including inbox mail the audit never judged. It now counts what
-                was actually examined, and says separately what was passed
-                over, so the number cannot imply a depth the scan did not have. */}
-            <div className="flex items-center gap-1.5">
-              <dd className="font-medium text-primary">{examined}</dd>
-              <dt>Conversations reviewed</dt>
-            </div>
-            {skipped > 0 ? (
-              <div
-                className="flex items-center gap-1.5"
-                title="Swept but not judged: no message from you in the thread, so there was no promise of yours to find. Usually newsletters, receipts and notifications."
-              >
-                <dd className="font-medium text-primary/70">{skipped}</dd>
-                <dt>Not a conversation</dt>
-              </div>
-            ) : null}
-            {snippetOnly > 0 ? (
-              <div
-                className="hidden items-center gap-1.5 xl:flex"
-                title="Judged on a short preview because the message body could not be read. A promise further down the message can be missed."
-              >
-                <dd className="font-medium text-amber-500">{snippetOnly}</dd>
-                <dt>Preview only</dt>
-              </div>
-            ) : null}
-            <div className="flex items-center gap-1.5">
-              <dd className="font-medium text-primary">{latestScan.relationshipsCreated ?? 0}</dd>
-              <dt>New relationships</dt>
-            </div>
-            <div className="hidden items-center gap-1.5 lg:flex">
-              <dd className="font-medium text-primary">{latestScan.candidatesSeen ?? 0}</dd>
-              <dt>Follow-up signals</dt>
-            </div>
-          </dl>
-          {relationshipCount > 0 ? (
-            <Button
-              className="ml-auto h-7"
-              onClick={onOpenAccounts}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              Review relationships
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {/* A broken source is not only an empty-register problem. With rows on
-          screen the register still looks authoritative while it is quietly
-          going out of date, so the warning rides above the list too — the
-          empty state below repeats it at full size when there is nothing else
-          to show. */}
-      {failure && items.length > 0 ? (
-        <Alert
-          className="mx-3 mt-3 rounded-none border-destructive/40 bg-destructive/[0.04]"
-          variant="destructive"
-        >
-          <Warning className="size-4" />
-          <AlertTitle className="text-[13px]">{failure.headline}</AlertTitle>
-          <AlertDescription className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-destructive/80">
-            {failure.needsReconnect
-              ? "This register is not being updated until you reconnect."
-              : "The last audit did not finish, so this register may be incomplete."}
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="ml-auto h-7 border-destructive/40 px-2 text-[12px] text-destructive"
-              onClick={failure.needsReconnect ? onOpenConnectors : onScan}
-              disabled={!failure.needsReconnect && scanning}
-            >
-              {failure.needsReconnect ? "Reconnect Google" : "Run the audit again"}
-            </Button>
-          </AlertDescription>
-        </Alert>
-      ) : null}
-
-      {error ? (
-        <div
-          role="alert"
-          className="m-3 rounded-none border border-destructive/40 p-3 text-sm text-destructive"
-        >
-          {error}
-        </div>
-      ) : loading ? (
-        <div className="flex flex-1 items-center justify-center gap-2 p-6 text-sm text-primary/55">
-          <Spinner className="size-4" /> Loading commitments…
-        </div>
-      ) : scopeMissing ? (
-        <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
-          <h2 className="text-[20px] font-semibold leading-6 text-primary">
-            {view === "by_account" ? "Choose an account" : "Enter an owner"}
-          </h2>
-          <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
-            {view === "by_account"
-              ? "Select one relationship to see its two-sided promise history."
-              : "Use a name or email to see what that person has promised."}
-          </p>
-        </div>
-      ) : filtered.length === 0 && scanning ? (
-        // Mid-scan the register is empty because nothing has been read yet, not
-        // because nothing was found. Saying "no promises were found" here reads
-        // as a result and it is the wrong one.
-        <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
-          <Spinner className="mb-3 size-7 text-primary/40" />
-          <h2 className="text-[20px] font-semibold leading-6 text-primary">
-            Reading your last {REVENUE_EVIDENCE_LOOKBACK_LABEL}
-          </h2>
-          <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
-            This takes a few minutes. You can keep working and come back.
-          </p>
-        </div>
-      ) : filtered.length === 0 && failure ? (
-        // The empty register and the reason for it, together.
-        <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
-          <Warning className="mb-3 size-7 text-destructive" />
-          <h2 className="text-[20px] font-semibold leading-6 text-primary">{failure.headline}</h2>
-          <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">{failure.detail}</p>
-          <div className="mt-5 flex flex-wrap justify-center gap-2">
-            {failure.needsReconnect ? (
+          <Chip leftIcon={ListFilter}>Filter</Chip>
+          <span className="ml-auto hidden items-center gap-1 2xl:inline-flex">
+            <Chip leftIcon={Columns3}>Columns</Chip>
+          </span>
+          <Button
+            className="hidden 2xl:inline-flex"
+            onClick={onOpenRecoveryQueue}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Recovery drafts
+          </Button>
+          <div className="flex items-center gap-2">
+            {!googleNeedsReconnect && !googleConnected ? (
+              <Button onClick={onOpenConnectors} size="sm" type="button" variant="outline">
+                <Plugs /> Connect Gmail & Calendar
+              </Button>
+            ) : googleConnected ? (
               <Button
+                className="hidden h-8 items-center gap-1.5 text-[12px] text-emerald-400 hover:bg-transparent hover:text-emerald-400 2xl:flex"
+                onClick={onOpenAccounts}
                 type="button"
-                size="sm"
-                className="bg-[#3478f6] text-white"
+                variant="ghost"
+              >
+                <Badge className="size-1.5 rounded-full bg-emerald-400 p-0" variant="default" />{" "}
+                Google connected
+              </Button>
+            ) : null}
+            {googleNeedsReconnect ? (
+              <Button
+                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
                 onClick={onOpenConnectors}
+                size="sm"
+                type="button"
               >
                 <Plugs /> Reconnect Google
               </Button>
             ) : (
               <Button
-                type="button"
-                size="sm"
-                className="bg-[#3478f6] text-white"
-                onClick={onScan}
+                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
                 disabled={scanning}
+                onClick={onScan}
+                size="sm"
+                type="button"
               >
                 {scanning ? <Spinner className="size-4" /> : <MagnifyingGlass />}
-                Run the audit again
+                <Label className="hidden font-normal xl:inline">
+                  {scanning
+                    ? `Scanning ${REVENUE_EVIDENCE_LOOKBACK_LABEL}`
+                    : "Run 6-month Promise Leak Audit"}
+                </Label>
+                <Label className="font-normal xl:hidden">
+                  {scanning ? "Scanning" : "Run audit"}
+                </Label>
               </Button>
             )}
           </div>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[84px] text-center">
-          <WorkspaceEmptyIllustration image="commitments" />
-          <h2 className="text-[20px] font-semibold leading-6 text-primary">
-            {items.length === 0 ? "Commitment Queue" : "No commitments match this view"}
-          </h2>
-          <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
-            {items.length === 0
-              ? googleConnected
-                ? "No explicit promises were found. Run another audit after new conversations or import reviewed meeting evidence."
-                : googleNeedsReconnect
-                  ? "Reconnect Google to resume finding who promised what, when it is due, and the exact evidence behind it."
-                  : "Connect Gmail and Calendar to find who promised what, when it is due, and the exact evidence behind it."
-              : "Change the filter or search query."}
-          </p>
-          {items.length === 0 ? (
+        </SimProductToolbar>
+
+        {latestScan?.status === "completed" ? (
+          <div className="flex min-h-12 flex-wrap items-center gap-4 border-b border-border bg-background-50 px-3 text-[12px] text-primary/55">
+            <Label className="font-medium text-primary">
+              Latest {latestScan.lookbackDays}-day audit
+            </Label>
+            <dl className="flex items-center gap-4">
+              {/* "Conversations reviewed" used to show every thread swept,
+                including inbox mail the audit never judged. It now counts what
+                was actually examined, and says separately what was passed
+                over, so the number cannot imply a depth the scan did not have. */}
+              <div className="flex items-center gap-1.5">
+                <dd className="font-medium text-primary">{examined}</dd>
+                <dt>Conversations reviewed</dt>
+              </div>
+              {skipped > 0 ? (
+                <div
+                  className="flex items-center gap-1.5"
+                  title="Swept but not judged: no message from you in the thread, so there was no promise of yours to find. Usually newsletters, receipts and notifications."
+                >
+                  <dd className="font-medium text-primary/70">{skipped}</dd>
+                  <dt>Not a conversation</dt>
+                </div>
+              ) : null}
+              {snippetOnly > 0 ? (
+                <div
+                  className="hidden items-center gap-1.5 xl:flex"
+                  title="Judged on a short preview because the message body could not be read. A promise further down the message can be missed."
+                >
+                  <dd className="font-medium text-amber-500">{snippetOnly}</dd>
+                  <dt>Preview only</dt>
+                </div>
+              ) : null}
+              <div className="flex items-center gap-1.5">
+                <dd className="font-medium text-primary">{latestScan.relationshipsCreated ?? 0}</dd>
+                <dt>New relationships</dt>
+              </div>
+              <div className="hidden items-center gap-1.5 lg:flex">
+                <dd className="font-medium text-primary">{latestScan.candidatesSeen ?? 0}</dd>
+                <dt>Follow-up signals</dt>
+              </div>
+            </dl>
+            {relationshipCount > 0 ? (
+              <Button
+                className="ml-auto h-7"
+                onClick={onOpenAccounts}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                Review relationships
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {/* A broken source is not only an empty-register problem. With rows on
+          screen the register still looks authoritative while it is quietly
+          going out of date, so the warning rides above the list too — the
+          empty state below repeats it at full size when there is nothing else
+          to show. */}
+        {failure && items.length > 0 ? (
+          <Alert
+            className="mx-3 mt-3 rounded-none border-destructive/40 bg-destructive/[0.04]"
+            variant="destructive"
+          >
+            <Warning className="size-4" />
+            <AlertTitle className="text-[13px]">{failure.headline}</AlertTitle>
+            <AlertDescription className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-destructive/80">
+              {failure.needsReconnect
+                ? "This register is not being updated until you reconnect."
+                : "The last audit did not finish, so this register may be incomplete."}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="ml-auto h-7 border-destructive/40 px-2 text-[12px] text-destructive"
+                onClick={failure.needsReconnect ? onOpenConnectors : onScan}
+                disabled={!failure.needsReconnect && scanning}
+              >
+                {failure.needsReconnect ? "Reconnect Google" : "Run the audit again"}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        {error ? (
+          <div
+            role="alert"
+            className="m-3 rounded-none border border-destructive/40 p-3 text-sm text-destructive"
+          >
+            {error}
+          </div>
+        ) : loading ? (
+          <div className="flex flex-1 items-center justify-center gap-2 p-6 text-sm text-primary/55">
+            <Spinner className="size-4" /> Loading commitments…
+          </div>
+        ) : scopeMissing ? (
+          <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
+            <h2 className="text-[20px] font-semibold leading-6 text-primary">
+              {view === "by_account" ? "Choose an account" : "Enter an owner"}
+            </h2>
+            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+              {view === "by_account"
+                ? "Select one relationship to see its two-sided promise history."
+                : "Use a name or email to see what that person has promised."}
+            </p>
+          </div>
+        ) : filtered.length === 0 && scanning ? (
+          // Mid-scan the register is empty because nothing has been read yet, not
+          // because nothing was found. Saying "no promises were found" here reads
+          // as a result and it is the wrong one.
+          <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
+            <Spinner className="mb-3 size-7 text-primary/40" />
+            <h2 className="text-[20px] font-semibold leading-6 text-primary">
+              Reading your last {REVENUE_EVIDENCE_LOOKBACK_LABEL}
+            </h2>
+            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+              This takes a few minutes. You can keep working and come back.
+            </p>
+          </div>
+        ) : filtered.length === 0 && failure ? (
+          // The empty register and the reason for it, together.
+          <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[120px] text-center">
+            <Warning className="mb-3 size-7 text-destructive" />
+            <h2 className="text-[20px] font-semibold leading-6 text-primary">{failure.headline}</h2>
+            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">{failure.detail}</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
-              {!googleConnected ? (
+              {failure.needsReconnect ? (
                 <Button
                   type="button"
                   size="sm"
                   className="bg-[#3478f6] text-white"
                   onClick={onOpenConnectors}
                 >
-                  <Plugs /> {googleNeedsReconnect ? "Reconnect Google" : "Connect Gmail & Calendar"}
+                  <Plugs /> Reconnect Google
                 </Button>
               ) : (
                 <Button
@@ -811,172 +768,172 @@ export function CommitmentQueue({
                   onClick={onScan}
                   disabled={scanning}
                 >
-                  <MagnifyingGlass /> Run 6-month audit
+                  {scanning ? <Spinner className="size-4" /> : <MagnifyingGlass />}
+                  Run the audit again
                 </Button>
               )}
-              <Button type="button" size="sm" variant="outline" onClick={onOpenAccounts}>
-                Import meeting evidence
-              </Button>
             </div>
-          ) : null}
-          {items.length === 0 ? (
-            <div className="mb-4 mt-auto w-full max-w-[640px] text-left">
-              <p className="mb-2 text-[12px] text-primary/45">Learn more</p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <Button
-                  className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-primary/80 hover:bg-background-100"
-                  onClick={onOpenAccounts}
-                  type="button"
-                  variant="ghost"
-                >
-                  <Avatar className="size-10 rounded-none">
-                    <AvatarFallback className="rounded-none border border-border bg-background text-primary/45">
-                      <Check className="size-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                  Confirm promises with exact evidence
-                </Button>
-                <Button
-                  className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-primary/80 hover:bg-background-100"
-                  onClick={onOpenRecoveryQueue}
-                  type="button"
-                  variant="ghost"
-                >
-                  <Avatar className="size-10 rounded-none">
-                    <AvatarFallback className="rounded-none border border-border bg-background text-primary/45">
-                      <ArrowClockwise className="size-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                  Approve recovery before anything is sent
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex min-h-[520px] flex-1 flex-col items-center px-6 pt-[84px] text-center">
+            <WorkspaceEmptyIllustration image="commitments" />
+            <h2 className="text-[20px] font-semibold leading-6 text-primary">
+              {items.length === 0 ? "Commitment Queue" : "No commitments match this view"}
+            </h2>
+            <p className="mt-2 max-w-md text-sm leading-6 text-primary/55">
+              {items.length === 0
+                ? googleConnected
+                  ? "No explicit promises were found. Run another audit after new conversations or import reviewed meeting evidence."
+                  : googleNeedsReconnect
+                    ? "Reconnect Google to resume finding who promised what, when it is due, and the exact evidence behind it."
+                    : "Connect Gmail and Calendar to find who promised what, when it is due, and the exact evidence behind it."
+                : "Change the filter or search query."}
+            </p>
+            {items.length === 0 ? (
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                {!googleConnected ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-[#3478f6] text-white"
+                    onClick={onOpenConnectors}
+                  >
+                    <Plugs />{" "}
+                    {googleNeedsReconnect ? "Reconnect Google" : "Connect Gmail & Calendar"}
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-[#3478f6] text-white"
+                    onClick={onScan}
+                    disabled={scanning}
+                  >
+                    <MagnifyingGlass /> Run 6-month audit
+                  </Button>
+                )}
+                <Button type="button" size="sm" variant="outline" onClick={onOpenAccounts}>
+                  Import meeting evidence
                 </Button>
               </div>
-            </div>
-          ) : null}
-        </div>
-      ) : (
-        <div className="min-w-0 flex-1 overflow-auto">
-          <table
-            className="w-full min-w-[1040px] border-collapse text-left"
-            aria-label="Commitments"
-          >
-            <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-border">
-              <TableRow className="h-10 border-b text-[12px] font-medium text-primary/55 hover:bg-transparent">
-                <TableHead className="h-10 w-10 border-r px-3">
-                  <Checkbox aria-label="Select all commitments" className="size-4" />
-                </TableHead>
-                <TableHead className="h-10 min-w-[330px] border-r px-3">Commitment</TableHead>
-                <TableHead className="h-10 w-36 border-r px-3">Promised by</TableHead>
-                <TableHead className="h-10 w-36 border-r px-3">To</TableHead>
-                <TableHead className="h-10 w-44 border-r px-3">Due date</TableHead>
-                <TableHead className="h-10 w-40 border-r px-3">Status</TableHead>
-                <TableHead className="h-10 w-36 px-3">Next step</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((item) => (
-                <TableRow key={item.id} className="group border-border hover:bg-background-100/70">
-                  <TableCell className="border-r px-3">
-                    <label className="flex items-center" htmlFor={`commitment-${item.id}`}>
-                      <Label className="sr-only">Select {item.text}</Label>
-                      <Checkbox
-                        aria-label={`Select ${item.text}`}
-                        className="size-4"
-                        id={`commitment-${item.id}`}
-                      />
-                    </label>
-                  </TableCell>
-                  <TableCell className="border-r px-3 py-2">
-                    <Button
-                      aria-label={`Open ${item.text}`}
-                      className="block h-auto w-full min-w-0 justify-start px-0 py-0 text-left font-normal hover:bg-transparent"
-                      onClick={() => setSelected(item)}
-                      type="button"
-                      variant="ghost"
+            ) : null}
+            {items.length === 0 ? (
+              <div className="mb-4 mt-auto w-full max-w-[640px] text-left">
+                <p className="mb-2 text-[12px] text-primary/45">Learn more</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button
+                    className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-primary/80 hover:bg-background-100"
+                    onClick={onOpenAccounts}
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Avatar className="size-10 rounded-none">
+                      <AvatarFallback className="rounded-none border border-border bg-background text-primary/45">
+                        <Check className="size-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                    Confirm promises with exact evidence
+                  </Button>
+                  <Button
+                    className="flex h-[72px] items-center justify-start gap-3 rounded-none border border-border bg-background-50 px-3 text-left text-[13px] font-normal text-primary/80 hover:bg-background-100"
+                    onClick={onOpenRecoveryQueue}
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Avatar className="size-10 rounded-none">
+                      <AvatarFallback className="rounded-none border border-border bg-background text-primary/45">
+                        <ArrowClockwise className="size-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                    Approve recovery before anything is sent
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div className="min-w-0 flex-1 overflow-auto">
+            <table
+              aria-label="Commitments"
+              className="w-full min-w-[620px] table-fixed border-collapse text-left"
+            >
+              <colgroup>
+                <col className="w-10" />
+                <col className="w-[174px]" />
+                <col className="w-[82px]" />
+                <col className="w-[138px]" />
+                <col className="w-[184px]" />
+              </colgroup>
+              <thead>
+                <tr className="sticky top-0 z-10 h-[34px] border-[var(--border)] border-b bg-[var(--bg)]">
+                  <th className="border-[var(--border)] border-r text-center font-normal text-[var(--text-muted)]">
+                    #
+                  </th>
+                  {REGISTER_COLUMNS.map(({ name, icon: Icon }) => (
+                    <th
+                      className="border-[var(--border)] border-r px-2.5 font-normal last:border-r-0"
+                      key={name}
+                      scope="col"
                     >
-                      <Label className="block truncate text-[13px] font-medium text-primary">
-                        {item.text}
-                      </Label>
-                      <CardDescription className="mt-0.5 block truncate text-[12px]">
-                        {item.relationshipName} · {item.quote ? `“${item.quote}”` : item.nextAction}
-                      </CardDescription>
-                    </Button>
-                  </TableCell>
-                  <TableCell className="truncate border-r px-3 text-[13px] text-primary/70">
-                    {item.owner}
-                  </TableCell>
-                  <TableCell className="truncate border-r px-3 text-[13px] text-primary/70">
-                    {item.counterparty}
-                  </TableCell>
-                  <TableCell className="border-r px-3 text-[12px] text-primary/60">
-                    {item.dueAt ? (
-                      new Date(item.dueAt).toLocaleString()
-                    ) : (
-                      <Badge className="font-normal text-amber-400" variant="outline">
-                        Due date missing
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="border-r px-3">
-                    <div className="flex flex-col items-start gap-1">
-                      <StatusBadge state={item.state} />
-                      {item.urgency === "overdue" || item.urgency === "due_soon" ? (
-                        <Badge
-                          className={cn(
-                            "text-[11px] font-normal",
-                            item.urgency === "overdue" ? "text-red-400" : "text-amber-400",
-                          )}
-                          variant="outline"
-                        >
-                          {item.urgency === "overdue" ? "Overdue" : "Due within 72h"}
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-2 py-1.5">
-                    <div className="flex items-center gap-1">
-                      {item.acceptance === "candidate" ? (
-                        <ActionButton
-                          busy={busy === `${item.id}:internally_confirmed`}
-                          disabled={busy !== null}
-                          className="h-7 px-2 text-[12px]"
-                          onClick={() => void transition(item, "internally_confirmed")}
-                        >
-                          <Check /> Confirm promise
-                        </ActionButton>
-                      ) : (
-                        <Button
-                          className="h-auto truncate px-0 py-0 text-left text-[12px] text-primary/55 hover:bg-transparent hover:text-primary"
-                          onClick={() => setSelected(item)}
-                          type="button"
-                          variant="ghost"
-                        >
-                          {item.urgency === "overdue" || item.urgency === "due_soon"
-                            ? "Review now"
-                            : "Open"}
-                        </Button>
+                      <span className="flex items-center gap-1.5">
+                        <Icon className="size-[14px] text-[var(--text-icon)]" />
+                        {name}
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((item, index) => {
+                  const previewStatus = registerPreviewStatus(item);
+                  return (
+                    <tr
+                      className={cn(
+                        "group h-[37px] cursor-pointer border-[var(--border)] border-b hover:bg-[var(--surface-hover)]",
+                        index === 0 && "bg-[var(--surface-3)]",
                       )}
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 px-2 text-[12px]"
-                        disabled={busy !== null}
-                        onClick={() => {
-                          setEditing(item);
-                          setCorrectedText(item.text);
-                          setCorrectedDueAt(localDateTime(item.dueAt));
-                        }}
-                      >
-                        <PencilSimple /> Correct
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </table>
-        </div>
-      )}
+                      key={item.id}
+                      onClick={() => setSelected(item)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelected(item);
+                        }
+                      }}
+                      tabIndex={0}
+                    >
+                      <td className="border-[var(--border)] border-r text-center text-[var(--text-muted)] tabular-nums">
+                        {index + 1}
+                      </td>
+                      <td className="border-[var(--border)] border-r px-2.5">
+                        <span className="block truncate font-medium text-[var(--text-primary)]">
+                          {item.relationshipName}
+                        </span>
+                        <span className="block truncate text-[11px] text-[var(--text-secondary)]">
+                          {item.text}
+                        </span>
+                      </td>
+                      <td className="border-[var(--border)] border-r px-2.5 tabular-nums">
+                        {item.confidence}
+                      </td>
+                      <td className="border-[var(--border)] border-r px-2.5">
+                        <SimBadge variant={previewStatus.variant}>{previewStatus.label}</SimBadge>
+                      </td>
+                      <td className="truncate px-2.5 text-[var(--text-secondary)]">
+                        {item.counterparty}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div className="flex h-9 items-center gap-2 px-3 text-[var(--text-muted)]">
+              <Plus className="size-[14px]" />
+              <span>New row</span>
+            </div>
+          </div>
+        )}
+      </SimProductPanel>
 
       {selected ? (
         <div className="fixed inset-y-0 right-0 z-40 flex bg-background md:left-[285px]">

@@ -36,17 +36,19 @@ describe("HomeAgentSurface", () => {
         onSelectPrompt={onSelectPrompt}
         promptInput={<label>Operator brief</label>}
         signalPanel={<p>3 promises at risk</p>}
+        userName="morgan@acme.com"
         workspace="Acme"
       />,
     );
 
     const component = screen.getByRole("region", { name: "Home agent" });
     expect(component).toHaveAttribute("data-slot", "home-agent-surface");
+    expect(screen.getByText("What should we get done, Morgan?")).toBeVisible();
     expect(component).toHaveTextContent("Acme · Revenue operator");
     expect(screen.getByText("3 promises at risk")).toBeVisible();
   });
 
-  it("offers stable starting points to reduced-motion users", async () => {
+  it("offers suggested actions to reduced-motion users on mobile", async () => {
     const user = userEvent.setup();
     render(
       <HomeAgentSurface
@@ -58,7 +60,7 @@ describe("HomeAgentSurface", () => {
       />,
     );
 
-    await user.click(screen.getByRole("button", { name: "slipping promise" }));
+    await user.click(screen.getAllByRole("button", { name: "Find a slipping promise" })[0]!);
 
     expect(onSelectPrompt).toHaveBeenCalledWith(expect.stringContaining("most likely to slip"));
   });

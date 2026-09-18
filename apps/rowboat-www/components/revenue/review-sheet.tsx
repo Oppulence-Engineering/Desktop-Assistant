@@ -49,8 +49,26 @@ import {
   PolicyBadge,
   PriorityBreakdown,
 } from "@/components/revenue/shared";
+import {
+  GovernedActionPrimaryButton,
+  GovernedActionSecondaryButton,
+  GovernedActionSurface,
+} from "@/components/features/revenue/governed-action-surface/governed-action-surface";
 import { capture, RevenueEvents } from "@/lib/analytics";
 import type { RevenueAction, RevenueWorkspace } from "@/types/revenue";
+
+function governedSourceLine(action: RevenueAction) {
+  const evidence = action.evidence[0];
+  if (!evidence) {
+    return action.reason ? `Source: ${action.reason}` : undefined;
+  }
+  const date = new Date(evidence.occurredAt).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+  const account = action.recipientEmail ? ` · ${action.recipientEmail}` : "";
+  return `Source: thread from ${date}${account}`;
+}
 
 export function ReviewSheet({
   action,
@@ -311,25 +329,72 @@ export function ReviewSheet({
               />
             </Field>
           ) : null}
-          <Field
-            label={
-              action.channel === "crm" || action.channel === "crm_task"
-                ? "HubSpot note or task"
-                : "Message"
-            }
-          >
-            <Textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={10}
-              className="resize-y font-normal"
-              placeholder="Exact approved content"
+          {isEmail && isSend ? (
+            <GovernedActionSurface
+              heldLabel={
+                approved ? "Approved" : rejected ? "Rejected" : blocked ? "Blocked" : "Held"
+              }
+              message={message}
+              onMessageChange={setMessage}
+              readOnly={rejected || blocked}
+              sourceLine={governedSourceLine(action)}
+              title="Follow-up draft"
+              primaryAction={
+                !approved ? (
+                  <GovernedActionPrimaryButton
+                    disabled={
+                      busy !== null || blocked || rejected || dirty || (needsRisk && !acceptRisk)
+                    }
+                    onClick={approve}
+                    title={dirty ? "Save your edits first" : undefined}
+                  >
+                    {busy === "approve" ? <CircleNotch className="animate-spin" /> : null}
+                    Approve send
+                  </GovernedActionPrimaryButton>
+                ) : (
+                  <GovernedActionPrimaryButton
+                    disabled={busy !== null || blocked || uncertain || !linked}
+                    onClick={execute}
+                  >
+                    {busy === "execute" ? (
+                      <CircleNotch className="animate-spin" />
+                    ) : (
+                      <PaperPlaneTilt />
+                    )}
+                    {executeLabel}
+                  </GovernedActionPrimaryButton>
+                )
+              }
+              secondaryAction={
+                dirty ? (
+                  <GovernedActionSecondaryButton disabled={busy !== null} onClick={saveEdit}>
+                    {busy === "save" ? <CircleNotch className="animate-spin" /> : <PencilSimple />}
+                    Edit draft
+                  </GovernedActionSecondaryButton>
+                ) : null
+              }
             />
-            <p className="mt-1 text-xs text-primary/45">
-              Editing the draft creates a new revision and clears any prior approval — you&apos;ll
-              re-approve below.
-            </p>
-          </Field>
+          ) : (
+            <Field
+              label={
+                action.channel === "crm" || action.channel === "crm_task"
+                  ? "HubSpot note or task"
+                  : "Message"
+              }
+            >
+              <Textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={10}
+                className="resize-y font-normal"
+                placeholder="Exact approved content"
+              />
+              <p className="mt-1 text-xs text-primary/45">
+                Editing the draft creates a new revision and clears any prior approval — you&apos;ll
+                re-approve below.
+              </p>
+            </Field>
+          )}
 
           <PriorityBreakdown action={action} />
 
@@ -431,13 +496,13 @@ export function ReviewSheet({
               ) : null}
             </div>
             <div className="flex items-center gap-2">
-              {dirty ? (
+              {!(isEmail && isSend) && dirty ? (
                 <Button variant="outline" size="sm" onClick={saveEdit} disabled={busy !== null}>
                   {busy === "save" ? <CircleNotch className="animate-spin" /> : <PencilSimple />}{" "}
                   Save draft
                 </Button>
               ) : null}
-              {!approved ? (
+              {!(isEmail && isSend) && !approved ? (
                 <Button
                   size="sm"
                   onClick={approve}
@@ -449,7 +514,7 @@ export function ReviewSheet({
                   {busy === "approve" ? <CircleNotch className="animate-spin" /> : <CheckCircle />}{" "}
                   Approve
                 </Button>
-              ) : (
+              ) : !(isEmail && isSend) ? (
                 <Button
                   size="sm"
                   onClick={execute}
@@ -464,7 +529,7 @@ export function ReviewSheet({
                   )}
                   {executeLabel}
                 </Button>
-              )}
+              ) : null}
             </div>
           </div>
         </SheetFooter>

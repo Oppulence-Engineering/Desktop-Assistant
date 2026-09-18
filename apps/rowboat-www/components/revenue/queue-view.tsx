@@ -15,7 +15,6 @@ import {
 
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
-import { Card, CardContent, CardFooter } from "@oppulence/ui/components/card";
 import { Empty, EmptyDescription, EmptyHeader } from "@oppulence/ui/components/empty";
 import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
@@ -37,7 +36,14 @@ import {
   SelectValue,
 } from "@oppulence/ui/components/select";
 import { Textarea } from "@oppulence/ui/components/textarea";
+import { Badge as SimBadge, Chip } from "@sim/emcn";
+import { ListFilter } from "@sim/emcn/icons";
 import { cn } from "@/lib/utils";
+import {
+  SimProductHeader,
+  SimProductPanel,
+  SimProductToolbar,
+} from "@/components/features/sim-product/sim-product-frame";
 import {
   createAction,
   DETECTOR_LABELS,
@@ -51,7 +57,6 @@ import {
   errMessage,
   ExecutionBadge,
   ListSkeleton,
-  ModeChip,
   PolicyBadge,
   priorityTone,
 } from "@/components/revenue/shared";
@@ -122,11 +127,12 @@ export function QueueView({
   const empty = actionsQuery.isSuccess && actions.length === 0;
 
   return (
-    <div className="flex min-h-full w-full min-w-0 flex-col">
-      <div className="flex min-h-12 flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
-        <div className="flex items-center gap-2">
+    <div className="flex min-h-full w-full min-w-0 flex-col p-3">
+      <SimProductPanel className="flex min-h-0 flex-1 flex-col">
+        <SimProductHeader actions={`${actions.length} shown`} title="Recovery queue" />
+        <SimProductToolbar>
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger size="sm" className="w-36">
+            <SelectTrigger className="h-7 w-36 border-0 bg-transparent px-0 shadow-none" size="sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="app-shell rounded-[2px]">
@@ -137,89 +143,87 @@ export function QueueView({
               ))}
             </SelectContent>
           </Select>
-          <Badge variant="secondary" className="font-normal text-primary/45">
-            {actions.length} shown
-          </Badge>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => setCreating(true)}>
-          <Plus /> New action
-        </Button>
-      </div>
-
-      {actionsQuery.isPending ? (
-        <div className="p-3">
-          <ListSkeleton />
-        </div>
-      ) : actionsQuery.isError ? (
-        <EmptyBlock
-          body="The recovery queue is temporarily unavailable. Existing drafts and approvals were not changed."
-          image="recovery"
-          learnMore={[]}
-          title="Recovery could not load"
-        >
-          <Button onClick={() => void actionsQuery.refetch()} type="button" variant="outline">
-            Try again
+          <Chip leftIcon={ListFilter}>Filter</Chip>
+          <Button className="ml-auto" onClick={() => setCreating(true)} size="sm" variant="outline">
+            <Plus /> New action
           </Button>
-        </EmptyBlock>
-      ) : empty ? (
-        filter === "open" ? (
-          <WorkspaceEmptyState
-            action={
-              <Button
-                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-                disabled={scanning}
-                onClick={onScan}
-                size="sm"
-              >
-                {needsReconnect ? (
-                  <>
-                    <Plugs /> Reconnect Google
-                  </>
-                ) : (
-                  <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run audit</>
-                )}
-              </Button>
-            }
-            description={
-              <>
-                No recovery drafts yet! Run an audit
-                <br />
-                or draft recovery from a commitment.
-              </>
-            }
-            image="recovery"
-            learnMore={[
-              { label: "Approve recovery before sending" },
-              { label: "Draft from confirmed commitments" },
-            ]}
-            title="Recovery"
-          />
-        ) : (
-          <WorkspaceEmptyState
-            description={`Nothing in the ${filter} queue right now.`}
+        </SimProductToolbar>
+
+        {actionsQuery.isPending ? (
+          <div className="p-3">
+            <ListSkeleton />
+          </div>
+        ) : actionsQuery.isError ? (
+          <EmptyBlock
+            body="The recovery queue is temporarily unavailable. Existing drafts and approvals were not changed."
             image="recovery"
             learnMore={[]}
-            title="Recovery"
-          />
-        )
-      ) : (
-        <ul className="flex flex-col gap-3 p-3">
-          {actions.map((action) => (
-            <li key={action.id}>
-              <ActionCard
-                action={action}
-                onReview={() => {
-                  capture(RevenueEvents.ActionReviewed, { detector: action.detector });
-                  setSelected(action);
-                }}
-                onAudit={() => setAuditFor(action)}
-                onOptimisticRemove={removeFromQueue}
-                onError={onError}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+            title="Recovery could not load"
+          >
+            <Button onClick={() => void actionsQuery.refetch()} type="button" variant="outline">
+              Try again
+            </Button>
+          </EmptyBlock>
+        ) : empty ? (
+          filter === "open" ? (
+            <WorkspaceEmptyState
+              action={
+                <Button
+                  className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+                  disabled={scanning}
+                  onClick={onScan}
+                  size="sm"
+                >
+                  {needsReconnect ? (
+                    <>
+                      <Plugs /> Reconnect Google
+                    </>
+                  ) : (
+                    <>{scanning ? <Spinner /> : <MagnifyingGlass />} Run audit</>
+                  )}
+                </Button>
+              }
+              description={
+                <>
+                  No recovery drafts yet! Run an audit
+                  <br />
+                  or draft recovery from a commitment.
+                </>
+              }
+              image="recovery"
+              learnMore={[
+                { label: "Approve recovery before sending" },
+                { label: "Draft from confirmed commitments" },
+              ]}
+              title="Recovery"
+            />
+          ) : (
+            <WorkspaceEmptyState
+              description={`Nothing in the ${filter} queue right now.`}
+              image="recovery"
+              learnMore={[]}
+              title="Recovery"
+            />
+          )
+        ) : (
+          <ul className="flex flex-col gap-3 p-3">
+            {actions.map((action) => (
+              <li key={action.id}>
+                <ActionCard
+                  action={action}
+                  onAudit={() => setAuditFor(action)}
+                  onError={onError}
+                  onOptimisticRemove={removeFromQueue}
+                  onReview={() => {
+                    capture(RevenueEvents.ActionReviewed, { detector: action.detector });
+                    setSelected(action);
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </SimProductPanel>
 
       {selected ? (
         <ReviewSheet
@@ -292,53 +296,43 @@ function ActionCard({
   };
 
   return (
-    <Card className="group gap-3 rounded-[2px] border-border bg-background py-4 shadow-none transition-colors hover:border-primary/20">
-      <CardContent className="flex flex-col gap-3 px-4 pt-0 pb-0">
-        <div className="flex items-start gap-4">
-          <div className="flex w-12 shrink-0 flex-col items-center">
-            <Badge
-              className={cn(
-                "border-0 bg-transparent px-0 text-2xl font-semibold tabular-nums",
-                tone.className,
-              )}
-              variant="outline"
-            >
-              {action.priorityScore}
-            </Badge>
-            <Badge
-              variant="outline"
-              className="mt-0.5 px-1 py-0 text-[10px] uppercase tracking-wide text-primary/40"
-            >
-              {tone.label}
-            </Badge>
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="font-normal">
-                {DETECTOR_LABELS[action.detector] ?? action.detector}
-              </Badge>
-              <Label className="truncate text-sm font-medium text-primary">{recipient}</Label>
-              <ModeChip mode={action.executionMode} />
-            </div>
-            <p className="mt-1.5 line-clamp-2 text-sm text-primary/70">{action.reason}</p>
-            {action.proposedSubject ? (
-              <p className="mt-1 truncate text-xs text-primary/45">
-                Draft subject:{" "}
-                <Badge variant="secondary" className="font-normal text-primary/60">
-                  {action.proposedSubject}
-                </Badge>
-              </p>
-            ) : null}
-          </div>
+    <SimProductPanel className="overflow-hidden">
+      <div className="flex items-start gap-4 px-4 py-3">
+        <div className="flex w-12 shrink-0 flex-col items-center">
+          <span className={cn("text-2xl font-semibold tabular-nums", tone.className)}>
+            {action.priorityScore}
+          </span>
+          <SimBadge className="mt-0.5" variant="amber">
+            {tone.label}
+          </SimBadge>
         </div>
-      </CardContent>
-      <CardFooter className="flex flex-wrap items-center justify-between gap-2 border-0 px-4 pt-0 pb-0 pl-16">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <SimBadge variant="amber">
+              {DETECTOR_LABELS[action.detector] ?? action.detector}
+            </SimBadge>
+            <Label className="truncate text-sm font-medium text-[var(--text-primary)]">
+              {recipient}
+            </Label>
+            <Chip className="ml-auto">{open ? "Held" : action.queueStatus}</Chip>
+          </div>
+          <p className="mt-1.5 line-clamp-2 text-sm text-[var(--text-secondary)]">
+            {action.reason}
+          </p>
+          {action.proposedSubject ? (
+            <p className="mt-1 truncate text-xs text-[var(--text-muted)]">
+              Draft subject: {action.proposedSubject}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-[var(--border)] border-t px-4 py-2">
         <div className="flex flex-wrap items-center gap-1.5">
           {action.executionMode === "send" ? <PolicyBadge status={action.policyStatus} /> : null}
           {action.approvalStatus === "approved" ? (
             <Badge
-              variant="outline"
               className="gap-1 border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+              variant="outline"
             >
               <CheckCircle weight="fill" /> Approved
             </Badge>
@@ -346,7 +340,7 @@ function ActionCard({
           <ExecutionBadge action={action} />
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="sm" onClick={onAudit}>
+          <Button onClick={onAudit} size="sm" variant="ghost">
             <ClockCounterClockwise /> History
           </Button>
           {open ? (
@@ -372,13 +366,13 @@ function ActionCard({
               </Button>
             </>
           ) : (
-            <Button variant="outline" size="sm" onClick={onReview}>
+            <Button onClick={onReview} size="sm" variant="outline">
               <PencilSimple /> Open
             </Button>
           )}
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </SimProductPanel>
   );
 }
 

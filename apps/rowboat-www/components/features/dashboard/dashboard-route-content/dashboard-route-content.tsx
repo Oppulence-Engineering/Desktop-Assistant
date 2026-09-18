@@ -258,6 +258,8 @@ export function WorkflowsDashboardRoute({ focus }: WorkflowsDashboardRouteProps)
 
 export function ChatDashboardRoute() {
   const chat = useChatRouteState();
+  const session = useAuthSession();
+  const homeUserName = session.user.email || session.user.workosUserId || undefined;
   return (
     <div
       className="flex flex-1 flex-col gap-4 overflow-hidden px-4 pb-0 md:flex-row"
@@ -384,6 +386,7 @@ export function ChatDashboardRoute() {
               onSelectPrompt={chat.onSelectPrompt}
               promptInput={chat.promptInput}
               signalPanel={<HomeOverview onOpenTab={chat.onOpenRevenueTab} />}
+              userName={homeUserName}
               workspace={chat.workspace}
             />
           </div>

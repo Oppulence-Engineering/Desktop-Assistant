@@ -27,6 +27,12 @@ import {
 } from "@/lib/icons";
 
 import { EmptyBlock, errMessage, ListSkeleton, ModeChip } from "@/components/revenue/shared";
+import { AttentionQueueSurface } from "@/components/features/revenue/attention-queue-surface/attention-queue-surface";
+import {
+  AccountMissionControlSurface,
+  accountAttentionFromHealth,
+  mapCommitmentsToAccountTimeline,
+} from "@/components/features/revenue/account-mission-control-surface/account-mission-control-surface";
 import { RelationshipGraphWorkspace } from "@/components/revenue/relationship-graph";
 import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue";
 import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
@@ -78,7 +84,6 @@ import {
   ACTION_TYPE_LABELS,
   acknowledgeMissionControl,
   decideIdentityCandidate,
-  decideRelationshipAttention,
   approveRecommendation,
   correctConversationReview,
   decideConversationReview,
@@ -620,12 +625,25 @@ export function RelationshipsView({
                   </div>
                   <SourceHealth statuses={sources} />
                 </div>
-                <PortfolioAttentionQueue
-                  items={companyAttention}
-                  onOpenRelationship={setDetail}
-                  onError={onError}
-                  onChanged={() => void load()}
-                />
+                {companyAttention.length > 0 ? (
+                  <p className="text-[12px] text-primary/55">
+                    {companyAttention.length} relationship
+                    {companyAttention.length === 1 ? "" : "s"} in the{" "}
+                    <button
+                      className="underline hover:text-primary"
+                      onClick={() =>
+                        document.getElementById("attention-queue")?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        })
+                      }
+                      type="button"
+                    >
+                      attention queue
+                    </button>
+                    .
+                  </p>
+                ) : null}
                 <SourceConnectionCards
                   inventory={sourceInventory}
                   onOpenConnectors={onOpenConnectors}
@@ -659,6 +677,18 @@ export function RelationshipsView({
               </div>
             </details>
           </div>
+
+          {companyAttention.length > 0 ? (
+            <div className="shrink-0 border-b border-border p-3">
+              <AttentionQueueSurface
+                items={companyAttention}
+                loading={loading}
+                onActionError={onError}
+                onChanged={() => void load()}
+                onOpenRelationship={setDetail}
+              />
+            </div>
+          ) : null}
 
           {loading ? (
             <div className="p-4">
@@ -946,155 +976,6 @@ export function RelationshipsView({
         />
       ) : null}
     </div>
-  );
-}
-
-function PortfolioAttentionQueue({
-  items,
-  onOpenRelationship,
-  onChanged,
-  onError,
-}: {
-  items: RelationshipAttentionItem[];
-  onOpenRelationship: (id: string) => void;
-  onChanged: () => void;
-  onError: (message: string) => void;
-}) {
-  const [busy, setBusy] = React.useState<string | null>(null);
-  if (items.length === 0) return null;
-
-  const decide = async (
-    item: RelationshipAttentionItem,
-    decision: "acknowledge" | "snooze" | "dismiss",
-  ) => {
-    const reason =
-      decision === "dismiss"
-        ? window.prompt("Why should this attention item be dismissed?", "Not relevant right now")
-        : decision === "acknowledge"
-          ? "Reviewed from the portfolio attention queue."
-          : "Snoozed from the portfolio attention queue.";
-    if (reason === null || (decision === "dismiss" && !reason.trim())) return;
-    setBusy(`${item.id}:${decision}`);
-    try {
-      await decideRelationshipAttention(item.id, {
-        decision,
-        reason,
-        expectedVersion: item.version,
-        snoozedUntil:
-          decision === "snooze"
-            ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-            : undefined,
-      });
-      onChanged();
-    } catch (error) {
-      onError(errMessage(error, "Could not update the attention item."));
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  return (
-    <section
-      aria-labelledby="portfolio-attention-heading"
-      className="space-y-2"
-      data-capability="attention-queue"
-    >
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-wider text-oppulence-orange">
-            Portfolio attention
-          </p>
-          <h3 id="portfolio-attention-heading" className="text-sm font-medium text-primary">
-            {items.length} relationship{items.length === 1 ? "" : "s"} need review
-          </h3>
-        </div>
-        <Badge className="text-[11px] font-normal text-primary/40" variant="secondary">
-          Deterministic order · factors visible
-        </Badge>
-      </div>
-      <ol className="space-y-2">
-        {items.slice(0, 10).map((item) => (
-          <li key={item.id} className="rounded-none border border-border p-3">
-            <div className="flex flex-wrap items-start gap-3">
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-auto min-w-0 flex-1 justify-start whitespace-normal rounded-none p-0 text-left hover:bg-transparent"
-                onClick={() => onOpenRelationship(item.relationshipId)}
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <Label className="text-sm font-medium text-primary">
-                    {item.relationshipName}
-                  </Label>
-                  <Badge
-                    variant="outline"
-                    className={`rounded-none capitalize ${
-                      item.urgencyBand === "critical"
-                        ? "border-red-500/40 text-red-600"
-                        : item.urgencyBand === "high"
-                          ? "border-amber-500/40 text-amber-600"
-                          : ""
-                    }`}
-                  >
-                    {relationshipLabel(item.reasonCode)} · {item.rankScore}
-                  </Badge>
-                </div>
-                <p className="mt-1 text-xs text-primary/60">{item.explanation}</p>
-              </Button>
-              <div className="flex flex-wrap gap-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={busy !== null}
-                  onClick={() => void decide(item, "acknowledge")}
-                >
-                  {busy === `${item.id}:acknowledge` ? <Spinner className="size-4" /> : <Check />}{" "}
-                  Review
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  disabled={busy !== null}
-                  onClick={() => void decide(item, "snooze")}
-                >
-                  Snooze 1d
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  disabled={busy !== null}
-                  onClick={() => void decide(item, "dismiss")}
-                >
-                  Dismiss
-                </Button>
-              </div>
-            </div>
-            <details className="mt-2 text-[11px] text-primary/50">
-              <summary className="cursor-pointer">Why this rank?</summary>
-              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
-                {Object.entries(item.rankFactors).map(([factor, contribution]) => (
-                  <Badge className="font-normal" key={factor} variant="outline">
-                    {relationshipLabel(factor)}: {contribution >= 0 ? "+" : ""}
-                    {contribution}
-                  </Badge>
-                ))}
-                {item.sourceRequirements.length > 0 ? (
-                  <Badge className="font-normal" variant="secondary">
-                    Requires: {item.sourceRequirements.join(", ")}
-                  </Badge>
-                ) : null}
-                <Badge className="font-normal" variant="secondary">
-                  State v{item.relationshipStateVersion} · detector v{item.detectorVersion}
-                </Badge>
-              </div>
-            </details>
-          </li>
-        ))}
-      </ol>
-    </section>
   );
 }
 
@@ -2029,6 +1910,18 @@ function RelationshipSheet({
                 </Button>
               </nav>
               <div id={`${id}:overview`} className="flex scroll-mt-14 flex-col gap-6 px-5 py-5">
+                {(() => {
+                  const attention = accountAttentionFromHealth(data.relationship.health);
+                  return (
+                    <AccountMissionControlSurface
+                      accountName={companyName(data.relationship)}
+                      attentionLabel={attention?.label}
+                      attentionVariant={attention?.variant}
+                      items={mapCommitmentsToAccountTimeline(data.commitments, 3)}
+                    />
+                  );
+                })()}
+
                 <p className="text-xs font-medium text-primary/55">Highlights</p>
 
                 <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -2498,18 +2391,12 @@ function RelationshipSheet({
                   </section>
                   <section id={`${id}:commitments`} className="scroll-mt-16">
                     <SectionTitle title={`Commitments (${data.commitments.length})`} />
-                    {data.commitments.length === 0 ? (
-                      <EmptyText>None recorded.</EmptyText>
-                    ) : (
-                      <ul className="flex flex-col gap-1.5" aria-label="Commitments">
-                        {data.commitments.map((commitment) => (
-                          <li key={commitment.id} className="border border-border p-2 text-xs">
-                            {commitment.text}
-                            {commitment.dueAt ? ` · ${relativeTime(commitment.dueAt)}` : ""}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                    <AccountMissionControlSurface
+                      accountName={companyName(data.relationship)}
+                      className="mt-2"
+                      items={mapCommitmentsToAccountTimeline(data.commitments, 8)}
+                      showHeader={false}
+                    />
                   </section>
                 </div>
 
