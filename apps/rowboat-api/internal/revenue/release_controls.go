@@ -50,6 +50,9 @@ const (
 	// re-gave. Consent lives on RevenueWorkspace.cloud_research_consent and is
 	// checked separately.
 	CapabilityCloudResearch = "cloud_research"
+	// CapabilityCommunicationIntelligence gates communication timelines and
+	// authorized body/attachment reads while metadata sync continues.
+	CapabilityCommunicationIntelligence = "communication_intelligence"
 )
 
 var supportedWorkspaceCapabilities = map[string]bool{
@@ -60,7 +63,7 @@ var supportedWorkspaceCapabilities = map[string]bool{
 	CapabilityDetectorNextStep: true, CapabilityDetectorSource: true, CapabilityDetectorOutcome: true,
 	CapabilityActionGmail: true, CapabilityActionSlack: true, CapabilityActionHubSpot: true,
 	CapabilityOutcomeRanking: true, CapabilityDesktopPublish: true, CapabilityRealtimeUpdates: true,
-	CapabilityCloudResearch: true,
+	CapabilityCloudResearch: true, CapabilityCommunicationIntelligence: true,
 }
 
 var supportedRolloutStages = map[string]bool{
@@ -331,8 +334,9 @@ var trustEventNames = map[string]bool{
 	"identity_decided": true, "identity_candidate_viewed": true,
 	"mission_control_opened":     true,
 	"identity_candidate_decided": true, "projection_failed": true,
-	"attention_item_decided": true,
-	"communication_purged":   true,
+	"attention_item_decided":     true,
+	"communication_purged":       true,
+	"communication_content_read": true,
 }
 
 var trustEventOutcomes = map[string]bool{

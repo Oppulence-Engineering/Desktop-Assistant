@@ -515,6 +515,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// Layer-3 (RFC 031): on-demand original-email retrieval, cached sealed with
 	// the column key for a short TTL.
 	revenueSvc.SetBodyFetcher(gmailExec, sealer, time.Duration(cfg.MailBodyCacheTTLHours)*time.Hour)
+	revenueSvc.SetAttachmentFetcher(gmailExec)
+	communicationSync.SetProjector(revenueSvc)
 	// Layer-2 (RFC 031): semantic memory. Ships dark behind
 	// REVENUE_SEMANTIC_MEMORY_ENABLED and needs an embeddings key.
 	if cfg.RevenueSemanticMemoryEnabled {

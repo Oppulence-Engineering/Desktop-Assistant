@@ -90,6 +90,7 @@ import {
   getRelationshipBetaDiagnostics,
   getRelationshipChanges,
   getRelationshipEvidence,
+  getRelationshipCommunicationTimeline,
   getRelationshipTimeline,
   ingestRelationshipObservations,
   listRelationships,
@@ -127,6 +128,7 @@ import type {
   RelationshipIdentityCandidate,
   RelationshipAttentionItem,
   RelationshipDetail,
+  CommunicationTimelineItem,
   RelationshipObservation,
   RelationshipPersonAttribute,
   RelationshipSourceStatus,
@@ -1699,6 +1701,9 @@ function RelationshipSheet({
 }) {
   const [data, setData] = React.useState<RelationshipDetail | null>(null);
   const [timeline, setTimeline] = React.useState<RelationshipObservation[]>([]);
+  const [communicationTimeline, setCommunicationTimeline] = React.useState<
+    CommunicationTimelineItem[]
+  >([]);
   const [changes, setChanges] = React.useState<RelationshipStateSnapshot[]>([]);
   const [identityCandidates, setIdentityCandidates] = React.useState<
     RelationshipIdentityCandidate[]
@@ -1711,9 +1716,18 @@ function RelationshipSheet({
 
   const load = React.useCallback(async () => {
     try {
-      const [nextData, nextTimeline, nextChanges, pending, deferred, resolved] = await Promise.all([
+      const [
+        nextData,
+        nextTimeline,
+        nextCommunicationTimeline,
+        nextChanges,
+        pending,
+        deferred,
+        resolved,
+      ] = await Promise.all([
         getRelationship(id),
         getRelationshipTimeline(id),
+        getRelationshipCommunicationTimeline(id),
         getRelationshipChanges(id),
         listIdentityCandidates("pending", id),
         listIdentityCandidates("deferred", id),
@@ -1721,6 +1735,7 @@ function RelationshipSheet({
       ]);
       setData(nextData);
       setTimeline(nextTimeline);
+      setCommunicationTimeline(nextCommunicationTimeline);
       setChanges(nextChanges);
       setIdentityCandidates([...pending, ...deferred, ...resolved]);
       const people = nextData.participants
@@ -2765,6 +2780,39 @@ function RelationshipSheet({
                     </ul>
                   </section>
                 ) : null}
+
+                <section>
+                  <SectionTitle
+                    title={`Email & meeting timeline (${communicationTimeline.length})`}
+                  />
+                  {communicationTimeline.length === 0 ? (
+                    <EmptyText>No synced communication metadata yet.</EmptyText>
+                  ) : (
+                    <ul className="flex flex-col divide-y divide-primary/10 rounded-none border border-border">
+                      {communicationTimeline.map((item) => (
+                        <li key={item.id} className="p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <Label className="text-xs font-medium capitalize text-primary">
+                              {item.source} · {humanize(item.interactionType)}
+                            </Label>
+                            <Badge
+                              className="text-[11px] font-normal text-primary/35"
+                              variant="secondary"
+                            >
+                              {item.bodyLocked ? "Locked" : "Shared"}
+                            </Badge>
+                          </div>
+                          <p className="mt-1 text-xs text-primary/55">
+                            {item.subject || "Metadata only"}
+                          </p>
+                          <p className="mt-1 text-[11px] text-primary/40">
+                            {relativeTime(item.occurredAt)} · {humanize(item.access.reason)}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
 
                 <section>
                   <SectionTitle title={`Evidence timeline (${timeline.length})`} />

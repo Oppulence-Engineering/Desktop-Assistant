@@ -154,12 +154,13 @@ func (notConfiguredExecutor) Execute(context.Context, ExecRequest) (*ExecResult,
 // with the caller's authenticated context, so ent interceptors and mutation
 // hooks scope all reads and writes to the tenant.
 type Service struct {
-	client       *ent.Client
-	facade       FacadeClient
-	executor     Executor
-	sweeper      ThreadSweeper
-	entitlements Entitlements
-	bodyFetcher  MailBodyFetcher
+	client            *ent.Client
+	facade            FacadeClient
+	executor          Executor
+	sweeper           ThreadSweeper
+	entitlements      Entitlements
+	bodyFetcher       MailBodyFetcher
+	attachmentFetcher CommunicationAttachmentFetcher
 	// promiseExtractor proposes promises the deterministic detector missed.
 	// Nil leaves extraction deterministic-only, which is the default.
 	promiseExtractor PromiseExtractor

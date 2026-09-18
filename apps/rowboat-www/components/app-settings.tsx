@@ -23,6 +23,7 @@ import {
   type ThemePreference,
 } from "@/components/app-shell";
 import { DeleteAccountRow } from "@/components/features/account/delete-account-row";
+import { CommunicationPrivacySettings } from "@/components/features/connectors/communication-privacy-settings";
 import { ConnectorSettings } from "@/components/features/connectors/connector-settings";
 import { capture, RevenueEvents, setAnalyticsConsent } from "@/lib/analytics";
 import {
@@ -952,6 +953,12 @@ export function SettingsView({
           <>
             <PageIntro description={current.description} title={current.label} />
             <ConnectorSettings />
+            <SettingsRow
+              description="Control mailbox metadata defaults, protected recipients, and attachment sharing."
+              title="Email & Calendar privacy"
+            >
+              <CommunicationPrivacySettings />
+            </SettingsRow>
           </>
         ) : null}
         {section === "advanced" ? (

@@ -55,13 +55,14 @@ type Config struct {
 
 // Service owns durable invalidation, leasing, provider reads, and projections.
 type Service struct {
-	client  *ent.Client
-	sealer  *crypto.Sealer
-	secrets *secrets.Store
-	google  *googleapi.Client
-	cfg     Config
-	log     *zap.Logger
-	now     func() time.Time
+	client    *ent.Client
+	sealer    *crypto.Sealer
+	secrets   *secrets.Store
+	google    *googleapi.Client
+	projector revenue.CommunicationProjector
+	cfg       Config
+	log       *zap.Logger
+	now       func() time.Time
 }
 
 // New returns a production-ready synchronization service.
@@ -79,6 +80,11 @@ func New(client *ent.Client, sealer *crypto.Sealer, secretStore *secrets.Store, 
 		log = zap.NewNop()
 	}
 	return &Service{client: client, sealer: sealer, secrets: secretStore, google: google, cfg: cfg, log: log, now: time.Now}
+}
+
+// SetProjector wires optional metadata projection into relationship observations.
+func (s *Service) SetProjector(projector revenue.CommunicationProjector) {
+	s.projector = projector
 }
 
 // EnqueueInvalidation is intentionally database-only so a verified webhook can
@@ -637,7 +643,24 @@ func (s *Service) persist(ctx context.Context, workspace *ent.RevenueWorkspace, 
 			return err
 		}
 	}
-	return tx.Commit()
+	if relID, linkErr := revenue.ResolveCommunicationRelationship(
+		ctx, tx.Client(), workspace.ID, addresses, p.accountID,
+	); linkErr != nil {
+		return linkErr
+	} else if relID != nil {
+		if _, err = interaction.Update().SetRelationshipID(*relID).Save(ctx); err != nil {
+			return err
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+	if s.projector != nil {
+		if projectErr := s.projector.ProjectCommunicationInteraction(ctx, interaction.ID); projectErr != nil {
+			s.log.Warn("communication projection failed", zap.String("interaction", interaction.ID.String()), zap.Error(projectErr))
+		}
+	}
+	return nil
 }
 
 func (s *Service) tombstone(ctx context.Context, workspace *ent.RevenueWorkspace, source, accountID, objectID string) error {
