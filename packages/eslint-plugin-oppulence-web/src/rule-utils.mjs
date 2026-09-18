@@ -5,7 +5,9 @@ import path from "node:path";
 // outside the app's node_modules. Load the peer from the package that is
 // linting so `npm ci` in rowboat-www is enough.
 const require = createRequire(path.join(process.cwd(), "package.json"));
-const { ESLintUtils } = require("@typescript-eslint/utils");
+/** @type {typeof import("@typescript-eslint/utils")} */
+const utils = require("@typescript-eslint/utils");
+const { ESLintUtils } = utils;
 
 export const createRule = ESLintUtils.RuleCreator(
   (name) =>

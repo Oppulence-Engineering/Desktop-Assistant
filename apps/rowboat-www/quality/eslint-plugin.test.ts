@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 
 import oppulenceWeb from "@oppulence/eslint-plugin-web";
 import parser from "@typescript-eslint/parser";
-import { Linter } from "eslint";
+import { type ESLint, Linter } from "eslint";
 import { describe, expect, it } from "vitest";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -19,7 +19,7 @@ function lint(rule: string, code: string, filename: string) {
           parser,
           parserOptions: { ecmaFeatures: { jsx: true }, sourceType: "module" },
         },
-        plugins: { "oppulence-web": oppulenceWeb },
+        plugins: { "oppulence-web": oppulenceWeb as ESLint.Plugin },
         rules: { [`oppulence-web/${rule}`]: "error" },
       },
     ],

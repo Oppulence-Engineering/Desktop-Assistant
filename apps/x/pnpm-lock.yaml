@@ -395,6 +395,9 @@ importers:
       react:
         specifier: ^19.2.6
         version: 19.2.7
+      react-day-picker:
+        specifier: ^10.0.1
+        version: 10.0.1(@types/react@19.2.16)(react@19.2.7)
       react-dom:
         specifier: ^19.2.6
         version: 19.2.7(react@19.2.7)
@@ -7219,11 +7222,6 @@ packages:
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  lucide-react@1.28.0:
-    resolution: {integrity: sha512-fARAFJULsGuDDydjp6+6blekG/sBIM29TerzLjc9bQUKAcEfrSc4ZQKb25KRz4OMKd87cZTb5dgq0w/T6KufVg==}
-    peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-
   luxon@3.7.2:
     resolution: {integrity: sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==}
     engines: {node: '>=12'}
@@ -11357,6 +11355,7 @@ snapshots:
     dependencies:
       '@base-ui/react': 1.6.0(@date-fns/tz@1.5.0)(@types/react@19.2.16)(date-fns@4.4.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@hookform/resolvers': 5.6.0(@standard-schema/spec@1.1.0)(ajv-formats@2.1.1(ajv@8.20.0))(ajv@8.20.0)(joi@18.2.5)(react-hook-form@7.84.0(react@19.2.7))(zod@4.4.3)
+      '@phosphor-icons/react': 2.1.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@shadcn/react': 0.2.1(@types/react@19.2.16)(react@19.2.7)
       class-variance-authority: 0.7.1
       clsx: 2.1.1
@@ -11364,7 +11363,6 @@ snapshots:
       date-fns: 4.4.0
       embla-carousel-react: 8.6.0(react@19.2.7)
       input-otp: 1.4.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      lucide-react: 1.28.0(react@19.2.7)
       next-themes: 0.4.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       radix-ui: 1.6.7(@types/react-dom@19.2.3(@types/react@19.2.16))(@types/react@19.2.16)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react: 19.2.7
@@ -16911,10 +16909,6 @@ snapshots:
   lru-cache@7.18.3: {}
 
   lucide-react@0.542.0(react@19.2.7):
-    dependencies:
-      react: 19.2.7
-
-  lucide-react@1.28.0(react@19.2.7):
     dependencies:
       react: 19.2.7
 
