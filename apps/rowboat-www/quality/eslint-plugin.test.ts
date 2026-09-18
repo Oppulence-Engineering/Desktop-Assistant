@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import oppulenceWeb from "@oppulence/eslint-plugin-web";
-import parser from "@typescript-eslint/parser";
+import * as typescriptEslintParser from "@typescript-eslint/parser";
 import { type ESLint, Linter } from "eslint";
 import { describe, expect, it } from "vitest";
 
@@ -16,7 +16,7 @@ function lint(rule: string, code: string, filename: string) {
       {
         files: ["**/*.{ts,tsx}"],
         languageOptions: {
-          parser,
+          parser: typescriptEslintParser,
           parserOptions: { ecmaFeatures: { jsx: true }, sourceType: "module" },
         },
         plugins: { "oppulence-web": oppulenceWeb as ESLint.Plugin },
