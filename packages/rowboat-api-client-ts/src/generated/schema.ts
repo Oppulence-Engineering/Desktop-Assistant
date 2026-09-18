@@ -1072,6 +1072,82 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/console/preferences": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get console preferences
+     * @description Returns defaults before the caller's first write.
+     */
+    get: operations["getConsolePreferences"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Patch console preferences
+     * @description Strictly merges supplied typed fields into the caller's durable preference document.
+     */
+    patch: operations["patchConsolePreferences"];
+    trace?: never;
+  };
+  "/v1/console/resources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List console resources
+     * @description Lists only the caller's resources in the exact organization workspace asserted by the token.
+     */
+    get: operations["listConsoleResources"];
+    put?: never;
+    /**
+     * Create console resource
+     * @description Creates a typed artifact. Replaying a note favorite returns the existing resource.
+     */
+    post: operations["createConsoleResource"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/console/resources/{resourceId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get console resource
+     * @description Returns one caller-owned resource.
+     */
+    get: operations["getConsoleResource"];
+    put?: never;
+    post?: never;
+    /**
+     * Delete console resource
+     * @description Deletes one caller-owned resource.
+     */
+    delete: operations["deleteConsoleResource"];
+    options?: never;
+    head?: never;
+    /**
+     * Patch console resource
+     * @description Validates the complete resulting kind-specific payload before updating.
+     */
+    patch: operations["patchConsoleResource"];
+    trace?: never;
+  };
   "/v1/entities": {
     parameters: {
       query?: never;
@@ -5296,6 +5372,260 @@ export interface components {
         | "cancelled"
         | "superseded";
     };
+    CommunicationAttachment: {
+      checksum?: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: date-time
+       * @description Credential or one-time ticket expiry timestamp.
+       * @example 2026-06-04T20:48:00Z
+       */
+      expires_at?: string;
+      filename?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      interaction: components["schemas"]["CommunicationInteraction"];
+      mime_type?: string;
+      provider_attachment_id: string;
+      scan_status: string;
+      /** Format: date-time */
+      scanned_at?: string;
+      /** Format: byte */
+      sealed_content?: string;
+      sealed_extracted_text?: string;
+      /** Format: int64 */
+      size_bytes: number;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      visibility: string;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    CommunicationInteraction: {
+      attachments?: components["schemas"]["CommunicationAttachment"][];
+      content_hash: string;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      deleted: boolean;
+      direction?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      interaction_type: string;
+      metadata_json: string;
+      /** Format: date-time */
+      occurred_at: string;
+      owner: components["schemas"]["User"];
+      participants?: components["schemas"]["CommunicationParticipant"][];
+      provider_object_id: string;
+      /** Format: date-time */
+      received_at: string;
+      relationship?: components["schemas"]["Relationship"];
+      source: string;
+      source_account_id: string;
+      source_version: string;
+      subject?: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      visibility: string;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    CommunicationParticipant: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      display_name?: string;
+      /**
+       * @description Best-known WorkOS primary email for the user.
+       * @example user@example.com
+       */
+      email: string;
+      external: boolean;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      interaction: components["schemas"]["CommunicationInteraction"];
+      owner: boolean;
+      role: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    CommunicationPrivacyPolicy: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      metadata_visibility: string;
+      model_contact_extraction: boolean;
+      owner: components["schemas"]["User"];
+      retention_days: number;
+      share_attachments: boolean;
+      share_body: boolean;
+      share_subject: boolean;
+      signature_enrichment: boolean;
+      source_account_id: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      version: number;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    CommunicationPrivacyRule: {
+      active: boolean;
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      kind: string;
+      owner: components["schemas"]["User"];
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      value: string;
+      value_hash: string;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    CommunicationShareGrant: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: date-time
+       * @description Credential or one-time ticket expiry timestamp.
+       * @example 2026-06-04T20:48:00Z
+       */
+      expires_at?: string;
+      grantee?: components["schemas"]["User"];
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      owner: components["schemas"]["User"];
+      /**
+       * @description Reason code for the ledger entry.
+       * @example llm_settle
+       * @enum {string}
+       */
+      reason?:
+        | "llm_call"
+        | "llm_call_reserve"
+        | "llm_settle"
+        | "voice_tts"
+        | "exa_search"
+        | "grant"
+        | "refund";
+      resource_id: string;
+      resource_type: string;
+      /** Format: date-time */
+      revoked_at?: string;
+      scope: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
+    CommunicationSyncCursor: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      cursor?: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      last_error?: string;
+      /** Format: date-time */
+      last_provider_event_at?: string;
+      /** Format: date-time */
+      last_success_at?: string;
+      /** Format: date-time */
+      lease_claimed_at?: string;
+      owner: components["schemas"]["User"];
+      retry_count: number;
+      source: string;
+      source_account_id: string;
+      /**
+       * @description Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.
+       * @example active
+       */
+      status: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      workspace: components["schemas"]["RevenueWorkspace"];
+    };
     /** @description Public bootstrap values consumed by the desktop before sign-in. */
     ConfigResponse: {
       /**
@@ -5805,6 +6135,254 @@ export interface components {
        * @enum {string}
        */
       tier: "low" | "medium" | "high" | "money-moving";
+    };
+    /** @description Saved graph view payload. */
+    ConsoleGraphSavedViewPayload: {
+      /**
+       * @description Opaque one-time OAuth state/session ticket.
+       * @example state_abc123
+       */
+      state: components["schemas"]["ConsoleGraphSavedViewState"];
+    };
+    /** @description Saved relationship graph controls. */
+    ConsoleGraphSavedViewState: {
+      /**
+       * Format: date-time
+       * @description Optional historical boundary.
+       * @example 2026-09-17T20:00:00Z
+       */
+      asOf?: string | null;
+      /**
+       * @description Show relationships changed since review.
+       * @example false
+       */
+      changedSinceReview: boolean;
+      /** @example 0.72 */
+      density: number;
+      /**
+       * @description Neighborhood depth.
+       * @example 0
+       */
+      focusDepth: number;
+      /**
+       * @description Hide nodes without visible edges.
+       * @example false
+       */
+      hideIsolated: boolean;
+      /**
+       * @description Graph layout.
+       * @example force
+       * @enum {string}
+       */
+      layout: "force" | "radial" | "timeline";
+      /**
+       * @description Graph query.
+       * @example renewal risk
+       */
+      query: string;
+      /**
+       * @description Required only for relationship scope.
+       * @example 3a196c5e-b10e-46cb-a177-7c001f7be573
+       */
+      relationshipId?: string | null;
+      /**
+       * @description Graph scope.
+       * @example portfolio
+       * @enum {string}
+       */
+      scope: "portfolio" | "relationship";
+      /**
+       * @description Optional selected graph node.
+       * @example relationship:123
+       */
+      selectedNodeId?: string | null;
+    };
+    /** @description Idempotent reference to a note in this workspace. */
+    ConsoleNoteFavoritePayload: {
+      /**
+       * @description Stable note identifier.
+       * @example note-123
+       */
+      noteId: string;
+    };
+    /** @description Reusable note authoring content. */
+    ConsoleNoteTemplatePayload: {
+      /**
+       * @description Optional plain-text fallback.
+       * @example Agenda
+       */
+      body?: string;
+      /** @description Optional Plate editor blocks. */
+      content?: {
+        [key: string]: unknown;
+      }[];
+      /**
+       * @description Template title.
+       * @example Weekly account review
+       */
+      title: string;
+    };
+    /** @description Canonical server-synced console preferences. */
+    ConsolePreferences: {
+      /**
+       * @description Default agent slug; empty clears the selection.
+       * @example assistant
+       */
+      defaultAgentSlug: string;
+      /**
+       * @description Cross-device display name.
+       * @example Ada Lovelace
+       */
+      displayName: string;
+      /**
+       * @description Notification preference.
+       * @example attention
+       * @enum {string}
+       */
+      notificationLevel: "off" | "attention" | "all";
+      /**
+       * @description Whether product usage analytics may be captured.
+       * @example true
+       */
+      shareUsageData: boolean;
+      /**
+       * @description Whether model reasoning is shown when the client supports it.
+       * @example false
+       */
+      showModelReasoning: boolean;
+      /**
+       * @description Cross-device theme preference.
+       * @example system
+       * @enum {string}
+       */
+      theme: "light" | "dark" | "system";
+    };
+    /** @description Partial preference merge. Explicit false and empty strings are preserved. */
+    ConsolePreferencesPatch: {
+      /**
+       * @description Default agent slug; empty clears the selection.
+       * @example assistant
+       */
+      defaultAgentSlug?: string;
+      /**
+       * @description Cross-device display name.
+       * @example Ada Lovelace
+       */
+      displayName?: string;
+      /**
+       * @description Notification preference.
+       * @example attention
+       * @enum {string}
+       */
+      notificationLevel?: "off" | "attention" | "all";
+      /**
+       * @description Whether product usage analytics may be captured.
+       * @example true
+       */
+      shareUsageData?: boolean;
+      /**
+       * @description Whether model reasoning is shown when the client supports it.
+       * @example false
+       */
+      showModelReasoning?: boolean;
+      /**
+       * @description Cross-device theme preference.
+       * @example system
+       * @enum {string}
+       */
+      theme?: "light" | "dark" | "system";
+    };
+    /** @description One caller-owned console artifact in the asserted workspace. */
+    ConsoleResource: {
+      /**
+       * Format: date-time
+       * @description Creation timestamp.
+       * @example 2026-09-17T20:00:00Z
+       */
+      createdAt: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      kind: components["schemas"]["ConsoleResourceKind"];
+      /**
+       * @description Template or view name; omitted for favorites.
+       * @example Renewal risk
+       */
+      name?: string;
+      payload:
+        | components["schemas"]["ConsoleNoteTemplatePayload"]
+        | components["schemas"]["ConsoleNoteFavoritePayload"]
+        | components["schemas"]["ConsoleGraphSavedViewPayload"];
+      /**
+       * @description User-controlled deterministic order.
+       * @example 0
+       */
+      sortOrder: number;
+      /**
+       * Format: date-time
+       * @description Last update timestamp.
+       * @example 2026-09-17T20:01:00Z
+       */
+      updatedAt: string;
+    };
+    /** @description Create a typed console artifact. */
+    ConsoleResourceCreate: {
+      kind: components["schemas"]["ConsoleResourceKind"];
+      /**
+       * @description Required for templates and saved views; forbidden for favorites.
+       * @example Renewal risk
+       */
+      name?: string;
+      payload:
+        | components["schemas"]["ConsoleNoteTemplatePayload"]
+        | components["schemas"]["ConsoleNoteFavoritePayload"]
+        | components["schemas"]["ConsoleGraphSavedViewPayload"];
+      /**
+       * @description User-controlled deterministic order.
+       * @example 0
+       */
+      sortOrder?: number;
+    };
+    /**
+     * @description Durable console artifact kind.
+     * @example graph_saved_view
+     * @enum {string}
+     */
+    ConsoleResourceKind: "note_template" | "note_favorite" | "graph_saved_view";
+    /** @description Bounded deterministic resource page. */
+    ConsoleResourcePage: {
+      /**
+       * @description Applied page limit.
+       * @example 50
+       */
+      limit: number;
+      /**
+       * @description Applied page offset.
+       * @example 0
+       */
+      offset: number;
+      /** @description Resources ordered by sortOrder, createdAt descending, then id. */
+      resources: components["schemas"]["ConsoleResource"][];
+    };
+    /** @description Update mutable artifact fields. Kind and ownership are immutable. */
+    ConsoleResourcePatch: {
+      /**
+       * @description Required for templates and saved views; forbidden for favorites.
+       * @example Renewal risk
+       */
+      name?: string;
+      payload?:
+        | components["schemas"]["ConsoleNoteTemplatePayload"]
+        | components["schemas"]["ConsoleNoteFavoritePayload"]
+        | components["schemas"]["ConsoleGraphSavedViewPayload"];
+      /**
+       * @description User-controlled deterministic order.
+       * @example 0
+       */
+      sortOrder?: number;
     };
     /** @description A material conversation claim anchored to exact words, time, speaker confidence, and capture caveats. */
     ConversationClaim: {
@@ -8559,6 +9137,7 @@ export interface components {
       commitment_dependencies?: components["schemas"]["CommitmentDependency"][];
       commitment_events?: components["schemas"]["CommitmentEvent"][];
       commitments?: components["schemas"]["Commitment"][];
+      communication_interactions?: components["schemas"]["CommunicationInteraction"][];
       company_categories: string[];
       company_description?: string;
       /** Format: date-time */
@@ -10576,6 +11155,11 @@ export interface components {
        */
       candidatesSeen?: number;
       /**
+       * @description New commitments recorded.
+       * @example 4
+       */
+      commitmentsCreated?: number;
+      /**
        * Format: date-time
        * @description Completion time.
        * @example 2026-07-23T12:00:40Z
@@ -10632,10 +11216,25 @@ export interface components {
        */
       status: "pending" | "running" | "completed" | "failed";
       /**
+       * @description Threads examined from complete message bodies.
+       * @example 30
+       */
+      threadsDeepRead?: number;
+      /**
        * @description Threads examined.
        * @example 42
        */
       threadsSeen?: number;
+      /**
+       * @description Threads skipped because readable evidence was unavailable.
+       * @example 4
+       */
+      threadsSkipped?: number;
+      /**
+       * @description Threads examined from snippets only.
+       * @example 8
+       */
+      threadsSnippetOnly?: number;
     };
     RevenueOutboxEvent: {
       /** Format: uuid */
@@ -11458,7 +12057,11 @@ export interface components {
       commitment_dependencies?: components["schemas"]["CommitmentDependency"][];
       commitment_events?: components["schemas"]["CommitmentEvent"][];
       commitments?: components["schemas"]["Commitment"][];
+      communication_privacy_policies?: components["schemas"]["CommunicationPrivacyPolicy"][];
+      communication_privacy_rules?: components["schemas"]["CommunicationPrivacyRule"][];
+      communication_sync_cursors?: components["schemas"]["CommunicationSyncCursor"][];
       connector_audit_events?: components["schemas"]["ConnectorAuditEvent"][];
+      console_resources?: components["schemas"]["ConsoleResource"][];
       conversation_intelligence_artifacts?: components["schemas"]["ConversationIntelligenceArtifact"][];
       /**
        * Format: date-time
@@ -11494,11 +12097,14 @@ export interface components {
       meeting_minute_usages?: components["schemas"]["MeetingMinuteUsage"][];
       /** @description Third-party OAuth connections for the user. */
       oauth_connections?: components["schemas"]["OAuthConnection"][];
+      owned_communication_interactions?: components["schemas"]["CommunicationInteraction"][];
+      owned_communication_share_grants?: components["schemas"]["CommunicationShareGrant"][];
       person_attributes?: components["schemas"]["PersonAttribute"][];
       person_identities?: components["schemas"]["PersonIdentity"][];
       person_merge_candidates?: components["schemas"]["PersonMergeCandidate"][];
       person_suppressions?: components["schemas"]["PersonSuppression"][];
       policy_decision_snapshots?: components["schemas"]["PolicyDecisionSnapshot"][];
+      received_communication_share_grants?: components["schemas"]["CommunicationShareGrant"][];
       relationship_assertions?: components["schemas"]["RelationshipAssertion"][];
       relationship_attention_items?: components["schemas"]["RelationshipAttentionItem"][];
       relationship_identities?: components["schemas"]["RelationshipIdentity"][];
@@ -11530,6 +12136,7 @@ export interface components {
        * @example 2026-06-04T20:39:00Z
        */
       updated_at: string;
+      user_preferences?: components["schemas"]["UserPreference"][];
       voice_api_keys?: components["schemas"]["VoiceAPIKey"][];
       voice_sync_items?: components["schemas"]["VoiceSyncItem"][];
       /**
@@ -11597,6 +12204,29 @@ export interface components {
        * @example user_01HABCDEF
        */
       workos_user_id: string;
+    };
+    UserPreference: {
+      /**
+       * Format: date-time
+       * @description Row creation timestamp.
+       * @example 2026-06-04T20:38:00Z
+       */
+      created_at: string;
+      /**
+       * Format: uuid
+       * @description Stable UUID primary key.
+       * @example 123e4567-e89b-12d3-a456-426614174000
+       */
+      id: string;
+      preferences_json: string;
+      /**
+       * Format: date-time
+       * @description Last row update timestamp.
+       * @example 2026-06-04T20:39:00Z
+       */
+      updated_at: string;
+      /** @description User that owns this row. */
+      user: components["schemas"]["User"];
     };
     /** @description Oppulence Voice API-key metadata. key is returned only on creation. */
     VoiceAPIKey: {
@@ -15153,6 +15783,573 @@ export interface operations {
       429: components["responses"]["429"];
       500: components["responses"]["500"];
       503: components["responses"]["503"];
+    };
+  };
+  getConsolePreferences: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Current preferences. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConsolePreferences"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      /** @description Request body exceeds 262144 bytes. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "request_body_too_large",
+           *       "detail": "request body exceeds 262144 bytes",
+           *       "requestId": "req-abc123",
+           *       "status": 413,
+           *       "title": "Content Too Large",
+           *       "type": "https://api.rowboat.dev/problems/request_body_too_large"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Content-Type must be application/json. */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "unsupported_media_type",
+           *       "detail": "Content-Type must be application/json",
+           *       "requestId": "req-abc123",
+           *       "status": 415,
+           *       "title": "Unsupported Media Type",
+           *       "type": "https://api.rowboat.dev/problems/unsupported_media_type"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
+    };
+  };
+  patchConsolePreferences: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Preference fields to merge. */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ConsolePreferencesPatch"];
+      };
+    };
+    responses: {
+      /** @description Current preferences. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConsolePreferences"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      /** @description Request body exceeds 262144 bytes. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "request_body_too_large",
+           *       "detail": "request body exceeds 262144 bytes",
+           *       "requestId": "req-abc123",
+           *       "status": 413,
+           *       "title": "Content Too Large",
+           *       "type": "https://api.rowboat.dev/problems/request_body_too_large"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Content-Type must be application/json. */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "unsupported_media_type",
+           *       "detail": "Content-Type must be application/json",
+           *       "requestId": "req-abc123",
+           *       "status": 415,
+           *       "title": "Unsupported Media Type",
+           *       "type": "https://api.rowboat.dev/problems/unsupported_media_type"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
+    };
+  };
+  listConsoleResources: {
+    parameters: {
+      query: {
+        /** @description Required resource kind. */
+        kind: components["schemas"]["ConsoleResourceKind"];
+        /** @description Page size (default 50, max 100). */
+        limit?: number;
+        /** @description Page offset (max 10000). */
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Resource page. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConsoleResourcePage"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      /** @description Request body exceeds 262144 bytes. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "request_body_too_large",
+           *       "detail": "request body exceeds 262144 bytes",
+           *       "requestId": "req-abc123",
+           *       "status": 413,
+           *       "title": "Content Too Large",
+           *       "type": "https://api.rowboat.dev/problems/request_body_too_large"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Content-Type must be application/json. */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "unsupported_media_type",
+           *       "detail": "Content-Type must be application/json",
+           *       "requestId": "req-abc123",
+           *       "status": 415,
+           *       "title": "Unsupported Media Type",
+           *       "type": "https://api.rowboat.dev/problems/unsupported_media_type"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
+    };
+  };
+  createConsoleResource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Typed resource. */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ConsoleResourceCreate"];
+      };
+    };
+    responses: {
+      /** @description Existing favorite returned after an idempotent replay. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConsoleResource"];
+        };
+      };
+      /** @description Created resource. */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConsoleResource"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      /** @description A resource with the same normalized name already exists. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "console_resource_conflict",
+           *       "detail": "console resource already exists",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/console_resource_conflict"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Request body exceeds 262144 bytes. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "request_body_too_large",
+           *       "detail": "request body exceeds 262144 bytes",
+           *       "requestId": "req-abc123",
+           *       "status": 413,
+           *       "title": "Content Too Large",
+           *       "type": "https://api.rowboat.dev/problems/request_body_too_large"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Content-Type must be application/json. */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "unsupported_media_type",
+           *       "detail": "Content-Type must be application/json",
+           *       "requestId": "req-abc123",
+           *       "status": 415,
+           *       "title": "Unsupported Media Type",
+           *       "type": "https://api.rowboat.dev/problems/unsupported_media_type"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
+    };
+  };
+  getConsoleResource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Console resource id. */
+        resourceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Resource. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConsoleResource"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      /** @description The resource is absent or belongs to another user or workspace. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "console_resource_not_found",
+           *       "detail": "console resource not found",
+           *       "requestId": "req-abc123",
+           *       "status": 404,
+           *       "title": "Not Found",
+           *       "type": "https://api.rowboat.dev/problems/console_resource_not_found"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Request body exceeds 262144 bytes. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "request_body_too_large",
+           *       "detail": "request body exceeds 262144 bytes",
+           *       "requestId": "req-abc123",
+           *       "status": 413,
+           *       "title": "Content Too Large",
+           *       "type": "https://api.rowboat.dev/problems/request_body_too_large"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Content-Type must be application/json. */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "unsupported_media_type",
+           *       "detail": "Content-Type must be application/json",
+           *       "requestId": "req-abc123",
+           *       "status": 415,
+           *       "title": "Unsupported Media Type",
+           *       "type": "https://api.rowboat.dev/problems/unsupported_media_type"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
+    };
+  };
+  deleteConsoleResource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Console resource id. */
+        resourceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Resource deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      /** @description The resource is absent or belongs to another user or workspace. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "console_resource_not_found",
+           *       "detail": "console resource not found",
+           *       "requestId": "req-abc123",
+           *       "status": 404,
+           *       "title": "Not Found",
+           *       "type": "https://api.rowboat.dev/problems/console_resource_not_found"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Request body exceeds 262144 bytes. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "request_body_too_large",
+           *       "detail": "request body exceeds 262144 bytes",
+           *       "requestId": "req-abc123",
+           *       "status": 413,
+           *       "title": "Content Too Large",
+           *       "type": "https://api.rowboat.dev/problems/request_body_too_large"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Content-Type must be application/json. */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "unsupported_media_type",
+           *       "detail": "Content-Type must be application/json",
+           *       "requestId": "req-abc123",
+           *       "status": 415,
+           *       "title": "Unsupported Media Type",
+           *       "type": "https://api.rowboat.dev/problems/unsupported_media_type"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
+    };
+  };
+  patchConsoleResource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Console resource id. */
+        resourceId: string;
+      };
+      cookie?: never;
+    };
+    /** @description Mutable resource fields. */
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ConsoleResourcePatch"];
+      };
+    };
+    responses: {
+      /** @description Resource. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ConsoleResource"];
+        };
+      };
+      400: components["responses"]["400"];
+      401: components["responses"]["401"];
+      403: components["responses"]["403"];
+      /** @description The resource is absent or belongs to another user or workspace. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "console_resource_not_found",
+           *       "detail": "console resource not found",
+           *       "requestId": "req-abc123",
+           *       "status": 404,
+           *       "title": "Not Found",
+           *       "type": "https://api.rowboat.dev/problems/console_resource_not_found"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description A resource with the same normalized name already exists. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "console_resource_conflict",
+           *       "detail": "console resource already exists",
+           *       "requestId": "req-abc123",
+           *       "status": 409,
+           *       "title": "Conflict",
+           *       "type": "https://api.rowboat.dev/problems/console_resource_conflict"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Request body exceeds 262144 bytes. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "request_body_too_large",
+           *       "detail": "request body exceeds 262144 bytes",
+           *       "requestId": "req-abc123",
+           *       "status": 413,
+           *       "title": "Content Too Large",
+           *       "type": "https://api.rowboat.dev/problems/request_body_too_large"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      /** @description Content-Type must be application/json. */
+      415: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "code": "unsupported_media_type",
+           *       "detail": "Content-Type must be application/json",
+           *       "requestId": "req-abc123",
+           *       "status": 415,
+           *       "title": "Unsupported Media Type",
+           *       "type": "https://api.rowboat.dev/problems/unsupported_media_type"
+           *     }
+           */
+          "application/problem+json": components["schemas"]["ErrorEnvelope"];
+        };
+      };
+      500: components["responses"]["500"];
     };
   };
   resolveEntityByRef: {

@@ -25,6 +25,11 @@ import type { CloudEvent } from "./cloudEvent";
 import type { Commitment } from "./commitment";
 import type { CommitmentDependency } from "./commitmentDependency";
 import type { CommitmentEvent } from "./commitmentEvent";
+import type { CommunicationInteraction } from "./communicationInteraction";
+import type { CommunicationPrivacyPolicy } from "./communicationPrivacyPolicy";
+import type { CommunicationPrivacyRule } from "./communicationPrivacyRule";
+import type { CommunicationShareGrant } from "./communicationShareGrant";
+import type { CommunicationSyncCursor } from "./communicationSyncCursor";
 import type { ConnectorAuditEvent } from "./connectorAuditEvent";
 import type { ConsoleResource } from "./consoleResource";
 import type { ConversationIntelligenceArtifact } from "./conversationIntelligenceArtifact";
@@ -103,6 +108,9 @@ export interface User {
   commitment_dependencies?: CommitmentDependency[];
   commitment_events?: CommitmentEvent[];
   commitments?: Commitment[];
+  communication_privacy_policies?: CommunicationPrivacyPolicy[];
+  communication_privacy_rules?: CommunicationPrivacyRule[];
+  communication_sync_cursors?: CommunicationSyncCursor[];
   connector_audit_events?: ConnectorAuditEvent[];
   console_resources?: ConsoleResource[];
   conversation_intelligence_artifacts?: ConversationIntelligenceArtifact[];
@@ -129,11 +137,14 @@ export interface User {
   meeting_minute_usages?: MeetingMinuteUsage[];
   /** Third-party OAuth connections for the user. */
   oauth_connections?: OAuthConnection[];
+  owned_communication_interactions?: CommunicationInteraction[];
+  owned_communication_share_grants?: CommunicationShareGrant[];
   person_attributes?: PersonAttribute[];
   person_identities?: PersonIdentity[];
   person_merge_candidates?: PersonMergeCandidate[];
   person_suppressions?: PersonSuppression[];
   policy_decision_snapshots?: PolicyDecisionSnapshot[];
+  received_communication_share_grants?: CommunicationShareGrant[];
   relationship_assertions?: RelationshipAssertion[];
   relationship_attention_items?: RelationshipAttentionItem[];
   relationship_identities?: RelationshipIdentity[];

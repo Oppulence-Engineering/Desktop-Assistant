@@ -3723,6 +3723,516 @@
         ],
         "description": "One cross-account register row with its reader-facing state and account."
       },
+      "CommunicationAttachment": {
+        "properties": {
+          "checksum": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "expires_at": {
+            "description": "Credential or one-time ticket expiry timestamp.",
+            "example": "2026-06-04T20:48:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "interaction": {
+            "$ref": "#/components/schemas/CommunicationInteraction"
+          },
+          "mime_type": {
+            "type": "string"
+          },
+          "provider_attachment_id": {
+            "type": "string"
+          },
+          "scan_status": {
+            "type": "string"
+          },
+          "scanned_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "sealed_content": {
+            "format": "byte",
+            "type": "string"
+          },
+          "sealed_extracted_text": {
+            "type": "string"
+          },
+          "size_bytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "provider_attachment_id",
+          "size_bytes",
+          "visibility",
+          "scan_status",
+          "workspace",
+          "interaction"
+        ],
+        "type": "object"
+      },
+      "CommunicationInteraction": {
+        "properties": {
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/CommunicationAttachment"
+            },
+            "type": "array"
+          },
+          "content_hash": {
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "interaction_type": {
+            "type": "string"
+          },
+          "metadata_json": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/User"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/CommunicationParticipant"
+            },
+            "type": "array"
+          },
+          "provider_object_id": {
+            "type": "string"
+          },
+          "received_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "relationship": {
+            "$ref": "#/components/schemas/Relationship"
+          },
+          "source": {
+            "type": "string"
+          },
+          "source_account_id": {
+            "type": "string"
+          },
+          "source_version": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "source",
+          "source_account_id",
+          "provider_object_id",
+          "source_version",
+          "interaction_type",
+          "occurred_at",
+          "received_at",
+          "visibility",
+          "deleted",
+          "content_hash",
+          "metadata_json",
+          "workspace",
+          "owner"
+        ],
+        "type": "object"
+      },
+      "CommunicationParticipant": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "email": {
+            "description": "Best-known WorkOS primary email for the user.",
+            "example": "user@example.com",
+            "type": "string"
+          },
+          "external": {
+            "type": "boolean"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "interaction": {
+            "$ref": "#/components/schemas/CommunicationInteraction"
+          },
+          "owner": {
+            "type": "boolean"
+          },
+          "role": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "email",
+          "role",
+          "external",
+          "owner",
+          "workspace",
+          "interaction"
+        ],
+        "type": "object"
+      },
+      "CommunicationPrivacyPolicy": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "metadata_visibility": {
+            "type": "string"
+          },
+          "model_contact_extraction": {
+            "type": "boolean"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/User"
+          },
+          "retention_days": {
+            "type": "integer"
+          },
+          "share_attachments": {
+            "type": "boolean"
+          },
+          "share_body": {
+            "type": "boolean"
+          },
+          "share_subject": {
+            "type": "boolean"
+          },
+          "signature_enrichment": {
+            "type": "boolean"
+          },
+          "source_account_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "type": "integer"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "source_account_id",
+          "metadata_visibility",
+          "share_subject",
+          "share_body",
+          "share_attachments",
+          "signature_enrichment",
+          "model_contact_extraction",
+          "retention_days",
+          "version",
+          "workspace",
+          "owner"
+        ],
+        "type": "object"
+      },
+      "CommunicationPrivacyRule": {
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/User"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "value_hash": {
+            "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "kind",
+          "value",
+          "value_hash",
+          "active",
+          "workspace",
+          "owner"
+        ],
+        "type": "object"
+      },
+      "CommunicationShareGrant": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "expires_at": {
+            "description": "Credential or one-time ticket expiry timestamp.",
+            "example": "2026-06-04T20:48:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "grantee": {
+            "$ref": "#/components/schemas/User"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/User"
+          },
+          "reason": {
+            "description": "Reason code for the ledger entry.",
+            "enum": [
+              "llm_call",
+              "llm_call_reserve",
+              "llm_settle",
+              "voice_tts",
+              "exa_search",
+              "grant",
+              "refund"
+            ],
+            "example": "llm_settle",
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "resource_type": {
+            "type": "string"
+          },
+          "revoked_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "scope",
+          "resource_type",
+          "resource_id",
+          "workspace",
+          "owner"
+        ],
+        "type": "object"
+      },
+      "CommunicationSyncCursor": {
+        "properties": {
+          "created_at": {
+            "description": "Row creation timestamp.",
+            "example": "2026-06-04T20:38:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "cursor": {
+            "type": "string"
+          },
+          "id": {
+            "description": "Stable UUID primary key.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "format": "uuid",
+            "type": "string"
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "last_provider_event_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "last_success_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lease_claimed_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/User"
+          },
+          "retry_count": {
+            "type": "integer"
+          },
+          "source": {
+            "type": "string"
+          },
+          "source_account_id": {
+            "type": "string"
+          },
+          "status": {
+            "description": "Lifecycle/status slug. Subscription rows use billing states; background task runs use queued/running/succeeded/failed/stopped.",
+            "example": "active",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Last row update timestamp.",
+            "example": "2026-06-04T20:39:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/RevenueWorkspace"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "source",
+          "source_account_id",
+          "status",
+          "retry_count",
+          "workspace",
+          "owner"
+        ],
+        "type": "object"
+      },
       "ConfigResponse": {
         "description": "Public bootstrap values consumed by the desktop before sign-in.",
         "properties": {
@@ -9060,6 +9570,12 @@
             },
             "type": "array"
           },
+          "communication_interactions": {
+            "items": {
+              "$ref": "#/components/schemas/CommunicationInteraction"
+            },
+            "type": "array"
+          },
           "company_categories": {
             "items": {
               "type": "string"
@@ -13478,6 +13994,24 @@
             },
             "type": "array"
           },
+          "communication_privacy_policies": {
+            "items": {
+              "$ref": "#/components/schemas/CommunicationPrivacyPolicy"
+            },
+            "type": "array"
+          },
+          "communication_privacy_rules": {
+            "items": {
+              "$ref": "#/components/schemas/CommunicationPrivacyRule"
+            },
+            "type": "array"
+          },
+          "communication_sync_cursors": {
+            "items": {
+              "$ref": "#/components/schemas/CommunicationSyncCursor"
+            },
+            "type": "array"
+          },
           "connector_audit_events": {
             "items": {
               "$ref": "#/components/schemas/ConnectorAuditEvent"
@@ -13595,6 +14129,18 @@
             },
             "type": "array"
           },
+          "owned_communication_interactions": {
+            "items": {
+              "$ref": "#/components/schemas/CommunicationInteraction"
+            },
+            "type": "array"
+          },
+          "owned_communication_share_grants": {
+            "items": {
+              "$ref": "#/components/schemas/CommunicationShareGrant"
+            },
+            "type": "array"
+          },
           "person_attributes": {
             "items": {
               "$ref": "#/components/schemas/PersonAttribute"
@@ -13622,6 +14168,12 @@
           "policy_decision_snapshots": {
             "items": {
               "$ref": "#/components/schemas/PolicyDecisionSnapshot"
+            },
+            "type": "array"
+          },
+          "received_communication_share_grants": {
+            "items": {
+              "$ref": "#/components/schemas/CommunicationShareGrant"
             },
             "type": "array"
           },

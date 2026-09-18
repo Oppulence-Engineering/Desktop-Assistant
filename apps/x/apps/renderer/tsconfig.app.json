@@ -22,7 +22,17 @@
       "@/*": ["./src/*"],
       "#lib/*": ["../../../../packages/ui/src/lib/*"],
       "#components/*": ["../../../../packages/ui/src/components/*"],
-      "#hooks/*": ["../../../../packages/ui/src/hooks/*"]
+      "#hooks/*": ["../../../../packages/ui/src/hooks/*"],
+      "react": ["../../node_modules/react"],
+      "react/*": ["../../node_modules/react/*"],
+      "react-dom": ["../../node_modules/react-dom"],
+      "react-dom/*": ["../../node_modules/react-dom/*"],
+      "class-variance-authority": ["../../node_modules/class-variance-authority"],
+      "radix-ui": ["../../node_modules/radix-ui"],
+      "react-day-picker": ["../../node_modules/react-day-picker"],
+      "@phosphor-icons/react": ["../../node_modules/@phosphor-icons/react"],
+      "clsx": ["../../node_modules/clsx"],
+      "tailwind-merge": ["../../node_modules/tailwind-merge"]
     },
 
     /* Linting */

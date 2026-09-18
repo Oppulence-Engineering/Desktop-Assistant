@@ -195,6 +195,7 @@ sdk-generate:
 # public SDK so one API generation command cannot leave either consumer stale.
 .PHONY: www-contracts-generate
 www-contracts-generate:
+	npm --prefix "$(WWW_DIR)" ci --ignore-scripts
 	npm --prefix "$(WWW_DIR)" run contracts:generate
 
 # Install the protoc plugins the proto-generate target needs.

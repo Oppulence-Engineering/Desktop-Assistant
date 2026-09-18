@@ -9,6 +9,7 @@ type ViteAlias = { find: string | RegExp; replacement: string };
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../../../..");
 const uiSrc = path.join(repoRoot, "packages/ui/src");
+const workspaceModules = path.resolve(__dirname, "../../node_modules");
 
 /**
  * @oppulence/ui uses package.json "imports" (#lib, #components, #hooks). Vite does not
@@ -29,8 +30,21 @@ export default defineConfig({
   base: "./", // Use relative paths for assets (required for Electron custom protocol)
   plugins: [react(), tailwindcss()],
   resolve: {
+    // packages/ui is compiled from source. Pin React to the desktop workspace
+    // copy so peer imports resolve in CI, where the UI package has no nested React.
+    dedupe: ["react", "react-dom"],
     alias: [
       { find: "@", replacement: path.resolve(__dirname, "./src") },
+      { find: /^react$/, replacement: path.join(workspaceModules, "react") },
+      {
+        find: /^react\/jsx-runtime$/,
+        replacement: path.join(workspaceModules, "react/jsx-runtime.js"),
+      },
+      {
+        find: /^react\/jsx-dev-runtime$/,
+        replacement: path.join(workspaceModules, "react/jsx-dev-runtime.js"),
+      },
+      { find: /^react-dom$/, replacement: path.join(workspaceModules, "react-dom") },
       ...uiInternalImportAliases(),
     ],
   },

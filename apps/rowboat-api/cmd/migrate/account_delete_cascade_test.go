@@ -48,8 +48,15 @@ func TestAccountDeleteCascadeMigrationMatchesTheEntSchema(t *testing.T) {
 	// Tables introduced after the corrective migration declare CASCADE in their
 	// CREATE TABLE statements and therefore must not appear in the old rewrite.
 	createdWithCascade := map[string]bool{
-		"console_resources": true,
-		"user_preferences":  true,
+		"communication_attachments":      true,
+		"communication_interactions":     true,
+		"communication_participants":     true,
+		"communication_privacy_policies": true,
+		"communication_privacy_rules":    true,
+		"communication_share_grants":     true,
+		"communication_sync_cursors":     true,
+		"console_resources":              true,
+		"user_preferences":               true,
 	}
 	migrated := map[cascadeFK]string{}
 	for _, stmt := range accountDeleteStatements(t, cascadeMigrationFile) {
