@@ -1,6 +1,6 @@
 # Product Marketing Context
 
-*Last updated: 2026-07-12*
+_Last updated: 2026-07-12_
 
 ## Product Overview
 
@@ -40,12 +40,12 @@
 
 ## Personas
 
-| Persona | Cares about | Challenge | Value we promise |
-|---------|-------------|-----------|------------------|
-| Founder seller | Revenue, speed, reputation | Important follow-ups live in memory and scattered tools | A short daily queue of the relationships most likely to create revenue |
-| Head of Sales | Pipeline quality, consistency, coaching | CRM fields do not capture promises, objections, or real relationship history | Source-backed actions and a repeatable follow-through system |
-| Revenue operator | Data quality, policy, deliverability | Research, suppression, approvals, and execution are fragmented | One governed action workflow with evidence and auditability |
-| Security or technical buyer | Control, permissions, deployment | Autonomous agents can create compliance and reputation risk | Explicit policies, approvals, provenance, audit history, and controlled deployment |
+| Persona                     | Cares about                             | Challenge                                                                    | Value we promise                                                                   |
+| --------------------------- | --------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Founder seller              | Revenue, speed, reputation              | Important follow-ups live in memory and scattered tools                      | A short daily queue of the relationships most likely to create revenue             |
+| Head of Sales               | Pipeline quality, consistency, coaching | CRM fields do not capture promises, objections, or real relationship history | Source-backed actions and a repeatable follow-through system                       |
+| Revenue operator            | Data quality, policy, deliverability    | Research, suppression, approvals, and execution are fragmented               | One governed action workflow with evidence and auditability                        |
+| Security or technical buyer | Control, permissions, deployment        | Autonomous agents can create compliance and reputation risk                  | Explicit policies, approvals, provenance, audit history, and controlled deployment |
 
 ## Problems & Pain Points
 
@@ -90,11 +90,11 @@
 
 ## Objections
 
-| Objection | Response |
-|-----------|----------|
-| “Is this another CRM?” | No. The CRM remains authoritative for opportunity state; Oppulence turns communication history and commitments into the next governed action. |
-| “Will it send messages without me?” | High-value actions are approval-gated. Automation can expand only under explicit policies. |
-| “Why not use ChatGPT or our sequencing tool?” | Those tools draft or send. Oppulence maintains relationship memory, cites evidence, checks policy, and learns from outcomes. |
+| Objection                                     | Response                                                                                                                                      |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| “Is this another CRM?”                        | No. The CRM remains authoritative for opportunity state; Oppulence turns communication history and commitments into the next governed action. |
+| “Will it send messages without me?”           | High-value actions are approval-gated. Automation can expand only under explicit policies.                                                    |
+| “Why not use ChatGPT or our sequencing tool?” | Those tools draft or send. Oppulence maintains relationship memory, cites evidence, checks policy, and learns from outcomes.                  |
 
 **Anti-persona:** High-volume commodity senders seeking the cheapest way to maximize email volume; teams without meaningful warm relationships or willingness to connect source systems.
 
@@ -129,13 +129,13 @@
 
 **Glossary:**
 
-| Term | Meaning |
-|------|---------|
-| Revenue Leak Scan | A 60–90 day review that finds neglected warm opportunities and missed commitments |
-| Revenue Action | A ranked, evidence-backed recommended next step for a commercial relationship |
-| Relationship Memory | The source-linked history of people, accounts, commitments, objections, and outcomes |
-| Policy Decision | The verification, suppression, frequency, sender-health, and permission result before execution |
-| Outcome | A reply, meeting, CRM change, win, loss, or other signal that updates the relationship memory |
+| Term                | Meaning                                                                                         |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| Revenue Leak Scan   | A 60–90 day review that finds neglected warm opportunities and missed commitments               |
+| Revenue Action      | A ranked, evidence-backed recommended next step for a commercial relationship                   |
+| Relationship Memory | The source-linked history of people, accounts, commitments, objections, and outcomes            |
+| Policy Decision     | The verification, suppression, frequency, sender-health, and permission result before execution |
+| Outcome             | A reply, meeting, CRM change, win, loss, or other signal that updates the relationship memory   |
 
 ## Brand Voice
 
@@ -155,12 +155,12 @@
 
 **Value themes:**
 
-| Theme | Proof |
-|-------|-------|
-| Explainable | Every recommendation includes source evidence and a reason it matters now |
-| Governed | Verification, suppression, sender policy, approval, and audit history precede execution |
-| Compounding | Replies, meetings, edits, and revenue outcomes update the relationship memory |
-| Unified | Customers see one promise, one queue, one bill, and one support surface |
+| Theme       | Proof                                                                                   |
+| ----------- | --------------------------------------------------------------------------------------- |
+| Explainable | Every recommendation includes source evidence and a reason it matters now               |
+| Governed    | Verification, suppression, sender policy, approval, and audit history precede execution |
+| Compounding | Replies, meetings, edits, and revenue outcomes update the relationship memory           |
+| Unified     | Customers see one promise, one queue, one bill, and one support surface                 |
 
 ## Goals
 

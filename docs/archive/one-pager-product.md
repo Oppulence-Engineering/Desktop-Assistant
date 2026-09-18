@@ -8,8 +8,8 @@
 
 In 2026, the average operator pays for a stack of AI tools that refuse to talk to each other:
 
-- **Granola ($14/mo)** writes the meeting note. Per their own docs: *"Granola only has access to your meeting data… it doesn't know about your emails, offline tasks, or personal to-do lists. Granola can only understand one meeting at a time."*
-- **Superhuman AI ($30/mo)** drafts the email — reviewers complain it sounds *"generic because it doesn't learn personal voice."*
+- **Granola ($14/mo)** writes the meeting note. Per their own docs: _"Granola only has access to your meeting data… it doesn't know about your emails, offline tasks, or personal to-do lists. Granola can only understand one meeting at a time."_
+- **Superhuman AI ($30/mo)** drafts the email — reviewers complain it sounds _"generic because it doesn't learn personal voice."_
 - **Fireflies ($18/mo)** owns the transcript but not the relationship.
 - **ChatGPT ($20/mo)** has memory now, but it lives in OpenAI's servers and can't see any of the above.
 
@@ -29,17 +29,17 @@ Rowboat continuously ingests Gmail, Google Calendar, and Fireflies / meeting not
 
 ### 2. It keeps the corpus alive
 
-Any note can become a *live note* by adding one block of YAML frontmatter:
+Any note can become a _live note_ by adding one block of YAML frontmatter:
 
 ```yaml
 live:
   objective: Track Acme's renewal — pull from the deal thread, last call, and any new Gmail mentions.
   triggers:
-    cronExpr: "0 8 * * *"           # refresh every morning at 8am
+    cronExpr: "0 8 * * *" # refresh every morning at 8am
     eventMatchCriteria: "Emails from anyone @acme.com"
 ```
 
-The note rewrites itself: on a schedule, inside a time-of-day window, or when a matching event arrives. Used to track a deal, a person, a competitor, a project, or a market topic. The user delegates *awareness*, not just tasks. Nothing in the Obsidian plugin ecosystem ships this primitive today.
+The note rewrites itself: on a schedule, inside a time-of-day window, or when a matching event arrives. Used to track a deal, a person, a competitor, a project, or a market topic. The user delegates _awareness_, not just tasks. Nothing in the Obsidian plugin ecosystem ships this primitive today.
 
 ### 3. Agents act on the corpus
 
@@ -73,8 +73,8 @@ The same Markdown + MCP stack ships in two forms:
 
 Rowboat's vault is one of several **systems of record** in the Oppulence portfolio — each owns a slice of financial truth and is structurally blind to the others. The desktop already federates them over MCP. Two new faculties complete the picture:
 
-- **Eigen = foresight.** Stress-testing a business's finances — a forward-simulation engine (runway under shock, liquidity, covenant risk, AR/AP sensitivity). A *compute* faculty, not a record.
-- **Conduit = evidence.** The system of record that binds invoice emails, replies, disputes, and follow-ups to the financial record they explain — the *"why behind every number."* A *correspondence↔record* faculty.
+- **Eigen = foresight.** Stress-testing a business's finances — a forward-simulation engine (runway under shock, liquidity, covenant risk, AR/AP sensitivity). A _compute_ faculty, not a record.
+- **Conduit = evidence.** The system of record that binds invoice emails, replies, disputes, and follow-ups to the financial record they explain — the _"why behind every number."_ A _correspondence↔record_ faculty.
 
 With those on the fabric, the platform spans **six planes across three faculties**:
 
@@ -91,23 +91,23 @@ AGENCY      (do something about it, durably)
   Execution      rowboat-api     scheduler · Temporal · event bus · cloud runtime ← the always-on plane
 ```
 
-The cockpit thesis was *"no single product can produce this, because each is blind to the others."* Eigen and Conduit extend it from *see the whole picture* to **explain it, simulate it, and act on it.**
+The cockpit thesis was _"no single product can produce this, because each is blind to the others."_ Eigen and Conduit extend it from _see the whole picture_ to **explain it, simulate it, and act on it.**
 
 ### Conduit — the evidence layer (a full four-seam plane)
 
 - **Read / Mirror** — every invoice note in the vault gains its correspondence thread: the dispute, the replies, the follow-ups. The number stops being a bare figure and carries its paper trail.
-- **Watch** — a new dispute or reply becomes an event → routes to the agent that owns that customer/invoice → the agent wakes grounded in *why* the number is contested, not just that it's overdue.
-- **Act + audit loop** — when the agent sends a follow-up (under dual review), that outbound message is itself correspondence Conduit binds *back* to the record. The platform's own autonomous actions become part of the system of record — a closed evidence chain, end-to-end provenance for every action. That's the regulatory moat for the sovereignty buyer.
+- **Watch** — a new dispute or reply becomes an event → routes to the agent that owns that customer/invoice → the agent wakes grounded in _why_ the number is contested, not just that it's overdue.
+- **Act + audit loop** — when the agent sends a follow-up (under dual review), that outbound message is itself correspondence Conduit binds _back_ to the record. The platform's own autonomous actions become part of the system of record — a closed evidence chain, end-to-end provenance for every action. That's the regulatory moat for the sovereignty buyer.
 
 Without the always-on execution plane, Conduit is an archive. With it, Conduit is the **live trigger source + grounding context + audit sink** for autonomous response.
 
 ### Eigen — foresight made continuous
 
-A compute faculty that plugs in as an agent tool *and* a scheduled/triggered job, consuming the whole federated graph:
+A compute faculty that plugs in as an agent tool _and_ a scheduled/triggered job, consuming the whole federated graph:
 
-- **Federation is the precondition for a real stress test.** No single record can stress-test the business because each is blind to the others. The cockpit already federates AR + AP + behavior + disputes into one place — so Eigen is the first engine that simulates the *whole* business off live data, not a stale spreadsheet.
+- **Federation is the precondition for a real stress test.** No single record can stress-test the business because each is blind to the others. The cockpit already federates AR + AP + behavior + disputes into one place — so Eigen is the first engine that simulates the _whole_ business off live data, not a stale spreadsheet.
 - **The execution plane makes it continuous.** Scheduled full runs (nightly/weekly, desktop-closed) + event-triggered incremental re-runs: a new overdue invoice, a vendor payment due, a new dispute → automatically re-run the liquidity/runway test → on a threshold breach, wake an agent or alert. Eigen stops being a calculator you remember to use and becomes an **always-on risk sensor.**
-- **Scenario-aware action at the point of decision.** The cloud runtime can call Eigen mid-run: an agent about to escalate dunning asks *"if Acme's $48k slips 30 days and we owe their subcontractor $12k Friday, what's the runway hit — and does pushing harder risk the renewal?"* — quantified, before it acts.
+- **Scenario-aware action at the point of decision.** The cloud runtime can call Eigen mid-run: an agent about to escalate dunning asks _"if Acme's $48k slips 30 days and we owe their subcontractor $12k Friday, what's the runway hit — and does pushing harder risk the renewal?"_ — quantified, before it acts.
 
 **The value chain only this assembles: Conduit → Eigen → Agent → Conduit.** Disputes (Conduit) are a probabilistic haircut on AR; payment behavior (Corinthian) is the collection probability. Eigen produces a **risk-adjusted, dispute-weighted cash forecast** impossible without both. The agent acts; the action becomes Conduit-bound evidence; the next event re-runs the loop — a self-maintaining, self-explaining, forward-looking financial brain.
 
@@ -115,13 +115,16 @@ The signature artifact, now with foresight and evidence:
 
 ```markdown
 ## Money
-- They owe us $48k — 54-day DSO, 2 broken promises          ← Corinthian
-- $18k of it disputed (invoice #4821, unresolved 3d)        ← Conduit  (haircut input)
-- We owe their subcontractor $12k — NET-30, clears Friday   ← Cadence
+
+- They owe us $48k — 54-day DSO, 2 broken promises ← Corinthian
+- $18k of it disputed (invoice #4821, unresolved 3d) ← Conduit (haircut input)
+- We owe their subcontractor $12k — NET-30, clears Friday ← Cadence
+
 ## Foresight
+
 - If #4821 dispute holds + Acme slips 30d: runway −2.1 wks,
-  breaches the 8-wk liquidity floor on 2026-07-18           ← Eigen   (off the federated graph)
-- Recommended: resolve dispute before escalating dunning    ← agent, grounded in all of the above
+  breaches the 8-wk liquidity floor on 2026-07-18 ← Eigen (off the federated graph)
+- Recommended: resolve dispute before escalating dunning ← agent, grounded in all of the above
 ```
 
 Canvas can't write the runway line. Granola can't write the AR line. Only the platform — federating evidence (Conduit) and foresight (Eigen) over a durable execution plane — writes all of them, continuously, and acts on them under review.
@@ -130,12 +133,12 @@ Canvas can't write the runway line. Granola can't write the AR line. Only the pl
 
 1. **Continuous whole-business stress-testing** — every material financial event auto-triggers Eigen over the live federated graph; breaches alert; results land in the corpus.
 2. **Evidence-grounded autonomous AR/AP** — agents respond to disputes/follow-ups grounded in the full correspondence + outcome memory, under dual review, and their actions become record.
-3. **Scenario-aware autonomous decisions** — the runtime quantifies the financial consequence of an action *before* taking it.
+3. **Scenario-aware autonomous decisions** — the runtime quantifies the financial consequence of an action _before_ taking it.
 4. **A self-explaining audit chain** — every autonomous action is bound back to the financial record it touched, with full run provenance.
 5. **A sellable autonomous tier** — because the execution plane meters, bounds, and SLOs the work, "continuous stress-testing + evidence-grounded collections" is a product priced in agent-hours/credits, on our sovereign substrate — not a rented agent cloud.
 6. **A near-zero-marginal-cost path to product N+1** — any future plane inherits scheduling, event-reactivity, cloud execution, metering, and audit the moment it mounts one MCP interface.
 
-> **In one line:** once the execution plane (specified in `apps/rfc/`) lands, Rowboat stops being "a coworker that runs when you click" and becomes a **sovereign, always-on financial digital twin** — it *perceives* the whole business (the federated records + Conduit's evidence), *simulates its future* (Eigen), and *acts durably on schedule and on events* — metered, audited, and owned. Where tool-execution vendors rent you the runtime, this owns the entire perceive→foresee→act loop over data the customer keeps. Eigen and Conduit aren't two more integrations; they're the two faculties — foresight and evidence — that turn the federated graph from a *report* into a *brain.*
+> **In one line:** once the execution plane (specified in `apps/rfc/`) lands, Rowboat stops being "a coworker that runs when you click" and becomes a **sovereign, always-on financial digital twin** — it _perceives_ the whole business (the federated records + Conduit's evidence), _simulates its future_ (Eigen), and _acts durably on schedule and on events_ — metered, audited, and owned. Where tool-execution vendors rent you the runtime, this owns the entire perceive→foresee→act loop over data the customer keeps. Eigen and Conduit aren't two more integrations; they're the two faculties — foresight and evidence — that turn the federated graph from a _report_ into a _brain._
 
 ---
 

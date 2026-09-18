@@ -4852,10 +4852,11 @@
   }
 
   .sm-header {
-    height: 70px;
-    border-bottom: 1px solid var(--sm-line);
-    background: rgb(255 255 255 / 95%);
-    backdrop-filter: blur(16px);
+    height: 56px;
+    overflow: visible;
+    border-bottom: 1px solid rgb(20 24 28 / 6%);
+    background: rgb(255 255 255 / 86%);
+    backdrop-filter: blur(18px);
   }
 
   .sm-header::before {
@@ -4864,18 +4865,18 @@
 
   html[data-marketing-scrolled] .sm-header,
   html[data-marketing-menu-open] .sm-header {
-    border-bottom-color: var(--sm-line);
-    background: rgb(255 255 255 / 98%);
+    border-bottom-color: rgb(20 24 28 / 8%);
+    background: rgb(255 255 255 / 94%);
   }
 
   .sm-header .linear-header-inner {
-    width: min(100%, 1440px);
-    padding-inline: clamp(22px, 8.3vw, 120px);
+    width: min(100%, 1200px);
+    padding-inline: 24px;
   }
 
   .sm-header .linear-header-logo {
     width: max-content;
-    height: 42px;
+    height: 32px;
     margin: 0;
     padding: 0;
   }
@@ -4887,126 +4888,162 @@
   }
 
   .sm-header .oppulence-compact-lockup {
-    gap: 9px;
+    gap: 8px;
   }
 
   .sm-header .oppulence-compact-lockup__mark-image {
-    width: 30px;
-    height: 30px;
+    width: 22px;
+    height: 22px;
     object-fit: contain;
   }
 
   .sm-header .oppulence-compact-lockup__wordmark {
     font-family: var(--font-marketing-display), "Space Grotesk", sans-serif;
-    font-size: 22px;
+    font-size: 16px;
     font-weight: 500;
     letter-spacing: -0.03em;
   }
 
   .sm-desktop-nav {
-    align-items: center;
+    align-items: stretch;
     gap: 2px;
+    height: 100%;
   }
 
   .sm-desktop-nav > a,
-  .sm-nav-products > summary,
+  .sm-nav-trigger,
   .sm-login {
     display: inline-flex;
-    min-height: 38px;
+    height: 100%;
     cursor: pointer;
     align-items: center;
-    border: 1px solid transparent;
-    padding-inline: 10px;
-    color: #202831;
+    border: 0;
+    background: transparent;
+    padding-inline: 11px;
+    color: #5c6670;
     font-family: var(--font-attio-sans, var(--font-marketing-sans)), "Inter", sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.012em;
     line-height: 1;
-    list-style: none;
-  }
-
-  .sm-nav-products > summary::-webkit-details-marker {
-    display: none;
   }
 
   .sm-desktop-nav > a:hover,
-  .sm-nav-products > summary:hover,
+  .sm-nav-item:hover > .sm-nav-trigger,
+  .sm-nav-item:focus-within > .sm-nav-trigger,
   .sm-login:hover {
-    border-color: var(--sm-line);
-    color: var(--sm-blue);
+    color: #111418;
   }
 
-  .sm-nav-products {
+  .sm-nav-item {
     position: relative;
+    display: flex;
+    align-items: stretch;
   }
 
-  .sm-product-menu {
+  .sm-nav-panel {
     position: absolute;
-    top: 46px;
-    right: 0;
+    z-index: 60;
+    top: 100%;
+    left: 50%;
+    visibility: hidden;
+    width: max-content;
+    min-width: 232px;
+    padding-top: 8px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 6px);
+    transition:
+      opacity 140ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 140ms cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 140ms;
+  }
+
+  .sm-nav-panel.is-wide {
+    min-width: 440px;
+  }
+
+  .sm-nav-item:hover > .sm-nav-panel,
+  .sm-nav-item:focus-within > .sm-nav-panel {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+  }
+
+  .sm-nav-panel-card {
     display: grid;
-    width: 360px;
-    border: 1px solid var(--sm-line);
+    overflow: hidden;
+    border: 1px solid rgb(20 24 28 / 8%);
+    border-radius: 12px;
     background: #ffffff;
-    box-shadow: 0 20px 50px rgb(18 35 52 / 14%);
+    box-shadow:
+      0 1px 2px rgb(17 20 24 / 4%),
+      0 16px 40px rgb(17 20 24 / 8%);
   }
 
-  .sm-product-menu-kicker {
-    border-bottom: 1px solid var(--sm-line);
-    padding: 10px 15px 8px;
-    color: #7d8893;
-    font-family: var(--font-marketing-display), var(--font-marketing-sans), sans-serif;
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+  .sm-nav-panel.is-wide .sm-nav-panel-card {
+    grid-template-columns: 1fr 1fr;
   }
 
-  .sm-product-menu a {
+  .sm-nav-panel-card a {
     display: grid;
-    gap: 3px;
-    border-bottom: 1px solid var(--sm-line);
-    padding: 13px 15px;
+    gap: 2px;
+    padding: 10px 14px;
   }
 
-  .sm-product-menu a:last-child {
-    border-bottom: 0;
+  .sm-nav-panel-card a:hover,
+  .sm-nav-panel-card a:focus-visible {
+    background: rgb(17 20 24 / 3.5%);
   }
 
-  .sm-product-menu a:hover {
-    background: var(--sm-soft);
+  .sm-nav-panel-card span {
+    color: #111418;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: -0.014em;
   }
 
-  .sm-product-menu span {
-    color: var(--sm-ink);
-    font-size: 14px;
-  }
-
-  .sm-product-menu small {
-    color: var(--sm-muted);
-    font-size: 11px;
+  .sm-nav-panel-card small {
+    color: #7a848e;
+    font-size: 12px;
+    font-weight: 400;
     line-height: 1.35;
   }
 
   .sm-login {
     justify-content: center;
-    border-color: var(--sm-line);
-    min-width: 92px;
+    min-width: 0;
   }
 
   .sm-header-cta {
-    min-height: 42px;
+    min-height: 32px;
     align-items: center;
-    gap: 24px;
-    border: 1px solid var(--sm-blue);
-    margin-left: 14px;
-    background: var(--sm-blue);
-    padding-inline: 18px 13px;
-    color: #ffffff;
-    font-size: 14px;
+    gap: 6px;
+    border: 0;
+    border-radius: 999px;
+    margin-left: 8px;
+    background: #111418;
+    padding-inline: 12px;
+    color: #f6f7f8;
+    font-size: 13px;
     font-weight: 500;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.012em;
+  }
+
+  .sm-header-cta svg {
+    display: none;
+  }
+
+  .sm-header .linear-mobile-summary {
+    height: 56px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sm-nav-panel {
+      transform: translate(-50%, 0);
+      transition: none;
+    }
   }
 
   .sm-header-cta svg,
@@ -5019,7 +5056,10 @@
     height: 15px;
   }
 
-  .sm-header-cta:hover,
+  .sm-header-cta:hover {
+    background: #1c2128;
+  }
+
   .sm-button-blue:hover {
     background: #004fc6;
   }
@@ -6349,7 +6389,7 @@
 
     .sm-mobile-panel {
       position: absolute;
-      top: 55px;
+      top: 56px;
       right: -22px;
       bottom: auto;
       left: auto;
@@ -6443,11 +6483,11 @@
     }
 
     .sm-header .oppulence-compact-lockup__wordmark {
-      font-size: 20px;
+      font-size: 15px;
     }
 
     .sm-header .linear-mobile-summary {
-      height: 70px;
+      height: 56px;
     }
 
     .sm-hero-copy {
@@ -6813,44 +6853,19 @@
     overflow: visible;
   }
 
-  /* Header on the Attio home: 68px bar, 1440/24px container so the wordmark
-     lines up with hero copy, and neutral dark CTA instead of the blue pill. */
+  /* Homepage header stays the same 56px bar as every other public page. */
   .sm-site:has(.sm-attio-home) .sm-header {
-    height: 68px;
-    border-bottom-color: var(--attio-line, #e4e7ec);
-    /* The global translucent header lets scrolled section copy show through,
-       which makes the fixed navigation look like overlapping text. */
+    border-bottom-color: rgb(20 24 28 / 6%);
     background: #ffffff;
   }
 
   .sm-site:has(.sm-attio-home) .sm-header .linear-header-inner {
-    width: min(100%, 1440px);
+    width: min(100%, 1200px);
     padding-inline: 24px;
-  }
-
-  .sm-site:has(.sm-attio-home) .sm-header-cta {
-    min-height: 36px;
-    gap: 0;
-    border-color: #202124;
-    border-radius: 0;
-    margin-left: 10px;
-    background: #202124;
-    padding-inline: 14px;
-    color: #f3f4f6;
-    font-size: 14px;
   }
 
   .sm-site:has(.sm-attio-home) .sm-header-cta svg {
     display: none;
-  }
-
-  .sm-site:has(.sm-attio-home) .sm-login {
-    min-height: 36px;
-    min-width: 0;
-    border-color: #cad0d9;
-    border-radius: 0;
-    padding-inline: 14px;
-    font-size: 14px;
   }
 
   /* Attio frames every section with vertical hairlines: a 1440px container

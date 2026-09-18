@@ -69,12 +69,12 @@ const pricingFaqs = [
   {
     question: "What is Watch, exactly?",
     answer:
-      "The free plan in the public price list: a 6-month report of what you owe, with source links. It is the first pass, not the live register.",
+      "The free plan: the first kickoff list, with source links. Chase is for staying on the account after you start the work.",
   },
   {
     question: "When do I need Chase?",
     answer:
-      "When the register is part of the week: at-risk promises and approved follow-ups, not just a one-time report.",
+      "When you need the same account after kickoff: a new commercial sentence, a date going stale, or a file they still have not sent.",
   },
   {
     question: "What does Intelligence add?",
@@ -102,12 +102,12 @@ const mobileNavLinks = [
 const productSuiteCards = [
   {
     eyebrow: "Core",
-    title: "Commitment Ledger",
-    body: "The record of what was promised, owed, and changed.",
+    title: "The rows",
+    body: "Find the promise, confirm it, keep it after kickoff.",
     href: "/product",
-    cta: "See the ledger",
+    cta: "See the loop",
     src: "/marketing/relationship-system/observe.webp",
-    alt: "Connected systems feeding the Oppulence commitment ledger",
+    alt: "Connected systems feeding Oppulence commitment state",
   },
   ...platformPages.map((platform) => ({
     eyebrow: platform.eyebrow.replace("Oppulence ", ""),
@@ -128,7 +128,7 @@ type MemoryRailLink = {
 
 const productRailLinks: MemoryRailLink[] = [
   { label: "Products", href: "/products" },
-  { label: "Commitment Ledger", href: "/product" },
+  { label: "The loop", href: "/product" },
   ...platformPages.map((platform) => ({
     label: platform.name.replace("Oppulence ", ""),
     href: `/${platform.slug}`,
@@ -531,45 +531,29 @@ export function TopBar() {
 
         <nav aria-label="Primary navigation" className="sm-desktop-nav hidden lg:flex">
           {headerNav.map((group) => (
-            <details
-              className="sm-nav-products sm-nav-menu"
-              data-marketing-dropdown
-              key={group.label}
-            >
-              <summary>
-                {group.label}
-                <Badge
-                  aria-hidden="true"
-                  className={cn("sm-nav-caret", marketingSpanClass)}
-                  variant="ghost"
-                >
-                  ▾
-                </Badge>
-              </summary>
+            <div className="sm-nav-item" key={group.label}>
+              {group.href ? (
+                <Link className="sm-nav-trigger" href={group.href}>
+                  {group.label}
+                </Link>
+              ) : (
+                <span className="sm-nav-trigger">{group.label}</span>
+              )}
               <div
-                className={
-                  group.items.length > 5
-                    ? "linear-dropdown-panel sm-product-menu sm-nav-menu-wide"
-                    : "linear-dropdown-panel sm-product-menu"
-                }
+                className={cn("sm-nav-panel", group.items.length > 6 && "is-wide")}
+                role="group"
+                aria-label={group.label}
               >
-                <p className="sm-product-menu-kicker">{group.description ?? group.label}</p>
-                {group.href ? (
-                  <Link className="sm-nav-menu-overview" href={group.href}>
-                    <MarketingSpan className="font-normal">
-                      View all {group.label.toLowerCase()}
-                    </MarketingSpan>
-                    <small>Open the full index</small>
-                  </Link>
-                ) : null}
-                {group.items.map((item) => (
-                  <Link href={item.href} key={item.href}>
-                    <MarketingSpan className="font-normal">{item.label}</MarketingSpan>
-                    {item.description ? <small>{item.description}</small> : null}
-                  </Link>
-                ))}
+                <div className="sm-nav-panel-card">
+                  {group.items.map((item) => (
+                    <Link href={item.href} key={item.href}>
+                      <MarketingSpan>{item.label}</MarketingSpan>
+                      {item.description ? <small>{item.description}</small> : null}
+                    </Link>
+                  ))}
+                </div>
               </div>
-            </details>
+            </div>
           ))}
           {headerUtilityLinks.map((item) => (
             <Link href={item.href} key={item.href}>
@@ -594,7 +578,7 @@ export function TopBar() {
 
 export function MarketingLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="marketing-polar sm-site relative flex min-h-svh flex-col overflow-clip bg-background text-foreground">
+    <div className="marketing-polar sm-site relative flex min-h-svh flex-col bg-background text-foreground">
       <MarketingEffects />
       <Link className="linear-skip-link" href="#marketing-content">
         Skip to content →
@@ -615,10 +599,10 @@ export function Footer() {
         <div className="sm-footer-statement">
           <InlineLogo prominent />
           <h2>
-            The commitment ledger <br />
-            for business promises.
+            What you promised. <br />
+            What they promised.
           </h2>
-          <p>What you owe. What they owe. Every claim cited.</p>
+          <p>Each row opens the email or the call that created it.</p>
         </div>
         <div className="sm-footer-links">
           {footerGroups.map((group) => (
@@ -659,16 +643,16 @@ function LinearFooterGroup({ title, items }: { title: string; items: LinkItem[] 
 
 const homeSteps = [
   {
-    title: "Connect the relationship history",
-    body: "Link Gmail in two minutes, then add calendar and billing context. Access is read-only at the start. Your mail stays yours.",
+    title: "Connect the mail you already have",
+    body: "Start with Gmail. Add Calendar, Slack, or HubSpot if the deal lived there. We read first. We do not send.",
   },
   {
-    title: "Ask the Monday question",
-    body: "See which relationship could cost you money if ignored this week, why it matters now, and the evidence behind it.",
+    title: "Pick one closed customer",
+    body: "You get a list of things that look like promises. Confirm the ones that are real, fix the wording, drop the rest. Take that list into kickoff.",
   },
   {
-    title: "Close the loop",
-    body: "Review the next move, approve it with one click, and let the reply, meeting, or payment make the relationship memory sharper.",
+    title: "Keep the same list after you start the work",
+    body: "New mail still attaches to those rows. A date with no finish evidence shows up. So does a late file they said they would send.",
   },
 ];
 
@@ -718,17 +702,17 @@ export function ProductsPage() {
       <div className="sm-products-page">
         <section className="sm-products-hero">
           <p className="linear-eyebrow">[products]</p>
-          <h1>One commitment ledger. Three ways to use it.</h1>
+          <h1>Web, desktop, and voice over the same rows.</h1>
           <p>
-            Web for the team queue. Desktop beside the work. Voice for capture. The same record
-            underneath.
+            Use the browser for kickoff and the weeks after. Use the desktop app in the meeting.
+            Voice is how you capture what was said.
           </p>
           <div>
             <Link className="sm-memory-button sm-memory-button-primary" href="/sign-up">
               Start for free <ArrowRightIcon aria-hidden="true" />
             </Link>
             <Link className="sm-memory-button" href="/product">
-              See the ledger <ArrowRightIcon aria-hidden="true" />
+              See the loop <ArrowRightIcon aria-hidden="true" />
             </Link>
           </div>
         </section>
@@ -758,25 +742,25 @@ export function ProductsPage() {
 
 const relationshipCatalog = [
   {
-    label: "Read",
+    label: "Detect",
     kicker: "01",
     icon: MagnifyingGlassIcon,
-    title: "It reads itself.",
-    body: "Email, meetings, CRM, and billing become one account trail.",
+    title: "It reads the mail and the calls.",
+    body: "Gmail, Calendar, Slack, HubSpot, and meetings. We pull sentences that look like promises.",
   },
   {
-    label: "Resolve",
+    label: "Confirm",
     kicker: "02",
     icon: NetworkIcon,
-    title: "Your tools finally agree.",
-    body: "What you owe, what they owe, what changed, and what is at risk.",
+    title: "You decide which ones count.",
+    body: "Keep, rewrite, or drop a row. What we owe and what they owe stay on the same list.",
   },
   {
-    label: "Act",
+    label: "Watch",
     kicker: "03",
     icon: SealCheckIcon,
-    title: "Ask, and it is there.",
-    body: "Every recommendation comes with the source and approval boundary.",
+    title: "The list stays open after kickoff.",
+    body: "If they add attachments in week three, that sentence lands on the account.",
   },
 ] as const;
 
@@ -787,11 +771,11 @@ const homepageGuarantees = [
 ] as const;
 
 const homepageSources = [
-  { label: "Email", icon: EnvelopeIcon },
+  { label: "Gmail", icon: EnvelopeIcon },
   { label: "Calendar", icon: CalendarDotsIcon },
-  { label: "Meetings", icon: HeadsetIcon },
-  { label: "CRM", icon: BriefcaseIcon },
-  { label: "Billing", icon: ChartLineIcon },
+  { label: "Slack", icon: HeadsetIcon },
+  { label: "HubSpot", icon: BriefcaseIcon },
+  { label: "Meetings", icon: ChartLineIcon },
 ] as const;
 
 /* Section headings mirror attio.com: one ink-coloured lead sentence followed by
@@ -835,15 +819,16 @@ export function HomePage() {
     <div className="sm-attio-home">
       <section className="sm-attio-hero" id="mission">
         <div className="sm-attio-shell sm-attio-hero-copy">
-          <Link className="sm-attio-announcement" href="/product">
-            The commitment ledger for business promises
+          <Link className="sm-attio-announcement" href="/use-cases/sales-to-delivery-handoff">
+            Before your next customer kickoff
             <ArrowRightIcon aria-hidden="true" />
           </Link>
 
-          <h1>Every promise, on the record.</h1>
+          <h1>See everything your team promised.</h1>
           <p>
-            Oppulence is the independent record of what you owe, what they owe, and what changed —
-            cited back to the email, meeting, or CRM row that created it.
+            We read Gmail, Slack, calls, and HubSpot and list the sentences that look like promises.
+            You confirm them. After kickoff we keep reading the same account, including the mail
+            that changes the work.
           </p>
 
           <div className="sm-attio-actions flex flex-wrap gap-3">
@@ -883,8 +868,8 @@ export function HomePage() {
         <div className="sm-attio-shell">
           <AttioSectionHead
             label="Platform"
-            lead="The record that never forgets."
-            rest="Catches the promise made on a call. Flags the renewal before it slips."
+            lead="Start with one closed customer."
+            rest="Stay on that account after the kickoff deck is done."
           />
 
           <PlatformRail items={platformRailItems} />
@@ -895,8 +880,8 @@ export function HomePage() {
         <div className="sm-attio-shell">
           <AttioSectionHead
             label="Self-building"
-            lead="Live from day one."
-            rest="Connect your inbox and calendar. Oppulence reads the last 6 months and builds the ledger before you ask it anything."
+            lead="An hour is enough to try it."
+            rest="Connect Gmail, pick someone you closed this quarter, and read the rows."
           />
           <MarketingButtonLink href="/sign-up">Start for free</MarketingButtonLink>
           <figure className="sm-attio-setup-media">
@@ -913,11 +898,8 @@ export function HomePage() {
       <section className="sm-attio-dark">
         <div className="sm-attio-shell">
           <div className="sm-attio-wordmark-stage">
-            <p className="sm-attio-dark-eyebrow">The only ledger with</p>
-            <h2 className="sm-attio-wordmark">
-              Relationship Memory
-              <sup aria-hidden="true">&trade;</sup>
-            </h2>
+            <p className="sm-attio-dark-eyebrow">The loop is</p>
+            <h2 className="sm-attio-wordmark">Detect → Reconcile</h2>
           </div>
 
           <div className="sm-attio-dark-strip">
@@ -988,7 +970,7 @@ export function HomePage() {
       <section className="sm-attio-steps">
         <div className="sm-attio-shell">
           <AttioSectionHead
-            cta={{ href: "/product", label: "See the ledger" }}
+            cta={{ href: "/product", label: "See the loop" }}
             label="How it works"
             lead="Better as you use it."
             rest="Every approved move sharpens the record underneath it."
@@ -1115,45 +1097,45 @@ function RelationshipFinalCta() {
 
 const linearHomeSections = [
   {
-    title: "It finds the loose ends nobody wrote down.",
+    title: "The promises nobody typed into HubSpot.",
     description:
-      "Oppulence scans the last 6 months of email, calendar, and billing to build a living ledger of promises, proposals, invoices, and open loops. It finds where a valuable relationship lost its next step, with the dollar amount and source attached.",
-    label: "Relationship State Engine",
-    href: "/features/commitment-register",
+      "Pick one closed customer. We read the mail, calendar, Slack, HubSpot notes, and meetings you already authorized. Each row is a sentence that looks like a promise, with a link back to it.",
+    label: "Handoff report",
+    href: "/features/handoff-report",
     src: desktopScreenshots.knowledge,
-    alt: "Oppulence relationship memory showing warm opportunities and source evidence",
+    alt: "A sourced kickoff list with evidence on each row",
     bullets: [
-      "Promises, objections, and open loops in one ledger",
-      "Ghosted proposals, dormant clients, and unpaid invoices",
-      "Every finding links back to its source",
+      "What we said we would do, and what they said they would do",
+      "Dates, and places the sources disagree",
+      "You confirm a row before anyone treats it as real",
     ],
   },
   {
-    title: "Run every account from one mission control.",
+    title: "The email three weeks after kickoff.",
     description:
-      "Each week, Oppulence ranks the three to five relationships where silence, a missed commitment, or a money-state change makes the next move worth attention. Each item explains why now, what is at stake, and what to do next.",
-    label: "Account Mission Control",
-    href: "/features/account-mission-control",
+      "Implementation has started. They write “as discussed, attachments are included.” That sentence should land on the same account, next to the rows you already confirmed.",
+    label: "Watch after kickoff",
+    href: "/features/watch-after-kickoff",
     src: desktopScreenshots.chat,
-    alt: "Oppulence relationship action queue ranked by value and urgency",
+    alt: "An account still open after implementation has started",
     bullets: [
-      "The relationships most likely to slip this week",
-      "Why now, what changed, and how much is at stake",
-      "A next move drafted from the real history",
+      "New commercial sentences after the kickoff deck",
+      "Dates getting close with nothing finished",
+      "Files they said they would send and have not",
     ],
   },
   {
-    title: "Protect the relationship when you act.",
+    title: "An extracted sentence does not leave the building.",
     description:
-      "Oppulence verifies the contact, checks the relationship and policy context, and waits for your approval. It never emails a contact who bounced, opted out, or changed roles. Actions that touch money need a second confirmation.",
-    label: "Governed Execution",
+      "You keep, rewrite, or drop every row. You can export the list into kickoff. Mail and CRM writes wait for a person.",
+    label: "Confirm and export",
     href: "/features/governed-actions",
     src: desktopScreenshots.connections,
-    alt: "Oppulence policy checks and sender protection before execution",
+    alt: "A row held at keep, rewrite, or drop, with the evidence in view",
     bullets: [
-      "You approve every send",
-      "Bounced and opted-out contacts are blocked",
-      "Money actions need step-up approval",
+      "You decide before it is on the account",
+      "Forward the list to the AE or the PM",
+      "Nothing sends on its own",
     ],
   },
 ] as const;
@@ -1162,9 +1144,9 @@ const linearHomeSections = [
    The long-form copy in linearHomeSections is written for the product pages
    and overflows this block, so the home rows get their own summary line. */
 const platformRowSummaries = [
-  "Sixty to ninety days of email, calendar, and billing become one ledger of promises, with the amount and source attached.",
-  "Each week it ranks the few relationships where silence or a missed commitment makes the next move worth your attention.",
-  "It checks the contact, the policy, and the money, then waits for your approval before anything leaves your name.",
+  "One closed customer. Sentences that look like promises, each with a link back to the message.",
+  "After kickoff, new mail still attaches to that account.",
+  "You keep, rewrite, or drop a row. Nothing sends because a model found a sentence.",
 ] as const;
 
 /* Each row needs a screenshot that shows the thing the copy claims. The
@@ -1187,7 +1169,7 @@ const platformRowMedia = [
 
 const platformRailItems: PlatformRailItem[] = linearHomeSections.map((section, index) => ({
   id: ["find-the-loose-ends", "run-every-account", "act-with-guardrails"][index] ?? `row-${index}`,
-  nav: ["Find the loose ends", "Run every account", "Act with guardrails"][index] ?? section.label,
+  nav: ["Detect", "Watch", "Confirm"][index] ?? section.label,
   title: section.title,
   description: platformRowSummaries[index] ?? section.description,
   label: section.label,
@@ -1267,9 +1249,9 @@ function HomeUpdates() {
       <div className="linear-inset">
         <p className="linear-eyebrow">[how it works]</p>
         <h2 className="linear-statement-title !max-w-[1180px]">
-          <strong>Relationship memory compounds.</strong> Generic AI can draft a message. It cannot
-          recreate the history that makes the next move timely, specific, and trusted. Every
-          promise, objection, reply, meeting, edit, and outcome makes your ledger more useful.
+          <strong>The useful part is the row you confirmed.</strong> A model can summarize a sales
+          thread in a minute. That does not tell you, six weeks later, whether the export they
+          promised ever arrived.
         </h2>
       </div>
       <div className="linear-updates-grid linear-inset">
@@ -1329,17 +1311,17 @@ function FinalCta() {
   return (
     <section className="linear-final-cta linear-inset">
       <p className="linear-eyebrow !mb-0">[get started]</p>
-      <h2>Give your team one shared truth about every customer relationship.</h2>
+      <h2>Before your next kickoff, see everything your team promised.</h2>
       <p className="linear-body max-w-xl text-balance">
-        Connect the systems that observe the relationship. Oppulence shows what changed, what needs
-        action, and the evidence behind the recommended next move.
+        Run it on one customer you closed this quarter. If a row surprises the person who has to
+        deliver the work, keep the account open afterward.
       </p>
       <div className="flex flex-col items-center gap-3 sm:flex-row">
         <MarketingButtonLink className="h-10 px-5" href="/sign-up">
           Start building
         </MarketingButtonLink>
         <MarketingButtonLink className="h-10 px-5" href="/product" variant="outline">
-          Explore relationship intelligence
+          See how the loop works
         </MarketingButtonLink>
       </div>
       <p className="linear-cta-note">[watch is free · chase is $99/mo]</p>
