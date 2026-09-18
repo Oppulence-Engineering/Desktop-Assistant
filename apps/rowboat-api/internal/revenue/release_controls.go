@@ -51,9 +51,17 @@ const (
 	// checked separately.
 	CapabilityCloudResearch = "cloud_research"
 	// CapabilityCommunicationIntelligence gates communication timelines and
-	// authorized body/attachment reads while metadata sync continues.
+	// authorized body/attachment reads while metadata sync continues. It is
+	// kill-switch-only: enabled for every workspace unless explicitly disabled.
 	CapabilityCommunicationIntelligence = "communication_intelligence"
 )
+
+// defaultEnabledWorkspaceCapabilities are opt-out entitlements. Missing
+// WorkspaceFeatureControl rows mean enabled, including for beta-enrolled
+// workspaces. Explicit enabled=false still applies everywhere.
+var defaultEnabledWorkspaceCapabilities = map[string]bool{
+	CapabilityCommunicationIntelligence: true,
+}
 
 var supportedWorkspaceCapabilities = map[string]bool{
 	CapabilityBetaEntitlement: true, CapabilityBetaNavigation: true, CapabilityReleaseApproval: true,
@@ -169,6 +177,9 @@ func (s *Service) requireWorkspaceFeature(
 	}
 	if capability == CapabilityBetaEntitlement {
 		return fmt.Errorf("%w: %s", ErrCapabilityDisabled, capability)
+	}
+	if defaultEnabledWorkspaceCapabilities[capability] {
+		return nil
 	}
 	beta, betaErr := s.client.WorkspaceFeatureControl.Query().
 		Where(

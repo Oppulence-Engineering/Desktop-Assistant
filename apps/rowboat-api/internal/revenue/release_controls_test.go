@@ -9,6 +9,30 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/auth"
 )
 
+func TestCommunicationIntelligenceDefaultsEnabledForBetaWorkspaces(t *testing.T) {
+	f := newFixture(t)
+	if _, err := f.svc.SetWorkspaceFeatureControl(
+		f.ctx, f.user, CapabilityBetaEntitlement, true, "internal_read_only", "internal_canary",
+	); err != nil {
+		t.Fatalf("enable beta entitlement: %v", err)
+	}
+	ws, err := f.svc.CurrentWorkspace(f.ctx, f.user)
+	if err != nil {
+		t.Fatalf("current workspace: %v", err)
+	}
+	if err := f.svc.requireWorkspaceFeature(f.ctx, ws, CapabilityCommunicationIntelligence); err != nil {
+		t.Fatalf("communication intelligence should default enabled for beta workspaces: %v", err)
+	}
+	if _, err := f.svc.SetWorkspaceFeatureControl(
+		f.ctx, f.user, CapabilityCommunicationIntelligence, false, "internal_read_only", "fault_drill",
+	); err != nil {
+		t.Fatalf("disable communication intelligence: %v", err)
+	}
+	if err := f.svc.requireWorkspaceFeature(f.ctx, ws, CapabilityCommunicationIntelligence); !errors.Is(err, ErrCapabilityDisabled) {
+		t.Fatalf("explicit kill switch did not disable communication intelligence: %v", err)
+	}
+}
+
 func TestWorkspaceFeatureControlsFailClosedForBetaAndKillSwitchLegacy(t *testing.T) {
 	f := newFixture(t)
 	now := time.Date(2026, 7, 31, 23, 0, 0, 0, time.UTC)
