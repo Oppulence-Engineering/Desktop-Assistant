@@ -166,6 +166,32 @@ func TestGmailCursorAdvancesAndReplayIsIdempotent(t *testing.T) {
 	}
 }
 
+func TestProtectedRecipientProjectsOwnerPrivateMetadata(t *testing.T) {
+	f := newSyncFixture(t)
+	f.installGmailHandlers(t, false)
+	ctx := auth.WithInternal(context.Background())
+	workspace, err := f.service.workspace(ctx, f.user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.client.CommunicationPrivacyRule.Create().
+		SetWorkspace(workspace).SetOwner(f.user).
+		SetKind("protected_domain").SetValue("example.com").SetValueHash("sha256:test").
+		SaveX(ctx)
+	if err := f.service.EnqueueInvalidation(ctx, f.user, "gmail", "owner@example.com", f.now); err != nil {
+		t.Fatal(err)
+	}
+	f.client.CommunicationSyncCursor.Update().
+		Where(communicationsynccursor.SourceEQ("gmail")).SetCursor("100").ExecX(ctx)
+	if err := f.service.RunOnce(ctx); err != nil {
+		t.Fatal(err)
+	}
+	interaction := f.client.CommunicationInteraction.Query().OnlyX(ctx)
+	if interaction.Visibility != "private" || interaction.Subject != "" || interaction.MetadataJSON != "{}" {
+		t.Fatalf("protected projection retained workspace-visible content: %#v", interaction)
+	}
+}
+
 func TestGmailGapRunsBoundedReconciliation(t *testing.T) {
 	f := newSyncFixture(t)
 	f.installGmailHandlers(t, true)
