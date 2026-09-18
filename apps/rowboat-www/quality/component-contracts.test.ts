@@ -57,9 +57,13 @@ describe("WEB020 React component contracts", () => {
       const basename = path.basename(filename, ".tsx");
       expect(basename).toMatch(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/);
       expect(source).not.toMatch(/export\s+default/);
-      expect(source).toContain("data-slot=");
       if (source.startsWith('"use client"')) expect(source).toContain('import "client-only"');
       expect(fs.existsSync(filename.replace(/\.tsx$/, ".test.tsx"))).toBe(true);
+      // Effect-only handlers render nothing. data-slot is for visual primitives.
+      if (/\breturn null;/.test(source) && !/<[A-Za-z]/.test(source)) {
+        continue;
+      }
+      expect(source).toContain("data-slot=");
     }
   });
 
