@@ -4,16 +4,16 @@ import "client-only";
 
 import { useEffect } from "react";
 
-import { loadSupportChatConfig } from "@/lib/api/support/chat";
+import { loadSupportChatConfig, type SupportChatCustomer } from "@/lib/api/support/chat";
 import { cn } from "@/lib/utils";
 
 /**
  * Plain chat widget loader.
  *
  * Mounts once per layout and boots Plain's chat script with the config served
- * by /api/support/chat. Signed-in users are identified via a server-minted
- * email hash; anonymous visitors chat as anonymous customers and Plain's own
- * verification flow identifies them if a thread is created.
+ * by /api/support/chat. Signed-in users are linked by `externalId` and email.
+ * A hash is attached only when the server minted one; a hash Plain cannot
+ * verify fails launch with `ChatAPIError: The provided email hash is invalid`.
  *
  * The widget is deliberately additive: if the workspace has no chat app
  * configured, or the script fails to load, nothing renders and no error
@@ -34,6 +34,24 @@ declare global {
   interface Window {
     Plain?: PlainAPI;
   }
+}
+
+/**
+ * Builds the identity we pass to Plain.
+ *
+ * Email without a hash is allowed — Plain treats it as unverified, which is
+ * enough for the inbox to see who is chatting. A hash without its email, or a
+ * hash minted with the wrong secret, is what takes the widget down.
+ */
+function customerDetailsForPlain(
+  customer: SupportChatCustomer | undefined,
+): Record<string, unknown> | undefined {
+  if (!customer) return undefined;
+  const details: Record<string, unknown> = {};
+  if (customer.externalId) details.externalId = customer.externalId;
+  if (customer.email) details.email = customer.email;
+  if (customer.email && customer.emailHash) details.emailHash = customer.emailHash;
+  return Object.keys(details).length ? details : undefined;
 }
 
 /** Loads Plain's script once, reusing the tag across mounts and route changes. */
@@ -89,9 +107,7 @@ export function SupportChat({ theme = "auto", className, ...props }: SupportChat
       const plain = window.Plain;
       if (!plain) return;
 
-      const customerDetails = config.customer
-        ? { email: config.customer.email, emailHash: config.customer.emailHash }
-        : undefined;
+      const customerDetails = customerDetailsForPlain(config.customer);
 
       // Plain.init throws if called twice (e.g. a client-side navigation
       // between the marketing and product layouts). Update the identity in

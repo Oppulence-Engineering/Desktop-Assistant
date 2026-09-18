@@ -24,7 +24,7 @@ vi.mock("next/server", async () => ({
 }));
 
 import { GET } from "@/app/api/support/chat/route";
-import { emailHash } from "@/lib/support/config";
+import { emailHash, isUsableChatSecret } from "@/lib/support/config";
 import { SupportChatConfigSchema } from "@/lib/api/support/chat";
 
 const session: DashboardSessionCookie = {
@@ -50,7 +50,7 @@ interface ChatConfigBody {
   configured: boolean;
   appId?: string;
   labelTypeIds?: string[];
-  customer?: { email: string; emailHash: string };
+  customer?: { externalId?: string; email?: string; emailHash?: string };
 }
 
 /**
@@ -128,7 +128,21 @@ describe("support chat config route", () => {
     expect((await callJSON()).labelTypeIds).toEqual(["lt_01M20XH6PFZ1F5EY4V19WWP7DG"]);
   });
 
-  it("omits identity in development even when Plain is enabled", async () => {
+  it("links a signed-in user by externalId and email without an email hash", async () => {
+    mocks.readSessionCookie.mockReturnValue(session);
+    mocks.fetchViewerIdentity.mockResolvedValue({
+      user: { id: "u1", email: "verified@example.com" },
+    });
+
+    const body = await callJSON();
+
+    expect(body.customer).toEqual({
+      externalId: "u1",
+      email: "verified@example.com",
+    });
+  });
+
+  it("omits the email hash in development even when Plain is enabled", async () => {
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_ENABLED", "1");
     mocks.readSessionCookie.mockReturnValue(session);
@@ -138,10 +152,15 @@ describe("support chat config route", () => {
 
     const body = await callJSON();
 
-    expect(body.customer).toBeUndefined();
+    expect(body.customer).toEqual({
+      externalId: "u1",
+      email: "verified@example.com",
+    });
+    expect(body.customer?.emailHash).toBeUndefined();
   });
 
-  it("identifies a signed-in user with a verified email and its hash", async () => {
+  it("adds a signed email only when identify is explicitly enabled", async () => {
+    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_IDENTIFY", "1");
     mocks.readSessionCookie.mockReturnValue(session);
     mocks.fetchViewerIdentity.mockResolvedValue({
       user: { id: "u1", email: "verified@example.com" },
@@ -150,21 +169,26 @@ describe("support chat config route", () => {
     const body = await callJSON();
 
     expect(body.customer).toEqual({
+      externalId: "u1",
       email: "verified@example.com",
       emailHash: emailHash("verified@example.com"),
     });
   });
 
-  it("omits the identity when the API cannot verify the current email", async () => {
+  it("falls back to the session email when the API cannot verify the viewer", async () => {
     mocks.readSessionCookie.mockReturnValue(session);
     mocks.fetchViewerIdentity.mockRejectedValue(new Error("api down"));
 
     const body = await callJSON();
 
-    expect(body.customer).toBeUndefined();
+    expect(body.customer).toEqual({
+      externalId: "workos-user",
+      email: "stale@example.com",
+    });
+    expect(body.customer?.emailHash).toBeUndefined();
   });
 
-  it("omits the identity when no chat secret can sign it", async () => {
+  it("still links by externalId when no chat secret can sign an email", async () => {
     vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_SECRET", "");
     mocks.readSessionCookie.mockReturnValue(session);
     mocks.fetchViewerIdentity.mockResolvedValue({
@@ -173,10 +197,9 @@ describe("support chat config route", () => {
 
     const body = await callJSON();
 
-    expect(body).toEqual({
-      configured: true,
-      appId: "chat-app-id",
-      labelTypeIds: ["lt_brand"],
+    expect(body.customer).toEqual({
+      externalId: "u1",
+      email: "verified@example.com",
     });
   });
 
@@ -208,5 +231,19 @@ describe("support chat email hash", () => {
   it("returns null without a secret rather than an unverifiable hash", () => {
     vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_SECRET", "");
     expect(emailHash("user@example.com")).toBeNull();
+  });
+
+  it("refuses workspace API keys and chat app ids, which cannot sign a hash", () => {
+    expect(isUsableChatSecret("chat-secret")).toBe(true);
+    expect(isUsableChatSecret("plainApiKey_not-a-chat-secret")).toBe(false);
+    expect(isUsableChatSecret("liveChatApp_01EXAMPLE")).toBe(false);
+    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_SECRET", "plainApiKey_not-a-chat-secret");
+    expect(emailHash("user@example.com")).toBeNull();
+  });
+
+  it("strips wrapping quotes and newlines so Fly secrets still verify", () => {
+    const expected = emailHash("johndoe@example.com");
+    vi.stubEnv("ROWBOAT_WWW_PLAIN_CHAT_SECRET", "'chat-secret'\n");
+    expect(emailHash("johndoe@example.com")).toBe(expected);
   });
 });

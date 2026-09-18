@@ -125,10 +125,14 @@ is one support inbox rather than one per surface.
 
 ```bash
 ROWBOAT_WWW_PLAIN_CHAT_APP_ID=<chat app id>
-ROWBOAT_WWW_PLAIN_CHAT_SECRET=<chat secret>
+ROWBOAT_WWW_PLAIN_CHAT_SECRET=<chat secret from Settings → Chat, not the workspace API key>
 # Optional. Comma-separated Plain label ids applied to every chat thread.
 # Defaults to the "Brand: Oppulence" label.
 ROWBOAT_WWW_PLAIN_CHAT_LABEL_TYPE_IDS=lt_01M20XH6PFZ1F5EY4V19WWP7DG
+# Local only: load the widget. Email-hash identify is opt-in everywhere —
+# a mismatched Chat secret fails launch with "email hash is invalid".
+# ROWBOAT_WWW_PLAIN_CHAT_ENABLED=1
+# ROWBOAT_WWW_PLAIN_CHAT_IDENTIFY=1
 ```
 
 Both come from Plain under **Settings → Chat**. With no app id the widget is
@@ -141,11 +145,12 @@ relay applies the same label server-side via the API's
 `PLAIN_ALWAYS_LABEL_TYPE_IDS`, so all Oppulence tickets are filterable
 regardless of which surface they came from.
 
-Signed-in users are identified by an HMAC-SHA256 hash of their verified email,
-minted server-side in `/api/support/chat`. Plain treats that hash as a bearer
-credential for the customer's identity, so the secret stays server-side and is
-never exposed to the browser bundle. Anonymous visitors chat unauthenticated
-and Plain's own email verification identifies them.
+Signed-in users are linked by their verified viewer id (`externalId`) and
+email. The email is an unverified inbox hint unless
+`ROWBOAT_WWW_PLAIN_CHAT_IDENTIFY=1` also mints the HMAC Plain uses as a
+bearer credential. That hash stays opt-in: a mismatched Chat secret takes
+the widget down. Anonymous visitors chat unauthenticated and Plain's own
+email verification identifies them.
 
 ## Verification
 
