@@ -34,7 +34,27 @@
       "#lib/*": ["../../packages/ui/src/lib/*"],
       "#lib/utils": ["../../packages/ui/src/lib/utils.ts"],
       "#lib/icons": ["../../packages/ui/src/lib/icons.tsx"],
-      "#components/*": ["../../packages/ui/src/components/*"]
+      "#components/*": ["../../packages/ui/src/components/*"],
+      "@base-ui/react": ["./node_modules/@base-ui/react"],
+      "@hookform/resolvers": ["./node_modules/@hookform/resolvers"],
+      "@phosphor-icons/react": ["./node_modules/@phosphor-icons/react"],
+      "@shadcn/react": ["./node_modules/@shadcn/react"],
+      "class-variance-authority": ["./node_modules/class-variance-authority"],
+      "clsx": ["./node_modules/clsx"],
+      "cmdk": ["./node_modules/cmdk"],
+      "date-fns": ["./node_modules/date-fns"],
+      "embla-carousel-react": ["./node_modules/embla-carousel-react"],
+      "input-otp": ["./node_modules/input-otp"],
+      "next-themes": ["./node_modules/next-themes"],
+      "radix-ui": ["./node_modules/radix-ui"],
+      "react-day-picker": ["./node_modules/react-day-picker"],
+      "react-hook-form": ["./node_modules/react-hook-form"],
+      "react-resizable-panels": ["./node_modules/react-resizable-panels"],
+      "recharts": ["./node_modules/recharts"],
+      "sonner": ["./node_modules/sonner"],
+      "tailwind-merge": ["./node_modules/tailwind-merge"],
+      "vaul": ["./node_modules/vaul"],
+      "zod": ["./node_modules/zod"]
     }
   },
   "include": [
