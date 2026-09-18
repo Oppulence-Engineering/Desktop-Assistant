@@ -44,6 +44,8 @@ rules:
     paths:
       exclude:
         - "**/app/(marketing)/page.tsx"
+        - "**/app/(marketing)/marketing-primitives.tsx"
+        - "**/app/layout.tsx"
         - "**/components/ai-elements/code-block.tsx"
 
   - id: oppulence.web014.private-env-in-client

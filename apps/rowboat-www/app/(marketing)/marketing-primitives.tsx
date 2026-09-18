@@ -209,7 +209,7 @@ export function CatalogIndex({
 }
 
 export function JsonLd({ data }: { data: unknown }) {
-  return (
-    <script dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} type="application/ld+json" />
-  );
+  // Catalog JSON-LD only. Escape "<" so a string cannot close the script tag.
+  const json = JSON.stringify(data).replace(/</g, "\\u003c");
+  return <script dangerouslySetInnerHTML={{ __html: json }} type="application/ld+json" />;
 }

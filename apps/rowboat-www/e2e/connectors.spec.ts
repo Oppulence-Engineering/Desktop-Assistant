@@ -10,7 +10,7 @@ async function authenticate(
   returnTo = "/app/settings?settings=connections",
 ) {
   await page.goto(`/api/auth/workos/login?return_to=${encodeURIComponent(returnTo)}`);
-  await expect(page).toHaveURL(new RegExp(`${returnTo.replace(/[?]/g, "\\?")}$`));
+  await expect(page).toHaveURL(new RegExp(`${returnTo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`));
 }
 
 test.beforeEach(async ({ request }) => {
