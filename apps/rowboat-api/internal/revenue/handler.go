@@ -67,6 +67,8 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Post("/current/communication-grants", h.GrantCommunicationAccess)
 		r.Post("/current/communication-grants/{grantId}/revoke", h.RevokeCommunicationAccess)
 		r.Delete("/current/communications/{interactionId}", h.PurgeCommunication)
+		r.Get("/current/communications/{interactionId}/body", h.CommunicationInteractionBody)
+		r.Get("/current/communications/attachments/{attachmentId}/content", h.CommunicationAttachmentContent)
 	})
 	// The register: obligations across every account, which is the product.
 	// Every other commitment route is scoped to one relationship and cannot
@@ -90,6 +92,7 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/graph", h.RelationshipGraph)
 		r.Get("/{relationshipId}", h.GetRelationship)
 		r.Get("/{relationshipId}/timeline", h.RelationshipTimeline)
+		r.Get("/{relationshipId}/communication-timeline", h.RelationshipCommunicationTimeline)
 		r.Get("/{relationshipId}/changes", h.RelationshipChanges)
 		r.Post("/{relationshipId}/acknowledgements", h.AcknowledgeMissionControl)
 		r.Get("/{relationshipId}/evidence/{evidenceId}", h.RelationshipEvidence)

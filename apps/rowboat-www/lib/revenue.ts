@@ -48,6 +48,9 @@ import type {
   ResearchConsentState,
   ResearchEstimate,
   ResearchStatus,
+  CommunicationPolicy,
+  CommunicationPrivacyRule,
+  CommunicationTimelineItem,
   CommitmentRegisterFilter,
   CommitmentRecord,
   OpenPromisesReport,
@@ -619,6 +622,68 @@ export const getRelationshipTimeline = (id: string, limit = 50, signal?: AbortSi
     `/relationships/${id}/timeline?limit=${limit}`,
     { signal },
   ).then((body) => body.observations ?? []);
+
+export const getRelationshipCommunicationTimeline = (
+  id: string,
+  limit = 50,
+  before?: string,
+  signal?: AbortSignal,
+) =>
+  call<{ items: CommunicationTimelineItem[]; hasMore: boolean; nextBefore?: string }>(
+    `/relationships/${id}/communication-timeline?limit=${limit}${
+      before ? `&before=${encodeURIComponent(before)}` : ""
+    }`,
+    { signal },
+  ).then((body) => body.items ?? []);
+
+export const getCommunicationPolicy = (sourceAccountId: string) =>
+  call<CommunicationPolicy>(
+    `/revenue-workspaces/current/communication-policy/${encodeURIComponent(sourceAccountId)}`,
+  );
+
+export const putCommunicationPolicy = (
+  sourceAccountId: string,
+  policy: Omit<CommunicationPolicy, "id" | "sourceAccountId" | "version">,
+) =>
+  call<CommunicationPolicy>(
+    `/revenue-workspaces/current/communication-policy/${encodeURIComponent(sourceAccountId)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        metadataVisibility: policy.metadataVisibility,
+        shareSubject: policy.shareSubject,
+        shareBody: policy.shareBody,
+        shareAttachments: policy.shareAttachments,
+        signatureEnrichment: policy.signatureEnrichment,
+        modelContactExtraction: policy.modelContactExtraction,
+        retentionDays: policy.retentionDays,
+      }),
+    },
+  );
+
+export const listCommunicationPrivacyRules = () =>
+  call<{ rules: CommunicationPrivacyRule[] }>(
+    "/revenue-workspaces/current/communication-privacy-rules",
+  ).then((body) => body.rules ?? []);
+
+export const createCommunicationPrivacyRule = (input: { kind: string; value: string }) =>
+  call<CommunicationPrivacyRule>("/revenue-workspaces/current/communication-privacy-rules", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+export const deleteCommunicationPrivacyRule = (ruleId: string) =>
+  call<void>(
+    `/revenue-workspaces/current/communication-privacy-rules/${encodeURIComponent(ruleId)}`,
+    {
+      method: "DELETE",
+    },
+  );
+
+export const getCommunicationInteractionBody = (interactionId: string) =>
+  call<{ body: string }>(
+    `/revenue-workspaces/current/communications/${encodeURIComponent(interactionId)}/body`,
+  );
 
 export const getRelationshipChanges = (id: string) =>
   call<{ snapshots: RelationshipStateSnapshot[] }>(`/relationships/${id}/changes`).then(
