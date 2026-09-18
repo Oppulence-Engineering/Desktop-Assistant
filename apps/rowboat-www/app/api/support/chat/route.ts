@@ -14,6 +14,11 @@ import {
  * GET /api/support/chat — everything the browser needs to boot Plain's chat
  * widget.
  *
+ * Signed-in users are linked by `externalId` and their verified email. The
+ * email is an unverified inbox hint unless we also mint `emailHash`. That
+ * hash is opt-in: a mismatched HMAC takes the widget down, so we never send
+ * one by default.
+ *
  * The email hash is minted here rather than in the client bundle because it is
  * a bearer credential for the customer's identity: leaking the chat secret
  * would let anyone impersonate any customer in our support inbox. The email is
@@ -45,21 +50,35 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  let externalId: string | undefined;
   let email: string | undefined;
   try {
     const identity = await fetchViewerIdentity(session);
+    externalId = identity?.user.id || undefined;
     email = identity?.user.email || undefined;
   } catch {
-    // Support stays reachable without a verified identity when the API is down.
+    // The inbox can still see who is chatting from the sealed session when
+    // rowboat-api is down. That email is an unverified hint, never hashed.
   }
+  externalId = externalId || session.user.workosUserId || undefined;
+  email = email || session.user.email || undefined;
 
   const hash = email && shouldIdentifySupportChatCustomer() ? emailHash(email) : null;
+  const customer =
+    externalId || email
+      ? {
+          ...(externalId ? { externalId } : {}),
+          ...(email ? { email } : {}),
+          ...(hash ? { emailHash: hash } : {}),
+        }
+      : undefined;
+
   return NextResponse.json(
     SupportChatConfigSchema.parse({
       configured: true,
       appId,
       labelTypeIds,
-      customer: hash ? { email, emailHash: hash } : undefined,
+      customer,
     }),
     { headers: { "cache-control": "no-store" } },
   );

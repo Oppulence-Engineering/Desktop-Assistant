@@ -82,11 +82,11 @@ describe("SupportChat", () => {
     expect(options.customerDetails).toBeUndefined();
   });
 
-  it("passes the server-signed identity through for signed-in users", async () => {
+  it("links signed-in users by externalId and email without requiring a hash", async () => {
     mocks.loadSupportChatConfig.mockResolvedValue({
       configured: true,
       appId: "app-1",
-      customer: { email: "user@example.com", emailHash: "deadbeef" },
+      customer: { externalId: "u1", email: "user@example.com" },
     });
 
     render(<SupportChat />);
@@ -94,6 +94,25 @@ describe("SupportChat", () => {
     await waitFor(() => expect(init).toHaveBeenCalledTimes(1));
     const options = init.mock.calls[0][0] as Record<string, unknown>;
     expect(options.customerDetails).toEqual({
+      externalId: "u1",
+      email: "user@example.com",
+    });
+    expect(options.customerDetails).not.toHaveProperty("emailHash");
+  });
+
+  it("passes the server-signed identity through only when both halves exist", async () => {
+    mocks.loadSupportChatConfig.mockResolvedValue({
+      configured: true,
+      appId: "app-1",
+      customer: { externalId: "u1", email: "user@example.com", emailHash: "deadbeef" },
+    });
+
+    render(<SupportChat />);
+
+    await waitFor(() => expect(init).toHaveBeenCalledTimes(1));
+    const options = init.mock.calls[0][0] as Record<string, unknown>;
+    expect(options.customerDetails).toEqual({
+      externalId: "u1",
       email: "user@example.com",
       emailHash: "deadbeef",
     });

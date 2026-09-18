@@ -27,11 +27,35 @@ export interface SupportChatConfig {
  */
 const DEFAULT_LABEL_TYPE_ID = "lt_01M20XH6PFZ1F5EY4V19WWP7DG";
 
+/**
+ * Fly / GitHub secrets often arrive with a trailing newline or wrapping quotes.
+ * Those extra bytes change the HMAC and Plain rejects the widget with
+ * "The provided email hash is invalid".
+ */
+export function normalizeChatSecret(raw: string): string {
+  return raw
+    .trim()
+    .replace(/\r?\n/g, "")
+    .replace(/^['"]|['"]$/g, "");
+}
+
+/**
+ * Workspace API keys and chat app ids cannot sign an email hash. Sending a
+ * hash minted with the wrong kind of secret is what takes the widget down.
+ */
+export function isUsableChatSecret(secret: string): boolean {
+  const value = normalizeChatSecret(secret);
+  if (!value) return false;
+  if (value.startsWith("plainApiKey_")) return false;
+  if (value.startsWith("liveChatApp_")) return false;
+  return true;
+}
+
 export function getSupportChatConfig(): SupportChatConfig {
   const labels = process.env.ROWBOAT_WWW_PLAIN_CHAT_LABEL_TYPE_IDS?.trim();
   return {
     appId: process.env.ROWBOAT_WWW_PLAIN_CHAT_APP_ID?.trim() || "",
-    secret: process.env.ROWBOAT_WWW_PLAIN_CHAT_SECRET?.trim() || "",
+    secret: normalizeChatSecret(process.env.ROWBOAT_WWW_PLAIN_CHAT_SECRET || ""),
     labelTypeIds: (labels ? labels.split(",") : [DEFAULT_LABEL_TYPE_ID])
       .map((id) => id.trim())
       .filter(Boolean),
@@ -48,15 +72,16 @@ export function isPlainChatEnabled(): boolean {
   return true;
 }
 
-/** Signed-in identity is production-only unless both dev opt-ins are set. */
+/**
+ * Email+hash identify is opt-in in every environment.
+ *
+ * A hash Plain cannot verify fails the widget launch for every signed-in user
+ * (`ChatAPIError: The provided email hash is invalid`). Keep it off until the
+ * Chat settings secret is confirmed against this app id.
+ */
 export function shouldIdentifySupportChatCustomer(): boolean {
-  if (isDevelopment()) {
-    return (
-      process.env.ROWBOAT_WWW_PLAIN_CHAT_ENABLED === "1" &&
-      process.env.ROWBOAT_WWW_PLAIN_CHAT_IDENTIFY === "1"
-    );
-  }
-  return true;
+  if (!isUsableChatSecret(getSupportChatConfig().secret)) return false;
+  return process.env.ROWBOAT_WWW_PLAIN_CHAT_IDENTIFY === "1";
 }
 
 /**
@@ -64,11 +89,11 @@ export function shouldIdentifySupportChatCustomer(): boolean {
  * email address. Plain hashes the same email with the same secret and compares,
  * so the input must be byte-identical to the `email` passed to `Plain.init`.
  *
- * Returns null when no secret is configured — the widget then runs anonymous
- * rather than sending an unverifiable identity.
+ * Returns null when no usable secret is configured — the widget then still
+ * receives the email as an unverified hint rather than a signed identity.
  */
 export function emailHash(email: string): string | null {
   const { secret } = getSupportChatConfig();
-  if (!secret || !email) return null;
+  if (!isUsableChatSecret(secret) || !email) return null;
   return createHmac("sha256", secret).update(email).digest("hex");
 }

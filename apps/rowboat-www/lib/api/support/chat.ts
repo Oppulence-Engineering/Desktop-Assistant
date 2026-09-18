@@ -2,9 +2,13 @@
 
 import "client-only";
 
-import { SupportChatConfigSchema, type SupportChatConfig } from "@/lib/api/support/chat-schema";
+import {
+  SupportChatConfigSchema,
+  type SupportChatConfig,
+  type SupportChatCustomer,
+} from "@/lib/api/support/chat-schema";
 
-export { SupportChatConfigSchema, type SupportChatConfig };
+export { SupportChatConfigSchema, type SupportChatConfig, type SupportChatCustomer };
 
 export async function loadSupportChatConfig(): Promise<SupportChatConfig> {
   const response = await fetch("/api/support/chat", {
