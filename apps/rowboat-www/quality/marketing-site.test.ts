@@ -66,6 +66,19 @@ describe("public marketing information architecture", () => {
     expect(source).toContain("/app/");
   });
 
+  it("opens desktop header menus without a click-only details element", () => {
+    const source = readFileSync(
+      new URL("../app/(marketing)/marketing-components.tsx", import.meta.url),
+      "utf8",
+    );
+    const styles = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
+    expect(source).toContain("sm-nav-item");
+    expect(source).toContain("sm-nav-panel");
+    expect(source).not.toContain("data-marketing-dropdown");
+    expect(styles).toContain(".sm-nav-item:hover > .sm-nav-panel");
+    expect(styles).toContain(".sm-nav-item:focus-within > .sm-nav-panel");
+  });
+
   it("keeps the marketing 404 inside the existing public shell", () => {
     const source = readFileSync(
       new URL("../app/(marketing)/not-found.tsx", import.meta.url),
