@@ -399,7 +399,7 @@ function FeedbackLink({ className }: { className?: string }) {
 }
 
 const TOP_BAR_LINK =
-  "text-[14px] text-primary/75 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30";
+  "text-[var(--text-small,13px)] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--border)]";
 
 /** The full-width bar above the framed workspace: brand, latest release, shortcuts. */
 export function AppTopBar({
@@ -410,7 +410,10 @@ export function AppTopBar({
   onOpenPeople: () => void;
 }) {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 px-4 md:px-6">
+    <header
+      className="flex h-14 shrink-0 items-center gap-4 border-[var(--border)] bg-[var(--bg)] px-4 md:px-6"
+      data-slot="app-top-bar"
+    >
       <Avatar aria-hidden="true" className="size-6 rounded-none" size="sm">
         <AvatarImage
           alt=""
@@ -579,8 +582,8 @@ function SidebarNavItem({
   className?: string;
 }) {
   const classes = cn(
-    "group/item flex h-9 w-full shrink-0 items-center justify-start gap-2 rounded-none px-3.5 text-left text-[15px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200",
-    active && "bg-background-100 text-primary dark:bg-background-200",
+    "group/item flex h-[var(--shell-nav-row-height,30px)] w-full shrink-0 items-center justify-start gap-1.5 rounded-lg px-2 text-left text-[var(--text-small,13px)] text-[var(--text-body)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--border)]",
+    active && "bg-[var(--surface-active)] text-[var(--text-primary)]",
     className,
   );
   const content = (
@@ -604,7 +607,7 @@ function SidebarNavItem({
   );
   if (href) {
     return (
-      <Button asChild className={classes} variant="ghost">
+      <Button asChild className={classes} data-active={active ? "true" : undefined} data-sidebar-row variant="ghost">
         <Link aria-current={active ? "page" : undefined} href={href}>
           {content}
         </Link>
@@ -612,7 +615,15 @@ function SidebarNavItem({
     );
   }
   return (
-    <Button className={classes} disabled={disabled} onClick={onClick} type="button" variant="ghost">
+    <Button
+      className={classes}
+      data-active={active ? "true" : undefined}
+      data-sidebar-row
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+      variant="ghost"
+    >
       {content}
     </Button>
   );
@@ -632,18 +643,20 @@ function SidebarSubItem({
   return (
     <Button
       className={cn(
-        "h-9 w-full justify-start gap-2.5 rounded-none py-1 pr-3 pl-6 text-left text-[14px] font-normal text-primary/65 hover:bg-background-100 hover:text-primary dark:hover:bg-background-200",
-        active && "bg-background-100 text-primary dark:bg-background-200",
-        muted && "text-primary/50",
+        "h-[var(--shell-nav-row-height,30px)] w-full justify-start gap-1.5 rounded-lg py-1 pr-3 pl-4 text-left text-[var(--text-small,13px)] font-normal text-[var(--text-body)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)]",
+        active && "bg-[var(--surface-active)] text-[var(--text-primary)]",
+        muted && "text-[var(--text-muted)]",
       )}
+      data-active={active ? "true" : undefined}
+      data-sidebar-row
       onClick={onClick}
       type="button"
       variant="ghost"
     >
       <Badge
         className={cn(
-          "size-1 shrink-0 rounded-none border-0 p-0 bg-primary/30",
-          active && "bg-oppulence-orange",
+          "size-1 shrink-0 rounded-full border-0 p-0 bg-[var(--text-muted)]",
+          active && "bg-[var(--text-primary)]",
         )}
         variant="outline"
       />
@@ -657,11 +670,11 @@ function SidebarEmptyHint({ children }: { children: React.ReactNode }) {
 }
 
 const SIDEBAR_FOOTER_LINK =
-  "flex h-9 w-full shrink-0 items-center justify-start rounded-none px-3.5 text-[15px] text-primary/70 transition-colors hover:bg-background-100 hover:text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/30 dark:hover:bg-background-200";
+  "flex h-[var(--shell-nav-row-height,30px)] w-full shrink-0 items-center justify-start rounded-lg px-2 text-[var(--text-small,13px)] text-[var(--text-body)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[var(--border)]";
 
 function SidebarSectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Label className="block px-3.5 pb-1 pt-3 text-[12px] font-normal text-primary/40">
+    <Label className="block px-2 pb-1 pt-3 text-[var(--text-caption,12px)] font-normal text-[var(--text-secondary)]" data-sidebar-section>
       {children}
     </Label>
   );
@@ -695,6 +708,7 @@ export function AppShellSidebar({
   activeRunId = null,
   onOpenSession,
   onNewChat,
+  overlayContainer = null,
 }: {
   open: boolean;
   onToggle: () => void;
@@ -718,6 +732,7 @@ export function AppShellSidebar({
   activeRunId?: string | null;
   onOpenSession?: (runId: string) => void;
   onNewChat?: () => void;
+  overlayContainer?: HTMLElement | null;
 }) {
   const [agents, setAgents] = React.useState<string[]>([]);
   const [tasks, setTasks] = React.useState<{ label: string; value: string }[]>([]);
@@ -859,15 +874,16 @@ export function AppShellSidebar({
   return (
     <div
       className={cn(
-        "absolute inset-y-0 left-0 z-30 flex h-full shrink-0 overflow-hidden border-r shadow-xl transition-all duration-200 ease-in-out md:relative md:shadow-none",
-        open ? "w-[274px]" : "w-0 border-r-0",
+        "absolute inset-y-0 left-0 z-30 flex h-full min-h-0 shrink-0 overflow-hidden border-[var(--border)] border-r shadow-xl transition-all duration-200 ease-in-out md:relative md:shadow-none",
+        open ? "w-[var(--shell-sidebar-width,252px)]" : "w-0 border-r-0",
         view === "settings" && "settings-rail",
       )}
+      data-slot="app-sidebar"
     >
       <div
         className={cn(
-          "flex h-full w-[274px] shrink-0 flex-col",
-          view !== "settings" && "bg-background",
+          "flex h-full min-h-0 w-[var(--shell-sidebar-width,252px)] shrink-0 flex-col bg-[var(--surface-1)]",
+          view === "settings" && "settings-rail",
         )}
       >
         {/* Phones get the sidebar as an overlay, so it needs its own way out. */}
@@ -884,7 +900,7 @@ export function AppShellSidebar({
           </Button>
         </div>
         {view === "settings" ? (
-          <nav className="settings-rail-scroll flex flex-1 flex-col items-stretch overflow-y-auto px-2 pb-3 pt-2">
+          <nav className="settings-rail-scroll flex min-h-0 flex-1 flex-col items-stretch overflow-y-auto px-2 pb-3 pt-2">
             <Button
               className="settings-back justify-start"
               onClick={onCloseSettings}
@@ -931,7 +947,7 @@ export function AppShellSidebar({
             ))}
           </nav>
         ) : (
-          <nav className="no-scrollbar flex flex-1 flex-col overflow-y-auto px-2.5 pb-2 pt-2.5">
+          <nav className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-2 pt-3" data-sidebar-nav>
             <SidebarNavItem
               active={view === "chat" && !selected}
               label="Home"
@@ -1047,43 +1063,44 @@ export function AppShellSidebar({
 
         <div
           className={cn(
-            "flex shrink-0 flex-col gap-0.5 px-2.5 pt-2",
+            "mt-auto flex shrink-0 flex-col",
             view === "settings" && "settings-rail-footer",
           )}
         >
-          <SidebarStatusCard billing={billing} onOpen={() => onNavigateRevenue?.("workspace")} />
-          {/* Help used to open the OpenAPI reference: an operator who clicked
-              it because a promise was missed landed on a route table. */}
-          <Link
-            className={SIDEBAR_FOOTER_LINK}
-            href="/blog"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            Need help?
-          </Link>
-          {/* A plain anchor, not Link: the route only redirects to the API's
-              docs, and Link's RSC prefetch of it failed with a 503 on every
-              page load. This is the OpenAPI spec, not product documentation;
-              calling it "Docs" sent operators looking for help into a route
-              table. */}
-          <a
-            className={SIDEBAR_FOOTER_LINK}
-            href="/api/reference"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            API reference
-          </a>
-          <SidebarNavItem
-            active={view === "settings"}
-            label="Settings"
-            onClick={() => onOpenSettings?.("overview")}
-          />
-        </div>
+          <div className="flex flex-col gap-0.5 border-[var(--border)] border-t px-2 pt-2" data-sidebar-footer>
+            <SidebarStatusCard billing={billing} onOpen={() => onNavigateRevenue?.("workspace")} />
+            {/* Help used to open the OpenAPI reference: an operator who clicked
+                it because a promise was missed landed on a route table. */}
+            <Link
+              className={SIDEBAR_FOOTER_LINK}
+              href="/blog"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Need help?
+            </Link>
+            {/* A plain anchor, not Link: the route only redirects to the API's
+                docs, and Link's RSC prefetch of it failed with a 503 on every
+                page load. This is the OpenAPI spec, not product documentation;
+                calling it "Docs" sent operators looking for help into a route
+                table. */}
+            <a
+              className={SIDEBAR_FOOTER_LINK}
+              href="/api/reference"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              API reference
+            </a>
+            <SidebarNavItem
+              active={view === "settings"}
+              label="Settings"
+              onClick={() => onOpenSettings?.("overview")}
+            />
+          </div>
 
-        <div className="mx-2.5 mt-2 flex h-14 shrink-0 items-center border-t">
-          <DropdownMenu>
+          <div className="relative z-10 mx-2 flex h-14 shrink-0 items-center border-[var(--border)] border-t" data-sidebar-account>
+            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 className="h-10 min-w-0 flex-1 justify-start gap-2.5 rounded-none px-2 text-left hover:bg-background-100 data-[state=open]:bg-background-100 dark:hover:bg-background-200 dark:data-[state=open]:bg-background-200"
@@ -1109,9 +1126,10 @@ export function AppShellSidebar({
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="app-shell w-[254px] rounded-none"
+              className="app-shell w-[254px] rounded-lg"
+              container={overlayContainer}
               side="top"
-              sideOffset={6}
+              sideOffset={8}
             >
               <DropdownMenuItem onSelect={() => onOpenSettings?.("overview")}>
                 <GearSix />
@@ -1195,6 +1213,7 @@ export function AppShellSidebar({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
       </div>
 

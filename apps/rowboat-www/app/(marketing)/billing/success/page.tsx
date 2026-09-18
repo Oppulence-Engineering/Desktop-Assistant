@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
-import { Badge } from "@oppulence/ui/components/badge";
+import { SimBillingStatusPage } from "../../sim-landing/subpages/sim-billing-status-page";
 
 const TITLE = "Subscription confirmed — Oppulence";
 const DESCRIPTION = "Stripe sends customers here after they pay for an Oppulence plan.";
@@ -10,7 +9,6 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   alternates: { canonical: "https://oppulence.io/billing/success" },
-  // A checkout return page belongs to one customer, so search engines skip it.
   robots: { index: false, follow: false },
   openGraph: {
     title: TITLE,
@@ -21,32 +19,15 @@ export const metadata: Metadata = {
 
 export default function BillingSuccessRoute() {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-6 py-20">
-      <Badge
-        className="rounded-none font-mono text-xs uppercase tracking-wider text-muted-foreground"
-        variant="outline"
-      >
-        Billing
-      </Badge>
-      <h1 className="text-3xl font-semibold tracking-tight">Your subscription is active</h1>
-      <p className="text-[15px] leading-relaxed text-foreground/78">
-        Thank you. Your payment went through, and your plan is now active on your account. Stripe
-        sends the receipt to your email address.
-      </p>
-      <section className="marketing-surface flex flex-col gap-3 border p-5">
-        <p className="text-[13px] leading-relaxed text-foreground/78">
-          Your plan can take a few seconds to appear in the app. Reload the settings page if you do
-          not see it yet.
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Link className="text-sm font-medium underline underline-offset-4" href="/app/settings">
-            Open settings
-          </Link>
-          <Link className="text-sm font-medium underline underline-offset-4" href="/app">
-            Go to the app
-          </Link>
-        </div>
-      </section>
-    </main>
+    <SimBillingStatusPage
+      actions={[
+        { href: "/app/settings", label: "Open settings" },
+        { href: "/app", label: "Go to the app", variant: "outline" },
+      ]}
+      description="Thank you. Your payment went through, and your plan is now active on your account. Stripe sends the receipt to your email address."
+      noteBody="Your plan can take a few seconds to appear in the app. Reload the settings page if you do not see it yet."
+      noteTitle="If the plan is not visible yet"
+      title="Your subscription is active"
+    />
   );
 }

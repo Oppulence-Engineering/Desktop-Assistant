@@ -183,17 +183,21 @@ export function CatalogIndex({
   title,
   description,
   items,
+  headingLevel = 1,
 }: {
   eyebrow: string;
   title: string;
   description: string;
   items: { href: string; title: string; body: string }[];
+  headingLevel?: 1 | 2;
 }) {
+  const Heading = headingLevel === 2 ? "h2" : "h1";
+
   return (
     <div className="mk-index linear-subpage">
       <div className="linear-inset">
         <p className="linear-eyebrow">{eyebrow}</p>
-        <h1 className="linear-subpage-title">{title}</h1>
+        <Heading className="linear-subpage-title">{title}</Heading>
         <p className="linear-body mt-5 max-w-2xl">{description}</p>
         <div className="mk-index-grid">
           {items.map((item) => (

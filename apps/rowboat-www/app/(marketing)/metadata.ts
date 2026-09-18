@@ -75,6 +75,15 @@ export function breadcrumbJsonLd(items: { name: string; path: string }[]) {
   };
 }
 
+export function definedTermJsonLd(term: string, description: string) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "DefinedTerm",
+    name: term,
+    description,
+  };
+}
+
 export function articleJsonLd({
   title,
   description,

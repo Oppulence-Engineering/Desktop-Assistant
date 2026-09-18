@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { PlatformProductPage } from "../marketing-components";
+import { SimPlatformPage } from "../sim-landing/subpages/sim-platform-page";
 import { getPlatformPage } from "../marketing-data";
 
 const page = getPlatformPage("web");
@@ -19,5 +19,5 @@ export const metadata: Metadata = {
 
 export default function OppulenceWebPage() {
   if (!page) notFound();
-  return <PlatformProductPage page={page} />;
+  return <SimPlatformPage page={page} />;
 }

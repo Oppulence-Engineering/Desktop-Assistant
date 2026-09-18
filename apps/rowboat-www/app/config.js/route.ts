@@ -16,7 +16,7 @@ export async function GET() {
     process.env.ROWBOAT_WWW_API_PROXY_URL ||
     process.env.ROWBOATX_API_PROXY_URL ||
     process.env.ROWBOATX_API_BASE_URL ||
-    "http://localhost:8080";
+    "http://localhost:18080";
   const body =
     "window.config = window.config || {};\n" +
     `window.config.apiBase = window.config.apiBase || ${JSON.stringify(publicApiBaseUrl)};\n`;

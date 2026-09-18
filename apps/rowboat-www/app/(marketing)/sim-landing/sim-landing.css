@@ -1,0 +1,479 @@
+/**
+ * Sim.ai landing visual chrome — color tokens, compact product density, preview scale.
+ * Sources:
+ * - apps/sim/app/_styles/globals.css (:root / .dark color + @theme text scale)
+ * - apps/sim/app/(landing)/components/shared/responsive-design-stage/
+ * - apps/sim/app/(landing)/components/cta/cta.module.css (closing artwork masks)
+ *
+ * Marketing headlines stay on Oppulence HOME_TYPE/LANDING_TYPE (outside .sim-product-preview).
+ * Product frames use Sim compact typography + transform scale — never body zoom.
+ */
+@layer utilities {
+  .sim-landing-root {
+    /*
+     * Sim compact product typography — apps/sim/app/_styles/globals.css @theme.
+     * Marketing headlines keep HOME_TYPE; previews inherit this scale via
+     * .sim-product-preview / [data-product-preview].
+     */
+    --text-micro: 10px;
+    --text-xs: 11px;
+    --text-xs--line-height: 1.5;
+    --text-caption: 12px;
+    --text-small: 13px;
+    --text-base: 15px;
+    --text-md: 16px;
+
+    /* Light tokens — apps/sim/app/_styles/globals.css :root */
+    --bg: #fefefe;
+    --surface-1: #fbfbfb;
+    --surface-2: #ffffff;
+    --surface-3: #f7f7f7;
+    --surface-4: #f5f5f5;
+    --surface-5: #f3f3f3;
+    --surface-6: #e5e5e5;
+    --surface-7: #d9d9d9;
+    --surface-hover: #f2f2f2;
+    --surface-active: #ececec;
+    --workflow-edge: #e0e0e0;
+    --text-primary: #1a1a1a;
+    --text-secondary: #525252;
+    --text-tertiary: #5c5c5c;
+    --text-muted: #7a7a7a;
+    --text-subtle: #8c8c8c;
+    --text-body: #434343;
+    --text-icon: #5a5a5a;
+    --text-icon-muted: #5c5c5c;
+    --thinking-ink-current: #2c2c2c;
+    --thinking-ink-inner: #2c2c2c;
+    --thinking-ink-outer: #5f5f5f;
+    --thinking-ink-glow: rgba(255, 255, 255, 0.6);
+    --text-inverse: #ffffff;
+    --text-muted-inverse: #a0a0a0;
+    --border: #d8d8d8;
+    --scrollbar-thumb-color: #c0c0c0;
+    --scrollbar-thumb-hover-color: #a8a8a8;
+    --selection-muted: #1a5cf647;
+    color: var(--text-primary);
+    background-color: var(--bg);
+  }
+
+  .dark .sim-landing-root {
+    /* Dark tokens — apps/sim/app/_styles/globals.css .dark */
+    --bg: #1b1b1b;
+    --surface-1: #1e1e1e;
+    --surface-2: #232323;
+    --surface-3: #242424;
+    --surface-4: #292929;
+    --surface-5: #363636;
+    --surface-6: #454545;
+    --surface-7: #505050;
+    --surface-hover: #262626;
+    --surface-active: #2c2c2c;
+    --workflow-edge: #454545;
+    --text-primary: #e6e6e6;
+    --text-secondary: #cccccc;
+    --text-tertiary: #b3b3b3;
+    --text-muted: #6e6e6e;
+    --text-subtle: #7d7d7d;
+    --text-body: #c1c1c1;
+    --text-icon: #969696;
+    --text-icon-muted: #949494;
+    --thinking-ink-current: #d6d6d6;
+    --thinking-ink-inner: #a7a7a7;
+    --thinking-ink-outer: #d6d6d6;
+    --thinking-ink-glow: rgba(255, 255, 255, 0.9);
+    --text-inverse: #1b1b1b;
+    --text-muted-inverse: #b3b3b3;
+    --border: #444444;
+    --scrollbar-thumb-color: #505050;
+    --scrollbar-thumb-hover-color: #6e6e6e;
+    --selection-muted: #4b83f759;
+  }
+
+  .sim-landing-root ::selection {
+    background-color: var(--selection-muted);
+  }
+
+  .sm-site:has(.sim-landing-root) {
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text-primary);
+    --sm-line: var(--border);
+    --sm-ink: var(--text-primary);
+    --sm-muted: var(--text-secondary);
+  }
+
+  .sm-site.sim-marketing-site:has(.sim-landing-root) {
+    height: var(--app-vh);
+    max-height: var(--app-vh);
+  }
+
+  .sm-site:has(.sim-landing-root) .linear-guides::before,
+  .sm-site:has(.sim-landing-root) .linear-guides::after {
+    content: none;
+  }
+
+  .sm-site:has(.sim-landing-root) .linear-shell {
+    width: 100%;
+    max-width: none;
+    padding-inline: 0;
+  }
+
+  .sm-site:has(.sim-landing-root) .sim-landing-header {
+    height: auto;
+    overflow: visible;
+    border-bottom: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .sm-site:has(.sim-landing-root) .sim-landing-header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--bg);
+    transition: background-color 200ms ease;
+  }
+
+  html[data-marketing-scrolled] .sm-site:has(.sim-landing-root) .sim-landing-header::before,
+  html[data-marketing-menu-open] .sm-site:has(.sim-landing-root) .sim-landing-header::before {
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(40px);
+  }
+
+  .sm-site:has(.sim-landing-root) .sim-landing-header .sm-nav-panel {
+    top: calc(100% + 8px);
+  }
+
+  .sm-site:has(.sim-landing-root) .sim-landing-header .sm-header-cta {
+    min-height: 26px;
+    background: var(--text-primary);
+    color: var(--text-inverse);
+  }
+
+  .sm-site:has(.sim-landing-root) .sim-landing-header .sm-header-cta:hover {
+    background: var(--text-body);
+  }
+
+  /* Do not override sim-landing-header frost with legacy sm-header fill. */
+  .sm-site:has(.sim-landing-root) .sim-landing-header.sm-header {
+    border-bottom: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  /*
+   * Marketing shell — sim tokens fully replace marketing-polar / sm-site legacy
+   * chrome so the scroll port reads as flat Sim surface, not Attio/Linear bleed.
+   */
+  html:has(.sim-marketing-site),
+  body:has(.sim-marketing-site) {
+    background: #fefefe;
+    color-scheme: light;
+    height: var(--app-vh);
+    overflow: hidden;
+  }
+
+  html.dark:has(.sim-marketing-site),
+  html.dark body:has(.sim-marketing-site) {
+    background: #1b1b1b;
+    color-scheme: dark;
+  }
+
+  .sm-site.sim-marketing-site {
+    background: transparent;
+    color: inherit;
+    height: var(--app-vh);
+    max-height: var(--app-vh);
+  }
+
+  .sm-site.sim-marketing-site.marketing-polar {
+    --background: #fefefe;
+    --foreground: #1a1a1a;
+    --border: #d8d8d8;
+    --card: #ffffff;
+    --card-foreground: #1a1a1a;
+    --muted-foreground: #525252;
+    background: transparent;
+    color: inherit;
+  }
+
+  html.dark .sm-site.sim-marketing-site.marketing-polar {
+    --background: #1b1b1b;
+    --foreground: #e6e6e6;
+    --border: #444444;
+    --card: #232323;
+    --card-foreground: #e6e6e6;
+    --muted-foreground: #cccccc;
+  }
+
+  .sm-site.sim-marketing-site ::selection {
+    background-color: var(--selection-muted, #1a5cf647);
+    color: inherit;
+  }
+
+  .sm-site.sim-marketing-site .sm-header {
+    height: auto;
+    overflow: visible;
+    border-bottom: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  html[data-marketing-scrolled] .sm-site.sim-marketing-site .sm-header,
+  html[data-marketing-menu-open] .sm-site.sim-marketing-site .sm-header {
+    border-bottom: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .sm-site.sim-marketing-site .sm-login {
+    color: var(--text-body);
+  }
+
+  .sm-site.sim-marketing-site .sm-login:hover {
+    color: var(--text-primary);
+  }
+
+  .sm-site.sim-marketing-site .sm-header-cta {
+    min-height: 26px;
+    background: var(--text-primary);
+    color: var(--text-inverse);
+  }
+
+  .sm-site.sim-marketing-site .sm-header-cta:hover {
+    background: var(--text-body);
+  }
+
+  .sm-site.sim-marketing-site .sm-nav-panel-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-2);
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 4%),
+      0 12px 32px rgb(0 0 0 / 8%);
+  }
+
+  .sm-site.sim-marketing-site .sm-nav-panel-card a:hover,
+  .sm-site.sim-marketing-site .sm-nav-panel-card a:focus-visible {
+    background: var(--surface-hover);
+  }
+
+  .sm-site.sim-marketing-site .sm-nav-panel-card span {
+    color: var(--text-primary);
+  }
+
+  .sm-site.sim-marketing-site .sm-nav-panel-card small {
+    color: var(--text-secondary);
+  }
+
+  .sim-landing-scroll-port {
+    scrollbar-gutter: stable;
+  }
+
+  /*
+   * Sim product-preview density — scoped to live frames only.
+   * Selectors: .sim-product-preview, [data-product-preview]
+   */
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) {
+    /* Compact typography defaults (Sim @theme) */
+    font-size: var(--text-base);
+    line-height: 1.45;
+
+    /* Layout + chrome proportions */
+    --preview-design-width: 1280;
+    --preview-design-height: 735;
+    --preview-scale: 1;
+    --preview-sidebar-width: 238px;
+    --preview-control-size: 30px;
+    --preview-control-size-lg: 36px;
+    --preview-icon-size: 16px;
+    --preview-icon-size-sm: 14px;
+    --preview-border-width: 1px;
+    --preview-radius-sm: 6px;
+    --preview-radius-md: 8px;
+    --preview-radius-lg: 12px;
+
+    container-type: size;
+  }
+
+  /*
+   * Fixed design surface — ResponsiveDesignStage sets --preview-scale via JS;
+   * container queries provide a CSS-only fallback before hydration.
+   */
+  .sim-landing-root .design-surface {
+    width: 1280px;
+    height: 735px;
+    flex-shrink: 0;
+    transform-origin: center;
+    transform: scale(var(--preview-scale, 1));
+  }
+
+  .sim-landing-root .design-surface.origin-top-left,
+  .sim-landing-root .origin-top-left.design-surface {
+    transform-origin: top left;
+  }
+
+  @supports (width: 1cqw) {
+    .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .design-surface:not([style*="--preview-scale"]) {
+      --preview-scale: min(
+        1,
+        100cqw / var(--preview-design-width),
+        100cqh / var(--preview-design-height)
+      );
+    }
+  }
+
+  /* Tailwind utility remaps → Sim compact tokens */
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .text-micro {
+    font-size: var(--text-micro);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .text-xs {
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .text-caption {
+    font-size: var(--text-caption);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .text-small {
+    font-size: var(--text-small);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .text-sm {
+    font-size: var(--text-small);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .text-base {
+    font-size: var(--text-base);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .text-md {
+    font-size: var(--text-md);
+  }
+
+  /* Arbitrary pixel utilities used in ported Sim preview components */
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .text-\[13px\] {
+    font-size: var(--text-small);
+    line-height: 1.45;
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .text-\[14px\] {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .text-\[15px\] {
+    font-size: var(--text-base);
+    line-height: 1.45;
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .text-\[16px\] {
+    font-size: var(--text-md);
+    line-height: 1.45;
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .text-\[18px\] {
+    font-size: 18px;
+    line-height: 1.3;
+  }
+
+  /* Density: sidebar rail, control targets, icons, hairline borders */
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .w-\[238px\] {
+    width: var(--preview-sidebar-width);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .size-\[30px\] {
+    width: var(--preview-control-size);
+    height: var(--preview-control-size);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .h-\[30px\] {
+    height: var(--preview-control-size);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .size-\[36px\] {
+    width: var(--preview-control-size-lg);
+    height: var(--preview-control-size-lg);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .size-\[16px\] {
+    width: var(--preview-icon-size);
+    height: var(--preview-icon-size);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .size-\[14px\] {
+    width: var(--preview-icon-size-sm);
+    height: var(--preview-icon-size-sm);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .rounded-\[6px\] {
+    border-radius: var(--preview-radius-sm);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .rounded-\[8px\] {
+    border-radius: var(--preview-radius-md);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .rounded-\[12px\] {
+    border-radius: var(--preview-radius-lg);
+  }
+
+  .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .border {
+    border-width: var(--preview-border-width);
+  }
+
+  @keyframes sim-demo-caption-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .sim-demo-caption-enter {
+      animation: sim-demo-caption-enter 600ms cubic-bezier(0.23, 1, 0.32, 1);
+    }
+  }
+
+  /* cta.module.css `.plate` — closing artwork masks */
+  .sim-closing-artwork__plate {
+    --plate-mask: linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 0) 0%,
+      rgb(0 0 0 / 0.074) 1.7%,
+      rgb(0 0 0 / 0.259) 3.3%,
+      rgb(0 0 0 / 0.5) 5%,
+      rgb(0 0 0 / 0.741) 6.7%,
+      rgb(0 0 0 / 0.926) 8.3%,
+      rgb(0 0 0 / 1) 10%,
+      rgb(0 0 0 / 1) 80%,
+      rgb(0 0 0 / 0.926) 83.3%,
+      rgb(0 0 0 / 0.741) 86.7%,
+      rgb(0 0 0 / 0.5) 90%,
+      rgb(0 0 0 / 0.259) 93.3%,
+      rgb(0 0 0 / 0.074) 96.7%,
+      rgb(0 0 0 / 0) 100%
+    );
+    --copy-mask: radial-gradient(
+      ellipse 52% 38% at 50% 0%,
+      rgb(0 0 0 / 0) 24%,
+      rgb(0 0 0 / 0.08) 40%,
+      rgb(0 0 0 / 0.35) 58%,
+      rgb(0 0 0 / 0.75) 78%,
+      rgb(0 0 0 / 1) 100%
+    );
+    -webkit-mask-image: var(--plate-mask), var(--copy-mask);
+    mask-image: var(--plate-mask), var(--copy-mask);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+  }
+}

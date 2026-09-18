@@ -1,5 +1,5 @@
 import { indexCopy, useCasePages } from "../catalog";
-import { CatalogIndex } from "../marketing-primitives";
+import { SimCatalogHub } from "../sim-landing/subpages/sim-catalog-hub";
 import { marketingMetadata } from "../metadata";
 
 export const metadata = marketingMetadata({
@@ -10,15 +10,16 @@ export const metadata = marketingMetadata({
 
 export default function UseCasesIndexPage() {
   return (
-    <CatalogIndex
+    <SimCatalogHub
       description={indexCopy.useCases.description}
       eyebrow="[use cases]"
+      heading={indexCopy.useCases.title}
       items={useCasePages.map((page) => ({
         href: page.path,
         title: page.eyebrow,
         body: page.description,
       }))}
-      title={indexCopy.useCases.title}
+      listHeading="All use cases"
     />
   );
 }

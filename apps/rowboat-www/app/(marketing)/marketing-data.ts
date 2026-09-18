@@ -1,3 +1,5 @@
+import { applySeoTheme } from "./seo-theme";
+
 export type LinkItem = {
   label: string;
   href: string;
@@ -882,9 +884,9 @@ export const primaryPages: MarketingPage[] = [
   {
     path: "product",
     eyebrow: "Product",
-    title: "Nobody remembers what you promised in March. We do.",
+    title: "The commitment ledger that survives kickoff.",
     description:
-      "Everything you said you'd do, every objection you got, every thread left hanging \u2014 pulled out of your email, calendar, meetings, and CRM without anyone typing it in. We'll tell you which accounts are slipping and write the follow-up. You send it.",
+      "Oppulence is a two-sided register of business promises. It reads Gmail, Slack, calls, and HubSpot, lists the sentences that look like commitments, and waits for you to confirm them. After kickoff it keeps reading the same account. Nothing customer-facing leaves without you.",
     category: "product",
     bullets: [
       "Build a living ledger of promises, objections, chases, and outcomes from the systems you already use.",
@@ -1319,7 +1321,10 @@ export const marketingPages = [...primaryPages, ...indexPages, ...blogPages, ...
 export const marketingPaths = marketingPages.map((page) => page.path);
 
 export function getMarketingPage(path: string) {
-  return marketingPages.find((page) => page.path === path);
+  const page = marketingPages.find((entry) => entry.path === path);
+  if (!page) return undefined;
+  // Leftover SEO slugs keep Ferndesk-style keyword titles without changing the path.
+  return applySeoTheme(page);
 }
 
 export const pricingPlans = [

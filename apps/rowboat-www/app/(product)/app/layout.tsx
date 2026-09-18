@@ -4,6 +4,7 @@ import { SupportChat } from "@/components/features/support/support-chat";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { requireSession } from "@/lib/auth/session";
 
+import "../product-sim-theme.css";
 import ProductDashboardClient from "./product-dashboard-client";
 
 // Authentication must complete before response headers are committed so an

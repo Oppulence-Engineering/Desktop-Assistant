@@ -5,7 +5,8 @@
  * the Electron renderer opt in with `data-product-shell`, while retaining
  * their own surface and status colors around these shared hierarchy tokens.
  */
-[data-product-shell] {
+/* Sim workspace (`sim-product-shell`) uses apps/rowboat-www/product-sim-theme.css */
+[data-product-shell]:not(.sim-product-shell) {
   --font-product:
     var(--font-inter), "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
@@ -26,8 +27,8 @@
   letter-spacing: -0.15px;
 }
 
-.dark [data-product-shell],
-[data-product-shell].dark {
+.dark [data-product-shell]:not(.sim-product-shell),
+[data-product-shell].dark:not(.sim-product-shell) {
   --background: #111214;
   --background-50: #0d0e0f;
   --background-100: #18191c;
@@ -49,12 +50,12 @@
   --product-text-tertiary: #71737a;
 }
 
-[data-product-shell] :where(*):not(code, pre, kbd, [class*="font-mono"]) {
+[data-product-shell]:not(.sim-product-shell) :where(*):not(code, pre, kbd, [class*="font-mono"]) {
   font-family: var(--font-product) !important;
   letter-spacing: -0.15px !important;
 }
 
-[data-product-shell]
+[data-product-shell]:not(.sim-product-shell)
   :where(
     strong,
     b,
@@ -67,12 +68,12 @@
   font-weight: 500 !important;
 }
 
-[data-product-shell] :where([class~="font-thin"], [class~="font-light"], [class~="font-normal"]) {
+[data-product-shell]:not(.sim-product-shell) :where([class~="font-thin"], [class~="font-light"], [class~="font-normal"]) {
   font-weight: 400 !important;
 }
 
 /* Product typography has four intentional stops: caption, body, label, title. */
-[data-product-shell]
+[data-product-shell]:not(.sim-product-shell)
   :where(
     small,
     [data-slot="badge"],
@@ -87,11 +88,11 @@
   font-size: 12px !important;
 }
 
-[data-product-shell] :where([class~="text-[13px]"]) {
+[data-product-shell]:not(.sim-product-shell) :where([class~="text-[13px]"]) {
   font-size: 13px !important;
 }
 
-[data-product-shell]
+[data-product-shell]:not(.sim-product-shell)
   :where(
     h2,
     h3,
@@ -110,7 +111,7 @@
   font-size: 14px !important;
 }
 
-[data-product-shell]
+[data-product-shell]:not(.sim-product-shell)
   :where(
     h1,
     [data-product-title],
@@ -131,40 +132,40 @@
   line-height: 1.2 !important;
 }
 
-[data-product-shell] :where(button, input, select, textarea, [data-slot="button"]) {
+[data-product-shell]:not(.sim-product-shell) :where(button, input, select, textarea, [data-slot="button"]) {
   font-size: 13px;
   font-weight: 500;
 }
 
-[data-product-shell] :where([data-tone="secondary"]) {
+[data-product-shell]:not(.sim-product-shell) :where([data-tone="secondary"]) {
   color: var(--product-text-secondary) !important;
 }
 
-[data-product-shell] :where([data-tone="tertiary"]) {
+[data-product-shell]:not(.sim-product-shell) :where([data-tone="tertiary"]) {
   color: var(--product-text-tertiary) !important;
 }
 
 /* Product surfaces use square geometry, including overlays portalled to the document body. */
-body:has([data-product-shell]) *,
-.app-shell,
-.app-shell * {
+body:has([data-product-shell]:not(.sim-product-shell)) *,
+.app-shell:not(.sim-product-shell),
+.app-shell:not(.sim-product-shell) * {
   border-radius: 0 !important;
 }
 
 /* Navigation and card icon scales remain distinct even when nested. */
-[data-product-shell]
+[data-product-shell]:not(.sim-product-shell)
   :where(nav, [data-navigation], [data-slot="sidebar"], [data-slot="tabs-list"])
   svg:not([data-preserve-size]) {
   height: 14px !important;
   width: 14px !important;
 }
 
-[data-product-shell] :where([data-slot="card"], [data-product-card]) svg:not([data-preserve-size]) {
+[data-product-shell]:not(.sim-product-shell) :where([data-slot="card"], [data-product-card]) svg:not([data-preserve-size]) {
   height: 20px !important;
   width: 20px !important;
 }
 
-[data-product-shell]
+[data-product-shell]:not(.sim-product-shell)
   :where(nav, [data-navigation], [data-slot="sidebar"], [data-slot="tabs-list"])
   [data-slot="card"]
   svg:not([data-preserve-size]) {
@@ -184,7 +185,7 @@ body:has([data-product-shell]) *,
     transform var(--icon-duration) var(--icon-ease-spring);
 }
 
-[data-product-shell]
+[data-product-shell]:not(.sim-product-shell)
   :is(
     button,
     a,
@@ -270,13 +271,13 @@ svg.app-icon[class*="fill-current"] {
   transform: scale(0.92);
 }
 
-:is(svg.app-icon, [data-product-shell] svg.animate-spin) {
+:is(svg.app-icon, [data-product-shell]:not(.sim-product-shell) svg.animate-spin) {
   transition: none;
   transform-origin: center;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(svg.app-icon, [data-product-shell] svg:not([data-preserve-size])) {
+  :is(svg.app-icon, [data-product-shell]:not(.sim-product-shell) svg:not([data-preserve-size])) {
     transition: none;
   }
 
@@ -298,7 +299,7 @@ svg.app-icon[class*="fill-current"] {
 }
 
 @media (forced-colors: active) {
-  :is(svg.app-icon, [data-product-shell] svg:not([data-preserve-size])) {
+  :is(svg.app-icon, [data-product-shell]:not(.sim-product-shell) svg:not([data-preserve-size])) {
     color: currentColor;
   }
 }

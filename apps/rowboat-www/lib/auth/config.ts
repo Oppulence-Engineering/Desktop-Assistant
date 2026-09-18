@@ -31,7 +31,7 @@ export function getAuthRuntimeConfig(): AuthRuntimeConfig {
     process.env.ROWBOAT_WWW_PUBLIC_API_BASE_URL ||
     process.env.ROWBOATX_API_PROXY_URL ||
     process.env.ROWBOATX_API_BASE_URL ||
-    "http://localhost:8080";
+    "http://localhost:18080"; // docker-compose.rowboat-api.yml / dev-local.sh
   const publicApiBaseUrl =
     process.env.ROWBOAT_WWW_PUBLIC_API_BASE_URL ||
     process.env.ROWBOATX_PUBLIC_API_BASE_URL ||

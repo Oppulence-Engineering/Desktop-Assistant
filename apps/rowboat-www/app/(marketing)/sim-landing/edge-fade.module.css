@@ -1,0 +1,89 @@
+/**
+ * Progressive blur ramp for Sim-style scene edges (ported from sim.ai EdgeFade).
+ */
+
+.edgeTop {
+  --edge-fade-direction: to top;
+}
+
+.edgeBottom {
+  --edge-fade-direction: to bottom;
+}
+
+.edgeLeft {
+  --edge-fade-direction: to left;
+}
+
+.edgeRight {
+  --edge-fade-direction: to right;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(var(--edge-fade-blur));
+  backdrop-filter: blur(var(--edge-fade-blur));
+  -webkit-mask-image: linear-gradient(
+    var(--edge-fade-direction),
+    transparent var(--edge-fade-from),
+    #000 var(--edge-fade-in),
+    #000 var(--edge-fade-out),
+    transparent var(--edge-fade-to)
+  );
+  mask-image: linear-gradient(
+    var(--edge-fade-direction),
+    transparent var(--edge-fade-from),
+    #000 var(--edge-fade-in),
+    #000 var(--edge-fade-out),
+    transparent var(--edge-fade-to)
+  );
+}
+
+.layer0 {
+  --edge-fade-blur: 0.3px;
+  --edge-fade-from: 0%;
+  --edge-fade-in: 20%;
+  --edge-fade-out: 40%;
+  --edge-fade-to: 60%;
+}
+
+.layer1 {
+  --edge-fade-blur: 1px;
+  --edge-fade-from: 20%;
+  --edge-fade-in: 40%;
+  --edge-fade-out: 60%;
+  --edge-fade-to: 80%;
+}
+
+.layer2 {
+  --edge-fade-blur: 2px;
+  --edge-fade-from: 40%;
+  --edge-fade-in: 60%;
+  --edge-fade-out: 80%;
+  --edge-fade-to: 100%;
+}
+
+.layer3 {
+  --edge-fade-blur: 4px;
+  --edge-fade-from: 60%;
+  --edge-fade-in: 80%;
+  --edge-fade-out: 100%;
+  --edge-fade-to: 120%;
+}
+
+.layer4 {
+  --edge-fade-blur: 8px;
+  --edge-fade-from: 80%;
+  --edge-fade-in: 100%;
+  --edge-fade-out: 120%;
+  --edge-fade-to: 140%;
+}
+
+.wash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(var(--edge-fade-direction), transparent, #000);
+  mask-image: linear-gradient(var(--edge-fade-direction), transparent, #000);
+}

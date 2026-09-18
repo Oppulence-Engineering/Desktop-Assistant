@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ProductsPage } from "../marketing-components";
+import { SimProductsPage } from "../sim-landing/subpages/sim-products-page";
 
 const DESCRIPTION =
   "The Oppulence product suite: the commitment ledger, web app, desktop app, voice app, and integrations that keep business promises visible.";
@@ -17,5 +17,5 @@ export const metadata: Metadata = {
 };
 
 export default function ProductsRoute() {
-  return <ProductsPage />;
+  return <SimProductsPage />;
 }

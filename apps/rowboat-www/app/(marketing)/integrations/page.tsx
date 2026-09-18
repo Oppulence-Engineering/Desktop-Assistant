@@ -1,5 +1,5 @@
 import { indexCopy, integrationPages } from "../catalog";
-import { CatalogIndex } from "../marketing-primitives";
+import { SimCatalogHub } from "../sim-landing/subpages/sim-catalog-hub";
 import { marketingMetadata } from "../metadata";
 
 export const metadata = marketingMetadata({
@@ -10,15 +10,16 @@ export const metadata = marketingMetadata({
 
 export default function IntegrationsIndexPage() {
   return (
-    <CatalogIndex
+    <SimCatalogHub
       description={indexCopy.integrations.description}
       eyebrow="[integrations]"
+      heading={indexCopy.integrations.title}
       items={integrationPages.map((page) => ({
         href: page.path,
         title: page.eyebrow,
         body: page.description,
       }))}
-      title={indexCopy.integrations.title}
+      listHeading="First-party connectors"
     />
   );
 }

@@ -1,5 +1,5 @@
 import { featurePages, indexCopy } from "../catalog";
-import { CatalogIndex } from "../marketing-primitives";
+import { SimCatalogHub } from "../sim-landing/subpages/sim-catalog-hub";
 import { marketingMetadata } from "../metadata";
 
 export const metadata = marketingMetadata({
@@ -10,15 +10,16 @@ export const metadata = marketingMetadata({
 
 export default function FeaturesIndexPage() {
   return (
-    <CatalogIndex
+    <SimCatalogHub
       description={indexCopy.features.description}
       eyebrow="[features]"
+      heading={indexCopy.features.title}
       items={featurePages.map((page) => ({
         href: page.path,
         title: page.eyebrow,
         body: page.description,
       }))}
-      title={indexCopy.features.title}
+      listHeading="All features"
     />
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { LegalDocument, type LegalSection } from "@/components/legal/legal-document";
+import { SimLegalDocumentPage } from "@/app/(marketing)/sim-landing/legal/sim-legal-document-page";
+import type { LegalSection } from "@/components/legal/types";
 
 export const metadata: Metadata = {
   title: "Terms of Service — Oppulence",
@@ -251,7 +252,8 @@ const SECTIONS: LegalSection[] = [
 
 export default function TermsPage() {
   return (
-    <LegalDocument
+    <SimLegalDocumentPage
+      eyebrow="[terms]"
       contactEmail="legal@oppulence.io"
       effective={EFFECTIVE}
       intro="These Terms explain the rules for using Oppulence: what the Service does, what you are responsible for, and how disputes are resolved. Please read them carefully, particularly the sections on AI output and dispute resolution."

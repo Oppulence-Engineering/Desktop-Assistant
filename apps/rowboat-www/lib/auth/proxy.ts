@@ -141,13 +141,26 @@ export async function proxyRowboatAPI(request: NextRequest, path: string[]): Pro
 
   const method = request.method.toUpperCase();
   const body = method === "GET" || method === "HEAD" ? undefined : await request.arrayBuffer();
-  const upstream = await fetch(upstreamURL, {
-    method,
-    headers,
-    body,
-    cache: "no-store",
-    signal: request.signal,
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetch(upstreamURL, {
+      method,
+      headers,
+      body,
+      cache: "no-store",
+      signal: request.signal,
+    });
+  } catch {
+    return NextResponse.json(
+      {
+        title: "rowboat-api is unreachable",
+        detail:
+          "The dashboard could not reach rowboat-api. In local dev, start the API on port 18080 (docker compose -f docker-compose.rowboat-api.yml up -d).",
+        code: "upstream_unavailable",
+      },
+      { status: 503 },
+    );
+  }
 
   const responseHeaders = new Headers();
   for (const header of RESPONSE_HEADERS) {

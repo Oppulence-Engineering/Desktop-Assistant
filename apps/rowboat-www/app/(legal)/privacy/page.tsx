@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { LegalDocument, type LegalSection } from "@/components/legal/legal-document";
+import { SimLegalDocumentPage } from "@/app/(marketing)/sim-landing/legal/sim-legal-document-page";
+import type { LegalSection } from "@/components/legal/types";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Oppulence",
@@ -302,7 +303,8 @@ const SECTIONS: LegalSection[] = [
 
 export default function PrivacyPage() {
   return (
-    <LegalDocument
+    <SimLegalDocumentPage
+      eyebrow="[privacy]"
       contactEmail="privacy@oppulence.io"
       effective={EFFECTIVE}
       intro="Your data stays yours. This Policy describes what we collect, why we collect it, who we share it with, how long we keep it, and the controls you have."

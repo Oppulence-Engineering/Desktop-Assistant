@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { LegalDocument, type LegalSection } from "@/components/legal/legal-document";
+import { SimLegalDocumentPage } from "@/app/(marketing)/sim-landing/legal/sim-legal-document-page";
+import type { LegalSection } from "@/components/legal/types";
 
 export const metadata: Metadata = {
   title: "Responsible Disclosure Policy — Oppulence",
@@ -124,7 +125,8 @@ const SECTIONS: LegalSection[] = [
 
 export default function ResponsibleDisclosurePage() {
   return (
-    <LegalDocument
+    <SimLegalDocumentPage
+      eyebrow="[security]"
       contactEmail="security@oppulence.io"
       effective={EFFECTIVE}
       intro="How to report a security vulnerability in Oppulence, what is in scope, and what we commit to in return. Report first, disclose after we have had a fair chance to fix it."

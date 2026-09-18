@@ -43,6 +43,7 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
   const chat = useDashboardChatController();
   const [sidebarOpen, setSidebarOpen] = useBooleanPref("app-sidebar-open", true);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [overlayContainer, setOverlayContainer] = useState<HTMLElement | null>(null);
   const shellUser = useMemo(
     () => ({
       name: session.user.email || session.user.workosUserId || "User",
@@ -104,12 +105,16 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
 
   return (
     <section
-      className={cn("app-shell contents", className)}
+      ref={setOverlayContainer}
+      className={cn(
+        "app-shell sim-product-shell sim-landing-root app-vh-shell flex w-full flex-col overflow-hidden bg-[var(--bg)] text-[var(--text-primary)]",
+        className,
+      )}
       data-product-shell
       data-slot="dashboard-shell"
       {...props}
     >
-      <div className="flex h-svh w-full flex-col overflow-hidden bg-background-50">
+      <div className="flex min-h-0 w-full flex-1 flex-col">
         <CommandPalette
           agents={chat.agentOptions}
           onNavigateChat={() => navigateWithoutResource(() => navigateTo("chat"))}
@@ -129,11 +134,13 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
         />
         <div className="min-h-0 w-full flex-1 md:px-2.5 md:pb-2.5">
           <section
-            className={`relative flex h-full overflow-clip border-t bg-background ${
+            className={`relative flex h-full overflow-clip border-[var(--border)] border-t bg-[var(--surface-2)] ${
               view === "settings" ? "settings-workspace border-0 md:border-0" : "md:border"
             }`}
+            data-slot="dashboard-workspace"
           >
             <AppShellSidebar
+              overlayContainer={overlayContainer}
               activeResourceGroup={
                 view === "agents" || chat.selectedResource?.kind === "agent"
                   ? "agents"
@@ -172,8 +179,9 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
                 className={
                   view === "settings"
                     ? "settings-stage-header"
-                    : "flex h-12 shrink-0 items-center px-5"
+                    : "flex h-12 shrink-0 items-center border-[var(--border)] border-b px-5"
                 }
+                data-slot="app-stage-header"
               >
                 <div className="flex items-center gap-2">
                   <Button
@@ -195,7 +203,7 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
                       className={
                         view === "settings"
                           ? "settings-stage-header-title font-normal"
-                          : "text-[15px] font-normal text-primary"
+                          : "text-[var(--text-small,13px)] font-normal text-[var(--text-secondary)]"
                       }
                     >
                       {title}

@@ -181,6 +181,7 @@ export const footerGroups: { title: string; items: NavLink[] }[] = [
       { label: "Integrations", href: "/integrations" },
       { label: "Security", href: "/security" },
       { label: "Compare", href: "/compare" },
+      { label: "Answer hub", href: "/answers" },
       { label: "Blog", href: "/blog" },
       { label: "Customers", href: "/customers" },
     ],
@@ -210,6 +211,7 @@ export const footerGroups: { title: string; items: NavLink[] }[] = [
 
 /** Dedicated marketing routes that live outside the catch-all slug table. */
 export const dedicatedMarketingPaths = [
+  "product",
   "products",
   "web",
   "desktop",
@@ -248,6 +250,7 @@ export const dedicatedMarketingPaths = [
   "blog",
   "customers",
   "compare",
+  "answers",
   ...comparePages.map((page) => page.path.slice(1)),
 ] as const;
 

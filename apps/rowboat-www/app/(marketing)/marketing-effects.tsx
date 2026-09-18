@@ -2,22 +2,36 @@
 
 import { useEffect } from "react";
 
+function getScrollPosition() {
+  const scrollPort = document.querySelector<HTMLElement>(".sim-landing-scroll-port");
+  if (scrollPort) return scrollPort.scrollTop;
+  return window.scrollY;
+}
+
 export function MarketingEffects() {
   useEffect(() => {
     const root = document.documentElement;
+    const scrollPort = document.querySelector<HTMLElement>(".sim-landing-scroll-port");
     const mobileMenu = document.querySelector<HTMLDetailsElement>("[data-marketing-mobile-menu]");
     const mobileMenuSummary = mobileMenu?.querySelector<HTMLElement>("summary");
     const mobileMenuLinks = mobileMenu?.querySelectorAll<HTMLAnchorElement>("a") ?? [];
     const desktopMedia = window.matchMedia("(min-width: 1024px)");
     const previousBodyOverflow = document.body.style.overflow;
+    const previousScrollPortOverflow = scrollPort?.style.overflowY ?? "";
 
     const syncScrollState = () => {
-      root.toggleAttribute("data-marketing-scrolled", window.scrollY > 8);
+      root.toggleAttribute("data-marketing-scrolled", getScrollPosition() > 8);
     };
 
     const syncMobileMenuState = () => {
       const isOpen = mobileMenu?.open ?? false;
       root.toggleAttribute("data-marketing-menu-open", isOpen);
+
+      if (scrollPort) {
+        scrollPort.style.overflowY = isOpen ? "hidden" : previousScrollPortOverflow;
+        return;
+      }
+
       document.body.style.overflow = isOpen ? "hidden" : previousBodyOverflow;
     };
 
@@ -67,21 +81,20 @@ export function MarketingEffects() {
       revealObserver = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            // Reveal on intersection; also reveal anything already scrolled
-            // past so deep links never land on blank sections.
             if (entry.isIntersecting || entry.boundingClientRect.bottom < 0) {
               entry.target.classList.add("is-revealed");
               revealObserver?.unobserve(entry.target);
             }
           });
         },
-        { rootMargin: "0px 0px -10% 0px", threshold: 0.1 },
+        {
+          root: scrollPort ?? undefined,
+          rootMargin: "0px 0px -10% 0px",
+          threshold: 0.1,
+        },
       );
       revealTargets.forEach((element) => revealObserver?.observe(element));
 
-      // Safety net: if observer callbacks never arrive (headless capture,
-      // print, embedded webviews), reveal everything after a beat so no
-      // section can stay invisible.
       revealFallback = window.setTimeout(() => {
         revealTargets.forEach((element) => element.classList.add("is-revealed"));
         revealObserver?.disconnect();
@@ -90,7 +103,13 @@ export function MarketingEffects() {
 
     syncScrollState();
     syncMobileMenuState();
-    window.addEventListener("scroll", syncScrollState, { passive: true });
+
+    if (scrollPort) {
+      scrollPort.addEventListener("scroll", syncScrollState, { passive: true });
+    } else {
+      window.addEventListener("scroll", syncScrollState, { passive: true });
+    }
+
     window.addEventListener("keydown", handleKeyDown);
     desktopMedia.addEventListener("change", handleDesktopMedia);
     mobileMenu?.addEventListener("toggle", syncMobileMenuState);
@@ -100,7 +119,12 @@ export function MarketingEffects() {
       if (revealFallback !== undefined) window.clearTimeout(revealFallback);
       revealObserver?.disconnect();
       root.removeAttribute("data-marketing-reveals");
-      window.removeEventListener("scroll", syncScrollState);
+      if (scrollPort) {
+        scrollPort.removeEventListener("scroll", syncScrollState);
+        scrollPort.style.overflowY = previousScrollPortOverflow;
+      } else {
+        window.removeEventListener("scroll", syncScrollState);
+      }
       window.removeEventListener("keydown", handleKeyDown);
       desktopMedia.removeEventListener("change", handleDesktopMedia);
       mobileMenu?.removeEventListener("toggle", syncMobileMenuState);

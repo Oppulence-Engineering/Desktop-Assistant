@@ -178,16 +178,23 @@ export function DesktopDownloadChooser({
   app = "desktop",
   name = "Oppulence Desktop",
   blurb = "Sign in once and continue with the same relationship state as the web app.",
+  mode = "hero",
+  defaultOpen = false,
+  className,
 }: {
   app?: "desktop" | "voice";
   name?: string;
   blurb?: string;
+  /** `page` hides marketing extras and opens the installer panel by default on /download. */
+  mode?: "hero" | "page";
+  defaultOpen?: boolean;
+  className?: string;
 } = {}) {
   const [detection, setDetection] = useState<Detection>({
     architecture: null,
     operatingSystem: null,
   });
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const [selectedOperatingSystem, setSelectedOperatingSystem] = useState<OperatingSystem>("mac");
   const selectionChanged = useRef(false);
   const panelId = useId();
@@ -245,7 +252,7 @@ export function DesktopDownloadChooser({
   };
 
   return (
-    <div className="mt-8">
+    <div className={cn(mode === "page" ? "sim-download-chooser mt-0" : "mt-8", className)}>
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
         <Button
           aria-controls={panelId}
@@ -261,25 +268,31 @@ export function DesktopDownloadChooser({
             weight="regular"
           />
         </Button>
-        <Button asChild className="h-12 w-full px-6 text-[14px] sm:w-auto" variant="outline">
-          <Link href="/app">See account mission control</Link>
-        </Button>
-        <Button asChild className="h-12 px-5 text-[14px]" variant="ghost">
-          <Link href="/product">
-            How relationship intelligence works{" "}
-            <Badge
-              aria-hidden="true"
-              className="ml-2 rounded-none border-0 bg-transparent p-0 font-normal text-foreground/40 shadow-none"
-              variant="ghost"
-            >
-              →
-            </Badge>
-          </Link>
-        </Button>
+        {mode === "hero" ? (
+          <>
+            <Button asChild className="h-12 w-full px-6 text-[14px] sm:w-auto" variant="outline">
+              <Link href="/app">See account mission control</Link>
+            </Button>
+            <Button asChild className="h-12 px-5 text-[14px]" variant="ghost">
+              <Link href="/product">
+                How relationship intelligence works{" "}
+                <Badge
+                  aria-hidden="true"
+                  className="ml-2 rounded-none border-0 bg-transparent p-0 font-normal text-foreground/40 shadow-none"
+                  variant="ghost"
+                >
+                  →
+                </Badge>
+              </Link>
+            </Button>
+          </>
+        ) : null}
       </div>
-      <p className="mt-3 font-mono text-xs text-[var(--linear-text-tertiary)]">
-        macOS · Windows · Linux · choose the installer for your device
-      </p>
+      {mode === "hero" ? (
+        <p className="mt-3 font-mono text-xs text-[var(--linear-text-tertiary)]">
+          macOS · Windows · Linux · choose the installer for your device
+        </p>
+      ) : null}
 
       <div className="desktop-download-collapse" hidden={!isOpen} id={panelId}>
         <section aria-label="Desktop app downloads" className="desktop-download-panel">

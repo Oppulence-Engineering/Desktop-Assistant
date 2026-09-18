@@ -1,7 +1,4 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-
-import { Badge } from "@oppulence/ui/components/badge";
 
 import {
   blogCategories,
@@ -10,7 +7,7 @@ import {
   isBlogCategory,
 } from "@/lib/content/editorial";
 
-import { MarketingBreadcrumbs } from "../../../marketing-primitives";
+import { SimBlogIndexPage } from "../../../sim-landing/subpages/sim-blog-index-page";
 import { marketingMetadata } from "../../../metadata";
 
 export const instant = false;
@@ -39,44 +36,30 @@ export default async function BlogCategoryPage({
   const posts = blogPostsInCategory(category);
 
   return (
-    <div className="mk-article linear-subpage">
-      <div className="linear-inset">
-        <MarketingBreadcrumbs
-          items={[
-            { label: "Home", href: "/" },
-            { label: "Blog", href: "/blog" },
-            { label: category },
-          ]}
-        />
-        <header className="linear-subpage-hero">
-          <div>
-            <p className="linear-eyebrow">[blog / {category}]</p>
-            <h1 className="linear-subpage-title mt-4">{category}</h1>
-          </div>
-          <div className="linear-subpage-description">
-            <p>
-              {posts.length === 0
-                ? "No published notes in this category yet."
-                : `${posts.length} published note${posts.length === 1 ? "" : "s"}.`}
-            </p>
-          </div>
-        </header>
-        <section className="mk-blog-list">
-          {posts.map((post) => {
-            const slug = blogPostSlug(post);
-            return (
-              <Link href={`/blog/${slug}`} key={slug}>
-                <Badge className="rounded-none" variant="outline">
-                  {post.category}
-                </Badge>
-                <strong>{post.title}</strong>
-                <em>{post.description}</em>
-                <time dateTime={post.date}>{post.date}</time>
-              </Link>
-            );
-          })}
-        </section>
-      </div>
-    </div>
+    <SimBlogIndexPage
+      categories={blogCategories.map((item) => ({
+        label: item,
+        href: `/blog/category/${item}`,
+      }))}
+      description={
+        posts.length === 0
+          ? "No published notes in this category yet."
+          : `${posts.length} published note${posts.length === 1 ? "" : "s"}.`
+      }
+      eyebrow={`[blog / ${category}]`}
+      listHeading={`${category} notes`}
+      posts={posts.map((post) => {
+        const slug = blogPostSlug(post);
+        return {
+          slug,
+          href: `/blog/${slug}`,
+          title: post.title,
+          description: post.description,
+          category: post.category,
+          date: post.date,
+        };
+      })}
+      title={category}
+    />
   );
 }

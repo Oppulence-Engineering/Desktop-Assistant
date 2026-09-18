@@ -1,5 +1,5 @@
 import { comparePages } from "../compare-catalog";
-import { CatalogIndex } from "../marketing-primitives";
+import { SimCompareHub } from "../sim-landing/subpages/sim-compare-hub";
 import { marketingMetadata } from "../metadata";
 
 export const metadata = marketingMetadata({
@@ -11,17 +11,10 @@ export const metadata = marketingMetadata({
 
 export default function CompareIndexPage() {
   return (
-    <div className="mk-index linear-subpage">
-      <CatalogIndex
-        description="These pages exist because the jobs overlap in conversation and not in the product. We will not publish a dozen generic alternative essays to chase help-center keywords."
-        eyebrow="[compare]"
-        items={comparePages.map((page) => ({
-          href: page.path,
-          title: page.eyebrow,
-          body: page.description,
-        }))}
-        title="What Oppulence is not, and what it sits next to."
-      />
-    </div>
+    <SimCompareHub
+      description="These pages exist because the jobs overlap in conversation and not in the product. We will not publish a dozen generic alternative essays to chase help-center keywords."
+      heading="What Oppulence is not, and what it sits next to."
+      pages={comparePages}
+    />
   );
 }

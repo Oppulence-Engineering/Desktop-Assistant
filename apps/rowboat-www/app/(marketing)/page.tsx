@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from "next";
 
 import { homepageFaqs } from "./catalog";
-import { HomePage } from "./marketing-components";
+import { SimLandingPage } from "./sim-landing/landing-page";
 import { JsonLd } from "./marketing-primitives";
 import { faqJsonLd } from "./metadata";
 
-const TITLE = "Oppulence — The Commitment Ledger";
+const TITLE = "The commitment ledger that survives kickoff";
 const DESCRIPTION =
-  "Oppulence is the independent record of business promises: what you owe, what they owe, what changed, and the proof behind it.";
+  "Oppulence is a two-sided register of business promises. It reads Gmail, Slack, calls, and HubSpot, lists the sentences that look like commitments, and waits for you to confirm them.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -69,7 +69,7 @@ export default function Page() {
         type="application/ld+json"
       />
       <JsonLd data={faqJsonLd(homepageFaqs)} />
-      <HomePage />
+      <SimLandingPage />
     </>
   );
 }

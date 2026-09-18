@@ -158,21 +158,21 @@ function HomeOverview({ onOpenTab }: { onOpenTab: (tab: RevenueTab) => void }) {
   return (
     <footer
       aria-label="Workspace pulse"
-      className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 pb-7 text-[11px] text-primary/30"
+      className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 px-0 text-[12px] text-[var(--text-muted)]"
     >
       {HOME_STATS.map((stat, index) => (
         <span className="inline-flex items-center gap-3" key={stat.tab}>
           {index > 0 ? (
-            <span aria-hidden className="text-primary/15">
+            <span aria-hidden className="text-[var(--border)]">
               ·
             </span>
           ) : null}
           <button
-            className="inline-flex items-baseline gap-1.5 font-normal transition-colors hover:text-primary/65"
+            className="inline-flex items-baseline gap-1.5 font-normal transition-colors hover:text-[var(--text-secondary)]"
             onClick={() => onOpenTab(stat.tab)}
             type="button"
           >
-            <span className="font-mono tabular-nums text-primary/50">
+            <span className="font-mono tabular-nums text-[var(--text-secondary)]">
               {impact ? (
                 stat.read(impact)
               ) : failed ? (
@@ -277,7 +277,12 @@ export function ChatDashboardRoute() {
           {!chat.empty ? (
             <div className="pointer-events-none sticky bottom-0 z-10 h-16 bg-gradient-to-t from-background via-background/80 to-transparent" />
           ) : null}
-          <ConversationContent className="!flex !flex-col !items-center !gap-8 !p-4 pb-32 pt-4">
+          <ConversationContent
+            className={cn(
+              "!flex !flex-col !items-center !gap-8 !p-4 pt-4",
+              chat.empty ? "!pb-4" : "!pb-32",
+            )}
+          >
             <div className="mx-auto w-full max-w-3xl space-y-4">
               {chat.conversation.map((item) => {
                 if (item.type === "message") {

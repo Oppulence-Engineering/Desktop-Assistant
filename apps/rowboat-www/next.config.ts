@@ -122,7 +122,13 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../.."),
-  transpilePackages: ["@oppulence/ui"],
+  transpilePackages: [
+    "@oppulence/ui",
+    "@sim/emcn",
+    "@sim/workflow-renderer",
+    "@sim/workflow-types",
+    "@sim/utils",
+  ],
   // Cursor's embedded browser uses the loopback IP. Without this development
   // exception Next blocks client chunks, leaving the app before hydration on
   // the server-rendered "Checking session" fallback indefinitely.

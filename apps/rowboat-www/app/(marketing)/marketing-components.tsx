@@ -25,7 +25,6 @@ import {
   type Icon as PhosphorIcon,
 } from "@/lib/icons";
 import Image from "next/image";
-import { PlatformRail, type PlatformRailItem } from "./platform-rail";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -33,19 +32,19 @@ import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import { CardDescription, CardTitle } from "@oppulence/ui/components/card";
 import { ItemMedia } from "@oppulence/ui/components/item";
-import { MarketingButtonLink, MarketingSpan, marketingSpanClass } from "./marketing-primitives";
+import {
+  MarketingBreadcrumbs,
+  MarketingButtonLink,
+  MarketingCta,
+  MarketingSpan,
+  ProductFrame,
+  RelatedPages,
+  SectionHeading,
+  marketingSpanClass,
+} from "./marketing-primitives";
 import { cn } from "@/lib/utils";
 
 import { DesktopDownloadChooser } from "./desktop-download-chooser";
-import {
-  HomepageCapabilities,
-  HomepageDownload,
-  HomepageFaq,
-  HomepageIntegrations,
-  HomepageProblem,
-  HomepageTrust,
-  HomepageUseCases,
-} from "./homepage-story";
 import {
   alternativeLinks,
   blogPages,
@@ -61,8 +60,14 @@ import {
   type MarketingPage,
   type PlatformPage,
 } from "./marketing-data";
-import { MarketingEffects } from "./marketing-effects";
+import { MarketingLayoutClient } from "./marketing-layout-client";
 import { MarketingFaq } from "./marketing-faq";
+import {
+  SeoAlternativeSections,
+  SeoLanderChips,
+  SeoLanderSections,
+} from "./seo-lander";
+import { alternativeFromSlug, getSeoLander } from "./seo-theme";
 import { footerGroups, headerNav, headerUtilityLinks } from "./site";
 
 const pricingFaqs = [
@@ -119,23 +124,6 @@ const productSuiteCards = [
     alt: platform.screenshotAlt,
   })),
 ] as const;
-
-type MemoryRailLink = {
-  label: string;
-  href: string;
-  active?: boolean;
-};
-
-const productRailLinks: MemoryRailLink[] = [
-  { label: "Products", href: "/products" },
-  { label: "The loop", href: "/product" },
-  ...platformPages.map((platform) => ({
-    label: platform.name.replace("Oppulence ", ""),
-    href: `/${platform.slug}`,
-  })),
-  { label: "Download", href: "/download" },
-  { label: "Pricing", href: "/pricing" },
-];
 
 const pricingPrinciples = ["Flat monthly price", "No seat tax", "Cancel any time"] as const;
 
@@ -424,7 +412,7 @@ function screenshotForPage(page: MarketingPage) {
   return desktopScreenshots.home;
 }
 
-function InlineLogo({
+export function InlineLogo({
   compact = false,
   header = false,
   prominent = false,
@@ -483,7 +471,7 @@ function InlineLogo({
   );
 }
 
-function MobileMenu() {
+export function MobileMenu() {
   return (
     <details className="relative lg:hidden" data-marketing-mobile-menu>
       <summary aria-label="Toggle navigation" className="linear-mobile-summary">
@@ -577,19 +565,7 @@ export function TopBar() {
 }
 
 export function MarketingLayout({ children }: { children: ReactNode }) {
-  return (
-    <div className="marketing-polar sm-site relative flex min-h-svh flex-col bg-background text-foreground">
-      <MarketingEffects />
-      <Link className="linear-skip-link" href="#marketing-content">
-        Skip to content →
-      </Link>
-      <TopBar />
-      <main className="flex flex-1 flex-col" id="marketing-content">
-        <div className="linear-shell linear-guides">{children}</div>
-      </main>
-      <Footer />
-    </div>
-  );
+  return <MarketingLayoutClient>{children}</MarketingLayoutClient>;
 }
 
 export function Footer() {
@@ -677,22 +653,128 @@ const customerStoryIcons: {
 
 export function ProductPage({ page }: { page: MarketingPage }) {
   return (
-    <SuiteSidebarLayout activeHref="/product">
-      <div className="flex flex-col">
-        <section className="linear-hero linear-inset">
-          <p className="mb-5 font-mono text-xs text-oppulence-orange">[product]</p>
-          <h1 className="linear-hero-title">{page.title}</h1>
-          <div className="linear-hero-meta">
-            <p className="linear-body max-w-[620px]">{page.description}</p>
+    <article className="mk-capability linear-subpage">
+      <div className="linear-inset">
+        <MarketingBreadcrumbs items={[{ label: "Home", href: "/" }, { label: "Product" }]} />
+        <header className="linear-subpage-hero">
+          <div>
+            <p className="linear-eyebrow">[product]</p>
+            <h1 className="linear-subpage-title mt-4">{page.title}</h1>
+          </div>
+          <div className="linear-subpage-description">
+            <p>{page.description}</p>
+            <p className="sm-hero-chips">
+              <span>Free first report</span>
+              <span>Approval before anything leaves</span>
+              <span>Not a second CRM</span>
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <MarketingButtonLink href="/sign-up">Start for free</MarketingButtonLink>
+              <MarketingButtonLink href="/download" variant="outline">
+                Download desktop
+              </MarketingButtonLink>
+            </div>
+          </div>
+        </header>
+
+        <section className="mk-capability-grid">
+          <SectionHeading
+            eyebrow="[what it is]"
+            title="Three jobs people file us under. Only one is right."
+          />
+          <div>
+            <article>
+              <h3>CRM</h3>
+              <p>HubSpot remembers the deal. It does not remember the sentence from Friday&apos;s call.</p>
+            </article>
+            <article>
+              <h3>Inbox</h3>
+              <p>Gmail and Slack are where the promise was made. They are a bad system of record.</p>
+            </article>
+            <article>
+              <h3>Commitment ledger</h3>
+              <p>A two-sided list with the source attached. That is the Oppulence object.</p>
+            </article>
           </div>
         </section>
-        {linearHomeSections.map((section, index) => (
-          <LinearProductSection index={index} key={section.title} section={section} />
-        ))}
-        <HomeUpdates />
-        <FinalCta />
+
+        <ProductFrame alt={linearHomeSections[0].alt} priority src={linearHomeSections[0].src} />
+
+        <section className="mk-workflow">
+          <SectionHeading eyebrow="[the loop]" title="Detect. Watch. Confirm." />
+          <ol>
+            {linearHomeSections.map((section, index) => (
+              <li key={section.title}>
+                <Badge className="rounded-none font-mono" variant="outline">
+                  {String(index + 1).padStart(2, "0")}
+                </Badge>
+                <p>
+                  <Link className="mk-text-link" href={section.href}>
+                    {section.label}
+                  </Link>
+                  {" — "}
+                  {section.title}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="mk-capability-grid">
+          <SectionHeading
+            eyebrow="[what the loop does]"
+            title="The promises, the mail after kickoff, and the row you confirm."
+          />
+          <div>
+            {linearHomeSections.map((section) => (
+              <article key={section.title}>
+                <h3>{section.label}</h3>
+                <p>{section.description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mk-capability-grid">
+          <SectionHeading
+            eyebrow="[how it works]"
+            title="The useful part is the row you confirmed."
+          />
+          <div>
+            {homeSteps.map((step) => (
+              <article key={step.title}>
+                <h3>{step.title}</h3>
+                <p>{step.body}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <RelatedPages
+          items={[
+            {
+              label: "Commitment register",
+              href: "/features/commitment-register",
+              description: "The two-sided list of what you owe and what they owe.",
+            },
+            {
+              label: "Account mission control",
+              href: "/features/account-mission-control",
+              description: "The same account after implementation starts.",
+            },
+            {
+              label: "Governed actions",
+              href: "/features/governed-actions",
+              description: "Nothing sends because a model found a sentence.",
+            },
+          ]}
+        />
+        <MarketingCta
+          body="Run it on one customer you closed this quarter. If a row surprises the person who has to deliver the work, keep the account open afterward."
+          title="Read one closed customer. Confirm the rows."
+        />
       </div>
-    </SuiteSidebarLayout>
+    </article>
   );
 }
 
@@ -740,352 +822,19 @@ export function ProductsPage() {
   );
 }
 
-const relationshipCatalog = [
-  {
-    label: "Detect",
-    kicker: "01",
-    icon: MagnifyingGlassIcon,
-    title: "It reads the mail and the calls.",
-    body: "Gmail, Calendar, Slack, HubSpot, and meetings. We pull sentences that look like promises.",
-  },
-  {
-    label: "Confirm",
-    kicker: "02",
-    icon: NetworkIcon,
-    title: "You decide which ones count.",
-    body: "Keep, rewrite, or drop a row. What we owe and what they owe stay on the same list.",
-  },
-  {
-    label: "Watch",
-    kicker: "03",
-    icon: SealCheckIcon,
-    title: "The list stays open after kickoff.",
-    body: "If they add attachments in week three, that sentence lands on the account.",
-  },
-] as const;
-
-const homepageGuarantees = [
-  { value: "Every source", label: "linked back to the original evidence" },
-  { value: "Every action", label: "waits for your approval" },
-  { value: "Every record", label: "exportable, and yours to take" },
-] as const;
-
-const homepageSources = [
-  { label: "Gmail", icon: EnvelopeIcon },
-  { label: "Calendar", icon: CalendarDotsIcon },
-  { label: "Slack", icon: HeadsetIcon },
-  { label: "HubSpot", icon: BriefcaseIcon },
-  { label: "Meetings", icon: ChartLineIcon },
-] as const;
-
-/* Section headings mirror attio.com: one ink-coloured lead sentence followed by
-   muted supporting sentences inside the same 40px/44px block. */
-function AttioHeading({ lead, rest }: { lead: string; rest?: string }) {
-  return (
-    <h2>
-      <MarketingSpan>{lead}</MarketingSpan>
-      {rest ? <MarketingSpan>{` ${rest}`}</MarketingSpan> : null}
-    </h2>
-  );
-}
-
-function AttioSectionHead({
-  cta,
-  label,
-  lead,
-  rest,
-}: {
-  cta?: { href: string; label: string };
-  label: string;
-  lead: string;
-  rest?: string;
-}) {
-  return (
-    <div className="sm-attio-section-head">
-      <p className="sm-attio-section-label">{label}</p>
-      <AttioHeading lead={lead} rest={rest} />
-      {cta ? (
-        <Link className="sm-attio-head-link" href={cta.href}>
-          {cta.label}
-          <ArrowRightIcon aria-hidden="true" />
-        </Link>
-      ) : null}
-    </div>
-  );
-}
-
-export function HomePage() {
-  return (
-    <div className="sm-attio-home">
-      <section className="sm-attio-hero" id="mission">
-        <div className="sm-attio-shell sm-attio-hero-copy">
-          <Link className="sm-attio-announcement" href="/use-cases/sales-to-delivery-handoff">
-            Before your next customer kickoff
-            <ArrowRightIcon aria-hidden="true" />
-          </Link>
-
-          <h1>See everything your team promised.</h1>
-          <p>
-            We read Gmail, Slack, calls, and HubSpot and list the sentences that look like promises.
-            You confirm them. After kickoff we keep reading the same account, including the mail
-            that changes the work.
-          </p>
-
-          <div className="sm-attio-actions flex flex-wrap gap-3">
-            <MarketingButtonLink href="/sign-up">Start for free</MarketingButtonLink>
-            <MarketingButtonLink href="/download" variant="outline">
-              Download desktop
-            </MarketingButtonLink>
-          </div>
-        </div>
-
-        <div className="sm-attio-stage">
-          <div className="sm-attio-shell">
-            <AttioProductWindow />
-          </div>
-        </div>
-      </section>
-
-      <section aria-label="Connected sources" className="sm-attio-logo-band">
-        <div className="sm-attio-shell">
-          <div className="sm-attio-logo-grid">
-            {homepageSources.map((source) => {
-              const Icon = source.icon;
-              return (
-                <div key={source.label}>
-                  <Icon aria-hidden="true" />
-                  {source.label}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <HomepageProblem />
-
-      <section className="sm-attio-platform" id="what-we-do">
-        <div className="sm-attio-shell">
-          <AttioSectionHead
-            label="Platform"
-            lead="Start with one closed customer."
-            rest="Stay on that account after the kickoff deck is done."
-          />
-
-          <PlatformRail items={platformRailItems} />
-        </div>
-      </section>
-
-      <section className="sm-attio-setup">
-        <div className="sm-attio-shell">
-          <AttioSectionHead
-            label="Self-building"
-            lead="An hour is enough to try it."
-            rest="Connect Gmail, pick someone you closed this quarter, and read the rows."
-          />
-          <MarketingButtonLink href="/sign-up">Start for free</MarketingButtonLink>
-          <figure className="sm-attio-setup-media">
-            <Image
-              alt="Oppulence connecting Gmail, calendar, CRM, and billing in settings"
-              height={960}
-              src={desktopScreenshots.connections}
-              width={1440}
-            />
-          </figure>
-        </div>
-      </section>
-
-      <section className="sm-attio-dark">
-        <div className="sm-attio-shell">
-          <div className="sm-attio-wordmark-stage">
-            <p className="sm-attio-dark-eyebrow">The loop is</p>
-            <h2 className="sm-attio-wordmark">Detect → Reconcile</h2>
-          </div>
-
-          <div className="sm-attio-dark-strip">
-            {relationshipCatalog.map((item) => (
-              <article key={item.label}>
-                <Badge aria-hidden="true" className={marketingSpanClass} variant="ghost">
-                  {item.kicker}
-                </Badge>
-                <div>
-                  <p>{item.title}</p>
-                  <p>{item.body}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <HomepageIntegrations />
-
-      <section className="sm-attio-guarantees">
-        <div className="sm-attio-shell">
-          <AttioSectionHead
-            label="Governance"
-            lead="Run it at any scale."
-            rest="Production-grade for your team and its agents."
-          />
-          <div className="sm-attio-guarantee-grid">
-            {homepageGuarantees.map((item) => (
-              <article key={item.label}>
-                <strong>{item.value}</strong>
-                <Badge className={marketingSpanClass} variant="ghost">
-                  {item.label}
-                </Badge>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="sm-attio-suite" id="products">
-        <div className="sm-attio-shell">
-          <AttioSectionHead
-            cta={{ href: "/products", label: "View all" }}
-            label="Suite"
-            lead="Work where the relationship happens."
-            rest="Web for the queue, desktop beside the work, voice for capture."
-          />
-          <div className="sm-attio-suite-grid">
-            {productSuiteCards.map((product) => (
-              <Link href={product.href} key={product.href}>
-                <Badge className={marketingSpanClass} variant="ghost">
-                  {product.eyebrow}
-                </Badge>
-                <strong>{product.title}</strong>
-                <p>{product.body}</p>
-                <ArrowRightIcon aria-hidden="true" />
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <HomepageCapabilities />
-      <HomepageUseCases />
-      <HomepageTrust />
-
-      <section className="sm-attio-steps">
-        <div className="sm-attio-shell">
-          <AttioSectionHead
-            cta={{ href: "/product", label: "See the loop" }}
-            label="How it works"
-            lead="Better as you use it."
-            rest="Every approved move sharpens the record underneath it."
-          />
-          <div className="sm-attio-step-grid">
-            {homeSteps.map((step, index) => (
-              <article key={step.title}>
-                <div className="sm-attio-step-copy">
-                  <MarketingSpan className="font-normal">{`Step 0${index + 1}`}</MarketingSpan>
-                  <h3>{step.title}</h3>
-                  <p>{step.body}</p>
-                </div>
-                <div aria-hidden="true" className="sm-attio-step-rule" />
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <HomepageFaq />
-      <HomepageDownload />
-
-      <section className="sm-attio-final">
-        <div className="sm-attio-shell">
-          <h2>Know what is owed.</h2>
-          <div className="sm-attio-actions flex flex-wrap gap-3">
-            <MarketingButtonLink href="/products" variant="outline">
-              See the suite
-            </MarketingButtonLink>
-            <MarketingButtonLink href="/sign-up">Start for free</MarketingButtonLink>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function AttioProductWindow() {
-  return (
-    <figure className="sm-attio-product-window">
-      <div className="sm-attio-product-inner">
-        <div className="sm-attio-product-chrome">
-          <Badge aria-hidden="true" className={marketingSpanClass} variant="ghost" />
-          <Badge aria-hidden="true" className={marketingSpanClass} variant="ghost" />
-          <Badge aria-hidden="true" className={marketingSpanClass} variant="ghost" />
-        </div>
-        <Image
-          alt="Oppulence account mission control ranking accounts by what changed and what is owed"
-          height={960}
-          priority
-          sizes="(max-width: 760px) 100vw, 1296px"
-          src="/marketing/relationship-web-list.png"
-          width={1440}
-        />
-      </div>
-    </figure>
-  );
-}
-
-function SuiteSidebarLayout({ activeHref, children }: { activeHref: string; children: ReactNode }) {
-  const links = productRailLinks.map((link) => ({
-    ...link,
-    active: link.href === activeHref,
-  }));
-
-  return (
-    <div className="sm-memory-home sm-suite-shell">
-      <MemoryRail ariaLabel="Products navigation" links={links} />
-      <div className="sm-memory-main">{children}</div>
-    </div>
-  );
-}
-
-function MemoryRail({ ariaLabel, links }: { ariaLabel: string; links: readonly MemoryRailLink[] }) {
-  return (
-    <aside aria-label={ariaLabel} className="sm-memory-rail">
-      <nav>
-        {links.map((link) => {
-          const content = (
-            <>
-              {link.active ? (
-                <Badge aria-hidden="true" className={marketingSpanClass} variant="ghost" />
-              ) : null}
-              {link.label}
-            </>
-          );
-
-          return link.href.startsWith("#") ? (
-            <a className={link.active ? "is-active" : undefined} href={link.href} key={link.href}>
-              {content}
-            </a>
-          ) : (
-            <Link
-              className={link.active ? "is-active" : undefined}
-              href={link.href}
-              key={link.href}
-            >
-              {content}
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
-  );
+/**
+ * Product surfaces used to sit in the homepage rail, which hid the public
+ * header. Keep one shell so /products, /web, and /desktop match the rest of
+ * the site.
+ */
+function SuiteSidebarLayout({ children }: { activeHref: string; children: ReactNode }) {
+  return <div className="sm-suite-public">{children}</div>;
 }
 
 function RelationshipFinalCta() {
   return (
     <section className="sm-final-cta">
-      <h2>
-        Go find what you&rsquo;ve been missing
-        <Badge className={marketingSpanClass} variant="ghost">
-          .
-        </Badge>
-      </h2>
+      <h2>Go find what you&rsquo;ve been missing.</h2>
       <div>
         <Link className="sm-button sm-button-blue" href="/sign-up">
           Start building <ArrowRightIcon aria-hidden="true" />
@@ -1101,7 +850,7 @@ const linearHomeSections = [
     description:
       "Pick one closed customer. We read the mail, calendar, Slack, HubSpot notes, and meetings you already authorized. Each row is a sentence that looks like a promise, with a link back to it.",
     label: "Handoff report",
-    href: "/features/handoff-report",
+    href: "/features/commitment-register",
     src: desktopScreenshots.knowledge,
     alt: "A sourced kickoff list with evidence on each row",
     bullets: [
@@ -1115,7 +864,7 @@ const linearHomeSections = [
     description:
       "Implementation has started. They write “as discussed, attachments are included.” That sentence should land on the same account, next to the rows you already confirmed.",
     label: "Watch after kickoff",
-    href: "/features/watch-after-kickoff",
+    href: "/features/account-mission-control",
     src: desktopScreenshots.chat,
     alt: "An account still open after implementation has started",
     bullets: [
@@ -1139,240 +888,6 @@ const linearHomeSections = [
     ],
   },
 ] as const;
-
-/* Attio's row descriptions are a single short sentence under the 24px title.
-   The long-form copy in linearHomeSections is written for the product pages
-   and overflows this block, so the home rows get their own summary line. */
-const platformRowSummaries = [
-  "One closed customer. Sentences that look like promises, each with a link back to the message.",
-  "After kickoff, new mail still attaches to that account.",
-  "You keep, rewrite, or drop a row. Nothing sends because a model found a sentence.",
-] as const;
-
-/* Each row needs a screenshot that shows the thing the copy claims. The
-   product-page images did not: row one pointed at a Notes folder list, and
-   the connections dialog was reused for both row three and self-building. */
-const platformRowMedia = [
-  {
-    src: "/marketing/relationship-web-detail.png",
-    alt: "An account record showing the promised security review, its evidence timeline, and what changed",
-  },
-  {
-    src: "/marketing/relationship-desktop.png",
-    alt: "Accounts ranked by what needs action now, each with its health and the change that triggered it",
-  },
-  {
-    src: "/marketing/relationship-desktop-detail.png",
-    alt: "A drafted follow-up held at an approve or reject gate, with the evidence behind it in view",
-  },
-] as const;
-
-const platformRailItems: PlatformRailItem[] = linearHomeSections.map((section, index) => ({
-  id: ["find-the-loose-ends", "run-every-account", "act-with-guardrails"][index] ?? `row-${index}`,
-  nav: ["Detect", "Watch", "Confirm"][index] ?? section.label,
-  title: section.title,
-  description: platformRowSummaries[index] ?? section.description,
-  label: section.label,
-  src: platformRowMedia[index]?.src ?? section.src,
-  alt: platformRowMedia[index]?.alt ?? section.alt,
-}));
-
-function LinearProductSection({
-  index,
-  section,
-}: {
-  index: number;
-  section: (typeof linearHomeSections)[number];
-}) {
-  const sectionNumber = `${index + 1}.0`;
-  const action = (
-    <Badge className={cn("linear-product-link", marketingSpanClass)} variant="ghost">
-      <Badge className={cn("linear-index", marketingSpanClass)} variant="ghost">
-        {sectionNumber}
-      </Badge>
-      <MarketingSpan className="linear-body !text-[var(--linear-text-tertiary)] font-normal">
-        {section.label}
-      </MarketingSpan>
-      <Badge className={cn("text-foreground/35", marketingSpanClass)} variant="ghost">
-        →
-      </Badge>
-    </Badge>
-  );
-
-  return (
-    <section className="linear-product-section">
-      <header className="linear-product-header linear-inset">
-        <div>
-          <p className="linear-eyebrow">[{section.label.toLowerCase()}]</p>
-          <h2 className="linear-product-title">{section.title}</h2>
-        </div>
-        <div className="linear-product-description">
-          <p>{section.description}</p>
-          {section.href.startsWith("/api/") ? (
-            <a href={section.href}>{action}</a>
-          ) : (
-            <Link href={section.href}>{action}</Link>
-          )}
-        </div>
-      </header>
-      <div className="linear-product-visual">
-        <div className="linear-product-panel">
-          <Image
-            alt={section.alt}
-            height={960}
-            sizes="(max-width: 640px) 100vw, (max-width: 1440px) 92vw, 1344px"
-            src={section.src}
-            width={1440}
-          />
-        </div>
-        <div className="linear-product-tabs">
-          {section.bullets.map((bullet, bulletIndex) => (
-            <div className="linear-product-tab" key={bullet}>
-              <Badge className={cn("linear-index mr-3", marketingSpanClass)} variant="ghost">
-                {index + 1}.{bulletIndex + 1}
-              </Badge>
-              {bullet}
-              <Badge className={cn("ml-2 text-foreground/30", marketingSpanClass)} variant="ghost">
-                +
-              </Badge>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function HomeUpdates() {
-  return (
-    <section className="linear-updates">
-      <div className="linear-inset">
-        <p className="linear-eyebrow">[how it works]</p>
-        <h2 className="linear-statement-title !max-w-[1180px]">
-          <strong>The useful part is the row you confirmed.</strong> A model can summarize a sales
-          thread in a minute. That does not tell you, six weeks later, whether the export they
-          promised ever arrived.
-        </h2>
-      </div>
-      <div className="linear-updates-grid linear-inset">
-        {homeSteps.map((step, index) => (
-          <article className="linear-update" key={step.title}>
-            <Badge className={cn("linear-index", marketingSpanClass)} variant="ghost">
-              0{index + 1}
-            </Badge>
-            <HomeStepVisual index={index} />
-            <div className="linear-update-copy">
-              <h3>{step.title}</h3>
-              <p className="linear-body mt-2">{step.body}</p>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function HomeStepVisual({ index }: { index: number }) {
-  if (index === 0) {
-    return (
-      <div aria-hidden="true" className="linear-step-art linear-step-capture">
-        <MarketingSpan className="linear-step-capture-ring" />
-        <MarketingSpan className="linear-step-capture-core" />
-        <MarketingSpan className="linear-step-ray linear-step-ray-a" />
-        <MarketingSpan className="linear-step-ray linear-step-ray-b" />
-        <MarketingSpan className="linear-step-ray linear-step-ray-c" />
-      </div>
-    );
-  }
-
-  if (index === 1) {
-    return (
-      <div aria-hidden="true" className="linear-step-art linear-step-priority">
-        <MarketingSpan className="linear-step-slab linear-step-slab-a" />
-        <MarketingSpan className="linear-step-slab linear-step-slab-b" />
-        <MarketingSpan className="linear-step-slab linear-step-slab-c" />
-        <MarketingSpan className="linear-step-focus" />
-      </div>
-    );
-  }
-
-  return (
-    <div aria-hidden="true" className="linear-step-art linear-step-loop">
-      <MarketingSpan className="linear-step-loop-ring" />
-      <MarketingSpan className="linear-step-loop-node linear-step-loop-node-a" />
-      <MarketingSpan className="linear-step-loop-node linear-step-loop-node-b" />
-      <MarketingSpan className="linear-step-loop-node linear-step-loop-node-c" />
-      <MarketingSpan className="linear-step-loop-core" />
-    </div>
-  );
-}
-
-function FinalCta() {
-  return (
-    <section className="linear-final-cta linear-inset">
-      <p className="linear-eyebrow !mb-0">[get started]</p>
-      <h2>Before your next kickoff, see everything your team promised.</h2>
-      <p className="linear-body max-w-xl text-balance">
-        Run it on one customer you closed this quarter. If a row surprises the person who has to
-        deliver the work, keep the account open afterward.
-      </p>
-      <div className="flex flex-col items-center gap-3 sm:flex-row">
-        <MarketingButtonLink className="h-10 px-5" href="/sign-up">
-          Start building
-        </MarketingButtonLink>
-        <MarketingButtonLink className="h-10 px-5" href="/product" variant="outline">
-          See how the loop works
-        </MarketingButtonLink>
-      </div>
-      <p className="linear-cta-note">[watch is free · chase is $99/mo]</p>
-    </section>
-  );
-}
-
-function DesktopScreenshotPreview({
-  alt,
-  className,
-  src,
-}: {
-  alt: string;
-  className?: string;
-  src: string;
-}) {
-  return (
-    <div
-      className={cn(
-        "marketing-preview relative flex w-full flex-col items-stretch justify-center overflow-hidden border border-primary/10 bg-background/50",
-        className,
-      )}
-    >
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--background-50),var(--background)_58%,var(--background-100))]" />
-      <div className="relative z-10 flex items-center justify-between border-primary/10 border-b px-3 py-2">
-        <div className="flex items-center gap-1.5">
-          <MarketingSpan className="size-2 rounded-full bg-oppulence-orange/70" />
-          <MarketingSpan className="size-2 rounded-full bg-oppulence-yellow/70" />
-          <MarketingSpan className="size-2 rounded-full bg-oppulence-green/70" />
-        </div>
-        <MarketingSpan className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-          Oppulence Desktop
-        </MarketingSpan>
-        <MarketingSpan className="hidden font-mono text-xs text-muted-foreground uppercase tracking-wider sm:inline">
-          Local graph
-        </MarketingSpan>
-      </div>
-      <div className="relative z-10 flex min-w-0 flex-1 items-center justify-center p-2 sm:p-6">
-        <Image
-          alt={alt}
-          className="marketing-preview-image w-full min-w-0 max-w-6xl rounded-none border border-primary/10 bg-background object-cover shadow-2xl shadow-black/30"
-          height={1000}
-          priority={src === desktopScreenshots.home}
-          sizes="(max-width: 768px) 100vw, 1120px"
-          src={src}
-          width={1440}
-        />
-      </div>
-    </div>
-  );
-}
 
 /**
  * One of the three ways to run Oppulence (web, desktop, voice). Same shape for
@@ -1488,24 +1003,27 @@ export function GenericPage({ page }: { page: MarketingPage }) {
     return <FeatureMirrorPage details={details} page={page} />;
   }
 
+  const lander = getSeoLander(page.path);
+  if (lander) {
+    return (
+      <PageShell className="mk-seo-lander" page={page}>
+        <SeoLanderChips chips={lander.chips} />
+        <SeoLanderSections lander={lander} />
+      </PageShell>
+    );
+  }
+
   const pageContent = (
     <PageShell page={page}>
-      <section className="grid gap-6 md:grid-cols-3">
-        {page.bullets.map((bullet, index) => {
-          const { icon, tone } = bulletIconCycle[index % bulletIconCycle.length];
-
-          return (
-            <article className="marketing-surface border p-5" key={bullet}>
-              <div className="flex items-center justify-between gap-3">
-                <MarketingIcon icon={icon} tone={tone} />
-                <MarketingSpan className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                  0{index + 1}
-                </MarketingSpan>
-              </div>
-              <p className="mt-4 text-[13px] leading-relaxed text-foreground/78">{bullet}</p>
+      <section className="mk-capability-grid">
+        <div>
+          {page.bullets.map((bullet, index) => (
+            <article key={bullet}>
+              <h3>{String(index + 1).padStart(2, "0")}</h3>
+              <p>{bullet}</p>
             </article>
-          );
-        })}
+          ))}
+        </div>
       </section>
       <ProofGrid page={page} />
       {page.category === "tool" ? <ToolPanel page={page} /> : null}
@@ -1516,278 +1034,188 @@ export function GenericPage({ page }: { page: MarketingPage }) {
 }
 
 function FeatureMirrorPage({ page, details }: { page: MarketingPage; details: FeatureDetail }) {
+  const lander = getSeoLander(page.path);
   const capabilitySections = details.capabilities ?? details.sections;
   const relatedPages =
+    lander?.cluster ??
     details.relatedPages ??
     featureLinks.filter((item) => item.href !== `/${page.path}`).slice(0, 3);
 
   return (
-    <div className="linear-subpage">
+    <article className={cn("mk-capability linear-subpage", lander && "mk-seo-lander")}>
       <div className="linear-inset">
+        <MarketingBreadcrumbs
+          items={[
+            { label: "Home", href: "/" },
+            ...(lander ? [{ label: "Answers", href: "/answers" }] : []),
+            { label: page.eyebrow },
+          ]}
+        />
         <header className="linear-subpage-hero">
-          <div className="min-w-0">
-            <EyebrowPill {...iconForPage(page)}>{page.eyebrow}</EyebrowPill>
-            <h1 className="linear-subpage-title mt-5">{page.title}</h1>
+          <div>
+            <p className="linear-eyebrow">[{page.eyebrow.toLowerCase()}]</p>
+            <h1 className="linear-subpage-title mt-4">{page.title}</h1>
           </div>
           <div className="linear-subpage-description">
             <p>{page.description}</p>
-            <FeatureActionButtons
-              primary={page.ctaLabel ?? "Start building"}
-              primaryHref={page.ctaHref ?? "/sign-up"}
-              secondary="See product"
-            />
+            {lander ? <SeoLanderChips chips={lander.chips} /> : null}
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <MarketingButtonLink href={page.ctaHref ?? "/sign-up"}>
+                {page.ctaLabel ?? "Start for free"}
+              </MarketingButtonLink>
+              <MarketingButtonLink href="/product" variant="outline">
+                See the loop
+              </MarketingButtonLink>
+            </div>
           </div>
         </header>
 
-        <section className="mt-12 grid gap-3 sm:grid-cols-3">
-          {page.bullets.slice(0, 3).map((bullet, index) => {
-            const { icon, tone } = bulletIconCycle[index % bulletIconCycle.length];
+        {lander ? (
+          <SeoLanderSections lander={lander} />
+        ) : (
+          <>
+            <ProductFrame
+              alt={`Oppulence desktop for ${page.eyebrow}`}
+              priority
+              src={screenshotForPage(page)}
+            />
 
-            return (
-              <article
-                className="marketing-surface flex gap-3 rounded-none border px-4 py-3"
-                key={bullet}
-              >
-                <MarketingIcon compact icon={icon} tone={tone} />
-                <div className="min-w-0">
-                  <p className="font-mono text-xs text-foreground/55 uppercase tracking-wider">
-                    0{index + 1}
-                  </p>
-                  <p className="mt-1 text-[13px] text-foreground/75">{bullet}</p>
-                </div>
-              </article>
-            );
-          })}
-        </section>
-
-        <DesktopScreenshotPreview
-          alt={`Oppulence desktop app screenshot for ${page.eyebrow}`}
-          className="mt-10"
-          src={screenshotForPage(page)}
-        />
-
-        <section className="mt-14 grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
-          <article className="marketing-surface border p-6">
-            <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
-              Why it matters
-            </p>
-            <p className="mt-4 text-foreground/80 text-[13px] leading-relaxed">{details.summary}</p>
-            <h2 className="mt-8 font-medium text-sm">How it works</h2>
-            <ol className="mt-4 space-y-3">
-              {details.workflow.map((step, index) => (
-                <li className="flex gap-3 text-[13px] leading-relaxed" key={step}>
-                  <ItemMedia
-                    variant="icon"
-                    className="marketing-icon-frame size-7 rounded font-mono text-xs text-muted-foreground"
-                  >
-                    {index + 1}
-                  </ItemMedia>
-                  <CardDescription className="text-[13px] leading-relaxed text-foreground/75">
-                    {step}
-                  </CardDescription>
-                </li>
-              ))}
-            </ol>
-          </article>
-
-          <div className="grid gap-4">
-            {capabilitySections.map((section) => {
-              const { icon, tone } = iconForTitle(section.title);
-
-              return (
-                <article className="marketing-surface border p-6" key={section.title}>
-                  <MarketingIcon icon={icon} tone={tone} />
-                  <h2 className="mt-5 font-medium text-sm">{section.title}</h2>
-                  <p className="mt-3 text-muted-foreground text-[13px] leading-relaxed">
-                    {section.body}
-                  </p>
-                </article>
-              );
-            })}
-            <article className="marketing-surface-strong border p-6">
-              <h2 className="font-medium text-sm">Operational outcomes</h2>
-              <div className="mt-4 grid gap-3">
-                {details.outcomes.map((outcome) => (
-                  <div className="flex gap-3 text-[13px] leading-relaxed" key={outcome}>
-                    <MarketingIcon compact icon={CheckCircleIcon} tone="green" />
-                    <CardDescription className="text-[13px] leading-relaxed text-foreground/75">
-                      {outcome}
-                    </CardDescription>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </div>
-        </section>
-
-        {details.useCases && details.useCases.length > 0 ? (
-          <section className="mt-14">
-            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <section className="mk-capability-split">
               <div>
-                <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
-                  Use cases
-                </p>
-                <h2 className="mt-2 text-2xl font-medium">Where the graph changes the workflow.</h2>
+                <SectionHeading eyebrow="[why]" title="Why it matters" />
+                <p>{details.summary}</p>
               </div>
-              <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-                The feature pages stay concrete: each capability maps back to work traces, graph
-                context, and a reviewable next step.
-              </p>
-            </div>
-            <div className="mt-6 grid gap-3 md:grid-cols-3">
-              {details.useCases.map((useCase, index) => {
-                const { icon, tone } = bulletIconCycle[(index + 1) % bulletIconCycle.length];
+              <div>
+                <SectionHeading eyebrow="[how it works]" title="The sequence." />
+                <ol>
+                  {details.workflow.map((step, index) => (
+                    <li key={step}>
+                      {String(index + 1).padStart(2, "0")} {step}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </section>
 
-                return (
-                  <article className="marketing-surface border p-5" key={useCase.title}>
-                    <MarketingIcon icon={icon} tone={tone} />
-                    <h3 className="mt-4 font-medium">{useCase.title}</h3>
-                    <p className="mt-2 text-muted-foreground text-[13px] leading-relaxed">
-                      {useCase.body}
-                    </p>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
+            {page.bullets.length > 0 ? (
+              <section className="mk-capability-grid">
+                <SectionHeading eyebrow="[in short]" title="What this page is about." />
+                <div>
+                  {page.bullets.slice(0, 3).map((bullet, index) => (
+                    <article key={bullet}>
+                      <h3>{String(index + 1).padStart(2, "0")}</h3>
+                      <p>{bullet}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
 
-        {page.path === "api-documentation-software" ? <ApiReferenceEmbed /> : null}
+            {capabilitySections.length > 0 ? (
+              <section className="mk-capability-grid">
+                <SectionHeading eyebrow="[capabilities]" title="What it actually does." />
+                <div>
+                  {capabilitySections.map((section) => (
+                    <article key={section.title}>
+                      <h3>{section.title}</h3>
+                      <p>{section.body}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
 
-        <ProofGrid page={page} />
+            {details.useCases && details.useCases.length > 0 ? (
+              <section className="mk-examples">
+                <SectionHeading eyebrow="[examples]" title="Where it shows up." />
+                <div>
+                  {details.useCases.map((useCase) => (
+                    <article key={useCase.title}>
+                      <h3>{useCase.title}</h3>
+                      <p>{useCase.body}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
 
-        <section className="mt-14 border-t border-primary/10 pt-10">
-          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
-                Related
-              </p>
-              <h2 className="mt-2 text-2xl font-medium">Keep following the revenue loop.</h2>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button asChild className="marketing-cta-primary">
-                <Link href={page.ctaHref ?? "/sign-up"}>{page.ctaLabel ?? "Start building"}</Link>
-              </Button>
-              <Button asChild className="marketing-cta-secondary" variant="ghost">
-                <Link href="/app">Open action queue</Link>
-              </Button>
-            </div>
-          </div>
-          <div className="mt-6 grid gap-3 md:grid-cols-3">
-            {relatedPages.map((item) => {
-              const { icon, tone } = iconForLink(item);
+            {details.outcomes.length > 0 ? (
+              <section className="mk-security-note">
+                <h2>What you keep</h2>
+                {details.outcomes.map((outcome) => (
+                  <p key={outcome}>{outcome}</p>
+                ))}
+              </section>
+            ) : null}
 
-              return (
-                <Link
-                  className="marketing-surface flex items-start gap-3 border p-4 transition-colors hover:bg-background-200"
-                  href={item.href}
-                  key={`${item.label}-${item.href}`}
-                >
-                  <MarketingIcon compact icon={icon} tone={tone} />
-                  <div className="min-w-0">
-                    <CardTitle className="block font-medium text-sm">{item.label}</CardTitle>
-                    {item.description ? (
-                      <CardDescription className="mt-1 block text-xs leading-relaxed">
-                        {item.description}
-                      </CardDescription>
-                    ) : null}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
+            {page.path === "api-documentation-software" ? <ApiReferenceEmbed /> : null}
+
+            <RelatedPages
+              items={relatedPages.map((item) => ({
+                label: item.label,
+                href: item.href,
+                description: item.description,
+              }))}
+            />
+          </>
+        )}
+        <MarketingCta
+          primary={{
+            href: page.ctaHref ?? "/sign-up",
+            label: page.ctaLabel ?? "Start for free",
+          }}
+          title="See the ledger against your own history."
+        />
       </div>
-    </div>
+    </article>
   );
 }
 
-function FeatureActionButtons({
-  primary = "Start building",
-  primaryHref = "/sign-up",
-  secondary = "See product",
+function PageShell({
+  page,
+  children,
+  className,
 }: {
-  primary?: string;
-  primaryHref?: string;
-  secondary?: string;
+  page: MarketingPage;
+  children: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-      <Button
-        asChild
-        className="marketing-cta-primary h-12 border border-transparent px-6 font-medium text-sm has-[>svg]:px-4"
-      >
-        <Link href={primaryHref}>
-          {primary}
-          <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
-        </Link>
-      </Button>
-      <Button
-        asChild
-        className="marketing-cta-secondary h-12 justify-between border border-primary/10 px-4 font-medium text-sm"
-        variant="ghost"
-      >
-        <Link href="/product">{secondary}</Link>
-      </Button>
-    </div>
-  );
-}
-
-function PageShell({ page, children }: { page: MarketingPage; children: ReactNode }) {
-  return (
-    <div className="linear-subpage">
+    <article className={cn("mk-capability linear-subpage", className)}>
       <div className="linear-inset">
+        <MarketingBreadcrumbs items={[{ label: "Home", href: "/" }, { label: page.eyebrow }]} />
         <header className="linear-subpage-hero">
-          <div className="min-w-0">
-            <EyebrowPill {...iconForPage(page)}>{page.eyebrow}</EyebrowPill>
-            <h1 className="linear-subpage-title mt-5">{page.title}</h1>
+          <div>
+            <p className="linear-eyebrow">[{page.eyebrow.toLowerCase()}]</p>
+            <h1 className="linear-subpage-title mt-4">{page.title}</h1>
           </div>
           <div className="linear-subpage-description">
             <p>{page.description}</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild className="marketing-cta-primary">
-                <Link href={page.ctaHref ?? "/sign-up"}>
-                  {page.ctaLabel ?? "Start building"}
-                  <ArrowRightIcon style={{ fontSize: "0.875rem" }} />
-                </Link>
-              </Button>
-              <Button asChild className="marketing-cta-secondary" variant="outline">
-                <Link href="/app">Open action queue</Link>
-              </Button>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <MarketingButtonLink href={page.ctaHref ?? "/sign-up"}>
+                {page.ctaLabel ?? "Start for free"}
+              </MarketingButtonLink>
+              <MarketingButtonLink href="/product" variant="outline">
+                See the loop
+              </MarketingButtonLink>
             </div>
           </div>
         </header>
         <div className="linear-subpage-content">{children}</div>
       </div>
-    </div>
+    </article>
   );
 }
 
 function ProofGrid({ page }: { page: MarketingPage }) {
   return (
-    <section className="border-y border-primary/10 py-10">
-      <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
-            Why teams trust the queue
-          </p>
-          <h2 className="mt-2 text-2xl font-medium">Built for evidence-backed action.</h2>
-        </div>
-        <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
-          Each workflow keeps the same standards: source evidence, current relationship context,
-          explicit policy decisions, and reviewable execution.
-        </p>
-      </div>
-      <div className="mt-6 grid gap-3 md:grid-cols-3">
+    <section className="mk-capability-grid">
+      <SectionHeading eyebrow="[why it holds]" title="Built for evidence-backed action." />
+      <div>
         {page.proof.map((item, index) => (
-          <article className="marketing-surface flex gap-3 border p-4" key={item}>
-            <MarketingIcon compact icon={CheckCircleIcon} tone="green" />
-            <div className="min-w-0">
-              <p className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-                0{index + 1}
-              </p>
-              <p className="mt-1 text-[13px] leading-relaxed text-foreground/72">{item}</p>
-            </div>
+          <article key={item}>
+            <h3>{String(index + 1).padStart(2, "0")}</h3>
+            <p>{item}</p>
           </article>
         ))}
       </div>
@@ -1797,30 +1225,21 @@ function ProofGrid({ page }: { page: MarketingPage }) {
 
 function ToolPanel({ page }: { page: MarketingPage }) {
   return (
-    <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+    <section className="mk-capability-split">
       <div>
-        <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
-          Tool workflow
-        </p>
-        <h2 className="mt-2 text-2xl font-medium">A clear path from check to action.</h2>
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+        <SectionHeading eyebrow="[tool]" title="A clear path from check to action." />
+        <p>
           This is a static marketing representation of the tool route. The production validator or
           quiz logic can be wired behind the same URL when ready.
         </p>
       </div>
-      <div className="marketing-surface border p-5">
-        <div className="flex items-center gap-2 font-mono text-xs text-muted-foreground">
-          <MarketingIcon compact icon={CircleIcon} tone="orange" />
-          {page.path}
-        </div>
-        <div className="mt-5 space-y-3">
+      <div>
+        <SectionHeading eyebrow={`[${page.path}]`} title="What it checks." />
+        <ul>
           {page.bullets.map((bullet) => (
-            <div className="marketing-chip flex gap-3 border px-4 py-3 text-[13px]" key={bullet}>
-              <MarketingIcon compact icon={SealCheckIcon} tone="green" />
-              <MarketingSpan className="font-normal">{bullet}</MarketingSpan>
-            </div>
+            <li key={bullet}>{bullet}</li>
           ))}
-        </div>
+        </ul>
       </div>
     </section>
   );
@@ -1976,9 +1395,20 @@ export function BlogIndexPage({ page }: { page: MarketingPage }) {
 }
 
 export function BlogArticlePage({ page }: { page: MarketingPage }) {
+  const alternative = alternativeFromSlug(page.path.replace(/^blog\//, ""));
+
+  if (alternative) {
+    return (
+      <PageShell className="mk-seo-lander" page={page}>
+        <SeoLanderChips chips={["No invented vendor ranking", "Keep the search URL", "Honest seam"]} />
+        <SeoAlternativeSections alternative={alternative} />
+      </PageShell>
+    );
+  }
+
   return (
     <PageShell page={page}>
-      <article className="max-w-3xl space-y-8 text-sm leading-relaxed text-foreground/78">
+      <article className="mk-article-body">
         <p>
           Most knowledge-base and documentation categories assume the answer is a better publishing
           surface. Oppulence starts one layer lower: the living graph agents and operators rely on
@@ -2085,7 +1515,7 @@ export function CustomerStoryPage({ page }: { page: MarketingPage }) {
 export function LegalPage({ page }: { page: MarketingPage }) {
   return (
     <PageShell page={page}>
-      <article className="max-w-3xl space-y-6 text-sm leading-relaxed text-foreground/76">
+      <article className="mk-article-body">
         {page.bullets.map((bullet) => (
           <p key={bullet}>{bullet}</p>
         ))}

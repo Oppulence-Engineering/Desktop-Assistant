@@ -99,6 +99,15 @@ export function friendlyRevenueError(message: string) {
   if (/gmail.*(?:returned 429|user-rate limit exceeded)/i.test(message)) {
     return "Google is temporarily limiting Gmail reads for this account. Please try the audit again in about 15 minutes.";
   }
+  if (/session refresh is temporarily unavailable|session_unavailable/i.test(message)) {
+    return "Your session could not be refreshed. Sign out and sign in again.";
+  }
+  if (/rowboat-api is unreachable|upstream_unavailable/i.test(message)) {
+    return "The Oppulence API is not reachable. In local dev, start rowboat-api on port 18080, then reload.";
+  }
+  if (/^Request failed \(503\)$/.test(message)) {
+    return "The Oppulence API returned an error (503). Confirm rowboat-api is running on port 18080, then reload.";
+  }
   return message;
 }
 

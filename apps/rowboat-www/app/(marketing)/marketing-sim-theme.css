@@ -1,0 +1,167 @@
+/**
+ * Sim.ai visual chrome for every Oppulence marketing route.
+ *
+ * Imports the homepage token sheet and adds subpage bridges so legacy
+ * mk-* / linear-* class names read on Sim surfaces without rewriting
+ * ~30 routes in one pass. Oppulence typography stays on marketing copy.
+ */
+@import "./sim-landing/sim-landing.css";
+
+@layer utilities {
+  /* Navbar clearance — matches Sim ProseShell / landing-layout heroTopPadding. */
+  .sim-marketing-page-main {
+    padding-top: 112px;
+  }
+
+  @media (max-width: 640px) {
+    .sim-marketing-page-main {
+      padding-top: 48px;
+    }
+  }
+
+  @media (min-width: 1280px) and (max-width: 1535px) {
+    .sim-marketing-page-main {
+      padding-top: 80px;
+    }
+  }
+
+  /* Subpage content width — Sim landing gutters inside the scroll port. */
+  .sm-site.sim-marketing-site .sim-marketing-page-main > .linear-shell.linear-guides {
+    width: min(100%, 1728px);
+    margin-inline: auto;
+    padding-inline: clamp(28px, 2.5vw, 40px);
+  }
+
+  @media (max-width: 768px) {
+    .sm-site.sim-marketing-site .sim-marketing-page-main > .linear-shell.linear-guides {
+      padding-inline: 28px;
+    }
+  }
+
+  /* Bridge catalog / compare surfaces to Sim tokens inside the scroll port. */
+  .sm-site.sim-marketing-site .mk-index-card,
+  .sm-site.sim-marketing-site .mk-compare-table,
+  .sm-site.sim-marketing-site .mk-capability-grid article,
+  .sm-site.sim-marketing-site .mk-related a,
+  .sm-site.sim-marketing-site .mk-related > div > a {
+    border-color: var(--border);
+    background: var(--surface-2);
+  }
+
+  .sm-site.sim-marketing-site .mk-index-card:hover,
+  .sm-site.sim-marketing-site .mk-index-card:focus-visible,
+  .sm-site.sim-marketing-site .mk-related a:hover,
+  .sm-site.sim-marketing-site .mk-related a:focus-visible {
+    border-color: var(--text-muted);
+    background: var(--surface-hover);
+  }
+
+  .sm-site.sim-marketing-site .linear-eyebrow {
+    color: var(--text-muted);
+    font-family: var(--font-marketing-mono), ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    text-transform: lowercase;
+  }
+
+  .sm-site.sim-marketing-site .linear-subpage-title,
+  .sm-site.sim-marketing-site .linear-page-title {
+    color: var(--text-primary);
+  }
+
+  .sm-site.sim-marketing-site .linear-subpage-description > p,
+  .sm-site.sim-marketing-site .linear-body {
+    color: var(--text-body);
+  }
+
+  .sm-site.sim-marketing-site .mk-breadcrumbs,
+  .sm-site.sim-marketing-site .mk-breadcrumbs a {
+    color: var(--text-secondary);
+  }
+
+  .sm-site.sim-marketing-site .mk-breadcrumbs a:hover {
+    color: var(--text-primary);
+  }
+
+  /*
+   * Legacy .marketing-polar sets a Linear dark palette on the whole tree.
+   * Inside the Sim scroll port, Sim tokens must win for surfaces and ink.
+   */
+  .sm-site.sim-marketing-site.marketing-polar:not(:has(.sim-landing-root)) {
+    background: var(--bg);
+    color: var(--text-primary);
+    color-scheme: light dark;
+  }
+
+  html.dark .sm-site.sim-marketing-site.marketing-polar:not(:has(.sim-landing-root)) {
+    background: var(--bg);
+    color: var(--text-primary);
+  }
+
+  /* Download chooser on /download — Sim tokens instead of legacy linear chrome. */
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-panel {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+  }
+
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-panel-header {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-eyebrow {
+    margin-bottom: 8px;
+    color: var(--text-muted);
+    font-family: var(--font-marketing-mono), ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-panel-title h2,
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-panel-header > p,
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-tab,
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-platform-heading > strong,
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-option-copy strong,
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-option-copy small {
+    color: var(--text-primary);
+  }
+
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-panel-header > p,
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-tab,
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-option-copy small {
+    color: var(--text-secondary);
+  }
+
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-tabs,
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-tab,
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-platform {
+    border-color: var(--border);
+  }
+
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-tab[aria-selected="true"] {
+    background: var(--surface-3);
+    color: var(--text-primary);
+  }
+
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-tab:hover {
+    background: var(--surface-hover);
+  }
+
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-option {
+    border-color: var(--border);
+    background: var(--surface-2);
+  }
+
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-option:hover {
+    background: var(--surface-hover);
+  }
+
+  .sm-site.sim-marketing-site .sim-download-chooser .desktop-download-option.is-recommended {
+    border-color: color-mix(in srgb, var(--border) 70%, var(--text-primary));
+    background: var(--surface-3);
+  }
+}

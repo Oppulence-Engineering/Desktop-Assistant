@@ -2,11 +2,13 @@ import { notFound } from "next/navigation";
 
 import { blogPostSlug, publishedBlogPost, publishedBlogPosts } from "@/lib/content/editorial";
 
-import { BlogArticlePage } from "../../marketing-components";
 import { blogPages, getMarketingPage } from "../../marketing-data";
 import { marketingMetadata } from "../../metadata";
 import { EditorialArticle } from "../../article-page";
 import { MarkdownBody } from "../../render-markdown";
+import { alternativeFromSlug } from "../../seo-theme";
+import { SimBlogArchivePage } from "../../sim-landing/subpages/sim-marketing-bullet-page";
+import { SimSeoAlternativePage } from "../../sim-landing/subpages/sim-seo-alternative-page";
 
 export const instant = false;
 
@@ -63,7 +65,11 @@ export default async function BlogSlugPage({ params }: { params: Promise<{ slug:
 
   const archive = getMarketingPage(`blog/${slug}`);
   if (archive) {
-    return <BlogArticlePage page={archive} />;
+    const alternative = alternativeFromSlug(slug);
+    if (alternative) {
+      return <SimSeoAlternativePage alternative={alternative} page={archive} />;
+    }
+    return <SimBlogArchivePage page={archive} />;
   }
 
   notFound();

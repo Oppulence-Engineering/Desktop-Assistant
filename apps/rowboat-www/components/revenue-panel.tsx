@@ -51,11 +51,18 @@ import type { RevenueLeakScan, RevenueWorkspace } from "@/types/revenue";
 // message at all and rendered the onboarding prompt instead.
 function registerErrorMessage(reason: unknown): string {
   const status = reason instanceof RevenueAPIError ? reason.status : 0;
+  const code = reason instanceof RevenueAPIError ? reason.code : undefined;
   if (status === 404) {
     return "The commitment register is unavailable on this server. This usually means the app is newer than the API it is talking to.";
   }
   if (status === 403) {
     return "You do not have access to the commitment register in this workspace.";
+  }
+  if (status === 503) {
+    if (code === "session_unavailable") {
+      return friendlyRevenueError("session refresh is temporarily unavailable");
+    }
+    return friendlyRevenueError("Request failed (503)");
   }
   if (reason instanceof Error && reason.message.trim()) {
     return friendlyRevenueError(reason.message);
@@ -87,7 +94,7 @@ export function RevenuePanel({
       .then(setWorkspace)
       .catch((e) => {
         if (e instanceof RevenueAPIError && (e.status === 401 || e.status === 404)) return;
-        setError(e instanceof Error ? e.message : "Could not load the revenue workspace.");
+        setError(registerErrorMessage(e));
       });
     void listScans()
       .then(setScans)
