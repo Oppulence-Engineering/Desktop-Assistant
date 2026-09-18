@@ -43,7 +43,7 @@ declare global {
  * enough for the inbox to see who is chatting. A hash without its email, or a
  * hash minted with the wrong secret, is what takes the widget down.
  */
-export function customerDetailsForPlain(
+function customerDetailsForPlain(
   customer: SupportChatCustomer | undefined,
 ): Record<string, unknown> | undefined {
   if (!customer) return undefined;

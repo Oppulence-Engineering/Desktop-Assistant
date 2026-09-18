@@ -32,7 +32,7 @@ const DEFAULT_LABEL_TYPE_ID = "lt_01M20XH6PFZ1F5EY4V19WWP7DG";
  * Those extra bytes change the HMAC and Plain rejects the widget with
  * "The provided email hash is invalid".
  */
-export function normalizeChatSecret(raw: string): string {
+function normalizeChatSecret(raw: string): string {
   return raw
     .trim()
     .replace(/\r?\n/g, "")
