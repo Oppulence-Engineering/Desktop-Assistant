@@ -324,16 +324,25 @@ const (
 	WorkspaceExecute       WorkspaceCapability = "execute"
 	WorkspaceManageSources WorkspaceCapability = "manage_sources"
 	WorkspaceManageMembers WorkspaceCapability = "manage_members"
+	// WorkspaceManagePrivacy permits owners and admins to manage workspace
+	// defaults. Mailbox policy and rules still require ownership in the privacy
+	// service; a role alone never grants control of another user's content.
+	WorkspaceManagePrivacy WorkspaceCapability = "manage_privacy"
+	// WorkspaceShareCommunications is intentionally owner-only. Explicit
+	// grants, revocations, and purges change access to mailbox content.
+	WorkspaceShareCommunications WorkspaceCapability = "share_communications"
 )
 
 var workspaceRoleCapabilities = map[string]map[WorkspaceCapability]bool{
 	"owner": {
 		WorkspaceView: true, WorkspaceContribute: true, WorkspaceExecute: true,
 		WorkspaceManageSources: true, WorkspaceManageMembers: true,
+		WorkspaceManagePrivacy: true, WorkspaceShareCommunications: true,
 	},
 	"admin": {
 		WorkspaceView: true, WorkspaceContribute: true, WorkspaceExecute: true,
 		WorkspaceManageSources: true, WorkspaceManageMembers: true,
+		WorkspaceManagePrivacy: true,
 	},
 	"member": {
 		WorkspaceView: true, WorkspaceContribute: true, WorkspaceExecute: true,

@@ -61,6 +61,9 @@ type ConversationGovernanceDecision struct {
 func defaultConversationPolicyLayer() ConversationPolicyLayer {
 	return ConversationPolicyLayer{
 		LayerID: "builtin:conversation-policy-v1", Scope: "organization", Enforced: true,
+		// This legacy policy governs meeting processing, but it is never
+		// sufficient authorization for mailbox content. Communication evidence
+		// is additionally admitted by CommunicationAuthorization below.
 		Capture: "require_consent", ModelRoute: "hosted_allowed", PublishEvidence: true,
 		ExternalShare: true, RetentionDays: 30,
 		RedactionClasses: []string{"credentials", "financial", "health", "personal_identifier"},
@@ -206,12 +209,20 @@ func enforceConversationObservationPolicy(
 	ctx context.Context,
 	client *ent.Client,
 	ws *ent.RevenueWorkspace,
-	_ *ent.User,
+	u *ent.User,
 	rel *ent.Relationship,
 	input *RelationshipObservationInput,
 	now time.Time,
 ) error {
+	if _, isConversation := input.Facts["conversation_extraction"]; !isConversation {
+		return nil
+	}
 	service := &Service{client: client, now: func() time.Time { return now }}
+	if input.Source == "gmail" || input.Source == "calendar" {
+		if err := service.AuthorizeCommunicationObservation(ctx, u, *input); err != nil {
+			return err
+		}
+	}
 	layers, err := service.conversationPolicyLayersFor(ctx, client, ws, rel)
 	if err != nil {
 		return err

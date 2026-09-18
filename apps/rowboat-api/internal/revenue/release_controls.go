@@ -332,6 +332,7 @@ var trustEventNames = map[string]bool{
 	"mission_control_opened":     true,
 	"identity_candidate_decided": true, "projection_failed": true,
 	"attention_item_decided": true,
+	"communication_purged":   true,
 }
 
 var trustEventOutcomes = map[string]bool{
