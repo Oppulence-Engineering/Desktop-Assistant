@@ -225,6 +225,27 @@ func (e *GmailExecutor) FetchBody(ctx context.Context, userID uuid.UUID, message
 	return e.google.GetMessageBody(ctx, token, messageID)
 }
 
+// FetchTextAttachment implements CommunicationAttachmentFetcher for bounded
+// Gmail text attachments after privacy authorization succeeds server-side.
+func (e *GmailExecutor) FetchTextAttachment(
+	ctx context.Context,
+	userID uuid.UUID,
+	messageID, attachmentID, filename, mimeType string,
+	size int64,
+) (string, error) {
+	_, token, err := e.connection(ctx, userID, scopeGmailReadonly)
+	if err != nil {
+		return "", err
+	}
+	result, err := e.google.GetTextAttachment(ctx, token, messageID, googleapi.GmailAttachment{
+		ID: attachmentID, Filename: filename, MIMEType: mimeType, Size: int(size),
+	})
+	if err != nil {
+		return "", err
+	}
+	return result.Content, nil
+}
+
 // SyncHistory implements MailSyncer (RFC 031 Layer-1 push sync): from a stored
 // history cursor, list the touched threads via the Gmail History API and fetch
 // each thread's metadata. Returns the threads, the user's own address, and the

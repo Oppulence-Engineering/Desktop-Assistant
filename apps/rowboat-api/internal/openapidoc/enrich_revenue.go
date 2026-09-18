@@ -589,6 +589,34 @@ func addRevenueSchemas(schemas obj) {
 		"sourceEventId": stringSchema("Source event id used for deduplication.", "msg_01"),
 		"occurredAt":    stringSchema("When the outcome occurred.", "2026-07-12T14:00:00Z", obj{"format": "date-time"}),
 	}, "id", "kind", "source", "sourceEventId", "occurredAt")
+
+	schemas["CommunicationAccess"] = objectSchema("Authorized communication fields for one actor.", obj{
+		"metadata":      boolSchema("Metadata visibility.", true),
+		"subject":       boolSchema("Subject visibility.", true),
+		"body":          boolSchema("Body visibility.", false),
+		"attachments":   boolSchema("Attachment visibility.", false),
+		"protected":     boolSchema("Protected recipient match.", false),
+		"reason":        stringSchema("Decision reason.", "owner_default"),
+		"policyVersion": intSchema("Policy version.", 1),
+	}, "metadata", "subject", "body", "attachments", "reason")
+	schemas["CommunicationTimelineItem"] = objectSchema("One redacted communication metadata row.", obj{
+		"id":              uuidSchema("Interaction id.", "9c8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"source":          stringEnum("Provider source.", "gmail", "gmail", "calendar"),
+		"interactionType": stringEnum("Interaction kind.", "email", "email", "meeting"),
+		"direction":       stringSchema("Direction.", "inbound"),
+		"subject":         stringSchema("Redacted subject.", "Follow up"),
+		"occurredAt":      stringSchema("When it occurred.", "2026-09-06T12:00:00Z", obj{"format": "date-time"}),
+		"visibility":      stringEnum("Stored visibility.", "metadata", "private", "metadata", "full"),
+		"ownerId":         uuidSchema("Mailbox owner.", "7b8dfa9b-a7b2-46ea-982c-622a914c00e5"),
+		"bodyLocked":      boolSchema("Whether the body remains locked.", true),
+		"attachmentCount": intSchema("Attachment count.", 1),
+		"access":          ref("CommunicationAccess"),
+	}, "id", "source", "interactionType", "occurredAt", "visibility", "ownerId", "bodyLocked", "access")
+	schemas["CommunicationTimelinePage"] = objectSchema("Paginated communication timeline.", obj{
+		"items":      arraySchema("Timeline items.", ref("CommunicationTimelineItem")),
+		"hasMore":    boolSchema("More pages exist.", false),
+		"nextBefore": stringSchema("Cursor for the next page.", "2026-09-06T12:00:00Z", obj{"format": "date-time"}, nullable()),
+	}, "items", "hasMore")
 }
 
 // restoreRevenueSchemaOverrides runs after the generic Ent field documentation
@@ -789,6 +817,11 @@ func addRevenuePaths(paths obj) {
 	})}
 	paths["/v1/relationships/{relationshipId}/timeline"] = obj{"get": operation("Relationship Intelligence", "Get evidence timeline", "Returns the latest immutable observations for a relationship.", "getRelationshipTimeline", bearer(), append(relationshipParam, obj{"name": "limit", "in": "query", "required": false, "description": "Maximum observations (1-100).", "schema": obj{"type": "integer"}}), nil, obj{
 		"200": jsonResponse("Evidence timeline.", objectSchema("Observation list.", obj{"observations": arraySchema("Observations.", ref("RelationshipObservation"))}), nil),
+		"401": responseRef("401"),
+		"404": responseRef("404"),
+	})}
+	paths["/v1/relationships/{relationshipId}/communication-timeline"] = obj{"get": operation("Relationship Intelligence", "Get communication timeline", "Returns paginated, policy-redacted Gmail and Calendar metadata for a relationship.", "getRelationshipCommunicationTimeline", bearer(), append(relationshipParam, obj{"name": "limit", "in": "query", "required": false, "description": "Maximum items (1-100).", "schema": obj{"type": "integer"}}, obj{"name": "before", "in": "query", "required": false, "description": "Return items before this RFC3339 timestamp.", "schema": obj{"type": "string", "format": "date-time"}}), nil, obj{
+		"200": jsonResponse("Communication timeline.", ref("CommunicationTimelinePage"), nil),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
 	})}
@@ -1165,6 +1198,27 @@ func addRevenuePaths(paths obj) {
 		"200": jsonResponse("Original email body.", objectSchema("Body.", obj{"body": stringSchema("Plain-text body.", "Hi — following up on the proposal...")}), nil),
 		"401": responseRef("401"),
 		"404": responseRef("404"),
+	})}
+	paths["/v1/revenue-workspaces/current/communications/{interactionId}/body"] = obj{"get": operation("Relationship Intelligence", "Get authorized communication body", "Returns the plain-text body for one interaction when policy and grants allow it.", "getCommunicationInteractionBody", bearer(), []any{
+		obj{"name": "interactionId", "in": "path", "required": true, "description": "Interaction id.", "schema": obj{"type": "string", "format": "uuid"}},
+	}, nil, obj{
+		"200": jsonResponse("Authorized body.", objectSchema("Body result.", obj{
+			"body":   stringSchema("Plain-text body.", "Thanks for the update."),
+			"access": ref("CommunicationAccess"),
+		}), nil),
+		"401": responseRef("401"), "403": responseRef("403"), "404": responseRef("404"),
+	})}
+	paths["/v1/revenue-workspaces/current/communications/attachments/{attachmentId}/content"] = obj{"get": operation("Relationship Intelligence", "Get authorized attachment content", "Returns one scanned text attachment when policy and grants allow it.", "getCommunicationAttachmentContent", bearer(), []any{
+		obj{"name": "attachmentId", "in": "path", "required": true, "description": "Attachment id.", "schema": obj{"type": "string", "format": "uuid"}},
+	}, nil, obj{
+		"200": jsonResponse("Authorized attachment.", objectSchema("Attachment result.", obj{
+			"filename":   stringSchema("Filename.", "notes.txt"),
+			"mimeType":   stringSchema("MIME type.", "text/plain"),
+			"content":    stringSchema("UTF-8 content.", "Quarterly plan"),
+			"scanStatus": stringSchema("Scan status.", "clean"),
+			"access":     ref("CommunicationAccess"),
+		}), nil),
+		"401": responseRef("401"), "403": responseRef("403"), "404": responseRef("404"),
 	})}
 	paths["/v1/revenue-actions/{actionId}/outcomes"] = obj{"post": operation("Revenue", "Record an outcome", "Appends an observed outcome idempotently on (action, source, sourceEventId); the duplicate returns the stored row.", "recordRevenueActionOutcome", bearer(), actionParam, jsonRequest("Outcome.", objectSchema("Outcome request.", obj{
 		"kind":          stringEnum("Outcome kind.", "replied", "sent", "delivered", "bounced", "replied", "meeting_booked", "won", "lost", "dismissed", "bad_recommendation"),

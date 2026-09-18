@@ -208,6 +208,51 @@ export interface ResearchConsentState {
   consentedAt?: string;
 }
 
+export interface CommunicationPolicy {
+  id: string;
+  sourceAccountId: string;
+  metadataVisibility: "private" | "workspace";
+  shareSubject: boolean;
+  shareBody: boolean;
+  shareAttachments: boolean;
+  signatureEnrichment: boolean;
+  modelContactExtraction: boolean;
+  retentionDays: number;
+  version: number;
+}
+
+export interface CommunicationPrivacyRule {
+  id: string;
+  kind: string;
+  value: string;
+  valueHash: string;
+  active: boolean;
+}
+
+export interface CommunicationAccess {
+  metadata: boolean;
+  subject: boolean;
+  body: boolean;
+  attachments: boolean;
+  protected: boolean;
+  reason: string;
+  policyVersion: number;
+}
+
+export interface CommunicationTimelineItem {
+  id: string;
+  source: string;
+  interactionType: string;
+  direction?: string;
+  subject?: string;
+  occurredAt: string;
+  visibility: string;
+  ownerId: string;
+  bodyLocked: boolean;
+  attachmentCount: number;
+  access: CommunicationAccess;
+}
+
 export interface ResearchStatus {
   available: boolean;
   allowed: boolean;
