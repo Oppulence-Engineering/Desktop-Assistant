@@ -139,9 +139,10 @@ describe("revenue panel after an audit", () => {
 
     renderPanel("commitments");
     await userEvent.click(
-      await screen.findByRole("button", { name: /Run 90-day Promise Leak Audit/ }),
+      await screen.findByRole("button", { name: /Run 6-month Promise Leak Audit/ }),
     );
 
+    expect(mocks.startScan).toHaveBeenCalledWith(180);
     expect(await screen.findByText("Google needs reconnecting")).toBeInTheDocument();
     expect(screen.queryByText(/connection looks healthy now/)).not.toBeInTheDocument();
     await waitFor(() => {

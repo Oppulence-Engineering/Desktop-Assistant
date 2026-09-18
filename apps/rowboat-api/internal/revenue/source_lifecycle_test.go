@@ -45,6 +45,75 @@ func TestSourceAuthorizationRecordsConsentWithoutRequiringFutureWriteScopes(t *t
 	}
 }
 
+func TestSourceAuthorizationReplayPreservesBackfillProgress(t *testing.T) {
+	f := newFixture(t)
+	base := time.Date(2026, 9, 17, 12, 0, 0, 0, time.UTC)
+	f.svc.now = func() time.Time { return base }
+	scopes := []string{
+		"https://www.googleapis.com/auth/gmail.readonly",
+		"https://www.googleapis.com/auth/calendar.events.readonly",
+	}
+	if _, err := f.svc.ReportSourceAuthorization(f.ctx, f.user, "google", SourceAuthorizationInput{
+		SourceAccountID: "owner@example.com", State: "completed", GrantedScopes: scopes,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	queued, err := f.svc.BeginSourceBackfill(f.ctx, f.user, "google", "owner@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	replayed, err := f.svc.ReportSourceAuthorization(f.ctx, f.user, "google", SourceAuthorizationInput{
+		SourceAccountID: "owner@example.com", State: "completed", GrantedScopes: scopes,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if replayed.Status != "backfilling" || replayed.BackfillPhase != "queued" ||
+		replayed.SyncStartedAt == nil || !replayed.SyncStartedAt.Equal(*queued.SyncStartedAt) {
+		t.Fatalf("authorization replay rewound queued backfill: %#v", replayed)
+	}
+
+	progressAt := base.Add(time.Minute)
+	running, err := f.svc.ReportSourceSyncProgress(f.ctx, f.user, SourceSyncProgressInput{
+		Source: "google", SourceAccountID: "owner@example.com", Completed: 25, Total: 100,
+		Watermark: "cursor-25", OccurredAt: progressAt,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	replayed, err = f.svc.ReportSourceAuthorization(f.ctx, f.user, "google", SourceAuthorizationInput{
+		SourceAccountID: "owner@example.com", State: "completed", GrantedScopes: scopes,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if replayed.BackfillPhase != "running" || replayed.BackfillCompleted != 25 ||
+		replayed.BackfillTotal != 100 || replayed.Watermark != "cursor-25" ||
+		replayed.SyncStartedAt == nil || !replayed.SyncStartedAt.Equal(*running.SyncStartedAt) {
+		t.Fatalf("authorization replay rewound running backfill: %#v", replayed)
+	}
+
+	completedAt := base.Add(2 * time.Minute)
+	if _, err := f.svc.ReportSourceSyncProgress(f.ctx, f.user, SourceSyncProgressInput{
+		Source: "google", SourceAccountID: "owner@example.com", Completed: 100, Total: 100,
+		Watermark: "cursor-100", Done: true, OccurredAt: completedAt,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	replayed, err = f.svc.ReportSourceAuthorization(f.ctx, f.user, "google", SourceAuthorizationInput{
+		SourceAccountID: "owner@example.com", State: "completed", GrantedScopes: scopes,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if replayed.Status != "live" || replayed.BackfillPhase != "live" ||
+		replayed.BackfillCompleted != 100 || replayed.BackfillCompletedAt == nil ||
+		!replayed.BackfillCompletedAt.Equal(completedAt) {
+		t.Fatalf("authorization replay rewound completed backfill: %#v", replayed)
+	}
+}
+
 func TestSourceAuthorizationCancellationAndFailureAreExplicit(t *testing.T) {
 	f := newFixture(t)
 	canceled, err := f.svc.ReportSourceAuthorization(f.ctx, f.user, "slack", SourceAuthorizationInput{State: "canceled"})

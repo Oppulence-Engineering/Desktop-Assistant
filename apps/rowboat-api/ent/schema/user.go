@@ -101,6 +101,12 @@ func (User) Edges() []ent.Edge {
 		edge.To("mail_message_metas", MailMessageMeta.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
 		edge.To("mail_body_caches", MailBodyCache.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
 		edge.To("mail_signals", MailSignal.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
+		edge.To("owned_communication_interactions", CommunicationInteraction.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
+		edge.To("communication_sync_cursors", CommunicationSyncCursor.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
+		edge.To("communication_privacy_policies", CommunicationPrivacyPolicy.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
+		edge.To("communication_privacy_rules", CommunicationPrivacyRule.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
+		edge.To("owned_communication_share_grants", CommunicationShareGrant.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
+		edge.To("received_communication_share_grants", CommunicationShareGrant.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
 		// Relationship intelligence state machine (RFC 036).
 		edge.To("relationship_participants", RelationshipParticipant.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
 		edge.To("relationship_identities", RelationshipIdentity.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
@@ -130,5 +136,8 @@ func (User) Edges() []ent.Edge {
 		// RFC 023 closed-loop actions.
 		edge.To("action_proposals", ActionProposal.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
 		edge.To("approval_tokens", ApprovalToken.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip()),
+		// Authenticated console state.
+		edge.To("user_preferences", UserPreference.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip(), entgql.Skip()),
+		edge.To("console_resources", ConsoleResource.Type).Annotations(entsql.OnDelete(entsql.Cascade), entproto.Skip(), entgql.Skip()),
 	}
 }

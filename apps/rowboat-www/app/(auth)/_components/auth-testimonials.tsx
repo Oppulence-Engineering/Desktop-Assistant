@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { Badge } from "@oppulence/ui/components/badge";
+
 export type Testimonial = {
   quote: string;
   name: string;
@@ -59,17 +61,26 @@ export function AuthTestimonials({ items }: { items: Testimonial[] }) {
         <blockquote>{active.quote}</blockquote>
         <figcaption>
           <img alt="" src={active.avatar} />
-          <span>
+          <Badge
+            className="grid rounded-none border-0 bg-transparent p-0 font-normal shadow-none"
+            variant="ghost"
+          >
             <strong>{active.name}</strong>
             {active.title}
-          </span>
+          </Badge>
         </figcaption>
       </div>
 
       {items.length > 1 ? (
         <div aria-hidden className="sm-auth-dots">
           {items.map((item, i) => (
-            <span data-active={i === index ? "true" : "false"} key={item.quote} />
+            <Badge
+              aria-hidden="true"
+              className="block h-[3px] w-[18px] rounded-none border-0 bg-[var(--sm-line)] p-0 shadow-none data-[active=true]:bg-[var(--sm-blue)]"
+              data-active={i === index ? "true" : "false"}
+              key={item.quote}
+              variant="ghost"
+            />
           ))}
         </div>
       ) : null}

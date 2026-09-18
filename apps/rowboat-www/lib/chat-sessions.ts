@@ -2,6 +2,8 @@
 
 import "client-only";
 
+import type { ConversationItem } from "@/lib/agent-history";
+
 /**
  * Sensitive chat history is cached in memory only; the organization-scoped
  * agent-session event log is the durable source used after a reload.
@@ -22,10 +24,22 @@ export type SessionMeta = {
 };
 
 export type StoredSession = SessionMeta & {
-  items: unknown[];
+  items: ConversationItem[];
 };
 
 const sessionsByScope = new Map<string, Map<string, StoredSession>>();
+
+/** Merges local and remote metadata by run id, keeping the newest entry first. */
+export function mergeSessionLists(...lists: SessionMeta[][]): SessionMeta[] {
+  return [
+    ...new Map(
+      lists
+        .flat()
+        .sort((left, right) => left.updatedAt - right.updatedAt)
+        .map((session) => [session.runId, session] as const),
+    ).values(),
+  ].sort((left, right) => right.updatedAt - left.updatedAt);
+}
 
 function scopeKey(scope: SessionScope): string {
   return `${scope.organizationId ?? "personal"}:${scope.userId}`;

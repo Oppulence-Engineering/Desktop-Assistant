@@ -261,6 +261,90 @@ func (f CommitmentEventFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Va
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommitmentEventMutation", m)
 }
 
+// The CommunicationAttachmentFunc type is an adapter to allow the use of ordinary
+// function as CommunicationAttachment mutator.
+type CommunicationAttachmentFunc func(context.Context, *ent.CommunicationAttachmentMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommunicationAttachmentFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommunicationAttachmentMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommunicationAttachmentMutation", m)
+}
+
+// The CommunicationInteractionFunc type is an adapter to allow the use of ordinary
+// function as CommunicationInteraction mutator.
+type CommunicationInteractionFunc func(context.Context, *ent.CommunicationInteractionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommunicationInteractionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommunicationInteractionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommunicationInteractionMutation", m)
+}
+
+// The CommunicationParticipantFunc type is an adapter to allow the use of ordinary
+// function as CommunicationParticipant mutator.
+type CommunicationParticipantFunc func(context.Context, *ent.CommunicationParticipantMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommunicationParticipantFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommunicationParticipantMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommunicationParticipantMutation", m)
+}
+
+// The CommunicationPrivacyPolicyFunc type is an adapter to allow the use of ordinary
+// function as CommunicationPrivacyPolicy mutator.
+type CommunicationPrivacyPolicyFunc func(context.Context, *ent.CommunicationPrivacyPolicyMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommunicationPrivacyPolicyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommunicationPrivacyPolicyMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommunicationPrivacyPolicyMutation", m)
+}
+
+// The CommunicationPrivacyRuleFunc type is an adapter to allow the use of ordinary
+// function as CommunicationPrivacyRule mutator.
+type CommunicationPrivacyRuleFunc func(context.Context, *ent.CommunicationPrivacyRuleMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommunicationPrivacyRuleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommunicationPrivacyRuleMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommunicationPrivacyRuleMutation", m)
+}
+
+// The CommunicationShareGrantFunc type is an adapter to allow the use of ordinary
+// function as CommunicationShareGrant mutator.
+type CommunicationShareGrantFunc func(context.Context, *ent.CommunicationShareGrantMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommunicationShareGrantFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommunicationShareGrantMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommunicationShareGrantMutation", m)
+}
+
+// The CommunicationSyncCursorFunc type is an adapter to allow the use of ordinary
+// function as CommunicationSyncCursor mutator.
+type CommunicationSyncCursorFunc func(context.Context, *ent.CommunicationSyncCursorMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CommunicationSyncCursorFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CommunicationSyncCursorMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CommunicationSyncCursorMutation", m)
+}
+
 // The ConnectorAuditEventFunc type is an adapter to allow the use of ordinary
 // function as ConnectorAuditEvent mutator.
 type ConnectorAuditEventFunc func(context.Context, *ent.ConnectorAuditEventMutation) (ent.Value, error)
@@ -307,6 +391,18 @@ func (f ConnectorRevocationJobFunc) Mutate(ctx context.Context, m ent.Mutation) 
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConnectorRevocationJobMutation", m)
+}
+
+// The ConsoleResourceFunc type is an adapter to allow the use of ordinary
+// function as ConsoleResource mutator.
+type ConsoleResourceFunc func(context.Context, *ent.ConsoleResourceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConsoleResourceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConsoleResourceMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConsoleResourceMutation", m)
 }
 
 // The ConversationIntelligenceArtifactFunc type is an adapter to allow the use of ordinary
@@ -931,6 +1027,18 @@ func (f UserHistoryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserHistoryMutation", m)
+}
+
+// The UserPreferenceFunc type is an adapter to allow the use of ordinary
+// function as UserPreference mutator.
+type UserPreferenceFunc func(context.Context, *ent.UserPreferenceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f UserPreferenceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.UserPreferenceMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserPreferenceMutation", m)
 }
 
 // The VoiceAPIKeyFunc type is an adapter to allow the use of ordinary

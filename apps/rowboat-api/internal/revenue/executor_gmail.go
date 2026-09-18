@@ -27,6 +27,7 @@ const (
 	scopeGmailReadonly = "https://www.googleapis.com/auth/gmail.readonly"
 	scopeGmailCompose  = "https://www.googleapis.com/auth/gmail.compose"
 	scopeGmailSend     = "https://www.googleapis.com/auth/gmail.send"
+	scopeCalendarRead  = "https://www.googleapis.com/auth/calendar.events.readonly"
 )
 
 // GmailExecutor performs email-channel revenue actions through the executing
@@ -150,6 +151,43 @@ func (e *GmailExecutor) SweepThreads(ctx context.Context, userID uuid.UUID, look
 		threads = append(threads, msgs)
 	}
 	return threads, conn.ExternalAccountID, nil
+}
+
+// ReadCalendarEvents reads a bounded primary-calendar window through the same
+// user-scoped Google credential used for Gmail. Keeping token resolution here
+// ensures one founder's consent can never be substituted for another user's.
+func (e *GmailExecutor) ReadCalendarEvents(
+	ctx context.Context,
+	userID uuid.UUID,
+	lookbackDays int,
+	maxEvents int,
+) ([]googleapi.CalendarEvent, string, error) {
+	conn, token, err := e.connection(ctx, userID, scopeCalendarRead)
+	if err != nil {
+		return nil, "", err
+	}
+	if lookbackDays <= 0 || maxEvents <= 0 {
+		return nil, conn.ExternalAccountID, nil
+	}
+	now := time.Now().UTC()
+	query := googleapi.CalendarQuery{
+		TimeMin: now.Add(-time.Duration(lookbackDays) * 24 * time.Hour).Format(time.RFC3339),
+		TimeMax: now.Format(time.RFC3339),
+	}
+	events := make([]googleapi.CalendarEvent, 0, maxEvents)
+	for len(events) < maxEvents {
+		query.Limit = min(maxEvents-len(events), 10)
+		page, nextPageToken, listErr := e.google.ListEvents(ctx, token, query)
+		if listErr != nil {
+			return nil, conn.ExternalAccountID, fmt.Errorf("revenue: calendar event sweep: %w", listErr)
+		}
+		events = append(events, page...)
+		if nextPageToken == "" {
+			break
+		}
+		query.PageToken = nextPageToken
+	}
+	return events, conn.ExternalAccountID, nil
 }
 
 // sweepQuery is the Gmail search the scan reads from.

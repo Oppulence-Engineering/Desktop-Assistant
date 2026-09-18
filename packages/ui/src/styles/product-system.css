@@ -171,3 +171,152 @@ body:has([data-product-shell]) *,
   height: 14px !important;
   width: 14px !important;
 }
+
+/* ── Phosphor icon system ───────────────────────────────────────────────────
+   Shared treatment for `@oppulence/ui` and product surfaces: crisp geometry,
+   optical centering, and tactile hover/active feedback without per-call-site CSS. */
+:root {
+  --icon-duration: 160ms;
+  --icon-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --icon-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --icon-transition-base:
+    color var(--icon-duration) var(--icon-ease), opacity var(--icon-duration) var(--icon-ease),
+    transform var(--icon-duration) var(--icon-ease-spring);
+}
+
+[data-product-shell]
+  :is(
+    button,
+    a,
+    [role="button"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="option"],
+    [role="tab"],
+    summary,
+    label
+  )
+  svg:not([data-preserve-size]),
+svg.app-icon {
+  display: block;
+  flex: none;
+  vertical-align: middle;
+  transform-origin: center;
+  shape-rendering: geometricPrecision;
+  overflow: visible;
+  transition: var(--icon-transition-base);
+}
+
+svg.app-icon:not(.animate-spin) {
+  opacity: 0.88;
+}
+
+svg.app-icon.fill-current,
+svg.app-icon[class*="fill-current"] {
+  opacity: 1;
+}
+
+:is(
+    button,
+    a,
+    [role="button"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="option"],
+    [role="tab"],
+    summary,
+    label
+  ):not(:disabled):hover
+  :is(svg.app-icon, svg:not([data-preserve-size])),
+:is(
+    button,
+    a,
+    [role="button"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="option"],
+    [role="tab"],
+    summary,
+    label
+  ):not(:disabled):focus-visible
+  :is(svg.app-icon, svg:not([data-preserve-size])),
+[aria-current]:not([aria-current="false"]) :is(svg.app-icon, svg:not([data-preserve-size])),
+[aria-selected="true"] :is(svg.app-icon, svg:not([data-preserve-size])),
+[aria-pressed="true"] :is(svg.app-icon, svg:not([data-preserve-size])),
+[data-active="true"] :is(svg.app-icon, svg:not([data-preserve-size])),
+[data-state="on"] :is(svg.app-icon, svg:not([data-preserve-size])),
+[data-state="checked"] :is(svg.app-icon, svg:not([data-preserve-size])) {
+  opacity: 1;
+}
+
+:is(
+    button,
+    a,
+    [role="button"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="option"],
+    [role="tab"],
+    summary,
+    label
+  ):not(:disabled):active
+  :is(svg.app-icon, svg:not([data-preserve-size])):not([class*="translate"]):not(
+    [class*="rotate"]
+  ) {
+  transform: scale(0.92);
+}
+
+:is(svg.app-icon, [data-product-shell] svg.animate-spin) {
+  transition: none;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(svg.app-icon, [data-product-shell] svg:not([data-preserve-size])) {
+    transition: none;
+  }
+
+  :is(
+      button,
+      a,
+      [role="button"],
+      [role="menuitem"],
+      [role="menuitemcheckbox"],
+      [role="menuitemradio"],
+      [role="option"],
+      [role="tab"],
+      summary,
+      label
+    ):active
+    :is(svg.app-icon, svg:not([data-preserve-size])):not(.animate-spin) {
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  :is(svg.app-icon, [data-product-shell] svg:not([data-preserve-size])) {
+    color: currentColor;
+  }
+}
+
+/* Docs / marketing nav icons — match better-auth minimal glyph treatment */
+.docs-layout #nd-page article > div.\@container > a div svg.app-icon,
+.marketing-icon-frame svg.app-icon {
+  opacity: 0.72;
+}
+
+.docs-layout #nd-page article > div.\@container > a:hover div svg.app-icon,
+.marketing-polar :is(a, article, button):hover .marketing-icon-frame svg.app-icon {
+  opacity: 1;
+}
+
+.marketing-polar
+  :is(a, article, button):hover
+  .marketing-icon-frame
+  svg.app-icon:not(.animate-spin) {
+  animation: icon-bounce 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}

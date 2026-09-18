@@ -4,6 +4,9 @@ import { createHash, randomBytes, randomUUID } from "crypto";
 
 import type { WorkOSPKCECookie } from "@/lib/auth/schemas";
 
+/** Must stay aligned with the PKCE cookie maxAge in lib/auth/cookies.ts. */
+export const PKCE_MAX_AGE_SECONDS = 60 * 30;
+
 function base64url(input: Buffer): string {
   return input.toString("base64url");
 }
@@ -22,6 +25,14 @@ export function createPKCECookie(returnTo: string): WorkOSPKCECookie & { codeCha
     returnTo,
     createdAt: Math.floor(Date.now() / 1000),
   };
+}
+
+/** Rejects PKCE state that outlived the sealed cookie's intended lifetime. */
+export function isPKCECookieFresh(
+  pending: WorkOSPKCECookie,
+  nowSeconds = Math.floor(Date.now() / 1000),
+): boolean {
+  return nowSeconds - pending.createdAt <= PKCE_MAX_AGE_SECONDS;
 }
 
 /** Allows only same-origin relative redirects after login/logout. */

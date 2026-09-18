@@ -1,5 +1,6 @@
 "use client";
 
+import { Label } from "@oppulence/ui/components/label";
 import { useEffect, useState } from "react";
 
 /**
@@ -14,5 +15,5 @@ export function CurrentYear() {
     setYear(new Date().getFullYear());
   }, []);
 
-  return <span>{year}</span>;
+  return <Label className="font-normal">{year}</Label>;
 }

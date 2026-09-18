@@ -1,5 +1,7 @@
 "use client";
 
+import "client-only";
+
 // Thin analytics wrapper around PostHog. Initializes lazily on the first
 // capture, and only when NEXT_PUBLIC_POSTHOG_KEY is set — with no key it is a
 // silent no-op, so the dashboard works identically in dev and in any env that
@@ -7,8 +9,49 @@
 
 import posthog from "posthog-js";
 
+import { getConsolePreferences } from "@/lib/console";
+
 let initialized = false;
 let disabled = false;
+let consent: boolean | undefined;
+let consentRequest: Promise<boolean> | undefined;
+
+const SENSITIVE_PROPERTY =
+  /(?:id$|email|name|message|content|query|title|prompt|relationship|commitment)/i;
+
+function safeProperties(
+  props?: Record<string, unknown>,
+): Record<string, string | number | boolean> {
+  if (!props) return {};
+  return Object.fromEntries(
+    Object.entries(props).filter(
+      ([key, value]) =>
+        !SENSITIVE_PROPERTY.test(key) &&
+        (typeof value === "string" || typeof value === "number" || typeof value === "boolean"),
+    ),
+  ) as Record<string, string | number | boolean>;
+}
+
+async function hasConsent(): Promise<boolean> {
+  if (consent !== undefined) return consent;
+  consentRequest ??= getConsolePreferences()
+    .then((preferences) => {
+      consent = preferences.shareUsageData;
+      return consent;
+    })
+    .catch(() => false);
+  return consentRequest;
+}
+
+/** Keeps capture gating current immediately after the preference is patched. */
+export function setAnalyticsConsent(next: boolean): void {
+  consent = next;
+  consentRequest = Promise.resolve(next);
+  if (initialized) {
+    if (next) posthog.opt_in_capturing();
+    else posthog.opt_out_capturing();
+  }
+}
 
 function client(): typeof posthog | null {
   if (disabled) return null;
@@ -29,13 +72,17 @@ function client(): typeof posthog | null {
   return posthog;
 }
 
-/** capture emits one product event; a no-op when analytics is not configured. */
+/** Captures only after synced consent resolves true; failures remain no-ops. */
 export function capture(event: string, props?: Record<string, unknown>): void {
-  try {
-    client()?.capture(event, props);
-  } catch {
-    // analytics must never break the app
-  }
+  void hasConsent().then((allowed) => {
+    if (!allowed) return;
+    const sanitized = safeProperties(props);
+    try {
+      client()?.capture(event, sanitized);
+    } catch {
+      // analytics must never break the app
+    }
+  });
 }
 
 // Revenue funnel event names, kept in one place so they stay consistent.

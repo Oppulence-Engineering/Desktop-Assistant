@@ -29,10 +29,18 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialcleanupjob"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorcredentialrecovery"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorrevocationjob"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/deletedidentity"
@@ -86,6 +94,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userhistory"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -714,6 +723,195 @@ func (f TraverseCommitmentEvent) Traverse(ctx context.Context, q ent.Query) erro
 	return fmt.Errorf("unexpected query type %T. expect *ent.CommitmentEventQuery", q)
 }
 
+// The CommunicationAttachmentFunc type is an adapter to allow the use of ordinary function as a Querier.
+type CommunicationAttachmentFunc func(context.Context, *ent.CommunicationAttachmentQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f CommunicationAttachmentFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.CommunicationAttachmentQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.CommunicationAttachmentQuery", q)
+}
+
+// The TraverseCommunicationAttachment type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseCommunicationAttachment func(context.Context, *ent.CommunicationAttachmentQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseCommunicationAttachment) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseCommunicationAttachment) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CommunicationAttachmentQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.CommunicationAttachmentQuery", q)
+}
+
+// The CommunicationInteractionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type CommunicationInteractionFunc func(context.Context, *ent.CommunicationInteractionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f CommunicationInteractionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.CommunicationInteractionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.CommunicationInteractionQuery", q)
+}
+
+// The TraverseCommunicationInteraction type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseCommunicationInteraction func(context.Context, *ent.CommunicationInteractionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseCommunicationInteraction) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseCommunicationInteraction) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CommunicationInteractionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.CommunicationInteractionQuery", q)
+}
+
+// The CommunicationParticipantFunc type is an adapter to allow the use of ordinary function as a Querier.
+type CommunicationParticipantFunc func(context.Context, *ent.CommunicationParticipantQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f CommunicationParticipantFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.CommunicationParticipantQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.CommunicationParticipantQuery", q)
+}
+
+// The TraverseCommunicationParticipant type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseCommunicationParticipant func(context.Context, *ent.CommunicationParticipantQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseCommunicationParticipant) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseCommunicationParticipant) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CommunicationParticipantQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.CommunicationParticipantQuery", q)
+}
+
+// The CommunicationPrivacyPolicyFunc type is an adapter to allow the use of ordinary function as a Querier.
+type CommunicationPrivacyPolicyFunc func(context.Context, *ent.CommunicationPrivacyPolicyQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f CommunicationPrivacyPolicyFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.CommunicationPrivacyPolicyQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.CommunicationPrivacyPolicyQuery", q)
+}
+
+// The TraverseCommunicationPrivacyPolicy type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseCommunicationPrivacyPolicy func(context.Context, *ent.CommunicationPrivacyPolicyQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseCommunicationPrivacyPolicy) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseCommunicationPrivacyPolicy) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CommunicationPrivacyPolicyQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.CommunicationPrivacyPolicyQuery", q)
+}
+
+// The CommunicationPrivacyRuleFunc type is an adapter to allow the use of ordinary function as a Querier.
+type CommunicationPrivacyRuleFunc func(context.Context, *ent.CommunicationPrivacyRuleQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f CommunicationPrivacyRuleFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.CommunicationPrivacyRuleQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.CommunicationPrivacyRuleQuery", q)
+}
+
+// The TraverseCommunicationPrivacyRule type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseCommunicationPrivacyRule func(context.Context, *ent.CommunicationPrivacyRuleQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseCommunicationPrivacyRule) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseCommunicationPrivacyRule) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CommunicationPrivacyRuleQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.CommunicationPrivacyRuleQuery", q)
+}
+
+// The CommunicationShareGrantFunc type is an adapter to allow the use of ordinary function as a Querier.
+type CommunicationShareGrantFunc func(context.Context, *ent.CommunicationShareGrantQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f CommunicationShareGrantFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.CommunicationShareGrantQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.CommunicationShareGrantQuery", q)
+}
+
+// The TraverseCommunicationShareGrant type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseCommunicationShareGrant func(context.Context, *ent.CommunicationShareGrantQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseCommunicationShareGrant) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseCommunicationShareGrant) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CommunicationShareGrantQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.CommunicationShareGrantQuery", q)
+}
+
+// The CommunicationSyncCursorFunc type is an adapter to allow the use of ordinary function as a Querier.
+type CommunicationSyncCursorFunc func(context.Context, *ent.CommunicationSyncCursorQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f CommunicationSyncCursorFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.CommunicationSyncCursorQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.CommunicationSyncCursorQuery", q)
+}
+
+// The TraverseCommunicationSyncCursor type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseCommunicationSyncCursor func(context.Context, *ent.CommunicationSyncCursorQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseCommunicationSyncCursor) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseCommunicationSyncCursor) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.CommunicationSyncCursorQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.CommunicationSyncCursorQuery", q)
+}
+
 // The ConnectorAuditEventFunc type is an adapter to allow the use of ordinary function as a Querier.
 type ConnectorAuditEventFunc func(context.Context, *ent.ConnectorAuditEventQuery) (ent.Value, error)
 
@@ -820,6 +1018,33 @@ func (f TraverseConnectorRevocationJob) Traverse(ctx context.Context, q ent.Quer
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.ConnectorRevocationJobQuery", q)
+}
+
+// The ConsoleResourceFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ConsoleResourceFunc func(context.Context, *ent.ConsoleResourceQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ConsoleResourceFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ConsoleResourceQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ConsoleResourceQuery", q)
+}
+
+// The TraverseConsoleResource type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseConsoleResource func(context.Context, *ent.ConsoleResourceQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseConsoleResource) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseConsoleResource) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ConsoleResourceQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ConsoleResourceQuery", q)
 }
 
 // The ConversationIntelligenceArtifactFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -2226,6 +2451,33 @@ func (f TraverseUserHistory) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.UserHistoryQuery", q)
 }
 
+// The UserPreferenceFunc type is an adapter to allow the use of ordinary function as a Querier.
+type UserPreferenceFunc func(context.Context, *ent.UserPreferenceQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f UserPreferenceFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.UserPreferenceQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.UserPreferenceQuery", q)
+}
+
+// The TraverseUserPreference type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseUserPreference func(context.Context, *ent.UserPreferenceQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseUserPreference) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseUserPreference) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.UserPreferenceQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.UserPreferenceQuery", q)
+}
+
 // The VoiceAPIKeyFunc type is an adapter to allow the use of ordinary function as a Querier.
 type VoiceAPIKeyFunc func(context.Context, *ent.VoiceAPIKeyQuery) (ent.Value, error)
 
@@ -2352,6 +2604,20 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.CommitmentDependencyQuery, predicate.CommitmentDependency, commitmentdependency.OrderOption]{typ: ent.TypeCommitmentDependency, tq: q}, nil
 	case *ent.CommitmentEventQuery:
 		return &query[*ent.CommitmentEventQuery, predicate.CommitmentEvent, commitmentevent.OrderOption]{typ: ent.TypeCommitmentEvent, tq: q}, nil
+	case *ent.CommunicationAttachmentQuery:
+		return &query[*ent.CommunicationAttachmentQuery, predicate.CommunicationAttachment, communicationattachment.OrderOption]{typ: ent.TypeCommunicationAttachment, tq: q}, nil
+	case *ent.CommunicationInteractionQuery:
+		return &query[*ent.CommunicationInteractionQuery, predicate.CommunicationInteraction, communicationinteraction.OrderOption]{typ: ent.TypeCommunicationInteraction, tq: q}, nil
+	case *ent.CommunicationParticipantQuery:
+		return &query[*ent.CommunicationParticipantQuery, predicate.CommunicationParticipant, communicationparticipant.OrderOption]{typ: ent.TypeCommunicationParticipant, tq: q}, nil
+	case *ent.CommunicationPrivacyPolicyQuery:
+		return &query[*ent.CommunicationPrivacyPolicyQuery, predicate.CommunicationPrivacyPolicy, communicationprivacypolicy.OrderOption]{typ: ent.TypeCommunicationPrivacyPolicy, tq: q}, nil
+	case *ent.CommunicationPrivacyRuleQuery:
+		return &query[*ent.CommunicationPrivacyRuleQuery, predicate.CommunicationPrivacyRule, communicationprivacyrule.OrderOption]{typ: ent.TypeCommunicationPrivacyRule, tq: q}, nil
+	case *ent.CommunicationShareGrantQuery:
+		return &query[*ent.CommunicationShareGrantQuery, predicate.CommunicationShareGrant, communicationsharegrant.OrderOption]{typ: ent.TypeCommunicationShareGrant, tq: q}, nil
+	case *ent.CommunicationSyncCursorQuery:
+		return &query[*ent.CommunicationSyncCursorQuery, predicate.CommunicationSyncCursor, communicationsynccursor.OrderOption]{typ: ent.TypeCommunicationSyncCursor, tq: q}, nil
 	case *ent.ConnectorAuditEventQuery:
 		return &query[*ent.ConnectorAuditEventQuery, predicate.ConnectorAuditEvent, connectorauditevent.OrderOption]{typ: ent.TypeConnectorAuditEvent, tq: q}, nil
 	case *ent.ConnectorCredentialCleanupJobQuery:
@@ -2360,6 +2626,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.ConnectorCredentialRecoveryQuery, predicate.ConnectorCredentialRecovery, connectorcredentialrecovery.OrderOption]{typ: ent.TypeConnectorCredentialRecovery, tq: q}, nil
 	case *ent.ConnectorRevocationJobQuery:
 		return &query[*ent.ConnectorRevocationJobQuery, predicate.ConnectorRevocationJob, connectorrevocationjob.OrderOption]{typ: ent.TypeConnectorRevocationJob, tq: q}, nil
+	case *ent.ConsoleResourceQuery:
+		return &query[*ent.ConsoleResourceQuery, predicate.ConsoleResource, consoleresource.OrderOption]{typ: ent.TypeConsoleResource, tq: q}, nil
 	case *ent.ConversationIntelligenceArtifactQuery:
 		return &query[*ent.ConversationIntelligenceArtifactQuery, predicate.ConversationIntelligenceArtifact, conversationintelligenceartifact.OrderOption]{typ: ent.TypeConversationIntelligenceArtifact, tq: q}, nil
 	case *ent.CreditLedgerQuery:
@@ -2464,6 +2732,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.UserQuery, predicate.User, user.OrderOption]{typ: ent.TypeUser, tq: q}, nil
 	case *ent.UserHistoryQuery:
 		return &query[*ent.UserHistoryQuery, predicate.UserHistory, userhistory.OrderOption]{typ: ent.TypeUserHistory, tq: q}, nil
+	case *ent.UserPreferenceQuery:
+		return &query[*ent.UserPreferenceQuery, predicate.UserPreference, userpreference.OrderOption]{typ: ent.TypeUserPreference, tq: q}, nil
 	case *ent.VoiceAPIKeyQuery:
 		return &query[*ent.VoiceAPIKeyQuery, predicate.VoiceAPIKey, voiceapikey.OrderOption]{typ: ent.TypeVoiceAPIKey, tq: q}, nil
 	case *ent.VoiceSyncItemQuery:

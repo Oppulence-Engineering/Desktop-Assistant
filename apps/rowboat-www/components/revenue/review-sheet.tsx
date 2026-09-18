@@ -11,10 +11,11 @@ import {
   PencilSimple,
   Prohibit,
   XCircle,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 
 import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
 import { Badge } from "@oppulence/ui/components/badge";
+import { CardTitle } from "@oppulence/ui/components/card";
 import { Button } from "@oppulence/ui/components/button";
 import { Checkbox } from "@oppulence/ui/components/checkbox";
 import { Input } from "@oppulence/ui/components/input";
@@ -351,7 +352,7 @@ export function ReviewSheet({
           {isSend ? (
             <div className="flex flex-col gap-2 rounded-[2px] border border-border p-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-primary">Policy preflight</span>
+                <CardTitle className="text-sm text-primary">Policy preflight</CardTitle>
                 <PolicyBadge status={action.policyStatus} />
               </div>
               {!linked ? (

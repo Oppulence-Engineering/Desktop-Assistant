@@ -54,6 +54,20 @@ type Tx struct {
 	CommitmentDependency *CommitmentDependencyClient
 	// CommitmentEvent is the client for interacting with the CommitmentEvent builders.
 	CommitmentEvent *CommitmentEventClient
+	// CommunicationAttachment is the client for interacting with the CommunicationAttachment builders.
+	CommunicationAttachment *CommunicationAttachmentClient
+	// CommunicationInteraction is the client for interacting with the CommunicationInteraction builders.
+	CommunicationInteraction *CommunicationInteractionClient
+	// CommunicationParticipant is the client for interacting with the CommunicationParticipant builders.
+	CommunicationParticipant *CommunicationParticipantClient
+	// CommunicationPrivacyPolicy is the client for interacting with the CommunicationPrivacyPolicy builders.
+	CommunicationPrivacyPolicy *CommunicationPrivacyPolicyClient
+	// CommunicationPrivacyRule is the client for interacting with the CommunicationPrivacyRule builders.
+	CommunicationPrivacyRule *CommunicationPrivacyRuleClient
+	// CommunicationShareGrant is the client for interacting with the CommunicationShareGrant builders.
+	CommunicationShareGrant *CommunicationShareGrantClient
+	// CommunicationSyncCursor is the client for interacting with the CommunicationSyncCursor builders.
+	CommunicationSyncCursor *CommunicationSyncCursorClient
 	// ConnectorAuditEvent is the client for interacting with the ConnectorAuditEvent builders.
 	ConnectorAuditEvent *ConnectorAuditEventClient
 	// ConnectorCredentialCleanupJob is the client for interacting with the ConnectorCredentialCleanupJob builders.
@@ -62,6 +76,8 @@ type Tx struct {
 	ConnectorCredentialRecovery *ConnectorCredentialRecoveryClient
 	// ConnectorRevocationJob is the client for interacting with the ConnectorRevocationJob builders.
 	ConnectorRevocationJob *ConnectorRevocationJobClient
+	// ConsoleResource is the client for interacting with the ConsoleResource builders.
+	ConsoleResource *ConsoleResourceClient
 	// ConversationIntelligenceArtifact is the client for interacting with the ConversationIntelligenceArtifact builders.
 	ConversationIntelligenceArtifact *ConversationIntelligenceArtifactClient
 	// CreditLedger is the client for interacting with the CreditLedger builders.
@@ -166,6 +182,8 @@ type Tx struct {
 	User *UserClient
 	// UserHistory is the client for interacting with the UserHistory builders.
 	UserHistory *UserHistoryClient
+	// UserPreference is the client for interacting with the UserPreference builders.
+	UserPreference *UserPreferenceClient
 	// VoiceAPIKey is the client for interacting with the VoiceAPIKey builders.
 	VoiceAPIKey *VoiceAPIKeyClient
 	// VoiceSyncItem is the client for interacting with the VoiceSyncItem builders.
@@ -324,10 +342,18 @@ func (tx *Tx) init() {
 	tx.Commitment = NewCommitmentClient(tx.config)
 	tx.CommitmentDependency = NewCommitmentDependencyClient(tx.config)
 	tx.CommitmentEvent = NewCommitmentEventClient(tx.config)
+	tx.CommunicationAttachment = NewCommunicationAttachmentClient(tx.config)
+	tx.CommunicationInteraction = NewCommunicationInteractionClient(tx.config)
+	tx.CommunicationParticipant = NewCommunicationParticipantClient(tx.config)
+	tx.CommunicationPrivacyPolicy = NewCommunicationPrivacyPolicyClient(tx.config)
+	tx.CommunicationPrivacyRule = NewCommunicationPrivacyRuleClient(tx.config)
+	tx.CommunicationShareGrant = NewCommunicationShareGrantClient(tx.config)
+	tx.CommunicationSyncCursor = NewCommunicationSyncCursorClient(tx.config)
 	tx.ConnectorAuditEvent = NewConnectorAuditEventClient(tx.config)
 	tx.ConnectorCredentialCleanupJob = NewConnectorCredentialCleanupJobClient(tx.config)
 	tx.ConnectorCredentialRecovery = NewConnectorCredentialRecoveryClient(tx.config)
 	tx.ConnectorRevocationJob = NewConnectorRevocationJobClient(tx.config)
+	tx.ConsoleResource = NewConsoleResourceClient(tx.config)
 	tx.ConversationIntelligenceArtifact = NewConversationIntelligenceArtifactClient(tx.config)
 	tx.CreditLedger = NewCreditLedgerClient(tx.config)
 	tx.DeletedIdentity = NewDeletedIdentityClient(tx.config)
@@ -380,6 +406,7 @@ func (tx *Tx) init() {
 	tx.TenantEvidenceKey = NewTenantEvidenceKeyClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.UserHistory = NewUserHistoryClient(tx.config)
+	tx.UserPreference = NewUserPreferenceClient(tx.config)
 	tx.VoiceAPIKey = NewVoiceAPIKeyClient(tx.config)
 	tx.VoiceSyncItem = NewVoiceSyncItemClient(tx.config)
 	tx.WorkspaceFeatureControl = NewWorkspaceFeatureControlClient(tx.config)

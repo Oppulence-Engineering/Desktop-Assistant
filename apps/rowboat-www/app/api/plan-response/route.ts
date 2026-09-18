@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { parseJsonBody } from "@/lib/api/routes/parse";
+import { PlanResponseRequestSchema } from "@/lib/api/routes/schemas/plan-response";
+import { streamUpstreamResponse } from "@/lib/bff/upstream-response";
 import { rowboatApiURL } from "@/lib/auth/config";
 
+const MAX_BODY_BYTES = 256 * 1024;
+
 export async function POST(request: NextRequest) {
-  const body = (await request.json().catch(() => null)) as {
-    token?: string;
-    response?: Record<string, unknown>;
-  } | null;
-  const token = body?.token?.trim() ?? "";
-  if (!/^[a-f0-9]{64}$/.test(token)) {
-    return NextResponse.json({ detail: "The plan link is invalid." }, { status: 400 });
+  const parsed = await parseJsonBody(request, PlanResponseRequestSchema, MAX_BODY_BYTES);
+  if (!parsed.success) {
+    return NextResponse.json({ detail: "The plan request is invalid." }, { status: 400 });
   }
-  const hasResponse = body?.response !== undefined;
+
+  const { token, response } = parsed.data;
+  const hasResponse = response != null;
   const upstream = await fetch(
     rowboatApiURL(
       hasResponse ? "/v1/public/mutual-action-plan/responses" : "/v1/public/mutual-action-plan",
@@ -23,16 +26,10 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
         "X-Oppulence-Plan-Token": token,
       },
-      body: hasResponse ? JSON.stringify(body?.response) : undefined,
+      body: hasResponse ? JSON.stringify(response) : undefined,
       cache: "no-store",
       signal: AbortSignal.timeout(15_000),
     },
   );
-  return new NextResponse(upstream.body, {
-    status: upstream.status,
-    headers: {
-      "Content-Type": upstream.headers.get("content-type") ?? "application/json",
-      "Cache-Control": "no-store",
-    },
-  });
+  return streamUpstreamResponse(upstream);
 }

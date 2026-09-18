@@ -36,6 +36,9 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 		"/v1/auth/workos/exchange",
 		"/v1/auth/workos/refresh",
 		"/v1/me",
+		"/v1/console/preferences",
+		"/v1/console/resources",
+		"/v1/console/resources/{resourceId}",
 		"/v1/background-task-templates",
 		"/v1/background-task-templates/{templateSlug}",
 		"/v1/background-task-templates/{templateSlug}/instantiate",
@@ -102,6 +105,55 @@ func TestEnrichDocumentsMountedRuntimeAPI(t *testing.T) {
 	}
 	if paths["/credit-ledgers"] != nil {
 		t.Fatal("unmounted generated entity CRUD path should not be documented")
+	}
+}
+
+func TestEnrichDocumentsStrictConsoleContracts(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	for _, name := range []string{
+		"ConsolePreferences",
+		"ConsolePreferencesPatch",
+		"ConsoleResource",
+		"ConsoleResourceCreate",
+		"ConsoleNoteTemplatePayload",
+		"ConsoleNoteFavoritePayload",
+		"ConsoleGraphSavedViewPayload",
+	} {
+		schema := asObj(schemas[name])
+		if schema["additionalProperties"] != false {
+			t.Fatalf("%s must reject unknown fields", name)
+		}
+	}
+
+	paths := asObj(spec["paths"])
+	resources := asObj(paths["/v1/console/resources"])
+	if asObj(resources["get"])["security"] == nil || asObj(resources["post"])["security"] == nil {
+		t.Fatal("console resource operations must require bearer authentication")
+	}
+	createResponses := asObj(asObj(resources["post"])["responses"])
+	if createResponses["200"] == nil || createResponses["201"] == nil || createResponses["409"] == nil {
+		t.Fatal("console create must document replay, create, and name-conflict outcomes")
+	}
+}
+
+func TestEnrichDocumentsRevenueScanCoverage(t *testing.T) {
+	spec := obj{"components": obj{"schemas": obj{}}}
+	Enrich(spec)
+
+	schemas := asObj(asObj(spec["components"])["schemas"])
+	properties := asObj(asObj(schemas["RevenueLeakScan"])["properties"])
+	for _, field := range []string{
+		"commitmentsCreated",
+		"threadsDeepRead",
+		"threadsSnippetOnly",
+		"threadsSkipped",
+	} {
+		if properties[field] == nil {
+			t.Fatalf("RevenueLeakScan must document %s returned by the API", field)
+		}
 	}
 }
 

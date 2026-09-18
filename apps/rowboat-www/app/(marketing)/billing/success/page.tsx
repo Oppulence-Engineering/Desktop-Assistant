@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { Badge } from "@oppulence/ui/components/badge";
+
 const TITLE = "Subscription confirmed — Oppulence";
 const DESCRIPTION = "Stripe sends customers here after they pay for an Oppulence plan.";
 
@@ -20,9 +22,12 @@ export const metadata: Metadata = {
 export default function BillingSuccessRoute() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-6 py-20">
-      <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+      <Badge
+        className="rounded-none font-mono text-xs uppercase tracking-wider text-muted-foreground"
+        variant="outline"
+      >
         Billing
-      </span>
+      </Badge>
       <h1 className="text-3xl font-semibold tracking-tight">Your subscription is active</h1>
       <p className="text-[15px] leading-relaxed text-foreground/78">
         Thank you. Your payment went through, and your plan is now active on your account. Stripe

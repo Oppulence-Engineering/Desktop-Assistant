@@ -2,7 +2,7 @@
 
 import { Button } from "@oppulence/ui/components/button";
 import { cn } from "@/lib/utils";
-import { Check, Copy } from "@phosphor-icons/react";
+import { Check, Copy } from "@/lib/icons";
 import {
   type ComponentProps,
   createContext,

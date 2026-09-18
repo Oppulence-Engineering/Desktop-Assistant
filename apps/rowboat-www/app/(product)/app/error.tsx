@@ -1,6 +1,6 @@
 "use client";
 
-import { WarningCircleIcon } from "@phosphor-icons/react";
+import { WarningCircleIcon } from "@/lib/icons";
 
 import { Button } from "@oppulence/ui/components/button";
 

@@ -31,7 +31,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/connectorauditevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/consoleresource"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -77,6 +83,7 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/subscription"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/tenantevidencekey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/user"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/userpreference"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voiceapikey"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/voicesyncitem"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/workspacefeaturecontrol"
@@ -790,6 +797,96 @@ func (_u *UserUpdate) AddMailSignals(v ...*MailSignal) *UserUpdate {
 	return _u.AddMailSignalIDs(ids...)
 }
 
+// AddOwnedCommunicationInteractionIDs adds the "owned_communication_interactions" edge to the CommunicationInteraction entity by IDs.
+func (_u *UserUpdate) AddOwnedCommunicationInteractionIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddOwnedCommunicationInteractionIDs(ids...)
+	return _u
+}
+
+// AddOwnedCommunicationInteractions adds the "owned_communication_interactions" edges to the CommunicationInteraction entity.
+func (_u *UserUpdate) AddOwnedCommunicationInteractions(v ...*CommunicationInteraction) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOwnedCommunicationInteractionIDs(ids...)
+}
+
+// AddCommunicationSyncCursorIDs adds the "communication_sync_cursors" edge to the CommunicationSyncCursor entity by IDs.
+func (_u *UserUpdate) AddCommunicationSyncCursorIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddCommunicationSyncCursorIDs(ids...)
+	return _u
+}
+
+// AddCommunicationSyncCursors adds the "communication_sync_cursors" edges to the CommunicationSyncCursor entity.
+func (_u *UserUpdate) AddCommunicationSyncCursors(v ...*CommunicationSyncCursor) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommunicationSyncCursorIDs(ids...)
+}
+
+// AddCommunicationPrivacyPolicyIDs adds the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity by IDs.
+func (_u *UserUpdate) AddCommunicationPrivacyPolicyIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddCommunicationPrivacyPolicyIDs(ids...)
+	return _u
+}
+
+// AddCommunicationPrivacyPolicies adds the "communication_privacy_policies" edges to the CommunicationPrivacyPolicy entity.
+func (_u *UserUpdate) AddCommunicationPrivacyPolicies(v ...*CommunicationPrivacyPolicy) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommunicationPrivacyPolicyIDs(ids...)
+}
+
+// AddCommunicationPrivacyRuleIDs adds the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity by IDs.
+func (_u *UserUpdate) AddCommunicationPrivacyRuleIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddCommunicationPrivacyRuleIDs(ids...)
+	return _u
+}
+
+// AddCommunicationPrivacyRules adds the "communication_privacy_rules" edges to the CommunicationPrivacyRule entity.
+func (_u *UserUpdate) AddCommunicationPrivacyRules(v ...*CommunicationPrivacyRule) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommunicationPrivacyRuleIDs(ids...)
+}
+
+// AddOwnedCommunicationShareGrantIDs adds the "owned_communication_share_grants" edge to the CommunicationShareGrant entity by IDs.
+func (_u *UserUpdate) AddOwnedCommunicationShareGrantIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddOwnedCommunicationShareGrantIDs(ids...)
+	return _u
+}
+
+// AddOwnedCommunicationShareGrants adds the "owned_communication_share_grants" edges to the CommunicationShareGrant entity.
+func (_u *UserUpdate) AddOwnedCommunicationShareGrants(v ...*CommunicationShareGrant) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOwnedCommunicationShareGrantIDs(ids...)
+}
+
+// AddReceivedCommunicationShareGrantIDs adds the "received_communication_share_grants" edge to the CommunicationShareGrant entity by IDs.
+func (_u *UserUpdate) AddReceivedCommunicationShareGrantIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddReceivedCommunicationShareGrantIDs(ids...)
+	return _u
+}
+
+// AddReceivedCommunicationShareGrants adds the "received_communication_share_grants" edges to the CommunicationShareGrant entity.
+func (_u *UserUpdate) AddReceivedCommunicationShareGrants(v ...*CommunicationShareGrant) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddReceivedCommunicationShareGrantIDs(ids...)
+}
+
 // AddRelationshipParticipantIDs adds the "relationship_participants" edge to the RelationshipParticipant entity by IDs.
 func (_u *UserUpdate) AddRelationshipParticipantIDs(ids ...uuid.UUID) *UserUpdate {
 	_u.mutation.AddRelationshipParticipantIDs(ids...)
@@ -1163,6 +1260,36 @@ func (_u *UserUpdate) AddApprovalTokens(v ...*ApprovalToken) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddApprovalTokenIDs(ids...)
+}
+
+// AddUserPreferenceIDs adds the "user_preferences" edge to the UserPreference entity by IDs.
+func (_u *UserUpdate) AddUserPreferenceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddUserPreferenceIDs(ids...)
+	return _u
+}
+
+// AddUserPreferences adds the "user_preferences" edges to the UserPreference entity.
+func (_u *UserUpdate) AddUserPreferences(v ...*UserPreference) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddUserPreferenceIDs(ids...)
+}
+
+// AddConsoleResourceIDs adds the "console_resources" edge to the ConsoleResource entity by IDs.
+func (_u *UserUpdate) AddConsoleResourceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.AddConsoleResourceIDs(ids...)
+	return _u
+}
+
+// AddConsoleResources adds the "console_resources" edges to the ConsoleResource entity.
+func (_u *UserUpdate) AddConsoleResources(v ...*ConsoleResource) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConsoleResourceIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -2037,6 +2164,132 @@ func (_u *UserUpdate) RemoveMailSignals(v ...*MailSignal) *UserUpdate {
 	return _u.RemoveMailSignalIDs(ids...)
 }
 
+// ClearOwnedCommunicationInteractions clears all "owned_communication_interactions" edges to the CommunicationInteraction entity.
+func (_u *UserUpdate) ClearOwnedCommunicationInteractions() *UserUpdate {
+	_u.mutation.ClearOwnedCommunicationInteractions()
+	return _u
+}
+
+// RemoveOwnedCommunicationInteractionIDs removes the "owned_communication_interactions" edge to CommunicationInteraction entities by IDs.
+func (_u *UserUpdate) RemoveOwnedCommunicationInteractionIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveOwnedCommunicationInteractionIDs(ids...)
+	return _u
+}
+
+// RemoveOwnedCommunicationInteractions removes "owned_communication_interactions" edges to CommunicationInteraction entities.
+func (_u *UserUpdate) RemoveOwnedCommunicationInteractions(v ...*CommunicationInteraction) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOwnedCommunicationInteractionIDs(ids...)
+}
+
+// ClearCommunicationSyncCursors clears all "communication_sync_cursors" edges to the CommunicationSyncCursor entity.
+func (_u *UserUpdate) ClearCommunicationSyncCursors() *UserUpdate {
+	_u.mutation.ClearCommunicationSyncCursors()
+	return _u
+}
+
+// RemoveCommunicationSyncCursorIDs removes the "communication_sync_cursors" edge to CommunicationSyncCursor entities by IDs.
+func (_u *UserUpdate) RemoveCommunicationSyncCursorIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveCommunicationSyncCursorIDs(ids...)
+	return _u
+}
+
+// RemoveCommunicationSyncCursors removes "communication_sync_cursors" edges to CommunicationSyncCursor entities.
+func (_u *UserUpdate) RemoveCommunicationSyncCursors(v ...*CommunicationSyncCursor) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommunicationSyncCursorIDs(ids...)
+}
+
+// ClearCommunicationPrivacyPolicies clears all "communication_privacy_policies" edges to the CommunicationPrivacyPolicy entity.
+func (_u *UserUpdate) ClearCommunicationPrivacyPolicies() *UserUpdate {
+	_u.mutation.ClearCommunicationPrivacyPolicies()
+	return _u
+}
+
+// RemoveCommunicationPrivacyPolicyIDs removes the "communication_privacy_policies" edge to CommunicationPrivacyPolicy entities by IDs.
+func (_u *UserUpdate) RemoveCommunicationPrivacyPolicyIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveCommunicationPrivacyPolicyIDs(ids...)
+	return _u
+}
+
+// RemoveCommunicationPrivacyPolicies removes "communication_privacy_policies" edges to CommunicationPrivacyPolicy entities.
+func (_u *UserUpdate) RemoveCommunicationPrivacyPolicies(v ...*CommunicationPrivacyPolicy) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommunicationPrivacyPolicyIDs(ids...)
+}
+
+// ClearCommunicationPrivacyRules clears all "communication_privacy_rules" edges to the CommunicationPrivacyRule entity.
+func (_u *UserUpdate) ClearCommunicationPrivacyRules() *UserUpdate {
+	_u.mutation.ClearCommunicationPrivacyRules()
+	return _u
+}
+
+// RemoveCommunicationPrivacyRuleIDs removes the "communication_privacy_rules" edge to CommunicationPrivacyRule entities by IDs.
+func (_u *UserUpdate) RemoveCommunicationPrivacyRuleIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveCommunicationPrivacyRuleIDs(ids...)
+	return _u
+}
+
+// RemoveCommunicationPrivacyRules removes "communication_privacy_rules" edges to CommunicationPrivacyRule entities.
+func (_u *UserUpdate) RemoveCommunicationPrivacyRules(v ...*CommunicationPrivacyRule) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommunicationPrivacyRuleIDs(ids...)
+}
+
+// ClearOwnedCommunicationShareGrants clears all "owned_communication_share_grants" edges to the CommunicationShareGrant entity.
+func (_u *UserUpdate) ClearOwnedCommunicationShareGrants() *UserUpdate {
+	_u.mutation.ClearOwnedCommunicationShareGrants()
+	return _u
+}
+
+// RemoveOwnedCommunicationShareGrantIDs removes the "owned_communication_share_grants" edge to CommunicationShareGrant entities by IDs.
+func (_u *UserUpdate) RemoveOwnedCommunicationShareGrantIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveOwnedCommunicationShareGrantIDs(ids...)
+	return _u
+}
+
+// RemoveOwnedCommunicationShareGrants removes "owned_communication_share_grants" edges to CommunicationShareGrant entities.
+func (_u *UserUpdate) RemoveOwnedCommunicationShareGrants(v ...*CommunicationShareGrant) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOwnedCommunicationShareGrantIDs(ids...)
+}
+
+// ClearReceivedCommunicationShareGrants clears all "received_communication_share_grants" edges to the CommunicationShareGrant entity.
+func (_u *UserUpdate) ClearReceivedCommunicationShareGrants() *UserUpdate {
+	_u.mutation.ClearReceivedCommunicationShareGrants()
+	return _u
+}
+
+// RemoveReceivedCommunicationShareGrantIDs removes the "received_communication_share_grants" edge to CommunicationShareGrant entities by IDs.
+func (_u *UserUpdate) RemoveReceivedCommunicationShareGrantIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveReceivedCommunicationShareGrantIDs(ids...)
+	return _u
+}
+
+// RemoveReceivedCommunicationShareGrants removes "received_communication_share_grants" edges to CommunicationShareGrant entities.
+func (_u *UserUpdate) RemoveReceivedCommunicationShareGrants(v ...*CommunicationShareGrant) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveReceivedCommunicationShareGrantIDs(ids...)
+}
+
 // ClearRelationshipParticipants clears all "relationship_participants" edges to the RelationshipParticipant entity.
 func (_u *UserUpdate) ClearRelationshipParticipants() *UserUpdate {
 	_u.mutation.ClearRelationshipParticipants()
@@ -2560,6 +2813,48 @@ func (_u *UserUpdate) RemoveApprovalTokens(v ...*ApprovalToken) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveApprovalTokenIDs(ids...)
+}
+
+// ClearUserPreferences clears all "user_preferences" edges to the UserPreference entity.
+func (_u *UserUpdate) ClearUserPreferences() *UserUpdate {
+	_u.mutation.ClearUserPreferences()
+	return _u
+}
+
+// RemoveUserPreferenceIDs removes the "user_preferences" edge to UserPreference entities by IDs.
+func (_u *UserUpdate) RemoveUserPreferenceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveUserPreferenceIDs(ids...)
+	return _u
+}
+
+// RemoveUserPreferences removes "user_preferences" edges to UserPreference entities.
+func (_u *UserUpdate) RemoveUserPreferences(v ...*UserPreference) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveUserPreferenceIDs(ids...)
+}
+
+// ClearConsoleResources clears all "console_resources" edges to the ConsoleResource entity.
+func (_u *UserUpdate) ClearConsoleResources() *UserUpdate {
+	_u.mutation.ClearConsoleResources()
+	return _u
+}
+
+// RemoveConsoleResourceIDs removes the "console_resources" edge to ConsoleResource entities by IDs.
+func (_u *UserUpdate) RemoveConsoleResourceIDs(ids ...uuid.UUID) *UserUpdate {
+	_u.mutation.RemoveConsoleResourceIDs(ids...)
+	return _u
+}
+
+// RemoveConsoleResources removes "console_resources" edges to ConsoleResource entities.
+func (_u *UserUpdate) RemoveConsoleResources(v ...*ConsoleResource) *UserUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConsoleResourceIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -4512,6 +4807,276 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.OwnedCommunicationInteractionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationInteractionsTable,
+			Columns: []string{user.OwnedCommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOwnedCommunicationInteractionsIDs(); len(nodes) > 0 && !_u.mutation.OwnedCommunicationInteractionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationInteractionsTable,
+			Columns: []string{user.OwnedCommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OwnedCommunicationInteractionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationInteractionsTable,
+			Columns: []string{user.OwnedCommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommunicationSyncCursorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationSyncCursorsTable,
+			Columns: []string{user.CommunicationSyncCursorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsynccursor.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommunicationSyncCursorsIDs(); len(nodes) > 0 && !_u.mutation.CommunicationSyncCursorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationSyncCursorsTable,
+			Columns: []string{user.CommunicationSyncCursorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsynccursor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommunicationSyncCursorsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationSyncCursorsTable,
+			Columns: []string{user.CommunicationSyncCursorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsynccursor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommunicationPrivacyPoliciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyPoliciesTable,
+			Columns: []string{user.CommunicationPrivacyPoliciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacypolicy.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommunicationPrivacyPoliciesIDs(); len(nodes) > 0 && !_u.mutation.CommunicationPrivacyPoliciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyPoliciesTable,
+			Columns: []string{user.CommunicationPrivacyPoliciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacypolicy.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommunicationPrivacyPoliciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyPoliciesTable,
+			Columns: []string{user.CommunicationPrivacyPoliciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacypolicy.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommunicationPrivacyRulesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyRulesTable,
+			Columns: []string{user.CommunicationPrivacyRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacyrule.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommunicationPrivacyRulesIDs(); len(nodes) > 0 && !_u.mutation.CommunicationPrivacyRulesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyRulesTable,
+			Columns: []string{user.CommunicationPrivacyRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacyrule.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommunicationPrivacyRulesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyRulesTable,
+			Columns: []string{user.CommunicationPrivacyRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacyrule.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OwnedCommunicationShareGrantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationShareGrantsTable,
+			Columns: []string{user.OwnedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOwnedCommunicationShareGrantsIDs(); len(nodes) > 0 && !_u.mutation.OwnedCommunicationShareGrantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationShareGrantsTable,
+			Columns: []string{user.OwnedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OwnedCommunicationShareGrantsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationShareGrantsTable,
+			Columns: []string{user.OwnedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ReceivedCommunicationShareGrantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ReceivedCommunicationShareGrantsTable,
+			Columns: []string{user.ReceivedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedReceivedCommunicationShareGrantsIDs(); len(nodes) > 0 && !_u.mutation.ReceivedCommunicationShareGrantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ReceivedCommunicationShareGrantsTable,
+			Columns: []string{user.ReceivedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ReceivedCommunicationShareGrantsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ReceivedCommunicationShareGrantsTable,
+			Columns: []string{user.ReceivedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.RelationshipParticipantsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -5637,6 +6202,96 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.UserPreferencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserPreferencesTable,
+			Columns: []string{user.UserPreferencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userpreference.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedUserPreferencesIDs(); len(nodes) > 0 && !_u.mutation.UserPreferencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserPreferencesTable,
+			Columns: []string{user.UserPreferencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userpreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserPreferencesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserPreferencesTable,
+			Columns: []string{user.UserPreferencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userpreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsoleResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsoleResourcesTable,
+			Columns: []string{user.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConsoleResourcesIDs(); len(nodes) > 0 && !_u.mutation.ConsoleResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsoleResourcesTable,
+			Columns: []string{user.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsoleResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsoleResourcesTable,
+			Columns: []string{user.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -6351,6 +7006,96 @@ func (_u *UserUpdateOne) AddMailSignals(v ...*MailSignal) *UserUpdateOne {
 	return _u.AddMailSignalIDs(ids...)
 }
 
+// AddOwnedCommunicationInteractionIDs adds the "owned_communication_interactions" edge to the CommunicationInteraction entity by IDs.
+func (_u *UserUpdateOne) AddOwnedCommunicationInteractionIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddOwnedCommunicationInteractionIDs(ids...)
+	return _u
+}
+
+// AddOwnedCommunicationInteractions adds the "owned_communication_interactions" edges to the CommunicationInteraction entity.
+func (_u *UserUpdateOne) AddOwnedCommunicationInteractions(v ...*CommunicationInteraction) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOwnedCommunicationInteractionIDs(ids...)
+}
+
+// AddCommunicationSyncCursorIDs adds the "communication_sync_cursors" edge to the CommunicationSyncCursor entity by IDs.
+func (_u *UserUpdateOne) AddCommunicationSyncCursorIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddCommunicationSyncCursorIDs(ids...)
+	return _u
+}
+
+// AddCommunicationSyncCursors adds the "communication_sync_cursors" edges to the CommunicationSyncCursor entity.
+func (_u *UserUpdateOne) AddCommunicationSyncCursors(v ...*CommunicationSyncCursor) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommunicationSyncCursorIDs(ids...)
+}
+
+// AddCommunicationPrivacyPolicyIDs adds the "communication_privacy_policies" edge to the CommunicationPrivacyPolicy entity by IDs.
+func (_u *UserUpdateOne) AddCommunicationPrivacyPolicyIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddCommunicationPrivacyPolicyIDs(ids...)
+	return _u
+}
+
+// AddCommunicationPrivacyPolicies adds the "communication_privacy_policies" edges to the CommunicationPrivacyPolicy entity.
+func (_u *UserUpdateOne) AddCommunicationPrivacyPolicies(v ...*CommunicationPrivacyPolicy) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommunicationPrivacyPolicyIDs(ids...)
+}
+
+// AddCommunicationPrivacyRuleIDs adds the "communication_privacy_rules" edge to the CommunicationPrivacyRule entity by IDs.
+func (_u *UserUpdateOne) AddCommunicationPrivacyRuleIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddCommunicationPrivacyRuleIDs(ids...)
+	return _u
+}
+
+// AddCommunicationPrivacyRules adds the "communication_privacy_rules" edges to the CommunicationPrivacyRule entity.
+func (_u *UserUpdateOne) AddCommunicationPrivacyRules(v ...*CommunicationPrivacyRule) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddCommunicationPrivacyRuleIDs(ids...)
+}
+
+// AddOwnedCommunicationShareGrantIDs adds the "owned_communication_share_grants" edge to the CommunicationShareGrant entity by IDs.
+func (_u *UserUpdateOne) AddOwnedCommunicationShareGrantIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddOwnedCommunicationShareGrantIDs(ids...)
+	return _u
+}
+
+// AddOwnedCommunicationShareGrants adds the "owned_communication_share_grants" edges to the CommunicationShareGrant entity.
+func (_u *UserUpdateOne) AddOwnedCommunicationShareGrants(v ...*CommunicationShareGrant) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOwnedCommunicationShareGrantIDs(ids...)
+}
+
+// AddReceivedCommunicationShareGrantIDs adds the "received_communication_share_grants" edge to the CommunicationShareGrant entity by IDs.
+func (_u *UserUpdateOne) AddReceivedCommunicationShareGrantIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddReceivedCommunicationShareGrantIDs(ids...)
+	return _u
+}
+
+// AddReceivedCommunicationShareGrants adds the "received_communication_share_grants" edges to the CommunicationShareGrant entity.
+func (_u *UserUpdateOne) AddReceivedCommunicationShareGrants(v ...*CommunicationShareGrant) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddReceivedCommunicationShareGrantIDs(ids...)
+}
+
 // AddRelationshipParticipantIDs adds the "relationship_participants" edge to the RelationshipParticipant entity by IDs.
 func (_u *UserUpdateOne) AddRelationshipParticipantIDs(ids ...uuid.UUID) *UserUpdateOne {
 	_u.mutation.AddRelationshipParticipantIDs(ids...)
@@ -6724,6 +7469,36 @@ func (_u *UserUpdateOne) AddApprovalTokens(v ...*ApprovalToken) *UserUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.AddApprovalTokenIDs(ids...)
+}
+
+// AddUserPreferenceIDs adds the "user_preferences" edge to the UserPreference entity by IDs.
+func (_u *UserUpdateOne) AddUserPreferenceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddUserPreferenceIDs(ids...)
+	return _u
+}
+
+// AddUserPreferences adds the "user_preferences" edges to the UserPreference entity.
+func (_u *UserUpdateOne) AddUserPreferences(v ...*UserPreference) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddUserPreferenceIDs(ids...)
+}
+
+// AddConsoleResourceIDs adds the "console_resources" edge to the ConsoleResource entity by IDs.
+func (_u *UserUpdateOne) AddConsoleResourceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.AddConsoleResourceIDs(ids...)
+	return _u
+}
+
+// AddConsoleResources adds the "console_resources" edges to the ConsoleResource entity.
+func (_u *UserUpdateOne) AddConsoleResources(v ...*ConsoleResource) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConsoleResourceIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -7598,6 +8373,132 @@ func (_u *UserUpdateOne) RemoveMailSignals(v ...*MailSignal) *UserUpdateOne {
 	return _u.RemoveMailSignalIDs(ids...)
 }
 
+// ClearOwnedCommunicationInteractions clears all "owned_communication_interactions" edges to the CommunicationInteraction entity.
+func (_u *UserUpdateOne) ClearOwnedCommunicationInteractions() *UserUpdateOne {
+	_u.mutation.ClearOwnedCommunicationInteractions()
+	return _u
+}
+
+// RemoveOwnedCommunicationInteractionIDs removes the "owned_communication_interactions" edge to CommunicationInteraction entities by IDs.
+func (_u *UserUpdateOne) RemoveOwnedCommunicationInteractionIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveOwnedCommunicationInteractionIDs(ids...)
+	return _u
+}
+
+// RemoveOwnedCommunicationInteractions removes "owned_communication_interactions" edges to CommunicationInteraction entities.
+func (_u *UserUpdateOne) RemoveOwnedCommunicationInteractions(v ...*CommunicationInteraction) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOwnedCommunicationInteractionIDs(ids...)
+}
+
+// ClearCommunicationSyncCursors clears all "communication_sync_cursors" edges to the CommunicationSyncCursor entity.
+func (_u *UserUpdateOne) ClearCommunicationSyncCursors() *UserUpdateOne {
+	_u.mutation.ClearCommunicationSyncCursors()
+	return _u
+}
+
+// RemoveCommunicationSyncCursorIDs removes the "communication_sync_cursors" edge to CommunicationSyncCursor entities by IDs.
+func (_u *UserUpdateOne) RemoveCommunicationSyncCursorIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveCommunicationSyncCursorIDs(ids...)
+	return _u
+}
+
+// RemoveCommunicationSyncCursors removes "communication_sync_cursors" edges to CommunicationSyncCursor entities.
+func (_u *UserUpdateOne) RemoveCommunicationSyncCursors(v ...*CommunicationSyncCursor) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommunicationSyncCursorIDs(ids...)
+}
+
+// ClearCommunicationPrivacyPolicies clears all "communication_privacy_policies" edges to the CommunicationPrivacyPolicy entity.
+func (_u *UserUpdateOne) ClearCommunicationPrivacyPolicies() *UserUpdateOne {
+	_u.mutation.ClearCommunicationPrivacyPolicies()
+	return _u
+}
+
+// RemoveCommunicationPrivacyPolicyIDs removes the "communication_privacy_policies" edge to CommunicationPrivacyPolicy entities by IDs.
+func (_u *UserUpdateOne) RemoveCommunicationPrivacyPolicyIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveCommunicationPrivacyPolicyIDs(ids...)
+	return _u
+}
+
+// RemoveCommunicationPrivacyPolicies removes "communication_privacy_policies" edges to CommunicationPrivacyPolicy entities.
+func (_u *UserUpdateOne) RemoveCommunicationPrivacyPolicies(v ...*CommunicationPrivacyPolicy) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommunicationPrivacyPolicyIDs(ids...)
+}
+
+// ClearCommunicationPrivacyRules clears all "communication_privacy_rules" edges to the CommunicationPrivacyRule entity.
+func (_u *UserUpdateOne) ClearCommunicationPrivacyRules() *UserUpdateOne {
+	_u.mutation.ClearCommunicationPrivacyRules()
+	return _u
+}
+
+// RemoveCommunicationPrivacyRuleIDs removes the "communication_privacy_rules" edge to CommunicationPrivacyRule entities by IDs.
+func (_u *UserUpdateOne) RemoveCommunicationPrivacyRuleIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveCommunicationPrivacyRuleIDs(ids...)
+	return _u
+}
+
+// RemoveCommunicationPrivacyRules removes "communication_privacy_rules" edges to CommunicationPrivacyRule entities.
+func (_u *UserUpdateOne) RemoveCommunicationPrivacyRules(v ...*CommunicationPrivacyRule) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveCommunicationPrivacyRuleIDs(ids...)
+}
+
+// ClearOwnedCommunicationShareGrants clears all "owned_communication_share_grants" edges to the CommunicationShareGrant entity.
+func (_u *UserUpdateOne) ClearOwnedCommunicationShareGrants() *UserUpdateOne {
+	_u.mutation.ClearOwnedCommunicationShareGrants()
+	return _u
+}
+
+// RemoveOwnedCommunicationShareGrantIDs removes the "owned_communication_share_grants" edge to CommunicationShareGrant entities by IDs.
+func (_u *UserUpdateOne) RemoveOwnedCommunicationShareGrantIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveOwnedCommunicationShareGrantIDs(ids...)
+	return _u
+}
+
+// RemoveOwnedCommunicationShareGrants removes "owned_communication_share_grants" edges to CommunicationShareGrant entities.
+func (_u *UserUpdateOne) RemoveOwnedCommunicationShareGrants(v ...*CommunicationShareGrant) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOwnedCommunicationShareGrantIDs(ids...)
+}
+
+// ClearReceivedCommunicationShareGrants clears all "received_communication_share_grants" edges to the CommunicationShareGrant entity.
+func (_u *UserUpdateOne) ClearReceivedCommunicationShareGrants() *UserUpdateOne {
+	_u.mutation.ClearReceivedCommunicationShareGrants()
+	return _u
+}
+
+// RemoveReceivedCommunicationShareGrantIDs removes the "received_communication_share_grants" edge to CommunicationShareGrant entities by IDs.
+func (_u *UserUpdateOne) RemoveReceivedCommunicationShareGrantIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveReceivedCommunicationShareGrantIDs(ids...)
+	return _u
+}
+
+// RemoveReceivedCommunicationShareGrants removes "received_communication_share_grants" edges to CommunicationShareGrant entities.
+func (_u *UserUpdateOne) RemoveReceivedCommunicationShareGrants(v ...*CommunicationShareGrant) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveReceivedCommunicationShareGrantIDs(ids...)
+}
+
 // ClearRelationshipParticipants clears all "relationship_participants" edges to the RelationshipParticipant entity.
 func (_u *UserUpdateOne) ClearRelationshipParticipants() *UserUpdateOne {
 	_u.mutation.ClearRelationshipParticipants()
@@ -8121,6 +9022,48 @@ func (_u *UserUpdateOne) RemoveApprovalTokens(v ...*ApprovalToken) *UserUpdateOn
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveApprovalTokenIDs(ids...)
+}
+
+// ClearUserPreferences clears all "user_preferences" edges to the UserPreference entity.
+func (_u *UserUpdateOne) ClearUserPreferences() *UserUpdateOne {
+	_u.mutation.ClearUserPreferences()
+	return _u
+}
+
+// RemoveUserPreferenceIDs removes the "user_preferences" edge to UserPreference entities by IDs.
+func (_u *UserUpdateOne) RemoveUserPreferenceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveUserPreferenceIDs(ids...)
+	return _u
+}
+
+// RemoveUserPreferences removes "user_preferences" edges to UserPreference entities.
+func (_u *UserUpdateOne) RemoveUserPreferences(v ...*UserPreference) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveUserPreferenceIDs(ids...)
+}
+
+// ClearConsoleResources clears all "console_resources" edges to the ConsoleResource entity.
+func (_u *UserUpdateOne) ClearConsoleResources() *UserUpdateOne {
+	_u.mutation.ClearConsoleResources()
+	return _u
+}
+
+// RemoveConsoleResourceIDs removes the "console_resources" edge to ConsoleResource entities by IDs.
+func (_u *UserUpdateOne) RemoveConsoleResourceIDs(ids ...uuid.UUID) *UserUpdateOne {
+	_u.mutation.RemoveConsoleResourceIDs(ids...)
+	return _u
+}
+
+// RemoveConsoleResources removes "console_resources" edges to ConsoleResource entities.
+func (_u *UserUpdateOne) RemoveConsoleResources(v ...*ConsoleResource) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConsoleResourceIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -10103,6 +11046,276 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.OwnedCommunicationInteractionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationInteractionsTable,
+			Columns: []string{user.OwnedCommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOwnedCommunicationInteractionsIDs(); len(nodes) > 0 && !_u.mutation.OwnedCommunicationInteractionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationInteractionsTable,
+			Columns: []string{user.OwnedCommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OwnedCommunicationInteractionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationInteractionsTable,
+			Columns: []string{user.OwnedCommunicationInteractionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationinteraction.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommunicationSyncCursorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationSyncCursorsTable,
+			Columns: []string{user.CommunicationSyncCursorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsynccursor.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommunicationSyncCursorsIDs(); len(nodes) > 0 && !_u.mutation.CommunicationSyncCursorsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationSyncCursorsTable,
+			Columns: []string{user.CommunicationSyncCursorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsynccursor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommunicationSyncCursorsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationSyncCursorsTable,
+			Columns: []string{user.CommunicationSyncCursorsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsynccursor.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommunicationPrivacyPoliciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyPoliciesTable,
+			Columns: []string{user.CommunicationPrivacyPoliciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacypolicy.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommunicationPrivacyPoliciesIDs(); len(nodes) > 0 && !_u.mutation.CommunicationPrivacyPoliciesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyPoliciesTable,
+			Columns: []string{user.CommunicationPrivacyPoliciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacypolicy.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommunicationPrivacyPoliciesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyPoliciesTable,
+			Columns: []string{user.CommunicationPrivacyPoliciesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacypolicy.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.CommunicationPrivacyRulesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyRulesTable,
+			Columns: []string{user.CommunicationPrivacyRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacyrule.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedCommunicationPrivacyRulesIDs(); len(nodes) > 0 && !_u.mutation.CommunicationPrivacyRulesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyRulesTable,
+			Columns: []string{user.CommunicationPrivacyRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacyrule.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CommunicationPrivacyRulesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.CommunicationPrivacyRulesTable,
+			Columns: []string{user.CommunicationPrivacyRulesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationprivacyrule.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OwnedCommunicationShareGrantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationShareGrantsTable,
+			Columns: []string{user.OwnedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOwnedCommunicationShareGrantsIDs(); len(nodes) > 0 && !_u.mutation.OwnedCommunicationShareGrantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationShareGrantsTable,
+			Columns: []string{user.OwnedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OwnedCommunicationShareGrantsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OwnedCommunicationShareGrantsTable,
+			Columns: []string{user.OwnedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ReceivedCommunicationShareGrantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ReceivedCommunicationShareGrantsTable,
+			Columns: []string{user.ReceivedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedReceivedCommunicationShareGrantsIDs(); len(nodes) > 0 && !_u.mutation.ReceivedCommunicationShareGrantsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ReceivedCommunicationShareGrantsTable,
+			Columns: []string{user.ReceivedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ReceivedCommunicationShareGrantsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ReceivedCommunicationShareGrantsTable,
+			Columns: []string{user.ReceivedCommunicationShareGrantsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(communicationsharegrant.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.RelationshipParticipantsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -11221,6 +12434,96 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(approvaltoken.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.UserPreferencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserPreferencesTable,
+			Columns: []string{user.UserPreferencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userpreference.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedUserPreferencesIDs(); len(nodes) > 0 && !_u.mutation.UserPreferencesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserPreferencesTable,
+			Columns: []string{user.UserPreferencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userpreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserPreferencesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserPreferencesTable,
+			Columns: []string{user.UserPreferencesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(userpreference.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConsoleResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsoleResourcesTable,
+			Columns: []string{user.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConsoleResourcesIDs(); len(nodes) > 0 && !_u.mutation.ConsoleResourcesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsoleResourcesTable,
+			Columns: []string{user.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConsoleResourcesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.ConsoleResourcesTable,
+			Columns: []string{user.ConsoleResourcesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(consoleresource.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

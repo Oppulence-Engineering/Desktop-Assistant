@@ -11,6 +11,7 @@ import {
   CommandShortcut,
 } from "@oppulence/ui/components/command";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@oppulence/ui/components/dialog";
+import { Label } from "@oppulence/ui/components/label";
 import { cn } from "@/lib/utils";
 import type { ComponentProps, ReactNode } from "react";
 
@@ -164,8 +165,8 @@ export const ModelSelectorLogoGroup = ({ className, ...props }: ModelSelectorLog
   />
 );
 
-export type ModelSelectorNameProps = ComponentProps<"span">;
+export type ModelSelectorNameProps = ComponentProps<typeof Label>;
 
 export const ModelSelectorName = ({ className, ...props }: ModelSelectorNameProps) => (
-  <span className={cn("flex-1 truncate text-left", className)} {...props} />
+  <Label className={cn("flex-1 truncate text-left font-normal", className)} {...props} />
 );

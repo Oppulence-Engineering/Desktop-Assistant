@@ -17,8 +17,9 @@ func TestWorkspaceAuthoredTablesCoverTenantMaps(t *testing.T) {
 	}
 	for typ, workspaceColumn := range workspaceTenantColumns {
 		userColumn, hasUser := tenantUserColumns[typ]
-		// Membership rows are the user's own; they must cascade, not move.
-		if !hasUser || typ == ent.TypeRevenueWorkspaceMember {
+		// Membership and console-resource rows are personal workspace state;
+		// they must cascade with the account rather than move to a successor.
+		if !hasUser || typ == ent.TypeRevenueWorkspaceMember || typ == ent.TypeConsoleResource {
 			continue
 		}
 		table, ok := listed[typ]

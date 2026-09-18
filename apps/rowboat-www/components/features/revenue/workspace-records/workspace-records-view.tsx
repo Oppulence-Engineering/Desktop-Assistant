@@ -8,16 +8,15 @@ import { Plate, PlateContent, createPlatePlugin, usePlateEditor } from "platejs/
 import {
   ArrowsOut,
   ArrowClockwise,
+  BookmarkSimple,
   CalendarBlank,
   CaretDown,
   CheckSquare,
-  CircleNotch,
   DotsThree,
   Funnel,
   GridFour,
   Link,
   List,
-  ListChecks,
   MagnifyingGlass,
   Minus,
   Note,
@@ -25,17 +24,45 @@ import {
   Plus,
   Quotes,
   SlidersHorizontal,
-  SquaresFour,
   TextB,
   TextHOne,
   TextItalic,
   TextUnderline,
+  Trash,
   User,
   X,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { EmptyBlock, errMessage, ListSkeleton } from "@/components/revenue/shared";
+import {
+  EmptyBlock,
+  errMessage,
+  ListSkeleton,
+  WorkspaceEmptyState,
+} from "@/components/revenue/shared";
+import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
+import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@oppulence/ui/components/card";
+import { Checkbox } from "@oppulence/ui/components/checkbox";
+import { Label } from "@oppulence/ui/components/label";
+import { Spinner } from "@oppulence/ui/components/spinner";
+import { Switch } from "@oppulence/ui/components/switch";
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@oppulence/ui/components/table";
+import { Tabs, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
 import {
   Dialog,
   DialogContent,
@@ -46,19 +73,39 @@ import {
 } from "@oppulence/ui/components/dialog";
 import { Input } from "@oppulence/ui/components/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@oppulence/ui/components/select";
+import { Textarea } from "@oppulence/ui/components/textarea";
+import { cn } from "@oppulence/ui/lib/utils";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@oppulence/ui/components/sheet";
-import { collapseWorkspaceNotes, plateText, type WorkspaceNote } from "@/lib/revenue-records";
+import {
+  collapseWorkspaceNotes,
+  mapSettledWithConcurrency,
+  plateText,
+  type WorkspaceNote,
+} from "@/lib/revenue-records";
+import {
+  createConsoleResource,
+  deleteConsoleResource,
+  listConsoleResources,
+  patchConsoleResource,
+} from "@/lib/console";
+import { noteFavorites, noteTemplates, type NoteTemplateResource } from "@/lib/console-resources";
 import {
   createAction,
   createRelationship,
   dismissAction,
   getPersonAttributes,
-  getRelationship,
   getRelationshipTimeline,
   ingestRelationshipObservations,
   listActions,
@@ -68,9 +115,9 @@ import {
   safeResearchCitationURL,
 } from "@/lib/revenue";
 import type {
+  RelationshipObservation,
   RelationshipPerson,
   RelationshipPersonAttribute,
-  RelationshipDetail,
   RevenueAction,
   RevenueRelationship,
 } from "@/types/revenue";
@@ -136,9 +183,15 @@ function RecordHeader({
 }) {
   return (
     <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
-      <div className="flex h-8 items-center gap-2 border border-border bg-background px-3 text-[13px] font-medium text-primary">
-        {icon} {label} <span className="text-primary/40">{count}</span>
-      </div>
+      <Badge
+        className="h-8 gap-2 border border-border bg-background px-3 text-[13px] font-medium text-primary"
+        variant="outline"
+      >
+        {icon} {label}{" "}
+        <Badge className="font-normal text-primary/40" variant="secondary">
+          {count}
+        </Badge>
+      </Badge>
       {action}
     </div>
   );
@@ -196,7 +249,9 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
       />
       <div className="flex min-h-12 shrink-0 items-center gap-2 border-b border-border px-3 py-2">
         <SearchBar label="Search people" value={query} onChange={setQuery} />
-        <span className="text-[12px] text-primary/45">Sorted by last interaction</span>
+        <Label className="text-[12px] font-normal text-primary/45">
+          Sorted by last interaction
+        </Label>
         <Button
           variant="ghost"
           size="sm"
@@ -213,11 +268,19 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
         </div>
       ) : people.length === 0 ? (
         <EmptyBlock
-          icon={<User className="size-6" />}
-          title="No people yet"
           body="Connect Gmail or add a person to build a relationship-aware contact record."
+          image="people"
+          learnMore={[
+            { label: "See who you are talking to" },
+            { label: "Enrich profiles with evidence" },
+          ]}
+          title="People"
         >
-          <Button size="sm" onClick={() => setCreating(true)}>
+          <Button
+            className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+            onClick={() => setCreating(true)}
+            size="sm"
+          >
             <Plus /> Add person
           </Button>
         </EmptyBlock>
@@ -227,78 +290,70 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
             className="w-full min-w-[1180px] table-fixed border-collapse text-left"
             aria-label="People"
           >
-            <thead className="sticky top-0 z-10 bg-background">
-              <tr className="h-10 border-b border-border text-[12px] font-medium text-primary/55">
-                <th className="w-10 border-r border-border px-3">
-                  <input
-                    aria-label="Select all people"
-                    className="size-4 accent-[#3478f6]"
-                    type="checkbox"
-                  />
-                </th>
-                <th className="w-[250px] border-r border-border px-3">Person</th>
-                <th className="w-[210px] border-r border-border px-3">Company</th>
-                <th className="w-36 border-r border-border px-3">Role</th>
-                <th className="w-36 border-r border-border px-3">Department</th>
-                <th className="w-40 border-r border-border px-3">Location</th>
-                <th className="w-36 border-r border-border px-3">Last interaction</th>
-                <th className="w-28 border-r border-border px-3 text-center">Relationships</th>
-                <th className="w-28 border-r border-border px-3">LinkedIn</th>
-                <th className="px-3">Enrichment</th>
-              </tr>
-            </thead>
-            <tbody>
+            <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-border">
+              <TableRow className="h-10 border-b text-[12px] font-medium text-primary/55 hover:bg-transparent">
+                <TableHead className="h-10 w-10 border-r px-3">
+                  <Checkbox aria-label="Select all people" className="size-4" />
+                </TableHead>
+                <TableHead className="h-10 w-[250px] border-r px-3">Person</TableHead>
+                <TableHead className="h-10 w-[210px] border-r px-3">Company</TableHead>
+                <TableHead className="h-10 w-36 border-r px-3">Role</TableHead>
+                <TableHead className="h-10 w-36 border-r px-3">Department</TableHead>
+                <TableHead className="h-10 w-40 border-r px-3">Location</TableHead>
+                <TableHead className="h-10 w-36 border-r px-3">Last interaction</TableHead>
+                <TableHead className="h-10 w-28 border-r px-3 text-center">Relationships</TableHead>
+                <TableHead className="h-10 w-28 border-r px-3">LinkedIn</TableHead>
+                <TableHead className="h-10 px-3">Enrichment</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {people.map((person) => (
-                <tr
-                  key={person.id}
-                  className="h-11 border-b border-border hover:bg-background-100/70"
-                >
-                  <td className="border-r border-border px-3">
-                    <input
-                      aria-label={`Select ${person.displayName}`}
-                      className="size-4 accent-[#3478f6]"
-                      type="checkbox"
-                    />
-                  </td>
-                  <td className="border-r border-border px-3">
-                    <button
+                <TableRow key={person.id} className="h-11 border-border hover:bg-background-100/70">
+                  <TableCell className="border-r px-3">
+                    <Checkbox aria-label={`Select ${person.displayName}`} className="size-4" />
+                  </TableCell>
+                  <TableCell className="border-r px-3">
+                    <Button
                       aria-label={`Open ${person.displayName}`}
-                      className="flex w-full items-center gap-2 text-left"
+                      className="flex h-auto w-full items-center justify-start gap-2 px-0 py-0 text-left font-normal hover:bg-transparent"
                       type="button"
+                      variant="ghost"
                       onClick={() => void openPerson(person)}
                     >
-                      <span className="flex size-6 shrink-0 items-center justify-center border border-border bg-background-100 text-[10px] font-semibold text-primary/60">
-                        {initials(person.displayName)}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-[13px] font-medium text-primary">
+                      <Avatar className="size-6 rounded-none" size="sm">
+                        <AvatarFallback className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/60">
+                          {initials(person.displayName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <Label className="block truncate text-[13px] font-medium text-primary">
                           {person.displayName}
-                        </span>
-                        <span className="block truncate text-[11px] text-primary/40">
+                        </Label>
+                        <CardDescription className="block truncate text-[11px]">
                           {person.primaryEmail || "No email"}
-                        </span>
-                      </span>
-                    </button>
-                  </td>
-                  <td className="truncate border-r border-border px-3 text-[12px] text-primary/60">
+                        </CardDescription>
+                      </div>
+                    </Button>
+                  </TableCell>
+                  <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
                     {person.orgName || person.orgDomain || "—"}
-                  </td>
-                  <td className="truncate border-r border-border px-3 text-[12px] text-primary/60">
+                  </TableCell>
+                  <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
                     {person.title || person.seniority || "—"}
-                  </td>
-                  <td className="truncate border-r border-border px-3 text-[12px] text-primary/60">
+                  </TableCell>
+                  <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
                     {person.department || "—"}
-                  </td>
-                  <td className="truncate border-r border-border px-3 text-[12px] text-primary/60">
+                  </TableCell>
+                  <TableCell className="truncate border-r px-3 text-[12px] text-primary/60">
                     {person.location || "—"}
-                  </td>
-                  <td className="border-r border-border px-3 text-[12px] text-primary/50">
+                  </TableCell>
+                  <TableCell className="border-r px-3 text-[12px] text-primary/50">
                     {person.lastInteractionAt ? relativeTime(person.lastInteractionAt) : "—"}
-                  </td>
-                  <td className="border-r border-border px-3 text-center text-[12px] text-primary/60">
+                  </TableCell>
+                  <TableCell className="border-r px-3 text-center text-[12px] text-primary/60">
                     {person.relationshipCount}
-                  </td>
-                  <td className="truncate border-r border-border px-3 text-[12px]">
+                  </TableCell>
+                  <TableCell className="truncate border-r px-3 text-[12px]">
                     {person.linkedinUrl ? (
                       <a
                         className="text-primary/60 underline-offset-2 hover:text-primary hover:underline"
@@ -309,18 +364,20 @@ export function PeopleView({ onError, onNotice }: ViewProps) {
                         View profile
                       </a>
                     ) : (
-                      <span className="text-primary/35">—</span>
+                      <Badge className="font-normal text-primary/35" variant="ghost">
+                        —
+                      </Badge>
                     )}
-                  </td>
-                  <td className="truncate px-3 text-[12px] text-primary/50">
+                  </TableCell>
+                  <TableCell className="truncate px-3 text-[12px] text-primary/50">
                     {person.location ||
                       (person.attributesVersion
                         ? `${person.attributesVersion} verified fields`
                         : "Not enriched")}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
+            </TableBody>
           </table>
         </div>
       )}
@@ -413,7 +470,7 @@ function CreatePersonDialog({
             Cancel
           </Button>
           <Button size="sm" disabled={busy || !name.trim()} onClick={() => void submit()}>
-            {busy ? <CircleNotch className="animate-spin" /> : <Plus />} Create
+            {busy ? <Spinner className="size-4" /> : <Plus />} Create
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -468,12 +525,12 @@ function PersonSheet({
               {attributes.map((attribute) => (
                 <li className="py-3" key={attribute.id}>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-medium capitalize text-primary">
+                    <Label className="text-sm font-medium capitalize text-primary">
                       {attribute.dimension.replaceAll("_", " ")}
-                    </span>
-                    <span className="text-xs text-primary/40">
+                    </Label>
+                    <Badge className="rounded-none font-normal text-primary/40" variant="outline">
                       {Math.round(attribute.confidence * 100)}%
-                    </span>
+                    </Badge>
                   </div>
                   <p className="mt-1 text-sm text-primary/65">{attribute.value}</p>
                   <p className="mt-1 text-[11px] text-primary/40">
@@ -504,20 +561,28 @@ function PersonSheet({
   );
 }
 
-async function listWorkspaceNotes(): Promise<{
+async function listWorkspaceNotes(signal?: AbortSignal): Promise<{
   notes: WorkspaceNote[];
   relationships: RevenueRelationship[];
+  failedTimelineCount: number;
 }> {
-  const relationships = (await listRelationships()).filter(
+  const relationships = (await listRelationships({}, signal)).filter(
     (relationship) => relationship.kind !== "person",
   );
-  // ponytail: timeline fan-out is sufficient for the current 200-record beta; add a global notes endpoint when this becomes measurably slow.
-  const timelines = await Promise.all(
-    relationships.map((relationship) => getRelationshipTimeline(relationship.id, 200)),
+  const results = await mapSettledWithConcurrency(relationships, 6, (relationship) =>
+    getRelationshipTimeline(relationship.id, 200, signal),
   );
+  const successfulRelationships: RevenueRelationship[] = [];
+  const timelines: RelationshipObservation[][] = [];
+  results.forEach((result, index) => {
+    if (result.status !== "fulfilled") return;
+    successfulRelationships.push(relationships[index]);
+    timelines.push(result.value);
+  });
   return {
-    notes: collapseWorkspaceNotes(relationships, timelines),
+    notes: collapseWorkspaceNotes(successfulRelationships, timelines),
     relationships,
+    failedTimelineCount: results.length - successfulRelationships.length,
   };
 }
 
@@ -533,80 +598,143 @@ const todayValue = () => {
 };
 
 export function NotesView({ onError, onNotice }: ViewProps) {
+  const queryClient = useQueryClient();
   const [notes, setNotes] = React.useState<WorkspaceNote[]>([]);
   const [relationships, setRelationships] = React.useState<RevenueRelationship[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [editing, setEditing] = React.useState<WorkspaceNote | "new" | null>(null);
+  const [editing, setEditing] = React.useState<
+    WorkspaceNote | { template?: NoteTemplateResource } | null
+  >(null);
+  const [editingTemplate, setEditingTemplate] = React.useState<NoteTemplateResource | "new" | null>(
+    null,
+  );
   const [tab, setTab] = React.useState<"notes" | "templates">("notes");
   const [layout, setLayout] = React.useState<"grid" | "list">("grid");
   const [newestFirst, setNewestFirst] = React.useState(true);
   const [showFavorites, setShowFavorites] = React.useState(true);
-  const load = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await listWorkspaceNotes();
-      setNotes(result.notes);
-      setRelationships(result.relationships);
-    } catch (error) {
-      onError(errMessage(error, "Could not load notes."));
-    } finally {
-      setLoading(false);
-    }
-  }, [onError]);
+  const templatesQuery = useQuery({
+    queryKey: ["console", "resources", "note_template"],
+    queryFn: ({ signal }) => listConsoleResources("note_template", signal),
+    select: noteTemplates,
+  });
+  const favoritesQuery = useQuery({
+    queryKey: ["console", "resources", "note_favorite"],
+    queryFn: ({ signal }) => listConsoleResources("note_favorite", signal),
+    select: noteFavorites,
+  });
+  const favoriteMutation = useMutation({
+    mutationFn: async (noteId: string) => {
+      const existing = favoritesQuery.data?.find((favorite) => favorite.payload.noteId === noteId);
+      if (existing) return deleteConsoleResource(existing.id);
+      return createConsoleResource({ kind: "note_favorite", payload: { noteId } });
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["console", "resources", "note_favorite"] }),
+    onError: (error) => onError(errMessage(error, "Could not update the favorite.")),
+  });
+  const load = React.useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      try {
+        const result = await listWorkspaceNotes(signal);
+        setNotes(result.notes);
+        setRelationships(result.relationships);
+        if (result.failedTimelineCount > 0) {
+          onNotice(
+            `Loaded available notes, but ${String(result.failedTimelineCount)} relationship timeline${result.failedTimelineCount === 1 ? "" : "s"} could not be read.`,
+          );
+        }
+      } catch (error) {
+        if (signal?.aborted) return;
+        onError(errMessage(error, "Could not load notes."));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onError, onNotice],
+  );
   React.useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 0);
-    return () => window.clearTimeout(timer);
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => void load(controller.signal), 0);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
   }, [load]);
   const visible = [...notes].sort((left, right) =>
     newestFirst
       ? right.occurredAt.localeCompare(left.occurredAt)
       : left.occurredAt.localeCompare(right.occurredAt),
   );
+  const favoriteIds = new Set(favoritesQuery.data?.map((item) => item.payload.noteId) ?? []);
+  const favoriteNotes = visible.filter((note) => favoriteIds.has(note.externalId));
   return (
     <div className="flex min-h-full flex-col bg-background" data-slot="notes-view">
-      <div className="flex h-11 shrink-0 items-end gap-1 border-b border-border px-3">
-        <button
-          type="button"
-          className={`flex h-9 items-center gap-2 border px-3 text-[13px] ${tab === "notes" ? "border-border bg-background-100 text-primary" : "border-transparent text-primary/55"}`}
-          onClick={() => setTab("notes")}
-        >
-          <Note className="size-4" /> Notes <span className="text-primary/40">{notes.length}</span>
-        </button>
-        <button
-          type="button"
-          className={`flex h-9 items-center gap-2 border px-3 text-[13px] ${tab === "templates" ? "border-border bg-background-100 text-primary" : "border-transparent text-primary/55"}`}
-          onClick={() => setTab("templates")}
-        >
-          <NotePencil className="size-4" /> Templates <span className="text-primary/40">0</span>
-        </button>
-      </div>
+      <Tabs
+        className="shrink-0 gap-0"
+        onValueChange={(value) => setTab(value as "notes" | "templates")}
+        value={tab}
+      >
+        <TabsList className="h-11 w-full justify-start rounded-none border-b border-border bg-transparent px-3">
+          <TabsTrigger
+            className="h-9 rounded-none border px-3 text-[13px] data-[state=active]:border-border data-[state=active]:bg-background-100"
+            value="notes"
+          >
+            <Note className="size-4" /> Notes{" "}
+            <Badge className="font-normal text-primary/40" variant="secondary">
+              {notes.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger
+            className="h-9 rounded-none border px-3 text-[13px] data-[state=active]:border-border data-[state=active]:bg-background-100"
+            value="templates"
+          >
+            <NotePencil className="size-4" /> Templates{" "}
+            <Badge className="font-normal text-primary/40" variant="secondary">
+              {templatesQuery.data?.length ?? 0}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
       <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
-        <button
+        <Button
           type="button"
-          className="flex h-8 items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary/60 hover:bg-background-100"
+          className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary/60 hover:bg-background-100"
+          variant="ghost"
           onClick={() => setNewestFirst((value) => !value)}
         >
-          <List className="size-4" /> Sorted by <span className="text-primary">Creation date</span>
-          <CaretDown className={`size-3 transition-transform ${newestFirst ? "" : "rotate-180"}`} />
-        </button>
+          <List className="size-4" /> Sorted by{" "}
+          <Label className="font-normal text-primary">Creation date</Label>
+          <CaretDown className={cn("size-3 transition-transform", !newestFirst && "rotate-180")} />
+        </Button>
         <div className="flex items-center gap-2">
           <div className="flex h-8 border border-border bg-background p-0.5">
-            <button
+            <Button
               aria-label="List view"
               type="button"
-              className={`flex w-7 items-center justify-center ${layout === "list" ? "bg-background-200 text-primary" : "text-primary/45"}`}
+              className={cn(
+                "size-7 rounded-none p-0",
+                layout === "list" ? "bg-background-200 text-primary" : "text-primary/45",
+              )}
+              size="icon-xs"
+              variant="ghost"
               onClick={() => setLayout("list")}
             >
               <List className="size-4" />
-            </button>
-            <button
+            </Button>
+            <Button
               aria-label="Grid view"
               type="button"
-              className={`flex w-7 items-center justify-center ${layout === "grid" ? "bg-background-200 text-primary" : "text-primary/45"}`}
+              className={cn(
+                "size-7 rounded-none p-0",
+                layout === "grid" ? "bg-background-200 text-primary" : "text-primary/45",
+              )}
+              size="icon-xs"
+              variant="ghost"
               onClick={() => setLayout("grid")}
             >
               <GridFour className="size-4" />
-            </button>
+            </Button>
           </div>
           <details className="relative">
             <summary className="flex h-8 cursor-pointer list-none items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100">
@@ -618,12 +746,11 @@ export function NotesView({ onError, onNotice }: ViewProps) {
                 className="flex cursor-pointer items-center justify-between gap-4 text-[13px] text-primary/70"
               >
                 Show favorites
-                <input
+                <Checkbox
                   id="notes-show-favorites"
                   aria-label="Show favorites"
-                  type="checkbox"
                   checked={showFavorites}
-                  onChange={(event) => setShowFavorites(event.target.checked)}
+                  onCheckedChange={(checked) => setShowFavorites(checked === true)}
                 />
               </label>
             </div>
@@ -631,105 +758,229 @@ export function NotesView({ onError, onNotice }: ViewProps) {
           <Button
             className="h-8 bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
             size="sm"
-            onClick={() => setEditing("new")}
+            onClick={() => setEditing({})}
           >
             <Plus /> New note
           </Button>
         </div>
       </div>
-      {loading ? (
+      {tab === "templates" && templatesQuery.isError ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+          <p className="text-sm text-destructive">Could not load note templates.</p>
+          <Button size="sm" variant="outline" onClick={() => void templatesQuery.refetch()}>
+            <ArrowClockwise /> Retry
+          </Button>
+        </div>
+      ) : tab === "templates" && templatesQuery.isLoading ? (
         <div className="p-4">
           <ListSkeleton />
         </div>
       ) : tab === "templates" ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-          <NotePencil className="size-9 text-primary/25" />
-          <div>
-            <p className="text-[17px] font-semibold text-primary">Templates</p>
-            <p className="mt-1 text-[13px] text-primary/45">
-              Create reusable structures for your team&apos;s notes.
-            </p>
+        <div className="min-h-0 flex-1 overflow-auto p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <Label className="text-sm font-medium">Reusable note templates</Label>
+            <Button size="sm" onClick={() => setEditingTemplate("new")}>
+              <Plus /> New template
+            </Button>
           </div>
-          <Button size="sm" onClick={() => setEditing("new")}>
-            <Plus /> Create new template
-          </Button>
+          {templatesQuery.data?.length ? (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
+              {templatesQuery.data.map((template) => (
+                <Card className="gap-3 p-4" key={template.id}>
+                  <CardTitle>{template.payload.title}</CardTitle>
+                  <CardDescription className="line-clamp-3">
+                    {template.payload.body || "Empty template"}
+                  </CardDescription>
+                  <div className="mt-auto flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setEditing({ template });
+                        setTab("notes");
+                      }}
+                    >
+                      Apply
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditingTemplate(template)}
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <WorkspaceEmptyState
+              action={
+                <Button size="sm" onClick={() => setEditingTemplate("new")}>
+                  <Plus /> Create template
+                </Button>
+              }
+              description="Create a reusable starting point for notes."
+              image="notes"
+              learnMore={[]}
+              title="No templates yet"
+            />
+          )}
         </div>
+      ) : loading ? (
+        <div className="p-4">
+          <ListSkeleton />
+        </div>
+      ) : visible.length === 0 ? (
+        <WorkspaceEmptyState
+          action={
+            <Button
+              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+              onClick={() => setEditing({})}
+              size="sm"
+            >
+              <Plus /> New note
+            </Button>
+          }
+          description={
+            <>
+              No notes yet! Create your first
+              <br />
+              note to get started.
+            </>
+          }
+          image="notes"
+          learnMore={[
+            { label: "Link notes to accounts" },
+            { label: "Turn notes into commitments" },
+          ]}
+          title="Notes"
+        />
       ) : (
         <div className="min-h-0 flex-1 overflow-auto">
           {showFavorites ? (
             <section className="px-4 pt-3">
-              <p className="mb-3 text-[12px] text-primary/45">Favorites</p>
-              <div className="flex h-44 items-center justify-center border border-dashed border-border text-center">
-                <div>
-                  <p className="text-[16px] font-semibold text-primary/70">Favorites</p>
-                  <p className="mt-2 text-[13px] text-primary/45">
-                    Notes that you favorite will appear here
-                  </p>
+              <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/45">
+                Favorites
+                <Badge className="text-[10px] font-normal" variant="outline">
+                  {favoriteNotes.length}
+                </Badge>
+              </Label>
+              {favoritesQuery.isError ? (
+                <div className="flex items-center gap-3 border border-destructive/30 p-3">
+                  <p className="text-xs text-destructive">Could not load favorites.</p>
+                  <Button size="sm" variant="outline" onClick={() => void favoritesQuery.refetch()}>
+                    Retry
+                  </Button>
                 </div>
-              </div>
+              ) : favoriteNotes.length ? (
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-2">
+                  {favoriteNotes.map((note) => (
+                    <Button
+                      className="h-auto justify-start border p-3 text-left"
+                      key={note.externalId}
+                      onClick={() => setEditing(note)}
+                      variant="outline"
+                    >
+                      <BookmarkSimple weight="fill" />
+                      <span className="truncate">{note.title || "Untitled note"}</span>
+                    </Button>
+                  ))}
+                </div>
+              ) : (
+                <Card className="flex h-28 items-center justify-center border-dashed py-0 text-center">
+                  <CardContent>
+                    <CardDescription>Favorite a note to keep it here.</CardDescription>
+                  </CardContent>
+                </Card>
+              )}
             </section>
           ) : null}
           <div className="mt-3 border-t border-border px-4 py-3">
-            <p className="mb-3 text-[12px] text-primary/55">
+            <Label className="mb-3 flex items-center gap-1 text-[12px] font-normal text-primary/55">
               Created today{" "}
-              <span className="ml-1 border border-border px-1 text-[10px]">{visible.length}</span>
-            </p>
-            {visible.length ? (
-              <div
-                className={
-                  layout === "grid"
-                    ? "grid grid-cols-[repeat(auto-fill,minmax(300px,368px))] gap-3"
-                    : "space-y-2"
-                }
-              >
-                {visible.map((note) => (
-                  <button
-                    key={note.externalId}
-                    aria-label={`Open ${note.title || "Untitled note"}`}
-                    type="button"
-                    className={`${layout === "grid" ? "h-52 max-w-[368px]" : "h-24 w-full"} flex flex-col border border-border bg-background text-left hover:bg-background-100`}
-                    onClick={() => setEditing(note)}
-                  >
-                    <span className="flex flex-1 flex-col p-4">
-                      <span className="flex items-center gap-2 text-[12px] text-primary/65">
-                        <Note className="size-3.5" />
-                        <span className="underline">{note.relationshipName}</span>
-                      </span>
-                      <span className="mt-3 text-[15px] font-semibold text-primary">
-                        {note.title || "Untitled note"}
-                      </span>
-                      <span className="mt-1 line-clamp-2 text-[13px] text-primary/45">
-                        {note.body || "This note has no content."}
-                      </span>
-                    </span>
-                    <span className="flex h-10 shrink-0 items-center justify-between border-t border-border px-4 text-[12px] text-primary/50">
-                      <span className="flex items-center gap-2">
-                        <span className="flex size-4 items-center justify-center bg-cyan-600 text-[9px] text-white">
+              <Badge className="text-[10px] font-normal" variant="outline">
+                {visible.length}
+              </Badge>
+            </Label>
+            <div
+              className={
+                layout === "grid"
+                  ? "grid grid-cols-[repeat(auto-fill,minmax(300px,368px))] gap-3"
+                  : "space-y-2"
+              }
+            >
+              {visible.map((note) => (
+                <Card
+                  className={cn(
+                    "cursor-pointer gap-0 py-0 transition-colors hover:bg-background-100",
+                    layout === "grid" ? "h-52 max-w-[368px]" : "h-24 w-full",
+                  )}
+                  key={note.externalId}
+                  onClick={() => setEditing(note)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setEditing(note);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <CardHeader className="flex-1 gap-1 px-4 pb-0 pt-4">
+                    <div className="flex items-center gap-2 text-[12px] text-primary/65">
+                      <Note className="size-3.5" />
+                      <Label className="font-normal underline">{note.relationshipName}</Label>
+                    </div>
+                    <CardTitle className="mt-3 text-[15px] text-primary">
+                      {note.title || "Untitled note"}
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2 text-[13px]">
+                      {note.body || "This note has no content."}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardFooter className="flex h-10 items-center justify-between border-t px-4 text-[12px] text-primary/50">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="size-4 rounded-none" size="sm">
+                        <AvatarFallback className="rounded-none bg-cyan-600 text-[9px] text-white">
                           Y
-                        </span>
-                        You
-                      </span>
-                      <span>{relativeTime(note.occurredAt)}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="flex h-36 w-full items-center justify-center border border-dashed border-border text-[13px] text-primary/45 hover:bg-background-100"
-                onClick={() => setEditing("new")}
-              >
-                <Plus className="mr-2 size-4" /> Create your first note
-              </button>
-            )}
+                        </AvatarFallback>
+                      </Avatar>
+                      <Label className="font-normal">You</Label>
+                    </div>
+                    <Badge className="font-normal" variant="secondary">
+                      {relativeTime(note.occurredAt)}
+                    </Badge>
+                    <Button
+                      aria-label={
+                        favoriteIds.has(note.externalId)
+                          ? `Remove ${note.title} from favorites`
+                          : `Add ${note.title} to favorites`
+                      }
+                      disabled={favoriteMutation.isPending}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        favoriteMutation.mutate(note.externalId);
+                      }}
+                      size="icon-xs"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <BookmarkSimple
+                        weight={favoriteIds.has(note.externalId) ? "fill" : "regular"}
+                      />
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       )}
       {editing ? (
         <NoteDialog
-          key={editing === "new" ? "new" : editing.externalId}
-          note={editing === "new" ? undefined : editing}
+          key={"externalId" in editing ? editing.externalId : editing.template?.id || "new"}
+          note={"externalId" in editing ? editing : undefined}
+          template={"template" in editing ? editing.template : undefined}
           relationships={relationships}
           onClose={() => setEditing(null)}
           onError={onError}
@@ -737,12 +988,117 @@ export function NotesView({ onError, onNotice }: ViewProps) {
           onNotice={onNotice}
         />
       ) : null}
+      {editingTemplate ? (
+        <TemplateDialog
+          key={editingTemplate === "new" ? "new" : editingTemplate.id}
+          onClose={() => setEditingTemplate(null)}
+          onError={onError}
+          onNotice={onNotice}
+          template={editingTemplate === "new" ? undefined : editingTemplate}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function TemplateDialog({
+  template,
+  onClose,
+  onError,
+  onNotice,
+}: {
+  template?: NoteTemplateResource;
+  onClose: () => void;
+  onError: (message: string) => void;
+  onNotice: (message: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [title, setTitle] = React.useState(template?.payload.title ?? "");
+  const [body, setBody] = React.useState(template?.payload.body ?? "");
+  const mutation = useMutation({
+    mutationFn: async (action: "save" | "delete") => {
+      if (action === "delete" && template) return deleteConsoleResource(template.id);
+      const payload = { title: title.trim(), body };
+      if (template) return patchConsoleResource(template.id, { name: title.trim(), payload });
+      return createConsoleResource({
+        kind: "note_template",
+        name: title.trim(),
+        payload,
+      });
+    },
+    onSuccess: (_, action) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["console", "resources", "note_template"],
+      });
+      onNotice(action === "delete" ? "Template deleted." : "Template saved.");
+      onClose();
+    },
+    onError: (error, action) =>
+      onError(errMessage(error, `Could not ${action} the note template.`)),
+  });
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{template ? "Edit note template" : "New note template"}</DialogTitle>
+          <DialogDescription>
+            Templates provide a reusable title and starting body for a new note.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Input
+            aria-label="Template title"
+            maxLength={200}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="Quarterly account review"
+            value={title}
+          />
+          <Textarea
+            aria-label="Template body"
+            className="min-h-48"
+            maxLength={65_536}
+            onChange={(event) => setBody(event.target.value)}
+            placeholder="Add prompts or a reusable note structure…"
+            value={body}
+          />
+          {mutation.isError ? (
+            <p className="text-xs text-destructive" role="alert">
+              The template change failed. You can retry without losing this draft.
+            </p>
+          ) : null}
+        </div>
+        <DialogFooter>
+          {template ? (
+            <Button
+              disabled={mutation.isPending}
+              onClick={() => mutation.mutate("delete")}
+              type="button"
+              variant="destructive"
+            >
+              <Trash /> Delete
+            </Button>
+          ) : null}
+          <Button disabled={mutation.isPending} onClick={onClose} type="button" variant="ghost">
+            Cancel
+          </Button>
+          <Button
+            disabled={mutation.isPending || !title.trim()}
+            onClick={() => mutation.mutate("save")}
+            type="button"
+          >
+            {mutation.isPending ? <Spinner className="size-4" /> : null}
+            Save template
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
 function NoteDialog({
   note,
+  template,
   relationships,
   onClose,
   onSaved,
@@ -750,6 +1106,7 @@ function NoteDialog({
   onNotice,
 }: {
   note?: WorkspaceNote;
+  template?: NoteTemplateResource;
   relationships: RevenueRelationship[];
   onClose: () => void;
   onSaved: () => void;
@@ -758,56 +1115,27 @@ function NoteDialog({
 }) {
   const noteId = React.useRef(note?.externalId || crypto.randomUUID()).current;
   const [title, setTitle] = React.useState(
-    note?.title === "Untitled note" ? "" : note?.title || "",
+    note?.title === "Untitled note" ? "" : note?.title || template?.payload.title || "",
   );
   const [relationshipId, setRelationshipId] = React.useState(
     note?.relationshipId || relationships[0]?.id || "",
   );
-  const [content, setContent] = React.useState<Value>(() => plateValue(note));
+  const [content, setContent] = React.useState<Value>(() => {
+    if (template?.payload.content) return template.payload.content as Value;
+    if (template?.payload.body) {
+      return [{ type: "p", children: [{ text: template.payload.body }] }];
+    }
+    return plateValue(note);
+  });
   const [meetingLinked, setMeetingLinked] = React.useState(Boolean(note?.meetingLinked));
-  const [liveLinked, setLiveLinked] = React.useState(note?.liveLinked ?? true);
-  const [liveRecord, setLiveRecord] = React.useState<RelationshipDetail | null>(null);
-  const [liveUpdatedAt, setLiveUpdatedAt] = React.useState<string | null>(null);
   const [maximized, setMaximized] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [saveState, setSaveState] = React.useState<"saved" | "saving" | "error">("saved");
   const lastSaved = React.useRef(
-    note ? JSON.stringify([title, relationshipId, content, meetingLinked, liveLinked]) : "",
+    note ? JSON.stringify([title, relationshipId, content, meetingLinked]) : "",
   );
   const editor = usePlateEditor({ plugins: notePlugins, value: content });
-  const snapshot = JSON.stringify([title, relationshipId, content, meetingLinked, liveLinked]);
-
-  const refreshLiveRecord = React.useCallback(async () => {
-    if (!relationshipId || !liveLinked) {
-      setLiveRecord(null);
-      return;
-    }
-    const detail = await getRelationship(relationshipId);
-    setLiveRecord(detail);
-    setLiveUpdatedAt(new Date().toISOString());
-  }, [liveLinked, relationshipId]);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    const refresh = async () => {
-      try {
-        const detail = await getRelationship(relationshipId);
-        if (!cancelled) {
-          setLiveRecord(detail);
-          setLiveUpdatedAt(new Date().toISOString());
-        }
-      } catch {
-        if (!cancelled) setLiveRecord(null);
-      }
-    };
-    if (!liveLinked || !relationshipId) return;
-    void refresh();
-    const timer = window.setInterval(() => void refresh(), 30_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [liveLinked, relationshipId]);
+  const snapshot = JSON.stringify([title, relationshipId, content, meetingLinked]);
 
   const publish = React.useCallback(
     async (eventType: "note" | "note_deleted") => {
@@ -832,7 +1160,6 @@ function NoteDialog({
                     body,
                     content,
                     meetingLinked,
-                    liveLinked,
                   }
                 : { noteId },
           },
@@ -847,7 +1174,7 @@ function NoteDialog({
         return false;
       }
     },
-    [content, liveLinked, meetingLinked, noteId, onError, onSaved, relationshipId, snapshot, title],
+    [content, meetingLinked, noteId, onError, onSaved, relationshipId, snapshot, title],
   );
 
   React.useEffect(() => {
@@ -856,8 +1183,14 @@ function NoteDialog({
     return () => window.clearTimeout(timer);
   }, [publish, relationshipId, snapshot]);
 
+  const noteHasDraftContent = Boolean(title.trim() || plateText(content).trim());
+
   const closeEditor = async () => {
-    if (snapshot !== lastSaved.current && !(await publish("note"))) return;
+    const dirty = snapshot !== lastSaved.current;
+    // Empty drafts and notes without a linked company should still dismiss on close.
+    if (dirty && noteHasDraftContent && relationshipId) {
+      if (!(await publish("note"))) return;
+    }
     onClose();
   };
   const selectedRelationship = relationships.find((item) => item.id === relationshipId);
@@ -866,65 +1199,73 @@ function NoteDialog({
     <Dialog open onOpenChange={(open) => !open && void closeEditor()}>
       <DialogContent
         showCloseButton={false}
-        className={`${maximized ? "h-screen w-screen" : "h-[min(588px,calc(100vh-32px))] w-[min(794px,calc(100vw-32px))]"} flex max-w-none translate-y-[-50%] flex-col gap-0 overflow-hidden border-border bg-[#17181a] p-0 shadow-2xl sm:max-w-none`}
+        className={`${maximized ? "h-screen w-screen" : "h-[min(588px,calc(100vh-32px))] w-[min(794px,calc(100vw-32px))]"} flex max-w-none translate-y-[-50%] flex-col gap-0 overflow-hidden border-border bg-background p-0 shadow-2xl sm:max-w-none`}
       >
         <DialogTitle className="sr-only">{title || "Untitled note"}</DialogTitle>
-        <div className="flex h-12 shrink-0 items-center justify-between border-b border-white/8 px-5">
-          <label
-            htmlFor="note-relationship"
-            className="flex min-w-0 items-center gap-2 text-[12px] text-white/80"
-          >
-            <Note className="size-3.5 text-white/50" />
-            <select
-              id="note-relationship"
-              aria-label="Linked company"
-              className="max-w-56 appearance-none bg-transparent text-[12px] text-white/85 underline outline-none"
-              value={relationshipId}
-              onChange={(event) => setRelationshipId(event.target.value)}
-            >
-              <option value="">Link a company</option>
-              {relationships.map((relationship) => (
-                <option value={relationship.id} key={relationship.id}>
-                  {relationship.displayName}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="flex items-center gap-2 text-white/50">
-            <button
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-5">
+          <div className="flex min-w-0 items-center gap-2 text-[12px] text-primary/80">
+            <Note className="size-3.5 text-primary/45" />
+            <Select value={relationshipId || undefined} onValueChange={setRelationshipId}>
+              <SelectTrigger
+                id="note-relationship"
+                aria-label="Linked company"
+                className="h-auto max-w-56 border-0 bg-transparent p-0 text-[12px] text-primary underline shadow-none focus:ring-0"
+              >
+                <SelectValue placeholder="Link a company" />
+              </SelectTrigger>
+              <SelectContent className="app-shell rounded-none">
+                {relationships.map((relationship) => (
+                  <SelectItem key={relationship.id} value={relationship.id}>
+                    {relationship.displayName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2 text-primary/45">
+            <Button
               aria-label="Minimize note"
               type="button"
-              className="flex size-7 items-center justify-center hover:bg-white/5 hover:text-white"
+              className="size-7 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
+              size="icon-xs"
+              variant="ghost"
               onClick={() => void closeEditor()}
             >
               <Minus className="size-3.5" />
-            </button>
-            <button
+            </Button>
+            <Button
               aria-label={maximized ? "Restore note" : "Maximize note"}
               type="button"
-              className="flex size-7 items-center justify-center hover:bg-white/5 hover:text-white"
+              className="size-7 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
+              size="icon-xs"
+              variant="ghost"
               onClick={() => setMaximized((value) => !value)}
             >
               <ArrowsOut className="size-3.5" />
-            </button>
-            <button
+            </Button>
+            <Button
               aria-label="Close note"
               type="button"
-              className="flex size-7 items-center justify-center hover:bg-white/5 hover:text-white"
+              className="size-7 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
+              size="icon-xs"
+              variant="ghost"
               onClick={() => void closeEditor()}
             >
               <X className="size-3.5" />
-            </button>
+            </Button>
           </div>
         </div>
-        <div className="relative min-h-0 flex-1 overflow-auto px-[52px] pb-14 pt-[57px] text-white/80">
-          <div className="absolute right-[18px] top-1 flex items-center gap-3 text-[13px] text-white/55">
-            <span className="flex size-5 items-center justify-center bg-cyan-600 text-[10px] font-semibold text-white">
-              Y
-            </span>
-            <button
+        <div className="relative min-h-0 flex-1 overflow-auto px-[52px] pb-14 pt-[57px] text-primary/80">
+          <div className="absolute right-[18px] top-1 flex items-center gap-3 text-[13px] text-primary/55">
+            <Avatar className="size-5 rounded-none">
+              <AvatarFallback className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/70">
+                Y
+              </AvatarFallback>
+            </Avatar>
+            <Button
               type="button"
-              className="flex items-center gap-2 hover:text-white"
+              className="h-auto rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
+              variant="ghost"
               onClick={async () => {
                 await navigator.clipboard.writeText(
                   `${window.location.origin}${window.location.pathname}#note=${noteId}`,
@@ -933,128 +1274,62 @@ function NoteDialog({
               }}
             >
               <Link className="size-3.5" /> Copy link
-            </button>
+            </Button>
             <div className="relative">
-              <button
+              <Button
                 aria-label="Note actions"
                 type="button"
-                className="flex size-7 items-center justify-center hover:bg-white/5 hover:text-white"
+                className="size-7 rounded-none text-primary/55 hover:bg-background-100 hover:text-primary"
+                size="icon-xs"
+                variant="ghost"
                 onClick={() => setMenuOpen((value) => !value)}
               >
                 <DotsThree className="size-4" />
-              </button>
+              </Button>
               {menuOpen ? (
-                <div className="absolute right-0 top-8 z-10 w-36 border border-white/10 bg-[#202124] p-1 shadow-xl">
-                  <button
+                <div className="absolute right-0 top-8 z-10 w-36 border border-border bg-background p-1 shadow-xl">
+                  <Button
                     type="button"
-                    className="w-full px-3 py-2 text-left text-[12px] text-red-400 hover:bg-white/5"
+                    className="h-auto w-full justify-start rounded-none px-3 py-2 text-[12px] text-destructive hover:bg-background-100"
+                    variant="ghost"
                     onClick={async () => {
                       if (await publish("note_deleted")) onClose();
                     }}
                   >
                     Delete note
-                  </button>
+                  </Button>
                 </div>
               ) : null}
             </div>
           </div>
-          <input
+          <Input
             aria-label="Note title"
-            className="mt-8 w-full bg-transparent text-[32px] font-semibold leading-tight tracking-[-0.03em] text-white/85 outline-none placeholder:text-white/55"
+            className="mt-8 h-auto rounded-none border-0 bg-transparent px-0 text-[32px] font-semibold leading-tight tracking-[-0.03em] text-primary shadow-none placeholder:text-primary/45 focus-visible:ring-0"
             placeholder="Untitled note"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
           />
-          <div className="mt-3 flex items-center gap-4 text-[13px] text-white/55">
-            <span className="flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-4 text-[13px] text-primary/55">
+            <Label
+              className={cn(
+                "flex items-center gap-2 font-normal text-primary/55",
+                selectedRelationship && "text-primary underline",
+              )}
+            >
               <Note className="size-3.5" />
-              <span className="text-white/80 underline">
-                {selectedRelationship?.displayName || "Link a company"}
-              </span>
-            </span>
-            <button
+              {selectedRelationship?.displayName || "Link a company"}
+            </Label>
+            <Button
               type="button"
-              className="flex items-center gap-2 hover:text-white"
+              className="h-auto rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
+              variant="ghost"
               onClick={() => setMeetingLinked((value) => !value)}
             >
               <CalendarBlank className="size-4" />
               {meetingLinked ? "Meeting linked" : "Link a meeting"}
-            </button>
-            <button
-              type="button"
-              className="flex items-center gap-2 hover:text-white"
-              onClick={() => setLiveLinked((value) => !value)}
-            >
-              <ArrowClockwise className={`size-4 ${liveLinked ? "text-cyan-400" : ""}`} />
-              {liveLinked ? "Live account context" : "Make this note live"}
-            </button>
+            </Button>
           </div>
-          {liveLinked ? (
-            <section
-              aria-live="polite"
-              className="mt-6 border border-white/10 bg-white/[0.025]"
-              data-capability="live-record-note"
-            >
-              <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
-                <div>
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-cyan-300/80">
-                    Live account context
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-white/55">
-                    Auto-refreshes every 30 seconds without changing your writing
-                  </p>
-                </div>
-                <button
-                  aria-label="Refresh live account context"
-                  className="flex size-7 items-center justify-center border border-white/10 hover:bg-white/5 hover:text-white"
-                  onClick={() => void refreshLiveRecord().catch(() => setLiveRecord(null))}
-                  type="button"
-                >
-                  <ArrowClockwise className="size-3.5" />
-                </button>
-              </div>
-              {liveRecord ? (
-                <div className="grid grid-cols-2 gap-px bg-white/10 text-[12px] md:grid-cols-4">
-                  {[
-                    ["Health", liveRecord.relationship.health.replaceAll("_", " ")],
-                    ["Open commitments", String(liveRecord.relationship.commitmentCount ?? 0)],
-                    [
-                      "Last interaction",
-                      liveRecord.relationship.lastTouchAt
-                        ? relativeTime(liveRecord.relationship.lastTouchAt)
-                        : "No activity",
-                    ],
-                    [
-                      "Next action",
-                      liveRecord.relationship.nextAction ||
-                        liveRecord.relationship.stateReason ||
-                        "Not established",
-                    ],
-                  ].map(([label, value]) => (
-                    <div className="min-w-0 bg-[#17181a] p-3" key={label}>
-                      <p className="text-[10px] uppercase tracking-wide text-white/55">{label}</p>
-                      <p className="mt-1 truncate capitalize text-white/70">{value}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="px-3 py-4 text-[12px] text-white/55">
-                  Loading current account state…
-                </p>
-              )}
-              {liveRecord?.relationship.risks.length ? (
-                <p className="border-t border-white/10 px-3 py-2 text-[11px] text-amber-200/70">
-                  {liveRecord.relationship.risks.length} open risk
-                  {liveRecord.relationship.risks.length === 1 ? "" : "s"}:{" "}
-                  {liveRecord.relationship.risks.join(" · ")}
-                </p>
-              ) : null}
-              {liveUpdatedAt ? (
-                <p className="sr-only">Live context updated {relativeTime(liveUpdatedAt)}</p>
-              ) : null}
-            </section>
-          ) : null}
-          <div className="mt-6 flex items-center gap-1 border-y border-white/10 py-1">
+          <div className="mt-6 flex items-center gap-1 border-y border-border py-1">
             {[
               { label: "Bold", icon: TextB, run: () => editor.tf.toggleMark("bold") },
               { label: "Italic", icon: TextItalic, run: () => editor.tf.toggleMark("italic") },
@@ -1066,63 +1341,75 @@ function NoteDialog({
               { label: "Heading", icon: TextHOne, run: () => editor.tf.toggleBlock("h2") },
               { label: "Quote", icon: Quotes, run: () => editor.tf.toggleBlock("blockquote") },
             ].map(({ label, icon: Icon, run }) => (
-              <button
+              <Button
                 aria-label={label}
-                className="flex size-8 items-center justify-center text-white/50 hover:bg-white/5 hover:text-white"
+                className="size-8 rounded-none text-primary/45 hover:bg-background-100 hover:text-primary"
                 key={label}
                 onMouseDown={(event) => {
                   event.preventDefault();
                   run();
                 }}
+                size="icon-xs"
                 type="button"
+                variant="ghost"
               >
                 <Icon className="size-4" />
-              </button>
+              </Button>
             ))}
           </div>
           <Plate editor={editor} onChange={({ value }) => setContent(value)}>
             <PlateContent
               aria-label="Note content"
-              className="mt-6 min-h-24 text-[14px] leading-6 text-white/80 outline-none [&_.slate-blockquote]:my-3 [&_.slate-blockquote]:border-l-2 [&_.slate-blockquote]:border-cyan-400/40 [&_.slate-blockquote]:pl-3 [&_.slate-blockquote]:text-white/60 [&_.slate-h2]:my-3 [&_.slate-h2]:text-xl [&_.slate-h2]:font-semibold [&_[data-slate-placeholder]]:text-white/55"
+              className="mt-6 min-h-24 text-[14px] leading-6 text-primary/80 outline-none [&_.slate-blockquote]:my-3 [&_.slate-blockquote]:border-l-2 [&_.slate-blockquote]:border-primary/25 [&_.slate-blockquote]:pl-3 [&_.slate-blockquote]:text-primary/60 [&_.slate-h2]:my-3 [&_.slate-h2]:text-xl [&_.slate-h2]:font-semibold [&_[data-slate-placeholder]]:text-primary/45"
               placeholder="Start typing your note"
             />
           </Plate>
           {bodyEmpty ? (
-            <div className="mt-6 space-y-7 text-[13px] text-white/55">
+            <div className="mt-6 space-y-7 text-[13px] text-primary/55">
               <div>
-                <p className="text-[10px] font-medium uppercase tracking-wide text-white/50">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-primary/45">
                   Favorite templates
                 </p>
                 <p className="mt-2">Templates that you favorite will appear here</p>
               </div>
               <div className="space-y-3">
-                <p className="text-[10px] font-medium uppercase tracking-wide text-white/50">
+                <p className="text-[10px] font-medium uppercase tracking-wide text-primary/45">
                   Actions
                 </p>
-                <button type="button" className="flex items-center gap-2 hover:text-white">
+                <Button
+                  type="button"
+                  className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
+                  variant="ghost"
+                >
                   <Note className="size-4" /> View all templates
-                </button>
-                <button type="button" className="flex items-center gap-2 hover:text-white">
+                </Button>
+                <Button
+                  type="button"
+                  className="h-auto justify-start rounded-none px-0 py-0 text-[13px] text-primary/55 hover:bg-transparent hover:text-primary"
+                  variant="ghost"
+                >
                   <Note className="size-4" /> Create new template
-                </button>
+                </Button>
               </div>
             </div>
           ) : null}
           {saveState !== "saved" ? (
-            <span
-              className={`absolute right-5 bottom-3 text-[11px] ${saveState === "error" ? "text-red-400" : "text-white/55"}`}
+            <Label
+              className={`absolute right-5 bottom-3 text-[11px] font-normal ${saveState === "error" ? "text-destructive" : "text-primary/55"}`}
             >
               {saveState === "saving" ? "Saving…" : "Save failed"}
-            </span>
+            </Label>
           ) : null}
         </div>
-        <button
+        <Button
           aria-label="Insert content"
           type="button"
-          className="absolute bottom-3 left-4 flex size-5 items-center justify-center border border-white/10 text-white/55 hover:bg-white/5 hover:text-white"
+          className="absolute bottom-3 left-4 size-5 rounded-none border border-border p-0 text-primary/55 hover:bg-background-100 hover:text-primary"
+          size="icon-xs"
+          variant="ghost"
         >
           <Plus className="size-3" />
-        </button>
+        </Button>
       </DialogContent>
     </Dialog>
   );
@@ -1181,35 +1468,38 @@ export function TasksView({ onError, onNotice }: ViewProps) {
     <div className="flex min-h-full flex-col bg-background" data-slot="tasks-view">
       <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary/60">
-            <List className="size-4" /> Sorted by <span className="text-primary">Due date</span>
-          </span>
-          <label
-            htmlFor="task-filter"
-            className="relative flex h-8 items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary/55 hover:bg-background-100"
+          <Badge
+            className="h-8 gap-2 border border-border bg-background px-3 text-[13px] font-normal text-primary/60"
+            variant="outline"
           >
-            <Funnel className="size-4" />
-            <select
+            <List className="size-4" /> Sorted by{" "}
+            <Label className="font-normal text-primary">Due date</Label>
+          </Badge>
+          <Select value={filter} onValueChange={(value) => setFilter(value as typeof filter)}>
+            <SelectTrigger
               id="task-filter"
               aria-label="Filter tasks"
-              className="appearance-none bg-transparent pr-4 outline-none"
-              value={filter}
-              onChange={(event) => setFilter(event.target.value as typeof filter)}
+              className="h-8 w-auto gap-2 rounded-none border border-border bg-background px-3 text-[13px] text-primary/55 shadow-none hover:bg-background-100"
+              size="sm"
             >
-              <option value="all">Filter</option>
-              <option value="today">Due today</option>
-              <option value="overdue">Overdue</option>
-            </select>
-            <CaretDown className="pointer-events-none absolute right-2 size-3" />
-          </label>
+              <Funnel className="size-4" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="app-shell rounded-none">
+              <SelectItem value="all">Filter</SelectItem>
+              <SelectItem value="today">Due today</SelectItem>
+              <SelectItem value="overdue">Overdue</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
-            className="flex h-8 items-center gap-2 border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100"
+            className="h-8 rounded-none border border-border bg-background px-3 text-[13px] text-primary hover:bg-background-100"
+            variant="ghost"
           >
             <SlidersHorizontal className="size-4" /> View settings
-          </button>
+          </Button>
           <Button
             className="h-8 bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
             size="sm"
@@ -1224,42 +1514,26 @@ export function TasksView({ onError, onNotice }: ViewProps) {
           <ListSkeleton />
         </div>
       ) : visible.length === 0 ? (
-        <div className="flex min-h-[560px] flex-1 flex-col justify-between px-16 py-14">
-          <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <div className="relative flex size-48 items-center justify-center border-x border-dashed border-border/60 before:absolute before:inset-x-[-30px] before:top-1/2 before:border-t before:border-dashed before:border-border/60">
-              <ListChecks className="relative z-10 size-16 text-primary/25" weight="thin" />
-            </div>
-            <p className="mt-4 text-[22px] font-semibold text-primary">Tasks</p>
-            <p className="mt-1 max-w-64 text-[14px] leading-5 text-primary/50">
-              No tasks yet! Create your first
-              <br />
-              task to get started.
-            </p>
+        <WorkspaceEmptyState
+          action={
             <Button
-              className="mt-4 bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-              size="sm"
+              className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
               onClick={() => setCreating(true)}
+              size="sm"
             >
               <Plus /> New task
             </Button>
-          </div>
-          <div>
-            <p className="mb-3 text-[12px] text-primary/45">Learn more</p>
-            <div className="grid grid-cols-2 gap-3">
-              {["Notes, Tasks, and Email sending", "Introduction to tasks"].map((label) => (
-                <div
-                  key={label}
-                  className="flex h-20 items-center gap-4 border border-border px-4 text-[13px] text-primary"
-                >
-                  <span className="flex size-12 items-center justify-center border border-border">
-                    <SquaresFour className="size-6 text-primary/45" />
-                  </span>
-                  {label}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+          }
+          description={
+            <>
+              No tasks yet! Create your first
+              <br />
+              task to get started.
+            </>
+          }
+          image="tasks"
+          title="Tasks"
+        />
       ) : (
         <ul className="divide-y divide-border">
           {visible.map((task) => {
@@ -1269,21 +1543,29 @@ export function TasksView({ onError, onNotice }: ViewProps) {
                 key={task.id}
                 className="grid min-h-12 grid-cols-[36px_minmax(0,1fr)_220px_150px] items-center gap-3 px-3 hover:bg-background-100/70"
               >
-                <button
+                <Button
                   aria-label={`Complete ${task.reason}`}
-                  className="flex size-5 items-center justify-center border border-border text-primary/40 hover:border-[#3478f6] hover:text-[#3478f6]"
+                  className="size-5 rounded-none border border-border p-0 text-primary/40 hover:border-[#3478f6] hover:bg-transparent hover:text-[#3478f6]"
                   disabled={busy === task.id}
                   onClick={() => void complete(task)}
+                  size="icon-xs"
                   type="button"
+                  variant="ghost"
                 >
-                  {busy === task.id ? <CircleNotch className="animate-spin" /> : null}
-                </button>
-                <span className="truncate text-[13px] font-medium text-primary">{task.reason}</span>
-                <span className="truncate text-[12px] text-primary/55">
+                  {busy === task.id ? <Spinner className="size-3" /> : null}
+                </Button>
+                <Label className="truncate text-[13px] font-medium text-primary">
+                  {task.reason}
+                </Label>
+                <CardDescription className="truncate text-[12px]">
                   {names.get(task.relationshipId || "") || "Unlinked"}
-                </span>
-                <span
-                  className={`text-right text-[12px] ${overdue ? "text-red-500" : "text-primary/45"}`}
+                </CardDescription>
+                <Badge
+                  className={cn(
+                    "ml-auto justify-end text-[12px] font-normal",
+                    overdue ? "text-red-500" : "text-primary/45",
+                  )}
+                  variant="secondary"
                 >
                   {task.dueAt
                     ? new Date(task.dueAt).toLocaleDateString(undefined, {
@@ -1292,7 +1574,7 @@ export function TasksView({ onError, onNotice }: ViewProps) {
                         year: "numeric",
                       })
                     : "No due date"}
-                </span>
+                </Badge>
               </li>
             );
           })}
@@ -1365,21 +1647,23 @@ function TaskDialog({
       >
         <DialogTitle className="sr-only">Create task</DialogTitle>
         <div className="flex h-12 items-center justify-between border-b border-white/8 px-4">
-          <span className="flex items-center gap-2 text-[14px] font-medium text-white/85">
+          <Label className="flex items-center gap-2 text-[14px] font-medium text-white/85">
             <CheckSquare className="size-4" /> Create task
-          </span>
-          <button
+          </Label>
+          <Button
             aria-label="Close task"
             type="button"
-            className="flex size-7 items-center justify-center text-white/50 hover:bg-white/5 hover:text-white"
+            className="size-7 rounded-none text-white/50 hover:bg-white/5 hover:text-white"
+            size="icon-xs"
+            variant="ghost"
             onClick={onClose}
           >
             <X className="size-4" />
-          </button>
+          </Button>
         </div>
-        <textarea
+        <Textarea
           aria-label="Task title"
-          className="min-h-[50px] w-full resize-none bg-transparent px-5 py-4 text-[14px] text-white/85 outline-none placeholder:text-white/55"
+          className="min-h-[50px] resize-none rounded-none border-0 bg-transparent px-5 py-4 text-[14px] text-white/85 shadow-none placeholder:text-white/55 focus-visible:ring-0"
           placeholder="Schedule a demo with @Contact"
           rows={1}
           value={title}
@@ -1398,14 +1682,14 @@ function TaskDialog({
               className="relative flex cursor-pointer items-center gap-2 hover:text-white"
             >
               <CalendarBlank className="size-4" />
-              <span>
+              <Label className="font-normal">
                 {dueDate === todayValue()
                   ? "Today"
                   : new Date(`${dueDate}T12:00:00`).toLocaleDateString(undefined, {
                       month: "short",
                       day: "numeric",
                     })}
-              </span>
+              </Label>
               <input
                 id="task-due-date"
                 aria-label="Due date"
@@ -1415,68 +1699,69 @@ function TaskDialog({
                 onChange={(event) => setDueDate(event.target.value)}
               />
             </label>
-            <span className="flex items-center gap-2">
+            <Label className="flex items-center gap-2 font-normal">
               <User className="size-4" /> Assigned to You
-            </span>
-            <label
-              htmlFor="task-relationship"
-              className={`relative flex items-center gap-2 ${recordError ? "text-red-400" : "hover:text-white"}`}
+            </Label>
+            <div
+              className={cn(
+                "relative flex items-center gap-2",
+                recordError ? "text-red-400" : "hover:text-white",
+              )}
             >
               <Link className="size-4" />
-              <select
-                id="task-relationship"
-                aria-label="Linked company"
-                className="max-w-44 appearance-none bg-transparent pr-4 outline-none"
-                value={relationshipId}
-                onChange={(event) => {
-                  setRelationshipId(event.target.value);
+              <Select
+                value={relationshipId || undefined}
+                onValueChange={(value) => {
+                  setRelationshipId(value);
                   setRecordError(false);
                 }}
               >
-                <option value="">{recordError ? "Add a record to save" : "Add record"}</option>
-                {relationships.map((relationship) => (
-                  <option value={relationship.id} key={relationship.id}>
-                    {relationship.displayName}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger
+                  id="task-relationship"
+                  aria-label="Linked company"
+                  className="h-auto max-w-44 border-0 bg-transparent p-0 pr-4 text-[13px] shadow-none focus:ring-0"
+                >
+                  <SelectValue placeholder={recordError ? "Add a record to save" : "Add record"} />
+                </SelectTrigger>
+                <SelectContent className="app-shell rounded-none">
+                  {relationships.map((relationship) => (
+                    <SelectItem key={relationship.id} value={relationship.id}>
+                      {relationship.displayName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <CaretDown className="pointer-events-none absolute right-0 size-3" />
-            </label>
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-3 text-[13px]">
-            <button
+            <div className="flex items-center gap-2 text-white/55">
+              <Switch
+                aria-label="Create more tasks after saving"
+                checked={createMore}
+                className="rounded-none data-[state=checked]:bg-[#3478f6]"
+                onCheckedChange={setCreateMore}
+              />
+              <Label className="font-normal text-white/55">Create more</Label>
+            </div>
+            <Button
               type="button"
-              role="switch"
-              aria-checked={createMore}
-              className="flex items-center gap-2 text-white/55 hover:text-white"
-              onClick={() => setCreateMore((value) => !value)}
-            >
-              <span
-                className={`relative h-4 w-7 border border-white/15 ${createMore ? "bg-[#3478f6]" : "bg-white/10"}`}
-              >
-                <span
-                  className={`absolute top-[2px] size-2.5 bg-white transition-transform ${createMore ? "translate-x-3" : "translate-x-0.5"}`}
-                />
-              </span>
-              Create more
-            </button>
-            <button
-              type="button"
-              className="flex h-8 items-center gap-1 px-2 text-white/80 hover:bg-white/5"
+              className="h-8 rounded-none px-2 text-white/80 hover:bg-white/5"
+              variant="ghost"
               onClick={onClose}
             >
               Cancel{" "}
               <kbd className="border border-white/10 px-1 text-[10px] text-white/55">ESC</kbd>
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="flex h-8 items-center gap-1 bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
+              className="h-8 rounded-none bg-[#3478f6] px-3 text-white hover:bg-[#2f6fe6]"
               disabled={busy || !title.trim() || !dueDate}
               onClick={() => void submit()}
             >
-              {busy ? <CircleNotch className="animate-spin" /> : null}Save{" "}
+              {busy ? <Spinner className="size-4" /> : null}Save{" "}
               <kbd className="border border-white/15 px-1 text-[10px]">↵</kbd>
-            </button>
+            </Button>
           </div>
         </div>
       </DialogContent>

@@ -2,28 +2,9 @@
 
 import "client-only";
 
-import { z } from "zod";
+import { SupportChatConfigSchema, type SupportChatConfig } from "@/lib/api/support/chat-schema";
 
-/**
- * Browser-side client for the support chat configuration endpoint.
- *
- * The response carries a per-user bearer credential (the Plain email hash), so
- * it is parsed with a runtime schema rather than trusted by shape: a malformed
- * or unexpected payload must fail closed instead of being handed to Plain.
- */
-export const SupportChatConfigSchema = z.object({
-  configured: z.boolean(),
-  appId: z.string().min(1).optional(),
-  labelTypeIds: z.array(z.string().min(1)).optional(),
-  customer: z
-    .object({
-      email: z.string().min(1),
-      emailHash: z.string().min(1),
-    })
-    .optional(),
-});
-
-export type SupportChatConfig = z.infer<typeof SupportChatConfigSchema>;
+export { SupportChatConfigSchema, type SupportChatConfig };
 
 export async function loadSupportChatConfig(): Promise<SupportChatConfig> {
   const response = await fetch("/api/support/chat", {

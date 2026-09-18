@@ -271,8 +271,9 @@ type googleWatchResponse struct {
 func (m *Manager) registerGmail(ctx context.Context, token string, conn *ent.OAuthConnection, row *ent.GoogleWatch) error {
 	body := map[string]any{
 		"topicName": m.cfg.GmailPubSubTopic,
-		// INBOX keeps push volume proportional to mail the user actually sees.
-		"labelIds": []string{"INBOX"},
+		// Deliberately omit labelIds: Gmail applies label filters to both added
+		// and removed labels, and an INBOX-only watch misses sent mail, archived
+		// updates, and deletes required by the communication timeline.
 	}
 	var resp googleWatchResponse
 	if err := m.google.PostJSON(ctx, token, m.google.GmailBaseURL()+"/gmail/v1/users/me/watch", body, &resp); err != nil {

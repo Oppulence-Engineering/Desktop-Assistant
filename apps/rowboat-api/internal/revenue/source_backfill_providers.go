@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/googleapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/hubspotapi"
@@ -14,22 +16,37 @@ import (
 )
 
 const (
-	googleBackfillDays     = 90
 	googleBackfillThreads  = 100
+	googleBackfillEvents   = 100
 	hubSpotBackfillRecords = 500
 	slackBackfillChannels  = 50
 	slackBackfillMessages  = 500
 )
 
 type googleSourceBackfiller struct {
-	sweeper ThreadSweeper
-	now     func() time.Time
+	sweeper  ThreadSweeper
+	calendar CalendarEvidenceReader
+	now      func() time.Time
 }
 
-// NewGoogleSourceBackfiller creates a 90-day, sent-anchored Gmail evidence
-// backfill that uses the existing sealed Google connection.
-func NewGoogleSourceBackfiller(sweeper ThreadSweeper) SourceBackfillProvider {
-	return &googleSourceBackfiller{sweeper: sweeper, now: time.Now}
+// CalendarEvidenceReader exposes only the bounded, user-scoped calendar read
+// needed by relationship backfill.
+type CalendarEvidenceReader interface {
+	ReadCalendarEvents(
+		ctx context.Context,
+		userID uuid.UUID,
+		lookbackDays int,
+		maxEvents int,
+	) ([]googleapi.CalendarEvent, string, error)
+}
+
+// NewGoogleSourceBackfiller creates a six-month Google evidence backfill over the
+// consenting founder's Gmail and primary Calendar.
+func NewGoogleSourceBackfiller(
+	sweeper ThreadSweeper,
+	calendar CalendarEvidenceReader,
+) SourceBackfillProvider {
+	return &googleSourceBackfiller{sweeper: sweeper, calendar: calendar, now: time.Now}
 }
 
 func (b *googleSourceBackfiller) Backfill(
@@ -38,15 +55,59 @@ func (b *googleSourceBackfiller) Backfill(
 	sourceAccountID string,
 	emit func(SourceBackfillBatch) error,
 ) error {
-	if b == nil || b.sweeper == nil {
+	if b == nil || b.sweeper == nil || b.calendar == nil {
 		return fmt.Errorf("google backfill provider is not configured")
 	}
 	threads, selfEmail, err := b.sweeper.SweepThreads(
-		ctx, u.ID, googleBackfillDays, googleBackfillThreads, nil,
+		ctx, u.ID, defaultLookback, googleBackfillThreads, nil,
 	)
 	if err != nil {
 		return err
 	}
+	receivedAt := b.now().UTC()
+	observations, latest, err := gmailBackfillObservations(
+		threads,
+		selfEmail,
+		sourceAccountID,
+		receivedAt,
+	)
+	if err != nil {
+		return err
+	}
+	events, calendarSelfEmail, err := b.calendar.ReadCalendarEvents(
+		ctx,
+		u.ID,
+		defaultLookback,
+		googleBackfillEvents,
+	)
+	if err != nil {
+		return err
+	}
+	if calendarSelfEmail == "" {
+		calendarSelfEmail = selfEmail
+	}
+	calendarObservations, calendarLatest, err := calendarBackfillObservations(
+		events,
+		calendarSelfEmail,
+		sourceAccountID,
+		receivedAt,
+	)
+	if err != nil {
+		return err
+	}
+	observations = append(observations, calendarObservations...)
+	if calendarLatest.After(latest) {
+		latest = calendarLatest
+	}
+	return emitObservationBatches(observations, latest.Format(time.RFC3339Nano), emit)
+}
+
+func gmailBackfillObservations(
+	threads [][]googleapi.GmailThreadMessage,
+	selfEmail string,
+	sourceAccountID string,
+	receivedAt time.Time,
+) ([]RelationshipObservationInput, time.Time, error) {
 	observations := make([]RelationshipObservationInput, 0, len(threads))
 	latest := time.Time{}
 	for _, messages := range threads {
@@ -80,13 +141,107 @@ func (b *googleSourceBackfiller) Backfill(
 			Facts:        payload,
 		})
 		if adaptErr != nil {
-			return adaptErr
+			return nil, time.Time{}, adaptErr
 		}
 		observation.SourceVersion = version
-		observation.ReceivedAt = b.now().UTC()
+		observation.ReceivedAt = receivedAt
 		observations = append(observations, observation)
 	}
-	return emitObservationBatches(observations, latest.Format(time.RFC3339Nano), emit)
+	return observations, latest, nil
+}
+
+func calendarBackfillObservations(
+	events []googleapi.CalendarEvent,
+	selfEmail string,
+	sourceAccountID string,
+	receivedAt time.Time,
+) ([]RelationshipObservationInput, time.Time, error) {
+	observations := make([]RelationshipObservationInput, 0, len(events))
+	latest := time.Time{}
+	for _, event := range events {
+		if strings.TrimSpace(event.ID) == "" || event.Status == "cancelled" {
+			continue
+		}
+		occurredAt, err := calendarEventTime(event.StartsAt)
+		if err != nil {
+			continue
+		}
+		participants := externalCalendarParticipants(event, selfEmail)
+		if len(participants) == 0 {
+			continue
+		}
+		if occurredAt.After(latest) {
+			latest = occurredAt
+		}
+		version := event.UpdatedAt
+		if strings.TrimSpace(version) == "" {
+			version = occurredAt.Format(time.RFC3339Nano)
+		}
+		for _, participant := range participants {
+			payload := map[string]any{
+				"eventId": event.ID, "iCalUID": event.ICalUID,
+				"startsAt": event.StartsAt, "endsAt": event.EndsAt,
+				"organizer": event.Organizer, "summary": event.Summary,
+				"responseStatus": event.AttendeeResponses[participant.Email],
+			}
+			observation, adaptErr := AdaptCalendarEvent(AdapterEvent{
+				ExternalID:      event.ID + ":" + participant.Email,
+				SourceAccountID: sourceAccountID,
+				AccountName:     participant.Email,
+				PrimaryEmail:    participant.Email,
+				ResourceRefs:    []string{"calendar:event:" + event.ID},
+				EventType:       "meeting.snapshot",
+				OccurredAt:      occurredAt,
+				Summary:         "Calendar meeting observed with " + participant.Email,
+				Payload:         payload,
+				Participants:    []RelationshipParticipantInput{participant},
+				Facts:           payload,
+			})
+			if adaptErr != nil {
+				return nil, time.Time{}, adaptErr
+			}
+			observation.SourceVersion = version
+			observation.ReceivedAt = receivedAt
+			observations = append(observations, observation)
+		}
+	}
+	return observations, latest, nil
+}
+
+func externalCalendarParticipants(
+	event googleapi.CalendarEvent,
+	selfEmail string,
+) []RelationshipParticipantInput {
+	emails := append([]string{event.Organizer}, event.Attendees...)
+	seen := make(map[string]struct{}, len(emails))
+	participants := make([]RelationshipParticipantInput, 0, len(emails))
+	for _, value := range emails {
+		email := normalizeEmail(value)
+		if !isExternalCounterparty(selfEmail, email) {
+			continue
+		}
+		if _, exists := seen[email]; exists {
+			continue
+		}
+		seen[email] = struct{}{}
+		participants = append(participants, RelationshipParticipantInput{
+			DisplayName: email,
+			Email:       email,
+			Role:        "contact",
+		})
+	}
+	return participants
+}
+
+func calendarEventTime(value string) (time.Time, error) {
+	if parsed, err := time.Parse(time.RFC3339, value); err == nil {
+		return parsed.UTC(), nil
+	}
+	parsed, err := time.Parse(time.DateOnly, value)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return parsed.UTC(), nil
 }
 
 func latestGmailMessage(messages []googleapi.GmailThreadMessage) googleapi.GmailThreadMessage {

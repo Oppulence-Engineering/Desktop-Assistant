@@ -5,31 +5,37 @@ import "client-only";
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowRightIcon,
-  CircleNotchIcon,
-  ExportIcon,
-  PlugsIcon,
-  WarningIcon,
-} from "@phosphor-icons/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowRightIcon, CircleNotchIcon, ExportIcon, PlugsIcon, WarningIcon } from "@/lib/icons";
 
+import { WorkspaceEmptyState } from "@/components/revenue/shared";
+import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { Label } from "@oppulence/ui/components/label";
 import { capture, RevenueEvents } from "@/lib/analytics";
+import { createGoogleCommitmentsAuthorizationURL } from "@/lib/api/connectors/google-oauth";
+import {
+  GOOGLE_OAUTH_CLAIM_RESULT_EVENT,
+  GOOGLE_OAUTH_CONNECTED_EVENT,
+  type GoogleOAuthClaimResult,
+} from "@/components/features/connectors/google-oauth-return-handler";
 import {
   downloadMarkdown,
   friendlyRevenueError,
   getOpenPromisesReport,
   getOpenPromisesReportMarkdown,
   getScan,
-  googleSourceHealth,
   latestCompletedScan,
   listScans,
-  listRelationshipSources,
+  listRelationshipSourceStatuses,
+  relationshipSourceHealth,
+  REVENUE_EVIDENCE_LOOKBACK_DAYS,
+  REVENUE_EVIDENCE_LOOKBACK_LABEL,
+  RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
   safeResearchCitationURL,
   startScan,
 } from "@/lib/revenue";
-import type { OpenPromisesReport } from "@/types/revenue";
+import type { OpenPromisesReport, RelationshipSourceStatus } from "@/types/revenue";
 
 export function OpenPromisesReportClient() {
   // The app shell already holds the session; Suspense is here for the scan id,
@@ -45,8 +51,11 @@ function ReportBody() {
   // The running scan is identified in the URL. That makes "leave the page and
   // come back" work with no browser storage, and the link is shareable.
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useSearchParams();
   const scanId = params.get("scan");
+  const googleConnectedInURL = params.get("google_connected") === "1";
+  const hasGoogleCallback = Boolean(params.get("google_session") || params.get("google_status"));
   const setScanId = React.useCallback(
     (id: string | null) => {
       router.replace(id ? `/app/report?scan=${encodeURIComponent(id)}` : "/app/report");
@@ -54,18 +63,43 @@ function ReportBody() {
     [router],
   );
   const [starting, setStarting] = React.useState(false);
+  const [connecting, setConnecting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [googleOAuthClaimed, setGoogleOAuthClaimed] = React.useState(false);
+  const [googleClaimState, setGoogleClaimState] = React.useState<
+    GoogleOAuthClaimResult | "claiming" | "idle"
+  >(hasGoogleCallback ? "claiming" : "idle");
+  const autoScanStarted = React.useRef(false);
+
+  React.useEffect(() => {
+    const acknowledgeReturn = () => {
+      setGoogleOAuthClaimed(true);
+    };
+    const recordClaimResult = (event: Event) => {
+      setGoogleClaimState((event as CustomEvent<GoogleOAuthClaimResult>).detail);
+    };
+    window.addEventListener(GOOGLE_OAUTH_CONNECTED_EVENT, acknowledgeReturn);
+    window.addEventListener(GOOGLE_OAUTH_CLAIM_RESULT_EVENT, recordClaimResult);
+    return () => {
+      window.removeEventListener(GOOGLE_OAUTH_CONNECTED_EVENT, acknowledgeReturn);
+      window.removeEventListener(GOOGLE_OAUTH_CLAIM_RESULT_EVENT, recordClaimResult);
+    };
+  }, []);
 
   const sourcesQuery = useQuery({
-    queryKey: ["report-sources"],
-    queryFn: () => listRelationshipSources(),
+    queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY,
+    queryFn: listRelationshipSourceStatuses,
+    refetchInterval: (query) => {
+      const google = (query.state.data ?? []).find((source) => source.source === "google");
+      return googleSourceSyncActive(google) ? 2_000 : false;
+    },
   });
-  const health = googleSourceHealth(sourcesQuery.data ?? []);
+  const googleSource = sourcesQuery.data?.find((source) => source.source === "google");
+  const health = relationshipSourceHealth(sourcesQuery.data ?? []);
 
   const scansQuery = useQuery({
     queryKey: ["report-scans"],
     queryFn: () => listScans(),
-    enabled: !scanId,
   });
   const effectiveScanId = scanId ?? latestCompletedScan(scansQuery.data ?? [])?.id ?? null;
 
@@ -79,6 +113,14 @@ function ReportBody() {
     },
   });
   const scanDone = scanQuery.data?.status === "completed";
+  const scanTerminal =
+    scanQuery.data?.status === "completed" || scanQuery.data?.status === "failed";
+
+  React.useEffect(() => {
+    if (!scanTerminal) return;
+    void queryClient.invalidateQueries({ queryKey: RELATIONSHIP_SOURCE_STATUS_QUERY_KEY });
+    void queryClient.invalidateQueries({ queryKey: ["report-scans"] });
+  }, [queryClient, scanTerminal]);
 
   const reportQuery = useQuery({
     queryKey: ["report", effectiveScanId],
@@ -96,28 +138,104 @@ function ReportBody() {
   }, [reportQuery.data]);
 
   const run = React.useCallback(async () => {
+    if (health !== "ready") {
+      setError(
+        health === "needs_reconnect"
+          ? "Reconnect Google before starting another audit."
+          : "Connect Gmail and Calendar before starting an audit.",
+      );
+      return;
+    }
     setStarting(true);
     setError(null);
     try {
-      const scan = await startScan(90);
+      const scan = await startScan(REVENUE_EVIDENCE_LOOKBACK_DAYS);
       setScanId(scan.id);
-      capture(RevenueEvents.ScanStarted, { lookbackDays: 90, surface: "report" });
+      capture(RevenueEvents.ScanStarted, {
+        lookbackDays: REVENUE_EVIDENCE_LOOKBACK_DAYS,
+        surface: "report",
+      });
     } catch (e) {
       setError(friendlyRevenueError(e instanceof Error ? e.message : "Could not start the scan."));
     } finally {
       setStarting(false);
     }
-  }, [setScanId]);
+  }, [health, setScanId]);
+
+  React.useEffect(() => {
+    if (
+      (!googleConnectedInURL && !googleOAuthClaimed) ||
+      autoScanStarted.current ||
+      sourcesQuery.isLoading ||
+      scansQuery.isLoading ||
+      health !== "ready"
+    ) {
+      return;
+    }
+    autoScanStarted.current = true;
+    const activeScan = scansQuery.data?.find(
+      (scan) => scan.status !== "completed" && scan.status !== "failed",
+    );
+    if (activeScan) {
+      setScanId(activeScan.id);
+      return;
+    }
+    void run();
+  }, [
+    googleConnectedInURL,
+    googleOAuthClaimed,
+    health,
+    run,
+    scansQuery.data,
+    scansQuery.isLoading,
+    setScanId,
+    sourcesQuery.isLoading,
+  ]);
+
+  const connectGoogle = React.useCallback(async () => {
+    setConnecting(true);
+    setError(null);
+    try {
+      window.location.assign(
+        (await createGoogleCommitmentsAuthorizationURL("/app/report")).toString(),
+      );
+    } catch {
+      setError("Google authorization could not be started. Please try again.");
+      setConnecting(false);
+    }
+  }, []);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6 py-10">
       <header>
         <h1 className="text-[28px] font-medium leading-tight text-primary">Open promises</h1>
         <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-primary/60">
-          The commitments your team made in the last 90 days that have no evidence of fulfilment,
-          and the exact message that created each one.
+          The commitments your team made in the last {REVENUE_EVIDENCE_LOOKBACK_LABEL} that have no
+          evidence of fulfilment, and the exact message that created each one.
         </p>
       </header>
+
+      {(scansQuery.data?.length ?? 0) > 1 ? (
+        <Label className="flex items-center gap-3 text-xs text-primary/55">
+          Audit
+          <select
+            className="h-8 min-w-56 border border-border bg-background px-2 text-xs text-primary"
+            onChange={(event) => {
+              setScanId(event.target.value || null);
+            }}
+            value={effectiveScanId ?? ""}
+          >
+            {scansQuery.data?.map((scan) => (
+              <option key={scan.id} value={scan.id}>
+                {scan.status === "completed" ? "Completed" : scan.status} ·{" "}
+                {scan.completedAt || scan.startedAt
+                  ? new Date(scan.completedAt ?? scan.startedAt ?? "").toLocaleDateString()
+                  : scan.id}
+              </option>
+            ))}
+          </select>
+        </Label>
+      ) : null}
 
       {error ? (
         <p className="flex items-start gap-2 border border-destructive/40 bg-destructive/5 p-3 text-[13px] text-destructive">
@@ -125,14 +243,27 @@ function ReportBody() {
         </p>
       ) : null}
 
+      <GoogleEvidenceSyncState claiming={googleClaimState === "claiming"} source={googleSource} />
+
       {sourcesQuery.isLoading || (!scanId && scansQuery.isLoading) ? (
         <p className="flex items-center gap-2 text-[13px] text-primary/55">
           <CircleNotchIcon className="size-4 animate-spin" /> Loading your report.
         </p>
       ) : health === "not_connected" ? (
-        <ConnectStep />
+        <GoogleConnectionStep
+          busy={connecting}
+          onConnect={() => {
+            void connectGoogle();
+          }}
+        />
       ) : health === "needs_reconnect" ? (
-        <ReconnectStep />
+        <GoogleConnectionStep
+          busy={connecting}
+          onConnect={() => {
+            void connectGoogle();
+          }}
+          reconnect
+        />
       ) : !effectiveScanId ? (
         <StartStep
           onRun={() => {
@@ -177,64 +308,155 @@ function ReportBody() {
   );
 }
 
-// Step one, and the only thing asked for. No model key, no workspace setup.
-function ConnectStep() {
+function googleSourceSyncActive(source?: RelationshipSourceStatus): boolean {
   return (
-    <section className="border border-border bg-background-50 p-5">
-      <h2 className="text-[15px] font-medium text-primary">Connect Gmail to begin</h2>
-      <p className="mt-1.5 max-w-lg text-[13px] leading-relaxed text-primary/60">
-        Oppulence reads the last 90 days to find promises. Nothing is sent, written, or replied to
-        on your behalf.
+    source?.status === "authorizing" ||
+    source?.status === "backfilling" ||
+    source?.status === "rebuilding" ||
+    source?.backfillPhase === "queued" ||
+    source?.backfillPhase === "running"
+  );
+}
+
+function GoogleEvidenceSyncState({
+  claiming,
+  source,
+}: {
+  claiming: boolean;
+  source?: RelationshipSourceStatus;
+}) {
+  if (claiming) {
+    return (
+      <section className="border border-border bg-background-50 p-4" role="status">
+        <p className="flex items-center gap-2 text-[13px] font-medium text-primary">
+          <CircleNotchIcon className="size-4 animate-spin" /> Saving your Google connection
+        </p>
+        <p className="mt-1 text-[12px] text-primary/55">
+          Oppulence is securely claiming the authorization returned by Google.
+        </p>
+      </section>
+    );
+  }
+  if (!source) return null;
+
+  const active = googleSourceSyncActive(source);
+  const failed = source.backfillPhase === "failed" || source.status === "reconnect_required";
+  const completed = Math.max(0, source.backfillCompleted);
+  const total = Math.max(0, source.backfillTotal);
+  const progress = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0;
+  const title = failed
+    ? source.status === "reconnect_required"
+      ? "Google needs to be reconnected"
+      : "Google evidence sync failed"
+    : active
+      ? "Syncing Google evidence"
+      : source.status === "live"
+        ? "Google evidence is live"
+        : "Google connected; sync is waiting to start";
+
+  return (
+    <section
+      className={
+        failed
+          ? "border border-destructive/40 bg-destructive/5 p-4"
+          : "border border-border bg-background-50 p-4"
+      }
+      role={failed ? "alert" : "status"}
+    >
+      <p className="flex items-center gap-2 text-[13px] font-medium text-primary">
+        {active ? <CircleNotchIcon className="size-4 animate-spin" /> : null}
+        {title}
       </p>
-      <Button asChild className="mt-4 bg-[#3478f6] text-white hover:bg-[#2f6fe6]">
-        <Link href="/app/settings">
-          <PlugsIcon /> Connect Gmail &amp; Calendar
-        </Link>
-      </Button>
+      <p className="mt-1 text-[12px] text-primary/55">
+        {failed
+          ? source.lastError || "The source could not advance. Reconnect or retry the sync."
+          : active && total > 0
+            ? `${String(completed)} of ${String(total)} evidence records processed.`
+            : active
+              ? `Reading relevant external customer and contact activity from the last ${REVENUE_EVIDENCE_LOOKBACK_LABEL}.`
+              : source.status === "live"
+                ? "Gmail and primary Calendar evidence finished its initial backfill."
+                : "The authorization is valid, but the initial evidence backfill is not active yet."}
+      </p>
+      {active && total > 0 ? (
+        <div
+          aria-label="Google evidence sync progress"
+          aria-valuemax={100}
+          aria-valuemin={0}
+          aria-valuenow={progress}
+          className="mt-3 h-1.5 overflow-hidden bg-primary/10"
+          role="progressbar"
+        >
+          <div className="h-full bg-[#3478f6]" style={{ width: `${String(progress)}%` }} />
+        </div>
+      ) : null}
     </section>
   );
 }
 
-// The grant died. Offering "find my open promises" here would invite a scan
-// that cannot read anything.
-function ReconnectStep() {
+function GoogleConnectionStep({
+  busy,
+  onConnect,
+  reconnect = false,
+}: {
+  busy: boolean;
+  onConnect: () => void;
+  reconnect?: boolean;
+}) {
   return (
-    <section className="border border-destructive/40 bg-destructive/[0.04] p-5">
-      <h2 className="flex items-center gap-2 text-[15px] font-medium text-primary">
-        <WarningIcon className="size-4 text-destructive" /> Google needs reconnecting
-      </h2>
-      <p className="mt-1.5 max-w-lg text-[13px] leading-relaxed text-primary/60">
-        Google stopped accepting the authorization, so we cannot read your mail. Reconnect to run
-        the audit.
-      </p>
-      <Button asChild className="mt-4 bg-[#3478f6] text-white hover:bg-[#2f6fe6]">
-        <Link href="/app/settings">
-          <PlugsIcon /> Reconnect Google
-        </Link>
-      </Button>
-    </section>
+    <WorkspaceEmptyState
+      action={
+        <Button
+          className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+          disabled={busy}
+          onClick={onConnect}
+          size="sm"
+          type="button"
+        >
+          {busy ? <CircleNotchIcon className="animate-spin" /> : <PlugsIcon />}
+          {busy ? "Connecting…" : reconnect ? "Reconnect Google" : "Connect Gmail & Calendar"}
+        </Button>
+      }
+      description={
+        reconnect
+          ? "Google stopped accepting the authorization, so we cannot read your mail. Reconnect to run the audit."
+          : `Oppulence reads the last ${REVENUE_EVIDENCE_LOOKBACK_LABEL} to find promises. Nothing is sent, written, or replied to on your behalf.`
+      }
+      image="openPromises"
+      learnMore={[
+        { label: "See exact message evidence" },
+        { label: "Nothing is sent on your behalf" },
+      ]}
+      title="Open promises"
+    />
   );
 }
 
 function StartStep({ onRun, busy }: { onRun: () => void; busy: boolean }) {
   return (
-    <section className="border border-border bg-background-50 p-5">
-      <h2 className="text-[15px] font-medium text-primary">Read the last 90 days</h2>
-      <p className="mt-1.5 max-w-lg text-[13px] leading-relaxed text-primary/60">
-        This takes a few minutes. You can leave the page and come back.
-      </p>
-      <Button
-        className="mt-4 bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
-        disabled={busy}
-        onClick={() => {
-          onRun();
-        }}
-        type="button"
-      >
-        {busy ? <CircleNotchIcon className="animate-spin" /> : <ArrowRightIcon />}
-        {busy ? "Starting" : "Find my open promises"}
-      </Button>
-    </section>
+    <WorkspaceEmptyState
+      action={
+        <Button
+          className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
+          disabled={busy}
+          onClick={() => {
+            onRun();
+          }}
+          size="sm"
+          type="button"
+        >
+          {busy ? <CircleNotchIcon className="animate-spin" /> : <ArrowRightIcon />}
+          {busy ? "Starting" : "Find my open promises"}
+        </Button>
+      }
+      description={`Read the last ${REVENUE_EVIDENCE_LOOKBACK_LABEL} to surface commitments with no evidence of fulfilment. This takes a few minutes — you can leave and come back.`}
+      image="openPromises"
+      learnMore={[
+        { label: "See exact message evidence" },
+        { label: "Nothing is sent on your behalf" },
+      ]}
+      title="Open promises"
+    />
   );
 }
 
@@ -263,7 +485,8 @@ function ScanningStep({
   return (
     <section className="border border-border bg-background-50 p-5">
       <h2 className="flex items-center gap-2 text-[15px] font-medium text-primary">
-        <CircleNotchIcon className="size-4 animate-spin" /> Reading your last 90 days
+        <CircleNotchIcon className="size-4 animate-spin" /> Reading your last{" "}
+        {REVENUE_EVIDENCE_LOOKBACK_LABEL}
       </h2>
       <p className="mt-1.5 text-[13px] text-primary/60">
         {threads > 0 ? `${String(threads)} conversations read so far.` : "Starting up."}
@@ -340,18 +563,21 @@ function Report({ report, scanId }: { report: OpenPromisesReport; scanId: string
         {report.items.map((item) => (
           <li key={item.commitmentId} className="border border-border bg-background p-4">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <span className="text-[13px] font-medium text-primary">{item.account}</span>
-              <span className="text-[12px] text-primary/45">
+              <Label className="text-[13px] font-medium text-primary">{item.account}</Label>
+              <Label className="text-[12px] font-normal text-primary/45">
                 {item.direction === "promised_by_them" ? "they owe us" : "we owe them"}
-              </span>
+              </Label>
               {item.state === "at_risk" ? (
-                <span className="border border-amber-500/40 px-1.5 py-0.5 text-[11px] text-amber-500">
+                <Badge
+                  className="rounded-none border-amber-500/40 px-1.5 py-0.5 text-[11px] font-normal text-amber-500"
+                  variant="outline"
+                >
                   at risk
-                </span>
+                </Badge>
               ) : null}
-              <span className="ml-auto text-[12px] text-primary/45">
+              <Label className="ml-auto text-[12px] font-normal text-primary/45">
                 {item.dueAt ? `due ${item.dueAt.slice(0, 10)}` : "due unspecified"}
-              </span>
+              </Label>
             </div>
             <p className="mt-1.5 text-[14px] leading-snug text-primary">{item.text}</p>
             {/* Every claim carries its citation, or it is not made. */}

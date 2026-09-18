@@ -7,15 +7,14 @@ import {
   BookOpen,
   Check,
   Clipboard,
-  Cloud,
-  MagnifyingGlass,
   Monitor,
   Moon,
   Plugs,
   ShieldCheck,
   Sun,
   type Icon as PhosphorIcon,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   SETTINGS_SECTIONS,
@@ -25,8 +24,20 @@ import {
 } from "@/components/app-shell";
 import { DeleteAccountRow } from "@/components/features/account/delete-account-row";
 import { ConnectorSettings } from "@/components/features/connectors/connector-settings";
+import { capture, RevenueEvents, setAnalyticsConsent } from "@/lib/analytics";
+import {
+  getConsolePreferences,
+  patchConsolePreferences,
+  type ConsolePreferences,
+  type ConsolePreferencesPatch,
+} from "@/lib/console";
+import { startCheckout } from "@/lib/revenue";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { CardDescription, CardTitle } from "@oppulence/ui/components/card";
+import { ItemMedia } from "@oppulence/ui/components/item";
+import { Label } from "@oppulence/ui/components/label";
+import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { Input } from "@oppulence/ui/components/input";
 import {
   Select,
@@ -35,17 +46,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@oppulence/ui/components/select";
+import { Switch } from "@oppulence/ui/components/switch";
+import { ToggleGroup, ToggleGroupItem } from "@oppulence/ui/components/toggle-group";
 import { dashboardFetch } from "@/lib/auth/client";
-import { ListConnectors200Response } from "@/lib/api/generated/zod/connectors/connectors";
-import { GetGoogleConnectionStatus200Response } from "@/lib/api/generated/zod/google-oauth/google-oauth";
-import { GetRelationshipSourceInventory200Response } from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
-import { ListSlackWorkspaces200Response } from "@/lib/api/generated/zod/slack-oauth/slack-oauth";
-import type { Connector } from "@/lib/api/generated/client/model/connector";
-import type { GoogleConnectionAccount } from "@/lib/api/generated/client/model/googleConnectionAccount";
-import type { RelationshipSourceInventoryItem } from "@/lib/api/generated/client/model/relationshipSourceInventoryItem";
-import type { SlackWorkspace } from "@/lib/api/generated/client/model/slackWorkspace";
-import { getPref, setPref } from "@/lib/console-prefs";
 import { cn } from "@/lib/utils";
+
+const CONSOLE_PREFERENCES_QUERY_KEY = ["console", "preferences"] as const;
+
+function useConsolePreferences() {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: CONSOLE_PREFERENCES_QUERY_KEY,
+    queryFn: ({ signal }) => getConsolePreferences(signal),
+  });
+  const mutation = useMutation({
+    mutationFn: (patch: ConsolePreferencesPatch) => patchConsolePreferences(patch),
+    onSuccess: (preferences) => {
+      queryClient.setQueryData<ConsolePreferences>(CONSOLE_PREFERENCES_QUERY_KEY, preferences);
+      void queryClient.invalidateQueries({ queryKey: CONSOLE_PREFERENCES_QUERY_KEY });
+    },
+  });
+  return { query, mutation };
+}
+
+function PreferenceLoadState({ message, retry }: { message: string; retry: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3 p-4" role="alert">
+      <p className="text-xs text-destructive">{message}</p>
+      <Button onClick={retry} size="sm" type="button" variant="outline">
+        Retry
+      </Button>
+    </div>
+  );
+}
 
 type SessionShape = {
   user: {
@@ -97,7 +130,7 @@ function SettingsRow({
       >
         {children}
         {footer ? (
-          <div className="flex items-center justify-end border-t border-[var(--settings-line)] px-4 py-3">
+          <div className="flex items-center justify-end border-t border-[var(--settings-line)] py-3">
             {footer}
           </div>
         ) : null}
@@ -127,27 +160,30 @@ function ValueRow({
 
   return (
     <div className="group/row flex min-h-[34px] items-center justify-between gap-4 rounded-none px-4 py-1 transition-colors hover:bg-background-100 dark:hover:bg-background-200">
-      <span className="text-xs capitalize text-primary/60">{label}</span>
-      <span className="flex min-w-0 items-center gap-1.5">
-        <span
+      <Label className="text-xs font-normal capitalize text-primary/60">{label}</Label>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <Badge
           className={cn(
-            "truncate text-right font-mono text-xs",
+            "truncate font-mono font-normal",
             value ? "text-primary" : "text-primary/40",
           )}
+          variant="secondary"
         >
           {value || "—"}
-        </span>
+        </Badge>
         {copy && value ? (
-          <button
+          <Button
             aria-label={`Copy ${label}`}
-            className="text-primary/50 opacity-0 transition-opacity hover:text-primary group-hover/row:opacity-100"
+            className="size-7 text-primary/50 opacity-0 transition-opacity hover:text-primary group-hover/row:opacity-100"
             onClick={handleCopy}
+            size="icon"
             type="button"
+            variant="ghost"
           >
             {copied ? <Check className="size-3.5" /> : <Clipboard className="size-3.5" />}
-          </button>
+          </Button>
         ) : null}
-      </span>
+      </div>
     </div>
   );
 }
@@ -174,8 +210,12 @@ function SaveFooter({
   onSave: () => void;
 }) {
   return (
-    <div className="flex items-center justify-end gap-3 border-t bg-background-100 p-4 dark:bg-background-200">
-      {saved ? <span className="font-mono text-xs text-oppulence-orange">saved</span> : null}
+    <div className="flex items-center justify-end gap-3 border-t border-[var(--settings-line)] py-3">
+      {saved ? (
+        <Badge className="font-mono text-xs text-oppulence-orange" variant="outline">
+          saved
+        </Badge>
+      ) : null}
       <Button disabled={!dirty || saving} onClick={onSave} size="sm">
         {saving ? "Saving…" : label}
       </Button>
@@ -192,11 +232,53 @@ function useSavedFlash(): [boolean, () => void] {
   return [saved, flash];
 }
 
+function SettingsStatus({ children }: { children: React.ReactNode }) {
+  return (
+    <Badge
+      className="settings-status settings-status--ok rounded-none border-0 bg-transparent px-0 font-normal shadow-none hover:bg-transparent"
+      variant="outline"
+    >
+      {children}
+    </Badge>
+  );
+}
+
+function ThemePreviewSkeleton({ dark }: { dark: boolean }) {
+  const line = dark ? "bg-zinc-400/35" : "bg-zinc-400/35";
+  const accent = dark ? "bg-zinc-400/60" : "bg-zinc-400/60";
+  return (
+    <div
+      className={cn(
+        "flex h-20 overflow-hidden rounded-none border",
+        dark ? "border-zinc-700 bg-zinc-900" : "bg-white",
+      )}
+    >
+      <div
+        className={cn(
+          "w-1/3 border-r p-2",
+          dark ? "border-zinc-700 bg-zinc-800" : "border-zinc-200 bg-zinc-100",
+        )}
+      >
+        <Skeleton className={cn("mb-2 h-1.5 w-2/3 rounded-none", accent)} />
+        <Skeleton className={cn("mb-1.5 h-1 w-full rounded-none", line)} />
+        <Skeleton className={cn("h-1 w-4/5 rounded-none", line)} />
+      </div>
+      <div className="flex-1 p-2">
+        <Skeleton className={cn("mb-2 h-1.5 w-1/2 rounded-none", accent)} />
+        <Skeleton className={cn("mb-1.5 h-1 w-full rounded-none", line)} />
+        <Skeleton className={cn("h-1 w-4/5 rounded-none", line)} />
+      </div>
+    </div>
+  );
+}
+
 function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: string }) {
   return (
     <div className="mb-1.5">
-      <span className="block text-sm font-medium text-primary">{children}</span>
-      {hint ? <span className="block text-xs text-muted-foreground">{hint}</span> : null}
+      <Label className="block text-sm text-primary">{children}</Label>
+      {hint ? (
+        <CardDescription className="block text-xs text-muted-foreground">{hint}</CardDescription>
+      ) : null}
     </div>
   );
 }
@@ -204,46 +286,74 @@ function FieldLabel({ children, hint }: { children: React.ReactNode; hint?: stri
 /* -------------------------------- sections --------------------------------- */
 
 function ProfileCard() {
+  const { query, mutation } = useConsolePreferences();
   const [name, setName] = React.useState("");
   const [initial, setInitial] = React.useState("");
   const [saved, flash] = useSavedFlash();
 
   React.useEffect(() => {
-    const current = getPref("display-name") || "";
-    setName(current);
-    setInitial(current);
-  }, []);
+    if (!query.data) return;
+    setName(query.data.displayName);
+    setInitial(query.data.displayName);
+  }, [query.data]);
 
   const dirty = name !== initial;
 
-  const save = () => {
-    setPref("display-name", name.trim());
-    setInitial(name.trim());
-    setName(name.trim());
-    flash();
+  const save = async () => {
+    const next = name.trim();
+    try {
+      await mutation.mutateAsync({ displayName: next });
+      setInitial(next);
+      setName(next);
+      flash();
+    } catch {
+      // The mutation state renders an inline retryable error.
+    }
   };
 
   return (
     <SettingsRow
-      description="How you appear in this console on this device."
-      footer={<SaveFooter dirty={dirty} label="Save profile" onSave={save} saved={saved} />}
+      description="How you appear in this console across signed-in devices."
+      footer={
+        <SaveFooter
+          dirty={dirty}
+          label="Save profile"
+          onSave={() => void save()}
+          saved={saved}
+          saving={mutation.isPending}
+        />
+      }
       title="Profile"
     >
-      <div className="space-y-6 px-4 py-6">
-        <div>
-          <FieldLabel hint="Shown in the sidebar instead of your email.">Display name</FieldLabel>
-          <Input
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Ada Lovelace"
-            value={name}
-          />
+      {query.isError ? (
+        <PreferenceLoadState
+          message="Could not load your profile preference."
+          retry={() => void query.refetch()}
+        />
+      ) : (
+        <div className="space-y-6 py-2">
+          <div>
+            <FieldLabel hint="Shown in the sidebar instead of your email.">Display name</FieldLabel>
+            <Input
+              disabled={query.isLoading}
+              onChange={(event) => setName(event.target.value)}
+              placeholder={query.isLoading ? "Loading…" : "Ada Lovelace"}
+              value={name}
+            />
+            {mutation.isError ? (
+              <p className="mt-2 text-xs text-destructive" role="alert">
+                Could not save your display name. Please retry.
+              </p>
+            ) : null}
+          </div>
         </div>
-      </div>
+      )}
     </SettingsRow>
   );
 }
 
 function DefaultsCard() {
+  const { query, mutation } = useConsolePreferences();
   const { items, state } = useJsonList("/api/rowboat/v1/agents", (data) => {
     const record = (data ?? {}) as Record<string, unknown>;
     return Array.isArray(record.agents) ? record.agents : [];
@@ -262,44 +372,74 @@ function DefaultsCard() {
   const [saved, flash] = useSavedFlash();
 
   React.useEffect(() => {
-    const current = getPref("default-agent") || "";
-    setAgent(current);
-    setInitial(current);
-  }, []);
+    if (!query.data) return;
+    setAgent(query.data.defaultAgentSlug);
+    setInitial(query.data.defaultAgentSlug);
+  }, [query.data]);
 
   const dirty = agent !== initial;
 
-  const save = () => {
-    setPref("default-agent", agent);
-    setInitial(agent);
-    flash();
+  const save = async () => {
+    try {
+      await mutation.mutateAsync({ defaultAgentSlug: agent });
+      setInitial(agent);
+      flash();
+    } catch {
+      // The mutation state renders an inline retryable error.
+    }
   };
 
   return (
     <SettingsRow
       description="What new chats start with. Applies the next time you open the console."
-      footer={<SaveFooter dirty={dirty} label="Save defaults" onSave={save} saved={saved} />}
+      footer={
+        <SaveFooter
+          dirty={dirty}
+          label="Save defaults"
+          onSave={() => void save()}
+          saved={saved}
+          saving={mutation.isPending}
+        />
+      }
       title="Chat Defaults"
     >
-      <div className="space-y-6 px-4 py-6">
-        <div>
-          <FieldLabel hint="The agent preselected for new conversations.">Default agent</FieldLabel>
-          <Select onValueChange={setAgent} value={agent || undefined}>
-            <SelectTrigger className="w-full max-w-xs">
-              <SelectValue
-                placeholder={state === "loading" ? "Loading agents…" : "Choose an agent"}
-              />
-            </SelectTrigger>
-            <SelectContent className="app-shell rounded-[2px]">
-              {agentNames.map((name) => (
-                <SelectItem key={name} value={name}>
-                  {name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {query.isError ? (
+        <PreferenceLoadState
+          message="Could not load your default agent."
+          retry={() => void query.refetch()}
+        />
+      ) : (
+        <div className="space-y-6 px-4 py-6">
+          <div>
+            <FieldLabel hint="The agent preselected for new conversations.">
+              Default agent
+            </FieldLabel>
+            <Select
+              disabled={query.isLoading || state === "loading"}
+              onValueChange={setAgent}
+              value={agent || undefined}
+            >
+              <SelectTrigger className="w-full max-w-xs">
+                <SelectValue
+                  placeholder={state === "loading" ? "Loading agents…" : "Choose an agent"}
+                />
+              </SelectTrigger>
+              <SelectContent className="app-shell rounded-[2px]">
+                {agentNames.map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {mutation.isError ? (
+              <p className="mt-2 text-xs text-destructive" role="alert">
+                Could not save your default agent. Please retry.
+              </p>
+            ) : null}
+          </div>
         </div>
-      </div>
+      )}
     </SettingsRow>
   );
 }
@@ -333,48 +473,30 @@ function AppearanceSection() {
         description="How the console looks on this device. Applies immediately."
         title="Theme"
       >
-        <div className="settings-choice-grid p-3">
+        <ToggleGroup
+          className="settings-choice-grid p-3"
+          onValueChange={(value) => value && setTheme(value as ThemePreference)}
+          type="single"
+          value={theme}
+        >
           {options.map((option) => (
-            <button
-              className="settings-choice"
+            <ToggleGroupItem
+              aria-label={option.label}
+              className="settings-choice h-auto flex-col data-[state=on]:shadow-none"
               data-selected={theme === option.value}
               key={option.value}
-              onClick={() => setTheme(option.value)}
-              type="button"
+              value={option.value}
             >
-              <span
-                className={cn(
-                  "flex h-20 overflow-hidden rounded-none border",
-                  option.value === "dark" ? "border-zinc-700 bg-zinc-900" : "bg-white",
-                )}
-              >
-                <span
-                  className={cn(
-                    "w-1/3 border-r p-2",
-                    option.value === "dark"
-                      ? "border-zinc-700 bg-zinc-800"
-                      : "border-zinc-200 bg-zinc-100",
-                  )}
-                >
-                  <span className="mb-2 block h-1.5 w-2/3 rounded-full bg-zinc-400/60" />
-                  <span className="mb-1.5 block h-1 w-full rounded-full bg-zinc-400/35" />
-                  <span className="block h-1 w-4/5 rounded-full bg-zinc-400/35" />
-                </span>
-                <span className="flex-1 p-2">
-                  <span className="mb-2 block h-1.5 w-1/2 rounded-full bg-zinc-400/60" />
-                  <span className="mb-1.5 block h-1 w-full rounded-full bg-zinc-400/35" />
-                  <span className="block h-1 w-4/5 rounded-full bg-zinc-400/35" />
-                </span>
-              </span>
-              <span className="flex items-center justify-between">
-                <span className="settings-choice-label">{option.label}</span>
+              <ThemePreviewSkeleton dark={option.value === "dark"} />
+              <div className="flex w-full items-center justify-between">
+                <Label className="settings-choice-label font-normal">{option.label}</Label>
                 {theme === option.value ? (
                   <Check className="size-3.5 text-[var(--settings-accent)]" />
                 ) : null}
-              </span>
-            </button>
+              </div>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       </SettingsRow>
       <SettingsRow description="Language used throughout the product." title="Language">
         <div className="settings-row">
@@ -382,9 +504,14 @@ function AppearanceSection() {
             <p className="settings-row-label">Interface language</p>
             <p className="settings-row-description">English is currently available.</p>
           </div>
-          <select className="settings-select w-40" defaultValue="en">
-            <option value="en">English</option>
-          </select>
+          <Select defaultValue="en" disabled>
+            <SelectTrigger aria-label="Interface language" className="settings-select w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">English</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </SettingsRow>
     </>
@@ -431,55 +558,31 @@ function nameOf(item: unknown): string {
   return JSON.stringify(item);
 }
 
-function ModelsSection() {
-  const { items, state } = useJsonList("/api/rowboat/v1/llm/models", (data) => {
-    const record = (data ?? {}) as Record<string, unknown>;
-    if (Array.isArray(record.data)) return record.data;
-    if (Array.isArray(record.models)) return record.models;
-    return Array.isArray(data) ? (data as unknown[]) : [];
-  });
-
-  return (
-    <SettingsRow
-      description="The catalog served by the Oppulence LLM gateway. It is managed server-side; pick what new chats use under General → Chat Defaults."
-      title="Models"
-    >
-      {state === "loading" ? (
-        <EmptyCardState>Loading models…</EmptyCardState>
-      ) : state === "error" ? (
-        <EmptyCardState>Could not reach the model gateway.</EmptyCardState>
-      ) : items.length === 0 ? (
-        <EmptyCardState>No models are configured for this workspace.</EmptyCardState>
-      ) : (
-        <div className="flex flex-col divide-y divide-primary/10">
-          {items.map((item) => {
-            const name = nameOf(item);
-            const provider = name.includes("/") ? name.split("/")[0] : null;
-            return (
-              <div className="flex items-center justify-between gap-4 px-4 py-2.5" key={name}>
-                <span className="truncate font-mono text-sm text-primary">{name}</span>
-                {provider ? (
-                  <Badge className="shrink-0 rounded-[2px] capitalize" variant="outline">
-                    {provider}
-                  </Badge>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </SettingsRow>
-  );
-}
-
-function PlanSection({ session }: { session: SessionShape }) {
+export function PlanSection({ session }: { session: SessionShape }) {
   const billing = session.billing;
+  const [upgrading, setUpgrading] = React.useState(false);
+  const [upgradeError, setUpgradeError] = React.useState<string | null>(null);
+  const canUpgrade = billing?.plan !== "pro";
   const usage =
     billing?.usage && typeof billing.usage === "object" && !Array.isArray(billing.usage)
       ? Object.entries(billing.usage as Record<string, unknown>).filter(
           ([, value]) => typeof value === "string" || typeof value === "number",
         )
       : [];
+
+  const upgrade = async () => {
+    if (upgrading) return;
+    setUpgrading(true);
+    setUpgradeError(null);
+    capture(RevenueEvents.UpgradeClicked, { from: "settings" });
+    try {
+      const url = await startCheckout("pro");
+      window.location.assign(url);
+    } catch {
+      setUpgradeError("Checkout is temporarily unavailable. Please try again.");
+      setUpgrading(false);
+    }
+  };
 
   return (
     <>
@@ -493,12 +596,25 @@ function PlanSection({ session }: { session: SessionShape }) {
               </p>
             ) : null}
           </div>
-          {billing?.status ? (
-            <Badge className="rounded-[2px] capitalize" variant="outline">
-              {billing.status}
-            </Badge>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {billing?.status ? (
+              <Badge className="rounded-[2px] capitalize" variant="outline">
+                {billing.status}
+              </Badge>
+            ) : null}
+            {canUpgrade ? (
+              <Button disabled={upgrading} onClick={() => void upgrade()} size="sm" type="button">
+                {upgrading ? "Opening checkout…" : "Upgrade to Pro"}
+                <ArrowRight />
+              </Button>
+            ) : null}
+          </div>
         </div>
+        {upgradeError ? (
+          <p className="px-4 pb-4 text-xs text-destructive" role="alert">
+            {upgradeError}
+          </p>
+        ) : null}
       </SettingsRow>
       <SettingsRow description="Metered activity for the current billing period." title="Usage">
         {usage.length === 0 ? (
@@ -515,69 +631,65 @@ function PlanSection({ session }: { session: SessionShape }) {
   );
 }
 
-function useStoredBoolean(key: string, initial: boolean) {
-  const [value, setValue] = React.useState(() => {
-    if (typeof window === "undefined") return initial;
-    const stored = localStorage.getItem(key);
-    return stored === null ? initial : stored === "true";
-  });
-
-  const update = React.useCallback(
-    (next: boolean) => {
-      setValue(next);
-      localStorage.setItem(key, String(next));
-    },
-    [key],
-  );
-
-  return [value, update] as const;
-}
-
-function PreferenceToggle({
-  storageKey,
-  label,
-  description,
-  initial = false,
-}: {
-  storageKey: string;
-  label: string;
-  description: string;
-  initial?: boolean;
-}) {
-  const [checked, setChecked] = useStoredBoolean(storageKey, initial);
+function UsageDataCard() {
+  const { query, mutation } = useConsolePreferences();
+  const update = (shareUsageData: boolean) => {
+    mutation.mutate(
+      { shareUsageData },
+      {
+        onSuccess: () => setAnalyticsConsent(shareUsageData),
+      },
+    );
+  };
 
   return (
-    <div className="settings-row">
-      <div className="settings-row-copy">
-        <p className="settings-row-label">{label}</p>
-        <p className="settings-row-description">{description}</p>
-      </div>
-      <button
-        aria-checked={checked}
-        aria-label={label}
-        className="settings-switch shrink-0"
-        onClick={() => setChecked(!checked)}
-        role="switch"
-        type="button"
-      />
-    </div>
+    <SettingsRow
+      description="This choice follows your account across signed-in devices."
+      title="Privacy"
+    >
+      {query.isError ? (
+        <PreferenceLoadState
+          message="Could not load your analytics preference."
+          retry={() => void query.refetch()}
+        />
+      ) : (
+        <div className="settings-row">
+          <div className="settings-row-copy">
+            <p className="settings-row-label">Share anonymous usage data</p>
+            <p className="settings-row-description">
+              Allow product events without note, relationship, prompt, or identity data.
+            </p>
+            {mutation.isError ? (
+              <p className="mt-1 text-xs text-destructive" role="alert">
+                Could not save this preference. Please retry.
+              </p>
+            ) : null}
+          </div>
+          <Switch
+            aria-label="Share anonymous usage data"
+            checked={query.data?.shareUsageData ?? false}
+            className="settings-switch shrink-0"
+            disabled={query.isLoading || mutation.isPending}
+            onCheckedChange={update}
+          />
+        </div>
+      )}
+    </SettingsRow>
   );
 }
 
 function PageIntro({ title, description }: { title: string; description: string }) {
   return (
-    <>
+    <header className="settings-page-intro">
       <h1 className="settings-page-title">{title}</h1>
-      <p className="settings-page-description">{description}</p>
-      <hr className="settings-divider" />
-    </>
+      {description ? <p className="settings-page-description">{description}</p> : null}
+    </header>
   );
 }
 
 const OVERVIEW_KEYS: SettingsSection[] = [
   "preferences",
   "connections",
-  "models",
   "appearance",
   "account",
   "help",
@@ -587,34 +699,35 @@ function OverviewSection({ onNavigate }: { onNavigate: (section: SettingsSection
   return (
     <>
       <PageIntro
-        description="Configure how Oppulence reasons, connects, and acts across every customer relationship."
+        description="Workspace, connections, and how Oppulence behaves."
         title="Settings"
       />
-      <section className="settings-overview-group">
-        <div className="settings-card-grid">
-          {OVERVIEW_KEYS.map((key) => {
-            const section = SETTINGS_SECTIONS.find((item) => item.key === key);
-            if (!section) return null;
-            return (
-              <button
-                className="settings-card"
-                key={section.key}
-                onClick={() => onNavigate(section.key)}
-                type="button"
-              >
-                <span className="settings-card-icon">
-                  <section.icon />
-                </span>
-                <span className="settings-card-copy">
-                  <span className="settings-card-title">{section.label}</span>
-                  <span className="settings-card-description">{section.description}</span>
-                </span>
-                <ArrowRight className="ml-auto size-3.5 shrink-0 text-primary/30" />
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      <nav aria-label="Settings sections" className="settings-link-list">
+        {OVERVIEW_KEYS.map((key) => {
+          const section = SETTINGS_SECTIONS.find((item) => item.key === key);
+          if (!section) return null;
+          return (
+            <Button
+              className="settings-link-row h-auto justify-start"
+              key={section.key}
+              onClick={() => onNavigate(section.key)}
+              type="button"
+              variant="ghost"
+            >
+              <ItemMedia className="settings-link-row-icon" variant="icon">
+                <section.icon />
+              </ItemMedia>
+              <div className="settings-link-row-copy min-w-0 flex-1">
+                <CardTitle className="settings-link-row-title text-sm">{section.label}</CardTitle>
+                <CardDescription className="settings-link-row-description">
+                  {section.description}
+                </CardDescription>
+              </div>
+              <ArrowRight className="ml-2 size-3.5 shrink-0 text-primary/25" />
+            </Button>
+          );
+        })}
+      </nav>
     </>
   );
 }
@@ -623,102 +736,17 @@ function PreferencesSection() {
   return (
     <>
       <PageIntro
-        description="Choose the defaults Oppulence uses while reviewing and maintaining relationships."
+        description="Choose account-wide defaults and whether anonymous product events may be captured."
         title="Preferences"
       />
       <DefaultsCard />
-      <SettingsRow
-        description="Control how much of the model's work is visible and when context is compacted."
-        title="Model"
-      >
-        <PreferenceToggle
-          description="Show the reasoning trace when a recommendation is generated."
-          initial
-          label="Show model reasoning"
-          storageKey="settings-show-model-reasoning"
-        />
-        <PreferenceToggle
-          description="Compress older evidence automatically as the working context grows."
-          initial
-          label="Auto context compaction"
-          storageKey="settings-auto-context-compaction"
-        />
-      </SettingsRow>
-      <SettingsRow
-        description="Choose when the console may call your attention back to a relationship."
-        title="Desktop notifications"
-      >
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Notify me</p>
-            <p className="settings-row-description">
-              Browser notifications stay off until you choose a level.
-            </p>
-          </div>
-          <select
-            aria-label="Notification level"
-            className="settings-select w-40"
-            defaultValue={getPref("notification-level") || "off"}
-            onChange={(event) => setPref("notification-level", event.target.value)}
-          >
-            <option value="off">Off</option>
-            <option value="attention">Needs attention</option>
-            <option value="all">All relationship changes</option>
-          </select>
-        </div>
-      </SettingsRow>
-      <SettingsRow
-        description="These controls stay local to this browser."
-        title="Privacy & memory"
-      >
-        <PreferenceToggle
-          description="Share anonymous product telemetry. Relationship content is never included."
-          initial
-          label="Share anonymous usage data"
-          storageKey="settings-share-usage"
-        />
-        <PreferenceToggle
-          description="Build a private semantic memory from approved relationship evidence."
-          label="Memory Bank (preview)"
-          storageKey="settings-memory-bank"
-        />
-      </SettingsRow>
+      <UsageDataCard />
     </>
   );
 }
 
 function NotificationsSection() {
-  return (
-    <>
-      <PageIntro
-        description="Choose when the console may call your attention back to a relationship."
-        title="Notifications"
-      />
-      <SettingsRow
-        description="Browser notifications stay off until you choose a delivery level."
-        title="Delivery"
-      >
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Notify me</p>
-            <p className="settings-row-description">
-              Choose which relationship changes are important enough to surface.
-            </p>
-          </div>
-          <select
-            aria-label="Notification level"
-            className="settings-select w-40"
-            defaultValue={getPref("notification-level") || "off"}
-            onChange={(event) => setPref("notification-level", event.target.value)}
-          >
-            <option value="off">Off</option>
-            <option value="attention">Needs attention</option>
-            <option value="all">All relationship changes</option>
-          </select>
-        </div>
-      </SettingsRow>
-    </>
-  );
+  return <PreferencesSection />;
 }
 
 function SecuritySection({ session }: { session: SessionShape }) {
@@ -739,7 +767,7 @@ function SecuritySection({ session }: { session: SessionShape }) {
               {session.user.organizationId || "No organization is attached to this session."}
             </p>
           </div>
-          <span className="settings-status settings-status--ok">Authorized</span>
+          <SettingsStatus>Authorized</SettingsStatus>
         </div>
         <div className="settings-row">
           <div className="settings-row-copy">
@@ -781,21 +809,24 @@ function HelpSection() {
       />
       <div className="settings-card-grid">
         {items.map((item) => (
-          <button
-            className="settings-card"
+          <Button
+            className="settings-card h-auto"
             key={item.title}
             onClick={() => window.open(item.href, "_blank")}
             type="button"
+            variant="ghost"
           >
-            <span className="settings-card-icon">
+            <ItemMedia className="settings-card-icon" variant="icon">
               <item.icon />
-            </span>
-            <span className="settings-card-copy">
-              <span className="settings-card-title">{item.title}</span>
-              <span className="settings-card-description">{item.description}</span>
-            </span>
+            </ItemMedia>
+            <div className="settings-card-copy">
+              <CardTitle className="settings-card-title text-sm">{item.title}</CardTitle>
+              <CardDescription className="settings-card-description">
+                {item.description}
+              </CardDescription>
+            </div>
             <ArrowRight className="ml-auto size-3.5 shrink-0 text-primary/30" />
-          </button>
+          </Button>
         ))}
       </div>
     </>
@@ -820,7 +851,7 @@ function PermissionsSection({ session }: { session: SessionShape }) {
               {session.user.organizationId || "No organization is attached to this session."}
             </p>
           </div>
-          <span className="settings-status settings-status--ok">Authorized</span>
+          <SettingsStatus>Authorized</SettingsStatus>
         </div>
         <div className="settings-row">
           <div className="settings-row-copy">
@@ -848,103 +879,6 @@ function PermissionsSection({ session }: { session: SessionShape }) {
             </p>
           </div>
           <Plugs className="size-4 text-primary/40" />
-        </div>
-      </SettingsRow>
-    </>
-  );
-}
-
-function CustomizationSection() {
-  const [appName, setAppName] = React.useState("Oppulence");
-  const [savedName, setSavedName] = React.useState("Oppulence");
-  const [sidebar, setSidebar] = useStoredBoolean("settings-display-sidebar", true);
-  const [statusBar, setStatusBar] = useStoredBoolean("settings-display-status-bar", true);
-  const [docs, setDocs] = useStoredBoolean("settings-display-docs", true);
-  const [feedback, setFeedback] = useStoredBoolean("settings-display-feedback", true);
-
-  React.useEffect(() => {
-    const stored = localStorage.getItem("settings-app-name") || "Oppulence";
-    setAppName(stored);
-    setSavedName(stored);
-  }, []);
-
-  return (
-    <>
-      <PageIntro
-        description="Tune the console's identity and the navigation elements your team sees."
-        title="Customization"
-      />
-      <SettingsRow
-        description="Set the local workspace label shown in this browser."
-        title="Branding"
-      >
-        <div className="space-y-3 p-4">
-          <label className="block text-xs font-medium text-primary" htmlFor="settings-app-name">
-            App name
-          </label>
-          <div className="flex gap-2">
-            <input
-              className="settings-control min-w-0 flex-1"
-              id="settings-app-name"
-              onChange={(event) => setAppName(event.target.value)}
-              value={appName}
-            />
-            <button
-              className="settings-button settings-button--primary"
-              disabled={appName.trim() === savedName}
-              onClick={() => {
-                const next = appName.trim() || "Oppulence";
-                localStorage.setItem("settings-app-name", next);
-                setAppName(next);
-                setSavedName(next);
-              }}
-              type="button"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      </SettingsRow>
-    </>
-  );
-}
-
-function EnvironmentSection() {
-  const origin = typeof window === "undefined" ? "" : window.location.origin;
-  return (
-    <>
-      <PageIntro
-        description="Inspect the endpoints and browser runtime used by this console."
-        title="Environment"
-      />
-      <SettingsRow
-        description="These values are detected from the running application."
-        title="Runtime"
-      >
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Console origin</p>
-            <p className="settings-row-description font-mono">{origin}</p>
-          </div>
-          <span className="settings-status settings-status--ok">Connected</span>
-        </div>
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Relationship API</p>
-            <p className="settings-row-description font-mono">
-              {origin}/api/rowboat/v1/relationships
-            </p>
-          </div>
-          <Cloud className="size-4 text-primary/40" />
-        </div>
-        <div className="settings-row">
-          <div className="settings-row-copy">
-            <p className="settings-row-label">Client runtime</p>
-            <p className="settings-row-description">
-              {typeof navigator === "undefined" ? "Browser" : navigator.userAgent}
-            </p>
-          </div>
-          <Monitor className="size-4 text-primary/40" />
         </div>
       </SettingsRow>
     </>
@@ -1014,12 +948,6 @@ export function SettingsView({
         {section === "notifications" ? <NotificationsSection /> : null}
         {section === "permissions" ? <PermissionsSection session={session} /> : null}
         {section === "security" ? <SecuritySection session={session} /> : null}
-        {section === "extensions" ? (
-          <>
-            <PageIntro description={current.description} title={current.label} />
-            <ConnectorSettings />
-          </>
-        ) : null}
         {section === "connections" ? (
           <>
             <PageIntro description={current.description} title={current.label} />
@@ -1040,7 +968,7 @@ export function SettingsView({
                     {typeof window === "undefined" ? "" : window.location.origin}
                   </p>
                 </div>
-                <span className="settings-status settings-status--ok">Default</span>
+                <SettingsStatus>Default</SettingsStatus>
               </div>
               <div className="settings-row">
                 <div className="settings-row-copy">
@@ -1049,7 +977,7 @@ export function SettingsView({
                     /api/rowboat/v1/relationships
                   </p>
                 </div>
-                <span className="settings-status settings-status--ok">Available</span>
+                <SettingsStatus>Available</SettingsStatus>
               </div>
             </SettingsRow>
             <SettingsRow
@@ -1063,26 +991,20 @@ export function SettingsView({
                     Evidence queries and governed actions use the signed-in organization.
                   </p>
                 </div>
-                <button
+                <Button
                   className="settings-button"
                   onClick={() => window.location.reload()}
                   type="button"
+                  variant="outline"
                 >
                   Refresh
-                </button>
+                </Button>
               </div>
             </SettingsRow>
           </>
         ) : null}
-        {section === "models" ? (
-          <>
-            <PageIntro description={current.description} title={current.label} />
-            <ModelsSection />
-          </>
-        ) : null}
-        {section === "customization" ? <CustomizationSection /> : null}
+        {section === "customization" ? <AppearanceSection /> : null}
         {section === "appearance" ? <AppearanceSection /> : null}
-        {section === "environment" ? <EnvironmentSection /> : null}
         {section === "account" ? <AccountSection session={session} /> : null}
         {section === "connect" ? (
           <>

@@ -7,6 +7,7 @@ import (
 	"mime"
 	"net/mail"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -623,6 +624,21 @@ func (c *Client) GetMessageContent(ctx context.Context, token, messageID string)
 	return msg.content(), nil
 }
 
+// GetMessageMetadata fetches the same headers and attachment descriptors used
+// by GetMessageContent while excluding MIME body data at the Google API
+// boundary. Continuous synchronization therefore cannot accidentally pull
+// message bodies into a metadata-only indexing path.
+func (c *Client) GetMessageMetadata(ctx context.Context, token, messageID string) (GmailMessageContent, error) {
+	q := url.Values{}
+	q.Set("format", "full")
+	q.Set("fields", "id,threadId,snippet,sizeEstimate,labelIds,internalDate,payload(headers,filename,mimeType,body(attachmentId,size),parts)")
+	var msg gmailAPIMessage
+	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages/"+url.PathEscape(messageID), q, &msg); err != nil {
+		return GmailMessageContent{}, fmt.Errorf("gmail messages.get metadata %s: %w", messageID, err)
+	}
+	return msg.content(), nil
+}
+
 // GetTextAttachment reads one attachment using metadata captured with its
 // provider-issued ID. Binary, oversized, and non-UTF-8 content is rejected.
 func (c *Client) GetTextAttachment(ctx context.Context, token, messageID string, attachment GmailAttachment) (GmailTextAttachment, error) {
@@ -797,59 +813,145 @@ var ErrHistoryGap = fmt.Errorf("gmail: history id too old; full re-sync required
 // mailbox update is a handful of pages at most).
 const maxHistoryPages = 10
 
-// ListHistory walks users.history.list from startHistoryID and returns the
-// unique thread ids touched by added messages, plus the mailbox's latest
-// historyId. A 404 (cursor too old) surfaces as ErrHistoryGap. Metadata only —
-// no bodies are fetched here.
-func (c *Client) ListHistory(ctx context.Context, token, startHistoryID string) (threadIDs []string, latestHistoryID string, err error) {
-	seen := map[string]struct{}{}
+// GmailHistoryChanges is the complete metadata mutation set represented by a
+// history walk. Updated includes additions and label changes; Deleted contains
+// provider IDs that can no longer be fetched.
+type GmailHistoryChanges struct {
+	UpdatedMessageIDs []string
+	DeletedMessageIDs []string
+	UpdatedThreadIDs  []string
+	LatestHistoryID   string
+}
+
+// ListHistoryChanges walks users.history.list from startHistoryID. Gmail can
+// describe the same message in multiple history records, so IDs are
+// deduplicated before returning. We request every history type because label
+// changes alter direction/visibility and messageDeleted is the only reliable
+// way to tombstone a projection.
+func (c *Client) ListHistoryChanges(ctx context.Context, token, startHistoryID string) (GmailHistoryChanges, error) {
+	updated := map[string]struct{}{}
+	deleted := map[string]struct{}{}
+	threads := map[string]struct{}{}
+	result := GmailHistoryChanges{}
 	pageToken := ""
 	for page := 0; page < maxHistoryPages; page++ {
 		q := url.Values{}
 		q.Set("startHistoryId", startHistoryID)
-		q.Add("historyTypes", "messageAdded")
 		if pageToken != "" {
 			q.Set("pageToken", pageToken)
 		}
 		var resp struct {
 			History []struct {
+				Messages []struct {
+					ID       string `json:"id"`
+					ThreadID string `json:"threadId"`
+				} `json:"messages"`
 				MessagesAdded []struct {
 					Message struct {
 						ID       string `json:"id"`
 						ThreadID string `json:"threadId"`
 					} `json:"message"`
 				} `json:"messagesAdded"`
+				MessagesDeleted []struct {
+					Message struct {
+						ID string `json:"id"`
+					} `json:"message"`
+				} `json:"messagesDeleted"`
 			} `json:"history"`
 			HistoryID     string `json:"historyId"`
 			NextPageToken string `json:"nextPageToken"`
 		}
 		if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/history", q, &resp); err != nil {
 			if isNotFound(err) {
-				return nil, "", ErrHistoryGap
+				return GmailHistoryChanges{}, ErrHistoryGap
 			}
-			return nil, "", fmt.Errorf("gmail history.list: %w", err)
+			return GmailHistoryChanges{}, fmt.Errorf("gmail history.list: %w", err)
 		}
-		if resp.HistoryID != "" {
-			latestHistoryID = resp.HistoryID
-		}
+		result.LatestHistoryID = resp.HistoryID
 		for _, h := range resp.History {
-			for _, m := range h.MessagesAdded {
-				tid := m.Message.ThreadID
-				if tid == "" {
-					continue
+			for _, message := range h.Messages {
+				if message.ID != "" {
+					updated[message.ID] = struct{}{}
 				}
-				if _, ok := seen[tid]; !ok {
-					seen[tid] = struct{}{}
-					threadIDs = append(threadIDs, tid)
+				if message.ThreadID != "" {
+					threads[message.ThreadID] = struct{}{}
+				}
+			}
+			for _, added := range h.MessagesAdded {
+				if added.Message.ID != "" {
+					updated[added.Message.ID] = struct{}{}
+				}
+				if added.Message.ThreadID != "" {
+					threads[added.Message.ThreadID] = struct{}{}
+				}
+			}
+			for _, removed := range h.MessagesDeleted {
+				if removed.Message.ID != "" {
+					deleted[removed.Message.ID] = struct{}{}
+					delete(updated, removed.Message.ID)
 				}
 			}
 		}
 		if resp.NextPageToken == "" {
-			break
+			for id := range updated {
+				result.UpdatedMessageIDs = append(result.UpdatedMessageIDs, id)
+			}
+			for id := range deleted {
+				result.DeletedMessageIDs = append(result.DeletedMessageIDs, id)
+			}
+			for id := range threads {
+				result.UpdatedThreadIDs = append(result.UpdatedThreadIDs, id)
+			}
+			sort.Strings(result.UpdatedMessageIDs)
+			sort.Strings(result.DeletedMessageIDs)
+			sort.Strings(result.UpdatedThreadIDs)
+			return result, nil
 		}
 		pageToken = resp.NextPageToken
 	}
-	return threadIDs, latestHistoryID, nil
+	return GmailHistoryChanges{}, fmt.Errorf("gmail history.list exceeded %d pages", maxHistoryPages)
+}
+
+// ListHistory preserves the existing revenue mail-index contract while the
+// communication index consumes the richer per-message change set.
+func (c *Client) ListHistory(ctx context.Context, token, startHistoryID string) (threadIDs []string, latestHistoryID string, err error) {
+	changes, err := c.ListHistoryChanges(ctx, token, startHistoryID)
+	if err != nil {
+		return nil, "", err
+	}
+	return changes.UpdatedThreadIDs, changes.LatestHistoryID, nil
+}
+
+// ListMessageIDsPage is the bounded reconciliation primitive. It lists IDs
+// only, including Sent and archived mail when query contains in:anywhere.
+func (c *Client) ListMessageIDsPage(ctx context.Context, token, query string, limit int, pageToken string) ([]string, string, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 500
+	}
+	q := url.Values{}
+	q.Set("maxResults", strconv.Itoa(limit))
+	if query != "" {
+		q.Set("q", query)
+	}
+	if pageToken != "" {
+		q.Set("pageToken", pageToken)
+	}
+	var list struct {
+		Messages []struct {
+			ID string `json:"id"`
+		} `json:"messages"`
+		NextPageToken string `json:"nextPageToken"`
+	}
+	if err := c.GetJSON(ctx, token, c.cfg.GmailBaseURL+"/gmail/v1/users/me/messages", q, &list); err != nil {
+		return nil, "", fmt.Errorf("gmail messages.list reconciliation: %w", err)
+	}
+	ids := make([]string, 0, len(list.Messages))
+	for _, message := range list.Messages {
+		if message.ID != "" {
+			ids = append(ids, message.ID)
+		}
+	}
+	return ids, list.NextPageToken, nil
 }
 
 // isNotFound reports whether err is a googleapi status error with code 404

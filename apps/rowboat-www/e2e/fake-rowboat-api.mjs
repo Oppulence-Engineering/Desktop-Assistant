@@ -2,13 +2,116 @@ import http from "node:http";
 
 const host = "127.0.0.1";
 const port = 4318;
+const defaultConsolePreferences = {
+  defaultAgentSlug: "",
+  displayName: "",
+  notificationLevel: "attention",
+  shareUsageData: false,
+  showModelReasoning: false,
+  theme: "system",
+};
 const state = {
   connected: false,
+  googleBackfillPollsRemaining: 0,
+  nativeGoogleConnected: false,
+  relationshipConnected: true,
+  consolePreferences: { ...defaultConsolePreferences },
+  consoleResources: [],
   consumedTickets: new Set(),
   lastStart: null,
   lastClaimAuthorization: null,
+  lastScanLookbackDays: null,
   ticketCounter: 0,
+  scanCounter: 1,
+  resourceCounter: 0,
 };
+
+const completedScan = {
+  id: "00000000-0000-4000-8000-000000000001",
+  status: "completed",
+  mode: "linked",
+  lookbackDays: 180,
+  threadsSeen: 12,
+  candidatesSeen: 4,
+  startedAt: "2026-08-28T01:00:00Z",
+  completedAt: "2026-08-28T01:05:00Z",
+};
+
+const openPromisesReport = {
+  generatedAt: "2026-08-28T01:05:30Z",
+  lookbackDays: 180,
+  threadsSeen: 12,
+  scanStatus: "completed",
+  outboundCount: 1,
+  inboundCount: 1,
+  byAccount: { "ACME Corp": 1, "Beta LLC": 1 },
+  truncated: false,
+  items: [
+    {
+      commitmentId: "commit-e2e-1",
+      account: "ACME Corp",
+      direction: "promised_by_us",
+      text: "Send the revised proposal",
+      state: "open",
+      dueAt: "2026-09-01T17:00:00Z",
+      sourceQuote: "I'll send the revised proposal by Friday.",
+      occurredAt: "2026-08-20T14:22:00Z",
+    },
+    {
+      commitmentId: "commit-e2e-2",
+      account: "Beta LLC",
+      direction: "promised_by_them",
+      text: "Share the signed SOW",
+      state: "at_risk",
+      duePhrase: "end of month",
+      sourceQuote: "We will share the signed SOW before month end.",
+      occurredAt: "2026-08-18T09:10:00Z",
+    },
+  ],
+};
+
+function relationshipSourcesResponse() {
+  const accounts = state.relationshipConnected
+    ? [
+        {
+          connectionId: "connection-web-e2e",
+          source: "google",
+          sourceAccountId: "connector-e2e@example.com",
+          status: state.googleBackfillPollsRemaining > 0 ? "backfilling" : "live",
+          backfillPhase: state.googleBackfillPollsRemaining > 0 ? "running" : "live",
+          backfillCompleted: state.googleBackfillPollsRemaining > 0 ? 25 : 100,
+          backfillTotal: 100,
+          completeness: state.googleBackfillPollsRemaining > 0 ? "partial" : "complete",
+          expectedCadenceSeconds: 3600,
+          lagSeconds: 0,
+          requiredScopes: ["google:email.read", "google:calendar.read"],
+          grantedScopes: ["google:email.read", "google:calendar.read"],
+          missingScopes: [],
+          retryCount: 0,
+          lastSuccessAt: state.googleBackfillPollsRemaining > 0 ? null : "2026-08-28T01:26:00Z",
+        },
+      ]
+    : [];
+  return {
+    sources: [
+      {
+        source: "google",
+        displayName: "Google",
+        evidence: ["email"],
+        actions: ["read"],
+        readScopes: ["google:email.read"],
+        writeScopes: [],
+        scopeExplanation: "Read email evidence for commitment detection.",
+        connectPath: "/v1/connections/google/start",
+        disconnectPath: "/v1/connections/google",
+        supportsReconnect: true,
+        supportsResync: true,
+        expectedCadenceSeconds: 3600,
+        accounts,
+      },
+    ],
+  };
+}
 
 function json(response, status, body) {
   response.writeHead(status, {
@@ -100,19 +203,35 @@ const server = http.createServer(async (request, response) => {
 
   if (url.pathname === "/__test/reset") {
     state.connected = false;
+    state.googleBackfillPollsRemaining = 0;
+    state.nativeGoogleConnected = false;
+    state.relationshipConnected = true;
     state.consumedTickets.clear();
     state.lastStart = null;
     state.lastClaimAuthorization = null;
+    state.lastScanLookbackDays = null;
     state.ticketCounter = 0;
+    state.scanCounter = 1;
+    state.resourceCounter = 0;
+    state.consolePreferences = { ...defaultConsolePreferences };
+    state.consoleResources = [];
     return json(response, 200, { ok: true });
   }
   if (url.pathname === "/__test/state") {
     return json(response, 200, {
       connected: state.connected,
+      consolePreferences: state.consolePreferences,
+      consoleResources: state.consoleResources,
       consumedTickets: [...state.consumedTickets],
       lastStart: state.lastStart,
       lastClaimAuthorization: state.lastClaimAuthorization,
+      lastScanLookbackDays: state.lastScanLookbackDays,
     });
+  }
+  if (url.pathname === "/__test/google-disconnect") {
+    state.nativeGoogleConnected = false;
+    state.relationshipConnected = false;
+    return json(response, 200, { ok: true });
   }
 
   if (url.pathname === "/v1/auth/workos/login-url") {
@@ -151,6 +270,49 @@ const server = http.createServer(async (request, response) => {
     return json(response, 200, {
       user: { id: "viewer-web-e2e", email: "connector-e2e@example.com" },
       billing: { plan: "pro", status: "active", usage: {} },
+    });
+  }
+
+  if (url.pathname === "/v1/google-oauth" && request.method === "GET") {
+    return json(response, 200, {
+      connected: state.nativeGoogleConnected,
+      accounts: state.nativeGoogleConnected
+        ? [
+            {
+              accountId: "connector-e2e@example.com",
+              connectedAt: "2026-09-17T12:00:00Z",
+              scopes: ["google:email.read", "google:calendar.read"],
+            },
+          ]
+        : [],
+    });
+  }
+  if (url.pathname === "/v1/google-oauth/start" && request.method === "POST") {
+    const authorization = new URL(`http://${host}:${port}/google/authorize`);
+    authorization.searchParams.set("return_path", url.searchParams.get("return_path") || "");
+    return json(response, 200, { authorizeUrl: authorization.toString() });
+  }
+  if (url.pathname === "/google/authorize") {
+    const returnPath =
+      url.searchParams.get("return_path") === "/app/report"
+        ? "/app/report"
+        : "/app/settings?settings=connections";
+    const callback = new URL(returnPath, "http://127.0.0.1:4317");
+    callback.searchParams.set("google_session", "native-google-ticket");
+    callback.searchParams.set("google_status", "success");
+    return redirect(response, callback.toString());
+  }
+  if (url.pathname === "/v1/google-oauth/claim" && request.method === "POST") {
+    const body = await readJSON(request);
+    if (body.session !== "native-google-ticket") {
+      return json(response, 400, { code: "invalid_ticket" });
+    }
+    state.nativeGoogleConnected = true;
+    state.relationshipConnected = true;
+    state.googleBackfillPollsRemaining = 1;
+    return json(response, 200, {
+      accountId: "connector-e2e@example.com",
+      connected: true,
     });
   }
 
@@ -219,6 +381,136 @@ const server = http.createServer(async (request, response) => {
     state.connected = false;
     response.writeHead(204);
     return response.end();
+  }
+
+  if (url.pathname === "/v1/console/preferences" && request.method === "GET") {
+    return json(response, 200, state.consolePreferences);
+  }
+  if (url.pathname === "/v1/console/preferences" && request.method === "PATCH") {
+    state.consolePreferences = {
+      ...state.consolePreferences,
+      ...(await readJSON(request)),
+    };
+    return json(response, 200, state.consolePreferences);
+  }
+  if (url.pathname === "/v1/console/resources" && request.method === "GET") {
+    const kind = url.searchParams.get("kind");
+    const resources = state.consoleResources.filter((resource) => !kind || resource.kind === kind);
+    return json(response, 200, {
+      limit: Number(url.searchParams.get("limit") || 100),
+      offset: Number(url.searchParams.get("offset") || 0),
+      resources,
+    });
+  }
+  if (url.pathname === "/v1/console/resources" && request.method === "POST") {
+    const body = await readJSON(request);
+    const now = new Date().toISOString();
+    const resource = {
+      ...body,
+      id: `00000000-0000-4000-9000-${String(++state.resourceCounter).padStart(12, "0")}`,
+      sortOrder: body.sortOrder ?? 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+    state.consoleResources.push(resource);
+    return json(response, 201, resource);
+  }
+  const consoleResourceMatch = url.pathname.match(/^\/v1\/console\/resources\/([^/]+)$/);
+  if (consoleResourceMatch) {
+    const resourceId = decodeURIComponent(consoleResourceMatch[1]);
+    const resourceIndex = state.consoleResources.findIndex(
+      (resource) => resource.id === resourceId,
+    );
+    if (resourceIndex < 0) {
+      return json(response, 404, {
+        code: "not_found",
+        status: 404,
+        title: "Not found",
+        type: "about:blank",
+      });
+    }
+    if (request.method === "GET") {
+      return json(response, 200, state.consoleResources[resourceIndex]);
+    }
+    if (request.method === "PATCH") {
+      state.consoleResources[resourceIndex] = {
+        ...state.consoleResources[resourceIndex],
+        ...(await readJSON(request)),
+        updatedAt: new Date().toISOString(),
+      };
+      return json(response, 200, state.consoleResources[resourceIndex]);
+    }
+    if (request.method === "DELETE") {
+      state.consoleResources.splice(resourceIndex, 1);
+      response.writeHead(204);
+      return response.end();
+    }
+  }
+
+  if (url.pathname === "/v1/relationship-sources" && request.method === "GET") {
+    return json(response, 200, relationshipSourcesResponse());
+  }
+  if (url.pathname === "/v1/relationship-sources/status" && request.method === "GET") {
+    const result = {
+      sources: relationshipSourcesResponse().sources.flatMap((source) => source.accounts),
+    };
+    if (state.googleBackfillPollsRemaining > 0) state.googleBackfillPollsRemaining -= 1;
+    return json(response, 200, result);
+  }
+
+  if (url.pathname === "/v1/revenue-leak-scans" && request.method === "GET") {
+    return json(response, 200, { scans: [completedScan] });
+  }
+  if (url.pathname === "/v1/revenue-leak-scans" && request.method === "POST") {
+    const body = await readJSON(request);
+    state.lastScanLookbackDays = body.lookbackDays ?? 180;
+    const scan = {
+      id: `00000000-0000-4000-8000-${String(++state.scanCounter).padStart(12, "0")}`,
+      status: "running",
+      mode: "linked",
+      lookbackDays: state.lastScanLookbackDays,
+      threadsSeen: 0,
+      startedAt: new Date().toISOString(),
+    };
+    return json(response, 201, scan);
+  }
+  const scanMatch = url.pathname.match(/^\/v1\/revenue-leak-scans\/([^/]+)(?:\/report)?$/);
+  if (scanMatch) {
+    const scanId = decodeURIComponent(scanMatch[1]);
+    const isReport = url.pathname.endsWith("/report");
+    if (isReport) {
+      if (url.searchParams.get("format") === "md") {
+        response.writeHead(200, { "content-type": "text/markdown; charset=utf-8" });
+        return response.end("# Open promises\n\nE2E fixture report.\n");
+      }
+      return json(response, 200, openPromisesReport);
+    }
+    if (scanId === completedScan.id) {
+      return json(response, 200, completedScan);
+    }
+    return json(response, 200, { ...completedScan, id: scanId });
+  }
+
+  if (url.pathname === "/v1/revenue-actions" && request.method === "GET") {
+    return json(response, 200, { actions: [] });
+  }
+  if (url.pathname === "/v1/revenue-search" && request.method === "GET") {
+    return json(response, 200, {
+      available: true,
+      matches: [
+        {
+          threadId: "thread-e2e-1",
+          subject: "Revised launch plan",
+          counterparty: "Ada",
+          classification: "commitment",
+          summary: "Ada promised to send the revised launch plan.",
+          score: 0.91,
+        },
+      ],
+    });
+  }
+  if (url.pathname === "/v1/action-proposals" && request.method === "GET") {
+    return json(response, 200, { proposals: [] });
   }
 
   return json(response, 200, {});

@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import oppulenceWeb from "@oppulence/eslint-plugin-web";
-import parser from "@typescript-eslint/parser";
+import * as typescriptEslintParser from "@typescript-eslint/parser";
 import { Linter } from "eslint";
 import { describe, expect, it } from "vitest";
 
@@ -16,7 +16,7 @@ function lint(rule: string, code: string, filename: string) {
       {
         files: ["**/*.{ts,tsx}"],
         languageOptions: {
-          parser,
+          parser: typescriptEslintParser,
           parserOptions: { ecmaFeatures: { jsx: true }, sourceType: "module" },
         },
         plugins: { "oppulence-web": oppulenceWeb },
@@ -103,6 +103,11 @@ const violations = [
     filename: "components/agents/new-agent-card.tsx",
     code: "export function NewAgentCard() { return null; }",
   },
+  {
+    rule: "require-api-route-zod",
+    filename: "app/api/widgets/route.ts",
+    code: "export async function GET() { return Response.json({ ok: true }); }",
+  },
 ] as const;
 
 describe("eslint-plugin-oppulence-web", () => {
@@ -126,6 +131,29 @@ describe("eslint-plugin-oppulence-web", () => {
       "standardized-component-location",
       "export function AgentCard() { return null; }",
       "components/features/agents/agent-card/agent-card.tsx",
+    );
+    expect(messages).toHaveLength(0);
+  });
+
+  it("accepts an API route that validates with Zod schemas", () => {
+    const messages = lint(
+      "require-api-route-zod",
+      `import { parseSearchParams } from "@/lib/api/routes/parse";
+import { DownloadQuerySchema } from "@/lib/api/routes/schemas/download";
+export async function GET(request: Request) {
+  parseSearchParams(new URL(request.url).searchParams, DownloadQuerySchema);
+  return Response.json({});
+}`,
+      "app/api/download/route.ts",
+    );
+    expect(messages).toHaveLength(0);
+  });
+
+  it("accepts an API route that re-exports a validated handler", () => {
+    const messages = lint(
+      "require-api-route-zod",
+      'export { GET } from "@/app/api/auth/workos/callback/route";',
+      "app/api/auth/callback/route.ts",
     );
     expect(messages).toHaveLength(0);
   });

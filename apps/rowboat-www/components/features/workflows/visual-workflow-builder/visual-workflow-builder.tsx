@@ -15,7 +15,7 @@ import {
   Plus,
   Trash,
   UserFocus,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 import {
   Background,
   Controls,
@@ -29,6 +29,8 @@ import {
 
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { CardDescription } from "@oppulence/ui/components/card";
+import { ItemMedia } from "@oppulence/ui/components/item";
 import { Input } from "@oppulence/ui/components/input";
 import { Label } from "@oppulence/ui/components/label";
 import {
@@ -246,18 +248,21 @@ function NodeLabel({
 }) {
   return (
     <div className="flex items-start gap-3 px-3 py-3 text-left">
-      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-none border border-border bg-muted/40 text-foreground [&>svg]:size-4">
+      <ItemMedia
+        className="mt-0.5 size-8 shrink-0 rounded-none border border-border bg-muted/40 text-foreground [&>svg]:size-4"
+        variant="icon"
+      >
         {icon}
-      </span>
-      <span className="min-w-0">
-        <span className="block text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+      </ItemMedia>
+      <div className="min-w-0">
+        <Label className="block text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
           {eyebrow}
-        </span>
-        <span className="mt-0.5 block truncate text-[13px] font-medium text-foreground">
+        </Label>
+        <Label className="mt-0.5 block truncate text-[13px] font-medium text-foreground">
           {title}
-        </span>
-        <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">{detail}</span>
-      </span>
+        </Label>
+        <CardDescription className="mt-0.5 block truncate text-[11px]">{detail}</CardDescription>
+      </div>
     </div>
   );
 }
@@ -439,7 +444,7 @@ export function VisualWorkflowBuilder({
   return (
     <section
       className={cn(
-        "grid min-h-0 flex-1 grid-cols-1 overflow-hidden border-t border-border bg-background lg:grid-cols-[minmax(0,1fr)_320px]",
+        "grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(440px,1fr)_auto] overflow-y-auto border-t border-border bg-background md:grid-cols-[minmax(0,1fr)_320px] md:grid-rows-1 md:overflow-hidden",
         className,
       )}
       data-slot="visual-workflow-builder"
@@ -480,7 +485,7 @@ export function VisualWorkflowBuilder({
         </div>
       </div>
 
-      <aside className="min-h-0 overflow-y-auto border-l border-border bg-background">
+      <aside className="min-h-0 border-t border-border bg-background md:overflow-y-auto md:border-l md:border-t-0">
         <div className="sticky top-0 z-10 flex h-11 items-center justify-between border-b border-border bg-background px-4">
           <p className="text-[12px] font-medium">Step configuration</p>
           <Badge className="rounded-none text-[10px]" variant="outline">

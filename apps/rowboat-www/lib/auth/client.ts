@@ -4,6 +4,14 @@ import "client-only";
 
 import { BrowserSessionResponseSchema, type BrowserSessionResponse } from "@/lib/auth/schemas";
 
+/** Thrown when WorkOS refresh is temporarily unreachable but cookies may still be valid. */
+export class SessionUnavailableError extends Error {
+  constructor() {
+    super("session refresh is temporarily unavailable");
+    this.name = "SessionUnavailableError";
+  }
+}
+
 /**
  * Loads the current browser session from the server-side auth boundary. The
  * response contains display/onboarding data only; WorkOS tokens stay in
@@ -17,6 +25,7 @@ export async function loadBrowserSession(): Promise<BrowserSessionResponse> {
     signal: AbortSignal.timeout(10_000),
   });
   if (res.status === 401) return { authenticated: false };
+  if (res.status === 502 || res.status === 503) throw new SessionUnavailableError();
   if (!res.ok) throw new Error(`Session check failed: ${res.status}`);
   return BrowserSessionResponseSchema.parse(await res.json());
 }

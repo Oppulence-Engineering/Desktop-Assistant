@@ -31,6 +31,13 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitment"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentdependency"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/commitmentevent"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationattachment"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationinteraction"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationparticipant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacypolicy"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationprivacyrule"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsharegrant"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/communicationsynccursor"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/conversationintelligenceartifact"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/creditledger"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/ent/entity"
@@ -5137,6 +5144,1749 @@ func (_m *CommitmentEvent) ToEdge(order *CommitmentEventOrder) *CommitmentEventE
 		order = DefaultCommitmentEventOrder
 	}
 	return &CommitmentEventEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// CommunicationAttachmentEdge is the edge representation of CommunicationAttachment.
+type CommunicationAttachmentEdge struct {
+	Node   *CommunicationAttachment `json:"node"`
+	Cursor Cursor                   `json:"cursor"`
+}
+
+// CommunicationAttachmentConnection is the connection containing edges to CommunicationAttachment.
+type CommunicationAttachmentConnection struct {
+	Edges      []*CommunicationAttachmentEdge `json:"edges"`
+	PageInfo   PageInfo                       `json:"pageInfo"`
+	TotalCount int                            `json:"totalCount"`
+}
+
+func (c *CommunicationAttachmentConnection) build(nodes []*CommunicationAttachment, pager *communicationattachmentPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *CommunicationAttachment
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *CommunicationAttachment {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *CommunicationAttachment {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*CommunicationAttachmentEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &CommunicationAttachmentEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// CommunicationAttachmentPaginateOption enables pagination customization.
+type CommunicationAttachmentPaginateOption func(*communicationattachmentPager) error
+
+// WithCommunicationAttachmentOrder configures pagination ordering.
+func WithCommunicationAttachmentOrder(order *CommunicationAttachmentOrder) CommunicationAttachmentPaginateOption {
+	if order == nil {
+		order = DefaultCommunicationAttachmentOrder
+	}
+	o := *order
+	return func(pager *communicationattachmentPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultCommunicationAttachmentOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithCommunicationAttachmentFilter configures pagination filter.
+func WithCommunicationAttachmentFilter(filter func(*CommunicationAttachmentQuery) (*CommunicationAttachmentQuery, error)) CommunicationAttachmentPaginateOption {
+	return func(pager *communicationattachmentPager) error {
+		if filter == nil {
+			return errors.New("CommunicationAttachmentQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type communicationattachmentPager struct {
+	reverse bool
+	order   *CommunicationAttachmentOrder
+	filter  func(*CommunicationAttachmentQuery) (*CommunicationAttachmentQuery, error)
+}
+
+func newCommunicationAttachmentPager(opts []CommunicationAttachmentPaginateOption, reverse bool) (*communicationattachmentPager, error) {
+	pager := &communicationattachmentPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultCommunicationAttachmentOrder
+	}
+	return pager, nil
+}
+
+func (p *communicationattachmentPager) applyFilter(query *CommunicationAttachmentQuery) (*CommunicationAttachmentQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *communicationattachmentPager) toCursor(_m *CommunicationAttachment) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *communicationattachmentPager) applyCursors(query *CommunicationAttachmentQuery, after, before *Cursor) (*CommunicationAttachmentQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultCommunicationAttachmentOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *communicationattachmentPager) applyOrder(query *CommunicationAttachmentQuery) *CommunicationAttachmentQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultCommunicationAttachmentOrder.Field {
+		query = query.Order(DefaultCommunicationAttachmentOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *communicationattachmentPager) orderExpr(query *CommunicationAttachmentQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultCommunicationAttachmentOrder.Field {
+			b.Comma().Ident(DefaultCommunicationAttachmentOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to CommunicationAttachment.
+func (_m *CommunicationAttachmentQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...CommunicationAttachmentPaginateOption,
+) (*CommunicationAttachmentConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newCommunicationAttachmentPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &CommunicationAttachmentConnection{Edges: []*CommunicationAttachmentEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// CommunicationAttachmentOrderField defines the ordering field of CommunicationAttachment.
+type CommunicationAttachmentOrderField struct {
+	// Value extracts the ordering value from the given CommunicationAttachment.
+	Value    func(*CommunicationAttachment) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) communicationattachment.OrderOption
+	toCursor func(*CommunicationAttachment) Cursor
+}
+
+// CommunicationAttachmentOrder defines the ordering of CommunicationAttachment.
+type CommunicationAttachmentOrder struct {
+	Direction OrderDirection                     `json:"direction"`
+	Field     *CommunicationAttachmentOrderField `json:"field"`
+}
+
+// DefaultCommunicationAttachmentOrder is the default ordering of CommunicationAttachment.
+var DefaultCommunicationAttachmentOrder = &CommunicationAttachmentOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &CommunicationAttachmentOrderField{
+		Value: func(_m *CommunicationAttachment) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: communicationattachment.FieldID,
+		toTerm: communicationattachment.ByID,
+		toCursor: func(_m *CommunicationAttachment) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts CommunicationAttachment into CommunicationAttachmentEdge.
+func (_m *CommunicationAttachment) ToEdge(order *CommunicationAttachmentOrder) *CommunicationAttachmentEdge {
+	if order == nil {
+		order = DefaultCommunicationAttachmentOrder
+	}
+	return &CommunicationAttachmentEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// CommunicationInteractionEdge is the edge representation of CommunicationInteraction.
+type CommunicationInteractionEdge struct {
+	Node   *CommunicationInteraction `json:"node"`
+	Cursor Cursor                    `json:"cursor"`
+}
+
+// CommunicationInteractionConnection is the connection containing edges to CommunicationInteraction.
+type CommunicationInteractionConnection struct {
+	Edges      []*CommunicationInteractionEdge `json:"edges"`
+	PageInfo   PageInfo                        `json:"pageInfo"`
+	TotalCount int                             `json:"totalCount"`
+}
+
+func (c *CommunicationInteractionConnection) build(nodes []*CommunicationInteraction, pager *communicationinteractionPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *CommunicationInteraction
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *CommunicationInteraction {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *CommunicationInteraction {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*CommunicationInteractionEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &CommunicationInteractionEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// CommunicationInteractionPaginateOption enables pagination customization.
+type CommunicationInteractionPaginateOption func(*communicationinteractionPager) error
+
+// WithCommunicationInteractionOrder configures pagination ordering.
+func WithCommunicationInteractionOrder(order *CommunicationInteractionOrder) CommunicationInteractionPaginateOption {
+	if order == nil {
+		order = DefaultCommunicationInteractionOrder
+	}
+	o := *order
+	return func(pager *communicationinteractionPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultCommunicationInteractionOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithCommunicationInteractionFilter configures pagination filter.
+func WithCommunicationInteractionFilter(filter func(*CommunicationInteractionQuery) (*CommunicationInteractionQuery, error)) CommunicationInteractionPaginateOption {
+	return func(pager *communicationinteractionPager) error {
+		if filter == nil {
+			return errors.New("CommunicationInteractionQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type communicationinteractionPager struct {
+	reverse bool
+	order   *CommunicationInteractionOrder
+	filter  func(*CommunicationInteractionQuery) (*CommunicationInteractionQuery, error)
+}
+
+func newCommunicationInteractionPager(opts []CommunicationInteractionPaginateOption, reverse bool) (*communicationinteractionPager, error) {
+	pager := &communicationinteractionPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultCommunicationInteractionOrder
+	}
+	return pager, nil
+}
+
+func (p *communicationinteractionPager) applyFilter(query *CommunicationInteractionQuery) (*CommunicationInteractionQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *communicationinteractionPager) toCursor(_m *CommunicationInteraction) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *communicationinteractionPager) applyCursors(query *CommunicationInteractionQuery, after, before *Cursor) (*CommunicationInteractionQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultCommunicationInteractionOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *communicationinteractionPager) applyOrder(query *CommunicationInteractionQuery) *CommunicationInteractionQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultCommunicationInteractionOrder.Field {
+		query = query.Order(DefaultCommunicationInteractionOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *communicationinteractionPager) orderExpr(query *CommunicationInteractionQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultCommunicationInteractionOrder.Field {
+			b.Comma().Ident(DefaultCommunicationInteractionOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to CommunicationInteraction.
+func (_m *CommunicationInteractionQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...CommunicationInteractionPaginateOption,
+) (*CommunicationInteractionConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newCommunicationInteractionPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &CommunicationInteractionConnection{Edges: []*CommunicationInteractionEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// CommunicationInteractionOrderField defines the ordering field of CommunicationInteraction.
+type CommunicationInteractionOrderField struct {
+	// Value extracts the ordering value from the given CommunicationInteraction.
+	Value    func(*CommunicationInteraction) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) communicationinteraction.OrderOption
+	toCursor func(*CommunicationInteraction) Cursor
+}
+
+// CommunicationInteractionOrder defines the ordering of CommunicationInteraction.
+type CommunicationInteractionOrder struct {
+	Direction OrderDirection                      `json:"direction"`
+	Field     *CommunicationInteractionOrderField `json:"field"`
+}
+
+// DefaultCommunicationInteractionOrder is the default ordering of CommunicationInteraction.
+var DefaultCommunicationInteractionOrder = &CommunicationInteractionOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &CommunicationInteractionOrderField{
+		Value: func(_m *CommunicationInteraction) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: communicationinteraction.FieldID,
+		toTerm: communicationinteraction.ByID,
+		toCursor: func(_m *CommunicationInteraction) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts CommunicationInteraction into CommunicationInteractionEdge.
+func (_m *CommunicationInteraction) ToEdge(order *CommunicationInteractionOrder) *CommunicationInteractionEdge {
+	if order == nil {
+		order = DefaultCommunicationInteractionOrder
+	}
+	return &CommunicationInteractionEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// CommunicationParticipantEdge is the edge representation of CommunicationParticipant.
+type CommunicationParticipantEdge struct {
+	Node   *CommunicationParticipant `json:"node"`
+	Cursor Cursor                    `json:"cursor"`
+}
+
+// CommunicationParticipantConnection is the connection containing edges to CommunicationParticipant.
+type CommunicationParticipantConnection struct {
+	Edges      []*CommunicationParticipantEdge `json:"edges"`
+	PageInfo   PageInfo                        `json:"pageInfo"`
+	TotalCount int                             `json:"totalCount"`
+}
+
+func (c *CommunicationParticipantConnection) build(nodes []*CommunicationParticipant, pager *communicationparticipantPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *CommunicationParticipant
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *CommunicationParticipant {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *CommunicationParticipant {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*CommunicationParticipantEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &CommunicationParticipantEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// CommunicationParticipantPaginateOption enables pagination customization.
+type CommunicationParticipantPaginateOption func(*communicationparticipantPager) error
+
+// WithCommunicationParticipantOrder configures pagination ordering.
+func WithCommunicationParticipantOrder(order *CommunicationParticipantOrder) CommunicationParticipantPaginateOption {
+	if order == nil {
+		order = DefaultCommunicationParticipantOrder
+	}
+	o := *order
+	return func(pager *communicationparticipantPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultCommunicationParticipantOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithCommunicationParticipantFilter configures pagination filter.
+func WithCommunicationParticipantFilter(filter func(*CommunicationParticipantQuery) (*CommunicationParticipantQuery, error)) CommunicationParticipantPaginateOption {
+	return func(pager *communicationparticipantPager) error {
+		if filter == nil {
+			return errors.New("CommunicationParticipantQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type communicationparticipantPager struct {
+	reverse bool
+	order   *CommunicationParticipantOrder
+	filter  func(*CommunicationParticipantQuery) (*CommunicationParticipantQuery, error)
+}
+
+func newCommunicationParticipantPager(opts []CommunicationParticipantPaginateOption, reverse bool) (*communicationparticipantPager, error) {
+	pager := &communicationparticipantPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultCommunicationParticipantOrder
+	}
+	return pager, nil
+}
+
+func (p *communicationparticipantPager) applyFilter(query *CommunicationParticipantQuery) (*CommunicationParticipantQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *communicationparticipantPager) toCursor(_m *CommunicationParticipant) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *communicationparticipantPager) applyCursors(query *CommunicationParticipantQuery, after, before *Cursor) (*CommunicationParticipantQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultCommunicationParticipantOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *communicationparticipantPager) applyOrder(query *CommunicationParticipantQuery) *CommunicationParticipantQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultCommunicationParticipantOrder.Field {
+		query = query.Order(DefaultCommunicationParticipantOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *communicationparticipantPager) orderExpr(query *CommunicationParticipantQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultCommunicationParticipantOrder.Field {
+			b.Comma().Ident(DefaultCommunicationParticipantOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to CommunicationParticipant.
+func (_m *CommunicationParticipantQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...CommunicationParticipantPaginateOption,
+) (*CommunicationParticipantConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newCommunicationParticipantPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &CommunicationParticipantConnection{Edges: []*CommunicationParticipantEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// CommunicationParticipantOrderField defines the ordering field of CommunicationParticipant.
+type CommunicationParticipantOrderField struct {
+	// Value extracts the ordering value from the given CommunicationParticipant.
+	Value    func(*CommunicationParticipant) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) communicationparticipant.OrderOption
+	toCursor func(*CommunicationParticipant) Cursor
+}
+
+// CommunicationParticipantOrder defines the ordering of CommunicationParticipant.
+type CommunicationParticipantOrder struct {
+	Direction OrderDirection                      `json:"direction"`
+	Field     *CommunicationParticipantOrderField `json:"field"`
+}
+
+// DefaultCommunicationParticipantOrder is the default ordering of CommunicationParticipant.
+var DefaultCommunicationParticipantOrder = &CommunicationParticipantOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &CommunicationParticipantOrderField{
+		Value: func(_m *CommunicationParticipant) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: communicationparticipant.FieldID,
+		toTerm: communicationparticipant.ByID,
+		toCursor: func(_m *CommunicationParticipant) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts CommunicationParticipant into CommunicationParticipantEdge.
+func (_m *CommunicationParticipant) ToEdge(order *CommunicationParticipantOrder) *CommunicationParticipantEdge {
+	if order == nil {
+		order = DefaultCommunicationParticipantOrder
+	}
+	return &CommunicationParticipantEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// CommunicationPrivacyPolicyEdge is the edge representation of CommunicationPrivacyPolicy.
+type CommunicationPrivacyPolicyEdge struct {
+	Node   *CommunicationPrivacyPolicy `json:"node"`
+	Cursor Cursor                      `json:"cursor"`
+}
+
+// CommunicationPrivacyPolicyConnection is the connection containing edges to CommunicationPrivacyPolicy.
+type CommunicationPrivacyPolicyConnection struct {
+	Edges      []*CommunicationPrivacyPolicyEdge `json:"edges"`
+	PageInfo   PageInfo                          `json:"pageInfo"`
+	TotalCount int                               `json:"totalCount"`
+}
+
+func (c *CommunicationPrivacyPolicyConnection) build(nodes []*CommunicationPrivacyPolicy, pager *communicationprivacypolicyPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *CommunicationPrivacyPolicy
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *CommunicationPrivacyPolicy {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *CommunicationPrivacyPolicy {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*CommunicationPrivacyPolicyEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &CommunicationPrivacyPolicyEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// CommunicationPrivacyPolicyPaginateOption enables pagination customization.
+type CommunicationPrivacyPolicyPaginateOption func(*communicationprivacypolicyPager) error
+
+// WithCommunicationPrivacyPolicyOrder configures pagination ordering.
+func WithCommunicationPrivacyPolicyOrder(order *CommunicationPrivacyPolicyOrder) CommunicationPrivacyPolicyPaginateOption {
+	if order == nil {
+		order = DefaultCommunicationPrivacyPolicyOrder
+	}
+	o := *order
+	return func(pager *communicationprivacypolicyPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultCommunicationPrivacyPolicyOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithCommunicationPrivacyPolicyFilter configures pagination filter.
+func WithCommunicationPrivacyPolicyFilter(filter func(*CommunicationPrivacyPolicyQuery) (*CommunicationPrivacyPolicyQuery, error)) CommunicationPrivacyPolicyPaginateOption {
+	return func(pager *communicationprivacypolicyPager) error {
+		if filter == nil {
+			return errors.New("CommunicationPrivacyPolicyQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type communicationprivacypolicyPager struct {
+	reverse bool
+	order   *CommunicationPrivacyPolicyOrder
+	filter  func(*CommunicationPrivacyPolicyQuery) (*CommunicationPrivacyPolicyQuery, error)
+}
+
+func newCommunicationPrivacyPolicyPager(opts []CommunicationPrivacyPolicyPaginateOption, reverse bool) (*communicationprivacypolicyPager, error) {
+	pager := &communicationprivacypolicyPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultCommunicationPrivacyPolicyOrder
+	}
+	return pager, nil
+}
+
+func (p *communicationprivacypolicyPager) applyFilter(query *CommunicationPrivacyPolicyQuery) (*CommunicationPrivacyPolicyQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *communicationprivacypolicyPager) toCursor(_m *CommunicationPrivacyPolicy) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *communicationprivacypolicyPager) applyCursors(query *CommunicationPrivacyPolicyQuery, after, before *Cursor) (*CommunicationPrivacyPolicyQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultCommunicationPrivacyPolicyOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *communicationprivacypolicyPager) applyOrder(query *CommunicationPrivacyPolicyQuery) *CommunicationPrivacyPolicyQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultCommunicationPrivacyPolicyOrder.Field {
+		query = query.Order(DefaultCommunicationPrivacyPolicyOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *communicationprivacypolicyPager) orderExpr(query *CommunicationPrivacyPolicyQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultCommunicationPrivacyPolicyOrder.Field {
+			b.Comma().Ident(DefaultCommunicationPrivacyPolicyOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to CommunicationPrivacyPolicy.
+func (_m *CommunicationPrivacyPolicyQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...CommunicationPrivacyPolicyPaginateOption,
+) (*CommunicationPrivacyPolicyConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newCommunicationPrivacyPolicyPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &CommunicationPrivacyPolicyConnection{Edges: []*CommunicationPrivacyPolicyEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// CommunicationPrivacyPolicyOrderField defines the ordering field of CommunicationPrivacyPolicy.
+type CommunicationPrivacyPolicyOrderField struct {
+	// Value extracts the ordering value from the given CommunicationPrivacyPolicy.
+	Value    func(*CommunicationPrivacyPolicy) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) communicationprivacypolicy.OrderOption
+	toCursor func(*CommunicationPrivacyPolicy) Cursor
+}
+
+// CommunicationPrivacyPolicyOrder defines the ordering of CommunicationPrivacyPolicy.
+type CommunicationPrivacyPolicyOrder struct {
+	Direction OrderDirection                        `json:"direction"`
+	Field     *CommunicationPrivacyPolicyOrderField `json:"field"`
+}
+
+// DefaultCommunicationPrivacyPolicyOrder is the default ordering of CommunicationPrivacyPolicy.
+var DefaultCommunicationPrivacyPolicyOrder = &CommunicationPrivacyPolicyOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &CommunicationPrivacyPolicyOrderField{
+		Value: func(_m *CommunicationPrivacyPolicy) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: communicationprivacypolicy.FieldID,
+		toTerm: communicationprivacypolicy.ByID,
+		toCursor: func(_m *CommunicationPrivacyPolicy) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts CommunicationPrivacyPolicy into CommunicationPrivacyPolicyEdge.
+func (_m *CommunicationPrivacyPolicy) ToEdge(order *CommunicationPrivacyPolicyOrder) *CommunicationPrivacyPolicyEdge {
+	if order == nil {
+		order = DefaultCommunicationPrivacyPolicyOrder
+	}
+	return &CommunicationPrivacyPolicyEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// CommunicationPrivacyRuleEdge is the edge representation of CommunicationPrivacyRule.
+type CommunicationPrivacyRuleEdge struct {
+	Node   *CommunicationPrivacyRule `json:"node"`
+	Cursor Cursor                    `json:"cursor"`
+}
+
+// CommunicationPrivacyRuleConnection is the connection containing edges to CommunicationPrivacyRule.
+type CommunicationPrivacyRuleConnection struct {
+	Edges      []*CommunicationPrivacyRuleEdge `json:"edges"`
+	PageInfo   PageInfo                        `json:"pageInfo"`
+	TotalCount int                             `json:"totalCount"`
+}
+
+func (c *CommunicationPrivacyRuleConnection) build(nodes []*CommunicationPrivacyRule, pager *communicationprivacyrulePager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *CommunicationPrivacyRule
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *CommunicationPrivacyRule {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *CommunicationPrivacyRule {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*CommunicationPrivacyRuleEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &CommunicationPrivacyRuleEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// CommunicationPrivacyRulePaginateOption enables pagination customization.
+type CommunicationPrivacyRulePaginateOption func(*communicationprivacyrulePager) error
+
+// WithCommunicationPrivacyRuleOrder configures pagination ordering.
+func WithCommunicationPrivacyRuleOrder(order *CommunicationPrivacyRuleOrder) CommunicationPrivacyRulePaginateOption {
+	if order == nil {
+		order = DefaultCommunicationPrivacyRuleOrder
+	}
+	o := *order
+	return func(pager *communicationprivacyrulePager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultCommunicationPrivacyRuleOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithCommunicationPrivacyRuleFilter configures pagination filter.
+func WithCommunicationPrivacyRuleFilter(filter func(*CommunicationPrivacyRuleQuery) (*CommunicationPrivacyRuleQuery, error)) CommunicationPrivacyRulePaginateOption {
+	return func(pager *communicationprivacyrulePager) error {
+		if filter == nil {
+			return errors.New("CommunicationPrivacyRuleQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type communicationprivacyrulePager struct {
+	reverse bool
+	order   *CommunicationPrivacyRuleOrder
+	filter  func(*CommunicationPrivacyRuleQuery) (*CommunicationPrivacyRuleQuery, error)
+}
+
+func newCommunicationPrivacyRulePager(opts []CommunicationPrivacyRulePaginateOption, reverse bool) (*communicationprivacyrulePager, error) {
+	pager := &communicationprivacyrulePager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultCommunicationPrivacyRuleOrder
+	}
+	return pager, nil
+}
+
+func (p *communicationprivacyrulePager) applyFilter(query *CommunicationPrivacyRuleQuery) (*CommunicationPrivacyRuleQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *communicationprivacyrulePager) toCursor(_m *CommunicationPrivacyRule) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *communicationprivacyrulePager) applyCursors(query *CommunicationPrivacyRuleQuery, after, before *Cursor) (*CommunicationPrivacyRuleQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultCommunicationPrivacyRuleOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *communicationprivacyrulePager) applyOrder(query *CommunicationPrivacyRuleQuery) *CommunicationPrivacyRuleQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultCommunicationPrivacyRuleOrder.Field {
+		query = query.Order(DefaultCommunicationPrivacyRuleOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *communicationprivacyrulePager) orderExpr(query *CommunicationPrivacyRuleQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultCommunicationPrivacyRuleOrder.Field {
+			b.Comma().Ident(DefaultCommunicationPrivacyRuleOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to CommunicationPrivacyRule.
+func (_m *CommunicationPrivacyRuleQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...CommunicationPrivacyRulePaginateOption,
+) (*CommunicationPrivacyRuleConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newCommunicationPrivacyRulePager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &CommunicationPrivacyRuleConnection{Edges: []*CommunicationPrivacyRuleEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// CommunicationPrivacyRuleOrderField defines the ordering field of CommunicationPrivacyRule.
+type CommunicationPrivacyRuleOrderField struct {
+	// Value extracts the ordering value from the given CommunicationPrivacyRule.
+	Value    func(*CommunicationPrivacyRule) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) communicationprivacyrule.OrderOption
+	toCursor func(*CommunicationPrivacyRule) Cursor
+}
+
+// CommunicationPrivacyRuleOrder defines the ordering of CommunicationPrivacyRule.
+type CommunicationPrivacyRuleOrder struct {
+	Direction OrderDirection                      `json:"direction"`
+	Field     *CommunicationPrivacyRuleOrderField `json:"field"`
+}
+
+// DefaultCommunicationPrivacyRuleOrder is the default ordering of CommunicationPrivacyRule.
+var DefaultCommunicationPrivacyRuleOrder = &CommunicationPrivacyRuleOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &CommunicationPrivacyRuleOrderField{
+		Value: func(_m *CommunicationPrivacyRule) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: communicationprivacyrule.FieldID,
+		toTerm: communicationprivacyrule.ByID,
+		toCursor: func(_m *CommunicationPrivacyRule) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts CommunicationPrivacyRule into CommunicationPrivacyRuleEdge.
+func (_m *CommunicationPrivacyRule) ToEdge(order *CommunicationPrivacyRuleOrder) *CommunicationPrivacyRuleEdge {
+	if order == nil {
+		order = DefaultCommunicationPrivacyRuleOrder
+	}
+	return &CommunicationPrivacyRuleEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// CommunicationShareGrantEdge is the edge representation of CommunicationShareGrant.
+type CommunicationShareGrantEdge struct {
+	Node   *CommunicationShareGrant `json:"node"`
+	Cursor Cursor                   `json:"cursor"`
+}
+
+// CommunicationShareGrantConnection is the connection containing edges to CommunicationShareGrant.
+type CommunicationShareGrantConnection struct {
+	Edges      []*CommunicationShareGrantEdge `json:"edges"`
+	PageInfo   PageInfo                       `json:"pageInfo"`
+	TotalCount int                            `json:"totalCount"`
+}
+
+func (c *CommunicationShareGrantConnection) build(nodes []*CommunicationShareGrant, pager *communicationsharegrantPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *CommunicationShareGrant
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *CommunicationShareGrant {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *CommunicationShareGrant {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*CommunicationShareGrantEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &CommunicationShareGrantEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// CommunicationShareGrantPaginateOption enables pagination customization.
+type CommunicationShareGrantPaginateOption func(*communicationsharegrantPager) error
+
+// WithCommunicationShareGrantOrder configures pagination ordering.
+func WithCommunicationShareGrantOrder(order *CommunicationShareGrantOrder) CommunicationShareGrantPaginateOption {
+	if order == nil {
+		order = DefaultCommunicationShareGrantOrder
+	}
+	o := *order
+	return func(pager *communicationsharegrantPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultCommunicationShareGrantOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithCommunicationShareGrantFilter configures pagination filter.
+func WithCommunicationShareGrantFilter(filter func(*CommunicationShareGrantQuery) (*CommunicationShareGrantQuery, error)) CommunicationShareGrantPaginateOption {
+	return func(pager *communicationsharegrantPager) error {
+		if filter == nil {
+			return errors.New("CommunicationShareGrantQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type communicationsharegrantPager struct {
+	reverse bool
+	order   *CommunicationShareGrantOrder
+	filter  func(*CommunicationShareGrantQuery) (*CommunicationShareGrantQuery, error)
+}
+
+func newCommunicationShareGrantPager(opts []CommunicationShareGrantPaginateOption, reverse bool) (*communicationsharegrantPager, error) {
+	pager := &communicationsharegrantPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultCommunicationShareGrantOrder
+	}
+	return pager, nil
+}
+
+func (p *communicationsharegrantPager) applyFilter(query *CommunicationShareGrantQuery) (*CommunicationShareGrantQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *communicationsharegrantPager) toCursor(_m *CommunicationShareGrant) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *communicationsharegrantPager) applyCursors(query *CommunicationShareGrantQuery, after, before *Cursor) (*CommunicationShareGrantQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultCommunicationShareGrantOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *communicationsharegrantPager) applyOrder(query *CommunicationShareGrantQuery) *CommunicationShareGrantQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultCommunicationShareGrantOrder.Field {
+		query = query.Order(DefaultCommunicationShareGrantOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *communicationsharegrantPager) orderExpr(query *CommunicationShareGrantQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultCommunicationShareGrantOrder.Field {
+			b.Comma().Ident(DefaultCommunicationShareGrantOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to CommunicationShareGrant.
+func (_m *CommunicationShareGrantQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...CommunicationShareGrantPaginateOption,
+) (*CommunicationShareGrantConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newCommunicationShareGrantPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &CommunicationShareGrantConnection{Edges: []*CommunicationShareGrantEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// CommunicationShareGrantOrderField defines the ordering field of CommunicationShareGrant.
+type CommunicationShareGrantOrderField struct {
+	// Value extracts the ordering value from the given CommunicationShareGrant.
+	Value    func(*CommunicationShareGrant) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) communicationsharegrant.OrderOption
+	toCursor func(*CommunicationShareGrant) Cursor
+}
+
+// CommunicationShareGrantOrder defines the ordering of CommunicationShareGrant.
+type CommunicationShareGrantOrder struct {
+	Direction OrderDirection                     `json:"direction"`
+	Field     *CommunicationShareGrantOrderField `json:"field"`
+}
+
+// DefaultCommunicationShareGrantOrder is the default ordering of CommunicationShareGrant.
+var DefaultCommunicationShareGrantOrder = &CommunicationShareGrantOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &CommunicationShareGrantOrderField{
+		Value: func(_m *CommunicationShareGrant) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: communicationsharegrant.FieldID,
+		toTerm: communicationsharegrant.ByID,
+		toCursor: func(_m *CommunicationShareGrant) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts CommunicationShareGrant into CommunicationShareGrantEdge.
+func (_m *CommunicationShareGrant) ToEdge(order *CommunicationShareGrantOrder) *CommunicationShareGrantEdge {
+	if order == nil {
+		order = DefaultCommunicationShareGrantOrder
+	}
+	return &CommunicationShareGrantEdge{
+		Node:   _m,
+		Cursor: order.Field.toCursor(_m),
+	}
+}
+
+// CommunicationSyncCursorEdge is the edge representation of CommunicationSyncCursor.
+type CommunicationSyncCursorEdge struct {
+	Node   *CommunicationSyncCursor `json:"node"`
+	Cursor Cursor                   `json:"cursor"`
+}
+
+// CommunicationSyncCursorConnection is the connection containing edges to CommunicationSyncCursor.
+type CommunicationSyncCursorConnection struct {
+	Edges      []*CommunicationSyncCursorEdge `json:"edges"`
+	PageInfo   PageInfo                       `json:"pageInfo"`
+	TotalCount int                            `json:"totalCount"`
+}
+
+func (c *CommunicationSyncCursorConnection) build(nodes []*CommunicationSyncCursor, pager *communicationsynccursorPager, after *Cursor, first *int, before *Cursor, last *int) {
+	c.PageInfo.HasNextPage = before != nil
+	c.PageInfo.HasPreviousPage = after != nil
+	if first != nil && *first+1 == len(nodes) {
+		c.PageInfo.HasNextPage = true
+		nodes = nodes[:len(nodes)-1]
+	} else if last != nil && *last+1 == len(nodes) {
+		c.PageInfo.HasPreviousPage = true
+		nodes = nodes[:len(nodes)-1]
+	}
+	var nodeAt func(int) *CommunicationSyncCursor
+	if last != nil {
+		n := len(nodes) - 1
+		nodeAt = func(i int) *CommunicationSyncCursor {
+			return nodes[n-i]
+		}
+	} else {
+		nodeAt = func(i int) *CommunicationSyncCursor {
+			return nodes[i]
+		}
+	}
+	c.Edges = make([]*CommunicationSyncCursorEdge, len(nodes))
+	for i := range nodes {
+		node := nodeAt(i)
+		c.Edges[i] = &CommunicationSyncCursorEdge{
+			Node:   node,
+			Cursor: pager.toCursor(node),
+		}
+	}
+	if l := len(c.Edges); l > 0 {
+		c.PageInfo.StartCursor = &c.Edges[0].Cursor
+		c.PageInfo.EndCursor = &c.Edges[l-1].Cursor
+	}
+	if c.TotalCount == 0 {
+		c.TotalCount = len(nodes)
+	}
+}
+
+// CommunicationSyncCursorPaginateOption enables pagination customization.
+type CommunicationSyncCursorPaginateOption func(*communicationsynccursorPager) error
+
+// WithCommunicationSyncCursorOrder configures pagination ordering.
+func WithCommunicationSyncCursorOrder(order *CommunicationSyncCursorOrder) CommunicationSyncCursorPaginateOption {
+	if order == nil {
+		order = DefaultCommunicationSyncCursorOrder
+	}
+	o := *order
+	return func(pager *communicationsynccursorPager) error {
+		if err := o.Direction.Validate(); err != nil {
+			return err
+		}
+		if o.Field == nil {
+			o.Field = DefaultCommunicationSyncCursorOrder.Field
+		}
+		pager.order = &o
+		return nil
+	}
+}
+
+// WithCommunicationSyncCursorFilter configures pagination filter.
+func WithCommunicationSyncCursorFilter(filter func(*CommunicationSyncCursorQuery) (*CommunicationSyncCursorQuery, error)) CommunicationSyncCursorPaginateOption {
+	return func(pager *communicationsynccursorPager) error {
+		if filter == nil {
+			return errors.New("CommunicationSyncCursorQuery filter cannot be nil")
+		}
+		pager.filter = filter
+		return nil
+	}
+}
+
+type communicationsynccursorPager struct {
+	reverse bool
+	order   *CommunicationSyncCursorOrder
+	filter  func(*CommunicationSyncCursorQuery) (*CommunicationSyncCursorQuery, error)
+}
+
+func newCommunicationSyncCursorPager(opts []CommunicationSyncCursorPaginateOption, reverse bool) (*communicationsynccursorPager, error) {
+	pager := &communicationsynccursorPager{reverse: reverse}
+	for _, opt := range opts {
+		if err := opt(pager); err != nil {
+			return nil, err
+		}
+	}
+	if pager.order == nil {
+		pager.order = DefaultCommunicationSyncCursorOrder
+	}
+	return pager, nil
+}
+
+func (p *communicationsynccursorPager) applyFilter(query *CommunicationSyncCursorQuery) (*CommunicationSyncCursorQuery, error) {
+	if p.filter != nil {
+		return p.filter(query)
+	}
+	return query, nil
+}
+
+func (p *communicationsynccursorPager) toCursor(_m *CommunicationSyncCursor) Cursor {
+	return p.order.Field.toCursor(_m)
+}
+
+func (p *communicationsynccursorPager) applyCursors(query *CommunicationSyncCursorQuery, after, before *Cursor) (*CommunicationSyncCursorQuery, error) {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	for _, predicate := range entgql.CursorsPredicate(after, before, DefaultCommunicationSyncCursorOrder.Field.column, p.order.Field.column, direction) {
+		query = query.Where(predicate)
+	}
+	return query, nil
+}
+
+func (p *communicationsynccursorPager) applyOrder(query *CommunicationSyncCursorQuery) *CommunicationSyncCursorQuery {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	query = query.Order(p.order.Field.toTerm(direction.OrderTermOption()))
+	if p.order.Field != DefaultCommunicationSyncCursorOrder.Field {
+		query = query.Order(DefaultCommunicationSyncCursorOrder.Field.toTerm(direction.OrderTermOption()))
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return query
+}
+
+func (p *communicationsynccursorPager) orderExpr(query *CommunicationSyncCursorQuery) sql.Querier {
+	direction := p.order.Direction
+	if p.reverse {
+		direction = direction.Reverse()
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(p.order.Field.column)
+	}
+	return sql.ExprFunc(func(b *sql.Builder) {
+		b.Ident(p.order.Field.column).Pad().WriteString(string(direction))
+		if p.order.Field != DefaultCommunicationSyncCursorOrder.Field {
+			b.Comma().Ident(DefaultCommunicationSyncCursorOrder.Field.column).Pad().WriteString(string(direction))
+		}
+	})
+}
+
+// Paginate executes the query and returns a relay based cursor connection to CommunicationSyncCursor.
+func (_m *CommunicationSyncCursorQuery) Paginate(
+	ctx context.Context, after *Cursor, first *int,
+	before *Cursor, last *int, opts ...CommunicationSyncCursorPaginateOption,
+) (*CommunicationSyncCursorConnection, error) {
+	if err := validateFirstLast(first, last); err != nil {
+		return nil, err
+	}
+	pager, err := newCommunicationSyncCursorPager(opts, last != nil)
+	if err != nil {
+		return nil, err
+	}
+	if _m, err = pager.applyFilter(_m); err != nil {
+		return nil, err
+	}
+	conn := &CommunicationSyncCursorConnection{Edges: []*CommunicationSyncCursorEdge{}}
+	ignoredEdges := !hasCollectedField(ctx, edgesField)
+	if hasCollectedField(ctx, totalCountField) || hasCollectedField(ctx, pageInfoField) {
+		hasPagination := after != nil || first != nil || before != nil || last != nil
+		if hasPagination || ignoredEdges {
+			c := _m.Clone()
+			c.ctx.Fields = nil
+			if conn.TotalCount, err = c.Count(ctx); err != nil {
+				return nil, err
+			}
+			conn.PageInfo.HasNextPage = first != nil && conn.TotalCount > 0
+			conn.PageInfo.HasPreviousPage = last != nil && conn.TotalCount > 0
+		}
+	}
+	if ignoredEdges || (first != nil && *first == 0) || (last != nil && *last == 0) {
+		return conn, nil
+	}
+	if _m, err = pager.applyCursors(_m, after, before); err != nil {
+		return nil, err
+	}
+	limit := paginateLimit(first, last)
+	if limit != 0 {
+		_m.Limit(limit)
+	}
+	if field := collectedField(ctx, edgesField, nodeField); field != nil {
+		if err := _m.collectField(ctx, limit == 1, graphql.GetOperationContext(ctx), *field, []string{edgesField, nodeField}); err != nil {
+			return nil, err
+		}
+	}
+	_m = pager.applyOrder(_m)
+	nodes, err := _m.All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	conn.build(nodes, pager, after, first, before, last)
+	return conn, nil
+}
+
+// CommunicationSyncCursorOrderField defines the ordering field of CommunicationSyncCursor.
+type CommunicationSyncCursorOrderField struct {
+	// Value extracts the ordering value from the given CommunicationSyncCursor.
+	Value    func(*CommunicationSyncCursor) (ent.Value, error)
+	column   string // field or computed.
+	toTerm   func(...sql.OrderTermOption) communicationsynccursor.OrderOption
+	toCursor func(*CommunicationSyncCursor) Cursor
+}
+
+// CommunicationSyncCursorOrder defines the ordering of CommunicationSyncCursor.
+type CommunicationSyncCursorOrder struct {
+	Direction OrderDirection                     `json:"direction"`
+	Field     *CommunicationSyncCursorOrderField `json:"field"`
+}
+
+// DefaultCommunicationSyncCursorOrder is the default ordering of CommunicationSyncCursor.
+var DefaultCommunicationSyncCursorOrder = &CommunicationSyncCursorOrder{
+	Direction: entgql.OrderDirectionAsc,
+	Field: &CommunicationSyncCursorOrderField{
+		Value: func(_m *CommunicationSyncCursor) (ent.Value, error) {
+			return _m.ID, nil
+		},
+		column: communicationsynccursor.FieldID,
+		toTerm: communicationsynccursor.ByID,
+		toCursor: func(_m *CommunicationSyncCursor) Cursor {
+			return Cursor{ID: _m.ID}
+		},
+	},
+}
+
+// ToEdge converts CommunicationSyncCursor into CommunicationSyncCursorEdge.
+func (_m *CommunicationSyncCursor) ToEdge(order *CommunicationSyncCursorOrder) *CommunicationSyncCursorEdge {
+	if order == nil {
+		order = DefaultCommunicationSyncCursorOrder
+	}
+	return &CommunicationSyncCursorEdge{
 		Node:   _m,
 		Cursor: order.Field.toCursor(_m),
 	}

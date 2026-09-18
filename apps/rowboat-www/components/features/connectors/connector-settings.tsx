@@ -6,7 +6,10 @@ import * as React from "react";
 
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { Checkbox } from "@oppulence/ui/components/checkbox";
+import { CardDescription } from "@oppulence/ui/components/card";
 import { Input } from "@oppulence/ui/components/input";
+import { Label } from "@oppulence/ui/components/label";
 
 import {
   getDeleteConnectionUrl,
@@ -18,15 +21,11 @@ import type {
   ConnectorScope,
   GoogleConnectionStatus,
 } from "@/lib/api/generated/client/model";
-import {
-  GetGoogleConnectionStatus200Response,
-  StartGoogleOAuth200Response,
-} from "@/lib/api/generated/zod/google-oauth/google-oauth";
+import { GetGoogleConnectionStatus200Response } from "@/lib/api/generated/zod/google-oauth/google-oauth";
+import { createGoogleCommitmentsAuthorizationURL } from "@/lib/api/connectors/google-oauth";
 import { startHostedOAuth } from "@/lib/api/connectors/hosted-oauth";
-import {
-  listRelationshipSourceStatuses,
-  reportRelationshipSourceAuthorization,
-} from "@/lib/revenue";
+import { GOOGLE_OAUTH_CONNECTED_EVENT } from "@/components/features/connectors/google-oauth-return-handler";
+import { listRelationshipSourceStatuses } from "@/lib/revenue";
 import { cn } from "@/lib/utils";
 import { ComposioConnections } from "@/components/features/connectors/composio-connections";
 import { parseConnectorsResponse } from "@/lib/api/connectors/schema";
@@ -86,6 +85,33 @@ function healthLabel(connector: Connector): string {
   return connector.connectionHealth.charAt(0).toUpperCase() + connector.connectionHealth.slice(1);
 }
 
+function OptionalConnectorScope({ scope }: { scope: ConnectorScope }) {
+  const [checked, setChecked] = React.useState(false);
+
+  return (
+    <label
+      className="flex items-start gap-2 text-xs text-muted-foreground"
+      htmlFor={`connector-scope-${scope.name}`}
+    >
+      <Checkbox
+        aria-label={scope.displayName}
+        checked={checked}
+        className="mt-0.5"
+        id={`connector-scope-${scope.name}`}
+        onCheckedChange={(value) => setChecked(value === true)}
+      />
+      {checked ? <input name="requested_scope" type="hidden" value={scope.name} /> : null}
+      <div>
+        <Label className="font-normal text-primary/80">
+          {scope.displayName} · Optional
+          {scope.requiredPlan ? ` · ${scope.requiredPlan} plan` : ""}
+        </Label>
+        <CardDescription className="block">{scope.description}</CardDescription>
+      </div>
+    </label>
+  );
+}
+
 function ConnectorScopeList({ scopes }: { scopes: ConnectorScope[] }) {
   if (scopes.length === 0) return null;
   return (
@@ -101,32 +127,16 @@ function ConnectorScopeList({ scopes }: { scopes: ConnectorScope[] }) {
                 type="hidden"
                 value={scope.name}
               />
-              <span>
-                <span className="font-medium text-primary/80">{scope.displayName}</span> · Required
-                {scope.requiredPlan ? ` · ${scope.requiredPlan} plan` : ""}
-                <span className="block">{scope.description}</span>
-              </span>
+              <div>
+                <Label className="font-normal text-primary/80">
+                  {scope.displayName} · Required
+                  {scope.requiredPlan ? ` · ${scope.requiredPlan} plan` : ""}
+                </Label>
+                <CardDescription className="block">{scope.description}</CardDescription>
+              </div>
             </div>
           ) : (
-            <label
-              className="flex items-start gap-2 text-xs text-muted-foreground"
-              htmlFor={`connector-scope-${scope.name}`}
-              key={scope.name}
-            >
-              <input
-                aria-label={scope.displayName}
-                className="mt-0.5"
-                id={`connector-scope-${scope.name}`}
-                name="requested_scope"
-                type="checkbox"
-                value={scope.name}
-              />
-              <span>
-                <span className="font-medium text-primary/80">{scope.displayName}</span> · Optional
-                {scope.requiredPlan ? ` · ${scope.requiredPlan} plan` : ""}
-                <span className="block">{scope.description}</span>
-              </span>
-            </label>
+            <OptionalConnectorScope key={scope.name} scope={scope} />
           ),
         )}
       </div>
@@ -139,7 +149,6 @@ function GoogleConnectionSettings() {
   const [sourceStatus, setSourceStatus] = React.useState<string | undefined>(undefined);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const claimStarted = React.useRef(false);
 
   const loadStatus = React.useCallback(async () => {
     const response = await dashboardFetch("/api/rowboat/v1/google-oauth");
@@ -164,70 +173,16 @@ function GoogleConnectionSettings() {
   }, [loadStatus]);
 
   React.useEffect(() => {
-    const parameters = new URLSearchParams(window.location.search);
-    const session = parameters.get("google_session");
-    const outcome = parameters.get("google_status");
-    if (!session && !outcome) return;
-    parameters.delete("google_session");
-    parameters.delete("google_status");
-    window.history.replaceState(
-      null,
-      "",
-      `${window.location.pathname}${parameters.size ? `?${parameters.toString()}` : ""}`,
-    );
-    if (claimStarted.current) return;
-    claimStarted.current = true;
-    if (!session || outcome !== "success") {
-      setError("Google authorization was not completed.");
-      return;
-    }
-    setBusy(true);
-    dashboardFetch("/api/rowboat/v1/google-oauth/claim", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session }),
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`Could not claim Google connection (${response.status})`);
-        const fresh = await loadStatus();
-        // The claim stores the grant; the relationship source only learns of
-        // it when told. Without this report no source row existed, so the
-        // sidebar said "No sources connected" while this card said "Active",
-        // and a dead grant had no row to flag. The grant is saved either way,
-        // so a failed report must not read as a failed authorization.
-        await Promise.all(
-          fresh.accounts.map((account) =>
-            reportRelationshipSourceAuthorization("google", {
-              sourceAccountId: account.accountId,
-              state: "completed",
-              grantedScopes: account.scopes,
-            }).catch(() => undefined),
-          ),
-        );
-        await loadStatus();
-      })
-      .catch(() => setError("Google authorization could not be saved."))
-      .finally(() => setBusy(false));
+    const refresh = () => void loadStatus();
+    window.addEventListener(GOOGLE_OAUTH_CONNECTED_EVENT, refresh);
+    return () => window.removeEventListener(GOOGLE_OAUTH_CONNECTED_EVENT, refresh);
   }, [loadStatus]);
 
   const connect = async () => {
     setBusy(true);
     setError(null);
     try {
-      const response = await dashboardFetch(
-        // return=web: the callback comes back here to claim the grant instead
-        // of handing off to the desktop app.
-        "/api/rowboat/v1/google-oauth/start?profile=commitments&return=web",
-        {
-          method: "POST",
-        },
-      );
-      if (!response.ok)
-        throw new Error(`Could not start Google authorization (${response.status})`);
-      const data = StartGoogleOAuth200Response.parse(await response.json());
-      const authorizeURL = safeAuthorizationURL(data.authorizeUrl);
-      if (!authorizeURL) throw new Error("Invalid Google authorization URL");
-      window.location.assign(authorizeURL.toString());
+      window.location.assign((await createGoogleCommitmentsAuthorizationURL()).toString());
     } catch {
       setError("Google authorization could not be started.");
       setBusy(false);
@@ -253,7 +208,7 @@ function GoogleConnectionSettings() {
   return (
     <div className="settings-panel mb-3 flex items-start justify-between gap-4 px-4 py-3">
       <div>
-        <span className="flex items-center gap-2 text-sm font-medium text-primary">
+        <Label className="flex items-center gap-2 text-sm font-medium text-primary">
           Gmail &amp; Google Calendar
           <Badge
             className={cn(
@@ -265,10 +220,10 @@ function GoogleConnectionSettings() {
           >
             {health.label}
           </Badge>
-        </span>
-        <p className="mt-1 text-xs text-muted-foreground">
+        </Label>
+        <CardDescription className="mt-1 text-xs">
           Read recent correspondence and meetings to identify operational commitments.
-        </p>
+        </CardDescription>
         {health.tone === "bad" && status?.connected ? (
           <p className="mt-1 text-xs text-destructive">
             Google is no longer accepting this authorization, so audits cannot read your mail.
@@ -394,10 +349,10 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
     <div className="flex flex-col gap-3 px-4 py-3" data-testid={`connector-${connector.name}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="truncate text-sm font-medium text-primary">
+          <div className="flex flex-wrap items-center gap-2">
+            <Label className="truncate text-sm font-medium text-primary">
               {connector.displayName}
-            </span>
+            </Label>
             {connector.connected ? (
               <Badge className="shrink-0 rounded-[2px] border-oppulence-green/40 text-oppulence-green">
                 Active
@@ -410,20 +365,24 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
             <Badge className="shrink-0 rounded-[2px] capitalize" variant="outline">
               {healthLabel(connector)}
             </Badge>
-          </span>
-          <span className="mt-1 block text-xs text-muted-foreground">{connector.description}</span>
-          <span className="mt-1 block font-mono text-[11px] text-primary/45">
+          </div>
+          <CardDescription className="mt-1 block text-xs">{connector.description}</CardDescription>
+          <Badge
+            className="mt-1 block font-mono text-[11px] font-normal text-primary/45"
+            variant="secondary"
+          >
             Lifecycle: {connector.status}
             {connectedAt ? ` · Connected ${connectedAt}` : ""}
             {lastUsedAt ? ` · Last used ${lastUsedAt}` : ""}
-          </span>
+          </Badge>
           {connector.connectionReason ? (
-            <span
-              className="mt-1 block font-mono text-[11px] text-oppulence-orange"
+            <Badge
+              className="mt-1 block font-mono text-[11px] font-normal text-oppulence-orange"
               id={`connector-support-${connector.name}`}
+              variant="outline"
             >
               {connector.connectionReason}
-            </span>
+            </Badge>
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">

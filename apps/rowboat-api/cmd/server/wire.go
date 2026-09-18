@@ -28,9 +28,11 @@ import (
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/backgroundtaskworkflow"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/billing"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/cloudevents"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/communicationsync"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/composioapi"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/config"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/connectors"
+	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/console"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/crypto"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/db"
 	"github.com/Oppulence-Engineering/rowboat/apps/rowboat-api/internal/docs"
@@ -318,6 +320,13 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		GoogleWebhookToken:   cfg.GoogleWebhookToken,
 		WebhookSigningSecret: cfg.WebhookSigningSecret,
 	}, log)
+	communicationSync := communicationsync.New(client, sealer, sec, googleapi.New(googleapi.Config{
+		TokenURL:        cfg.GoogleTokenURL,
+		GmailBaseURL:    cfg.GmailAPIBaseURL,
+		CalendarBaseURL: cfg.CalendarAPIBaseURL,
+		DriveBaseURL:    cfg.DriveAPIBaseURL,
+	}), communicationsync.Config{}, log)
+	cloudEventsH.SetGoogleInvalidationConsumer(communicationSync.EnqueueInvalidation)
 	if strings.TrimSpace(cfg.GoogleWebhookOIDCAudience) != "" {
 		googlePushVerifier, err := oauthrs.NewGeneric(ctx, oauthrs.GenericConfig{
 			IssuerURL:      "https://accounts.google.com",
@@ -495,7 +504,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 	// and lifecycle progress advances only after those observations commit.
 	go func() {
 		_ = revenue.NewSourceBackfillRunner(revenueSvc, map[string]revenue.SourceBackfillProvider{
-			"google":  revenue.NewGoogleSourceBackfiller(gmailExec),
+			"google":  revenue.NewGoogleSourceBackfiller(gmailExec, gmailExec),
 			"slack":   revenue.NewSlackSourceBackfiller(slackTokens, slackAPI),
 			"hubspot": revenue.NewHubSpotSourceBackfiller(hubspotClient),
 		}, 5*time.Second, 50, log).Run(ctx)
@@ -541,6 +550,28 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		_ = revenue.NewResearchTriggerRunner(revenueSvc, 24*time.Hour, 200, log).Run(ctx)
 	}()
 	revenueH := revenue.NewHandler(revenueSvc, log)
+	consoleH := console.NewHandler(console.NewService(client, console.WorkspaceResolverFunc(
+		func(ctx context.Context, user *ent.User, workosOrgID string, access console.WorkspaceAccess) (*ent.RevenueWorkspace, error) {
+			workspace, err := revenueSvc.CurrentWorkspaceForOrg(ctx, user, workosOrgID)
+			if err != nil {
+				if ent.IsNotFound(err) || errors.Is(err, revenue.ErrForbidden) {
+					return nil, console.ErrForbidden
+				}
+				return nil, err
+			}
+			capability := revenue.WorkspaceView
+			if access == console.WorkspaceWrite {
+				capability = revenue.WorkspaceContribute
+			}
+			if _, err := revenueSvc.RequireWorkspaceCapability(ctx, user, workspace, capability); err != nil {
+				if errors.Is(err, revenue.ErrForbidden) {
+					return nil, console.ErrForbidden
+				}
+				return nil, err
+			}
+			return workspace, nil
+		},
+	)), log)
 	entitySvc := entities.New(client, func(ctx context.Context) (entities.Scope, error) {
 		u, ok := auth.UserFromCtx(ctx)
 		if !ok {
@@ -568,14 +599,8 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		return err
 	})
 	entitiesH := entities.NewHandler(entitySvc)
-	// RFC 031 Layer-1 push sync: keep the mail index live from Gmail pushes.
-	// Ships dark behind REVENUE_MAIL_PUSH_SYNC_ENABLED.
-	if cfg.RevenueMailPushSyncEnabled {
-		revenueSvc.SetMailSyncer(gmailExec)
-		cloudEventsH.SetGmailHistoryConsumer(func(ctx context.Context, owner *ent.User, historyID uint64) error {
-			return revenueSvc.SyncMailFromPush(ctx, owner, historyID)
-		})
-	}
+	// Gmail history synchronization is a required part of the Google source.
+	revenueSvc.SetMailSyncer(gmailExec)
 	// RFC 031: disconnecting Google purges the mail index (Layers 1-3);
 	// Layer-4 evidence quotes survive as the user's own action history.
 	googleH.SetOnDisconnect(func(ctx context.Context, u *ent.User) error {
@@ -774,6 +799,7 @@ func mountRoutes(ctx context.Context, srv *server.Server, cfg appconfig.Config, 
 		r.Use(authMW.RequireJWT)
 		r.Use(rl.PerUser(ratelimit.GroupDefault, 600)) // sanity bucket
 		entitiesH.Mount(r)
+		consoleH.Mount(r)
 
 		r.Get("/v1/me", billingH.Me)
 		// Account deletion is irreversible and calls Stripe and WorkOS: a tight

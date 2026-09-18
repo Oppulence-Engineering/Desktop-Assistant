@@ -132,6 +132,27 @@ func (RevenueWorkspace) Edges() []ent.Edge {
 		edge.To("scans", RevenueLeakScan.Type).
 			StorageKey(edge.Column("revenue_workspace_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("communication_interactions", CommunicationInteraction.Type).
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("communication_participants", CommunicationParticipant.Type).
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("communication_attachments", CommunicationAttachment.Type).
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("communication_sync_cursors", CommunicationSyncCursor.Type).
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("communication_privacy_policies", CommunicationPrivacyPolicy.Type).
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("communication_privacy_rules", CommunicationPrivacyRule.Type).
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("communication_share_grants", CommunicationShareGrant.Type).
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("relationship_participants", RelationshipParticipant.Type).
 			StorageKey(edge.Column("revenue_workspace_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
@@ -202,6 +223,9 @@ func (RevenueWorkspace) Edges() []ent.Edge {
 			StorageKey(edge.Column("revenue_workspace_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("person_merge_candidates", PersonMergeCandidate.Type).
+			StorageKey(edge.Column("revenue_workspace_id")).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("console_resources", ConsoleResource.Type).
 			StorageKey(edge.Column("revenue_workspace_id")).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}

@@ -27,7 +27,7 @@ const ChangelogEntrySchema = z.object({
   url: z.string(),
 });
 
-const ChangelogResponseSchema = z.object({
+export const ChangelogResponseSchema = z.object({
   entries: ChangelogEntrySchema.array().default([]),
 });
 

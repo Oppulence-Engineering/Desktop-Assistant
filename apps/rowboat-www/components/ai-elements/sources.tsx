@@ -5,8 +5,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@oppulence/ui/components/collapsible";
+import { Label } from "@oppulence/ui/components/label";
 import { cn } from "@/lib/utils";
-import { Book, CaretDown } from "@phosphor-icons/react";
+import { Book, CaretDown } from "@/lib/icons";
 import type { ComponentProps } from "react";
 
 export type SourcesProps = ComponentProps<"div">;
@@ -50,7 +51,7 @@ export const Source = ({ href, title, children, ...props }: SourceProps) => (
     {children ?? (
       <>
         <Book className="h-4 w-4" />
-        <span className="block font-medium">{title}</span>
+        <Label className="block font-medium">{title}</Label>
       </>
     )}
   </a>

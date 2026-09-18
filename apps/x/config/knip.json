@@ -33,7 +33,8 @@
     },
     "apps/renderer": {
       "entry": ["src/main.tsx", "src/dictation.tsx", "src/indicator.tsx"],
-      "project": ["src/**/*.{ts,tsx}"]
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignoreDependencies": ["react-day-picker"]
     },
     "packages/core": {
       "entry": ["src/index.ts", "src/**/*.test.ts", "vitest.config.ts"],

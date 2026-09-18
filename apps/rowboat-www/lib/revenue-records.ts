@@ -23,6 +23,34 @@ const nodeText = (node: unknown): string => {
 export const plateText = (value: unknown) =>
   Array.isArray(value) ? value.map(nodeText).join("\n").trimEnd() : "";
 
+/**
+ * Runs large relationship fan-outs with bounded pressure while retaining each
+ * result position so callers can report and recover from partial failures.
+ */
+export async function mapSettledWithConcurrency<Input, Output>(
+  inputs: readonly Input[],
+  concurrency: number,
+  worker: (input: Input) => Promise<Output>,
+): Promise<PromiseSettledResult<Output>[]> {
+  if (!Number.isInteger(concurrency) || concurrency < 1) {
+    throw new RangeError("concurrency must be a positive integer");
+  }
+  const results: PromiseSettledResult<Output>[] = new Array(inputs.length);
+  let nextIndex = 0;
+  const run = async () => {
+    while (nextIndex < inputs.length) {
+      const index = nextIndex++;
+      try {
+        results[index] = { status: "fulfilled", value: await worker(inputs[index]) };
+      } catch (reason) {
+        results[index] = { status: "rejected", reason };
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, inputs.length) }, run));
+  return results;
+}
+
 export function collapseWorkspaceNotes(
   relationships: RevenueRelationship[],
   timelines: RelationshipObservation[][],

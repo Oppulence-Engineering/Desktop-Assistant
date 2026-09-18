@@ -1,11 +1,13 @@
 "use client";
 
-import DesktopIcon from "@mui/icons-material/DesktopWindowsOutlined";
-import DownloadIcon from "@mui/icons-material/DownloadOutlined";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMoreOutlined";
+import { CaretDown, DownloadSimple, Monitor } from "@/lib/icons";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 
+import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
+import { ItemMedia } from "@oppulence/ui/components/item";
+import { MarketingSpan, marketingSpanClass } from "./marketing-primitives";
 import { cn } from "@/lib/utils";
 
 type OperatingSystem = "linux" | "mac" | "windows";
@@ -245,25 +247,35 @@ export function DesktopDownloadChooser({
   return (
     <div className="mt-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <button
+        <Button
           aria-controls={panelId}
           aria-expanded={isOpen}
-          className="desktop-download-trigger linear-button-primary !h-12 !px-6 !text-[14px] sm:!w-[250px]"
+          className="desktop-download-trigger h-12 px-6 text-[14px] sm:w-[250px]"
           onClick={() => setIsOpen((current) => !current)}
           type="button"
         >
           Download {name === "Oppulence Desktop" ? "desktop app" : "Oppulence Voice"}
-          <ExpandMoreIcon aria-hidden="true" className="desktop-download-trigger-icon" />
-        </button>
-        <Link
-          className="linear-button-secondary !h-12 !w-full !px-6 !text-[14px] sm:!w-auto"
-          href="/app"
-        >
-          See account mission control
-        </Link>
-        <Link className="linear-button-ghost !h-12 !px-5 !text-[14px]" href="/product">
-          How relationship intelligence works <span className="ml-2 text-foreground/40">→</span>
-        </Link>
+          <CaretDown
+            aria-hidden="true"
+            className="app-icon desktop-download-trigger-icon"
+            weight="regular"
+          />
+        </Button>
+        <Button asChild className="h-12 w-full px-6 text-[14px] sm:w-auto" variant="outline">
+          <Link href="/app">See account mission control</Link>
+        </Button>
+        <Button asChild className="h-12 px-5 text-[14px]" variant="ghost">
+          <Link href="/product">
+            How relationship intelligence works{" "}
+            <Badge
+              aria-hidden="true"
+              className="ml-2 rounded-none border-0 bg-transparent p-0 font-normal text-foreground/40 shadow-none"
+              variant="ghost"
+            >
+              →
+            </Badge>
+          </Link>
+        </Button>
       </div>
       <p className="mt-3 font-mono text-xs text-[var(--linear-text-tertiary)]">
         macOS · Windows · Linux · choose the installer for your device
@@ -274,7 +286,7 @@ export function DesktopDownloadChooser({
           <header className="desktop-download-panel-header">
             <p className="desktop-download-eyebrow">[{app} app · latest release]</p>
             <div className="desktop-download-panel-title">
-              <DownloadIcon aria-hidden="true" />
+              <DownloadSimple aria-hidden="true" className="app-icon" weight="regular" />
               <h2>Download {name}</h2>
             </div>
             <p>{blurb}</p>
@@ -290,10 +302,10 @@ export function DesktopDownloadChooser({
               const isSelected = selectedOperatingSystem === group.operatingSystem;
 
               return (
-                <button
+                <Button
                   aria-controls={`${panelId}-${group.operatingSystem}-panel`}
                   aria-selected={isSelected}
-                  className="desktop-download-tab"
+                  className="desktop-download-tab h-auto justify-start gap-2 rounded-none px-3 py-2"
                   id={`${panelId}-${group.operatingSystem}-tab`}
                   key={group.operatingSystem}
                   onKeyDown={(event) => handleTabKeyDown(event, downloadGroups.indexOf(group))}
@@ -304,11 +316,17 @@ export function DesktopDownloadChooser({
                   role="tab"
                   tabIndex={isSelected ? 0 : -1}
                   type="button"
+                  variant={isSelected ? "secondary" : "ghost"}
                 >
-                  <DesktopIcon aria-hidden="true" />
-                  <span>{group.title}</span>
+                  <Monitor aria-hidden="true" className="app-icon" weight="regular" />
+                  <Badge
+                    className="rounded-none border-0 bg-transparent p-0 text-xs font-medium shadow-none"
+                    variant="ghost"
+                  >
+                    {group.title}
+                  </Badge>
                   {isDetected ? <em>{detectionLabel(detection)}</em> : null}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -320,7 +338,12 @@ export function DesktopDownloadChooser({
             role="tabpanel"
           >
             <div className="desktop-download-platform-heading">
-              <span>Choose an installer</span>
+              <Badge
+                className="rounded-none border-0 bg-transparent p-0 font-mono text-[10px] uppercase shadow-none"
+                variant="ghost"
+              >
+                Choose an installer
+              </Badge>
               <strong>{selectedGroup.title}</strong>
             </div>
 
@@ -344,13 +367,15 @@ export function DesktopDownloadChooser({
                     key={option.platform}
                     prefetch={false}
                   >
-                    <DownloadIcon aria-hidden="true" />
-                    <span className="desktop-download-option-copy">
+                    <DownloadSimple aria-hidden="true" className="app-icon" weight="regular" />
+                    <ItemMedia className="desktop-download-option-copy" variant="default">
                       <strong>{option.label}</strong>
                       <small>{option.detail}</small>
-                    </span>
+                    </ItemMedia>
                     {isRecommended ? (
-                      <span className="desktop-download-device">Recommended</span>
+                      <Badge className="desktop-download-device rounded-none" variant="outline">
+                        Recommended
+                      </Badge>
                     ) : null}
                   </Link>
                 );

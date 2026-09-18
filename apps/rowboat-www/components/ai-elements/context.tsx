@@ -1,7 +1,9 @@
 "use client";
 
+import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@oppulence/ui/components/hover-card";
+import { Label } from "@oppulence/ui/components/label";
 import { Progress } from "@oppulence/ui/components/progress";
 import { cn } from "@/lib/utils";
 import type { LanguageModelUsage } from "ai";
@@ -105,7 +107,7 @@ export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
     <HoverCardTrigger asChild>
       {children ?? (
         <Button type="button" variant="ghost" {...props}>
-          <span className="font-medium text-muted-foreground">{renderedPercent}</span>
+          <Label className="font-medium text-muted-foreground">{renderedPercent}</Label>
           <ContextIcon />
         </Button>
       )}
@@ -198,8 +200,10 @@ export const ContextContentFooter = ({
     >
       {children ?? (
         <>
-          <span className="text-muted-foreground">Total cost</span>
-          <span>{totalCost}</span>
+          <Label className="font-normal text-muted-foreground">Total cost</Label>
+          <Badge className="rounded-none font-normal" variant="outline">
+            {totalCost}
+          </Badge>
         </>
       )}
     </div>
@@ -233,7 +237,7 @@ export const ContextInputUsage = ({ className, children, ...props }: ContextInpu
 
   return (
     <div className={cn("flex items-center justify-between text-xs", className)} {...props}>
-      <span className="text-muted-foreground">Input</span>
+      <Label className="font-normal text-muted-foreground">Input</Label>
       <TokensWithCost costText={inputCostText} tokens={inputTokens} />
     </div>
   );
@@ -266,7 +270,7 @@ export const ContextOutputUsage = ({ className, children, ...props }: ContextOut
 
   return (
     <div className={cn("flex items-center justify-between text-xs", className)} {...props}>
-      <span className="text-muted-foreground">Output</span>
+      <Label className="font-normal text-muted-foreground">Output</Label>
       <TokensWithCost costText={outputCostText} tokens={outputTokens} />
     </div>
   );
@@ -303,7 +307,7 @@ export const ContextReasoningUsage = ({
 
   return (
     <div className={cn("flex items-center justify-between text-xs", className)} {...props}>
-      <span className="text-muted-foreground">Reasoning</span>
+      <Label className="font-normal text-muted-foreground">Reasoning</Label>
       <TokensWithCost costText={reasoningCostText} tokens={reasoningTokens} />
     </div>
   );
@@ -336,19 +340,21 @@ export const ContextCacheUsage = ({ className, children, ...props }: ContextCach
 
   return (
     <div className={cn("flex items-center justify-between text-xs", className)} {...props}>
-      <span className="text-muted-foreground">Cache</span>
+      <Label className="font-normal text-muted-foreground">Cache</Label>
       <TokensWithCost costText={cacheCostText} tokens={cacheTokens} />
     </div>
   );
 };
 
 const TokensWithCost = ({ tokens, costText }: { tokens?: number; costText?: string }) => (
-  <span>
+  <Badge className="rounded-none font-normal" variant="outline">
     {tokens === undefined
       ? "—"
       : new Intl.NumberFormat("en-US", {
           notation: "compact",
         }).format(tokens)}
-    {costText ? <span className="ml-2 text-muted-foreground">• {costText}</span> : null}
-  </span>
+    {costText ? (
+      <Label className="ml-2 font-normal text-muted-foreground">• {costText}</Label>
+    ) : null}
+  </Badge>
 );

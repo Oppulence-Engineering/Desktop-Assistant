@@ -2,10 +2,12 @@ package googleapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -22,6 +24,54 @@ type CalendarQuery struct {
 	Text      string // free-text q= filter
 	Limit     int
 	PageToken string
+}
+
+// ErrCalendarSyncTokenExpired is returned when Google answers 410 Gone. The
+// token is permanently invalid and callers must perform a fresh bounded list.
+var ErrCalendarSyncTokenExpired = errors.New("calendar: sync token expired")
+
+// CalendarChanges is one page of the Calendar incremental feed. A sync token
+// is emitted only on the final page, exactly as required by events.list.
+type CalendarChanges struct {
+	Events        []CalendarEvent
+	NextPageToken string
+	NextSyncToken string
+}
+
+// ListCalendarChanges reads Calendar's incremental feed. Push notifications
+// intentionally carry no event data; they only cause this method to run.
+// showDeleted retains cancellations, and singleEvents=false preserves
+// recurrence masters and exceptions instead of flattening away their identity.
+func (c *Client) ListCalendarChanges(ctx context.Context, token, syncToken, pageToken, timeMin string) (CalendarChanges, error) {
+	q := url.Values{}
+	q.Set("showDeleted", "true")
+	q.Set("singleEvents", "false")
+	q.Set("maxResults", "250")
+	if syncToken != "" {
+		q.Set("syncToken", syncToken)
+	} else if timeMin != "" {
+		q.Set("timeMin", timeMin)
+	}
+	if pageToken != "" {
+		q.Set("pageToken", pageToken)
+	}
+	var list struct {
+		Items         []calendarAPIEvent `json:"items"`
+		NextPageToken string             `json:"nextPageToken"`
+		NextSyncToken string             `json:"nextSyncToken"`
+	}
+	if err := c.GetJSON(ctx, token, c.cfg.CalendarBaseURL+"/calendars/primary/events", q, &list); err != nil {
+		if strings.Contains(err.Error(), "returned 410") {
+			return CalendarChanges{}, ErrCalendarSyncTokenExpired
+		}
+		return CalendarChanges{}, fmt.Errorf("calendar incremental events.list: %w", err)
+	}
+	out := CalendarChanges{NextPageToken: list.NextPageToken, NextSyncToken: list.NextSyncToken}
+	out.Events = make([]CalendarEvent, 0, len(list.Items))
+	for _, item := range list.Items {
+		out.Events = append(out.Events, item.toCalendarEvent())
+	}
+	return out, nil
 }
 
 // CalendarEvent is the narrow read shape the runtime's connector tool returns

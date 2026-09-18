@@ -57,9 +57,14 @@ describe("WEB020 React component contracts", () => {
       const basename = path.basename(filename, ".tsx");
       expect(basename).toMatch(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/);
       expect(source).not.toMatch(/export\s+default/);
-      expect(source).toContain("data-slot=");
       if (source.startsWith('"use client"')) expect(source).toContain('import "client-only"');
       expect(fs.existsSync(filename.replace(/\.tsx$/, ".test.tsx"))).toBe(true);
+      // Effect-only handlers return null with no JSX tree. data-slot is for
+      // visual primitives; angle brackets in this file are TypeScript generics.
+      if (/\breturn null;/.test(source) && !/return\s*\(/.test(source)) {
+        continue;
+      }
+      expect(source, relativeAppPath(filename)).toContain("data-slot=");
     }
   });
 

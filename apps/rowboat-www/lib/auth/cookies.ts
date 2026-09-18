@@ -22,6 +22,18 @@ const PKCE_MAX_AGE_SECONDS = 60 * 30;
 
 type CookiePayload = DashboardSessionCookie | WorkOSPKCECookie;
 
+/**
+ * A refreshable session remains authenticated after its short-lived access
+ * token expires. Keeping this predicate beside the cookie model prevents the
+ * proxy, layouts, and auth routes from applying contradictory expiry rules.
+ */
+export function isSessionUsable(
+  session: DashboardSessionCookie | null,
+  nowSeconds = Math.floor(Date.now() / 1000),
+): session is DashboardSessionCookie {
+  return Boolean(session && (session.expiresAt > nowSeconds || session.refreshToken));
+}
+
 function base64url(input: Buffer | string): string {
   return Buffer.from(input).toString("base64url");
 }

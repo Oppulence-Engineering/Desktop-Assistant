@@ -1,10 +1,18 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowClockwise, CircleNotch } from "@phosphor-icons/react";
+import { ArrowClockwise } from "@/lib/icons";
 
 import { Button } from "@oppulence/ui/components/button";
-import { loadBrowserSession, loginURL } from "@/lib/auth/client";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@oppulence/ui/components/empty";
+import { Spinner } from "@oppulence/ui/components/spinner";
+import { loadBrowserSession, loginURL, SessionUnavailableError } from "@/lib/auth/client";
 import type { BrowserSessionResponse } from "@/lib/auth/schemas";
 
 type AuthState =
@@ -25,8 +33,17 @@ export function useAuthSession() {
   return value.session;
 }
 
-export function AuthGate({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ status: "loading" });
+export function AuthGate({
+  children,
+  initialSession,
+}: {
+  children: ReactNode;
+  initialSession: Extract<BrowserSessionResponse, { authenticated: true }>;
+}) {
+  const [state, setState] = useState<AuthState>({
+    status: "authenticated",
+    session: initialSession,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -40,14 +57,19 @@ export function AuthGate({ children }: { children: ReactNode }) {
         }
         setState({ status: "authenticated", session });
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (cancelled) return;
+        if (error instanceof SessionUnavailableError) {
+          // Keep the server-verified session when refresh is temporarily down.
+          setState({ status: "authenticated", session: initialSession });
+          return;
+        }
         setState({ status: "error" });
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialSession]);
 
   const contextValue = useMemo(() => (state.status === "authenticated" ? state : null), [state]);
 
@@ -59,25 +81,27 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   return (
     <main className="flex min-h-svh items-center justify-center bg-background px-6">
-      <div className="flex w-full max-w-sm flex-col items-center gap-4 text-center">
+      <Empty className="w-full max-w-sm border-0">
         {state.status === "error" ? (
           <>
-            <div className="space-y-1">
-              <h1 className="text-base font-medium">We couldn’t verify your session</h1>
-              <p className="text-sm text-muted-foreground">Check your connection and try again.</p>
-            </div>
-            <Button onClick={() => window.location.reload()}>
-              <ArrowClockwise />
-              Try again
-            </Button>
+            <EmptyHeader>
+              <EmptyTitle className="text-base">We couldn’t verify your session</EmptyTitle>
+              <EmptyDescription>Check your connection and try again.</EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button onClick={() => window.location.reload()}>
+                <ArrowClockwise />
+                Try again
+              </Button>
+            </EmptyContent>
           </>
         ) : (
-          <>
-            <CircleNotch className="h-5 w-5 animate-spin text-muted-foreground" />
-            <div className="text-sm text-muted-foreground">Checking session</div>
-          </>
+          <EmptyHeader>
+            <Spinner className="size-5 text-muted-foreground" />
+            <EmptyDescription>Checking session</EmptyDescription>
+          </EmptyHeader>
         )}
-      </div>
+      </Empty>
     </main>
   );
 }

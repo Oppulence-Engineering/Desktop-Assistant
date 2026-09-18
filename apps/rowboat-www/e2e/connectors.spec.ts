@@ -5,11 +5,12 @@ const fakeAPIOrigin = "http://127.0.0.1:4318";
 
 test.describe.configure({ mode: "serial" });
 
-async function authenticate(page: import("@playwright/test").Page) {
-  await page.goto(
-    `/api/auth/workos/login?return_to=${encodeURIComponent("/app/settings?settings=connections")}`,
-  );
-  await expect(page).toHaveURL(/\/app\/settings\?settings=connections/);
+async function authenticate(
+  page: import("@playwright/test").Page,
+  returnTo = "/app/settings?settings=connections",
+) {
+  await page.goto(`/api/auth/workos/login?return_to=${encodeURIComponent(returnTo)}`);
+  await expect(page).toHaveURL(new RegExp(`${returnTo.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`));
 }
 
 test.beforeEach(async ({ request }) => {
@@ -42,6 +43,24 @@ test("settings Connect completes the authenticated hosted claim and shows active
   });
   expect(state.consumedTickets).toEqual(["ticket-1"]);
   expect(state.lastClaimAuthorization).toMatch(/^Bearer /);
+});
+
+test("Open Promises returns from Google, syncs evidence, and starts one audit", async ({
+  page,
+  request,
+}) => {
+  await authenticate(page, "/app/report");
+  await request.get(`${fakeAPIOrigin}/__test/google-disconnect`);
+  await page.goto("/app/report");
+
+  await page.getByRole("button", { name: "Connect Gmail & Calendar" }).click();
+
+  await expect(page).toHaveURL(/\/app\/report\?scan=/);
+  await expect(page.locator("body")).toContainText("Send the revised proposal");
+  await expect(page.getByText(/Syncing Google evidence|Google evidence is live/)).toBeVisible();
+  await expect(page).not.toHaveURL(/settings/);
+  const state = await (await request.get(`${fakeAPIOrigin}/__test/state`)).json();
+  expect(state.lastScanLookbackDays).toBe(180);
 });
 
 test("callback replay and restart outcomes fail safely without retaining the ticket", async ({

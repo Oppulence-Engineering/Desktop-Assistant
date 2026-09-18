@@ -14,7 +14,6 @@ import {
   ArrowClockwise,
   Buildings,
   Check,
-  CircleNotch,
   ClockCounterClockwise,
   DownloadSimple,
   EnvelopeSimple,
@@ -25,12 +24,23 @@ import {
   Sparkle,
   Warning,
   X,
-} from "@phosphor-icons/react";
+} from "@/lib/icons";
 
 import { EmptyBlock, errMessage, ListSkeleton, ModeChip } from "@/components/revenue/shared";
 import { RelationshipGraphWorkspace } from "@/components/revenue/relationship-graph";
+import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue";
+import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
+import { Label } from "@oppulence/ui/components/label";
+import { Spinner } from "@oppulence/ui/components/spinner";
+import {
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@oppulence/ui/components/table";
 import { Checkbox } from "@oppulence/ui/components/checkbox";
 import { DateTimePicker } from "@oppulence/ui/components/date-time-picker";
 import {
@@ -126,6 +136,7 @@ import type {
   ResearchEstimate,
   ResearchStatus,
 } from "@/types/revenue";
+import { cn } from "@/lib/utils";
 
 const LIFECYCLE_OPTIONS = [
   "prospect",
@@ -334,7 +345,7 @@ function RelationshipEnrichment({
           </Button>
         ) : status?.available && status.reason === "consent_required" ? (
           <Button type="button" size="sm" disabled={busy} onClick={() => void changeConsent(true)}>
-            {busy ? <CircleNotch className="animate-spin" /> : <Sparkle />}
+            {busy ? <Spinner className="size-4" /> : <Sparkle />}
             Allow cited enrichment
           </Button>
         ) : null}
@@ -365,7 +376,7 @@ function RelationshipEnrichment({
           companyEstimate &&
           (personEstimate.people ?? 0) + (companyEstimate.companies ?? 0) > 0 ? (
             <Button type="button" size="sm" disabled={busy} onClick={() => void run()}>
-              {busy ? <CircleNotch className="animate-spin" /> : <Sparkle />}
+              {busy ? <Spinner className="size-4" /> : <Sparkle />}
               Enrich companies &amp; people
             </Button>
           ) : null}
@@ -489,12 +500,16 @@ export function RelationshipsView({
   return (
     <div className="flex min-h-full flex-col">
       <div className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-border px-3">
-        <button
-          className="flex h-8 items-center gap-2 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-primary hover:bg-background-100"
+        <Button
+          className="h-8 rounded-none border border-border bg-background px-3 text-[13px] font-medium text-primary hover:bg-background-100"
           type="button"
+          variant="ghost"
         >
-          <Buildings /> All companies <span className="text-primary/40">{companies.length}</span>
-        </button>
+          <Buildings /> All companies{" "}
+          <Badge className="font-normal text-primary/40" variant="secondary">
+            {companies.length}
+          </Badge>
+        </Button>
         <div className="flex items-center gap-2">
           <ToggleGroup
             type="single"
@@ -649,18 +664,22 @@ export function RelationshipsView({
             </div>
           ) : companies.length === 0 ? (
             <EmptyBlock
-              icon={<Buildings className="size-6" />}
-              title="No matching companies"
               body={
                 hasConnectedSource
-                  ? "Gmail is connected. Run the 90-day audit from Commitments to discover companies and the people behind each conversation."
+                  ? `Gmail is connected. Run the ${REVENUE_EVIDENCE_LOOKBACK_LABEL} audit from Commitments to discover companies and the people behind each conversation.`
                   : "Connect Gmail to discover companies from real conversations, or add one by hand."
               }
+              image="companies"
+              learnMore={[
+                { label: "One model per account" },
+                { label: "People roll up to companies" },
+              ]}
+              title="Companies"
             >
               <Button
-                size="sm"
-                className="bg-[#3478f6] text-white"
+                className="bg-[#3478f6] text-white hover:bg-[#2f6fe6]"
                 onClick={() => setCreating(true)}
+                size="sm"
               >
                 <Plus /> Add company
               </Button>
@@ -671,28 +690,26 @@ export function RelationshipsView({
                 className="w-full min-w-[960px] table-fixed border-collapse text-left font-sans tracking-[-0.15px]"
                 aria-label="Companies"
               >
-                <thead className="sticky top-0 z-10 bg-background">
-                  <tr className="h-10 border-b border-border text-[13px] font-medium text-primary/55">
-                    <th className="sticky left-0 z-20 w-10 border-r border-border bg-background px-3">
-                      <input
-                        aria-label="Select all companies"
-                        className="size-4 accent-[#3478f6]"
-                        type="checkbox"
-                      />
-                    </th>
-                    <th className="sticky left-10 z-20 w-[200px] border-r border-border bg-background px-3">
+                <TableHeader className="sticky top-0 z-10 bg-background [&_tr]:border-border">
+                  <TableRow className="h-10 border-b text-[13px] font-medium text-primary/55 hover:bg-transparent">
+                    <TableHead className="sticky left-0 z-20 h-10 w-10 border-r bg-background px-3">
+                      <Checkbox aria-label="Select all companies" className="size-4" />
+                    </TableHead>
+                    <TableHead className="sticky left-10 z-20 h-10 w-[200px] border-r bg-background px-3">
                       <div className="flex items-center justify-between gap-2">
-                        <span>Company</span>
+                        <Label className="font-normal">Company</Label>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button
+                            <Button
                               aria-label="Add column"
-                              className="flex size-6 items-center justify-center text-primary/35 hover:bg-background-100 hover:text-primary"
+                              className="size-6 rounded-none p-0 text-primary/35 hover:bg-background-100 hover:text-primary"
                               title="Add column"
                               type="button"
+                              size="icon-xs"
+                              variant="ghost"
                             >
                               <Plus className="size-3.5" />
-                            </button>
+                            </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start" className="app-shell rounded-none">
                             {OPTIONAL_COMPANY_COLUMNS.map((column) => (
@@ -714,80 +731,90 @@ export function RelationshipsView({
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
-                    </th>
-                    <th className="w-32 border-r border-border px-3">Last interaction</th>
-                    <th className="w-40 border-r border-border px-3">Email threads</th>
-                    <th className="w-[136px] border-r border-border px-3">Categories</th>
-                    <th className="w-44 border-r border-border px-3">Domains</th>
-                    <th className="w-[120px] border-r border-border px-3">LinkedIn</th>
+                    </TableHead>
+                    <TableHead className="h-10 w-32 border-r px-3">Last interaction</TableHead>
+                    <TableHead className="h-10 w-40 border-r px-3">Email threads</TableHead>
+                    <TableHead className="h-10 w-[136px] border-r px-3">Categories</TableHead>
+                    <TableHead className="h-10 w-44 border-r px-3">Domains</TableHead>
+                    <TableHead className="h-10 w-[120px] border-r px-3">LinkedIn</TableHead>
                     {optionalColumns.includes("people") ? (
-                      <th className="w-20 border-r border-border px-3 text-center">People</th>
+                      <TableHead className="h-10 w-20 border-r px-3 text-center">People</TableHead>
                     ) : null}
                     {optionalColumns.includes("emails") ? (
-                      <th className="w-20 border-r border-border px-3 text-center">Emails</th>
+                      <TableHead className="h-10 w-20 border-r px-3 text-center">Emails</TableHead>
                     ) : null}
                     {optionalColumns.includes("health") ? (
-                      <th className="w-28 border-r border-border px-3">Health</th>
+                      <TableHead className="h-10 w-28 border-r px-3">Health</TableHead>
                     ) : null}
                     {optionalColumns.includes("nextAction") ? (
-                      <th className="w-56 border-r border-border px-3">Next action</th>
+                      <TableHead className="h-10 w-56 border-r px-3">Next action</TableHead>
                     ) : null}
                     {optionalColumns.includes("headquarters") ? (
-                      <th className="w-48 border-r border-border px-3">Headquarters</th>
+                      <TableHead className="h-10 w-48 border-r px-3">Headquarters</TableHead>
                     ) : null}
                     {optionalColumns.includes("employees") ? (
-                      <th className="w-40 border-r border-border px-3">Employees</th>
+                      <TableHead className="h-10 w-40 border-r px-3">Employees</TableHead>
                     ) : null}
                     {optionalColumns.includes("funding") ? (
-                      <th className="w-64 border-r border-border px-3">Funding</th>
+                      <TableHead className="h-10 w-64 border-r px-3">Funding</TableHead>
                     ) : null}
                     {optionalColumns.includes("revenue") ? (
-                      <th className="w-44 border-r border-border px-3">Revenue</th>
+                      <TableHead className="h-10 w-44 border-r px-3">Revenue</TableHead>
                     ) : null}
                     {optionalColumns.includes("signals") ? (
-                      <th className="w-72 border-r border-border px-3">Growth signals</th>
+                      <TableHead className="h-10 w-72 border-r px-3">Growth signals</TableHead>
                     ) : null}
-                  </tr>
-                </thead>
-                <tbody>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {companies.map((relationship) => (
-                    <tr
+                    <TableRow
                       key={relationship.id}
-                      className="group h-9 border-b border-border hover:bg-background-100/70"
+                      className="group h-9 border-border hover:bg-background-100/70"
                     >
-                      <td className="sticky left-0 z-[5] border-r border-border bg-background px-3 group-hover:bg-background-100">
-                        <input
+                      <TableCell className="sticky left-0 z-[5] border-r bg-background px-3 group-hover:bg-background-100">
+                        <Checkbox
                           aria-label={`Select ${relationship.displayName}`}
-                          className="size-4 accent-[#3478f6]"
-                          type="checkbox"
+                          className="size-4"
                         />
-                      </td>
-                      <td className="sticky left-10 z-[5] border-r border-border bg-background px-3 group-hover:bg-background-100">
-                        <button
-                          className="flex w-full items-center gap-2 truncate text-left text-sm font-medium text-primary"
+                      </TableCell>
+                      <TableCell className="sticky left-10 z-[5] border-r bg-background px-3 group-hover:bg-background-100">
+                        <Button
+                          className="flex h-auto w-full items-center justify-start gap-2 truncate px-0 py-0 text-left text-sm font-medium text-primary hover:bg-transparent"
                           onClick={() => setDetail(relationship.id)}
                           type="button"
+                          variant="ghost"
                         >
-                          <span className="flex size-6 shrink-0 items-center justify-center rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/60">
-                            {companyName(relationship).slice(0, 2).toUpperCase()}
-                          </span>
-                          <span className="truncate">{companyName(relationship)}</span>
-                        </button>
-                      </td>
-                      <td className="border-r border-border px-3 text-[13px] text-primary/50">
+                          <Avatar className="size-6 rounded-none" size="sm">
+                            <AvatarFallback className="rounded-none border border-border bg-background-100 text-[10px] font-semibold text-primary/60">
+                              {companyName(relationship).slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <Label className="truncate font-normal">
+                            {companyName(relationship)}
+                          </Label>
+                        </Button>
+                      </TableCell>
+                      <TableCell className="border-r px-3 text-[13px] text-primary/50">
                         {relationship.lastTouchAt ? relativeTime(relationship.lastTouchAt) : "—"}
-                      </td>
-                      <td className="border-r border-border px-3">
-                        <span className="text-[13px] text-primary/55">
+                      </TableCell>
+                      <TableCell className="border-r px-3">
+                        <Badge
+                          className="text-[13px] font-normal text-primary/55"
+                          variant="secondary"
+                        >
                           {interactionCountLabel(relationship.emailThreadCount)}
-                        </span>
-                      </td>
-                      <td className="border-r border-border px-3">
-                        <span className="border border-border bg-background-100 px-2 py-1 text-[11px] capitalize text-primary/60">
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="border-r px-3">
+                        <Badge
+                          className="bg-background-100 text-[11px] capitalize text-primary/60"
+                          variant="outline"
+                        >
                           {relationship.categories?.[0] ?? "—"}
-                        </span>
-                      </td>
-                      <td className="truncate border-r border-border px-3 text-[13px]">
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="truncate border-r px-3 text-[13px]">
                         {relationship.accountDomain ? (
                           <a
                             className="text-primary/65 underline-offset-2 hover:text-primary hover:underline"
@@ -798,10 +825,12 @@ export function RelationshipsView({
                             {relationship.accountDomain}
                           </a>
                         ) : (
-                          <span className="text-primary/35">—</span>
+                          <Badge className="font-normal text-primary/35" variant="ghost">
+                            —
+                          </Badge>
                         )}
-                      </td>
-                      <td className="border-r border-border px-3 text-[13px]">
+                      </TableCell>
+                      <TableCell className="border-r px-3 text-[13px]">
                         <a
                           className="text-primary/55 underline-offset-2 hover:text-primary hover:underline"
                           href={companyLinkedInURL(
@@ -819,63 +848,67 @@ export function RelationshipsView({
                             ? "View profile"
                             : "Find profile"}
                         </a>
-                      </td>
+                      </TableCell>
                       {optionalColumns.includes("people") ? (
-                        <td className="border-r border-border px-3 text-center text-[13px] text-primary/60">
+                        <TableCell className="border-r px-3 text-center text-[13px] text-primary/60">
                           {relationship.peopleCount ?? 0}
-                        </td>
+                        </TableCell>
                       ) : null}
                       {optionalColumns.includes("emails") ? (
-                        <td className="border-r border-border px-3 text-center text-[13px] text-primary/60">
+                        <TableCell className="border-r px-3 text-center text-[13px] text-primary/60">
                           {relationship.emailThreadCount ?? 0}
-                        </td>
+                        </TableCell>
                       ) : null}
                       {optionalColumns.includes("health") ? (
-                        <td className="border-r border-border px-3">
-                          <span
-                            className={`text-[13px] capitalize ${HEALTH_TONE[relationship.health] ?? HEALTH_TONE.unknown}`}
+                        <TableCell className="border-r px-3">
+                          <Badge
+                            className={cn(
+                              "text-[13px] font-normal capitalize",
+                              HEALTH_TONE[relationship.health] ?? HEALTH_TONE.unknown,
+                            )}
+                            variant="outline"
                           >
                             {humanize(relationship.health)}
-                          </span>
-                        </td>
+                          </Badge>
+                        </TableCell>
                       ) : null}
                       {optionalColumns.includes("nextAction") ? (
-                        <td className="truncate border-r border-border px-3 text-[13px] text-primary/60">
+                        <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
                           {relationship.nextAction ||
                             relationship.stateReason ||
                             (relationship.openActions
                               ? `${relationship.openActions} open action${relationship.openActions === 1 ? "" : "s"}`
                               : "No open action")}
-                        </td>
+                        </TableCell>
                       ) : null}
                       {optionalColumns.includes("headquarters") ? (
-                        <td className="truncate border-r border-border px-3 text-[13px] text-primary/60">
+                        <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
                           {relationship.companyEnrichmentData?.headquarters || "—"}
-                        </td>
+                        </TableCell>
                       ) : null}
                       {optionalColumns.includes("employees") ? (
-                        <td className="truncate border-r border-border px-3 text-[13px] text-primary/60">
+                        <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
                           {relationship.companyEnrichmentData?.employee_range || "—"}
-                        </td>
+                        </TableCell>
                       ) : null}
                       {optionalColumns.includes("funding") ? (
-                        <td className="truncate border-r border-border px-3 text-[13px] text-primary/60">
+                        <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
                           {relationship.companyEnrichmentData?.funding_summary || "—"}
-                        </td>
+                        </TableCell>
                       ) : null}
                       {optionalColumns.includes("revenue") ? (
-                        <td className="truncate border-r border-border px-3 text-[13px] text-primary/60">
+                        <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
                           {relationship.companyEnrichmentData?.revenue_range || "—"}
-                        </td>
+                        </TableCell>
                       ) : null}
                       {optionalColumns.includes("signals") ? (
-                        <td className="truncate border-r border-border px-3 text-[13px] text-primary/60">
+                        <TableCell className="truncate border-r px-3 text-[13px] text-primary/60">
                           {relationship.companyEnrichmentData?.growth_signals || "—"}
-                        </td>
+                        </TableCell>
                       ) : null}
-                    </tr>
+                    </TableRow>
                   ))}
-                </tbody>
+                </TableBody>
               </table>
             </div>
           )}
@@ -973,7 +1006,9 @@ function PortfolioAttentionQueue({
             {items.length} relationship{items.length === 1 ? "" : "s"} need review
           </h3>
         </div>
-        <span className="text-[11px] text-primary/40">Deterministic order · factors visible</span>
+        <Badge className="text-[11px] font-normal text-primary/40" variant="secondary">
+          Deterministic order · factors visible
+        </Badge>
       </div>
       <ol className="space-y-2">
         {items.slice(0, 10).map((item) => (
@@ -986,7 +1021,9 @@ function PortfolioAttentionQueue({
                 onClick={() => onOpenRelationship(item.relationshipId)}
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-primary">{item.relationshipName}</span>
+                  <Label className="text-sm font-medium text-primary">
+                    {item.relationshipName}
+                  </Label>
                   <Badge
                     variant="outline"
                     className={`rounded-none capitalize ${
@@ -1010,11 +1047,7 @@ function PortfolioAttentionQueue({
                   disabled={busy !== null}
                   onClick={() => void decide(item, "acknowledge")}
                 >
-                  {busy === `${item.id}:acknowledge` ? (
-                    <CircleNotch className="animate-spin" />
-                  ) : (
-                    <Check />
-                  )}{" "}
+                  {busy === `${item.id}:acknowledge` ? <Spinner className="size-4" /> : <Check />}{" "}
                   Review
                 </Button>
                 <Button
@@ -1041,17 +1074,19 @@ function PortfolioAttentionQueue({
               <summary className="cursor-pointer">Why this rank?</summary>
               <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
                 {Object.entries(item.rankFactors).map(([factor, contribution]) => (
-                  <span key={factor}>
+                  <Badge className="font-normal" key={factor} variant="outline">
                     {relationshipLabel(factor)}: {contribution >= 0 ? "+" : ""}
                     {contribution}
-                  </span>
+                  </Badge>
                 ))}
                 {item.sourceRequirements.length > 0 ? (
-                  <span>Requires: {item.sourceRequirements.join(", ")}</span>
+                  <Badge className="font-normal" variant="secondary">
+                    Requires: {item.sourceRequirements.join(", ")}
+                  </Badge>
                 ) : null}
-                <span>
+                <Badge className="font-normal" variant="secondary">
                   State v{item.relationshipStateVersion} · detector v{item.detectorVersion}
-                </span>
+                </Badge>
               </div>
             </details>
           </li>
@@ -1091,9 +1126,9 @@ function SourceHealth({ statuses }: { statuses: RelationshipSourceStatus[] }) {
         </Badge>
       ))}
       {needsRepair > 0 ? (
-        <span className="flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+        <Badge className="gap-1 font-normal text-amber-600 dark:text-amber-400" variant="outline">
           <Warning /> {needsRepair} need attention
-        </span>
+        </Badge>
       ) : null}
     </div>
   );
@@ -1169,10 +1204,10 @@ function SourceConnectionCards({
               <details className="text-[11px] text-primary/55">
                 <summary className="cursor-pointer">Permissions and capabilities</summary>
                 <p className="mt-1">
-                  <span className="font-medium">Read:</span> {item.readScopes.join(", ")}
+                  <Label className="font-medium">Read:</Label> {item.readScopes.join(", ")}
                 </p>
                 <p className="mt-1">
-                  <span className="font-medium">On approval:</span> {item.writeScopes.join(", ")}
+                  <Label className="font-medium">On approval:</Label> {item.writeScopes.join(", ")}
                 </p>
               </details>
               {account ? (
@@ -1211,7 +1246,7 @@ function SourceConnectionCards({
                     }
                   >
                     {busy === `${item.source}:resync` ? (
-                      <CircleNotch className="animate-spin" />
+                      <Spinner className="size-4" />
                     ) : (
                       <ArrowClockwise />
                     )}{" "}
@@ -1306,16 +1341,16 @@ function IdentityReviewInbox({
                 {candidate.anchorPreview || "preview withheld"}
               </p>
             </div>
-            <span className="text-xs text-primary/45">
+            <Badge className="text-xs font-normal text-primary/45" variant="secondary">
               {candidate.evidenceCount} evidence item{candidate.evidenceCount === 1 ? "" : "s"} ·{" "}
               {Math.round(candidate.recommendationConfidence * 100)}% recommendation confidence
-            </span>
+            </Badge>
           </div>
           <div className="flex flex-wrap gap-1.5 text-[11px] text-primary/55">
             {Object.entries(candidate.impact).map(([kind, count]) => (
-              <span key={kind} className="border border-border px-2 py-1">
+              <Badge className="font-normal" key={kind} variant="outline">
                 {count} {humanize(kind)}
-              </span>
+              </Badge>
             ))}
           </div>
           <Input
@@ -1339,9 +1374,7 @@ function IdentityReviewInbox({
                 disabled={busy !== null}
                 onClick={() => void decide(candidate, decision)}
               >
-                {busy === `${candidate.id}:${decision}` ? (
-                  <CircleNotch className="animate-spin" />
-                ) : null}
+                {busy === `${candidate.id}:${decision}` ? <Spinner className="size-4" /> : null}
                 {relationshipLabel(decision)}
               </Button>
             ))}
@@ -1446,16 +1479,20 @@ function MissionControlOverview({
           {Object.values(model.evidence).map((item) => (
             <li key={item.dimension} className="border-l border-border pl-3">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium">
+                <Label className="font-medium">
                   {RELATIONSHIP_DIMENSION_LABELS[item.dimension] ??
                     relationshipLabel(item.dimension)}
-                </span>
+                </Label>
                 <Badge variant="outline" className="rounded-none font-normal">
                   {item.supported
                     ? (AUTHORITY_LABELS[item.authority ?? ""] ?? relationshipLabel(item.authority))
                     : "Explicitly incomplete"}
                 </Badge>
-                {!item.fresh ? <span className="text-amber-600">stale</span> : null}
+                {!item.fresh ? (
+                  <Badge className="font-normal text-amber-600" variant="outline">
+                    stale
+                  </Badge>
+                ) : null}
               </div>
               <p className="mt-1 text-primary/55">{item.reason || item.missingReason}</p>
               {item.supported && item.authorityRank ? (
@@ -1609,10 +1646,10 @@ function ImportedTranscriptPublisher({
           checked={disclosureConfirmed}
           onCheckedChange={(checked) => setDisclosureConfirmed(checked === true)}
         />
-        <span>
+        <Label className="font-normal">
           I confirm this transcript may be stored under workspace policy and participants were
           notified where required.
-        </span>
+        </Label>
       </label>
       <div className="flex flex-wrap gap-2">
         <Button
@@ -1764,9 +1801,9 @@ function RelationshipSheet({
             {data?.relationship.primaryEmail}
             {data?.relationship.accountDomain ? ` · ${data.relationship.accountDomain}` : ""}
           </SheetDescription>
-          <span className="ml-auto rounded-none border border-border px-3 py-1.5 text-xs text-primary">
+          <Badge className="ml-auto text-xs font-normal text-primary" variant="outline">
             Ask Oppulence
-          </span>
+          </Badge>
         </SheetHeader>
         {!data ? (
           <p className="px-4 py-6 text-sm text-primary/50">Loading living state…</p>
@@ -1775,9 +1812,11 @@ function RelationshipSheet({
             <aside className="border-b border-border px-4 py-5 md:border-r md:border-b-0">
               <section>
                 <div className="flex items-center gap-3">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-none border border-border bg-background-100 text-xs font-semibold text-primary/60">
-                    {companyName(data.relationship).slice(0, 2).toUpperCase()}
-                  </span>
+                  <Avatar className="size-10 rounded-none">
+                    <AvatarFallback className="rounded-none border border-border bg-background-100 text-xs font-semibold text-primary/60">
+                      {companyName(data.relationship).slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="min-w-0">
                     <h2 className="truncate text-lg font-semibold text-primary">
                       {companyName(data.relationship)}
@@ -1933,41 +1972,46 @@ function RelationshipSheet({
 
             <div className="min-w-0 overflow-y-auto">
               <nav className="sticky top-0 z-10 flex h-12 items-center gap-1 border-b border-border bg-background px-4 text-xs">
-                <button
+                <Button
                   type="button"
                   onClick={() => openSection("overview")}
-                  className="rounded-none bg-background-200 px-3 py-1.5 text-primary"
+                  className="h-auto rounded-none bg-background-200 px-3 py-1.5 text-primary"
+                  variant="secondary"
                 >
                   Overview
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => openSection("activity")}
-                  className="px-3 py-1.5 text-primary/50 hover:text-primary"
+                  className="h-auto rounded-none px-3 py-1.5 text-primary/50 hover:text-primary"
+                  variant="ghost"
                 >
                   Activity
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => openSection("activity")}
-                  className="px-3 py-1.5 text-primary/50 hover:text-primary"
+                  className="h-auto rounded-none px-3 py-1.5 text-primary/50 hover:text-primary"
+                  variant="ghost"
                 >
                   Emails {data.emailThreads.length}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => openSection("commitments")}
-                  className="px-3 py-1.5 text-primary/50 hover:text-primary"
+                  className="h-auto rounded-none px-3 py-1.5 text-primary/50 hover:text-primary"
+                  variant="ghost"
                 >
                   Commitments {data.commitments.length}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => openSection("people")}
-                  className="px-3 py-1.5 text-primary/50 hover:text-primary"
+                  className="h-auto rounded-none px-3 py-1.5 text-primary/50 hover:text-primary"
+                  variant="ghost"
                 >
                   People {data.participants.length}
-                </button>
+                </Button>
               </nav>
               <div id={`${id}:overview`} className="flex scroll-mt-14 flex-col gap-6 px-5 py-5">
                 <p className="text-xs font-medium text-primary/55">Highlights</p>
@@ -2138,20 +2182,22 @@ function RelationshipSheet({
                         Privacy policy · {humanize(data.intelligence.effectivePolicy.modelRoute)}
                       </summary>
                       <div className="mt-2 grid gap-1 sm:grid-cols-2">
-                        <span>Capture: {humanize(data.intelligence.effectivePolicy.capture)}</span>
-                        <span>
+                        <Badge className="justify-start font-normal" variant="secondary">
+                          Capture: {humanize(data.intelligence.effectivePolicy.capture)}
+                        </Badge>
+                        <Badge className="justify-start font-normal" variant="secondary">
                           Retention: {data.intelligence.effectivePolicy.retentionDays} days
-                        </span>
-                        <span>
+                        </Badge>
+                        <Badge className="justify-start font-normal" variant="secondary">
                           Evidence:{" "}
                           {data.intelligence.effectivePolicy.publishEvidence
                             ? "allowed"
                             : "blocked"}
-                        </span>
-                        <span>
+                        </Badge>
+                        <Badge className="justify-start font-normal" variant="secondary">
                           External share:{" "}
                           {data.intelligence.effectivePolicy.externalShare ? "allowed" : "blocked"}
-                        </span>
+                        </Badge>
                       </div>
                       <p className="mt-2 break-all text-[11px]">
                         {data.intelligence.effectivePolicy.policyVersion} ·{" "}
@@ -2198,7 +2244,7 @@ function RelationshipSheet({
                       disabled={busy === "recovery"}
                       onClick={() => void act("recovery", () => runCommitmentRecovery(id))}
                     >
-                      {busy === "recovery" ? <CircleNotch className="animate-spin" /> : null}
+                      {busy === "recovery" ? <Spinner className="size-4" /> : null}
                       Reconcile now
                     </Button>
                   </div>
@@ -2257,9 +2303,15 @@ function RelationshipSheet({
                             <ModeChip mode={action.executionMode} />
                           </div>
                           <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-primary/40">
-                            <span>{DETECTOR_LABELS[action.detector] ?? action.detector}</span>
-                            <span>priority {action.priorityScore}</span>
-                            <span>{action.policyStatus}</span>
+                            <Badge className="font-normal" variant="outline">
+                              {DETECTOR_LABELS[action.detector] ?? action.detector}
+                            </Badge>
+                            <Badge className="font-normal" variant="secondary">
+                              priority {action.priorityScore}
+                            </Badge>
+                            <Badge className="font-normal capitalize" variant="secondary">
+                              {action.policyStatus}
+                            </Badge>
                           </div>
                           {action.evidence.length > 0 ? (
                             <details className="mt-2 text-xs text-primary/55">
@@ -2285,7 +2337,7 @@ function RelationshipSheet({
                                 disabled={Boolean(busy)}
                               >
                                 {busy === `approve:${action.id}` ? (
-                                  <CircleNotch className="animate-spin" />
+                                  <Spinner className="size-4" />
                                 ) : (
                                   <Check />
                                 )}
@@ -2372,9 +2424,12 @@ function RelationshipSheet({
                                     <ul className="mt-1 space-y-1 border-l border-border pl-2">
                                       {cited.map((attribute) => (
                                         <li key={attribute.id}>
-                                          <span className="capitalize">
+                                          <Badge
+                                            className="capitalize font-normal"
+                                            variant="outline"
+                                          >
                                             {humanize(attribute.dimension)}
-                                          </span>
+                                          </Badge>
                                           : {attribute.value}
                                           {` · ${Math.round(attribute.confidence * 100)}% confidence`}
                                           {(attribute.citations ?? []).map((citation, index) => {
@@ -2458,11 +2513,15 @@ function RelationshipSheet({
                         );
                         return (
                           <li key={dependency.dependencyId} className="border border-border p-3">
-                            <span>{from?.text ?? "Unknown commitment"}</span>
+                            <Label className="font-normal">
+                              {from?.text ?? "Unknown commitment"}
+                            </Label>
                             <Badge variant="secondary" className="mx-2 capitalize">
                               {dependency.kind}
                             </Badge>
-                            <span>{to?.text ?? "Unknown commitment"}</span>
+                            <Label className="font-normal">
+                              {to?.text ?? "Unknown commitment"}
+                            </Label>
                           </li>
                         );
                       })}
@@ -2605,15 +2664,15 @@ function RelationshipSheet({
                     <ul className="mb-3 space-y-2 rounded-none border border-amber-500/30 p-3 text-xs text-primary/60">
                       {data.intelligence.contradictionCases.map((item) => (
                         <li key={item.caseId}>
-                          <span className="font-medium capitalize text-primary">
+                          <Label className="font-medium capitalize text-primary">
                             {humanize(item.dimension)}:
-                          </span>{" "}
+                          </Label>{" "}
                           {item.status === "open"
                             ? `Choose the current value from ${item.sides.length} evidence-backed options.`
                             : item.reason}
-                          <span className="ml-1 text-primary/40">
+                          <Badge className="ml-1 font-normal text-primary/40" variant="secondary">
                             ({item.sides.map((side) => side.source).join(" vs ")})
-                          </span>
+                          </Badge>
                           {item.status === "open" ? (
                             <div className="mt-2 flex flex-wrap gap-1.5">
                               {item.sides.map((side) => (
@@ -2653,9 +2712,9 @@ function RelationshipSheet({
                   ) : null}
                   {data.intelligence?.delta.recommendationReason ? (
                     <p className="mb-3 rounded-none border border-border p-3 text-xs text-primary/60">
-                      <span className="font-medium text-primary">
+                      <Label className="font-medium text-primary">
                         Why the recommendation changed:
-                      </span>{" "}
+                      </Label>{" "}
                       {data.intelligence.delta.recommendationReason}
                     </p>
                   ) : null}
@@ -2722,12 +2781,15 @@ function RelationshipSheet({
                             className="h-auto w-full justify-start rounded-none p-0 text-left hover:bg-transparent"
                           >
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs font-medium capitalize text-primary">
+                              <Label className="text-xs font-medium capitalize text-primary">
                                 {observation.source} · {humanize(observation.eventType)}
-                              </span>
-                              <span className="text-[11px] text-primary/35">
+                              </Label>
+                              <Badge
+                                className="text-[11px] font-normal text-primary/35"
+                                variant="secondary"
+                              >
                                 {relativeTime(observation.occurredAt)}
-                              </span>
+                              </Badge>
                             </div>
                             <p className="mt-1 text-xs text-primary/55">
                               {observation.summary || "Open the source evidence"}
@@ -2786,9 +2848,9 @@ function CorrectionReview({
             <li key={item.id} className="rounded-none border border-border bg-background p-3">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-medium text-primary">{item.label}</p>
-                <span className="text-[11px] text-primary/40">
+                <Badge className="text-[11px] font-normal text-primary/40" variant="secondary">
                   {Math.round(item.confidence * 100)}% · {item.kind}
-                </span>
+                </Badge>
               </div>
               {item.exactQuote ? (
                 <blockquote className="my-2 border-l border-border pl-2 text-xs text-primary/55">
@@ -3058,7 +3120,7 @@ function CreateRelationshipDialog({
             Cancel
           </Button>
           <Button size="sm" onClick={submit} disabled={busy || !displayName.trim()}>
-            {busy ? <CircleNotch className="animate-spin" /> : <Plus />} Create
+            {busy ? <Spinner className="size-4" /> : <Plus />} Create
           </Button>
         </DialogFooter>
       </DialogContent>

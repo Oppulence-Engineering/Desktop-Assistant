@@ -9,6 +9,7 @@ import noUnvalidatedJson from "./rules/no-unvalidated-json.mjs";
 import noUpstreamHtmlProxy from "./rules/no-upstream-html-proxy.mjs";
 import productPagesAreServer from "./rules/product-pages-are-server.mjs";
 import requireAbortSignal from "./rules/require-abort-signal.mjs";
+import requireApiRouteZod from "./rules/require-api-route-zod.mjs";
 import requireSafeProxyHeaders from "./rules/require-safe-proxy-headers.mjs";
 import requireServerAuthLayout from "./rules/require-server-auth-layout.mjs";
 import requireServerOnly from "./rules/require-server-only.mjs";
@@ -26,6 +27,7 @@ export const rules = {
   "no-upstream-html-proxy": noUpstreamHtmlProxy,
   "require-safe-proxy-headers": requireSafeProxyHeaders,
   "require-abort-signal": requireAbortSignal,
+  "require-api-route-zod": requireApiRouteZod,
   "no-raw-upstream-errors": noRawUpstreamErrors,
   "no-sensitive-console": noSensitiveConsole,
   "no-client-server-imports": noClientServerImports,

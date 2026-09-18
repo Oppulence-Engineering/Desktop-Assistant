@@ -1,6 +1,9 @@
 import Link from "next/link";
 
 import { AuthTestimonials, type Testimonial } from "@/app/(auth)/_components/auth-testimonials";
+import { Alert, AlertDescription } from "@oppulence/ui/components/alert";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Label } from "@oppulence/ui/components/label";
 
 /** Multi-color Google "G". Explicit fills, so button color rules don't tint it. */
 function GoogleLogo() {
@@ -84,7 +87,7 @@ export function AuthShell({
         <div className="sm-auth-form-inner">
           <Link aria-label="Oppulence home" className="sm-auth-lockup" href="/">
             <img alt="" src="/marketing/oppulence-icon.png" />
-            <span>Oppulence</span>
+            <Label className="font-normal">Oppulence</Label>
           </Link>
 
           {/* The visitor clicked "Start for free" under "Every promise, on the
@@ -98,7 +101,11 @@ export function AuthShell({
               : "Sign in or create an account to get started."}
           </p>
 
-          {errorMessage ? <p className="sm-auth-error">{errorMessage}</p> : null}
+          {errorMessage ? (
+            <Alert className="sm-auth-error">
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          ) : null}
 
           <a className="sm-auth-provider" href={loginHref}>
             <GoogleLogo />
@@ -125,7 +132,13 @@ export function AuthShell({
 
             <div className="sm-auth-stats">
               {STATS.map((stat) => (
-                <span key={stat}>{stat}</span>
+                <Badge
+                  key={stat}
+                  variant="secondary"
+                  className="rounded-none border-transparent bg-[rgb(255_255_255/55%)] px-4 py-[9px] text-[13.5px] font-normal text-[#1d2a38] backdrop-blur-[6px]"
+                >
+                  {stat}
+                </Badge>
               ))}
             </div>
           </div>
