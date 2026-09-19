@@ -1594,27 +1594,25 @@ function RelationshipSheet({
   const [personAttributes, setPersonAttributes] = React.useState<
     Record<string, RelationshipPersonAttribute[]>
   >({});
+  const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
 
   const load = React.useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
     try {
-      const [
-        nextData,
-        nextTimeline,
-        nextCommunicationTimeline,
-        nextChanges,
-        pending,
-        deferred,
-        resolved,
-      ] = await Promise.all([
-        getRelationship(id),
-        getRelationshipTimeline(id),
-        getRelationshipCommunicationTimeline(id),
-        getRelationshipChanges(id),
-        listIdentityCandidates("pending", id),
-        listIdentityCandidates("deferred", id),
-        listIdentityCandidates("resolved", id),
-      ]);
+      const nextData = await getRelationship(id);
       setData(nextData);
+
+      const [nextTimeline, nextCommunicationTimeline, nextChanges, pending, deferred, resolved] =
+        await Promise.all([
+          getRelationshipTimeline(id).catch(() => [] as RelationshipObservation[]),
+          getRelationshipCommunicationTimeline(id).catch(() => [] as CommunicationTimelineItem[]),
+          getRelationshipChanges(id).catch(() => [] as RelationshipStateSnapshot[]),
+          listIdentityCandidates("pending", id).catch(() => [] as RelationshipIdentityCandidate[]),
+          listIdentityCandidates("deferred", id).catch(() => [] as RelationshipIdentityCandidate[]),
+          listIdentityCandidates("resolved", id).catch(() => [] as RelationshipIdentityCandidate[]),
+        ]);
       setTimeline(nextTimeline);
       setCommunicationTimeline(nextCommunicationTimeline);
       setChanges(nextChanges);
@@ -1630,7 +1628,11 @@ function RelationshipSheet({
       );
       setPersonAttributes(Object.fromEntries(attributes));
     } catch (error) {
-      onError(errMessage(error, "Could not load the relationship."));
+      const message = errMessage(error, "Could not load the relationship.");
+      setLoadError(message);
+      onError(message);
+    } finally {
+      setLoading(false);
     }
   }, [id, onError]);
 
@@ -1701,7 +1703,19 @@ function RelationshipSheet({
             Ask Oppulence
           </Badge>
         </SheetHeader>
-        {!data ? (
+        {!loading && loadError ? (
+          <div className="flex flex-col gap-3 px-4 py-6">
+            <p className="text-sm text-destructive">{loadError}</p>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" type="button" variant="outline" onClick={() => void load()}>
+                Retry
+              </Button>
+              <Button size="sm" type="button" variant="ghost" onClick={onClose}>
+                Close
+              </Button>
+            </div>
+          </div>
+        ) : loading || !data ? (
           <p className="px-4 py-6 text-sm text-primary/50">Loading living state…</p>
         ) : (
           <div className="grid min-h-0 flex-1 md:grid-cols-[320px_minmax(0,1fr)]">

@@ -44,7 +44,10 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   }
 
   return (
-    <div className={`${dmSans.variable} ${dmMono.variable} ${spaceGrotesk.variable}`}>
+    <div
+      className={`${dmSans.variable} ${dmMono.variable} ${spaceGrotesk.variable} h-dvh overflow-hidden`}
+      data-auth-route
+    >
       {children}
     </div>
   );

@@ -500,7 +500,7 @@ function ConnectorRow({ connector, onChanged }: { connector: Connector; onChange
   );
 }
 
-export function ConnectorSettings() {
+export function ConnectorSettings({ showHeading = true }: { showHeading?: boolean }) {
   const [connectors, setConnectors] = React.useState<Connector[]>([]);
   const [state, setState] = React.useState<"loading" | "ready" | "error">("loading");
   const [refreshKey, setRefreshKey] = React.useState(0);
@@ -551,15 +551,17 @@ export function ConnectorSettings() {
 
   return (
     <section className="settings-section-block" data-slot="connector-settings">
-      <div className="settings-section-heading">
-        <div>
-          <h2 className="settings-section-title">Connectors</h2>
-          <p className="settings-section-description">
-            Managed connections your agents can use. OAuth grants complete through the authenticated
-            broker claim flow; provider credentials remain server-side.
-          </p>
+      {showHeading ? (
+        <div className="settings-section-heading">
+          <div>
+            <h2 className="settings-section-title">Connectors</h2>
+            <p className="settings-section-description">
+              Managed connections your agents can use. OAuth grants complete through the
+              authenticated broker claim flow; provider credentials remain server-side.
+            </p>
+          </div>
         </div>
-      </div>
+      ) : null}
       {notice ? (
         <div className="settings-inline-notice" role="status">
           <strong className="capitalize">{notice.connector || "Connector"}:</strong>{" "}
