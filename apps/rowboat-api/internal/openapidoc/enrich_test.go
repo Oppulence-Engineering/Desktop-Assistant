@@ -248,6 +248,14 @@ func TestEnrichAddsSecuritySchemasAndEntityDetail(t *testing.T) {
 	if relationshipProperties["resourceRefs"] == nil {
 		t.Fatal("RevenueRelationship is missing runtime resourceRefs")
 	}
+	// List and detail DTOs always emit these counts. If they stay off the
+	// contract, the web Orval strictObject rejects /relationships as a
+	// "different versions" schema mismatch.
+	for _, field := range []string{"peopleCount", "emailThreadCount", "commitmentCount"} {
+		if relationshipProperties[field] == nil {
+			t.Fatalf("RevenueRelationship is missing runtime %s", field)
+		}
+	}
 
 	observationBatch := asObj(asObj(asObj(asObj(spec["paths"])["/v1/relationship-observations/batch"])["post"])["requestBody"])
 	content := asObj(observationBatch["content"])
