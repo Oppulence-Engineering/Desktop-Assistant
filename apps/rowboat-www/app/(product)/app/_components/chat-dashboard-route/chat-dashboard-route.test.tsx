@@ -31,7 +31,7 @@ vi.mock("@/components/features/dashboard/chat-route-provider/chat-route-provider
     workspace: "Acme",
   }),
 }));
-vi.mock("@/components/auth-gate", () => ({
+vi.mock("@/components/auth/auth-gate", () => ({
   useAuthSession: () => ({ user: { email: "morgan@acme.com", workosUserId: "user-1" } }),
 }));
 

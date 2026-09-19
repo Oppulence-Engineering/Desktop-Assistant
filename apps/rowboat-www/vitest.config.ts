@@ -2,12 +2,21 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import tailwindcss from "@tailwindcss/postcss";
 import { defineConfig } from "vitest/config";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(path.join(root, "package.json"));
 
 export default defineConfig({
+  // Vite cannot resolve PostCSS plugins named as strings. Next can, and
+  // importing the plugin from postcss.config.mjs makes Turbopack evaluate
+  // lightningcss through its HMR runtime (`Cannot find module 'unknown'`).
+  css: {
+    postcss: {
+      plugins: [tailwindcss],
+    },
+  },
   plugins: [
     {
       name: "resolve-ui-workspace-deps",

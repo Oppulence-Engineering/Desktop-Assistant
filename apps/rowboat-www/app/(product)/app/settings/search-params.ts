@@ -1,6 +1,6 @@
 import { createParser, createSearchParamsCache } from "nuqs/server";
 
-import { settingsSectionFromParam, type SettingsSection } from "@/lib/product-navigation";
+import { settingsSectionFromParam, type SettingsSection } from "@/lib/dashboard/product-navigation";
 
 export const settingsParsers = {
   settings: createParser({

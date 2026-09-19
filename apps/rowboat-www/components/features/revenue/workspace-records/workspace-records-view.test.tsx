@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
   fetchWorkspaceNotes: vi.fn(),
 }));
 
-vi.mock("@/lib/console", () => ({
+vi.mock("@/lib/console/console", () => ({
   createConsoleResource: vi.fn(),
   deleteConsoleResource: vi.fn(),
   patchConsoleResource: vi.fn(),
@@ -24,7 +24,7 @@ vi.mock("@/hooks/queries/utils/fetch-console", () => ({
 vi.mock("@/hooks/queries/utils/fetch-workspace-notes", () => ({
   fetchWorkspaceNotes: mocks.fetchWorkspaceNotes,
 }));
-vi.mock("@/lib/revenue", () => ({
+vi.mock("@/lib/revenue/revenue", () => ({
   relativeTime: () => "now",
 }));
 vi.mock("@oppulence/ui/components/dialog", () => ({
@@ -117,8 +117,8 @@ describe("durable note templates and favorites", () => {
 });
 import { describe, expect, it } from "vitest";
 
-import { collapseWorkspaceNotes, plateText } from "@/lib/revenue-records";
-import type { RelationshipObservation, RevenueRelationship } from "@/types/revenue";
+import { collapseWorkspaceNotes, plateText } from "@/lib/revenue/revenue-records";
+import type { RelationshipObservation, RevenueRelationship } from "@/lib/revenue/types";
 
 const relationship = {
   id: "relationship-1",

@@ -8,7 +8,7 @@ import type { ComponentPropsWithoutRef } from "react";
 import { cn } from "@oppulence/ui/lib/utils";
 
 const OpenPromisesReportClient = dynamic(() =>
-  import("@/app/(product)/app/report/report-client").then(
+  import("@/components/features/report/open-promises-report/open-promises-report").then(
     (module) => module.OpenPromisesReportClient,
   ),
 );

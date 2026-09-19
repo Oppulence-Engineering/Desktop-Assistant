@@ -1,3 +1,5 @@
+import { cacheLife } from "next/cache";
+
 import { SimAnswersPage } from "../sim-landing/subpages/sim-answers-page";
 import { marketingMetadata } from "../metadata";
 import { seoAlternativeList, seoLanderList } from "../seo-theme";
@@ -24,7 +26,10 @@ const itemList = {
   })),
 };
 
-export default function AnswersPage() {
+export default async function AnswersPage() {
+  "use cache";
+  cacheLife("days");
+
   return (
     <SimAnswersPage
       alternativeItems={seoAlternativeList.map((page) => ({

@@ -3,7 +3,10 @@ import {
   GetRelationshipSourceStatuses200Response,
 } from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
-import type { RelationshipSourceInventoryItem, RelationshipSourceStatus } from "@/types/revenue";
+import type {
+  RelationshipSourceInventoryItem,
+  RelationshipSourceStatus,
+} from "@/lib/revenue/types";
 
 const RELATIONSHIP_SOURCE_STATUS_PATH = "/relationship-sources/status";
 
@@ -16,7 +19,7 @@ export async function loadRelationshipSourceStatuses(
     schema: GetRelationshipSourceStatuses200Response,
     signal,
   });
-  return (body.sources ?? []) as RelationshipSourceStatus[];
+  return body.sources ?? [];
 }
 
 export function fetchRelationshipSourceStatuses(
@@ -36,7 +39,7 @@ export async function loadRelationshipSources(
     schema: GetRelationshipSourceInventory200Response,
     signal,
   });
-  return (body.sources ?? []) as RelationshipSourceInventoryItem[];
+  return body.sources ?? [];
 }
 
 export function fetchRelationshipSources(

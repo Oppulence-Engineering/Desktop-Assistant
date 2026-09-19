@@ -14,7 +14,7 @@ import type {
   RevenueAction,
   RevenueImpact,
   RevenueLeakScan,
-} from "@/types/revenue";
+} from "@/lib/revenue/types";
 
 const navigation = vi.hoisted(() => ({
   params: new URLSearchParams(),
@@ -45,8 +45,8 @@ vi.mock("next/link", () => ({
     </a>
   ),
 }));
-vi.mock("@/lib/revenue", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/revenue")>()),
+vi.mock("@/lib/revenue/revenue", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/revenue/revenue")>()),
   ...mocks,
 }));
 vi.mock("@/hooks/queries/utils/fetch-relationship-sources", () => ({
@@ -76,17 +76,21 @@ vi.mock("@/hooks/queries/utils/fetch-revenue-actions", () => ({
 vi.mock("@/lib/api/connectors/google-oauth", () => ({
   createGoogleCommitmentsAuthorizationURL: mocks.createGoogleCommitmentsAuthorizationURL,
 }));
-vi.mock("@/lib/analytics", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/analytics")>()),
+vi.mock("@/lib/analytics/analytics", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/analytics/analytics")>()),
   capture: vi.fn(),
 }));
-vi.mock("@/components/revenue/review-sheet", () => ({ ReviewSheet: () => null }));
-vi.mock("@/components/revenue/audit-sheet", () => ({ AuditSheet: () => null }));
+vi.mock("@/components/features/revenue/review-sheet/review-sheet", () => ({
+  ReviewSheet: () => null,
+}));
+vi.mock("@/components/features/revenue/audit-sheet/audit-sheet", () => ({
+  AuditSheet: () => null,
+}));
 
-import { OpenPromisesReportClient } from "@/app/(product)/app/report/report-client";
-import { ImpactView } from "@/components/revenue/impact-view";
-import { QueueView } from "@/components/revenue/queue-view";
-import { ScansView } from "@/components/revenue/scans-view";
+import { OpenPromisesReportClient } from "@/components/features/report/open-promises-report/open-promises-report";
+import { ImpactView } from "@/components/features/revenue/impact-view/impact-view";
+import { QueueView } from "@/components/features/revenue/queue-view/queue-view";
+import { ScansView } from "@/components/features/revenue/scans-view/scans-view";
 
 function sourceStatus(status: string, connectionId = `google-${status}`): RelationshipSourceStatus {
   return {

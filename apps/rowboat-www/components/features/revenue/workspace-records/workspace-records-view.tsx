@@ -46,7 +46,7 @@ import {
   errMessage,
   ListSkeleton,
   WorkspaceEmptyState,
-} from "@/components/revenue/shared";
+} from "@/components/features/revenue/shared/shared";
 import { Avatar, AvatarFallback } from "@oppulence/ui/components/avatar";
 import { Badge } from "@oppulence/ui/components/badge";
 import { Button } from "@oppulence/ui/components/button";
@@ -94,9 +94,17 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@oppulence/ui/components/sheet";
-import { plateText, type WorkspaceNote } from "@/lib/revenue-records";
-import { createConsoleResource, deleteConsoleResource, patchConsoleResource } from "@/lib/console";
-import { noteFavorites, noteTemplates, type NoteTemplateResource } from "@/lib/console-resources";
+import { plateText, type WorkspaceNote } from "@/lib/revenue/revenue-records";
+import {
+  createConsoleResource,
+  deleteConsoleResource,
+  patchConsoleResource,
+} from "@/lib/console/console";
+import {
+  noteFavorites,
+  noteTemplates,
+  type NoteTemplateResource,
+} from "@/lib/console/console-resources";
 import {
   createRelationship,
   dismissAction,
@@ -104,13 +112,13 @@ import {
   ingestRelationshipObservations,
   relativeTime,
   safeResearchCitationURL,
-} from "@/lib/revenue";
+} from "@/lib/revenue/revenue";
 import type {
   RelationshipPerson,
   RelationshipPersonAttribute,
   RevenueAction,
   RevenueRelationship,
-} from "@/types/revenue";
+} from "@/lib/revenue/types";
 import { TaskCreateDialog } from "@/components/features/revenue/task-create-dialog/task-create-dialog";
 
 type ViewProps = {

@@ -1,8 +1,7 @@
-import Image from "next/image";
-
 import { cn } from "@/lib/sim/cn";
 
-import { FOOTER_ARTWORK, FOOTER_ARTWORK_SIZES } from "./footer-artwork";
+import { FOOTER_ARTWORK_SIZES } from "./footer-artwork";
+import { FooterArtworkPlate } from "./footer-artwork-plate";
 import { SimHeroCta } from "./primitives";
 import { HOME_TYPE, LANDING_CONTENT_WIDTH, LANDING_GUTTER } from "./tokens";
 
@@ -15,7 +14,11 @@ const CTA_HEADLINE = ["Read one closed customer.", "Confirm the rows."] as const
  */
 export function SimClosingCta() {
   return (
-    <section aria-labelledby="cta-heading" className="relative isolate flex w-full flex-col" id="cta">
+    <section
+      aria-labelledby="cta-heading"
+      className="relative isolate flex w-full flex-col"
+      id="cta"
+    >
       <div
         className={cn(
           "relative z-10 flex flex-col items-center gap-8 pt-10 text-center max-sm:gap-7 max-sm:pt-6 max-lg:pt-8",
@@ -42,31 +45,11 @@ export function SimClosingCta() {
         aria-hidden="true"
         className="pointer-events-none relative -mt-[clamp(96px,12.5vw,240px)] aspect-video w-full max-sm:-mt-6 max-sm:aspect-[16/10]"
       >
-        {(Object.entries(FOOTER_ARTWORK) as Array<[keyof typeof FOOTER_ARTWORK, (typeof FOOTER_ARTWORK)[keyof typeof FOOTER_ARTWORK]]>).map(
-          ([theme, artwork]) => (
-            <picture
-              className={cn(
-                "absolute inset-0",
-                theme === "light" ? "block dark:hidden" : "hidden dark:block",
-              )}
-              key={theme}
-            >
-              <source sizes={FOOTER_ARTWORK_SIZES} srcSet={artwork.avifSrcSet} type="image/avif" />
-              <source sizes={FOOTER_ARTWORK_SIZES} srcSet={artwork.webpSrcSet} type="image/webp" />
-              <Image
-                alt=""
-                blurDataURL={artwork.blurDataURL}
-                className="sim-closing-artwork__plate object-cover object-center"
-                fill
-                placeholder="blur"
-                priority
-                sizes={FOOTER_ARTWORK_SIZES}
-                src={artwork.src}
-                unoptimized
-              />
-            </picture>
-          ),
-        )}
+        <FooterArtworkPlate
+          className="sim-closing-artwork__plate object-cover object-center"
+          preload
+          sizes={FOOTER_ARTWORK_SIZES}
+        />
       </div>
     </section>
   );

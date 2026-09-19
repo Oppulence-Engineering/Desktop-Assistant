@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/dynamic", () => ({
   default: () => () => <div>Revenue</div>,
 }));
-vi.mock("@/hooks/use-product-route-state", () => ({
+vi.mock("@/hooks/dashboard/use-product-route-state", () => ({
   useProductRouteState: () => ({
     openRevenueTab: vi.fn(),
     openSettings: vi.fn(),

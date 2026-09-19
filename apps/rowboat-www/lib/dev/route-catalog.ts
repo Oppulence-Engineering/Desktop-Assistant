@@ -1,4 +1,4 @@
-import { PRODUCT_VIEW_PATHS, type ProductView } from "@/lib/product-navigation";
+import { PRODUCT_VIEW_PATHS, type ProductView } from "@/lib/dashboard/product-navigation";
 
 export type RouteCatalogEntry = {
   path: string;
@@ -17,39 +17,40 @@ const PRODUCT_META: Record<
 > = {
   chat: {
     label: "Chat / home",
-    clientBoundary: "product-dashboard-client.tsx",
+    clientBoundary:
+      "components/features/dashboard/product-dashboard-client/product-dashboard-client.tsx",
     bffEndpoints: ["/api/rowboat/v1/agent-sessions", "/api/rowboat/v1/llm/models"],
     e2e: "e2e/navigation.spec.ts",
     readme: "app/(product)/app/README.md",
   },
   agents: {
     label: "Agents",
-    clientBoundary: "components/agents/agents-view.tsx",
+    clientBoundary: "components/features/agents/agents-view/agents-view.tsx",
     bffEndpoints: ["/api/rowboat/v1/agents", "/api/rowboat/v1/llm/models"],
     e2e: "e2e/navigation.spec.ts",
     readme: "app/(product)/app/agents/README.md",
   },
   workflows: {
     label: "Workflows",
-    clientBoundary: "components/workflows/cloud-workflows-view.tsx",
+    clientBoundary: "components/features/workflows/cloud-workflows-view/cloud-workflows-view.tsx",
     bffEndpoints: ["/api/rowboat/v1/background-tasks", "/api/rowboat/v1/background-task-runs"],
     readme: "app/(product)/app/workflows/README.md",
   },
   revenue: {
     label: "Revenue",
-    clientBoundary: "components/revenue/*",
+    clientBoundary: "components/features/revenue/*",
     bffEndpoints: ["/api/rowboat/v1/revenue-actions", "/api/rowboat/v1/revenue-leak-scans"],
     readme: "app/(product)/app/revenue/README.md",
   },
   settings: {
     label: "Settings",
-    clientBoundary: "components/app-settings.tsx",
+    clientBoundary: "components/features/settings/app-settings/app-settings.tsx",
     bffEndpoints: ["/api/rowboat/v1/connectors", "/api/rowboat/v1/me"],
     readme: "app/(product)/app/settings/README.md",
   },
   report: {
     label: "Open promises report",
-    clientBoundary: "app/(product)/app/report/report-client.tsx",
+    clientBoundary: "components/features/report/open-promises-report/open-promises-report.tsx",
     bffEndpoints: [
       "/api/rowboat/v1/relationship-sources",
       "/api/rowboat/v1/revenue-leak-scans",

@@ -1,17 +1,17 @@
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { Suspense } from "react";
 
 import { RevenueDashboardRoute } from "@/app/(product)/app/revenue/_components/revenue-dashboard-route/revenue-dashboard-route";
 import { prefetchRevenue } from "@/app/(product)/app/revenue/prefetch";
-import { getQueryClient } from "@/lib/query/get-query-client";
+import { PrefetchHydration } from "@/lib/query/prefetch-hydration";
 
-export const instant = false;
+import RevenueLoading from "./loading";
 
-export default async function RevenuePage() {
-  const queryClient = getQueryClient();
-  await prefetchRevenue(queryClient);
+export default function RevenuePage() {
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <RevenueDashboardRoute />
-    </HydrationBoundary>
+    <Suspense fallback={<RevenueLoading />}>
+      <PrefetchHydration seed={prefetchRevenue}>
+        <RevenueDashboardRoute />
+      </PrefetchHydration>
+    </Suspense>
   );
 }

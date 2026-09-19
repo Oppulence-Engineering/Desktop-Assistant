@@ -1,7 +1,5 @@
+import { DashboardRouteFallback } from "@/lib/query/prefetch-hydration";
+
 export default function WorkflowsLoading() {
-  return (
-    <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-      Loading workflows…
-    </div>
-  );
+  return <DashboardRouteFallback label="Loading workflows…" />;
 }

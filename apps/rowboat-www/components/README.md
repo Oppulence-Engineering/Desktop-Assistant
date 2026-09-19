@@ -32,9 +32,10 @@ native host props may intersect `ComponentPropsWithoutRef`. See `docs/growth-sta
 - Test behavior through accessible roles, names, labels, and user interaction. Do not assert
   implementation state or large snapshots.
 
-The exact pre-standardization files are recorded in
-`config/architecture/component-baseline.json`. They may be migrated, but new files cannot be added
-to those legacy locations.
+Product UI lives under `components/features/<domain>/<name>`. Auth, legal,
+providers, Sim chrome, and AI elements are managed owners in
+`config/architecture/component-baseline.json`. New files cannot be added to
+legacy locations; that list is empty after the dashboard migration.
 
 ## Examples
 

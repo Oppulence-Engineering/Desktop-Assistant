@@ -316,8 +316,15 @@ describe("WEB027 growth-standard generators", () => {
       files.find((file) => file.path.endsWith(`${path.sep}page.tsx`))?.path ?? "",
       "utf8",
     );
-    expect(page).toContain("HydrationBoundary");
+    const loading = await readFile(
+      files.find((file) => file.path.endsWith(`${path.sep}loading.tsx`))?.path ?? "",
+      "utf8",
+    );
+    expect(loading).toContain("DashboardRouteFallback");
+    expect(page).toContain("PrefetchHydration");
+    expect(page).toContain("Suspense");
     expect(page).toContain("prefetchListConnectors");
+    expect(page).not.toContain("export const instant = false");
     expect(page).not.toContain('"use client"');
   });
 });

@@ -1,26 +1,32 @@
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { Suspense } from "react";
 
 import { WorkflowsDashboardRoute } from "@/app/(product)/app/workflows/_components/workflows-dashboard-route/workflows-dashboard-route";
 import { prefetchWorkflows } from "@/app/(product)/app/workflows/prefetch";
 import { workflowSearchParamsCache } from "@/app/(product)/app/workflows/search-params";
-import { getQueryClient } from "@/lib/query/get-query-client";
+import { PrefetchHydration } from "@/lib/query/prefetch-hydration";
 
-export const instant = false;
+import WorkflowsLoading from "./loading";
 
-export default async function WorkflowsPage({
-  searchParams,
-}: {
+type WorkflowsPageProps = {
   searchParams: Promise<{ focus?: string | string[] }>;
-}) {
+};
+
+export default function WorkflowsPage({ searchParams }: WorkflowsPageProps) {
+  return (
+    <Suspense fallback={<WorkflowsLoading />}>
+      <WorkflowsRouteContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function WorkflowsRouteContent({ searchParams }: WorkflowsPageProps) {
   const raw = await searchParams;
   const { focus } = workflowSearchParamsCache.parse({
     focus: Array.isArray(raw.focus) ? raw.focus[0] : raw.focus,
   });
-  const queryClient = getQueryClient();
-  await prefetchWorkflows(queryClient);
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
+    <PrefetchHydration seed={prefetchWorkflows}>
       <WorkflowsDashboardRoute focus={focus} />
-    </HydrationBoundary>
+    </PrefetchHydration>
   );
 }

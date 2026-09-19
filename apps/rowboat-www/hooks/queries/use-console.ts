@@ -13,7 +13,7 @@ import {
   CONSOLE_RESOURCE_STALE_TIME,
   consoleKeys,
 } from "@/hooks/queries/utils/console-keys";
-import type { ConsoleResourceKind } from "@/lib/console-contract";
+import type { ConsoleResourceKind } from "@/lib/console/console-contract";
 
 export function useConsolePreferences() {
   return useQuery({

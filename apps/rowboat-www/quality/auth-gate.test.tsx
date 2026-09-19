@@ -19,7 +19,7 @@ vi.mock("@/lib/auth/client", async (importOriginal) => {
   };
 });
 
-import { AuthGate, useAuthSession } from "@/components/auth-gate";
+import { AuthGate, useAuthSession } from "@/components/auth/auth-gate";
 import { SessionUnavailableError } from "@/lib/auth/client";
 
 const initialSession: Extract<BrowserSessionResponse, { authenticated: true }> = {

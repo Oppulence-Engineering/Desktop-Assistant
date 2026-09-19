@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
-import type { ActionProposal } from "@/types/actions";
+import type { ActionProposal } from "@/lib/actions/types";
 
 const ActionProposalSchema = z
   .object({

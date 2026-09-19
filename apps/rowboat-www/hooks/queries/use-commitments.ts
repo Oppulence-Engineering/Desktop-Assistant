@@ -14,7 +14,7 @@ import { fetchRelationshipSources } from "@/hooks/queries/utils/fetch-relationsh
 import { registerFilterFor, type RegisterView } from "@/lib/revenue/commitment-register-filter";
 import { fetchRelationshipGraph } from "@/hooks/queries/utils/fetch-relationships";
 import { DashboardRequestError } from "@/lib/api/request-json";
-import { friendlyRevenueError, RevenueAPIError } from "@/lib/revenue";
+import { friendlyRevenueError, RevenueAPIError } from "@/lib/revenue/revenue";
 
 function registerErrorMessage(reason: unknown): string {
   const status =

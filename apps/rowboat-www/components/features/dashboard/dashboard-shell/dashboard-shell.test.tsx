@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
   setSidebarOpen: vi.fn(),
 }));
 
-vi.mock("@/components/app-shell", () => ({
+vi.mock("@/components/features/dashboard/app-shell/app-shell", () => ({
   AppShellSidebar: () => <aside aria-label="Sidebar" />,
   AppTopBar: ({ onAsk }: { onAsk: () => void }) => (
     <button onClick={onAsk} type="button">
@@ -22,13 +22,13 @@ vi.mock("@/components/app-shell", () => ({
   SETTINGS_SECTIONS: [{ key: "overview", label: "Settings" }],
   ViewBoundary: ({ children }: { children: React.ReactNode }) => children,
 }));
-vi.mock("@/components/auth-gate", () => ({
+vi.mock("@/components/auth/auth-gate", () => ({
   useAuthSession: () => ({
     user: { email: "person@example.com", organizationId: "org" },
     billing: null,
   }),
 }));
-vi.mock("@/components/command-palette", () => ({
+vi.mock("@/components/features/dashboard/command-palette/command-palette", () => ({
   CommandPalette: ({ open }: { open: boolean }) => (
     <div aria-label="Command palette" data-open={String(open)} />
   ),
@@ -49,7 +49,7 @@ vi.mock("@/components/features/dashboard/chat-route-provider/chat-route-provider
     onUseAgent: vi.fn(),
   }),
 }));
-vi.mock("@/hooks/use-product-route-state", () => ({
+vi.mock("@/hooks/dashboard/use-product-route-state", () => ({
   useProductRouteState: () => ({
     view: "chat",
     revenueTab: "commitments",
@@ -61,7 +61,7 @@ vi.mock("@/hooks/use-product-route-state", () => ({
     openWorkflows: vi.fn(),
   }),
 }));
-vi.mock("@/lib/console-prefs", () => ({
+vi.mock("@/lib/console/console-prefs", () => ({
   useBooleanPref: () => [true, mocks.setSidebarOpen],
 }));
 vi.mock("@/lib/icons", () => ({ SidebarSimple: () => <span aria-hidden /> }));

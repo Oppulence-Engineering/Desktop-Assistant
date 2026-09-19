@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 
 import { SimBillingStatusPage } from "../../sim-landing/subpages/sim-billing-status-page";
 
@@ -17,7 +18,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function BillingCancelRoute() {
+export default async function BillingCancelRoute() {
+  "use cache";
+  cacheLife("days");
+
   return (
     <SimBillingStatusPage
       actions={[

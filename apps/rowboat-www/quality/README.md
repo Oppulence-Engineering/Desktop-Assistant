@@ -33,4 +33,4 @@ Rule ownership:
 - Cross-package imports: `config/architecture/dependency-cruiser.config.mjs`
 - Security/data-flow sinks: `config/quality/semgrep.yml`
 - Account-scoped preferences: `lib/storage/scoped-storage.ts`
-- Sensitive conversations: scoped in-memory storage in `lib/chat-sessions.ts`
+- Sensitive conversations: scoped in-memory storage in `lib/agents/chat-sessions.ts`

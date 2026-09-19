@@ -48,7 +48,7 @@ function isLocalRootFile(filename: string): boolean {
 // until a manual reload, and users reported the integration as broken.
 const externalFlowRefreshExemptions = new Map<string, string>([
   [
-    "components/app-settings.tsx",
+    "components/features/settings/app-settings/app-settings.tsx",
     "opens a static documentation link; there is no state to refresh",
   ],
 ]);

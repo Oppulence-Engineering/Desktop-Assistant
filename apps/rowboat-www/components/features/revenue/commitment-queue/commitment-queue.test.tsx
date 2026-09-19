@@ -12,7 +12,7 @@ import type {
   RegisterEntry,
   RelationshipSourceInventoryItem,
   RevenueLeakScan,
-} from "@/types/revenue";
+} from "@/lib/revenue/types";
 
 afterEach(cleanup);
 

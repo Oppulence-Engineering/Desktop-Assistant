@@ -2,15 +2,15 @@ import { z } from "zod";
 
 import { ListRelationships200Response } from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
 import { DashboardRequestError, requestJson, type RequestJsonFn } from "@/lib/api/request-json";
-import { mapSettledWithConcurrency } from "@/lib/revenue-records";
-import { RelationshipGraphSchema } from "@/types/revenue";
+import { mapSettledWithConcurrency } from "@/lib/revenue/revenue-records";
+import { RelationshipGraphSchema } from "@/lib/revenue/types";
 import type {
   RelationshipAttentionItem,
   RelationshipGraph,
   RelationshipIdentityCandidate,
   RelationshipPerson,
   RevenueRelationship,
-} from "@/types/revenue";
+} from "@/lib/revenue/types";
 import type {
   RelationshipGraphScope,
   RelationshipListScope,

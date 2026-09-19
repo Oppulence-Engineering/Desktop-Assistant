@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
-import type { CommunicationPolicy, CommunicationPrivacyRule } from "@/types/revenue";
+import type { CommunicationPolicy, CommunicationPrivacyRule } from "@/lib/revenue/types";
 
 const CommunicationPolicySchema = z
   .object({

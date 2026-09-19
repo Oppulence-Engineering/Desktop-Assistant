@@ -1,10 +1,10 @@
+import { cacheLife } from "next/cache";
+
 import { parseReleases, type GitHubRelease } from "@/lib/api/changelog/changelog";
 import { DESKTOP_RELEASES_REPO, fetchGitHubReleases } from "@/lib/api/github/releases";
 
 import { SimChangelogPage } from "../sim-landing/subpages/sim-changelog-page";
 import { marketingMetadata } from "../metadata";
-
-export const instant = false;
 
 export const metadata = marketingMetadata({
   title: "Changelog",
@@ -13,9 +13,15 @@ export const metadata = marketingMetadata({
   path: "/changelog",
 });
 
-export default async function ChangelogPage() {
+async function loadPublishedReleases() {
+  "use cache";
+  cacheLife("hours");
   const releases = await fetchGitHubReleases<GitHubRelease>(DESKTOP_RELEASES_REPO, { perPage: 20 });
-  const entries = releases ? parseReleases(releases, 20) : [];
+  return releases ? parseReleases(releases, 20) : [];
+}
+
+export default async function ChangelogPage() {
+  const entries = await loadPublishedReleases();
 
   return (
     <SimChangelogPage

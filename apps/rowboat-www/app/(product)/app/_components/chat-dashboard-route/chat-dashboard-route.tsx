@@ -15,7 +15,7 @@ import { CardDescription } from "@oppulence/ui/components/card";
 import { Skeleton } from "@oppulence/ui/components/skeleton";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import { cn } from "@oppulence/ui/lib/utils";
-import { useAuthSession } from "@/components/auth-gate";
+import { useAuthSession } from "@/components/auth/auth-gate";
 import {
   Artifact,
   ArtifactAction,
@@ -36,23 +36,29 @@ import {
   ToolInput,
   ToolOutput,
 } from "@/components/ai-elements/tool";
-import type { AgentHistoryItem } from "@/lib/agent-history";
-import type { RevenueTab } from "@/lib/product-navigation";
-import type { RevenueImpact } from "@/types/revenue";
+import type { AgentHistoryItem } from "@/lib/agents/agent-history";
+import type { RevenueTab } from "@/lib/dashboard/product-navigation";
+import type { RevenueImpact } from "@/lib/revenue/types";
 
 const AgentConfigurationForm = dynamic(() =>
-  import("@/components/agents/agent-configuration-form").then(
+  import("@/components/features/agents/agent-configuration-form/agent-configuration-form").then(
     (module) => module.AgentConfigurationForm,
   ),
 );
 const JsonEditor = dynamic(() =>
-  import("@/components/json-editor").then((module) => module.JsonEditor),
+  import("@/components/features/editors/json-editor/json-editor").then(
+    (module) => module.JsonEditor,
+  ),
 );
 const MarkdownViewer = dynamic(() =>
-  import("@/components/markdown-viewer").then((module) => module.MarkdownViewer),
+  import("@/components/features/editors/markdown-viewer/markdown-viewer").then(
+    (module) => module.MarkdownViewer,
+  ),
 );
 const TiptapMarkdownEditor = dynamic(() =>
-  import("@/components/tiptap-markdown-editor").then((module) => module.TiptapMarkdownEditor),
+  import("@/components/features/editors/tiptap-markdown-editor/tiptap-markdown-editor").then(
+    (module) => module.TiptapMarkdownEditor,
+  ),
 );
 const HomeAgentSurface = dynamic(() =>
   import("@/components/features/dashboard/home-agent-surface/home-agent-surface").then(

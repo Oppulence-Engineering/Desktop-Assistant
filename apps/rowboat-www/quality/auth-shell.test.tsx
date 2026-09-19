@@ -16,4 +16,26 @@ describe("AuthShell", () => {
     expect(screen.getByText("Sign-in is temporarily unavailable. Please try again.")).toBeVisible();
     expect(screen.queryByText("sign_in_unavailable")).not.toBeInTheDocument();
   });
+
+  it("sends Google sign-in through WorkOS with the safe return path", () => {
+    render(<AuthShell mode="sign-in" returnTo="/app/settings" />);
+
+    expect(screen.getByRole("link", { name: "Continue with Google" })).toHaveAttribute(
+      "href",
+      "/api/auth/workos/login?return_to=%2Fapp%2Fsettings",
+    );
+  });
+
+  it("keeps the form as the only product copy", () => {
+    render(<AuthShell mode="sign-up" returnTo="/app" />);
+
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+      "href",
+      "/sign-in?return_to=%2Fapp",
+    );
+    expect(document.querySelector('img[src*="/marketing/footer-artwork/"]')).toBeTruthy();
+    expect(screen.queryByText("Acme Corp")).not.toBeInTheDocument();
+    expect(screen.queryByText("Security review by Friday")).not.toBeInTheDocument();
+    expect(screen.queryByText("Design partner")).not.toBeInTheDocument();
+  });
 });

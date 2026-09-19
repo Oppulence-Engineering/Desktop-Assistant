@@ -1,6 +1,6 @@
 import { createParser, createSearchParamsCache } from "nuqs/server";
 
-import { WorkflowFocusSchema, type WorkflowFocus } from "@/lib/product-navigation";
+import { WorkflowFocusSchema, type WorkflowFocus } from "@/lib/dashboard/product-navigation";
 
 export const workflowParsers = {
   focus: createParser({

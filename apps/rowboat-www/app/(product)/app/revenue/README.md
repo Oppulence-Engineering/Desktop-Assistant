@@ -4,7 +4,7 @@
 
 **URL state:** `?tab=` selects sub-view (commitments default).
 
-**Client:** `components/revenue/*` loaded from dashboard route content.
+**Client:** `components/features/revenue/*` loaded from dashboard route content.
 
 **BFF:** `/api/rowboat/v1/revenue-actions`, leak scans, workspace link, semantic search.
 

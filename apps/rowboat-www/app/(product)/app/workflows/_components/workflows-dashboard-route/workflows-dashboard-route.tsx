@@ -7,10 +7,12 @@ import type { ComponentPropsWithoutRef } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";
 import { useDashboardChatController } from "@/components/features/dashboard/chat-route-provider/chat-route-provider";
-import type { WorkflowFocus } from "@/lib/product-navigation";
+import type { WorkflowFocus } from "@/lib/dashboard/product-navigation";
 
 const CloudWorkflowsView = dynamic(() =>
-  import("@/components/workflows/cloud-workflows-view").then((module) => module.CloudWorkflowsView),
+  import("@/components/features/workflows/cloud-workflows-view/cloud-workflows-view").then(
+    (module) => module.CloudWorkflowsView,
+  ),
 );
 
 export type WorkflowsDashboardRouteProps = ComponentPropsWithoutRef<"section"> & {

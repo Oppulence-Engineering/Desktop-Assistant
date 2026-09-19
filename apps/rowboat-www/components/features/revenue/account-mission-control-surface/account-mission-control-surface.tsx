@@ -7,8 +7,8 @@ import { Building } from "@sim/emcn/icons";
 import type { ComponentPropsWithoutRef } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";
-import { SimProductPanel } from "@/components/features/sim-product/sim-product-frame";
-import type { RelationshipCommitment } from "@/types/revenue";
+import { SimProductPanel } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
+import type { RelationshipCommitment } from "@/lib/revenue/types";
 
 export type AccountTimelineItem = {
   id: string;

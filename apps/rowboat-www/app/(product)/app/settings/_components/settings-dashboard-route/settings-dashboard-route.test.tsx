@@ -8,10 +8,10 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/dynamic", () => ({
   default: () => () => <div>Settings</div>,
 }));
-vi.mock("@/components/auth-gate", () => ({
+vi.mock("@/components/auth/auth-gate", () => ({
   useAuthSession: () => ({ user: { email: "morgan@acme.com" } }),
 }));
-vi.mock("@/hooks/use-product-route-state", () => ({
+vi.mock("@/hooks/dashboard/use-product-route-state", () => ({
   useProductRouteState: () => ({ openSettings: vi.fn() }),
 }));
 

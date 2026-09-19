@@ -121,7 +121,7 @@ to seal or verify auth cookies without `ROWBOAT_WWW_SESSION_SECRET`.
 ## Support chat
 
 Plain's chat widget is mounted on both the marketing site and the dashboard by
-`components/features/support/support-chat.tsx`. Threads land in the same Plain
+`components/features/support/support-chat/support-chat.tsx`. Threads land in the same Plain
 workspace as the desktop app's in-app feedback (`POST /v1/feedback`), so there
 is one support inbox rather than one per surface.
 

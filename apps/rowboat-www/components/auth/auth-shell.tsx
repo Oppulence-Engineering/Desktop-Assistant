@@ -1,9 +1,6 @@
 import Link from "next/link";
 
-import { AuthTestimonials, type Testimonial } from "@/app/(auth)/_components/auth-testimonials";
-import { Alert, AlertDescription } from "@oppulence/ui/components/alert";
-import { Badge } from "@oppulence/ui/components/badge";
-import { Label } from "@oppulence/ui/components/label";
+import { AuthLedgerPreview } from "@/components/auth/auth-ledger-preview";
 
 /** Multi-color Google "G". Explicit fills, so button color rules don't tint it. */
 function GoogleLogo() {
@@ -29,35 +26,6 @@ function GoogleLogo() {
   );
 }
 
-/** Stat pills under the quote card, mirroring the public site's proof strip. */
-const STATS = ["Every account, always current", "Evidence behind every action"];
-
-// Showcase quotes, rotated every few seconds. Keep these real and attributable
-// — swap text and attribution together, and don't ship a quote we can't source.
-const TESTIMONIALS: Testimonial[] = [
-  {
-    quote:
-      "The Monday scramble is gone. Open it and the accounts that moved are already surfaced, with the reasoning attached, so nothing is a guess. It's not magic — it's just the first tool here that stayed accurate past week two.",
-    name: "Design partner",
-    title: "Head of Customer Success, B2B SaaS",
-    avatar: "/marketing/oppulence-icon.png",
-  },
-  {
-    quote:
-      "Renewal prep used to mean digging through six months of threads the night before. Now the history is already assembled and the gaps are called out, so the call is about the customer instead of about catching up.",
-    name: "Design partner",
-    title: "Account Director, enterprise software",
-    avatar: "/marketing/oppulence-icon.png",
-  },
-  {
-    quote:
-      "What sold the team was the receipts. Every suggestion links back to the actual email or meeting it came from, so people trust it enough to act instead of double-checking everything by hand.",
-    name: "Design partner",
-    title: "RevOps lead, Series B",
-    avatar: "/marketing/oppulence-icon.png",
-  },
-];
-
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
   sign_in_unavailable: "Sign-in is temporarily unavailable. Please try again.",
 };
@@ -81,69 +49,84 @@ export function AuthShell({
     : `/sign-up?${new URLSearchParams({ return_to: returnTo })}`;
 
   return (
-    <main className="sm-site sm-auth">
-      {/* Form column */}
-      <div className="sm-auth-form">
-        <div className="sm-auth-form-inner">
-          <Link aria-label="Oppulence home" className="sm-auth-lockup" href="/">
-            <img alt="" src="/marketing/oppulence-icon.png" />
-            <Label className="font-normal">Oppulence</Label>
-          </Link>
+    <main
+      className="grid min-h-svh bg-[var(--bg)] text-[var(--text-primary)] lg:grid-cols-[minmax(22rem,28rem)_minmax(0,1fr)]"
+      key={mode}
+    >
+      <section className="flex flex-col justify-between px-6 py-8 sm:px-10 lg:border-r lg:border-[var(--border)] lg:px-12 lg:py-10">
+        <Link
+          aria-label="Oppulence home"
+          className="inline-flex items-center gap-2.5 text-[15px] font-medium tracking-[-0.02em] text-[var(--text-primary)]"
+          href="/"
+        >
+          <img alt="" className="size-7 object-contain" src="/marketing/oppulence-icon.png" />
+          Oppulence
+        </Link>
 
-          {/* The visitor clicked "Start for free" under "Every promise, on the
-              record". Greeting them with a different product ("your
-              relationship layer") at the highest-intent moment in the funnel
-              reads as the wrong site. */}
-          <h1 className="sm-auth-title">Every promise, on the record</h1>
-          <p className="sm-auth-sub">
+        <div className="mx-auto w-full max-w-[22rem] py-12 lg:mx-0 lg:py-16">
+          <p className="font-mono text-[11px] tracking-[0.08em] text-[var(--text-muted)] uppercase">
+            {isSignUp ? "Start" : "Sign in"}
+          </p>
+          {/* Same headline as the public CTA so this does not read as a second product. */}
+          <h1 className="mt-3 text-balance text-[32px] leading-[1.15] font-medium tracking-[-0.02em] text-[var(--text-primary)] sm:text-[36px]">
+            Every promise, on the record
+          </h1>
+          <p className="mt-3 text-pretty text-[15px] leading-[1.5] text-[var(--text-body)]">
             {isSignUp
-              ? "Create an account to start tracking what you owe, what they owe, and the proof behind it. Your first sign-in builds your workspace."
-              : "Sign in or create an account to get started."}
+              ? "Create a workspace with Google. The first sign-in builds the register — what you owe, what they owe, and the proof."
+              : "Continue with Google to open the register. A new workspace starts on the first sign-in."}
           </p>
 
           {errorMessage ? (
-            <Alert className="sm-auth-error">
-              <AlertDescription>{errorMessage}</AlertDescription>
-            </Alert>
+            <p
+              className="mt-6 rounded-[8px] border border-[var(--border)] bg-[var(--surface-3)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--text-primary)]"
+              role="alert"
+            >
+              {errorMessage}
+            </p>
           ) : null}
 
-          <a className="sm-auth-provider" href={loginHref}>
+          <a
+            className="mt-8 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[8px] border border-[var(--border)] bg-[var(--surface-2)] text-[15px] font-medium text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--text-primary)]/20"
+            href={loginHref}
+          >
             <GoogleLogo />
             Continue with Google
           </a>
 
-          <p className="sm-auth-legal">
-            By continuing, you agree to our <Link href="/terms">Terms</Link> and{" "}
-            <Link href="/privacy">Privacy Policy</Link>.{" "}
-            {isSignUp ? "Have an account?" : "New here?"}{" "}
-            <Link href={crossHref}>{isSignUp ? "Sign in" : "Create one"}</Link>.
+          <p className="mt-5 text-[12.5px] leading-relaxed text-[var(--text-muted)]">
+            By continuing, you agree to our{" "}
+            <Link
+              className="underline underline-offset-3 hover:text-[var(--text-primary)]"
+              href="/terms"
+            >
+              Terms
+            </Link>{" "}
+            and{" "}
+            <Link
+              className="underline underline-offset-3 hover:text-[var(--text-primary)]"
+              href="/privacy"
+            >
+              Privacy Policy
+            </Link>
+            .
           </p>
         </div>
-      </div>
 
-      {/* Showcase column */}
-      <div className="sm-auth-showcase">
-        <div className="sm-auth-canvas">
-          <img alt="" className="sm-auth-canvas-image" src="/marketing/relationship-desktop.png" />
-          <div aria-hidden className="sm-auth-canvas-wash" />
+        <p className="text-[13px] text-[var(--text-secondary)]">
+          {isSignUp ? "Have an account?" : "New here?"}{" "}
+          <Link
+            className="font-medium text-[var(--text-primary)] underline-offset-3 hover:underline"
+            href={crossHref}
+          >
+            {isSignUp ? "Sign in" : "Create a workspace"}
+          </Link>
+        </p>
+      </section>
 
-          <div className="sm-auth-overlay">
-            <AuthTestimonials items={TESTIMONIALS} />
-
-            <div className="sm-auth-stats">
-              {STATS.map((stat) => (
-                <Badge
-                  key={stat}
-                  variant="secondary"
-                  className="rounded-none border-transparent bg-[rgb(255_255_255/55%)] px-4 py-[9px] text-[13.5px] font-normal text-[#1d2a38] backdrop-blur-[6px]"
-                >
-                  {stat}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      <aside className="relative min-h-[22rem] overflow-hidden lg:min-h-svh">
+        <AuthLedgerPreview />
+      </aside>
     </main>
   );
 }

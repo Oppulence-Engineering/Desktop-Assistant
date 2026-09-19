@@ -5,9 +5,15 @@ import "@testing-library/jest-dom/vitest";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/components/json-editor", () => ({ JsonEditor: () => null }));
-vi.mock("@/components/markdown-viewer", () => ({ MarkdownViewer: () => null }));
-vi.mock("@/components/tiptap-markdown-editor", () => ({ TiptapMarkdownEditor: () => null }));
+vi.mock("@/components/features/editors/json-editor/json-editor", () => ({
+  JsonEditor: () => null,
+}));
+vi.mock("@/components/features/editors/markdown-viewer/markdown-viewer", () => ({
+  MarkdownViewer: () => null,
+}));
+vi.mock("@/components/features/editors/tiptap-markdown-editor/tiptap-markdown-editor", () => ({
+  TiptapMarkdownEditor: () => null,
+}));
 
 import { DashboardRouteContent } from "./dashboard-route-content";
 

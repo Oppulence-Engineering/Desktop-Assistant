@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   optOut: vi.fn(),
 }));
 
-vi.mock("@/lib/console", () => ({
+vi.mock("@/lib/console/console", () => ({
   getConsolePreferences: mocks.getConsolePreferences,
 }));
 vi.mock("posthog-js", () => ({
@@ -35,7 +35,7 @@ describe("analytics consent", () => {
       displayName: "",
       shareUsageData: false,
     });
-    const { capture } = await import("@/lib/analytics");
+    const { capture } = await import("@/lib/analytics/analytics");
 
     capture("viewed", { surface: "report" });
     await vi.waitFor(() => {
@@ -52,7 +52,7 @@ describe("analytics consent", () => {
       displayName: "",
       shareUsageData: true,
     });
-    const { capture } = await import("@/lib/analytics");
+    const { capture } = await import("@/lib/analytics/analytics");
 
     capture("exported", {
       commitmentId: "secret-id",

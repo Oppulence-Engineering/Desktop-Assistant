@@ -1,12 +1,12 @@
 import { loadRelationships } from "@/hooks/queries/utils/fetch-relationships";
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
-import { getRelationshipTimeline } from "@/lib/revenue";
+import { getRelationshipTimeline } from "@/lib/revenue/revenue";
 import {
   collapseWorkspaceNotes,
   mapSettledWithConcurrency,
   type WorkspaceNote,
-} from "@/lib/revenue-records";
-import type { RelationshipObservation, RevenueRelationship } from "@/types/revenue";
+} from "@/lib/revenue/revenue-records";
+import type { RelationshipObservation, RevenueRelationship } from "@/lib/revenue/types";
 
 export type WorkspaceNotesBundle = {
   notes: WorkspaceNote[];

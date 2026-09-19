@@ -1,3 +1,5 @@
+import { cacheLife } from "next/cache";
+
 import { indexCopy, useCasePages } from "../catalog";
 import { SimCatalogHub } from "../sim-landing/subpages/sim-catalog-hub";
 import { marketingMetadata } from "../metadata";
@@ -8,7 +10,10 @@ export const metadata = marketingMetadata({
   path: "/use-cases",
 });
 
-export default function UseCasesIndexPage() {
+export default async function UseCasesIndexPage() {
+  "use cache";
+  cacheLife("days");
+
   return (
     <SimCatalogHub
       description={indexCopy.useCases.description}

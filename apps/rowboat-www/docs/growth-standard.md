@@ -49,17 +49,17 @@ seams. This plan closes those seams before the surface area doubles.
 These are facts from the working tree. The generators must extend them, not
 replace them.
 
-| Capability                 | Today                                                                    | Gap                                                                                              |
-| -------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| Shared primitives          | `npm run ui:add` (shadcn CLI into `packages/ui`)                         | Keep. Do not generate primitives with the product CLI.                                           |
-| Product / route components | `npm run component:new` → `.tsx` + `.test.tsx`                           | No Zod props, no JSDoc, no story, no `.lit.ts`.                                                  |
-| OpenAPI clients + Zod      | Orval via `npm run contracts:generate` into `lib/api/generated`          | Hand-written domain types still sit beside generated schemas (`types/revenue.ts`, `as T` casts). |
-| Pages                      | Six product `page.tsx` files; each owns a route `_components/` island    | Route-local `loading.tsx` / `error.tsx` / `search-params.ts` now exist for the product leaves.   |
-| Hooks                      | Manual `hooks/queries/use-*.ts` + `utils/fetch-*.ts` + `utils/*-keys.ts` | Correct split, no generator. Some fetchers still cast.                                           |
-| Stores                     | `stores/browser-session/store.ts` is a marketing stub                    | No Zustand product store yet; generator must encode the "ephemeral only" rule.                   |
-| Storybook                  | `stories/*.stories.tsx` for `@oppulence/ui` only                         | No product-feature stories.                                                                      |
-| Enforcement                | WEB019 location, WEB020 colocated tests, WEB022 API-route Zod            | No rules for pages, hooks, libs, stores, stories, or naked domain types.                         |
-| Template engine            | String templates inside `scripts/generate-component.ts`                  | Works and is tested. Not reusable across kinds. No open-source template library.                 |
+| Capability                 | Today                                                                    | Gap                                                                                                                                                                                                      |
+| -------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared primitives          | `npm run ui:add` (shadcn CLI into `packages/ui`)                         | Keep. Do not generate primitives with the product CLI.                                                                                                                                                   |
+| Product / route components | `npm run component:new` → `.tsx` + `.test.tsx`                           | No Zod props, no JSDoc, no story, no `.lit.ts`.                                                                                                                                                          |
+| OpenAPI clients + Zod      | Orval via `npm run contracts:generate` into `lib/api/generated`          | Workspace, actions, impact, digest, commitments, and relationship-sources reads are `z.infer` of Orval schemas. Report, relationships, communication, and `lib/revenue/revenue.ts` mutations still cast. |
+| Pages                      | Six product `page.tsx` files; each owns a route `_components/` island    | Route-local `loading.tsx` / `error.tsx` / `search-params.ts` now exist for the product leaves.                                                                                                           |
+| Hooks                      | Manual `hooks/queries/use-*.ts` + `utils/fetch-*.ts` + `utils/*-keys.ts` | Correct split, no generator. Some fetchers still cast.                                                                                                                                                   |
+| Stores                     | `stores/browser-session/store.ts` is a marketing stub                    | No Zustand product store yet; generator must encode the "ephemeral only" rule.                                                                                                                           |
+| Storybook                  | `stories/*.stories.tsx` for `@oppulence/ui` only                         | No product-feature stories.                                                                                                                                                                              |
+| Enforcement                | WEB019 location, WEB020 colocated tests, WEB022 API-route Zod            | No rules for pages, hooks, libs, stores, stories, or naked domain types.                                                                                                                                 |
+| Template engine            | String templates inside `scripts/generate-component.ts`                  | Works and is tested. Not reusable across kinds. No open-source template library.                                                                                                                         |
 
 Non-negotiable boundaries that generators must preserve:
 
@@ -370,7 +370,7 @@ Component source rules (upgrade from the current template):
 ### 6.3 `gen page` — Next.js product skeleton
 
 New product areas are real App Router routes under the server-authenticated
-product layout. They are not new cases in `product-dashboard-client.tsx`.
+product layout. They are not new cases in `components/features/dashboard/product-dashboard-client/product-dashboard-client.tsx`.
 
 ```bash
 npm run gen -- page --route forecasts --name forecasts --title "Forecasts"
@@ -464,7 +464,7 @@ The split already used by `use-report.ts` is the standard:
 | `utils/*-keys.ts`     | shared                         | key factory + `staleTime` constants        |
 
 The generated fetcher calls `requestJson({ path, schema, signal })` and returns
-the parsed value. It does not `as` the result into `types/revenue.ts`. If a view
+the parsed value. It does not `as` the result into `lib/revenue/types.ts`. If a view
 model is required, it is a named Zod transform in a schema module, not a cast.
 
 When the operation has query parameters, `--operation` also binds
@@ -659,10 +659,12 @@ apps/rowboat-www/
 │   ├── search-params.ts
 │   └── _components/<name>/          # route-private UI
 ├── components/features/<domain>/<name>/
-├── hooks/queries/
+├── hooks/queries/               # gen hook / gen mutation only
 │   ├── use-<name>.ts
 │   └── utils/{fetch-<name>,<name>-keys}.ts
-├── lib/<domain>/                    # hand-written, Zod-validated
+├── hooks/dashboard/             # product composition; not generated
+├── lib/<domain>/                    # hand-written, Zod-validated; no barrels
+│   # import @/lib/revenue/revenue, never @/lib/revenue
 ├── lib/api/generated/               # Orval only
 ├── stores/<name>/                   # ephemeral Zustand only
 ├── stories/                         # @oppulence/ui catalog only
@@ -729,7 +731,7 @@ existing tests plus new golden tests pass.
 - Add WEB024 for new pages only (baseline the six current product pages).
 
 **Exit:** `gen page --route forecasts` writes a route that typechecks, lint-cleans,
-and does not touch `product-dashboard-client.tsx`.
+and does not touch `components/features/dashboard/product-dashboard-client/product-dashboard-client.tsx`.
 
 ### Phase 4 — `lib`, `hook`, `store`, `story`
 

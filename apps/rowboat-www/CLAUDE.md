@@ -35,7 +35,7 @@ Rules that must survive implementation:
   object shapes. No `as T` after JSON.
 - Server Components by default. `--client` only when hooks, events, or browser
   APIs require it.
-- Do not add surfaces to `product-dashboard-client.tsx`.
+- Do not add surfaces to `components/features/dashboard/product-dashboard-client/product-dashboard-client.tsx`.
 - Shared primitives: `npm run ui:add`, not `gen`. OpenAPI types: Orval, not a
   hand-written duplicate.
 

@@ -5,7 +5,7 @@ import {
   type ConsolePreferences,
   type ConsoleResource,
   type ConsoleResourceKind,
-} from "@/lib/console-contract";
+} from "@/lib/console/console-contract";
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
 
 const PREFERENCES_PATH = "/console/preferences";

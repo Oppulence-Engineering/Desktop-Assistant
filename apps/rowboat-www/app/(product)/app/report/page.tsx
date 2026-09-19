@@ -1,35 +1,37 @@
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { Suspense } from "react";
 
 import { ReportDashboardRoute } from "@/app/(product)/app/report/_components/report-dashboard-route/report-dashboard-route";
 import { prefetchReport } from "@/app/(product)/app/report/prefetch";
 import { reportSearchParamsCache } from "@/app/(product)/app/report/search-params";
-import { getQueryClient } from "@/lib/query/get-query-client";
+import { PrefetchHydration } from "@/lib/query/prefetch-hydration";
 
-// The Open Promises report is the wedge (one-pager §11). Signup lands here:
-// connect Gmail, scan six months, read the document. The sale and the activation
-// are one motion, so this route asks for nothing else first — no model key, no
-// workspace setup, no configuration.
-export const instant = false;
+import ReportLoading from "./loading";
 
 export const metadata = {
   title: "Open promises - Oppulence",
   description: "The commitments your team made that have no evidence of fulfilment.",
 };
 
-export default async function ReportPage({
-  searchParams,
-}: {
+type ReportPageProps = {
   searchParams: Promise<{ scan?: string | string[] }>;
-}) {
+};
+
+export default function ReportPage({ searchParams }: ReportPageProps) {
+  return (
+    <Suspense fallback={<ReportLoading />}>
+      <ReportRouteContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function ReportRouteContent({ searchParams }: ReportPageProps) {
   const raw = await searchParams;
   const { scan } = reportSearchParamsCache.parse({
     scan: Array.isArray(raw.scan) ? raw.scan[0] : raw.scan,
   });
-  const queryClient = getQueryClient();
-  await prefetchReport(queryClient, scan);
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
+    <PrefetchHydration seed={(queryClient) => prefetchReport(queryClient, scan)}>
       <ReportDashboardRoute />
-    </HydrationBoundary>
+    </PrefetchHydration>
   );
 }

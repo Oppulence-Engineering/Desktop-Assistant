@@ -28,7 +28,7 @@ import {
 import { Label } from "@oppulence/ui/components/label";
 import { Spinner } from "@oppulence/ui/components/spinner";
 import { Tabs, TabsList, TabsTrigger } from "@oppulence/ui/components/tabs";
-import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue";
+import { REVENUE_EVIDENCE_LOOKBACK_LABEL } from "@/lib/revenue/revenue";
 import {
   Dialog,
   DialogContent,
@@ -56,19 +56,19 @@ import {
   TypeNumber,
   TypeText,
 } from "@sim/emcn/icons";
-import { WorkspaceEmptyIllustration } from "@/components/revenue/shared";
+import { WorkspaceEmptyIllustration } from "@/components/features/revenue/shared/shared";
 import {
   SimProductHeader,
   SimProductPanel,
   SimProductToolbar,
-} from "@/components/features/sim-product/sim-product-frame";
+} from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
 
 import type { RegisterView } from "@/lib/revenue/commitment-register-filter";
 import type {
   RegisterEntry,
   RelationshipSourceInventoryItem,
   RevenueLeakScan,
-} from "@/types/revenue";
+} from "@/lib/revenue/types";
 
 export type { RegisterView } from "@/lib/revenue/commitment-register-filter";
 export { registerFilterFor } from "@/lib/revenue/commitment-register-filter";
@@ -239,7 +239,7 @@ function toQueueItems(entries: RegisterEntry[], now = new Date()): CommitmentQue
         direction: entry.direction,
         owner,
         counterparty,
-        dueAt: entry.dueAt,
+        dueAt: entry.dueAt ?? undefined,
         state: entry.state,
         acceptance: entry.acceptance ?? "candidate",
         blocker: entry.blocker,

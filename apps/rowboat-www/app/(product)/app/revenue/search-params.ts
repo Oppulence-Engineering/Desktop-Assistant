@@ -1,6 +1,6 @@
 import { createParser, createSearchParamsCache } from "nuqs/server";
 
-import { RevenueTabSchema, type RevenueTab } from "@/lib/product-navigation";
+import { RevenueTabSchema, type RevenueTab } from "@/lib/dashboard/product-navigation";
 
 export const revenueParsers = {
   tab: createParser({

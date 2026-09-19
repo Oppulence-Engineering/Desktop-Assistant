@@ -6,7 +6,7 @@ import { allCapabilityPages } from "@/app/(marketing)/catalog";
 import { getMarketingPage } from "@/app/(marketing)/marketing-data";
 import { buildLlmsTxt, getSeoLander } from "@/app/(marketing)/seo-theme";
 import { footerGroups, headerNav, dedicatedMarketingPaths } from "@/app/(marketing)/site";
-import sitemap from "@/app/sitemap";
+import { buildPublicSitemap } from "@/app/sitemap";
 
 const knownStaticHrefs = new Set([
   "/",
@@ -52,7 +52,7 @@ describe("public marketing information architecture", () => {
   });
 
   it("puts the dedicated public routes in the sitemap", () => {
-    const urls = sitemap().map((entry) => entry.url);
+    const urls = buildPublicSitemap().map((entry) => entry.url);
     expect(urls).toContain("https://oppulence.io");
     expect(urls).toContain("https://oppulence.io/download");
     expect(urls).toContain("https://oppulence.io/security");
@@ -169,6 +169,10 @@ describe("public marketing information architecture", () => {
       new URL("../app/(marketing)/sim-landing/footer-artwork.ts", import.meta.url),
       "utf8",
     );
+    const footerArtworkPlate = readFileSync(
+      new URL("../app/(marketing)/sim-landing/footer-artwork-plate.tsx", import.meta.url),
+      "utf8",
+    );
     const landingShell = readFileSync(
       new URL("../app/(marketing)/sim-landing/landing-shell.tsx", import.meta.url),
       "utf8",
@@ -184,76 +188,106 @@ describe("public marketing information architecture", () => {
     const page = readFileSync(new URL("../app/(marketing)/page.tsx", import.meta.url), "utf8");
     expect(page).toContain("SimLandingPage");
     expect(hero).toContain("SimHeroPlatformStage");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/hero-platform-stage.tsx", import.meta.url),
-      "utf8",
-    )).toContain("HeroPlatformLoopMount");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/hero-platform-stage.tsx", import.meta.url),
-      "utf8",
-    )).toContain("SimMobileHeroPreview");
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/hero-platform-stage.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain("HeroPlatformLoopMount");
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/hero-platform-stage.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain("SimMobileHeroPreview");
     expect(productDemo).toContain("ProductDemoCaption");
     expect(hero).toContain("A two-sided register of business promises");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/platform-suite.tsx", import.meta.url),
-      "utf8",
-    )).toContain("IsoIntegrateIllustration");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/platform-suite.tsx", import.meta.url),
-      "utf8",
-    )).toContain("ResponsiveDesignStage");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/hero-platform-loop.tsx", import.meta.url),
-      "utf8",
-    )).toContain("mode='native'");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/hero-platform-stage.tsx", import.meta.url),
-      "utf8",
-    )).toContain("sim-product-preview");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/platform-suite.tsx", import.meta.url),
-      "utf8",
-    )).toContain('data-iso-hover=""');
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/platform-suite.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain("IsoIntegrateIllustration");
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/platform-suite.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain("ResponsiveDesignStage");
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/hero-platform-loop.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain("mode='native'");
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/hero-platform-stage.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain("sim-product-preview");
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/platform-suite.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain('data-iso-hover=""');
     expect(landing).toContain("SimFeaturesRail");
     expect(productDemo).toContain("ProductDemoBeatProvider");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/product-demo-visual.tsx", import.meta.url),
-      "utf8",
-    )).toContain("ProductDemoVisualMount");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/composer-loop.tsx", import.meta.url),
-      "utf8",
-    )).toContain("composer-goo");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/mobile-hero-preview.tsx", import.meta.url),
-      "utf8",
-    )).toContain("EdgeFade");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/workspace-controls.tsx", import.meta.url),
-      "utf8",
-    )).toContain("size-[56px]");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/composer-loop.tsx", import.meta.url),
-      "utf8",
-    )).toContain("ComposerWorkflowStage");
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/product-demo-visual.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain("ProductDemoVisualMount");
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/composer-loop.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain("composer-goo");
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/mobile-hero-preview.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain("EdgeFade");
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/workspace-controls.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain("size-[56px]");
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/composer-loop.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain("ComposerWorkflowStage");
     expect(landing).not.toMatch(/<main[\s>]/);
     expect(editorial).toContain("Oppulence is not a CRM, and it is not your inbox.");
     expect(editorial).toContain("Commitment ledger");
     expect(editorial).toContain("SimAgentMomentum");
     expect(footer).toContain("SimThemeToggle");
     expect(footerWordmark).toContain("FooterWordmarkLoop");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/footer-wordmark-loop.tsx", import.meta.url),
-      "utf8",
-    )).toContain('data-stage="squeeze"');
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/footer-wordmark-loop.tsx", import.meta.url),
-      "utf8",
-    )).toContain("data-anim=\"metaballsA\"");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/footer-wordmark-loop.tsx", import.meta.url),
-      "utf8",
-    )).toContain('"metaballs", 2000');
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/footer-wordmark-loop.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain('data-stage="squeeze"');
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/footer-wordmark-loop.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain('data-anim="metaballsA"');
+    expect(
+      readFileSync(
+        new URL("../app/(marketing)/sim-landing/footer-wordmark-loop.tsx", import.meta.url),
+        "utf8",
+      ),
+    ).toContain('"metaballs", 2000');
     expect(simLandingStyles).toContain(".dark .sim-landing-root");
     expect(simLandingStyles).toContain("--text-base: 15px");
     expect(simLandingStyles).toContain(".sim-product-preview");
@@ -261,14 +295,24 @@ describe("public marketing information architecture", () => {
     expect(simLandingStyles).toContain("--preview-scale");
     expect(simLandingStyles).toContain("--preview-sidebar-width: 238px");
     expect(simLandingStyles).toContain(".text-\\[15px\\]");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/shared/responsive-design-stage.tsx", import.meta.url),
-      "utf8",
-    )).toContain("design-surface");
-    expect(readFileSync(
-      new URL("../app/(marketing)/sim-landing/shared/responsive-design-stage.tsx", import.meta.url),
-      "utf8",
-    )).toContain("--preview-scale");
+    expect(
+      readFileSync(
+        new URL(
+          "../app/(marketing)/sim-landing/shared/responsive-design-stage.tsx",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ).toContain("design-surface");
+    expect(
+      readFileSync(
+        new URL(
+          "../app/(marketing)/sim-landing/shared/responsive-design-stage.tsx",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    ).toContain("--preview-scale");
     expect(simLandingStyles).toContain("--surface-3: #242424");
     expect(simLandingStyles).not.toContain("letter-spacing: 0.28px");
     expect(simLandingStyles).not.toMatch(/font-family:/);
@@ -278,13 +322,14 @@ describe("public marketing information architecture", () => {
     expect(landing).toContain("gap-16 max-sm:gap-10 max-lg:gap-12");
     expect(landing).toContain("gap-7 max-lg:gap-4");
     expect(landing).toContain("SimFaqSection");
-    expect(closingCta).toContain("FOOTER_ARTWORK");
+    expect(closingCta).toContain("FooterArtworkPlate");
     expect(closingCta).toContain("sim-closing-artwork__plate");
-    expect(closingCta).toContain("block dark:hidden");
-    expect(closingCta).toContain('type="image/avif"');
-    expect(closingCta).toContain('type="image/webp"');
-    expect(closingCta).toContain("avifSrcSet");
     expect(closingCta).not.toContain("brightness-[0.28]");
+    expect(footerArtworkPlate).toContain("FOOTER_ARTWORK");
+    expect(footerArtworkPlate).toContain("block dark:hidden");
+    expect(footerArtworkPlate).toContain('type="image/avif"');
+    expect(footerArtworkPlate).toContain('type="image/webp"');
+    expect(footerArtworkPlate).toContain("avifSrcSet");
     expect(footerArtwork).toContain("/marketing/footer-artwork/");
     expect(footerArtwork).toContain("nyc-skyline");
     expect(footerArtwork).toContain("B&W");
@@ -316,7 +361,9 @@ describe("public marketing information architecture", () => {
     expect(styles).toContain(".mk-seo-audience");
     expect(buildLlmsTxt()).toContain("https://oppulence.io/help-center-software");
     expect(buildLlmsTxt()).toContain("https://oppulence.io/answers");
-    expect(sitemap().map((entry) => entry.url)).toContain("https://oppulence.io/answers");
+    expect(buildPublicSitemap().map((entry) => entry.url)).toContain(
+      "https://oppulence.io/answers",
+    );
   });
 
   it("applies Sim chrome to every marketing route, not only the homepage", () => {
@@ -343,7 +390,7 @@ describe("public marketing information architecture", () => {
     expect(shell).toContain('variant = "subpage"');
     expect(shell).toContain("linear-shell linear-guides");
     expect(theme).toContain(".sim-marketing-page-main");
-    expect(theme).toContain("@import \"./sim-landing/sim-landing.css\"");
+    expect(theme).toContain('@import "./sim-landing/sim-landing.css"');
     expect(styles).toContain("marketing-sim-theme.css");
 
     const marketingPages = [
@@ -396,7 +443,12 @@ describe("public marketing information architecture", () => {
       {
         route: "../app/(marketing)/compare-page.tsx",
         body: "../app/(marketing)/sim-landing/subpages/sim-compare-detail.tsx",
-        markers: ["SimCompareDetailPage", "All category seams", "[the seam in one line]", "The usual tool"],
+        markers: [
+          "SimCompareDetailPage",
+          "All category seams",
+          "[the seam in one line]",
+          "The usual tool",
+        ],
       },
       {
         route: "../app/(marketing)/download/page.tsx",
@@ -512,9 +564,7 @@ describe("public marketing information architecture", () => {
     for (const entry of refactored) {
       const route = readFileSync(new URL(entry.route, import.meta.url), "utf8");
       const body = readFileSync(new URL(entry.body, import.meta.url), "utf8");
-      const extra = entry.extra
-        ? readFileSync(new URL(entry.extra, import.meta.url), "utf8")
-        : "";
+      const extra = entry.extra ? readFileSync(new URL(entry.extra, import.meta.url), "utf8") : "";
       for (const marker of entry.markers) {
         if (marker === "TrustedBy") {
           expect(body).not.toContain(marker);
@@ -524,12 +574,15 @@ describe("public marketing information architecture", () => {
           expect(body).toContain(marker);
           continue;
         }
-        expect(route.includes(marker) || body.includes(marker), `${entry.route} missing ${marker}`).toBe(
-          true,
-        );
+        expect(
+          route.includes(marker) || body.includes(marker),
+          `${entry.route} missing ${marker}`,
+        ).toBe(true);
       }
       for (const marker of entry.extraMarkers ?? []) {
-        expect(extra.includes(marker), `${entry.extra} missing ${marker}`).toBe(true);
+        expect(extra.includes(marker), `${entry.extra ?? entry.route} missing ${marker}`).toBe(
+          true,
+        );
       }
       expect(route).not.toContain("MarketingCta");
       expect(route).not.toContain("linear-subpage");

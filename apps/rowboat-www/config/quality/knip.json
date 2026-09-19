@@ -39,7 +39,6 @@
     "components/ai-elements/task.tsx",
     "components/ai-elements/toolbar.tsx",
     "components/ai-elements/web-preview.tsx",
-    "hooks/use-mobile.ts",
     "lib/icon.tsx",
     "lib/api/generated/**",
     "quality/fixtures/**",
@@ -50,10 +49,16 @@
       "exports",
       "types"
     ],
-    "lib/{actions,cloud-workflows,revenue,metadata,product-navigation,dashboard-resource,dashboard-schemas,agent-history}.ts": [
+    "lib/metadata.ts": ["exports", "types"],
+    "lib/actions/actions.ts": ["exports", "types"],
+    "lib/agents/agent-history.ts": ["exports", "types"],
+    "lib/dashboard/{product-navigation,dashboard-resource,dashboard-schemas}.ts": [
       "exports",
       "types"
     ],
+    "lib/revenue/{revenue,types}.ts": ["exports", "types"],
+    "lib/actions/types.ts": ["exports", "types"],
+    "lib/workflows/cloud-workflows.ts": ["exports", "types"],
     "lib/icons.tsx": ["exports", "types"],
     "lib/connectors/hosted-oauth.ts": ["exports", "types"],
     "lib/content/editorial.ts": ["exports", "types"],
@@ -62,12 +67,11 @@
     "hooks/queries/**": ["exports", "types"],
     "lib/auth/{proxy,pkce}.ts": ["exports", "types"],
     "lib/dev/{debug-bundle,route-catalog}.ts": ["exports", "types"],
-    "components/revenue/shared.tsx": ["exports", "types"],
+    "components/features/revenue/shared/shared.tsx": ["exports", "types"],
     "components/features/dashboard/chat-route-provider/chat-route-provider.tsx": [
       "exports",
       "types"
-    ],
-    "types/{actions,revenue}.ts": ["exports", "types"]
+    ]
   },
   "ignoreDependencies": [
     "@emotion/react",

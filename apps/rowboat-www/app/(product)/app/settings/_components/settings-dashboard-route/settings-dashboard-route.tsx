@@ -6,12 +6,14 @@ import dynamic from "next/dynamic";
 import type { ComponentPropsWithoutRef } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";
-import { useAuthSession } from "@/components/auth-gate";
-import { useProductRouteState } from "@/hooks/use-product-route-state";
-import type { SettingsSection } from "@/lib/product-navigation";
+import { useAuthSession } from "@/components/auth/auth-gate";
+import { useProductRouteState } from "@/hooks/dashboard/use-product-route-state";
+import type { SettingsSection } from "@/lib/dashboard/product-navigation";
 
 const SettingsView = dynamic(() =>
-  import("@/components/app-settings").then((module) => module.SettingsView),
+  import("@/components/features/settings/app-settings/app-settings").then(
+    (module) => module.SettingsView,
+  ),
 );
 
 export type SettingsDashboardRouteProps = ComponentPropsWithoutRef<"section"> & {

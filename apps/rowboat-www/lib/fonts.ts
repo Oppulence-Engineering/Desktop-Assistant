@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { DM_Mono, Geist, Geist_Mono, Inter } from "next/font/google";
 import localFont from "next/font/local";
 
 import { cn } from "@/lib/utils";
@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 /**
  * Root font variables loaded once in `app/layout.tsx`.
  *
- * Route groups (marketing, auth) may add scoped display/body stacks on their
- * own wrappers; product and dashboard code read these defaults via CSS tokens.
+ * Marketing and auth add the shared mono stack from this module; product
+ * and dashboard code read the root defaults via CSS tokens.
  */
 const fontSans = Geist({
   variable: "--font-geist-sans",
@@ -24,7 +24,18 @@ const fontMono = Geist_Mono({
 const fontInter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+
+/**
+ * Shared public-site stacks. Instantiated once so marketing, legal, and auth
+ * do not each download their own next/font copy of the same family.
+ */
+const marketingMono = DM_Mono({
+  variable: "--font-marketing-mono",
   weight: ["400", "500"],
+  subsets: ["latin"],
   display: "swap",
 });
 
@@ -46,3 +57,5 @@ export const fontVariables = cn(
   fontInter.variable,
   fontDisplay.variable,
 );
+
+export const marketingFontVariables = marketingMono.variable;

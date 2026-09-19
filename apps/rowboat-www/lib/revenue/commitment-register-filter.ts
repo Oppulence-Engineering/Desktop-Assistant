@@ -1,4 +1,4 @@
-import type { CommitmentRegisterFilter } from "@/types/revenue";
+import type { CommitmentRegisterFilter } from "@/lib/revenue/types";
 
 /** The five views of the commitment register. Each one is a different query. */
 export type RegisterView = "we_owe" | "they_owe" | "changed" | "by_account" | "by_owner";

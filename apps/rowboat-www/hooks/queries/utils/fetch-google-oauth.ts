@@ -1,8 +1,11 @@
+import { z } from "zod";
+
 import { GetGoogleConnectionStatus200Response } from "@/lib/api/generated/zod/google-oauth/google-oauth";
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
-import type { GoogleConnectionStatus } from "@/lib/api/generated/client/model";
 
 const GOOGLE_OAUTH_PATH = "/google-oauth";
+
+export type GoogleConnectionStatus = z.infer<typeof GetGoogleConnectionStatus200Response>;
 
 export async function loadGoogleConnectionStatus(
   request: RequestJsonFn,
@@ -12,7 +15,7 @@ export async function loadGoogleConnectionStatus(
     path: GOOGLE_OAUTH_PATH,
     schema: GetGoogleConnectionStatus200Response,
     signal,
-  }) as Promise<GoogleConnectionStatus>;
+  });
 }
 
 export function fetchGoogleConnectionStatus(signal?: AbortSignal): Promise<GoogleConnectionStatus> {

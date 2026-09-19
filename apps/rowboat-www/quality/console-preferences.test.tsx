@@ -22,10 +22,10 @@ vi.mock("@/hooks/queries/utils/fetch-console", () => ({
 vi.mock("@/hooks/queries/utils/fetch-agents", () => ({
   fetchAgentSummaries: vi.fn().mockResolvedValue([{ slug: "reviewer", name: "Reviewer" }]),
 }));
-vi.mock("@/lib/console", () => ({
+vi.mock("@/lib/console/console", () => ({
   patchConsolePreferences: mocks.patchPreferences,
 }));
-vi.mock("@/lib/analytics", () => ({
+vi.mock("@/lib/analytics/analytics", () => ({
   capture: vi.fn(),
   RevenueEvents: { UpgradeClicked: "upgrade" },
   setAnalyticsConsent: mocks.setConsent,
@@ -33,14 +33,14 @@ vi.mock("@/lib/analytics", () => ({
 vi.mock("@/lib/auth/client", () => ({
   dashboardFetch: mocks.dashboardFetch,
 }));
-vi.mock("@/components/features/connectors/connector-settings", () => ({
+vi.mock("@/components/features/connectors/connector-settings/connector-settings", () => ({
   ConnectorSettings: () => null,
 }));
-vi.mock("@/components/features/account/delete-account-row", () => ({
+vi.mock("@/components/features/account/delete-account-row/delete-account-row", () => ({
   DeleteAccountRow: () => null,
 }));
 
-import { SettingsView } from "@/components/app-settings";
+import { SettingsView } from "@/components/features/settings/app-settings/app-settings";
 
 const preferences = {
   defaultAgentSlug: "reviewer",

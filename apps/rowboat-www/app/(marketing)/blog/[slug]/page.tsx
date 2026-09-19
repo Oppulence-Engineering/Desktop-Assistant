@@ -1,4 +1,6 @@
+import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { blogPostSlug, publishedBlogPost, publishedBlogPosts } from "@/lib/content/editorial";
 
@@ -9,8 +11,6 @@ import { MarkdownBody } from "../../render-markdown";
 import { alternativeFromSlug } from "../../seo-theme";
 import { SimBlogArchivePage } from "../../sim-landing/subpages/sim-marketing-bullet-page";
 import { SimSeoAlternativePage } from "../../sim-landing/subpages/sim-seo-alternative-page";
-
-export const instant = false;
 
 export function generateStaticParams() {
   const editorial = publishedBlogPosts().map((post) => blogPostSlug(post));
@@ -39,8 +39,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return { title: "Page not found — Oppulence" };
 }
 
-export default async function BlogSlugPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+async function renderBlogSlug(slug: string) {
+  "use cache";
+  cacheLife("days");
   const post = publishedBlogPost(slug);
   if (post) {
     const raw = await post.getText("raw");
@@ -73,4 +74,17 @@ export default async function BlogSlugPage({ params }: { params: Promise<{ slug:
   }
 
   notFound();
+}
+
+export default function BlogSlugPage({ params }: { params: Promise<{ slug: string }> }) {
+  return (
+    <Suspense fallback={null}>
+      <BlogSlugFromParams params={params} />
+    </Suspense>
+  );
+}
+
+async function BlogSlugFromParams({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  return renderBlogSlug(slug);
 }

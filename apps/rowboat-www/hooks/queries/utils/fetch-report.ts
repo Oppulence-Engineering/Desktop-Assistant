@@ -4,7 +4,7 @@ import {
   ListRevenueLeakScans200Response,
 } from "@/lib/api/generated/zod/revenue/revenue";
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
-import type { OpenPromisesReport, RevenueLeakScan } from "@/types/revenue";
+import type { OpenPromisesReport, RevenueLeakScan } from "@/lib/revenue/types";
 
 const REPORT_SCAN_LIST_PATH = "/revenue-leak-scans?limit=10";
 

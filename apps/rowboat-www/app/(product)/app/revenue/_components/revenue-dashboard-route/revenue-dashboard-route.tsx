@@ -6,10 +6,12 @@ import dynamic from "next/dynamic";
 import type { ComponentPropsWithoutRef } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";
-import { useProductRouteState } from "@/hooks/use-product-route-state";
+import { useProductRouteState } from "@/hooks/dashboard/use-product-route-state";
 
 const RevenuePanel = dynamic(() =>
-  import("@/components/revenue-panel").then((module) => module.RevenuePanel),
+  import("@/components/features/revenue/revenue-panel/revenue-panel").then(
+    (module) => module.RevenuePanel,
+  ),
 );
 
 export type RevenueDashboardRouteProps = ComponentPropsWithoutRef<"section">;

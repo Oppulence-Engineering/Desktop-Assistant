@@ -1,6 +1,6 @@
 import { ListAgentSessions200Response } from "@/lib/api/generated/zod/agent-sessions/agent-sessions";
 import { isOptionalRequestFailure, requestJson, type RequestJsonFn } from "@/lib/api/request-json";
-import type { SessionMeta } from "@/lib/chat-sessions";
+import type { SessionMeta } from "@/lib/agents/chat-sessions";
 
 const CHAT_SESSIONS_PATH = "/agent-sessions";
 

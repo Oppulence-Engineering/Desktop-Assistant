@@ -10,13 +10,13 @@ import {
   REVENUE_TAB_LABELS,
   SETTINGS_SECTIONS,
   ViewBoundary,
-} from "@/components/app-shell";
-import { useAuthSession } from "@/components/auth-gate";
-import { CommandPalette } from "@/components/command-palette";
+} from "@/components/features/dashboard/app-shell/app-shell";
+import { useAuthSession } from "@/components/auth/auth-gate";
+import { CommandPalette } from "@/components/features/dashboard/command-palette/command-palette";
 import { useDashboardChatController } from "@/components/features/dashboard/chat-route-provider/chat-route-provider";
-import { useProductRouteState } from "@/hooks/use-product-route-state";
+import { useProductRouteState } from "@/hooks/dashboard/use-product-route-state";
 import { SidebarSimple } from "@/lib/icons";
-import { useBooleanPref } from "@/lib/console-prefs";
+import { useBooleanPref } from "@/lib/console/console-prefs";
 import { Button } from "@oppulence/ui/components/button";
 import { Label } from "@oppulence/ui/components/label";
 import { cn } from "@oppulence/ui/lib/utils";

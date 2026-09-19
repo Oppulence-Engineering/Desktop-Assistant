@@ -1,10 +1,10 @@
 import { ListRevenueActions200Response } from "@/lib/api/generated/zod/revenue/revenue";
+import { withQueryString } from "@/lib/api/query-string";
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
-import type { RevenueAction } from "@/types/revenue";
+import type { RevenueAction } from "@/lib/revenue/types";
 
 function revenueActionsPath(queueStatus: string, limit: number): string {
-  const params = new URLSearchParams({ queueStatus, limit: String(limit) });
-  return `/revenue-actions?${params.toString()}`;
+  return withQueryString("/revenue-actions", { queueStatus, limit });
 }
 
 export async function loadRevenueActions(
@@ -18,7 +18,7 @@ export async function loadRevenueActions(
     schema: ListRevenueActions200Response,
     signal,
   });
-  return body.actions as RevenueAction[];
+  return body.actions ?? [];
 }
 
 export function fetchRevenueActions(

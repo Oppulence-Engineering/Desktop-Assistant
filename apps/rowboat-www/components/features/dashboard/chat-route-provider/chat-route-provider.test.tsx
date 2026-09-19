@@ -28,15 +28,15 @@ vi.mock("@/components/ai-elements/prompt-input", () => ({
   ),
   PromptInputTools: ({ children }: { children: React.ReactNode }) => children,
 }));
-vi.mock("@/components/app-shell", () => ({
+vi.mock("@/components/features/dashboard/app-shell/app-shell", () => ({
   useWorkspaceLabel: () => "Acme",
 }));
-vi.mock("@/components/auth-gate", () => ({
+vi.mock("@/components/auth/auth-gate", () => ({
   useAuthSession: () => ({
     user: { email: "person@example.com", organizationId: "org", id: "user" },
   }),
 }));
-vi.mock("@/hooks/use-agent-catalog", () => ({
+vi.mock("@/hooks/dashboard/use-agent-catalog", () => ({
   useAgentCatalog: () => ({
     agentOptions: ["assistant"],
     refreshAgents: vi.fn(),
@@ -44,7 +44,7 @@ vi.mock("@/hooks/use-agent-catalog", () => ({
     setSelectedAgent: vi.fn(),
   }),
 }));
-vi.mock("@/hooks/use-agent-run", () => ({
+vi.mock("@/hooks/dashboard/use-agent-run", () => ({
   useAgentRun: () => ({
     beginOpenRun: vi.fn(),
     chatError: null,
@@ -63,13 +63,13 @@ vi.mock("@/hooks/use-agent-run", () => ({
     text: "",
   }),
 }));
-vi.mock("@/hooks/use-chat-sessions", () => ({
+vi.mock("@/hooks/dashboard/use-chat-sessions", () => ({
   useChatSessions: () => ({ openSession: vi.fn(), sessions: [] }),
 }));
-vi.mock("@/hooks/use-dashboard-artifact", () => ({
+vi.mock("@/hooks/dashboard/use-dashboard-artifact", () => ({
   useDashboardArtifact: () => null,
 }));
-vi.mock("@/hooks/use-product-route-state", () => ({
+vi.mock("@/hooks/dashboard/use-product-route-state", () => ({
   useProductRouteState: () => ({
     navigateTo: mocks.navigateTo,
     openRevenueTab: vi.fn(),

@@ -1,9 +1,9 @@
+import { cacheLife } from "next/cache";
+
 import { blogCategories, blogPostSlug, publishedBlogPosts } from "@/lib/content/editorial";
 
 import { SimBlogIndexPage } from "../sim-landing/subpages/sim-blog-index-page";
 import { marketingMetadata } from "../metadata";
-
-export const instant = false;
 
 export const metadata = marketingMetadata({
   title: "Blog",
@@ -12,7 +12,9 @@ export const metadata = marketingMetadata({
   path: "/blog",
 });
 
-export default function BlogIndexPage() {
+export default async function BlogIndexPage() {
+  "use cache";
+  cacheLife("days");
   const posts = publishedBlogPosts();
 
   return (

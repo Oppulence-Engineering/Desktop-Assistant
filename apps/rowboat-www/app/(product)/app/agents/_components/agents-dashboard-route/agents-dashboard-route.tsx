@@ -9,7 +9,9 @@ import { cn } from "@oppulence/ui/lib/utils";
 import { useDashboardChatController } from "@/components/features/dashboard/chat-route-provider/chat-route-provider";
 
 const AgentsView = dynamic(() =>
-  import("@/components/agents/agents-view").then((module) => module.AgentsView),
+  import("@/components/features/agents/agents-view/agents-view").then(
+    (module) => module.AgentsView,
+  ),
 );
 
 export type AgentsDashboardRouteProps = ComponentPropsWithoutRef<"section">;

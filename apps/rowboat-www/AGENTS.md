@@ -43,7 +43,7 @@ replicas, and an HPA. Do not assume that it is deployed on Vercel.
   streaming starts.
 - `/app`, `/app/agents`, `/app/workflows`, `/app/settings`, and `/app/revenue`
   are real Server Component routes. They currently share the legacy
-  `product-dashboard-client.tsx` island while features are extracted.
+  `components/features/dashboard/product-dashboard-client/product-dashboard-client.tsx` island while features are extracted.
 - Route handlers under `app/api` provide auth, public API documentation,
   downloads, public plan responses, and the authenticated Go API proxy.
 - Next.js Cache Components and partial prefetching are enabled.
@@ -73,7 +73,9 @@ do not call protected Go API endpoints directly from Client Components.
   exact migration seams are recorded in `eslint.config.mjs`.
 - Live product behavior uses SSE, polling, and TanStack Query. New remote
   reads and writes are scaffolded with `gen hook` / `gen mutation` (prefer
-  `--operation`). Fetchers call `requestJson` with an Orval Zod schema from
+  `--operation`) and live in `hooks/queries/`. Dashboard composition
+  (`use-product-route-state`, chat session orchestration) lives in
+  `hooks/dashboard/`. Fetchers call `requestJson` with an Orval Zod schema from
   `lib/api/generated/zod`. Do not enable Orval `client: "react-query"` and do
   not add tRPC — the BFF plus Go OpenAPI is the compiler.
 - Independent requests are generally parallelized with `Promise.all`.
@@ -156,7 +158,7 @@ Optional flags on `feature`: `--client` (panel only), `--lib`,
 `--store-name canvas-viewport`, `--fields tab:string`, `--operation listConnectors`
 (or `--orval-schema` + `--orval-import` + `--path`). That also writes the
 hook, a `prefetch-*.ts` helper, and a route `prefetch.ts` that seeds
-HydrationBoundary. Do not use tRPC; Orval + `requestJson` is the fetch compiler.
+`PrefetchHydration` behind Suspense. Do not use tRPC; Orval + `requestJson` is the fetch compiler.
 
 Atomic examples:
 
@@ -177,7 +179,7 @@ After generation:
 1. Fill implementation regions. Keep the generated file-level JSDoc.
 2. Extend the generated test through accessible roles and user-visible behavior.
 3. Do not add barrel `index.ts` files.
-4. Do not add the surface to `product-dashboard-client.tsx` or
+4. Do not add the surface to `components/features/dashboard/product-dashboard-client/product-dashboard-client.tsx` or
    `dashboard-route-content.tsx`.
 
 ### 3. Type and boundary rules agents must not break
@@ -281,7 +283,7 @@ guidance.
 ### Use route-based product architecture
 
 Do not add another major dashboard surface to the internal `view` switch in
-`app/(product)/app/product-dashboard-client.tsx`.
+`components/features/dashboard/product-dashboard-client/product-dashboard-client.tsx`.
 
 New product areas should be real routes beneath a server-authenticated product
 layout. The target structure is:

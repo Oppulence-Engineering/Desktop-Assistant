@@ -1,0 +1,432 @@
+"use client";
+
+import "client-only";
+
+import * as React from "react";
+import {
+  ArrowClockwise,
+  CheckCircle,
+  CurrencyDollar,
+  ListChecks,
+  Prohibit,
+  Receipt,
+  ShieldCheck,
+  WarningCircle,
+} from "@/lib/icons";
+
+import { Alert, AlertDescription, AlertTitle } from "@oppulence/ui/components/alert";
+import { Badge } from "@oppulence/ui/components/badge";
+import { Button } from "@oppulence/ui/components/button";
+import { Card, CardContent, CardFooter } from "@oppulence/ui/components/card";
+import { Spinner } from "@oppulence/ui/components/spinner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@oppulence/ui/components/dialog";
+import { Textarea } from "@oppulence/ui/components/textarea";
+import { useQueryClient } from "@tanstack/react-query";
+import { usePendingActionProposals } from "@/hooks/queries/use-action-proposals";
+import { actionProposalKeys } from "@/hooks/queries/utils/action-proposal-keys";
+import { capture, ActionEvents } from "@/lib/analytics/analytics";
+import { ActionAPIError, approve, execute, reject } from "@/lib/actions/actions";
+import { DashboardRequestError } from "@/lib/api/request-json";
+import {
+  errMessage,
+  ListSkeleton,
+  WorkspaceEmptyState,
+} from "@/components/features/revenue/shared/shared";
+import { ActionAuditSheet } from "@/components/features/actions/audit-sheet/audit-sheet";
+import type { ActionProposal, ActionStatus } from "@/lib/actions/types";
+
+function StatusBadge({ status }: { status: ActionStatus }) {
+  const map: Record<
+    ActionStatus,
+    { label: string; variant: "secondary" | "outline" | "destructive"; icon?: React.ReactNode }
+  > = {
+    pending: { label: "Awaiting approval", variant: "secondary" },
+    approved: { label: "Approved", variant: "outline", icon: <ShieldCheck weight="fill" /> },
+    executed: { label: "Executed", variant: "outline", icon: <CheckCircle weight="fill" /> },
+    executed_unconfirmed: { label: "Executed · unconfirmed", variant: "secondary" },
+    rejected: { label: "Rejected", variant: "destructive" },
+    failed: { label: "Failed", variant: "destructive" },
+    expired: { label: "Expired", variant: "secondary" },
+  };
+  const m = map[status] ?? { label: status, variant: "outline" as const };
+  return (
+    <Badge variant={m.variant} className="gap-1">
+      {m.icon}
+      {m.label}
+    </Badge>
+  );
+}
+
+// Ref renders a resourceRef / kind in a compact monospace chip.
+function Ref({ children }: { children: React.ReactNode }) {
+  return (
+    <Badge
+      variant="outline"
+      className="rounded-[2px] bg-background-200 px-1.5 py-0.5 font-mono text-xs font-normal text-primary/70 dark:bg-background-100"
+    >
+      {children}
+    </Badge>
+  );
+}
+
+export function ActionsView() {
+  const queryClient = useQueryClient();
+  const proposalsQuery = usePendingActionProposals();
+  const [localProposals, setLocalProposals] = React.useState<ActionProposal[] | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const [busy, setBusy] = React.useState<Record<string, string>>({}); // id → verb
+  const [rejecting, setRejecting] = React.useState<ActionProposal | null>(null);
+  const [auditRef, setAuditRef] = React.useState<string | null>(null);
+  // Tokens held in memory after approve for a within-session execute retry when
+  // the Act seam is momentarily unavailable. Never persisted.
+  const tokens = React.useRef<Record<string, string>>({});
+  const unavailable =
+    proposalsQuery.error instanceof DashboardRequestError &&
+    (proposalsQuery.error.status === 404 || proposalsQuery.error.status === 501);
+  const disabled = unavailable;
+  const proposals = unavailable
+    ? []
+    : (localProposals ?? proposalsQuery.data ?? (proposalsQuery.isPending ? null : []));
+
+  React.useEffect(() => {
+    if (proposalsQuery.data) setLocalProposals(proposalsQuery.data);
+  }, [proposalsQuery.data]);
+
+  React.useEffect(() => {
+    if (!proposalsQuery.error || unavailable) return;
+    setError(errMessage(proposalsQuery.error, "Could not load action proposals."));
+  }, [proposalsQuery.error, unavailable]);
+
+  const load = React.useCallback(async () => {
+    setError(null);
+    await queryClient.invalidateQueries({ queryKey: actionProposalKeys.lists() });
+  }, [queryClient]);
+
+  const setRowBusy = (id: string, verb: string | null) =>
+    setBusy((b) => {
+      const next = { ...b };
+      if (verb) next[id] = verb;
+      else delete next[id];
+      return next;
+    });
+
+  const replace = (p: ActionProposal) =>
+    setLocalProposals((cur) => (cur ? cur.map((x) => (x.id === p.id ? p : x)) : cur));
+
+  // Approve then immediately execute with the freshly issued token. If the Act
+  // seam is unavailable the proposal stays approved and the token is kept for a
+  // manual retry.
+  async function approveAndExecute(p: ActionProposal) {
+    setRowBusy(p.id, "approve");
+    setError(null);
+    try {
+      const res = await approve(p.id);
+      tokens.current[p.id] = res.token;
+      capture(ActionEvents.ProposalApproved, { kind: p.kind, financial: p.financial });
+      replace(res.proposal);
+      await runExecute(p.id, res.token, p.kind);
+    } catch (e) {
+      if (e instanceof ActionAPIError && e.code === "step_up_required") {
+        setError(
+          "This financial action needs recent re-authentication. Sign in again, then approve.",
+        );
+      } else {
+        setError(errMessage(e, "Could not approve the action."));
+      }
+      void load();
+    } finally {
+      setRowBusy(p.id, null);
+    }
+  }
+
+  async function runExecute(id: string, token: string, kind: string) {
+    setRowBusy(id, "execute");
+    try {
+      const done = await execute(id, token);
+      delete tokens.current[id];
+      capture(ActionEvents.ProposalExecuted, { kind, status: done.status });
+      replace(done);
+    } catch (e) {
+      if (e instanceof ActionAPIError && e.code === "execution_unavailable") {
+        setError(
+          "Approved, but no execution backend is configured yet. The approval is held — retry execute once the product Act seam is connected.",
+        );
+      } else {
+        setError(errMessage(e, "Execution failed."));
+      }
+      void load();
+    } finally {
+      setRowBusy(id, null);
+    }
+  }
+
+  async function doReject(reason: string) {
+    const p = rejecting;
+    if (!p) return;
+    setRejecting(null);
+    setRowBusy(p.id, "reject");
+    try {
+      const done = await reject(p.id, reason);
+      capture(ActionEvents.ProposalRejected, { kind: p.kind });
+      replace(done);
+    } catch (e) {
+      setError(errMessage(e, "Could not reject the action."));
+    } finally {
+      setRowBusy(p.id, null);
+    }
+  }
+
+  const openAudit = (ref: string) => {
+    capture(ActionEvents.AuditViewed, {});
+    setAuditRef(ref);
+  };
+
+  return (
+    <div className="flex min-h-full w-full min-w-0 flex-col" data-slot="actions-view">
+      <header className="flex min-h-12 items-center justify-between gap-4 border-b border-border px-3 py-2">
+        <p className="min-w-0 flex-1 truncate text-[13px] text-primary/55">
+          Closed-loop finance actions your agents propose. Approve one to issue a single-use, scoped
+          token and execute it against the product — money never moves without it.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void load()}
+          className="shrink-0 gap-1.5"
+        >
+          <ArrowClockwise weight="bold" /> Refresh
+        </Button>
+      </header>
+
+      {error ? (
+        <Alert className="m-3 border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300">
+          <WarningCircle weight="fill" className="mt-0.5 shrink-0" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {!proposals ? (
+        <ListSkeleton rows={3} />
+      ) : disabled ? (
+        <ActionsEmpty
+          description="Agent approvals are not switched on for this workspace yet. When they are, every finance action an agent proposes will wait here before anything happens."
+          title="Agent approvals"
+        />
+      ) : proposals.length === 0 ? (
+        <ActionsEmpty
+          description={
+            <>
+              No pending actions yet! Agent proposals
+              <br />
+              will land here for your approval.
+            </>
+          }
+          title="Agent approvals"
+        />
+      ) : (
+        <ul className="flex flex-col gap-3 p-3">
+          {proposals.map((p) => {
+            const verb = busy[p.id];
+            const heldToken = tokens.current[p.id];
+            return (
+              <li key={p.id}>
+                <Card className="gap-3 rounded-[2px] border-border bg-background py-4 shadow-none dark:bg-background-50">
+                  <CardContent className="flex flex-col gap-3 px-4 pt-0 pb-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Ref>{p.kind}</Ref>
+                      {p.financial ? (
+                        <Badge
+                          variant="outline"
+                          className="gap-1 border-amber-500/40 text-amber-600 dark:text-amber-400"
+                        >
+                          <CurrencyDollar weight="fill" /> Financial
+                        </Badge>
+                      ) : null}
+                      <StatusBadge status={p.status} />
+                      <Badge variant="secondary" className="ml-auto font-normal text-primary/45">
+                        {new Date(p.createdAt).toLocaleString()}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-sm text-primary/70">
+                      <Receipt weight="fill" className="shrink-0 text-primary/40" />
+                      <Ref>{p.target}</Ref>
+                    </div>
+
+                    {p.rationale ? <p className="text-sm text-primary/70">{p.rationale}</p> : null}
+
+                    {p.paramsJson ? (
+                      <details className="text-xs">
+                        <summary className="cursor-pointer select-none text-primary/50 hover:text-primary/70">
+                          Parameters
+                        </summary>
+                        <pre className="mt-1 overflow-x-auto rounded-[2px] bg-background-200 p-2 font-mono text-[11px] text-primary/70 dark:bg-background-100">
+                          {prettyParams(p.paramsJson)}
+                        </pre>
+                      </details>
+                    ) : null}
+
+                    {p.status === "executed" || p.status === "executed_unconfirmed" ? (
+                      <ExecutedNote proposal={p} />
+                    ) : null}
+                    {p.status === "failed" && p.reason ? (
+                      <p className="text-xs text-red-600 dark:text-red-400">{p.reason}</p>
+                    ) : null}
+                    {p.status === "rejected" && p.reason ? (
+                      <p className="text-xs text-primary/50">Rejected: {p.reason}</p>
+                    ) : null}
+                  </CardContent>
+
+                  <CardFooter className="flex flex-wrap items-center gap-2 border-t border-border/60 px-4 pt-3 pb-0">
+                    {p.status === "pending" ? (
+                      <>
+                        <Button
+                          size="sm"
+                          onClick={() => void approveAndExecute(p)}
+                          disabled={!!verb}
+                          className="gap-1.5"
+                        >
+                          {verb ? <Spinner /> : <ShieldCheck weight="fill" />}
+                          {verb === "approve"
+                            ? "Approving…"
+                            : verb === "execute"
+                              ? "Executing…"
+                              : "Approve & execute"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setRejecting(p)}
+                          disabled={!!verb}
+                          className="gap-1.5 text-primary/60"
+                        >
+                          <Prohibit weight="fill" /> Reject
+                        </Button>
+                      </>
+                    ) : null}
+                    {p.status === "approved" ? (
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          heldToken
+                            ? void runExecute(p.id, heldToken, p.kind)
+                            : setError(
+                                "This approval's token is no longer in this session. Reject and re-propose.",
+                              )
+                        }
+                        disabled={!!verb || !heldToken}
+                        className="gap-1.5"
+                      >
+                        {verb === "execute" ? <Spinner /> : <CheckCircle weight="fill" />}
+                        Execute
+                      </Button>
+                    ) : null}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openAudit(p.target)}
+                      className="ml-auto gap-1.5 text-primary/60"
+                    >
+                      <ListChecks weight="fill" /> Audit trail
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <RejectDialog proposal={rejecting} onCancel={() => setRejecting(null)} onConfirm={doReject} />
+      {auditRef ? (
+        <ActionAuditSheet resourceRef={auditRef} onClose={() => setAuditRef(null)} />
+      ) : null}
+    </div>
+  );
+}
+
+function ExecutedNote({ proposal }: { proposal: ActionProposal }) {
+  return (
+    <Alert className="border-emerald-500/30 bg-emerald-500/5 text-xs text-emerald-700 dark:text-emerald-300">
+      <CheckCircle weight="fill" />
+      <AlertTitle className="inline-flex items-center gap-1.5 text-xs font-normal">
+        {proposal.resolvedAt
+          ? "Loop closed — the product confirmed the change."
+          : "Executed — awaiting the product's return event to close the loop."}
+      </AlertTitle>
+      {proposal.resultRef ? (
+        <AlertDescription className="text-emerald-700 dark:text-emerald-300">
+          <Ref>{proposal.resultRef}</Ref>
+        </AlertDescription>
+      ) : null}
+    </Alert>
+  );
+}
+
+function ActionsEmpty({ title, description }: { title: string; description: React.ReactNode }) {
+  return (
+    <WorkspaceEmptyState
+      description={description}
+      image="actions"
+      learnMore={[
+        { label: "Approve before anything executes" },
+        { label: "Audit trail for every action" },
+      ]}
+      title={title}
+    />
+  );
+}
+
+function RejectDialog({
+  proposal,
+  onCancel,
+  onConfirm,
+}: {
+  proposal: ActionProposal | null;
+  onCancel: () => void;
+  onConfirm: (reason: string) => void;
+}) {
+  const [reason, setReason] = React.useState("");
+  React.useEffect(() => setReason(""), [proposal]);
+  return (
+    <Dialog open={!!proposal} onOpenChange={(o) => !o && onCancel()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Reject this action</DialogTitle>
+          <DialogDescription>
+            The proposal is discarded. Add a short reason for the audit trail.
+          </DialogDescription>
+        </DialogHeader>
+        <Textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Why is this being rejected?"
+          rows={3}
+        />
+        <DialogFooter>
+          <Button variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button variant="destructive" onClick={() => onConfirm(reason.trim())}>
+            Reject
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function prettyParams(raw: string): string {
+  try {
+    return JSON.stringify(JSON.parse(raw), null, 2);
+  } catch {
+    return raw;
+  }
+}

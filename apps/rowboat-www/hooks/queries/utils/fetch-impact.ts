@@ -3,10 +3,18 @@ import {
   GetRevenueImpact200Response,
 } from "@/lib/api/generated/zod/revenue/revenue";
 import { requestJson, type RequestJsonFn } from "@/lib/api/request-json";
-import type { RevenueDigest, RevenueImpact } from "@/types/revenue";
+import type { RevenueDigest, RevenueImpact } from "@/lib/revenue/types";
 
 const IMPACT_PATH = "/revenue-impact";
 const DIGEST_PATH = "/revenue-digest";
+
+function numberRecord(value: Record<string, unknown> | undefined): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const [key, item] of Object.entries(value ?? {})) {
+    if (typeof item === "number" && Number.isFinite(item)) counts[key] = item;
+  }
+  return counts;
+}
 
 export async function loadImpact(
   request: RequestJsonFn,
@@ -31,7 +39,7 @@ export async function loadImpact(
     lost: impact.lost ?? 0,
     replyRate: impact.replyRate ?? null,
     meetingRate: impact.meetingRate ?? null,
-    outcomes: (impact.outcomes ?? {}) as Record<string, number>,
+    outcomes: numberRecord(impact.outcomes),
     byDetector: (impact.byDetector ?? []).map((row) => ({
       detector: row.detector ?? "",
       surfaced: row.surfaced ?? 0,
@@ -53,11 +61,11 @@ export async function loadDigest(
   request: RequestJsonFn,
   signal?: AbortSignal,
 ): Promise<RevenueDigest> {
-  return (await request({
+  return request({
     path: DIGEST_PATH,
     schema: GetRevenueDigest200Response,
     signal,
-  })) as RevenueDigest;
+  });
 }
 
 export function fetchImpact(signal?: AbortSignal): Promise<RevenueImpact> {
