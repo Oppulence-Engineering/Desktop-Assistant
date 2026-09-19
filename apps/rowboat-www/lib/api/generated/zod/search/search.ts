@@ -38,12 +38,12 @@ export const SearchExaBody = zod
     type: zod.string().optional().describe("Exa search type, for example neural or keyword."),
   })
   .describe(
-    "Exa search request body. Solomon AI API applies a flat credit charge and forwards the JSON body unchanged to Exa \/search.",
+    "Exa search request body. Solomon AI API applies a flat credit charge and forwards the JSON body unchanged to Exa /search.",
   );
 
 export const SearchExa200Response = zod
   .record(zod.string(), zod.unknown())
-  .describe("Exa \/search JSON response, proxied unchanged.");
+  .describe("Exa /search JSON response, proxied unchanged.");
 
 export const SearchExa400Response = zod
   .strictObject({

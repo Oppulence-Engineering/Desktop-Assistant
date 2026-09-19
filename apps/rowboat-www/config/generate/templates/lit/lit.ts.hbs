@@ -1,0 +1,38 @@
+import { z } from "zod";
+
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * {{title}} — {{summary}}
+ *
+ * Living Interface Template. This file is the contract, not the
+ * implementation. Implementation lives in the siblings listed in `files`.
+ */
+export const {{litSchemaName}} = z.object({
+  kind: z.literal("{{artifactKind}}"),
+  name: z.literal("{{name}}"),
+  domain: z.literal("{{domain}}"),
+  owner: z.literal("{{owner}}"),
+  client: z.literal({{client}}),
+  summary: z.string().min(1),
+  schemas: z.array(z.string()),
+  files: z.array(z.string()),
+});
+
+export const {{litExportName}} = {{litSchemaName}}.parse({
+  kind: "{{artifactKind}}",
+  name: "{{name}}",
+  domain: "{{domain}}",
+  owner: "{{owner}}",
+  client: {{client}},
+  summary: {{{summaryLiteral}}},
+  schemas: [
+{{#each schemas}}
+    "{{this}}",
+{{/each}}
+  ],
+  files: [
+{{#each files}}
+    "{{this}}",
+{{/each}}
+  ],
+});

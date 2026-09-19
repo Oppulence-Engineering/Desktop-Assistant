@@ -83,7 +83,12 @@ export function SimBlogIndexPage({
   return (
     <div className="bg-[var(--bg)] pb-16 max-sm:pb-12">
       <div className={cn(LANDING_CONTENT_WIDTH, LANDING_GUTTER)}>
-        <SimSubpageHero description={description} eyebrow={eyebrow} title={title} titleId="blog-heading" />
+        <SimSubpageHero
+          description={description}
+          eyebrow={eyebrow}
+          title={title}
+          titleId="blog-heading"
+        />
         {categories.length > 0 ? (
           <nav aria-label="Blog categories" className="mt-6 flex flex-wrap gap-2">
             {categories.map((category) => (

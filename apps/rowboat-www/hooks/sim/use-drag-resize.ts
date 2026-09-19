@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from "react";
 
 interface UseDragResizeOptions {
   /** Cursor applied to the document body for the duration of the drag */
-  cursor: 'ew-resize' | 'ns-resize'
+  cursor: "ew-resize" | "ns-resize";
   /**
    * The CSS custom property this drag drives (e.g. `--panel-width`). During
    * the drag it is written as `${value}px`.
    */
-  cssVar: string
+  cssVar: string;
   /**
    * Returns the element the drag resizes, which is also the subtree
    * {@link cssVar} is written to during it — a style recalc scoped to that
@@ -17,7 +17,7 @@ interface UseDragResizeOptions {
    * `document.documentElement`. This element is also the drag's liveness
    * reference: once it detaches, the release stops recomputing from layout.
    */
-  getTarget: () => HTMLElement | null
+  getTarget: () => HTMLElement | null;
   /**
    * Other subtrees that read {@link cssVar} but are not what the drag resizes —
    * the toast stack insets by `--panel-width`/`--terminal-height` yet is
@@ -32,33 +32,33 @@ interface UseDragResizeOptions {
    * duplicate elements are ignored, and writing to one that detaches mid-drag
    * is harmless.
    */
-  getExtraTargets?: () => (HTMLElement | null)[]
+  getExtraTargets?: () => (HTMLElement | null)[];
   /**
    * Maps a pointer position to the clamped target dimension, or `null` to
    * ignore the move. Runs at most once per animation frame (before the write,
    * so a layout read here happens against clean layout) and once more on
    * release, so it may read layout but must stay cheap.
    */
-  compute: (ev: PointerEvent) => number | null
+  compute: (ev: PointerEvent) => number | null;
   /**
    * Persists the final value once when the drag ends. Should write the
    * authoritative value to `:root` (typically via the store setter) so
    * on-demand readers of {@link cssVar} stay correct; the scoped override is
    * then removed. Not called when the pointer never moved (a plain click).
    */
-  commit: (value: number) => void
+  commit: (value: number) => void;
   /**
    * Optional per-frame hook invoked after the variable is written (e.g. the
    * terminal's expanded-threshold store sync). Runs inside the rAF callback.
    */
-  onApply?: (value: number) => void
+  onApply?: (value: number) => void;
   /**
    * Optional drag-start hook (e.g. set a resize class). Return `false` to
    * abort the drag before any listeners are attached.
    */
-  onStart?: () => boolean | undefined
+  onStart?: () => boolean | undefined;
   /** Optional drag-end hook, invoked after teardown and commit */
-  onEnd?: () => void
+  onEnd?: () => void;
 }
 
 /**
@@ -92,96 +92,96 @@ interface UseDragResizeOptions {
  * surviving target element.
  */
 export function useDragResize(options: UseDragResizeOptions) {
-  const teardownRef = useRef<(() => void) | null>(null)
-  const optionsRef = useRef(options)
+  const teardownRef = useRef<(() => void) | null>(null);
+  const optionsRef = useRef(options);
 
   useEffect(() => {
-    optionsRef.current = options
-  }, [options])
+    optionsRef.current = options;
+  }, [options]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLElement>) => {
-    if (teardownRef.current) return
-    if (optionsRef.current.onStart?.() === false) return
+    if (teardownRef.current) return;
+    if (optionsRef.current.onStart?.() === false) return;
 
-    const handle = e.currentTarget
-    const pointerId = e.pointerId
-    const { cssVar } = optionsRef.current
-    const target = optionsRef.current.getTarget() ?? document.documentElement
-    const extras = optionsRef.current.getExtraTargets?.() ?? []
-    const targets = [...new Set([target, ...extras.filter((el) => el !== null)])]
-    document.body.style.cursor = optionsRef.current.cursor
-    document.body.style.userSelect = 'none'
-    handle.setPointerCapture?.(pointerId)
+    const handle = e.currentTarget;
+    const pointerId = e.pointerId;
+    const { cssVar } = optionsRef.current;
+    const target = optionsRef.current.getTarget() ?? document.documentElement;
+    const extras = optionsRef.current.getExtraTargets?.() ?? [];
+    const targets = [...new Set([target, ...extras.filter((el) => el !== null)])];
+    document.body.style.cursor = optionsRef.current.cursor;
+    document.body.style.userSelect = "none";
+    handle.setPointerCapture?.(pointerId);
 
-    let rafId: number | null = null
-    let lastEvent: PointerEvent | null = null
-    let lastApplied: number | null = null
+    let rafId: number | null = null;
+    let lastEvent: PointerEvent | null = null;
+    let lastApplied: number | null = null;
 
     const applyValue = (value: number) => {
-      for (const el of targets) el.style.setProperty(cssVar, `${value}px`)
-      lastApplied = value
-      optionsRef.current.onApply?.(value)
-    }
+      for (const el of targets) el.style.setProperty(cssVar, `${value}px`);
+      lastApplied = value;
+      optionsRef.current.onApply?.(value);
+    };
 
     const onPointerMove = (ev: PointerEvent) => {
-      if (ev.pointerId !== pointerId) return
-      lastEvent = ev
+      if (ev.pointerId !== pointerId) return;
+      lastEvent = ev;
       rafId ??= requestAnimationFrame(() => {
-        rafId = null
-        if (lastEvent === null) return
-        const value = optionsRef.current.compute(lastEvent)
-        if (value !== null) applyValue(value)
-      })
-    }
+        rafId = null;
+        if (lastEvent === null) return;
+        const value = optionsRef.current.compute(lastEvent);
+        if (value !== null) applyValue(value);
+      });
+    };
 
     const cleanup = () => {
       if (rafId !== null) {
-        cancelAnimationFrame(rafId)
-        rafId = null
+        cancelAnimationFrame(rafId);
+        rafId = null;
       }
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-      if (handle.hasPointerCapture?.(pointerId)) handle.releasePointerCapture(pointerId)
-      document.removeEventListener('pointermove', onPointerMove)
-      document.removeEventListener('pointerup', onPointerEnd)
-      document.removeEventListener('pointercancel', onPointerEnd)
-      window.removeEventListener('blur', endDrag)
-      teardownRef.current = null
-    }
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      if (handle.hasPointerCapture?.(pointerId)) handle.releasePointerCapture(pointerId);
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", onPointerEnd);
+      document.removeEventListener("pointercancel", onPointerEnd);
+      window.removeEventListener("blur", endDrag);
+      teardownRef.current = null;
+    };
 
     function endDrag() {
-      cleanup()
+      cleanup();
       // Recompute the final value from the last pointer position for an exact
       // finish (and flick-safety when no frame ran) — but only while the target
       // is still attached. On an unmount its rect can be detached, so a
       // layout-reading compute would return a degenerate value; there, commit
       // the last value actually shown to the user instead.
       if (lastEvent !== null && target.isConnected) {
-        const value = optionsRef.current.compute(lastEvent)
-        if (value !== null) applyValue(value)
+        const value = optionsRef.current.compute(lastEvent);
+        if (value !== null) applyValue(value);
       }
       if (lastApplied !== null) {
-        optionsRef.current.commit(lastApplied)
+        optionsRef.current.commit(lastApplied);
         for (const el of targets) {
-          if (el !== document.documentElement) el.style.removeProperty(cssVar)
+          if (el !== document.documentElement) el.style.removeProperty(cssVar);
         }
       }
-      optionsRef.current.onEnd?.()
+      optionsRef.current.onEnd?.();
     }
 
     function onPointerEnd(ev: PointerEvent) {
-      if (ev.pointerId !== pointerId) return
-      endDrag()
+      if (ev.pointerId !== pointerId) return;
+      endDrag();
     }
 
-    teardownRef.current = endDrag
-    document.addEventListener('pointermove', onPointerMove)
-    document.addEventListener('pointerup', onPointerEnd)
-    document.addEventListener('pointercancel', onPointerEnd)
-    window.addEventListener('blur', endDrag)
-  }, [])
+    teardownRef.current = endDrag;
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup", onPointerEnd);
+    document.addEventListener("pointercancel", onPointerEnd);
+    window.addEventListener("blur", endDrag);
+  }, []);
 
-  useEffect(() => () => teardownRef.current?.(), [])
+  useEffect(() => () => teardownRef.current?.(), []);
 
-  return { handlePointerDown }
+  return { handlePointerDown };
 }

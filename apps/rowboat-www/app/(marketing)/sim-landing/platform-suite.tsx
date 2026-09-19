@@ -6,11 +6,7 @@ import { type ComponentType, useState } from "react";
 
 import { cn } from "@/lib/sim/cn";
 
-import {
-  IsoIntegrateIllustration,
-  IsoMonitorIllustration,
-  type IsoTone,
-} from "./iso-marks";
+import { IsoIntegrateIllustration, IsoMonitorIllustration, type IsoTone } from "./iso-marks";
 import {
   HOME_INSET,
   HOME_TYPE,

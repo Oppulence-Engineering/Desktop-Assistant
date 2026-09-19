@@ -7,10 +7,4 @@ export { VoiceMenuPreview } from "./voice-menu-preview";
 export { WebMenuPreview } from "./web-menu-preview";
 
 export type ProductPreviewKey =
-  | "overview"
-  | "register"
-  | "web"
-  | "desktop"
-  | "voice"
-  | "account"
-  | "govern";
+  "overview" | "register" | "web" | "desktop" | "voice" | "account" | "govern";

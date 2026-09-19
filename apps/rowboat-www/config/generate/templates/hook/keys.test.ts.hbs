@@ -1,0 +1,11 @@
+import { describe, expect, it } from "vitest";
+
+import { {{keysName}}, {{staleName}} } from "./{{name}}-keys";
+
+describe("{{keysName}}", () => {
+  it("nests list and detail keys under the resource root", () => {
+    expect({{keysName}}.list()[0]).toBe("{{name}}");
+    expect({{keysName}}.detail("abc")).toEqual(["{{name}}", "detail", "abc", {}]);
+    expect({{staleName}}).toBe(15_000);
+  });
+});

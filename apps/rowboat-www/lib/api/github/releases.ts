@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cacheLife, cacheTag } from "next/cache";
 import { z } from "zod";
 
 /** Default repo for Oppulence Desktop installers and changelog cards. */
@@ -67,7 +68,6 @@ export function githubApiHeaders(): Record<string, string> {
 
 export type FetchGitHubReleasesOptions = {
   perPage?: number;
-  revalidate?: number;
   timeoutMs?: number;
 };
 
@@ -79,14 +79,16 @@ export async function fetchGitHubReleases<T extends GitHubReleaseListItem = GitH
   repo: string,
   options: FetchGitHubReleasesOptions = {},
 ): Promise<T[] | null> {
-  const { perPage = 10, revalidate = 900, timeoutMs = 8_000 } = options;
+  "use cache";
+  cacheLife("hours");
+  cacheTag("github-releases", `github-releases:${repo}`);
+  const { perPage = 10, timeoutMs = 8_000 } = options;
 
   try {
     const response = await fetch(
       `https://api.github.com/repos/${repo}/releases?per_page=${String(perPage)}`,
       {
         headers: githubApiHeaders(),
-        next: { revalidate },
         signal: AbortSignal.timeout(timeoutMs),
       },
     );

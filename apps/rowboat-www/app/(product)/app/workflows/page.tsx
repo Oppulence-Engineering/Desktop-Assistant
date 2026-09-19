@@ -1,17 +1,32 @@
-import { WorkflowsDashboardRoute } from "@/components/features/dashboard/dashboard-route-content/dashboard-route-content";
-import { workflowFocusFromParam } from "@/lib/product-navigation";
+import { Suspense } from "react";
 
-export const instant = false;
+import { WorkflowsDashboardRoute } from "@/app/(product)/app/workflows/_components/workflows-dashboard-route/workflows-dashboard-route";
+import { prefetchWorkflows } from "@/app/(product)/app/workflows/prefetch";
+import { workflowSearchParamsCache } from "@/app/(product)/app/workflows/search-params";
+import { PrefetchHydration } from "@/lib/query/prefetch-hydration";
 
-export default async function WorkflowsPage({
-  searchParams,
-}: {
+import WorkflowsLoading from "./loading";
+
+type WorkflowsPageProps = {
   searchParams: Promise<{ focus?: string | string[] }>;
-}) {
-  const { focus } = await searchParams;
+};
+
+export default function WorkflowsPage({ searchParams }: WorkflowsPageProps) {
   return (
-    <WorkflowsDashboardRoute
-      focus={workflowFocusFromParam(Array.isArray(focus) ? focus[0] : focus)}
-    />
+    <Suspense fallback={<WorkflowsLoading />}>
+      <WorkflowsRouteContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function WorkflowsRouteContent({ searchParams }: WorkflowsPageProps) {
+  const raw = await searchParams;
+  const { focus } = workflowSearchParamsCache.parse({
+    focus: Array.isArray(raw.focus) ? raw.focus[0] : raw.focus,
+  });
+  return (
+    <PrefetchHydration seed={prefetchWorkflows}>
+      <WorkflowsDashboardRoute focus={focus} />
+    </PrefetchHydration>
   );
 }

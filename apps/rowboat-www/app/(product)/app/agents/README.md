@@ -2,7 +2,7 @@
 
 **Goal:** Configure and run workspace agents against the Go API.
 
-**Client:** `components/agents/agents-view.tsx`, `agent-configuration-form.tsx`.
+**Client:** `components/features/agents/agents-view/agents-view.tsx`, `components/features/agents/agent-configuration-form/agent-configuration-form.tsx`.
 
 **BFF:** `/api/rowboat/v1/agents`, `/api/rowboat/v1/llm/models`.
 

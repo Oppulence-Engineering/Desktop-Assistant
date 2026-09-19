@@ -15,9 +15,9 @@ import {
   SimProductHeader,
   SimProductPanel,
   SimProductToolbar,
-} from "@/components/features/sim-product/sim-product-frame";
-import { decideRelationshipAttention } from "@/lib/revenue";
-import type { RelationshipAttentionItem } from "@/types/revenue";
+} from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
+import { decideRelationshipAttention } from "@/lib/revenue/revenue";
+import type { RelationshipAttentionItem } from "@/lib/revenue/types";
 
 const COLUMNS = [
   { name: "Account", icon: TypeText },

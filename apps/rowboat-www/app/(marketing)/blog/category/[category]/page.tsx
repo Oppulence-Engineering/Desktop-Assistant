@@ -1,4 +1,6 @@
+import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import {
   blogCategories,
@@ -9,8 +11,6 @@ import {
 
 import { SimBlogIndexPage } from "../../../sim-landing/subpages/sim-blog-index-page";
 import { marketingMetadata } from "../../../metadata";
-
-export const instant = false;
 
 export function generateStaticParams() {
   return blogCategories.map((category) => ({ category }));
@@ -26,12 +26,9 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   });
 }
 
-export default async function BlogCategoryPage({
-  params,
-}: {
-  params: Promise<{ category: string }>;
-}) {
-  const { category } = await params;
+async function renderBlogCategory(category: string) {
+  "use cache";
+  cacheLife("days");
   if (!isBlogCategory(category)) notFound();
   const posts = blogPostsInCategory(category);
 
@@ -62,4 +59,17 @@ export default async function BlogCategoryPage({
       title={category}
     />
   );
+}
+
+export default function BlogCategoryPage({ params }: { params: Promise<{ category: string }> }) {
+  return (
+    <Suspense fallback={null}>
+      <BlogCategoryFromParams params={params} />
+    </Suspense>
+  );
+}
+
+async function BlogCategoryFromParams({ params }: { params: Promise<{ category: string }> }) {
+  const { category } = await params;
+  return renderBlogCategory(category);
 }

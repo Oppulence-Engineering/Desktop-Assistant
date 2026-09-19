@@ -119,7 +119,6 @@ export async function resolveDownloadTarget(
   const fallback = releasesPageForApp(app);
   const releases = await fetchGitHubReleases(app.repo, {
     perPage: 20,
-    revalidate: 300,
     timeoutMs: 8_000,
   });
   if (!releases) return { kind: "fallback", url: fallback };

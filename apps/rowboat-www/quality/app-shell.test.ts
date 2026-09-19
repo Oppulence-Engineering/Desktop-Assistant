@@ -53,6 +53,66 @@ describe("Better Auth–style app shell", () => {
     expect(layout.indexOf("react-scan@0.5.7/dist/auto.global.js")).toBeLessThan(
       layout.indexOf("react-grab/dist/index.global.js"),
     );
+    expect(layout).not.toContain('src="/config.js"');
+    expect(layout).not.toContain("export const instant = false");
+  });
+
+  it("streams product leaves behind Suspense instead of opting each page out of instant nav", () => {
+    const leaves = [
+      "../app/(product)/app/page.tsx",
+      "../app/(product)/app/revenue/page.tsx",
+      "../app/(product)/app/agents/page.tsx",
+      "../app/(product)/app/workflows/page.tsx",
+      "../app/(product)/app/report/page.tsx",
+      "../app/(product)/app/settings/page.tsx",
+    ];
+
+    for (const relative of leaves) {
+      const page = readFileSync(new URL(relative, import.meta.url), "utf8");
+      expect(page, relative).toContain("Suspense");
+      expect(page, relative).toContain("PrefetchHydration");
+      expect(page, relative).not.toContain("export const instant = false");
+    }
+
+    const productLayout = readFileSync(
+      new URL("../app/(product)/app/layout.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(productLayout).toContain("export const instant = false");
+  });
+
+  it("loads public fonts once instead of per route group", () => {
+    const fonts = readFileSync(new URL("../lib/fonts.ts", import.meta.url), "utf8");
+    const marketing = readFileSync(
+      new URL("../app/(marketing)/layout.tsx", import.meta.url),
+      "utf8",
+    );
+    const legal = readFileSync(new URL("../app/(legal)/layout.tsx", import.meta.url), "utf8");
+    const auth = readFileSync(new URL("../app/(auth)/layout.tsx", import.meta.url), "utf8");
+
+    expect(fonts).toContain('from "next/font/google"');
+    expect(marketing).not.toContain('from "next/font/google"');
+    expect(legal).not.toContain('from "next/font/google"');
+    expect(auth).not.toContain('from "next/font/google"');
+    expect(auth).toContain("marketingFontVariables");
+    expect(auth).toContain("sim-landing-root");
+    expect(marketing).toContain("marketingFontVariables");
+  });
+
+  it("caches public marketing and legal leaves with use cache", () => {
+    const publicLeaves = [
+      "../app/(marketing)/page.tsx",
+      "../app/(marketing)/download/page.tsx",
+      "../app/(marketing)/guides/page.tsx",
+      "../app/(legal)/privacy/page.tsx",
+      "../app/(legal)/terms/page.tsx",
+    ];
+
+    for (const relative of publicLeaves) {
+      const page = readFileSync(new URL(relative, import.meta.url), "utf8");
+      expect(page, relative).toContain('"use cache"');
+      expect(page, relative).toContain("cacheLife(");
+    }
   });
 
   it("allows react-grab CDN and localhost MCP ports in development CSP", () => {

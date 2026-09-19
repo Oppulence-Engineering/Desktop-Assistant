@@ -1,0 +1,17 @@
+/**
+ * Auth crop of the shared NYC plate.
+ *
+ * The painting is the marketing close. A short left fade is the only local
+ * treatment — so the city meets the form column without a hard cut.
+ */
+.stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.plate {
+  -webkit-mask-image: linear-gradient(to right, rgb(0 0 0 / 0) 0%, rgb(0 0 0 / 1) 10%);
+  mask-image: linear-gradient(to right, rgb(0 0 0 / 0) 0%, rgb(0 0 0 / 1) 10%);
+}

@@ -1,3 +1,5 @@
+import { cacheLife } from "next/cache";
+
 import { comparePages } from "../compare-catalog";
 import { SimCompareHub } from "../sim-landing/subpages/sim-compare-hub";
 import { marketingMetadata } from "../metadata";
@@ -9,7 +11,10 @@ export const metadata = marketingMetadata({
   path: "/compare",
 });
 
-export default function CompareIndexPage() {
+export default async function CompareIndexPage() {
+  "use cache";
+  cacheLife("days");
+
   return (
     <SimCompareHub
       description="These pages exist because the jobs overlap in conversation and not in the product. We will not publish a dozen generic alternative essays to chase help-center keywords."

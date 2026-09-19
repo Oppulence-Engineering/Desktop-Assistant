@@ -1,12 +1,12 @@
+import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { customerStaticParams, publishedCustomerStory } from "@/lib/content/editorial";
 
 import { EditorialArticle } from "../../article-page";
 import { MarkdownBody } from "../../render-markdown";
 import { marketingMetadata } from "../../metadata";
-
-export const instant = false;
 
 export function generateStaticParams() {
   return customerStaticParams();
@@ -23,12 +23,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   });
 }
 
-export default async function CustomerStoryRoute({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
+async function renderCustomerStory(slug: string) {
+  "use cache";
+  cacheLife("days");
   const story = publishedCustomerStory(slug);
   if (!story) notFound();
 
@@ -59,4 +56,17 @@ export default async function CustomerStoryRoute({
       <MarkdownBody raw={raw} />
     </EditorialArticle>
   );
+}
+
+export default function CustomerStoryRoute({ params }: { params: Promise<{ slug: string }> }) {
+  return (
+    <Suspense fallback={null}>
+      <CustomerStoryFromParams params={params} />
+    </Suspense>
+  );
+}
+
+async function CustomerStoryFromParams({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  return renderCustomerStory(slug);
 }

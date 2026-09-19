@@ -1,0 +1,10 @@
+import { DashboardRouteFallback } from "@/lib/query/prefetch-hydration";
+
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * Independent loading boundary for {{title}} so the product shell can stream.
+ * Owned by `{{name}}.lit.ts`.
+ */
+export default function {{pascalName}}Loading() {
+  return <DashboardRouteFallback label="Loading {{title}}…" />;
+}

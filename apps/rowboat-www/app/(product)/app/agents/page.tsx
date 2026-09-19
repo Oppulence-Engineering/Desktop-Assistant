@@ -1,7 +1,17 @@
-import { AgentsDashboardRoute } from "@/components/features/dashboard/dashboard-route-content/dashboard-route-content";
+import { Suspense } from "react";
 
-export const instant = false;
+import { AgentsDashboardRoute } from "@/app/(product)/app/agents/_components/agents-dashboard-route/agents-dashboard-route";
+import { prefetchAgents } from "@/app/(product)/app/agents/prefetch";
+import { PrefetchHydration } from "@/lib/query/prefetch-hydration";
+
+import AgentsLoading from "./loading";
 
 export default function AgentsPage() {
-  return <AgentsDashboardRoute />;
+  return (
+    <Suspense fallback={<AgentsLoading />}>
+      <PrefetchHydration seed={prefetchAgents}>
+        <AgentsDashboardRoute />
+      </PrefetchHydration>
+    </Suspense>
+  );
 }

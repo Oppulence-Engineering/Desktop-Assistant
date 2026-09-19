@@ -4,7 +4,7 @@
 
 **URL state:** `?scan=<id>` identifies the active leak scan (shareable, no localStorage).
 
-**Client:** `report-client.tsx` — TanStack Query for sources, scans, poll until complete, report fetch.
+**Client:** `components/features/report/open-promises-report/open-promises-report.tsx` — TanStack Query for sources, scans, poll until complete, report fetch.
 
 **BFF endpoints:**
 

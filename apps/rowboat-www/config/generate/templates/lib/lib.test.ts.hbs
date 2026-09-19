@@ -1,0 +1,9 @@
+import { describe, expect, it } from "vitest";
+
+import { {{functionName}} } from "./{{name}}";
+
+describe("{{functionName}}", () => {
+  it("validates input before running", () => {
+    expect(() => {{functionName}}({} as never)).toThrow();
+  });
+});

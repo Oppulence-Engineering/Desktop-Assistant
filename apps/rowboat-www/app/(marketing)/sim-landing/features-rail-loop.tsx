@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Children,
-  type ReactNode,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { Children, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/sim/cn";
 

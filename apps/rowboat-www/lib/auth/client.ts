@@ -2,7 +2,15 @@
 
 import "client-only";
 
+import {
+  dashboardRequest,
+  loginURL,
+  redirectBrowserIfUnauthorized,
+  toDashboardAPIPath,
+} from "@/lib/auth/dashboard-fetch";
 import { BrowserSessionResponseSchema, type BrowserSessionResponse } from "@/lib/auth/schemas";
+
+export { loginURL, toDashboardAPIPath };
 
 /** Thrown when WorkOS refresh is temporarily unreachable but cookies may still be valid. */
 export class SessionUnavailableError extends Error {
@@ -30,37 +38,15 @@ export async function loadBrowserSession(): Promise<BrowserSessionResponse> {
   return BrowserSessionResponseSchema.parse(await res.json());
 }
 
-export function loginURL(returnTo = "/app"): string {
-  const params = new URLSearchParams({ return_to: returnTo });
-  return `/api/auth/workos/login?${params.toString()}`;
-}
-
 /**
- * Fetch wrapper for protected dashboard endpoints. It keeps every dashboard
- * request same-origin so the Next proxy can attach the rowboat-api bearer token
- * server-side and redirect the browser back through WorkOS when the session
- * expires.
+ * Browser dashboard fetch. Adds the login bounce that Server Components
+ * cannot perform. Prefer `requestJson` for new validated JSON reads.
  */
 export async function dashboardFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<Response> {
-  const res = await fetch(input, {
-    ...init,
-    credentials: "include",
-    signal: init?.signal ?? AbortSignal.timeout(30_000),
-    headers: {
-      ...(init?.headers || {}),
-    },
-  });
-  if (res.status === 401 && typeof window !== "undefined") {
-    window.location.assign(loginURL(window.location.pathname + window.location.search));
-  }
+  const res = await dashboardRequest(input, init);
+  redirectBrowserIfUnauthorized(res.status);
   return res;
-}
-
-export function toDashboardAPIPath(path: string): string {
-  if (path.startsWith("/api/")) return path;
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  return `/api/rowboat/v1${normalized}`;
 }

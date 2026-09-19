@@ -3,12 +3,7 @@ import Link from "next/link";
 import { cn } from "@/lib/sim/cn";
 
 import { SimHeroPlatformStage } from "./hero-platform-stage";
-import {
-  HOME_INSET,
-  HOME_TYPE,
-  LANDING_CONTENT_WIDTH,
-  LANDING_GUTTER,
-} from "./tokens";
+import { HOME_INSET, HOME_TYPE, LANDING_CONTENT_WIDTH, LANDING_GUTTER } from "./tokens";
 import { SimHeroCta } from "./primitives";
 
 /** Sim `Hero` + painted `HeroPlatformStage` using Oppulence copy and animated product loop. */

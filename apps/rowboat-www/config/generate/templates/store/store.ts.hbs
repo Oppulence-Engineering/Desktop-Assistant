@@ -1,0 +1,24 @@
+"use client";
+
+import "client-only";
+
+import { create } from "zustand";
+
+import { {{schemaName}}, type {{typeName}} } from "./{{name}}.schema";
+
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * Ephemeral {{title}} client state. Zustand is not for navigation, remote data,
+ * or shareable filters. Persist, if ever required, must go through
+ * `lib/storage/scoped-storage.ts`. Owned by `{{name}}.lit.ts`.
+ */
+const initialState = {{schemaName}}.parse({
+{{#each fields}}
+  {{name}}: {{storeInitial}},
+{{/each}}
+});
+
+export const {{storeHookName}} = create<{{typeName}} & { reset: () => void }>()((set) => ({
+  ...initialState,
+  reset: () => set(initialState),
+}));

@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { cacheLife } from "next/cache";
 import type { MetadataRoute } from "next";
 
 import { comparePages } from "./(marketing)/compare-catalog";
@@ -19,7 +20,7 @@ function publishedContentPaths(kind: "blog" | "customers") {
     });
 }
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export function buildPublicSitemap(): MetadataRoute.Sitemap {
   const seen = new Set<string>([SITE_URL]);
 
   const add = (
@@ -59,4 +60,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       .map((route) => add(route, "yearly", 0.3))
       .filter((entry): entry is NonNullable<typeof entry> => entry !== null),
   ];
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  "use cache";
+  cacheLife("days");
+  return buildPublicSitemap();
 }

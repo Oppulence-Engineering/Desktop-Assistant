@@ -10,9 +10,6 @@ import { cn } from "@/lib/utils";
 
 import "./globals.css";
 import "./product-theme.css";
-import { Geist } from "next/font/google";
-
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = createMetadata({
   title: {
@@ -31,12 +28,6 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: dark)", color: "#111111" },
   ],
 };
-
-// Cache Components still validates every segment for instant navigation.
-// The dashboard and marketing shells are client-heavy; a dropped segment
-// was surfacing as a hard "/app" or "/" crash overlay. Opt the tree out
-// so a missing prerender shell is not reported as a runtime crash.
-export const instant = false;
 
 /**
  * Dev tooling from the react-grab / react-scan ecosystem (Aiden Bai):
@@ -72,7 +63,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
-      className={cn(fontVariables, "antialiased", "font-sans", geist.variable)}
+      className={cn(fontVariables, "antialiased", "font-sans")}
       suppressHydrationWarning
       data-scroll-behavior="smooth"
     >
@@ -85,7 +76,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             strategy="beforeInteractive"
           />
         ) : null}
-        <Script src="/config.js" strategy="beforeInteractive" />
         {devToolsEnabled ? (
           <>
             <Script

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { featureDetails } from "../marketing-data";
 import { getMarketingPage, marketingPaths } from "../marketing-data";
@@ -14,8 +16,6 @@ import { SimSeoLanderPage } from "../sim-landing/subpages/sim-seo-lander-page";
 type PageProps = {
   params: Promise<{ slug: string[] }>;
 };
-
-export const instant = false;
 
 export function generateStaticParams() {
   const moved = new Set([
@@ -55,9 +55,10 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   });
 }
 
-export default async function Page(props: PageProps) {
-  const { slug } = await props.params;
-  const page = getMarketingPage(slug.join("/"));
+async function renderCatchAll(path: string) {
+  "use cache";
+  cacheLife("days");
+  const page = getMarketingPage(path);
 
   if (!page) {
     notFound();
@@ -99,4 +100,17 @@ export default async function Page(props: PageProps) {
   }
 
   return <SimMarketingBulletPage page={page} />;
+}
+
+export default function Page(props: PageProps) {
+  return (
+    <Suspense fallback={null}>
+      <CatchAllFromParams params={props.params} />
+    </Suspense>
+  );
+}
+
+async function CatchAllFromParams({ params }: { params: Promise<{ slug: string[] }> }) {
+  const { slug } = await params;
+  return renderCatchAll(slug.join("/"));
 }

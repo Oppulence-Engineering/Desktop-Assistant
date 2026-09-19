@@ -26,10 +26,9 @@ export function MenuPreviewFrame({
       aria-hidden={interactive ? undefined : true}
       className={cn(
         "sim-product-preview isolate select-none overflow-hidden [container-type:inline-size]",
-        isStage
-          ? "relative size-full bg-[var(--bg)]"
-          : "pointer-events-none absolute inset-0",
-        !isStage && (isHero ? "bg-[var(--bg)]" : "bg-[var(--surface-3)] [--preview-content-width:576px]"),
+        isStage ? "relative size-full bg-[var(--bg)]" : "pointer-events-none absolute inset-0",
+        !isStage &&
+          (isHero ? "bg-[var(--bg)]" : "bg-[var(--surface-3)] [--preview-content-width:576px]"),
       )}
       data-menu-preview={kind}
       data-product-preview=""

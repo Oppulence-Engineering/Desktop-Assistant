@@ -1,0 +1,35 @@
+import {
+  createSearchParamsCache{{#if usesParseAsArray}},
+  parseAsArrayOf{{/if}}{{#if usesParseAsBoolean}},
+  parseAsBoolean{{/if}}{{#if usesParseAsInteger}},
+  parseAsInteger{{/if}}{{#if usesParseAsString}},
+  parseAsString{{/if}},
+} from "nuqs/server";
+import { z } from "zod";
+
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * Shareable view-state for the {{title}} route. The URL is the source of truth;
+ * do not reconstruct this with router.replace. Owned by `{{name}}.lit.ts`.
+ *{{#unless hasFields}} Add --fields or --operation query params to generate parsers.{{/unless}}
+ */
+export const {{searchSchemaName}} = z.object({
+{{#each fields}}
+  {{name}}: {{zod}}.optional(),
+{{/each}}
+});
+
+export type {{pascalName}}SearchParams = z.infer<typeof {{searchSchemaName}}>;
+
+export const {{parsersName}} = {
+{{#each fields}}
+  {{name}}: {{nuqsParser}},
+{{/each}}
+} as const;
+
+export const {{urlKeysName}} = {
+  history: "replace",
+  clearOnDefault: true,
+} as const;
+
+export const {{searchCacheName}} = createSearchParamsCache({{parsersName}});

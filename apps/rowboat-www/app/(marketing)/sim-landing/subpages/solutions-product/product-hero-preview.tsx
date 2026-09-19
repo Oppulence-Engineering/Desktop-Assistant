@@ -37,9 +37,7 @@ export function ProductHeroPreview({ product, compact = false }: ProductHeroPrev
     <div
       className={cn(
         "sim-product-preview relative isolate overflow-hidden",
-        compact
-          ? "h-full min-h-[240px]"
-          : "h-[420px] max-lg:h-[400px]",
+        compact ? "h-full min-h-[240px]" : "h-[420px] max-lg:h-[400px]",
         !compact && product !== "govern" && "max-sm:h-[320px]",
       )}
       data-product-hero={product}

@@ -1,0 +1,22 @@
+"use client";
+
+import "client-only";
+
+import { useQuery } from "@tanstack/react-query";
+
+import { {{fetchName}}{{#if hasQuery}}, type {{queryTypeName}}{{/if}} } from "@/hooks/queries/utils/fetch-{{name}}";
+import { {{keysName}}, {{staleName}} } from "@/hooks/queries/utils/{{name}}-keys";
+
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * Client query hook for {{title}}. Keys, staleTime, and the fetcher stay in
+ * non-client modules. Owned by `use-{{name}}.lit.ts`.
+ */
+export function {{hookName}}({{#if hasPathParams}}{{pathParamsSignature}}{{#if hasQuery}}, {{/if}}{{/if}}{{#if hasQuery}}query?: {{queryTypeName}}{{/if}}) {
+  return useQuery({
+    queryKey: {{keysName}}.{{#if hasPathParams}}detail({{pathParamsCall}}{{#if hasQuery}}, query{{/if}}){{else}}{{#if hasQuery}}list(query){{else}}all{{/if}}{{/if}},
+    queryFn: ({ signal }) =>
+      {{fetchName}}({{#if hasPathParams}}{{pathParamsCall}}, {{/if}}{{#if hasQuery}}query, {{/if}}signal),
+    staleTime: {{staleName}},
+  });
+}

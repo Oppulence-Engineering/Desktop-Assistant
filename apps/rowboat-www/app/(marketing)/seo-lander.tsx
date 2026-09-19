@@ -26,10 +26,7 @@ export function SeoLanderSections({ lander }: { lander: SeoLander }) {
       </section>
 
       <section className="mk-capability-grid">
-        <SectionHeading
-          eyebrow="[terms people blur]"
-          title="Three jobs that are not the same."
-        />
+        <SectionHeading eyebrow="[terms people blur]" title="Three jobs that are not the same." />
         <div>
           {lander.distinctions.map((item) => (
             <article key={item.title}>
@@ -101,7 +98,10 @@ export function SeoAlternativeSections({ alternative }: { alternative: SeoAltern
 
       <section className="mk-seo-audience">
         <div>
-          <SectionHeading eyebrow="[what they are]" title={`${alternative.competitor} is ${alternative.category} software.`} />
+          <SectionHeading
+            eyebrow="[what they are]"
+            title={`${alternative.competitor} is ${alternative.category} software.`}
+          />
           <p>{alternative.whatTheyAre}</p>
         </div>
         <div>

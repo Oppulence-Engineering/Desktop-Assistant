@@ -53,7 +53,11 @@ export function SimBillingStatusPage({
           </div>
           <div className="mt-8 flex flex-wrap gap-3">
             {actions.map((action) => (
-              <SimCtaLink href={action.href} key={action.href} variant={action.variant ?? "primary"}>
+              <SimCtaLink
+                href={action.href}
+                key={action.href}
+                variant={action.variant ?? "primary"}
+              >
                 {action.label}
               </SimCtaLink>
             ))}

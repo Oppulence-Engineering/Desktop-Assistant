@@ -65,7 +65,12 @@ export function ProductShowcase({ feature, description }: ProductShowcaseProps) 
           </p>
           {feature.cta ? (
             <div className="mt-4">
-              <SimCtaLink className="max-w-full" href={feature.cta.href} variant="outline" withArrow>
+              <SimCtaLink
+                className="max-w-full"
+                href={feature.cta.href}
+                variant="outline"
+                withArrow
+              >
                 {feature.cta.label}
               </SimCtaLink>
             </div>

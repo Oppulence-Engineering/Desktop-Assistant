@@ -1,0 +1,30 @@
+"use client";
+
+import "client-only";
+
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+import { {{fetchName}}{{#if hasBody}}, type {{pascalName}}Input{{/if}} } from "@/hooks/queries/utils/mutate-{{name}}";
+import { {{keysName}} } from "@/hooks/queries/utils/{{name}}-keys";
+{{#if hasInvalidate}}import { {{invalidateKeysName}} } from "@/hooks/queries/utils/{{invalidateName}}-keys";
+{{/if}}
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * Client mutation hook for {{title}}. The transport stays in a non-client
+ * module. Owned by `use-{{name}}.lit.ts`.
+ */
+export function {{hookName}}() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (
+      {{#if hasPathParams}}{{#if hasBody}}input: { {{pathParamsSignature}}; body: {{pascalName}}Input }{{else}}input: { {{pathParamsSignature}} }{{/if}}{{else}}{{#if hasBody}}body: {{pascalName}}Input{{else}}_input?: undefined{{/if}}{{/if}},
+    ) =>
+      {{fetchName}}(
+        {{#if hasPathParams}}{{#if hasBody}}{{#each pathParams}}input.{{this}}, {{/each}}input.body{{else}}{{#each pathParams}}input.{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}{{else}}{{#if hasBody}}body{{/if}}{{/if}},
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: {{keysName}}.all });
+{{#if hasInvalidate}}      void queryClient.invalidateQueries({ queryKey: {{invalidateKeysName}}.all });
+{{/if}}    },
+  });
+}

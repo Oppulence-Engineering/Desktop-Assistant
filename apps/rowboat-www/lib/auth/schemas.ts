@@ -87,6 +87,10 @@ export const RowboatAPIErrorSchema = z
     error: z.string().optional(),
     message: z.string().optional(),
     code: z.string().optional(),
+    // Go problem details use `detail` / `title`; keep them in the envelope so
+    // legacy 400s still match on the public sentence, not a generic status.
+    detail: z.string().optional(),
+    title: z.string().optional(),
   })
   .passthrough();
 

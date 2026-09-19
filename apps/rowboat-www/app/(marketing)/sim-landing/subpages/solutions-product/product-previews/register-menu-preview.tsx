@@ -1,5 +1,14 @@
 import { Badge, Chip } from "@sim/emcn";
-import { ChevronDown, Columns3, ListFilter, Plus, Table, TagIcon, TypeNumber, TypeText } from "@sim/emcn/icons";
+import {
+  ChevronDown,
+  Columns3,
+  ListFilter,
+  Plus,
+  Table,
+  TagIcon,
+  TypeNumber,
+  TypeText,
+} from "@sim/emcn/icons";
 
 import { cn } from "@/lib/sim/cn";
 
@@ -33,7 +42,11 @@ export function RegisterMenuPreview({ layout = "menu" }: RegisterMenuPreviewProp
   return (
     <MenuPreviewFrame kind="register" layout={layout}>
       <div className="w-[620px] overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--bg)] text-[var(--text-body)] text-small shadow-xs">
-        <MenuPreviewHeader icon={Table} title="Commitment register" actions={`${ROWS.length} rows`} />
+        <MenuPreviewHeader
+          icon={Table}
+          title="Commitment register"
+          actions={`${ROWS.length} rows`}
+        />
         <MenuPreviewToolbar>
           <Chip rightIcon={ChevronDown}>All records</Chip>
           <Chip leftIcon={ListFilter}>Filter</Chip>

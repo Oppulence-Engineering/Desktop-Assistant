@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 
 import { SimLegalDocumentPage } from "@/app/(marketing)/sim-landing/legal/sim-legal-document-page";
 import type { LegalSection } from "@/components/legal/types";
@@ -301,7 +302,10 @@ const SECTIONS: LegalSection[] = [
   },
 ];
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  "use cache";
+  cacheLife("weeks");
+
   return (
     <SimLegalDocumentPage
       eyebrow="[privacy]"

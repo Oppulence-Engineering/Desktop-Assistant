@@ -118,13 +118,31 @@ pnpm uses symlinks for workspace packages. Electron Forge's dependency walker ca
 
 Long-form docs for specific features. Read the relevant file before making changes in that area — it has the full product flow, technical flows, and (where applicable) a catalog of the LLM prompts involved with exact file:line pointers.
 
-| Feature                                                                                                                                                                                                                 | Doc                         |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| Live Notes — single `live:` frontmatter block (one objective + optional cron / windows / eventMatchCriteria) that turns a note into a self-updating artifact, panel UI, Copilot skill, prompts catalog                  | `apps/x/LIVE_NOTE.md`       |
-| Analytics — PostHog event catalog, person properties, use-case taxonomy, how to add a new event                                                                                                                         | `apps/x/ANALYTICS.md`       |
-| Meeting Capture — local dual-track recording (mic + system audio) through the `oppulence-audiocap` Swift sidecar, the filesystem-as-queue transcription pipeline, retention, and the manual signal-verification runbook | `apps/x/MEETING_CAPTURE.md` |
+| Feature                                                                                                                                                                                                                 | Doc                                        |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| Live Notes — single `live:` frontmatter block (one objective + optional cron / windows / eventMatchCriteria) that turns a note into a self-updating artifact, panel UI, Copilot skill, prompts catalog                  | `apps/x/LIVE_NOTE.md`                      |
+| Analytics — PostHog event catalog, person properties, use-case taxonomy, how to add a new event                                                                                                                         | `apps/x/ANALYTICS.md`                      |
+| Meeting Capture — local dual-track recording (mic + system audio) through the `oppulence-audiocap` Swift sidecar, the filesystem-as-queue transcription pipeline, retention, and the manual signal-verification runbook | `apps/x/MEETING_CAPTURE.md`                |
+| rowboat-www growth standard — `npm run gen` for pages, components, Zod, hooks, mutations, stores, stories                                                                                                               | `apps/rowboat-www/docs/growth-standard.md` |
 
 ## Common Tasks
+
+### Add a rowboat-www product feature
+
+Do not hand-create the file tree. From `apps/rowboat-www`:
+
+```bash
+npm run gen -- feature --domain forecasts --route forecasts --name forecasts --title "Forecasts"
+npm run gen -- hook --operation listConnectors
+npm run gen -- mutation --operation createRevenueAction
+```
+
+Then fill the generated `/* implementation */` regions. Do not hand-create the
+tree — WEB029 rejects new product units without `@oppulence-gen`. Agents must
+follow `apps/rowboat-www/AGENTS.md` (**How to add a new product feature**) and
+`apps/rowboat-www/docs/growth-standard.md`. Zod + `z.infer` only; no new naked
+domain types; no new surfaces in `product-dashboard-client.tsx`. Remote JSON
+goes through Orval + `requestJson`, not tRPC.
 
 ### LLM configuration (single provider)
 

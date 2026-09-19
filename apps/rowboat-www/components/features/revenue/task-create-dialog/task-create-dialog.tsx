@@ -16,9 +16,9 @@ import {
 } from "@sim/emcn";
 import { Link, ListChecks, Loader, User } from "@sim/emcn/icons";
 
-import { errMessage } from "@/components/revenue/shared";
-import { createAction } from "@/lib/revenue";
-import type { RevenueRelationship } from "@/types/revenue";
+import { errMessage } from "@/components/features/revenue/shared/shared";
+import { createAction } from "@/lib/revenue/revenue";
+import type { RevenueRelationship } from "@/lib/revenue/types";
 
 export type TaskCreateDialogProps = {
   open: boolean;
@@ -105,6 +105,7 @@ export function TaskCreateDialog({
   return (
     <ChipModal
       className="sim-landing-root"
+      data-slot="task-create-dialog"
       dismissDisabled={busy}
       open={open}
       size="xl"

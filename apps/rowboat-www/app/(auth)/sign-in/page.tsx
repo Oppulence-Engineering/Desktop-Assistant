@@ -2,6 +2,13 @@ import { Suspense } from "react";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { safeReturnTo } from "@/lib/auth/pkce";
+import { createMetadata } from "@/lib/metadata";
+
+export const metadata = createMetadata({
+  title: "Sign in",
+  description: "Continue with Google to open the Oppulence commitment register.",
+  robots: { index: false, follow: false },
+});
 
 type SignInSearchParams = Promise<{ error?: string; return_to?: string }>;
 
@@ -13,9 +20,8 @@ async function SignInContent({ searchParams }: { searchParams: SignInSearchParam
 }
 
 export default function SignInPage({ searchParams }: { searchParams: SignInSearchParams }) {
-  // searchParams is runtime data, so it must resolve under Suspense for the
-  // route to keep an instant prerendered shell. The fallback mirrors the
-  // default render (no error, "/app" return), so the swap is invisible.
+  // searchParams is runtime data, so it must resolve under Suspense.
+  // One AuthShell fallback — do not also add loading.tsx with the same tree.
   return (
     <Suspense fallback={<AuthShell mode="sign-in" returnTo="/app" />}>
       <SignInContent searchParams={searchParams} />

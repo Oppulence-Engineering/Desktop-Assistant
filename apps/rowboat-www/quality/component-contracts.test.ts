@@ -23,7 +23,7 @@ function relativeAppPath(filename: string): string {
 
 describe("WEB020 React component contracts", () => {
   it("keeps every product component in an explicit ownership class", () => {
-    const legacy = new Set(architecture.legacyFiles);
+    const legacy = new Set<string>(architecture.legacyFiles);
     const rogue = filesBelow(path.join(appRoot, "components"))
       .filter((filename) => filename.endsWith(".tsx") && !filename.endsWith(".test.tsx"))
       .map(relativeAppPath)
@@ -50,7 +50,12 @@ describe("WEB020 React component contracts", () => {
       ...filesBelow(path.join(appRoot, "app/(product)")).filter((filename) =>
         filename.includes(`${path.sep}_components${path.sep}`),
       ),
-    ].filter((filename) => filename.endsWith(".tsx") && !filename.endsWith(".test.tsx"));
+    ].filter(
+      (filename) =>
+        filename.endsWith(".tsx") &&
+        !filename.endsWith(".test.tsx") &&
+        !filename.endsWith(".stories.tsx"),
+    );
 
     for (const filename of standardized) {
       const source = fs.readFileSync(filename, "utf8");

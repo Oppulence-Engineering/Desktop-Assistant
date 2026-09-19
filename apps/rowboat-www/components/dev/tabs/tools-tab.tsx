@@ -235,8 +235,8 @@ export function ToolsTab() {
         </div>
 
         <ToggleRow
-          label="Unnecessary renders"
-          description="Ask React Scan to gray-outline renders with no DOM change."
+          label="Scan renders"
+          description="Outline components when they re-render. React Scan no longer marks 'unnecessary' renders."
           checked={prefs.trackUnnecessaryRenders}
           onChange={(checked) => void patchPrefs({ trackUnnecessaryRenders: checked })}
         />

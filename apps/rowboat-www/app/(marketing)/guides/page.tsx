@@ -1,3 +1,5 @@
+import { cacheLife } from "next/cache";
+
 import { guidePages, indexCopy } from "../catalog";
 import { SimCatalogHub } from "../sim-landing/subpages/sim-catalog-hub";
 import { marketingMetadata } from "../metadata";
@@ -8,7 +10,10 @@ export const metadata = marketingMetadata({
   path: "/guides",
 });
 
-export default function GuidesIndexPage() {
+export default async function GuidesIndexPage() {
+  "use cache";
+  cacheLife("days");
+
   return (
     <SimCatalogHub
       description={indexCopy.guides.description}

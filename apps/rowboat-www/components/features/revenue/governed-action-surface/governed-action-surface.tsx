@@ -7,7 +7,7 @@ import { Mail } from "@sim/emcn/icons";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { cn } from "@oppulence/ui/lib/utils";
-import { SimProductPanel } from "@/components/features/sim-product/sim-product-frame";
+import { SimProductPanel } from "@/components/features/sim-product/sim-product-frame/sim-product-frame";
 
 export type GovernedActionSurfaceProps = Omit<ComponentPropsWithoutRef<"section">, "children"> & {
   title?: string;

@@ -29,8 +29,16 @@ export function SimCompareHub({
   pages: ComparePage[];
 }) {
   return (
-    <main className={cn(LANDING_CONTENT_WIDTH, LANDING_GUTTER, "pb-16 max-sm:pb-12")} id="main-content">
-      <div className={cn(HOME_INSET, "grid gap-10 pt-2 pb-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,340px)] lg:items-end")}>
+    <main
+      className={cn(LANDING_CONTENT_WIDTH, LANDING_GUTTER, "pb-16 max-sm:pb-12")}
+      id="main-content"
+    >
+      <div
+        className={cn(
+          HOME_INSET,
+          "grid gap-10 pt-2 pb-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,340px)] lg:items-end",
+        )}
+      >
         <header>
           <p className="text-[12px] text-[var(--text-muted)] uppercase tracking-[0.08em]">
             [compare]
@@ -93,7 +101,12 @@ export function SimCompareHub({
         </div>
       </section>
 
-      <div className={cn(HOME_INSET, "mt-12 flex flex-wrap gap-2 border-[var(--border)] border-t pt-8")}>
+      <div
+        className={cn(
+          HOME_INSET,
+          "mt-12 flex flex-wrap gap-2 border-[var(--border)] border-t pt-8",
+        )}
+      >
         {pages.map((page) => (
           <ChipLink href={page.path} key={page.slug} variant="outline">
             {page.eyebrow}

@@ -1,0 +1,14 @@
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * Query-key factory and staleTime for {{title}}.
+ * Keep this module free of `"use client"` so server prefetch can import it.
+ * Owned by `use-{{name}}.lit.ts`.
+ */
+export const {{keysName}} = {
+  all: ["{{name}}"] as const,
+  list: (query?: Record<string, unknown>) => [...{{keysName}}.all, "list", query ?? {}] as const,
+  detail: (id?: string, query?: Record<string, unknown>) =>
+    [...{{keysName}}.all, "detail", id ?? "", query ?? {}] as const,
+};
+
+export const {{staleName}} = 15_000;

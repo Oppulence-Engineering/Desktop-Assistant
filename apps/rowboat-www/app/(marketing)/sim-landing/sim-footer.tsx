@@ -4,7 +4,7 @@ import { cn } from "@/lib/sim/cn";
 
 import { footerGroups } from "../site";
 import type { LinkItem } from "../marketing-data";
-import { InlineLogo } from "../marketing-components";
+import { InlineLogo } from "../marketing-chrome";
 import { SimFooterWordmark } from "./footer-wordmark";
 import { SimThemeToggle } from "./theme-toggle";
 import { LANDING_CONTENT_WIDTH, LANDING_GUTTER } from "./tokens";
@@ -43,7 +43,9 @@ function SimFooterColumn({ title, items }: { title: string; items: LinkItem[] })
 export function SimFooter() {
   return (
     <footer className="sim-landing-root w-full border-t border-[var(--border)] bg-[var(--bg)] text-[var(--text-primary)]">
-      <div className={cn("pt-16 pb-6 max-sm:pb-5 max-lg:pt-12", LANDING_CONTENT_WIDTH, LANDING_GUTTER)}>
+      <div
+        className={cn("pt-16 pb-6 max-sm:pb-5 max-lg:pt-12", LANDING_CONTENT_WIDTH, LANDING_GUTTER)}
+      >
         <nav
           aria-label="Footer navigation"
           className="grid grid-cols-7 gap-x-8 gap-y-10 max-sm:grid-cols-2 max-sm:gap-y-8 max-lg:grid-cols-3"

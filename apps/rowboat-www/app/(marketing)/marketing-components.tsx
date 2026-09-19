@@ -60,13 +60,10 @@ import {
   type MarketingPage,
   type PlatformPage,
 } from "./marketing-data";
+import { InlineLogo, MobileMenu } from "./marketing-chrome";
 import { MarketingLayoutClient } from "./marketing-layout-client";
 import { MarketingFaq } from "./marketing-faq";
-import {
-  SeoAlternativeSections,
-  SeoLanderChips,
-  SeoLanderSections,
-} from "./seo-lander";
+import { SeoAlternativeSections, SeoLanderChips, SeoLanderSections } from "./seo-lander";
 import { alternativeFromSlug, getSeoLander } from "./seo-theme";
 import { footerGroups, headerNav, headerUtilityLinks } from "./site";
 
@@ -91,17 +88,6 @@ const pricingFaqs = [
     answer:
       "The published plans are flat monthly. We are not adding a per-seat line to look more like enterprise software.",
   },
-];
-
-const mobileNavLinks = [
-  { label: "Products", href: "/products" },
-  { label: "Features", href: "/features" },
-  { label: "Use cases", href: "/use-cases" },
-  { label: "How it works", href: "/product" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Download", href: "/download" },
-  { label: "Resources", href: "/resources" },
-  { label: "Security", href: "/security" },
 ];
 
 const productSuiteCards = [
@@ -412,100 +398,7 @@ function screenshotForPage(page: MarketingPage) {
   return desktopScreenshots.home;
 }
 
-export function InlineLogo({
-  compact = false,
-  header = false,
-  prominent = false,
-}: {
-  compact?: boolean;
-  header?: boolean;
-  prominent?: boolean;
-}) {
-  // The header mark is rendered at its box size now that the lockup no longer
-  // crops an oversized image down to a narrow window.
-  const iconSize = header ? 20 : compact ? 20 : prominent ? 40 : 28;
-
-  return (
-    <Badge
-      className={cn(
-        header ? "oppulence-compact-lockup" : "flex items-center gap-2",
-        marketingSpanClass,
-      )}
-      variant="ghost"
-    >
-      {header ? (
-        <Badge
-          aria-hidden="true"
-          className={cn("oppulence-compact-lockup__mark", marketingSpanClass)}
-          variant="ghost"
-        >
-          <Image
-            alt=""
-            className="oppulence-compact-lockup__mark-image"
-            height={iconSize}
-            src="/marketing/oppulence-icon.png"
-            width={iconSize}
-          />
-        </Badge>
-      ) : (
-        <Image
-          alt=""
-          className={cn("rounded-[3px]", compact ? "size-5" : prominent ? "size-10" : "size-7")}
-          height={iconSize}
-          src="/marketing/oppulence-icon.png"
-          width={iconSize}
-        />
-      )}
-      {!compact ? (
-        <MarketingSpan
-          className={cn(
-            header
-              ? "oppulence-compact-lockup__wordmark"
-              : "font-display text-[24px] leading-6 font-medium text-primary",
-          )}
-        >
-          {header ? "Oppulence" : "oppulence"}
-        </MarketingSpan>
-      ) : null}
-    </Badge>
-  );
-}
-
-export function MobileMenu() {
-  return (
-    <details className="relative lg:hidden" data-marketing-mobile-menu>
-      <summary aria-label="Toggle navigation" className="linear-mobile-summary">
-        <Badge className={marketingSpanClass} variant="ghost" />
-        <Badge className={marketingSpanClass} variant="ghost" />
-      </summary>
-      <nav className="linear-mobile-panel sm-mobile-panel">
-        {mobileNavLinks.map((item) => (
-          <Link href={item.href} key={`${item.label}-${item.href}`}>
-            {item.label}
-          </Link>
-        ))}
-        {headerNav.map((group) => (
-          <div key={group.label}>
-            <p className="sm-mobile-kicker">{group.label}</p>
-            {group.items.slice(0, 6).map((item) => (
-              <Link className="sm-mobile-product" href={item.href} key={item.href}>
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        ))}
-        <div className="mt-auto grid gap-2 pt-8">
-          <Link className="sm-button sm-button-light" href="/sign-in">
-            Sign in
-          </Link>
-          <Link className="sm-button sm-button-blue" href="/sign-up">
-            Start for free <ArrowRightIcon aria-hidden="true" />
-          </Link>
-        </div>
-      </nav>
-    </details>
-  );
-}
+export { InlineLogo, MobileMenu } from "./marketing-chrome";
 
 export function TopBar() {
   return (
@@ -685,11 +578,16 @@ export function ProductPage({ page }: { page: MarketingPage }) {
           <div>
             <article>
               <h3>CRM</h3>
-              <p>HubSpot remembers the deal. It does not remember the sentence from Friday&apos;s call.</p>
+              <p>
+                HubSpot remembers the deal. It does not remember the sentence from Friday&apos;s
+                call.
+              </p>
             </article>
             <article>
               <h3>Inbox</h3>
-              <p>Gmail and Slack are where the promise was made. They are a bad system of record.</p>
+              <p>
+                Gmail and Slack are where the promise was made. They are a bad system of record.
+              </p>
             </article>
             <article>
               <h3>Commitment ledger</h3>
@@ -1400,7 +1298,9 @@ export function BlogArticlePage({ page }: { page: MarketingPage }) {
   if (alternative) {
     return (
       <PageShell className="mk-seo-lander" page={page}>
-        <SeoLanderChips chips={["No invented vendor ranking", "Keep the search URL", "Honest seam"]} />
+        <SeoLanderChips
+          chips={["No invented vendor ranking", "Keep the search URL", "Honest seam"]}
+        />
         <SeoAlternativeSections alternative={alternative} />
       </PageShell>
     );

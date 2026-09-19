@@ -11,15 +11,15 @@ const billing = vi.hoisted(() => ({
   startCheckout: vi.fn(),
 }));
 
-vi.mock("@/lib/analytics", () => ({
+vi.mock("@/lib/analytics/analytics", () => ({
   capture: billing.capture,
   RevenueEvents: { UpgradeClicked: "revenue_upgrade_clicked" },
 }));
-vi.mock("@/lib/revenue", () => ({
+vi.mock("@/lib/revenue/revenue", () => ({
   startCheckout: billing.startCheckout,
 }));
 
-import { PlanSection } from "@/components/app-settings";
+import { PlanSection } from "@/components/features/settings/app-settings/app-settings";
 
 const session = (plan: string) => ({
   billing: { plan, status: "active", usage: {} },

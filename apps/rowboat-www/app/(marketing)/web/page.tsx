@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
 import { notFound } from "next/navigation";
 
 import { SimPlatformPage } from "../sim-landing/subpages/sim-platform-page";
@@ -17,7 +18,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function OppulenceWebPage() {
+export default async function OppulenceWebPage() {
+  "use cache";
+  cacheLife("days");
   if (!page) notFound();
   return <SimPlatformPage page={page} />;
 }

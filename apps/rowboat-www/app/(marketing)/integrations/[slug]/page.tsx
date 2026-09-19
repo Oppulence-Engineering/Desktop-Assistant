@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { CatalogSlugPage, catalogMetadata, catalogStaticParams } from "../../catalog-route";
+import { CatalogSlugRoute, catalogMetadata, catalogStaticParams } from "../../catalog-route";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
@@ -13,7 +13,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return catalogMetadata("integration", slug);
 }
 
-export default async function IntegrationSlugPage({ params }: PageProps) {
-  const { slug } = await params;
-  return <CatalogSlugPage kind="integration" slug={slug} />;
+export default function IntegrationSlugPage({ params }: PageProps) {
+  return <CatalogSlugRoute kind="integration" params={params} />;
 }

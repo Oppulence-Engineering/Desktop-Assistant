@@ -7,8 +7,8 @@ import {
   revenueTabSearch,
   sourceHealth,
   trialDaysRemaining,
-} from "@/components/app-shell";
-import type { RelationshipSourceStatus } from "@/types/revenue";
+} from "@/components/features/dashboard/app-shell/app-shell";
+import type { RelationshipSourceStatus } from "@/lib/revenue/types";
 
 const inDays = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
 

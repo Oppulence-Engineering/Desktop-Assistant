@@ -30,22 +30,22 @@ import {
   PromptInputTextarea,
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
-import { useAuthSession } from "@/components/auth-gate";
-import { useWorkspaceLabel } from "@/components/app-shell";
-import { useAgentCatalog } from "@/hooks/use-agent-catalog";
-import { useAgentRun } from "@/hooks/use-agent-run";
-import { useChatSessions } from "@/hooks/use-chat-sessions";
-import { useDashboardArtifact } from "@/hooks/use-dashboard-artifact";
-import { useProductRouteState } from "@/hooks/use-product-route-state";
-import type { ApprovalRequest, ConversationItem } from "@/lib/agent-history";
+import { useAuthSession } from "@/components/auth/auth-gate";
+import { useWorkspaceLabel } from "@/components/features/dashboard/app-shell/app-shell";
+import { useAgentCatalog } from "@/hooks/dashboard/use-agent-catalog";
+import { useAgentRun } from "@/hooks/dashboard/use-agent-run";
+import { useChatSessions } from "@/hooks/dashboard/use-chat-sessions";
+import { useDashboardArtifact } from "@/hooks/dashboard/use-dashboard-artifact";
+import { useProductRouteState } from "@/hooks/dashboard/use-product-route-state";
+import type { ApprovalRequest, ConversationItem } from "@/lib/agents/agent-history";
 import {
   WEB_CHAT_ACCEPT,
   WEB_CHAT_MAX_FILE_BYTES,
   WEB_CHAT_MAX_FILES,
-} from "@/lib/chat-attachments";
-import type { SessionMeta, SessionScope } from "@/lib/chat-sessions";
-import type { SelectedResource } from "@/lib/dashboard-resource";
-import type { RevenueTab, WorkflowFocus } from "@/lib/product-navigation";
+} from "@/lib/agents/chat-attachments";
+import type { SessionMeta, SessionScope } from "@/lib/agents/chat-sessions";
+import type { SelectedResource } from "@/lib/dashboard/dashboard-resource";
+import type { RevenueTab, WorkflowFocus } from "@/lib/dashboard/product-navigation";
 import {
   Select,
   SelectContent,

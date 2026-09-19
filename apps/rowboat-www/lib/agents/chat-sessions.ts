@@ -1,0 +1,74 @@
+"use client";
+
+import "client-only";
+
+import type { ConversationItem } from "@/lib/agents/agent-history";
+
+/**
+ * Sensitive chat history is cached in memory only; the organization-scoped
+ * agent-session event log is the durable source used after a reload.
+ */
+
+const MAX_SESSIONS = 30;
+
+export type SessionScope = {
+  organizationId?: string;
+  userId: string;
+};
+
+export type SessionMeta = {
+  runId: string;
+  title: string;
+  agent?: string;
+  updatedAt: number;
+};
+
+export type StoredSession = SessionMeta & {
+  items: ConversationItem[];
+};
+
+const sessionsByScope = new Map<string, Map<string, StoredSession>>();
+
+/** Merges local and remote metadata by run id, keeping the newest entry first. */
+export function mergeSessionLists(...lists: SessionMeta[][]): SessionMeta[] {
+  return [
+    ...new Map(
+      lists
+        .flat()
+        .sort((left, right) => left.updatedAt - right.updatedAt)
+        .map((session) => [session.runId, session] as const),
+    ).values(),
+  ].sort((left, right) => right.updatedAt - left.updatedAt);
+}
+
+function scopeKey(scope: SessionScope): string {
+  return `${scope.organizationId ?? "personal"}:${scope.userId}`;
+}
+
+function sessionsFor(scope: SessionScope): Map<string, StoredSession> {
+  const key = scopeKey(scope);
+  const existing = sessionsByScope.get(key);
+  if (existing) return existing;
+  const created = new Map<string, StoredSession>();
+  sessionsByScope.set(key, created);
+  return created;
+}
+
+export function listSessions(scope: SessionScope): SessionMeta[] {
+  return [...sessionsFor(scope).values()]
+    .sort((left, right) => right.updatedAt - left.updatedAt)
+    .map(({ runId, title, agent, updatedAt }) => ({ runId, title, agent, updatedAt }));
+}
+
+export function loadSession(scope: SessionScope, runId: string): StoredSession | null {
+  return sessionsFor(scope).get(runId) ?? null;
+}
+
+export function saveSession(scope: SessionScope, session: StoredSession): void {
+  const sessions = sessionsFor(scope);
+  sessions.set(session.runId, session);
+  const overflow = [...sessions.values()]
+    .sort((left, right) => right.updatedAt - left.updatedAt)
+    .slice(MAX_SESSIONS);
+  for (const stale of overflow) sessions.delete(stale.runId);
+}

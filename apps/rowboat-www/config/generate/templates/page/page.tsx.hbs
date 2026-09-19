@@ -1,0 +1,51 @@
+import { Suspense } from "react";
+{{#if hasPrefetch}}
+import { {{panelPascal}} } from "./_components/{{panelName}}/{{panelName}}";
+import { {{prefetchName}} } from "./prefetch";
+import { {{searchCacheName}} } from "./search-params";
+import { PrefetchHydration } from "@/lib/query/prefetch-hydration";
+{{else}}
+import { {{panelPascal}} } from "./_components/{{panelName}}/{{panelName}}";
+import { {{searchCacheName}} } from "./search-params";
+{{/if}}
+import {{pascalName}}Loading from "./loading";
+
+/**
+ * @oppulence-gen kind={{artifactKind}}
+ * Authenticated {{title}} route. The page stays a Server Component; interactivity
+ * lives in the route-private panel. Owned by `{{name}}.lit.ts`.
+ *
+ * Instant navigation: searchParams and prefetch stay behind Suspense. Do not
+ * add `instant = false` here — the product layout already opts the tree out
+ * of instant-nav validation because auth must finish before headers.
+ */
+export const metadata = {
+  title: "{{title}} - Oppulence",
+  description: "{{summary}}",
+};
+
+type {{pascalName}}PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default function {{pascalName}}Page({ searchParams }: {{pascalName}}PageProps) {
+  return (
+    <Suspense fallback={<{{pascalName}}Loading />}>
+      <{{pascalName}}RouteContent searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function {{pascalName}}RouteContent({ searchParams }: {{pascalName}}PageProps) {
+  const raw = await searchParams;
+  {{searchCacheName}}.parse(raw);
+{{#if hasPrefetch}}
+  return (
+    <PrefetchHydration seed={{{prefetchName}}}>
+      <{{panelPascal}} />
+    </PrefetchHydration>
+  );
+{{else}}
+  return <{{panelPascal}} />;
+{{/if}}
+}
