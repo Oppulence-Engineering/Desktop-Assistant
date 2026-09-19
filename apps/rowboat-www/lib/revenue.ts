@@ -643,7 +643,16 @@ export const getRelationshipCommunicationTimeline = (
       before ? `&before=${encodeURIComponent(before)}` : ""
     }`,
     { signal },
-  ).then((body) => body.items ?? []);
+  )
+    .then((body) => body.items ?? [])
+    .catch((error) => {
+      // Workspaces without communication intelligence, or an older API,
+      // answer 404/409. The company sheet can still render without that pane.
+      if (error instanceof RevenueAPIError && (error.status === 404 || error.status === 409)) {
+        return [] as CommunicationTimelineItem[];
+      }
+      throw error;
+    });
 
 export const getCommunicationPolicy = (sourceAccountId: string) =>
   call<CommunicationPolicy>(

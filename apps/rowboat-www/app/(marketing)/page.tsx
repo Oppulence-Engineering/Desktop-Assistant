@@ -35,6 +35,8 @@ export const viewport: Viewport = {
   ],
 };
 
+export const instant = false;
+
 const jsonLd = {
   "@context": "https://schema.org",
   "@graph": [
