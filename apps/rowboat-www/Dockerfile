@@ -3,6 +3,8 @@
 FROM node:24-alpine AS deps
 WORKDIR /repo/apps/rowboat-www
 COPY apps/rowboat-www/package.json apps/rowboat-www/package-lock.json apps/rowboat-www/.npmrc ./
+# file: deps resolve from this tree, same as packages/ui below.
+COPY apps/rowboat-www/vendor/sim /repo/apps/rowboat-www/vendor/sim
 COPY packages/relationship-contract /repo/packages/relationship-contract
 COPY packages/ui /repo/packages/ui
 COPY packages/eslint-plugin-oppulence-web /repo/packages/eslint-plugin-oppulence-web

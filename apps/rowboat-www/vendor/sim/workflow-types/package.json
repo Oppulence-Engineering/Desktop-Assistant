@@ -30,7 +30,6 @@
     "@xyflow/react": "^12.11.3"
   },
   "devDependencies": {
-    "@sim/tsconfig": "workspace:*",
     "@xyflow/react": "12.11.3",
     "typescript": "^7.0.2"
   }
