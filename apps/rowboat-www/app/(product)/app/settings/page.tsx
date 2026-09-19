@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { SettingsDashboardRoute } from "@/components/features/dashboard/dashboard-route-content/dashboard-route-content";
 import { settingsSectionFromParam } from "@/lib/product-navigation";
 
+export const instant = false;
+
 type SettingsPageProps = {
   searchParams: Promise<{ settings?: string | string[] }>;
 };
