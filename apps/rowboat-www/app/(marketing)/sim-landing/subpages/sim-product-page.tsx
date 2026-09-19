@@ -1,10 +1,7 @@
 import type { MarketingPage } from "../../marketing-data";
 import { JsonLd } from "../../marketing-primitives";
 import { breadcrumbJsonLd } from "../../metadata";
-import {
-  SimSolutionsProductPage,
-  productToSolutionsConfig,
-} from "./solutions-product";
+import { SimSolutionsProductPage, productToSolutionsConfig } from "./solutions-product";
 import { SimPageFooterRule } from "./sim-subpage-hero";
 
 /** Sim platform-style core product page — `/product`. */

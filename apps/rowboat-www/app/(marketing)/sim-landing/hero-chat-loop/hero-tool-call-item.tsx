@@ -1,12 +1,12 @@
-import { Table } from '@sim/emcn/icons'
-import { GmailIcon } from '@/components/sim/icons'
-import { ActivityStatus } from '@/components/sim/activity-status'
-import { getToolStatusDisplayTitle } from '@/lib/sim-port/copilot/tools/tool-display'
+import { Table } from "@sim/emcn/icons";
+import { GmailIcon } from "@/components/sim/icons";
+import { ActivityStatus } from "@/components/sim/activity-status";
+import { getToolStatusDisplayTitle } from "@/lib/sim-port/copilot/tools/tool-display";
 import type {
   ToolActivityPresentation,
   ToolCallItemProps,
-} from '@/sim-port/workspace/home/components/message-content/components/agent-group/tool-call-item'
-import { getToolIcon } from '@/sim-port/workspace/home/components/message-content/utils'
+} from "@/sim-port/workspace/home/components/message-content/components/agent-group/tool-call-item";
+import { getToolIcon } from "@/sim-port/workspace/home/components/message-content/utils";
 
 /** Demo fixtures have known brands, so the landing page never loads the block registry. */
 export function HeroToolCallItem({
@@ -18,21 +18,21 @@ export function HeroToolCallItem({
   status,
 }: ToolCallItemProps) {
   const Icon =
-    toolCallId === 'hero-read-gmail'
+    toolCallId === "hero-read-gmail"
       ? GmailIcon
-      : toolCallId === 'hero-read-table'
+      : toolCallId === "hero-read-table"
         ? Table
-        : getToolIcon(toolName)
+        : getToolIcon(toolName);
   const activity: ToolActivityPresentation = {
     label: getToolStatusDisplayTitle(displayTitle, status, toolName, activityDescription),
     activeLabel: getToolStatusDisplayTitle(
       displayTitle,
-      status === 'success' ? 'executing' : status,
+      status === "success" ? "executing" : status,
       toolName,
-      activityDescription
+      activityDescription,
     ),
-    isActive: status === 'executing',
-    icon: <Icon className='size-full' />,
-  }
-  return renderStatus ? renderStatus(activity) : <ActivityStatus {...activity} />
+    isActive: status === "executing",
+    icon: <Icon className="size-full" />,
+  };
+  return renderStatus ? renderStatus(activity) : <ActivityStatus {...activity} />;
 }

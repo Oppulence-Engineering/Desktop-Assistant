@@ -1,8 +1,5 @@
 import type { PlatformPage } from "../../marketing-data";
-import {
-  SimSolutionsProductPage,
-  platformToSolutionsConfig,
-} from "./solutions-product";
+import { SimSolutionsProductPage, platformToSolutionsConfig } from "./solutions-product";
 import { SimPageFooterRule } from "./sim-subpage-hero";
 
 /** Sim solutions-style product page — web, desktop, or voice. Body matches sim.ai module pages. */

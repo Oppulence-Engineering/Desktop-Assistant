@@ -69,12 +69,7 @@ export function SimPricingCard({
           <p className="text-[var(--text-secondary)] text-base">{priceSubtext ?? "\u00a0"}</p>
         </div>
 
-        <ChipLink
-          className="w-full justify-center"
-          fullWidth
-          href={cta.href}
-          variant={ctaVariant}
-        >
+        <ChipLink className="w-full justify-center" fullWidth href={cta.href} variant={ctaVariant}>
           {cta.label}
         </ChipLink>
       </div>

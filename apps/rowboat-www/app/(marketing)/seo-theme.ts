@@ -522,7 +522,8 @@ export const seoLanders: Record<string, SeoLander> = {
     [
       {
         question: "Does Oppulence write docs from my GitHub repo?",
-        answer: "No. Connect the repo as an MCP tool if you want the desktop agent to call it. That is not a help-center publisher.",
+        answer:
+          "No. Connect the repo as an MCP tool if you want the desktop agent to call it. That is not a help-center publisher.",
       },
     ],
   ),
@@ -668,8 +669,10 @@ export function applySeoTheme(page: MarketingPage): MarketingPage {
       title: landerForPage.title,
       description: landerForPage.description,
       eyebrow: landerForPage.query,
-      ctaLabel: page.ctaLabel && /support memory/i.test(page.ctaLabel) ? "Start for free" : page.ctaLabel,
-      ctaHref: page.ctaHref && /help-center|support/i.test(page.ctaHref) ? "/sign-up" : page.ctaHref,
+      ctaLabel:
+        page.ctaLabel && /support memory/i.test(page.ctaLabel) ? "Start for free" : page.ctaLabel,
+      ctaHref:
+        page.ctaHref && /help-center|support/i.test(page.ctaHref) ? "/sign-up" : page.ctaHref,
     };
   }
 
@@ -685,8 +688,7 @@ export function applySeoTheme(page: MarketingPage): MarketingPage {
 
 export const seoLanderList = Object.values(seoLanders).filter(
   (page, index, all) =>
-    !page.path.startsWith("lp/") &&
-    all.findIndex((item) => item.query === page.query) === index,
+    !page.path.startsWith("lp/") && all.findIndex((item) => item.query === page.query) === index,
 );
 
 export const seoAlternativeList = Object.keys(ALTERNATIVE_META)

@@ -1,9 +1,6 @@
 import { JsonLd } from "../../marketing-primitives";
 import { breadcrumbJsonLd } from "../../metadata";
-import {
-  SimSolutionsProductPage,
-  productsSuiteToSolutionsConfig,
-} from "./solutions-product";
+import { SimSolutionsProductPage, productsSuiteToSolutionsConfig } from "./solutions-product";
 import { SimPageFooterRule } from "./sim-subpage-hero";
 
 /** Sim solutions-style product suite hub — live previews like sim.ai `/platform`. */

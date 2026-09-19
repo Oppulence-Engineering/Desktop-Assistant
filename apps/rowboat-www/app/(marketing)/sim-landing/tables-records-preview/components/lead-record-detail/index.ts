@@ -1,1 +1,1 @@
-export { LeadRecordDetail } from './lead-record-detail'
+export { LeadRecordDetail } from "./lead-record-detail";

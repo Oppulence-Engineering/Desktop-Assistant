@@ -115,7 +115,9 @@ html:has([data-product-shell]) {
   font-size: var(--text-small);
   font-weight: 400;
   letter-spacing: -0.01em;
-  transition: background-color 150ms ease, color 150ms ease;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
 }
 
 [data-product-shell].sim-product-shell [data-sidebar-nav] [data-sidebar-row]:hover {

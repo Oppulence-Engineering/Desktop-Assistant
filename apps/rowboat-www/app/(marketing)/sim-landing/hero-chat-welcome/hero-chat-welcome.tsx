@@ -1,14 +1,14 @@
-import { cn } from '@sim/emcn'
-import { ArrowRight, FileText, Table, Workflow } from '@sim/emcn/icons'
-import { PREVIEW_SUGGESTIONS } from '../preview-chat-content'
+import { cn } from "@sim/emcn";
+import { ArrowRight, FileText, Table, Workflow } from "@sim/emcn/icons";
+import { PREVIEW_SUGGESTIONS } from "../preview-chat-content";
 
 interface HeroChatWelcomeProps {
-  visible: boolean
-  onSelect: (prompt: string) => void
+  visible: boolean;
+  onSelect: (prompt: string) => void;
 }
 
-const ACTION_ICONS = [Workflow, Table, FileText] as const
-const REVEAL = 'transition-opacity duration-150 ease-out motion-reduce:transition-none'
+const ACTION_ICONS = [Workflow, Table, FileText] as const;
+const REVEAL = "transition-opacity duration-150 ease-out motion-reduce:transition-none";
 
 /** Greeting and suggested actions anchored around the preview's single composer. */
 export function HeroChatWelcome({ visible, onSelect }: HeroChatWelcomeProps) {
@@ -17,9 +17,9 @@ export function HeroChatWelcome({ visible, onSelect }: HeroChatWelcomeProps) {
       <p
         aria-hidden={!visible}
         className={cn(
-          'absolute inset-x-0 bottom-[calc(100%+28px)] text-balance text-center text-[26px] text-[var(--text-primary)] leading-[1.2] tracking-[-0.01em] max-sm:bottom-[calc(100%+20px)] max-sm:text-[20px]',
+          "absolute inset-x-0 bottom-[calc(100%+28px)] text-balance text-center text-[26px] text-[var(--text-primary)] leading-[1.2] tracking-[-0.01em] max-sm:bottom-[calc(100%+20px)] max-sm:text-[20px]",
           REVEAL,
-          visible ? 'opacity-100' : 'pointer-events-none opacity-0'
+          visible ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       >
         What should we get done, Morgan?
@@ -28,30 +28,30 @@ export function HeroChatWelcome({ visible, onSelect }: HeroChatWelcomeProps) {
         inert={!visible}
         aria-hidden={!visible}
         className={cn(
-          'absolute inset-x-0 top-[calc(100%+28px)] max-sm:hidden',
+          "absolute inset-x-0 top-[calc(100%+28px)] max-sm:hidden",
           REVEAL,
-          visible ? 'opacity-100' : 'pointer-events-none opacity-0'
+          visible ? "opacity-100" : "pointer-events-none opacity-0",
         )}
       >
-        <span className='text-[13px] text-[var(--text-secondary)]'>Suggested actions</span>
-        <div className='mt-2 flex flex-col'>
+        <span className="text-[13px] text-[var(--text-secondary)]">Suggested actions</span>
+        <div className="mt-2 flex flex-col">
           {PREVIEW_SUGGESTIONS.map((action, index) => {
-            const Icon = ACTION_ICONS[index]
+            const Icon = ACTION_ICONS[index];
             return (
               <button
                 key={action.title}
-                type='button'
+                type="button"
                 onClick={() => onSelect(action.prompt)}
-                className='flex items-center gap-2 border-[var(--border)] px-2 py-2 text-left text-[var(--text-body)] text-sm transition-colors duration-150 hover:bg-[var(--surface-hover)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[var(--text-primary)] [&+button]:border-t'
+                className="flex items-center gap-2 border-[var(--border)] px-2 py-2 text-left text-[var(--text-body)] text-sm transition-colors duration-150 hover:bg-[var(--surface-hover)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[var(--text-primary)] [&+button]:border-t"
               >
-                <Icon className='size-[16px] shrink-0 text-[var(--text-icon)]' />
-                <span className='min-w-0 flex-1 truncate'>{action.title}</span>
-                <ArrowRight className='size-[14px] shrink-0 text-[var(--text-icon)]' />
+                <Icon className="size-[16px] shrink-0 text-[var(--text-icon)]" />
+                <span className="min-w-0 flex-1 truncate">{action.title}</span>
+                <ArrowRight className="size-[14px] shrink-0 text-[var(--text-icon)]" />
               </button>
-            )
+            );
           })}
         </div>
       </div>
     </>
-  )
+  );
 }

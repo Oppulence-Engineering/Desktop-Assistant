@@ -1,50 +1,47 @@
-'use client'
+"use client";
 
-import { useRef, useState } from 'react'
+import { useRef, useState } from "react";
 import {
   Chip,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@sim/emcn'
-import { Check, ChevronDown, Columns3, ListFilter, Table } from '@sim/emcn/icons'
+} from "@sim/emcn";
+import { Check, ChevronDown, Columns3, ListFilter, Table } from "@sim/emcn/icons";
 import {
   MenuPreviewHeader,
   MenuPreviewToolbar,
-} from '../shared/menu-preview-header/menu-preview-header'
-import { usePreviewDialogFocus } from '@/hooks/sim/use-preview-dialog-focus'
-import { LeadRecordDetail } from './components/lead-record-detail/lead-record-detail'
-import { LeadRecordList } from './components/lead-record-list/lead-record-list'
-import {
-  type LeadRecord,
-  ROWS,
-} from './data'
+} from "../shared/menu-preview-header/menu-preview-header";
+import { usePreviewDialogFocus } from "@/hooks/sim/use-preview-dialog-focus";
+import { LeadRecordDetail } from "./components/lead-record-detail/lead-record-detail";
+import { LeadRecordList } from "./components/lead-record-list/lead-record-list";
+import { type LeadRecord, ROWS } from "./data";
 
 interface TablesRecordsTableProps {
-  initialRows?: readonly LeadRecord[]
+  initialRows?: readonly LeadRecord[];
 }
 
 /** The native ruled Tables grid and Edit Row dialog, backed only by local demo records. */
 export function TablesRecordsTable({ initialRows = ROWS }: TablesRecordsTableProps) {
-  const filterButtonRef = useRef<HTMLButtonElement>(null)
-  const [rows, setRows] = useState<readonly LeadRecord[]>(initialRows)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [status, setStatus] = useState<LeadRecord['status'] | null>(null)
-  const [showContact, setShowContact] = useState(true)
-  const selected = rows.find((row) => row.id === selectedId)
-  const visibleRows = rows.filter((row) => !status || row.status === status)
-  const dialogOpenerRef = usePreviewDialogFocus(Boolean(selected), filterButtonRef)
+  const filterButtonRef = useRef<HTMLButtonElement>(null);
+  const [rows, setRows] = useState<readonly LeadRecord[]>(initialRows);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [status, setStatus] = useState<LeadRecord["status"] | null>(null);
+  const [showContact, setShowContact] = useState(true);
+  const selected = rows.find((row) => row.id === selectedId);
+  const visibleRows = rows.filter((row) => !status || row.status === status);
+  const dialogOpenerRef = usePreviewDialogFocus(Boolean(selected), filterButtonRef);
 
   return (
-    <div className='relative flex h-full min-h-0 flex-col overflow-hidden bg-[var(--bg)] text-[var(--text-body)] text-small'>
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[var(--bg)] text-[var(--text-body)] text-small">
       <MenuPreviewHeader
         icon={Table}
-        title='Commitment register'
+        title="Commitment register"
         actions={`${visibleRows.length} rows`}
       />
       <MenuPreviewToolbar>
-        <span aria-hidden='true' inert>
+        <span aria-hidden="true" inert>
           <Chip rightIcon={ChevronDown}>All records</Chip>
         </span>
         <DropdownMenu>
@@ -53,11 +50,11 @@ export function TablesRecordsTable({ initialRows = ROWS }: TablesRecordsTablePro
               Filter
             </Chip>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align='start'>
+          <DropdownMenuContent align="start">
             <DropdownMenuItem onSelect={() => setStatus(null)} active={status === null}>
               All statuses
             </DropdownMenuItem>
-            {(['Confirmed', 'Review'] as const).map((value) => (
+            {(["Confirmed", "Review"] as const).map((value) => (
               <DropdownMenuItem
                 key={value}
                 onSelect={() => setStatus(value)}
@@ -68,12 +65,12 @@ export function TablesRecordsTable({ initialRows = ROWS }: TablesRecordsTablePro
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        <span className='ml-auto'>
+        <span className="ml-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Chip leftIcon={Columns3}>Columns</Chip>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align='end'>
+            <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => setShowContact((value) => !value)}>
                 {showContact && <Check />}Contact
               </DropdownMenuItem>
@@ -85,8 +82,8 @@ export function TablesRecordsTable({ initialRows = ROWS }: TablesRecordsTablePro
         rows={visibleRows}
         selectedId={selectedId}
         onSelect={(id, opener) => {
-          dialogOpenerRef.current = opener
-          setSelectedId(id)
+          dialogOpenerRef.current = opener;
+          setSelectedId(id);
         }}
         showContact={showContact}
       />
@@ -96,11 +93,11 @@ export function TablesRecordsTable({ initialRows = ROWS }: TablesRecordsTablePro
           record={selected}
           onClose={() => setSelectedId(null)}
           onSave={(record) => {
-            setRows((current) => current.map((row) => (row.id === record.id ? record : row)))
-            setSelectedId(null)
+            setRows((current) => current.map((row) => (row.id === record.id ? record : row)));
+            setSelectedId(null);
           }}
         />
       )}
     </div>
-  )
+  );
 }

@@ -62,11 +62,7 @@ import {
 } from "./marketing-data";
 import { MarketingLayoutClient } from "./marketing-layout-client";
 import { MarketingFaq } from "./marketing-faq";
-import {
-  SeoAlternativeSections,
-  SeoLanderChips,
-  SeoLanderSections,
-} from "./seo-lander";
+import { SeoAlternativeSections, SeoLanderChips, SeoLanderSections } from "./seo-lander";
 import { alternativeFromSlug, getSeoLander } from "./seo-theme";
 import { footerGroups, headerNav, headerUtilityLinks } from "./site";
 
@@ -685,11 +681,16 @@ export function ProductPage({ page }: { page: MarketingPage }) {
           <div>
             <article>
               <h3>CRM</h3>
-              <p>HubSpot remembers the deal. It does not remember the sentence from Friday&apos;s call.</p>
+              <p>
+                HubSpot remembers the deal. It does not remember the sentence from Friday&apos;s
+                call.
+              </p>
             </article>
             <article>
               <h3>Inbox</h3>
-              <p>Gmail and Slack are where the promise was made. They are a bad system of record.</p>
+              <p>
+                Gmail and Slack are where the promise was made. They are a bad system of record.
+              </p>
             </article>
             <article>
               <h3>Commitment ledger</h3>
@@ -1400,7 +1401,9 @@ export function BlogArticlePage({ page }: { page: MarketingPage }) {
   if (alternative) {
     return (
       <PageShell className="mk-seo-lander" page={page}>
-        <SeoLanderChips chips={["No invented vendor ranking", "Keep the search URL", "Honest seam"]} />
+        <SeoLanderChips
+          chips={["No invented vendor ranking", "Keep the search URL", "Honest seam"]}
+        />
         <SeoAlternativeSections alternative={alternative} />
       </PageShell>
     );

@@ -39,10 +39,7 @@ export function SimLandingShell({
       </Link>
       <SimTopBar />
       <main
-        className={cn(
-          "flex flex-col",
-          isHome ? HOME_SECTION_RHYTHM : "sim-marketing-page-main",
-        )}
+        className={cn("flex flex-col", isHome ? HOME_SECTION_RHYTHM : "sim-marketing-page-main")}
         id="main-content"
       >
         {isHome ? children : <div className="linear-shell linear-guides">{children}</div>}

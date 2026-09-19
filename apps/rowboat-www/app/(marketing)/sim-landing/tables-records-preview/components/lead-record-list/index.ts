@@ -1,1 +1,1 @@
-export { LeadRecordList } from './lead-record-list'
+export { LeadRecordList } from "./lead-record-list";

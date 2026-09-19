@@ -93,7 +93,12 @@ export function SimResourcesPage({
     <div className="bg-[var(--bg)] pb-16 max-sm:pb-12">
       <div className={cn(LANDING_CONTENT_WIDTH, LANDING_GUTTER)}>
         <div aria-hidden="true" className="mb-6 h-6" />
-        <SimSubpageHero description={description} eyebrow="[resources]" title={heading} titleId="resources-heading" />
+        <SimSubpageHero
+          description={description}
+          eyebrow="[resources]"
+          title={heading}
+          titleId="resources-heading"
+        />
       </div>
 
       <SimPageDivider />
@@ -114,7 +119,10 @@ export function SimResourcesPage({
         <section className="px-6 py-10">
           <p className="max-w-[720px] text-[14px] text-[var(--text-muted)] leading-[1.55]">
             Documentation for the API lives at{" "}
-            <Link className="text-[var(--text-body)] underline-offset-4 hover:underline" href="https://docs.oppulence.io">
+            <Link
+              className="text-[var(--text-body)] underline-offset-4 hover:underline"
+              href="https://docs.oppulence.io"
+            >
               docs.oppulence.io
             </Link>
             . We are not building a second docs tree here.

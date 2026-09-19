@@ -37,10 +37,7 @@ export function ProductStagePreview({
       {useInteractiveRegister ? (
         <TablesRecordsPreview layout="stage" />
       ) : (
-        <ProductModulePreview
-          layout="stage"
-          product={product as ProductPreviewKey}
-        />
+        <ProductModulePreview layout="stage" product={product as ProductPreviewKey} />
       )}
     </div>
   );

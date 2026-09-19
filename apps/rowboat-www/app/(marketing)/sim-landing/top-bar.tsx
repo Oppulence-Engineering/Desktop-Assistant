@@ -96,7 +96,10 @@ export function SimTopBar() {
         </div>
 
         <div className="relative z-10 flex flex-1 items-center justify-end xl:hidden">
-          <Link className={cn("sm-login hidden md:inline-flex", marketingSpanClass)} href="/sign-in">
+          <Link
+            className={cn("sm-login hidden md:inline-flex", marketingSpanClass)}
+            href="/sign-in"
+          >
             Sign in
           </Link>
           <Link className="sm-header-cta hidden md:inline-flex" href="/sign-up">

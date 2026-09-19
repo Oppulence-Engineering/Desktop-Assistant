@@ -87,7 +87,9 @@ export function SimContactPage() {
       id="contact"
     >
       <div className="flex flex-col gap-5 xl:col-start-1 xl:row-start-1 xl:self-start">
-        <p className="text-[12px] text-[var(--text-muted)] uppercase tracking-[0.08em]">[contact]</p>
+        <p className="text-[12px] text-[var(--text-muted)] uppercase tracking-[0.08em]">
+          [contact]
+        </p>
         <h1
           className="max-w-[16ch] text-balance text-[48px] text-[var(--text-primary)] leading-[1.1] max-sm:text-[32px] max-xl:text-[40px]"
           id="contact-heading"
@@ -110,7 +112,10 @@ export function SimContactPage() {
           </div>
           <p className="text-[13px] text-[var(--text-muted)] leading-[1.5]">
             Most evaluation starts with the free report, not a conversation. See{" "}
-            <Link className="text-[var(--text-body)] underline-offset-4 hover:underline" href="/resources">
+            <Link
+              className="text-[var(--text-body)] underline-offset-4 hover:underline"
+              href="/resources"
+            >
               resources
             </Link>{" "}
             if you want the docs first.

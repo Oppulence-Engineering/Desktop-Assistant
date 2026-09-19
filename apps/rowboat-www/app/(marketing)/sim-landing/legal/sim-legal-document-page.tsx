@@ -4,11 +4,7 @@ import { LegalSectionContent } from "@/components/legal/legal-blocks";
 import { legalSectionSlug } from "@/components/legal/legal-slug";
 import type { LegalRelatedLink, LegalSection } from "@/components/legal/types";
 
-import {
-  SIM_LEGAL_PAGE,
-  SimLegalPageMeta,
-  SimLegalRelatedLinks,
-} from "./sim-legal-shared";
+import { SIM_LEGAL_PAGE, SimLegalPageMeta, SimLegalRelatedLinks } from "./sim-legal-shared";
 
 /** Shared legal layout — sticky table of contents + reading column (same as /privacy). */
 export function SimLegalDocumentPage({

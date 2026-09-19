@@ -143,7 +143,10 @@ export function SimPricingPage() {
                     download
                   </Link>{" "}
                   and{" "}
-                  <Link className="underline-offset-4 hover:underline" href="/guides/desktop-vs-web">
+                  <Link
+                    className="underline-offset-4 hover:underline"
+                    href="/guides/desktop-vs-web"
+                  >
                     which surface to use
                   </Link>
                   .

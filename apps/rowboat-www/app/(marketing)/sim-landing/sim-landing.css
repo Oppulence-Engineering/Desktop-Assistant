@@ -316,7 +316,9 @@
   }
 
   @supports (width: 1cqw) {
-    .sim-landing-root :is(.sim-product-preview, [data-product-preview]) .design-surface:not([style*="--preview-scale"]) {
+    .sim-landing-root
+      :is(.sim-product-preview, [data-product-preview])
+      .design-surface:not([style*="--preview-scale"]) {
       --preview-scale: min(
         1,
         100cqw / var(--preview-design-width),

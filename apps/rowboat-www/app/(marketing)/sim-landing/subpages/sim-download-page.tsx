@@ -51,7 +51,8 @@ const specs = [
   { term: "SBOMs", detail: "SPDX and CycloneDX attach to the release. We publish what we ship." },
   {
     term: "Signing",
-    detail: "Desktop builds are signed for macOS and Windows. Linux packages ship with checksums on the release.",
+    detail:
+      "Desktop builds are signed for macOS and Windows. Linux packages ship with checksums on the release.",
   },
 ] as const;
 
@@ -232,7 +233,9 @@ export function SimDownloadPage() {
                   <dt className="text-[12px] text-[var(--text-muted)] uppercase tracking-[0.06em]">
                     {row.term}
                   </dt>
-                  <dd className="text-[15px] text-[var(--text-body)] leading-[1.55]">{row.detail}</dd>
+                  <dd className="text-[15px] text-[var(--text-body)] leading-[1.55]">
+                    {row.detail}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -260,7 +263,11 @@ export function SimDownloadPage() {
                 href: "/guides/desktop-vs-web",
                 description: "Which surface for which job.",
               },
-              { label: "Pricing", href: "/pricing", description: "What Watch, Chase, and Intelligence unlock." },
+              {
+                label: "Pricing",
+                href: "/pricing",
+                description: "What Watch, Chase, and Intelligence unlock.",
+              },
               { label: "Security", href: "/security", description: "What the install can access." },
             ]}
           />

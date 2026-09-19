@@ -2,12 +2,7 @@
 
 import { cn } from "@/lib/sim/cn";
 
-import {
-  HOME_INSET,
-  LANDING_CONTENT_WIDTH,
-  LANDING_GUTTER,
-  LANDING_STAGE_RADIUS,
-} from "./tokens";
+import { HOME_INSET, LANDING_CONTENT_WIDTH, LANDING_GUTTER, LANDING_STAGE_RADIUS } from "./tokens";
 import { SimCtaLink } from "./primitives";
 import { ProductDemoCaption } from "./product-demo-caption";
 import { ProductDemoBeatProvider } from "./product-demo-context";

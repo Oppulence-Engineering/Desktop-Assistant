@@ -1,5 +1,5 @@
-import { Table as TableIcon } from '@sim/emcn/icons'
-import { CONNECTION_KNOB_PEAK_PX } from '@sim/workflow-renderer'
+import { Table as TableIcon } from "@sim/emcn/icons";
+import { CONNECTION_KNOB_PEAK_PX } from "@sim/workflow-renderer";
 import {
   AgentIcon,
   ApiIcon,
@@ -7,12 +7,8 @@ import {
   ConditionalIcon,
   GmailIcon,
   StartIcon,
-} from '@/components/sim/icons'
-import {
-  BLOCK_WIDTH,
-  type BlockDef,
-  blockHeight,
-} from './workflow-data'
+} from "@/components/sim/icons";
+import { BLOCK_WIDTH, type BlockDef, blockHeight } from "./workflow-data";
 
 /**
  * Design-space geometry for the hero's live workflow stage — the commitment
@@ -28,124 +24,124 @@ import {
  */
 export const STAGE_BLOCKS: BlockDef[] = [
   {
-    id: 'start',
-    name: 'Start',
-    type: 'start_trigger',
-    typeLabel: 'Start',
+    id: "start",
+    name: "Start",
+    type: "start_trigger",
+    typeLabel: "Start",
     icon: StartIcon,
-    bgColor: 'var(--text-muted)',
+    bgColor: "var(--text-muted)",
     isTrigger: true,
     rows: [],
     x: 40,
     y: 310,
   },
   {
-    id: 'enrich',
-    name: 'Read Gmail',
-    type: 'gmail',
-    typeLabel: 'Gmail',
+    id: "enrich",
+    name: "Read Gmail",
+    type: "gmail",
+    typeLabel: "Gmail",
     isIntegration: true,
     icon: GmailIcon,
-    bgColor: '#EA4335',
+    bgColor: "#EA4335",
     sentence: {
-      segments: ['Read', { subBlockId: 'mailbox', noun: 'mailbox' }],
-      values: { mailbox: 'Acme thread' },
+      segments: ["Read", { subBlockId: "mailbox", noun: "mailbox" }],
+      values: { mailbox: "Acme thread" },
     },
     rows: [],
     x: 390,
     y: 278,
   },
   {
-    id: 'score',
-    name: 'Read HubSpot',
-    type: 'hubspot',
-    typeLabel: 'HubSpot',
+    id: "score",
+    name: "Read HubSpot",
+    type: "hubspot",
+    typeLabel: "HubSpot",
     isIntegration: true,
     icon: AgentIcon,
-    bgColor: '#FF7A59',
+    bgColor: "#FF7A59",
     sentence: {
-      segments: ['Pull', { subBlockId: 'object', noun: 'deal fields' }],
-      values: { object: 'closed deal' },
+      segments: ["Pull", { subBlockId: "object", noun: "deal fields" }],
+      values: { object: "closed deal" },
     },
     rows: [],
     x: 740,
     y: 278,
   },
   {
-    id: 'route',
-    name: 'Strong sentence?',
-    type: 'condition',
-    typeLabel: 'Condition',
+    id: "route",
+    name: "Strong sentence?",
+    type: "condition",
+    typeLabel: "Condition",
     icon: ConditionalIcon,
-    bgColor: '#FF752F',
+    bgColor: "#FF752F",
     rows: [
-      { title: 'If', value: 'source-linked' },
-      { title: 'Else', value: 'needs review' },
+      { title: "If", value: "source-linked" },
+      { title: "Else", value: "needs review" },
     ],
     x: 1090,
     y: 266,
   },
   {
-    id: 'slack',
-    name: 'Confirm rows',
-    type: 'register',
-    typeLabel: 'Register',
+    id: "slack",
+    name: "Confirm rows",
+    type: "register",
+    typeLabel: "Register",
     icon: CodeIcon,
-    bgColor: 'var(--text-primary)',
+    bgColor: "var(--text-primary)",
     sentence: {
-      segments: ['Draft', { subBlockId: 'rows', noun: 'register rows' }],
-      values: { rows: 'candidate sentences' },
+      segments: ["Draft", { subBlockId: "rows", noun: "register rows" }],
+      values: { rows: "candidate sentences" },
     },
     rows: [],
     x: 1440,
     y: 170,
   },
   {
-    id: 'tables',
-    name: 'Hold external sends',
-    type: 'approval',
-    typeLabel: 'Approval',
+    id: "tables",
+    name: "Hold external sends",
+    type: "approval",
+    typeLabel: "Approval",
     icon: TableIcon,
-    bgColor: '#10B981',
+    bgColor: "#10B981",
     isTerminal: true,
     sentence: {
-      segments: ['Wait for', { subBlockId: 'approval', noun: 'approval' }],
-      values: { approval: 'your confirmation' },
+      segments: ["Wait for", { subBlockId: "approval", noun: "approval" }],
+      values: { approval: "your confirmation" },
     },
     rows: [],
     x: 1790,
     y: 170,
   },
   {
-    id: 'verify',
-    name: 'Queue for review',
-    type: 'api',
-    typeLabel: 'Queue',
+    id: "verify",
+    name: "Queue for review",
+    type: "api",
+    typeLabel: "Queue",
     icon: ApiIcon,
-    bgColor: '#2F55FF',
+    bgColor: "#2F55FF",
     isTerminal: true,
     sentence: {
-      segments: ['Send', { subBlockId: 'queue', noun: 'weak rows' }, 'to the attention queue'],
-      values: { queue: 'uncertain sentences' },
+      segments: ["Send", { subBlockId: "queue", noun: "weak rows" }, "to the attention queue"],
+      values: { queue: "uncertain sentences" },
     },
     rows: [],
     x: 1440,
     y: 430,
   },
-]
+];
 
 /** Source → target pairs, drawn in order as their endpoints land on canvas. */
 export const STAGE_EDGES: ReadonlyArray<readonly [string, string]> = [
-  ['start', 'enrich'],
-  ['enrich', 'score'],
-  ['score', 'route'],
-  ['route', 'slack'],
-  ['slack', 'tables'],
-  ['route', 'verify'],
-]
+  ["start", "enrich"],
+  ["enrich", "score"],
+  ["score", "route"],
+  ["route", "slack"],
+  ["slack", "tables"],
+  ["route", "verify"],
+];
 
 /** Initial camera viewport. The workflow continues to the right. */
-export const STAGE_CANVAS = { width: 860, height: 720 } as const
+export const STAGE_CANVAS = { width: 860, height: 720 } as const;
 
 /**
  * Rounded orthogonal ("smoothstep") path for a VERTICAL flow - from a source's
@@ -154,9 +150,9 @@ export const STAGE_CANVAS = { width: 860, height: 720 } as const
  * lives in `hero-visual/workflow-data.ts`.
  */
 export function verticalSmoothStep(sx: number, sy: number, tx: number, ty: number, r = 8): string {
-  if (Math.abs(tx - sx) < 1) return `M ${sx} ${sy} L ${tx} ${ty}`
-  const midY = (sy + ty) / 2
-  const dir = tx >= sx ? 1 : -1
+  if (Math.abs(tx - sx) < 1) return `M ${sx} ${sy} L ${tx} ${ty}`;
+  const midY = (sy + ty) / 2;
+  const dir = tx >= sx ? 1 : -1;
   return [
     `M ${sx} ${sy}`,
     `L ${sx} ${midY - r}`,
@@ -164,7 +160,7 @@ export function verticalSmoothStep(sx: number, sy: number, tx: number, ty: numbe
     `L ${tx - dir * r} ${midY}`,
     `Q ${tx} ${midY} ${tx} ${midY + r}`,
     `L ${tx} ${ty}`,
-  ].join(' ')
+  ].join(" ");
 }
 
 /** Handle anchor points for a block at its fixed position. */
@@ -175,5 +171,5 @@ export function handleAnchors(block: BlockDef) {
       y: block.y + blockHeight(block) + CONNECTION_KNOB_PEAK_PX,
     },
     in: { x: block.x + BLOCK_WIDTH / 2, y: block.y - CONNECTION_KNOB_PEAK_PX },
-  }
+  };
 }

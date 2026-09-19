@@ -1,17 +1,17 @@
-'use client'
+"use client";
 
-import { type ReactNode, useLayoutEffect, useRef } from 'react'
-import { cn } from '@sim/emcn'
+import { type ReactNode, useLayoutEffect, useRef } from "react";
+import { cn } from "@sim/emcn";
 
-const SCALE_EPSILON = 0.0001
+const SCALE_EPSILON = 0.0001;
 
 interface FitScaleOptions {
-  availableWidth: number
-  availableHeight: number
-  designWidth: number
-  designHeight: number
-  inset: number
-  maxScale: number
+  availableWidth: number;
+  availableHeight: number;
+  designWidth: number;
+  designHeight: number;
+  inset: number;
+  maxScale: number;
 }
 
 export function calculateFitScale({
@@ -29,25 +29,25 @@ export function calculateFitScale({
     designHeight <= 0 ||
     maxScale <= 0
   ) {
-    return 0
+    return 0;
   }
 
   return Math.min(
     maxScale,
     (availableWidth - inset) / designWidth,
-    (availableHeight - inset) / designHeight
-  )
+    (availableHeight - inset) / designHeight,
+  );
 }
 
 interface ResponsiveDesignStageProps {
-  width: number
-  height: number
-  children: ReactNode
-  className?: string
-  contentClassName?: string
-  inset?: number
-  maxScale?: number
-  align?: 'start' | 'center'
+  width: number;
+  height: number;
+  children: ReactNode;
+  className?: string;
+  contentClassName?: string;
+  inset?: number;
+  maxScale?: number;
+  align?: "start" | "center";
 }
 
 /**
@@ -65,20 +65,20 @@ export function ResponsiveDesignStage({
   contentClassName,
   inset = 0,
   maxScale = 1,
-  align = 'center',
+  align = "center",
 }: ResponsiveDesignStageProps) {
-  const hostRef = useRef<HTMLDivElement>(null)
-  const surfaceRef = useRef<HTMLDivElement>(null)
+  const hostRef = useRef<HTMLDivElement>(null);
+  const surfaceRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
-    const host = hostRef.current
-    const surface = surfaceRef.current
-    if (!host || !surface) return
+    const host = hostRef.current;
+    const surface = surfaceRef.current;
+    if (!host || !surface) return;
 
-    surface.style.width = `${width}px`
-    surface.style.height = `${height}px`
+    surface.style.width = `${width}px`;
+    surface.style.height = `${height}px`;
 
-    let appliedScale = -1
+    let appliedScale = -1;
 
     const applyScale = (availableWidth: number, availableHeight: number) => {
       const scale = calculateFitScale({
@@ -88,49 +88,49 @@ export function ResponsiveDesignStage({
         designHeight: height,
         inset,
         maxScale,
-      })
+      });
       if (scale === 0) {
-        surface.style.opacity = '0'
-        appliedScale = -1
-        return
+        surface.style.opacity = "0";
+        appliedScale = -1;
+        return;
       }
-      if (Math.abs(scale - appliedScale) < SCALE_EPSILON) return
+      if (Math.abs(scale - appliedScale) < SCALE_EPSILON) return;
 
-      surface.style.setProperty("--preview-scale", String(scale))
-      surface.style.transform = `scale(${scale})`
-      surface.style.opacity = "1"
-      appliedScale = scale
-    }
+      surface.style.setProperty("--preview-scale", String(scale));
+      surface.style.transform = `scale(${scale})`;
+      surface.style.opacity = "1";
+      appliedScale = scale;
+    };
 
-    applyScale(host.clientWidth, host.clientHeight)
+    applyScale(host.clientWidth, host.clientHeight);
 
     const observer = new ResizeObserver(([entry]) => {
-      applyScale(entry.contentRect.width, entry.contentRect.height)
-    })
-    observer.observe(host)
+      applyScale(entry.contentRect.width, entry.contentRect.height);
+    });
+    observer.observe(host);
 
-    return () => observer.disconnect()
-  }, [height, inset, maxScale, width])
+    return () => observer.disconnect();
+  }, [height, inset, maxScale, width]);
 
   return (
     <div
       ref={hostRef}
       className={cn(
-        'overflow-hidden [contain:content]',
-        align === 'center' ? 'flex items-center justify-center' : 'relative',
-        className
+        "overflow-hidden [contain:content]",
+        align === "center" ? "flex items-center justify-center" : "relative",
+        className,
       )}
     >
       <div
         ref={surfaceRef}
         className={cn(
-          'design-surface shrink-0 opacity-0',
-          align === 'start' ? 'absolute top-0 left-0 origin-top-left' : 'origin-center',
-          contentClassName
+          "design-surface shrink-0 opacity-0",
+          align === "start" ? "absolute top-0 left-0 origin-top-left" : "origin-center",
+          contentClassName,
         )}
       >
         {children}
       </div>
     </div>
-  )
+  );
 }

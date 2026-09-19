@@ -1,12 +1,5 @@
 import { Chip } from "@sim/emcn";
-import {
-  BookOpen,
-  Calendar,
-  MessageSquareText,
-  Mic,
-  Search,
-  Sparkles,
-} from "@sim/emcn/icons";
+import { BookOpen, Calendar, MessageSquareText, Mic, Search, Sparkles } from "@sim/emcn/icons";
 
 import { cn } from "@/lib/sim/cn";
 

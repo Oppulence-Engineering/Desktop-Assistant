@@ -34,9 +34,7 @@ const CAPABILITY_HERO: Partial<Record<string, ProductPreviewKey>> = {
 };
 
 /** Interactive showcase preview per capability slug. */
-const CAPABILITY_SHOWCASE: Partial<
-  Record<string, ProductPreviewKey | "register-interactive">
-> = {
+const CAPABILITY_SHOWCASE: Partial<Record<string, ProductPreviewKey | "register-interactive">> = {
   "commitment-register": "register-interactive",
   "governed-actions": "govern",
   "meeting-capture": "voice",
@@ -139,7 +137,13 @@ export function capabilityToSolutionsConfig(page: CapabilityPage): SolutionsProd
               ? { label: page.related[1].label, href: page.related[1].href }
               : undefined,
           )
-        : featureBlock("capability", "Capability", page.howItWorks.title, page.howItWorks.body, gridA),
+        : featureBlock(
+            "capability",
+            "Capability",
+            page.howItWorks.title,
+            page.howItWorks.body,
+            gridA,
+          ),
       tertiary
         ? featureBlock(
             slugify(tertiary.title),
@@ -191,7 +195,13 @@ export function platformToSolutionsConfig(page: PlatformPage): SolutionsProductP
         : featureBlock("overview", page.summary, page.title, page.lede, heroProduct),
       second
         ? featureBlock(slugify(second.title), second.title, second.title, second.body, gridA)
-        : featureBlock("detail", page.specs[0]?.term ?? page.name, page.specs[0]?.term ?? page.name, page.specs[0]?.detail ?? page.summary, gridA),
+        : featureBlock(
+            "detail",
+            page.specs[0]?.term ?? page.name,
+            page.specs[0]?.term ?? page.name,
+            page.specs[0]?.detail ?? page.summary,
+            gridA,
+          ),
       third
         ? featureBlock(
             slugify(third.title),

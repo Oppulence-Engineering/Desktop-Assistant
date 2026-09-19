@@ -123,8 +123,8 @@ export function SimBlogArchivePage({ page }: { page: MarketingPage }) {
               <p className="my-4">
                 The practical shift is ownership. Email threads, meeting notes, local files, product
                 context, and tool events become durable graph context with sources attached. The
-                agent can search it, update it, and act from it without turning each workflow into
-                a fresh prompt.
+                agent can search it, update it, and act from it without turning each workflow into a
+                fresh prompt.
               </p>
               <p className="my-4">
                 That makes comparison pages less about which static surface looks better and more
