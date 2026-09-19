@@ -93,6 +93,8 @@ const config = [
       "coverage/**",
       "lib/api/generated/**",
       ".rowboat-contracts-*/**",
+      "vendor/**",
+      "sim-port/**",
       "next-env.d.ts",
     ],
   },

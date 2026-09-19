@@ -23,7 +23,7 @@ function relativeAppPath(filename: string): string {
 
 describe("WEB020 React component contracts", () => {
   it("keeps every product component in an explicit ownership class", () => {
-    const legacy = new Set(architecture.legacyFiles);
+    const legacy = new Set<string>(architecture.legacyFiles);
     const rogue = filesBelow(path.join(appRoot, "components"))
       .filter((filename) => filename.endsWith(".tsx") && !filename.endsWith(".test.tsx"))
       .map(relativeAppPath)
