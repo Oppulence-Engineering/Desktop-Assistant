@@ -2,6 +2,7 @@
 public/mockServiceWorker.js
 coverage/
 config/deployment/*.toml
+config/generate/templates/
 lib/api/generated/
 node_modules/
 playwright-report/
