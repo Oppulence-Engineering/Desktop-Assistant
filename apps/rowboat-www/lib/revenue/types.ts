@@ -463,9 +463,9 @@ export interface RevenueLeakScan {
   threadsDeepRead?: number;
   threadsSnippetOnly?: number;
   threadsSkipped?: number;
-  startedAt?: string;
-  completedAt?: string;
-  sourceFreshnessAt?: string;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  sourceFreshnessAt?: string | null;
   error?: string;
 }
 

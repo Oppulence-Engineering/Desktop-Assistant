@@ -32,6 +32,7 @@ import {
   OUTCOME_LABELS,
   recordOutcome,
   relativeTime,
+  type RecordOutcomeInput,
 } from "@/lib/revenue/revenue";
 import { errMessage, PolicyBadge } from "@/components/features/revenue/shared/shared";
 import { capture, RevenueEvents } from "@/lib/analytics/analytics";
@@ -48,7 +49,7 @@ export function AuditSheet({
 }) {
   const [audit, setAudit] = React.useState<ActionAudit | null>(null);
   const [loading, setLoading] = React.useState(false);
-  const [outcome, setOutcome] = React.useState("replied");
+  const [outcome, setOutcome] = React.useState<RecordOutcomeInput["kind"]>("replied");
   const [logging, setLogging] = React.useState(false);
 
   const load = React.useCallback(
@@ -190,7 +191,13 @@ export function AuditSheet({
                   <p className="mb-3 text-xs text-primary/45">No outcomes recorded yet.</p>
                 )}
                 <div className="flex items-center gap-2">
-                  <Select value={outcome} onValueChange={setOutcome}>
+                  <Select
+                    value={outcome}
+                    onValueChange={(value) => {
+                      const next = MANUAL_OUTCOMES.find((item) => item.value === value);
+                      if (next) setOutcome(next.value);
+                    }}
+                  >
                     <SelectTrigger size="sm" className="w-48">
                       <SelectValue />
                     </SelectTrigger>

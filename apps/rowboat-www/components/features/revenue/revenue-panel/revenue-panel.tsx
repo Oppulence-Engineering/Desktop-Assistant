@@ -231,8 +231,9 @@ export function RevenuePanel({
         await queryClient.invalidateQueries({ queryKey: commitmentKeys.lists() });
         await queryClient.invalidateQueries({ queryKey: revenueActionKeys.lists() });
         await commitmentQuery.refetch();
+        const evaluations = result.evaluations;
         setNoticeMsg(
-          result.evaluations.length
+          Array.isArray(evaluations) && evaluations.length > 0
             ? "Recovery draft created. Review and approve it before sending."
             : "No due commitment needed a recovery draft.",
         );

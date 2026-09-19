@@ -26,6 +26,65 @@ import {
   fetchCommunicationPrivacyRules,
 } from "@/hooks/queries/utils/fetch-communication";
 import { fetchWorkspace } from "@/hooks/queries/utils/fetch-workspace";
+import { fetchAcknowledgeMissionControl } from "@/hooks/queries/utils/mutate-acknowledge-mission-control";
+import {
+  fetchAppendCommitmentTransition,
+  type AppendCommitmentTransitionInput,
+} from "@/hooks/queries/utils/mutate-append-commitment-transition";
+import { fetchApproveMutualActionPlan } from "@/hooks/queries/utils/mutate-approve-mutual-action-plan";
+import { fetchApproveRelationshipRecommendation } from "@/hooks/queries/utils/mutate-approve-relationship-recommendation";
+import { fetchApproveRevenueAction } from "@/hooks/queries/utils/mutate-approve-revenue-action";
+import { fetchCorrectConversationEvidence } from "@/hooks/queries/utils/mutate-correct-conversation-evidence";
+import { fetchCorrectRelationship } from "@/hooks/queries/utils/mutate-correct-relationship";
+import {
+  fetchCreateMutualActionPlan,
+  type CreateMutualActionPlanInput,
+} from "@/hooks/queries/utils/mutate-create-mutual-action-plan";
+import {
+  fetchCreateRelationship,
+  type CreateRelationshipInput as CreateRelationshipMutationInput,
+} from "@/hooks/queries/utils/mutate-create-relationship";
+import {
+  fetchCreateRevenueAction,
+  type CreateRevenueActionInput,
+} from "@/hooks/queries/utils/mutate-create-revenue-action";
+import { fetchDecideConversationChange } from "@/hooks/queries/utils/mutate-decide-conversation-change";
+import { fetchDecideRelationshipAttention } from "@/hooks/queries/utils/mutate-decide-relationship-attention";
+import {
+  fetchDecideRelationshipIdentityCandidate,
+  type DecideRelationshipIdentityCandidateInput,
+} from "@/hooks/queries/utils/mutate-decide-relationship-identity-candidate";
+import { fetchDisconnectRelationshipSource } from "@/hooks/queries/utils/mutate-disconnect-relationship-source";
+import { fetchDismissRevenueAction } from "@/hooks/queries/utils/mutate-dismiss-revenue-action";
+import {
+  fetchEditRevenueAction,
+  type EditRevenueActionInput,
+} from "@/hooks/queries/utils/mutate-edit-revenue-action";
+import { fetchEvaluateRevenueAction } from "@/hooks/queries/utils/mutate-evaluate-revenue-action";
+import { fetchExecuteRevenueAction } from "@/hooks/queries/utils/mutate-execute-revenue-action";
+import {
+  fetchIngestRelationshipObservations,
+  type IngestRelationshipObservationsInput,
+} from "@/hooks/queries/utils/mutate-ingest-relationship-observations";
+import {
+  fetchLinkRevenueWorkspace,
+  type LinkRevenueWorkspaceInput,
+} from "@/hooks/queries/utils/mutate-link-revenue-workspace";
+import {
+  fetchRecordRevenueActionOutcome,
+  type RecordRevenueActionOutcomeInput,
+} from "@/hooks/queries/utils/mutate-record-revenue-action-outcome";
+import { fetchRejectRelationshipRecommendation } from "@/hooks/queries/utils/mutate-reject-relationship-recommendation";
+import { fetchRejectRevenueAction } from "@/hooks/queries/utils/mutate-reject-revenue-action";
+import { fetchReportRelationshipSourceAuthorization } from "@/hooks/queries/utils/mutate-report-relationship-source-authorization";
+import { fetchRequestConversationDeletion } from "@/hooks/queries/utils/mutate-request-conversation-deletion";
+import { fetchResolveRelationshipContradiction } from "@/hooks/queries/utils/mutate-resolve-relationship-contradiction";
+import { fetchResyncRelationshipSource } from "@/hooks/queries/utils/mutate-resync-relationship-source";
+import { fetchRetractRelationshipAssertion } from "@/hooks/queries/utils/mutate-retract-relationship-assertion";
+import { fetchRunCommitmentRecovery } from "@/hooks/queries/utils/mutate-run-commitment-recovery";
+import { fetchShareMutualActionPlan } from "@/hooks/queries/utils/mutate-share-mutual-action-plan";
+import { fetchSnoozeRevenueAction } from "@/hooks/queries/utils/mutate-snooze-revenue-action";
+import { fetchStartRevenueLeakScan } from "@/hooks/queries/utils/mutate-start-revenue-leak-scan";
 import type { RelationshipListScope } from "@/hooks/queries/utils/relationship-keys";
 import { RELATIONSHIP_SOURCE_STATUS_QUERY_KEY } from "@/hooks/queries/utils/relationship-source-keys";
 import { DashboardRequestError } from "@/lib/api/request-json";
@@ -35,24 +94,13 @@ import {
   toDashboardAPIPath,
 } from "@/lib/auth/dashboard-fetch";
 import { ExportCommitment200Response } from "@/lib/api/generated/zod/relationship-intelligence/relationship-intelligence";
-import { StartRevenueLeakScan202Response } from "@/lib/api/generated/zod/revenue/revenue";
-import { RelationshipGraphSchema } from "@/lib/revenue/types";
 import type {
   ActionAudit,
   RelationshipDetail,
   RevenueAction,
-  RevenueDigest,
-  RevenueImpact,
   RevenueLeakScan,
-  RevenueOutcome,
-  RevenuePolicyDecision,
   RevenueRelationship,
-  RevenueWorkspace,
   RelationshipObservation,
-  RelationshipObservationInput,
-  RelationshipIdentityCandidate,
-  RelationshipAttentionItem,
-  RelationshipSourceInventoryItem,
   RelationshipSourceStatus,
   BetaDiagnostics,
   RelationshipGraph,
@@ -70,7 +118,6 @@ import type {
   CommunicationTimelineItem,
   CommitmentRegisterFilter,
   CommitmentRecord,
-  OpenPromisesReport,
   RegisterEntry,
 } from "@/lib/revenue/types";
 
@@ -169,9 +216,6 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-const post = (path: string, body?: unknown) =>
-  call(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
-
 export function safeResearchCitationURL(value: string) {
   try {
     const url = new URL(value);
@@ -220,22 +264,15 @@ export async function startCheckout(plan: "starter" | "pro"): Promise<string> {
   return body.url;
 }
 
-export interface LinkWorkspaceInput {
-  outboundOrganizationId?: string;
-  outboundWorkspaceId: string;
-}
+export type LinkWorkspaceInput = LinkRevenueWorkspaceInput;
 
 export const linkWorkspace = (input: LinkWorkspaceInput) =>
-  post("/revenue-workspaces/link", input) as Promise<RevenueWorkspace>;
+  viaRequest(() => fetchLinkRevenueWorkspace(input));
 
 // --- scan --------------------------------------------------------------------
 
-export const startScan = async (lookbackDays?: number): Promise<RevenueLeakScan> =>
-  parsed(
-    StartRevenueLeakScan202Response,
-    await post("/revenue-leak-scans", lookbackDays ? { lookbackDays } : undefined),
-    "revenue scan",
-  ) as RevenueLeakScan;
+export const startScan = (lookbackDays?: number) =>
+  viaRequest(() => fetchStartRevenueLeakScan(lookbackDays ? { lookbackDays } : {}));
 
 export const getScan = fetchReportScan;
 
@@ -328,21 +365,10 @@ export const getAudit = (actionId: string) =>
 export const getSourceBody = (actionId: string) =>
   call<{ body: string }>(`/revenue-actions/${actionId}/source-body`).then((r) => r.body);
 
-export interface CreateActionInput {
-  relationshipId: string;
-  actionType: string;
-  channel: string;
-  reason: string;
-  recipientEmail?: string;
-  proposedSubject?: string;
-  proposedMessage?: string;
-  executionMode?: "draft" | "send";
-  priorityScore?: number;
-  dueAt?: string;
-}
+export type CreateActionInput = CreateRevenueActionInput;
 
 export const createAction = (input: CreateActionInput) =>
-  post("/revenue-actions", input) as Promise<RevenueAction>;
+  viaRequest(() => fetchCreateRevenueAction(input));
 
 // --- relationships -----------------------------------------------------------
 
@@ -415,6 +441,9 @@ export const getPersonAttributes = (personId: string) =>
 
 export const getResearchStatus = () => call<ResearchStatus>("/research/status");
 
+// These writes have no OpenAPI operationId with a 200/201/202 schema, so
+// `gen mutation --operation` cannot express them. Do not invent a local Zod
+// stub; document the route on the Go spec, then generate.
 export const setResearchConsent = (consented: boolean) =>
   call<ResearchConsentState>("/research/consent", {
     method: "PUT",
@@ -467,12 +496,7 @@ export const deletePerson = (personId: string) =>
   });
 
 export const acknowledgeMissionControl = (id: string, stateVersion: number, stateHash: string) =>
-  post(`/relationships/${id}/acknowledgements`, { stateVersion, stateHash }) as Promise<{
-    id: string;
-    stateVersion: number;
-    stateHash: string;
-    acknowledgedAt: string;
-  }>;
+  viaRequest(() => fetchAcknowledgeMissionControl(id, { stateVersion, stateHash }));
 
 export const getRelationshipTimeline = (id: string, limit = 50, signal?: AbortSignal) =>
   call<{ observations: RelationshipObservation[] }>(
@@ -557,17 +581,20 @@ export const getRelationshipEvidence = (relationshipId: string, evidenceId: stri
     `/relationships/${relationshipId}/evidence/${evidenceId}`,
   );
 
-export const ingestRelationshipObservations = (observations: RelationshipObservationInput[]) =>
-  post("/relationship-observations/batch", { observations }) as Promise<{
-    results: Array<{
-      observation: RelationshipObservation;
-      relationship: RevenueRelationship;
-      duplicate: boolean;
-    }>;
-  }>;
+export const ingestRelationshipObservations = (
+  observations: IngestRelationshipObservationsInput["observations"],
+) => viaRequest(() => fetchIngestRelationshipObservations({ observations }));
 
 export interface RelationshipCorrectionInput {
-  dimension: "lifecycle" | "engagement" | "sentiment" | "health" | "next_action";
+  dimension:
+    | "lifecycle"
+    | "engagement"
+    | "sentiment"
+    | "health"
+    | "summary"
+    | "next_action"
+    | "risk"
+    | "milestone";
   value: string;
   reason: string;
   supersedesAssertionId?: string;
@@ -575,16 +602,13 @@ export interface RelationshipCorrectionInput {
 }
 
 export const correctRelationship = (id: string, input: RelationshipCorrectionInput) =>
-  post(`/relationships/${id}/corrections`, input) as Promise<RevenueRelationship>;
+  viaRequest(() => fetchCorrectRelationship(id, input));
 
 export const retractRelationshipAssertion = (
   relationshipId: string,
   assertionId: string,
   reason: string,
-) =>
-  post(`/relationships/${relationshipId}/assertions/${assertionId}/retract`, {
-    reason,
-  }) as Promise<RevenueRelationship>;
+) => viaRequest(() => fetchRetractRelationshipAssertion(relationshipId, assertionId, { reason }));
 
 export const correctConversationReview = (
   id: string,
@@ -593,10 +617,7 @@ export const correctConversationReview = (
     correctedValue: string;
     reason: string;
   },
-) =>
-  post(`/relationships/${id}/conversation-corrections`, input) as Promise<
-    Pick<RelationshipDetail, "relationship" | "intelligence">
-  >;
+) => viaRequest(() => fetchCorrectConversationEvidence(id, input));
 
 export const decideConversationReview = (
   id: string,
@@ -607,68 +628,36 @@ export const decideConversationReview = (
     reason?: string;
     deferUntil?: string;
   },
-) =>
-  post(`/relationships/${id}/conversation-decisions`, input) as Promise<
-    Pick<RelationshipDetail, "relationship" | "intelligence">
-  >;
+) => viaRequest(() => fetchDecideConversationChange(id, input));
 
 export const resolveRelationshipContradiction = (
   id: string,
   caseId: string,
   input: { selectedAssertionId: string; reason?: string },
-) =>
-  post(
-    `/relationships/${encodeURIComponent(id)}/contradictions/${encodeURIComponent(caseId)}/resolve`,
-    input,
-  ) as Promise<Pick<RelationshipDetail, "relationship" | "intelligence">>;
+) => viaRequest(() => fetchResolveRelationshipContradiction(id, caseId, input));
 
 export const runCommitmentRecovery = (id: string) =>
-  post(`/relationships/${encodeURIComponent(id)}/commitment-recovery/run`, {}) as Promise<{
-    evaluations: NonNullable<RelationshipDetail["intelligence"]>["recoveryEvaluations"];
-  }>;
+  viaRequest(() => fetchRunCommitmentRecovery(id, {}));
 
 export const appendCommitmentTransition = (
   relationshipId: string,
   commitmentId: string,
-  input: {
-    kind: string;
-    idempotencyKey: string;
-    reason?: string;
-    dueAt?: string;
-    action?: string;
-    blocker?: string;
-    evidenceRefs?: string[];
-  },
-) =>
-  post(
-    `/relationships/${encodeURIComponent(relationshipId)}/commitments/${encodeURIComponent(commitmentId)}/transitions`,
-    input,
-  ) as Promise<RelationshipDetail["commitments"][number]>;
+  input: AppendCommitmentTransitionInput,
+) => viaRequest(() => fetchAppendCommitmentTransition(relationshipId, commitmentId, input));
 
-export const createMutualActionPlan = (relationshipId: string, commitmentIds: string[]) =>
-  post(`/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans`, {
-    commitmentIds,
-  }) as Promise<NonNullable<RelationshipDetail["intelligence"]>["mutualActionPlans"][number]>;
+export const createMutualActionPlan = (
+  relationshipId: string,
+  commitmentIds: CreateMutualActionPlanInput["commitmentIds"],
+) => viaRequest(() => fetchCreateMutualActionPlan(relationshipId, { commitmentIds }));
 
 export const approveMutualActionPlan = (relationshipId: string, planId: string) =>
-  post(
-    `/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans/${encodeURIComponent(planId)}/approve`,
-    {},
-  ) as Promise<NonNullable<RelationshipDetail["intelligence"]>["mutualActionPlans"][number]>;
+  viaRequest(() => fetchApproveMutualActionPlan(relationshipId, planId, {}));
 
 export const shareMutualActionPlan = (relationshipId: string, planId: string) =>
-  post(
-    `/relationships/${encodeURIComponent(relationshipId)}/mutual-action-plans/${encodeURIComponent(planId)}/share`,
-    {},
-  ) as Promise<{
-    plan: NonNullable<RelationshipDetail["intelligence"]>["mutualActionPlans"][number];
-    responseToken: string;
-  }>;
+  viaRequest(() => fetchShareMutualActionPlan(relationshipId, planId, {}));
 
 export const requestConversationDeletion = (relationshipId: string, requestId: string) =>
-  post(`/relationships/${encodeURIComponent(relationshipId)}/conversation-deletion`, {
-    requestId,
-  }) as Promise<NonNullable<RelationshipDetail["intelligence"]>["deletionReceipts"][number]>;
+  viaRequest(() => fetchRequestConversationDeletion(relationshipId, { requestId }));
 
 /**
  * One cache entry for source health. The sidebar and the revenue panel both
@@ -692,22 +681,13 @@ export const reportRelationshipSourceAuthorization = (
     grantedScopes?: string[];
     errorCode?: string;
   },
-) =>
-  post(
-    `/relationship-sources/${encodeURIComponent(source)}/authorization`,
-    input,
-  ) as Promise<RelationshipSourceStatus>;
+) => viaRequest(() => fetchReportRelationshipSourceAuthorization(source, input));
 
 export const resyncRelationshipSource = (source: string, sourceAccountId: string) =>
-  post(`/relationship-sources/${encodeURIComponent(source)}/resync`, {
-    sourceAccountId,
-  }) as Promise<RelationshipSourceStatus>;
+  viaRequest(() => fetchResyncRelationshipSource(source, { sourceAccountId }));
 
 export const disconnectRelationshipSource = (source: string, sourceAccountId: string) =>
-  post(
-    `/relationship-sources/${encodeURIComponent(source)}/${encodeURIComponent(sourceAccountId)}/disconnect`,
-    {},
-  ) as Promise<RelationshipSourceStatus>;
+  viaRequest(() => fetchDisconnectRelationshipSource(source, sourceAccountId));
 
 export const listIdentityCandidates = (
   status = "pending",
@@ -717,12 +697,8 @@ export const listIdentityCandidates = (
 
 export const decideIdentityCandidate = (
   candidateId: string,
-  input: { decision: string; reason: string; expectedVersion: number; idempotencyKey: string },
-) =>
-  post(
-    `/relationship-identity-candidates/${encodeURIComponent(candidateId)}/decisions`,
-    input,
-  ) as Promise<RelationshipIdentityCandidate>;
+  input: DecideRelationshipIdentityCandidateInput,
+) => viaRequest(() => fetchDecideRelationshipIdentityCandidate(candidateId, input));
 
 export const listRelationshipAttention = (status = "open", signal?: AbortSignal) =>
   viaRequest(() => fetchRelationshipAttention(status, signal));
@@ -735,76 +711,49 @@ export const decideRelationshipAttention = (
     expectedVersion: number;
     snoozedUntil?: string;
   },
-) =>
-  post(
-    `/relationship-attention/${encodeURIComponent(attentionId)}/decisions`,
-    input,
-  ) as Promise<RelationshipAttentionItem>;
+) => viaRequest(() => fetchDecideRelationshipAttention(attentionId, input));
 
 export const approveRecommendation = (actionId: string, acceptRisk = false) =>
-  post(`/relationship-recommendations/${actionId}/approve`, {
-    acceptRisk,
-  }) as Promise<RevenueAction>;
+  viaRequest(() => fetchApproveRelationshipRecommendation(actionId, { acceptRisk }));
 
 export const rejectRecommendation = (actionId: string, reason: string) =>
-  post(`/relationship-recommendations/${actionId}/reject`, {
-    reason,
-  }) as Promise<RevenueAction>;
+  viaRequest(() => fetchRejectRelationshipRecommendation(actionId, { reason }));
 
-export interface CreateRelationshipInput {
-  kind: string;
-  displayName: string;
-  primaryEmail?: string;
-  accountDomain?: string;
-  summary?: string;
-}
+export type CreateRelationshipInput = CreateRelationshipMutationInput;
 
 export const createRelationship = (input: CreateRelationshipInput) =>
-  post("/relationships", input) as Promise<RevenueRelationship>;
+  viaRequest(() => fetchCreateRelationship(input));
 
 // --- lifecycle ---------------------------------------------------------------
 
-export interface EditActionInput {
-  reason?: string;
-  recipientEmail?: string;
-  proposedSubject?: string;
-  proposedMessage?: string;
-  senderAccountRef?: string;
-  channel?: string;
-  actionType?: string;
-  executionMode?: string;
-}
+export type EditActionInput = EditRevenueActionInput;
 
 export const editAction = (actionId: string, input: EditActionInput) =>
-  post(`/revenue-actions/${actionId}/edit`, input) as Promise<RevenueAction>;
+  viaRequest(() => fetchEditRevenueAction(actionId, input));
 
 export const evaluateAction = (actionId: string) =>
-  post(`/revenue-actions/${actionId}/evaluate`) as Promise<RevenuePolicyDecision>;
+  viaRequest(() => fetchEvaluateRevenueAction(actionId));
 
 export const approveAction = (actionId: string, acceptRisk = false) =>
-  post(`/revenue-actions/${actionId}/approve`, { acceptRisk }) as Promise<RevenueAction>;
+  viaRequest(() => fetchApproveRevenueAction(actionId, { acceptRisk }));
 
 export const rejectAction = (actionId: string, reason: string) =>
-  post(`/revenue-actions/${actionId}/reject`, { reason }) as Promise<RevenueAction>;
+  viaRequest(() => fetchRejectRevenueAction(actionId, { reason }));
 
 export const executeAction = (actionId: string) =>
-  post(`/revenue-actions/${actionId}/execute`) as Promise<RevenueAction>;
+  viaRequest(() => fetchExecuteRevenueAction(actionId));
 
 export const snoozeAction = (actionId: string, until: string) =>
-  post(`/revenue-actions/${actionId}/snooze`, { until }) as Promise<RevenueAction>;
+  viaRequest(() => fetchSnoozeRevenueAction(actionId, { until }));
 
 export const dismissAction = (actionId: string, reason: string) =>
-  post(`/revenue-actions/${actionId}/dismiss`, { reason }) as Promise<RevenueAction>;
+  viaRequest(() => fetchDismissRevenueAction(actionId, { reason }));
 
-export interface RecordOutcomeInput {
-  kind: string;
-  source: string;
-  sourceEventId: string;
-  occurredAt?: string;
-}
+export type RecordOutcomeInput = RecordRevenueActionOutcomeInput;
+export type { DecideRelationshipIdentityCandidateInput };
 
 export const recordOutcome = (actionId: string, input: RecordOutcomeInput) =>
-  post(`/revenue-actions/${actionId}/outcomes`, input) as Promise<RevenueOutcome>;
+  viaRequest(() => fetchRecordRevenueActionOutcome(actionId, input));
 
 // --- display helpers ---------------------------------------------------------
 
@@ -855,7 +804,7 @@ export const OUTCOME_LABELS: Record<string, string> = {
 };
 
 // Outcomes an operator can log by hand from the audit view.
-export const MANUAL_OUTCOMES: { value: string; label: string }[] = [
+export const MANUAL_OUTCOMES: { value: RecordOutcomeInput["kind"]; label: string }[] = [
   { value: "replied", label: "They replied" },
   { value: "meeting_booked", label: "Meeting booked" },
   { value: "won", label: "Won" },
@@ -881,7 +830,7 @@ export const PRIORITY_COMPONENT_LABELS: Record<string, string> = {
   contact_risk_penalty: "Contact risk",
 };
 
-export function relativeTime(iso?: string): string {
+export function relativeTime(iso?: string | null): string {
   if (!iso) return "";
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return "";
