@@ -32,6 +32,12 @@ export const viewport: Viewport = {
   ],
 };
 
+// Cache Components still validates every segment for instant navigation.
+// The dashboard and marketing shells are client-heavy; a dropped segment
+// was surfacing as a hard "/app" or "/" crash overlay. Opt the tree out
+// so a missing prerender shell is not reported as a runtime crash.
+export const instant = false;
+
 /**
  * Dev tooling from the react-grab / react-scan ecosystem (Aiden Bai):
  * - React Scan highlights slow or unnecessary re-renders in the component tree.

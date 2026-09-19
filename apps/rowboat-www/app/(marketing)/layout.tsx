@@ -24,6 +24,11 @@ export const viewport = {
   themeColor: "#000000",
 };
 
+// Marketing pages mount Support Chat and other client chrome that Next
+// drops from the instant prerender. Opt out here so "/" does not open
+// with the same crash overlay the dashboard had.
+export const instant = false;
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className={`${inter.variable} ${dmMono.variable}`}>

@@ -4,6 +4,7 @@ import { dashboardFetch } from "@/lib/auth/client";
 import {
   companyLinkedInURL,
   friendlyRevenueError,
+  getRelationshipCommunicationTimeline,
   getRelationshipGraph,
   googleSourceHealth,
   interactionCountLabel,
@@ -176,6 +177,19 @@ it("lets one healthy Google account win over stale dead account rows", () => {
       { source: "google", status: "live", missingScopes: [] },
     ]),
   ).toBe("ready");
+});
+
+describe("getRelationshipCommunicationTimeline", () => {
+  it("treats a missing communication-intelligence route as an empty timeline", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ detail: "not found", code: "not_found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await expect(getRelationshipCommunicationTimeline("rel-1")).resolves.toEqual([]);
+  });
 });
 
 describe("friendlyRevenueError", () => {
