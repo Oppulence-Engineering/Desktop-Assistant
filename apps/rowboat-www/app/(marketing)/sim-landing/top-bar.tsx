@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { cn } from "@/lib/sim/cn";
 
-import { InlineLogo, MobileMenu } from "../marketing-components";
+import { InlineLogo, MobileMenu } from "../marketing-chrome";
 import { MarketingSpan, marketingSpanClass } from "../marketing-primitives";
 import { headerNav, headerUtilityLinks } from "../site";
 import { SimCtaLink } from "./primitives";

@@ -4,7 +4,7 @@ import { cn } from "@/lib/sim/cn";
 
 import { footerGroups } from "../site";
 import type { LinkItem } from "../marketing-data";
-import { InlineLogo } from "../marketing-components";
+import { InlineLogo } from "../marketing-chrome";
 import { SimFooterWordmark } from "./footer-wordmark";
 import { SimThemeToggle } from "./theme-toggle";
 import { LANDING_CONTENT_WIDTH, LANDING_GUTTER } from "./tokens";
